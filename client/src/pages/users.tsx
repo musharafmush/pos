@@ -404,14 +404,45 @@ export default function Users() {
                                   <PencilIcon className="h-4 w-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
+                                
                                 {user.id !== currentUser?.user?.id && (
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDelete(user)}
-                                    className={user.active ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}
-                                  >
-                                    <TrashIcon className="h-4 w-4 mr-2" />
-                                    {user.active ? "Deactivate" : "Activate"}
-                                  </DropdownMenuItem>
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuLabel>Change Role</DropdownMenuLabel>
+                                    <DropdownMenuItem 
+                                      onClick={() => updateUserRoleMutation.mutate({ id: user.id, role: "admin" })}
+                                      disabled={user.role === "admin"}
+                                      className={user.role === "admin" ? "opacity-50" : "text-purple-600 dark:text-purple-400"}
+                                    >
+                                      <ShieldIcon className="h-4 w-4 mr-2" />
+                                      Admin
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => updateUserRoleMutation.mutate({ id: user.id, role: "manager" })}
+                                      disabled={user.role === "manager"}
+                                      className={user.role === "manager" ? "opacity-50" : "text-blue-600 dark:text-blue-400"}
+                                    >
+                                      <UserIcon className="h-4 w-4 mr-2" />
+                                      Manager
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => updateUserRoleMutation.mutate({ id: user.id, role: "cashier" })}
+                                      disabled={user.role === "cashier"}
+                                      className={user.role === "cashier" ? "opacity-50" : "text-green-600 dark:text-green-400"}
+                                    >
+                                      <UserIcon className="h-4 w-4 mr-2" />
+                                      Cashier
+                                    </DropdownMenuItem>
+                                    
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDelete(user)}
+                                      className={user.active ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}
+                                    >
+                                      <TrashIcon className="h-4 w-4 mr-2" />
+                                      {user.active ? "Deactivate" : "Activate"}
+                                    </DropdownMenuItem>
+                                  </>
                                 )}
                               </DropdownMenuContent>
                             </DropdownMenu>
