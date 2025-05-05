@@ -204,25 +204,24 @@ export default function Users() {
     }
   });
 
-  const deleteUserMutation = useMutation({
-    mutationFn: async (id: number) => {
-      // Note: This endpoint might not exist. In a real system, you'd want a proper delete endpoint
-      return await apiRequest("PUT", `/api/users/${id}`, { active: false });
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: async ({ id, active }: { id: number, active: boolean }) => {
+      return await apiRequest("PUT", `/api/users/${id}/status`, { active });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsDeleteDialogOpen(false);
       setSelectedUser(null);
       toast({
-        title: "User deactivated",
-        description: "User has been successfully deactivated",
+        title: variables.active ? "User activated" : "User deactivated",
+        description: `User has been successfully ${variables.active ? "activated" : "deactivated"}`,
       });
     },
-    onError: (error) => {
-      console.error("Error deactivating user:", error);
+    onError: (error, variables) => {
+      console.error(`Error ${variables.active ? "activating" : "deactivating"} user:`, error);
       toast({
         title: "Error",
-        description: "Failed to deactivate user. Please try again.",
+        description: `Failed to ${variables.active ? "activate" : "deactivate"} user. Please try again.`,
         variant: "destructive"
       });
     }
@@ -257,8 +256,33 @@ export default function Users() {
 
   const confirmDelete = () => {
     if (!selectedUser) return;
-    deleteUserMutation.mutate(selectedUser.id);
+    toggleUserStatusMutation.mutate({ 
+      id: selectedUser.id, 
+      active: !selectedUser.active 
+    });
   };
+
+  // Add a mutation for updating user roles
+  const updateUserRoleMutation = useMutation({
+    mutationFn: async ({ id, role }: { id: number, role: "admin" | "manager" | "cashier" }) => {
+      return await apiRequest("PUT", `/api/users/${id}/role`, { role });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "Role updated",
+        description: `User role has been updated to ${variables.role}`,
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating user role:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Filter users based on search term
   const filteredUsers = users?.filter((user: any) => {
@@ -713,9 +737,9 @@ export default function Users() {
             <Button 
               variant={selectedUser?.active ? "destructive" : "default"}
               onClick={confirmDelete}
-              disabled={deleteUserMutation.isPending}
+              disabled={toggleUserStatusMutation.isPending}
             >
-              {deleteUserMutation.isPending 
+              {toggleUserStatusMutation.isPending 
                 ? "Processing..." 
                 : selectedUser?.active ? "Deactivate" : "Activate"}
             </Button>
