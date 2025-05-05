@@ -19,6 +19,24 @@ const isAuthenticated = (req: any, res: any, next: any) => {
   return res.status(401).json({ message: "Unauthorized" });
 };
 
+// Define role-based middleware
+const hasRole = (roles: string[]) => {
+  return (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+    }
+    
+    return next();
+  };
+};
+
+const isAdmin = hasRole(['admin']);
+const isAdminOrManager = hasRole(['admin', 'manager']);
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure session storage
   const PostgresqlStore = pgSession(session);
@@ -80,6 +98,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const user = { ...req.user as any };
     delete user.password;
     res.json({ user });
+  });
+  
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      // Validate user data
+      const userData = schema.userInsertSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      
+      // Create user (default role is 'cashier' as defined in schema)
+      const newUser = await storage.createUser({
+        ...userData,
+        password: hashedPassword
+      });
+      
+      // Auto login after registration
+      req.login(newUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'Error logging in after registration' });
+        }
+        
+        // Remove password from response
+        const user = { ...newUser };
+        delete user.password;
+        res.status(201).json({ user });
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error('Error registering user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
   app.post('/api/auth/logout', (req, res) => {
@@ -615,14 +673,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Users API
-  app.get('/api/users', isAuthenticated, async (req, res) => {
+  app.get('/api/users', isAdmin, async (req, res) => {
     try {
-      // Check if user is admin
-      const user = req.user as any;
-      if (user.role !== 'admin') {
-        return res.status(403).json({ message: 'Forbidden' });
-      }
-      
       const users = await storage.listUsers();
       // Remove passwords from response
       const safeUsers = users.map(user => {
@@ -636,17 +688,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-
-  app.post('/api/users', isAuthenticated, async (req, res) => {
+  
+  app.get('/api/users/roles', isAuthenticated, async (req, res) => {
     try {
-      // Check if user is admin
-      const currentUser = req.user as any;
-      if (currentUser.role !== 'admin') {
-        return res.status(403).json({ message: 'Forbidden' });
+      // Return the available roles
+      res.json(['admin', 'manager', 'cashier']);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/users', isAdmin, async (req, res) => {
+    try {
+      const userData = schema.userInsertSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username already exists' });
       }
       
-      const userData = schema.userInsertSchema.parse(req.body);
-      const user = await storage.createUser(userData);
+      // Hash password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword
+      });
       
       // Remove password from response
       const { password, ...safeUser } = user;
@@ -671,14 +740,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Forbidden' });
       }
       
+      // Get current user data
+      const existingUser = await storage.getUserById(id);
+      if (!existingUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Handle password updates specially
+      let userData = { ...req.body };
+      
+      if (userData.password) {
+        // If password is being changed, hash it
+        userData.password = await bcrypt.hash(userData.password, 10);
+      } else {
+        // If not changing password, remove it from the update
+        delete userData.password;
+      }
+      
       // Remove sensitive fields if not admin
-      const userData = { ...req.body };
       if (currentUser.role !== 'admin') {
         delete userData.role;
         delete userData.active;
       }
       
       const user = await storage.updateUser(id, userData);
+      
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      
+      res.json(safeUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error('Error updating user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Add endpoint to change user status (active/inactive) - admin only
+  app.put('/api/users/:id/status', isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { active } = req.body;
+      
+      if (typeof active !== 'boolean') {
+        return res.status(400).json({ message: 'Active status must be a boolean' });
+      }
+      
+      const user = await storage.updateUser(id, { active });
       
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -689,7 +799,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(safeUser);
     } catch (error) {
-      console.error('Error updating user:', error);
+      console.error('Error updating user status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Add endpoint to change user role - admin only
+  app.put('/api/users/:id/role', isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { role } = req.body;
+      
+      if (!role || !['admin', 'manager', 'cashier'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role' });
+      }
+      
+      const user = await storage.updateUser(id, { role });
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      
+      res.json(safeUser);
+    } catch (error) {
+      console.error('Error updating user role:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

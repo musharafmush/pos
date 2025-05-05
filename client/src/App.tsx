@@ -12,18 +12,22 @@ import Purchases from "@/pages/purchases";
 import Reports from "@/pages/reports";
 import Users from "@/pages/users";
 import Settings from "@/pages/settings";
+import AuthPage from "@/pages/auth-page";
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/pos" component={POS} />
-      <Route path="/products" component={Products} />
-      <Route path="/inventory" component={Inventory} />
-      <Route path="/purchases" component={Purchases} />
-      <Route path="/reports" component={Reports} />
-      <Route path="/users" component={Users} />
-      <Route path="/settings" component={Settings} />
+      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/pos" component={POS} />
+      <ProtectedRoute path="/products" component={Products} />
+      <ProtectedRoute path="/inventory" component={Inventory} />
+      <ProtectedRoute path="/purchases" component={Purchases} />
+      <ProtectedRoute path="/reports" component={Reports} />
+      <ProtectedRoute path="/users" component={Users} adminOnly />
+      <ProtectedRoute path="/settings" component={Settings} />
+      <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -33,8 +37,10 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="pos-theme">
       <QueryClientProvider client={queryClient}>
-        <Router />
-        <Toaster />
+        <AuthProvider>
+          <Router />
+          <Toaster />
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );
