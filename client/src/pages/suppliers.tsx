@@ -248,27 +248,44 @@ export default function Suppliers() {
                 <Plus className="mr-2 h-4 w-4" /> Add Supplier
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle className="text-xl">Add New Supplier</DialogTitle>
+            <DialogContent className="sm:max-w-[650px]">
+              <DialogHeader className="border-b pb-4">
+                <DialogTitle className="text-xl text-blue-700 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                  Add New Supplier
+                </DialogTitle>
                 <DialogDescription>
-                  Enter the supplier details below. Fields marked with * are required.
+                  Enter the supplier details below. Fields marked with <span className="text-red-500">*</span> are required.
                 </DialogDescription>
               </DialogHeader>
               
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
-                    <h3 className="text-sm font-medium text-slate-500 pb-2 border-b">Basic Information</h3>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
+                  <div className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
+                    <h3 className="text-base font-medium text-blue-700 pb-2 border-b flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                      Basic Information
+                    </h3>
                     
                     <FormField
                       control={form.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-800">Company/Supplier Name *</FormLabel>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Company/Supplier Name <span className="text-red-500 ml-1">*</span>
+                            <div className="ml-2 cursor-help group relative">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                Company or business name of the supplier
+                              </div>
+                            </div>
+                          </FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Enter supplier or company name" className="focus-visible:ring-blue-500" />
+                            <div className="relative">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                              <Input {...field} placeholder="Enter supplier or company name" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -281,9 +298,20 @@ export default function Suppliers() {
                         name="taxId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-800">GST/Tax ID</FormLabel>
+                            <FormLabel className="text-slate-800 flex items-center">
+                              GST/Tax ID
+                              <div className="ml-2 cursor-help group relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                  Tax identification number for business transactions
+                                </div>
+                              </div>
+                            </FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="e.g. 29AADCB2230M1ZP" className="focus-visible:ring-blue-500" />
+                              <div className="relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2"/><path d="M21 12H8"/><path d="m16 12 2 2 4-4"/></svg>
+                                <Input {...field} placeholder="e.g. 29AADCB2230M1ZP" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -295,9 +323,20 @@ export default function Suppliers() {
                         name="contactPerson"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-800">Contact Person</FormLabel>
+                            <FormLabel className="text-slate-800 flex items-center">
+                              Contact Person
+                              <div className="ml-2 cursor-help group relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                  Primary person to contact at this supplier
+                                </div>
+                              </div>
+                            </FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="Name of point of contact" className="focus-visible:ring-blue-500" />
+                              <div className="relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <Input {...field} placeholder="Name of point of contact" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -306,8 +345,11 @@ export default function Suppliers() {
                     </div>
                   </div>
                   
-                  <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
-                    <h3 className="text-sm font-medium text-slate-500 pb-2 border-b">Contact Information</h3>
+                  <div className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
+                    <h3 className="text-base font-medium text-blue-700 pb-2 border-b flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                      Contact Information
+                    </h3>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
@@ -315,9 +357,20 @@ export default function Suppliers() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-800">Email Address</FormLabel>
+                            <FormLabel className="text-slate-800 flex items-center">
+                              Email Address
+                              <div className="ml-2 cursor-help group relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                  Primary contact email for this supplier
+                                </div>
+                              </div>
+                            </FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="email@example.com" className="focus-visible:ring-blue-500" />
+                              <div className="relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                                <Input {...field} placeholder="email@example.com" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -329,9 +382,20 @@ export default function Suppliers() {
                         name="phone"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-800">Phone Number</FormLabel>
+                            <FormLabel className="text-slate-800 flex items-center">
+                              Phone Number
+                              <div className="ml-2 cursor-help group relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                  Contact phone number for this supplier
+                                </div>
+                              </div>
+                            </FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="e.g. +1 555-123-4567" className="focus-visible:ring-blue-500" />
+                              <div className="relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                <Input {...field} placeholder="e.g. +1 555-123-4567" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -344,14 +408,25 @@ export default function Suppliers() {
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-800">Address</FormLabel>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Address
+                            <div className="ml-2 cursor-help group relative">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                Physical address of the supplier's location
+                              </div>
+                            </div>
+                          </FormLabel>
                           <FormControl>
-                            <Textarea 
-                              {...field} 
-                              placeholder="Full address including city, state and postal code"
-                              className="resize-none focus-visible:ring-blue-500"
-                              rows={3}
-                            />
+                            <div className="relative">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                              <Textarea 
+                                {...field} 
+                                placeholder="Full address including city, state and postal code"
+                                className="resize-none pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                rows={3}
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -359,52 +434,85 @@ export default function Suppliers() {
                     />
                   </div>
                   
-                  <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
-                    <h3 className="text-sm font-medium text-slate-500 pb-2 border-b">Additional Information</h3>
+                  <div className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
+                    <h3 className="text-base font-medium text-blue-700 pb-2 border-b flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 17h6"/><path d="M9 13h6"/></svg>
+                      Additional Information
+                    </h3>
                     
                     <FormField
                       control={form.control}
                       name="notes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-800">Notes</FormLabel>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Notes
+                            <div className="ml-2 cursor-help group relative">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                Any additional notes about this supplier that could be helpful for your team
+                              </div>
+                            </div>
+                          </FormLabel>
                           <FormControl>
-                            <Textarea 
-                              {...field} 
-                              placeholder="Additional information about this supplier"
-                              className="resize-none focus-visible:ring-blue-500"
-                              rows={3}
-                            />
+                            <div className="relative">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 17h6"/><path d="M9 13h6"/></svg>
+                              <Textarea 
+                                {...field} 
+                                placeholder="Enter any additional details about this supplier (e.g., payment terms, lead times, special requirements, etc.)"
+                                className="resize-none pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                rows={4}
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    
+                    <div className="bg-blue-50 p-3 rounded-md border border-blue-100 flex items-start">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                      <div className="text-sm text-blue-700">
+                        <p className="font-medium mb-1">Supplier Management Best Practices</p>
+                        <ul className="list-disc pl-5 space-y-0.5">
+                          <li>Include payment terms and credit information</li>
+                          <li>Document lead times and minimum order requirements</li>
+                          <li>Note any special handling or shipping requirements</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                   
-                  <DialogFooter className="mt-6 pt-4 border-t">
-                    <DialogClose asChild>
-                      <Button type="button" variant="outline" className="border-slate-300">Cancel</Button>
-                    </DialogClose>
-                    <Button 
-                      type="submit"
-                      className="bg-blue-600 hover:bg-blue-700"
-                      disabled={createSupplierMutation.isPending}
-                    >
-                      {createSupplierMutation.isPending ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" /> Save Supplier
-                        </>
-                      )}
-                    </Button>
+                  <DialogFooter className="mt-6 pt-6 border-t flex items-center justify-between">
+                    <div className="text-sm text-slate-500 flex items-center">
+                      <span className="text-red-500 mr-1">*</span> Required fields must be completed
+                    </div>
+                    <div className="flex space-x-3">
+                      <DialogClose asChild>
+                        <Button type="button" variant="outline" className="border-slate-300 px-4">
+                          <X className="mr-2 h-4 w-4 text-slate-500" /> Cancel
+                        </Button>
+                      </DialogClose>
+                      <Button 
+                        type="submit"
+                        className="bg-blue-600 hover:bg-blue-700 px-5"
+                        disabled={createSupplierMutation.isPending}
+                      >
+                        {createSupplierMutation.isPending ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Saving Supplier...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-5 w-5" /> Save Supplier
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </DialogFooter>
                 </form>
               </Form>
