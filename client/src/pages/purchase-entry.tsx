@@ -851,7 +851,247 @@ export default function PurchaseEntry() {
                                 <TableCell>
                                   <FormField
                                     control={form.control}
-                                    name={`items.${index}.productId`}
+                                    name={`items.${index}.code`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            disabled={createPurchaseMutation.isPending}
+                                            className="w-full"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.productName`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <Select
+                                          disabled={createPurchaseMutation.isPending}
+                                          value={field.value}
+                                          onValueChange={(value) => {
+                                            field.onChange(value);
+                                            
+                                            const product = products.find(
+                                              (p: any) => p.name === value
+                                            );
+                                            
+                                            if (product) {
+                                              form.setValue(
+                                                `items.${index}.productId`,
+                                                product.id
+                                              );
+                                              form.setValue(
+                                                `items.${index}.code`,
+                                                product.sku || ""
+                                              );
+                                              form.setValue(
+                                                `items.${index}.cost`,
+                                                product.cost?.toString() || "0"
+                                              );
+                                              form.setValue(
+                                                `items.${index}.hsnCode`,
+                                                product.hsnCode || ""
+                                              );
+                                              form.setValue(
+                                                `items.${index}.sellingPrice`,
+                                                product.price?.toString() || "0"
+                                              );
+                                              form.setValue(
+                                                `items.${index}.mrp`,
+                                                (parseFloat(product.price || "0") * 1.1).toFixed(2)
+                                              );
+                                              // Initialize quantities
+                                              form.setValue(
+                                                `items.${index}.receivedQty`,
+                                                "1"
+                                              );
+                                              form.setValue(
+                                                `items.${index}.freeQty`,
+                                                "0"
+                                              );
+                                              // Calculate amounts
+                                              recalculateAmounts(index);
+                                            }
+                                          }}
+                                        >
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select product" />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            {filteredProducts.map((product: any) => (
+                                              <SelectItem
+                                                key={product.id}
+                                                value={product.name}
+                                              >
+                                                {product.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.receivedQty`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            disabled={createPurchaseMutation.isPending}
+                                            onChange={(e) => {
+                                              field.onChange(e);
+                                              recalculateAmounts(index);
+                                            }}
+                                            className="w-full"
+                                            type="number"
+                                            min="0"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.freeQty`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            disabled={createPurchaseMutation.isPending}
+                                            className="w-full"
+                                            type="number"
+                                            min="0"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.cost`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            disabled={createPurchaseMutation.isPending}
+                                            onChange={(e) => {
+                                              field.onChange(e);
+                                              recalculateAmounts(index);
+                                            }}
+                                            className="w-full"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.hsnCode`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            disabled={createPurchaseMutation.isPending}
+                                            className="w-full"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.taxPercent`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            disabled={createPurchaseMutation.isPending}
+                                            onChange={(e) => {
+                                              field.onChange(e);
+                                              recalculateAmounts(index);
+                                            }}
+                                            className="w-full"
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="0.01"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.discountAmount`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            disabled={createPurchaseMutation.isPending}
+                                            onChange={(e) => {
+                                              field.onChange(e);
+                                              recalculateAmounts(index);
+                                            }}
+                                            className="w-full"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.expiryDate`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            disabled={createPurchaseMutation.isPending}
+                                            className="w-full"
+                                            type="date"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
