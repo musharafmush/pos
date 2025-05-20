@@ -308,7 +308,7 @@ export default function PurchaseEntry() {
     const cashDiscountAmount = amount * (cashDiscountPercent / 100);
 
     // Calculate net cost (including tax, discounts)
-    const netCost = netAmount / receivedQty; // Per unit cost after all calculations
+    const netCost = receivedQty > 0 ? netAmount / receivedQty : 0;
 
     // Calculate profit metrics if selling price is available
     let roiPercent = 0;
@@ -405,99 +405,67 @@ export default function PurchaseEntry() {
     
     if (product) {
       form.setValue(`items.${index}.productId`, productId);
+      form.setValue(`items.${index}.code`, product.sku || "");
       form.setValue(`items.${index}.description`, product.name);
-      form.setValue(`items.${index}.cost`, product.cost.toString());
+      form.setValue(`items.${index}.cost`, typeof product.cost === 'number' ? product.cost.toString() : product.cost);
       form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
-      form.setValue(`items.${index}.sellingPrice`, product.price.toString());
-      form.setValue(`items.${index}.mrp`, product.price.toString());
+      form.setValue(`items.${index}.sellingPrice`, typeof product.price === 'number' ? product.price.toString() : product.price);
+      form.setValue(`items.${index}.mrp`, typeof product.price === 'number' ? product.price.toString() : product.price);
       
-      // Recalculate amounts
-      const qty = Number(form.getValues(`items.${index}.receivedQty`)) || 0;
-      const cost = Number(product.cost) || 0;
-      form.setValue(`items.${index}.amount`, (qty * cost).toFixed(2));
+      // Recalculate amounts for this item
+      recalculateAmounts(index);
     }
   };
   
-  // Form submission handler
   const onSubmit = (data: PurchaseEntryFormValues) => {
     createPurchaseMutation.mutate(data);
   };
   
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // F5 = Save
-      if (e.key === "F5") {
-        e.preventDefault();
-        form.handleSubmit(onSubmit)();
-      }
-      // F6 = Clear
-      else if (e.key === "F6") {
-        e.preventDefault();
-        form.reset();
-        form.setValue("items", [{ ...emptyPurchaseItem }]);
-        form.setValue("poDate", today);
-        form.setValue("dueDate", today);
-      }
-    };
-    
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [form, onSubmit, today]);
-  
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Purchase Entry</h1>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              className="gap-1" 
-              onClick={() => form.reset()}
+      <div className="container max-w-7xl pb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-3xl font-bold tracking-tight">Purchase Entry</h1>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                window.history.back();
+              }}
             >
-              <XCircle className="h-4 w-4" /> Clear
+              Cancel
             </Button>
+            
             <Button 
-              variant="outline" 
-              className="gap-1"
-            >
-              <Printer className="h-4 w-4" /> Print
-            </Button>
-            <Button 
-              className="gap-1" 
               onClick={form.handleSubmit(onSubmit)}
               disabled={createPurchaseMutation.isPending}
             >
-              <Save className="h-4 w-4" />
-              {createPurchaseMutation.isPending ? "Saving..." : "Save"}
+              {createPurchaseMutation.isPending ? (
+                "Saving..."
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" /> Save
+                </>
+              )}
             </Button>
-          </div>
-        </div>
-        
-        <div className="bg-muted/30 p-1 mb-4 text-xs">
-          <div className="flex gap-8">
-            <div>F5: Save</div>
-            <div>F6: Clear</div>
-            <div>F8: Print</div>
-            <div>F12: Close</div>
           </div>
         </div>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Tabs defaultValue="details" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-4">
                 <TabsTrigger value="details">Purchase Details</TabsTrigger>
                 <TabsTrigger value="items">Line Items</TabsTrigger>
+                <TabsTrigger value="summary">Summary</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="details" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Purchase Info */}
+              <TabsContent value="details">
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Purchase Order Details */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Purchase Order Details</CardTitle>
+                      <CardTitle>Order Details</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
@@ -506,11 +474,10 @@ export default function PurchaseEntry() {
                           name="poNo"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>PO No.</FormLabel>
+                              <FormLabel>PO Number</FormLabel>
                               <FormControl>
                                 <Input placeholder="Auto-generated" {...field} />
                               </FormControl>
-                              <FormMessage />
                             </FormItem>
                           )}
                         />
@@ -523,14 +490,19 @@ export default function PurchaseEntry() {
                               <FormLabel>PO Date</FormLabel>
                               <FormControl>
                                 <div className="flex">
-                                  <Input type="date" {...field} />
+                                  <Input
+                                    type="date"
+                                    {...field}
+                                  />
                                 </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="dueDate"
@@ -539,7 +511,10 @@ export default function PurchaseEntry() {
                               <FormLabel>Due Date</FormLabel>
                               <FormControl>
                                 <div className="flex">
-                                  <Input type="date" {...field} />
+                                  <Input
+                                    type="date"
+                                    {...field}
+                                  />
                                 </div>
                               </FormControl>
                               <FormMessage />
@@ -553,59 +528,20 @@ export default function PurchaseEntry() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Payment Type</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <Select 
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select payment type" />
+                                    <SelectValue placeholder="Select" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
                                   <SelectItem value="cash">Cash</SelectItem>
                                   <SelectItem value="credit">Credit</SelectItem>
-                                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                                   <SelectItem value="cheque">Cheque</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="holdBills"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel>Hold Bills</FormLabel>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="print"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Print</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Print option" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="yes">Yes</SelectItem>
-                                  <SelectItem value="no">No</SelectItem>
+                                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -616,41 +552,45 @@ export default function PurchaseEntry() {
                     </CardContent>
                   </Card>
                   
-                  {/* Supplier Info */}
+                  {/* Supplier Details */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Supplier Details</CardTitle>
+                      <CardTitle>Supplier Details</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="supplierId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Supplier</FormLabel>
-                              <Select 
-                                onValueChange={(value) => handleSupplierChange(value)}
-                                defaultValue={field.value?.toString()}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select supplier" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {suppliers.map((supplier: any) => (
-                                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                                      {supplier.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name="supplierId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Supplier</FormLabel>
+                            <Select 
+                              onValueChange={(value) => {
+                                field.onChange(parseInt(value));
+                                handleSupplierChange(value);
+                              }}
+                              value={field.value ? field.value.toString() : ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a supplier" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {suppliers.map((supplier: any) => (
+                                  <SelectItem 
+                                    key={supplier.id} 
+                                    value={supplier.id.toString()}
+                                  >
+                                    {supplier.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
@@ -668,17 +608,19 @@ export default function PurchaseEntry() {
                         
                         <FormField
                           control={form.control}
-                          name="supplierName"
+                          name="supplierGstNo"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Name</FormLabel>
+                              <FormLabel>GST Number</FormLabel>
                               <FormControl>
                                 <Input {...field} readOnly />
                               </FormControl>
                             </FormItem>
                           )}
                         />
-                        
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="supplierPhone"
@@ -704,113 +646,166 @@ export default function PurchaseEntry() {
                             </FormItem>
                           )}
                         />
-
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Invoice Details */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Invoice Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name="supplierGstNo"
+                          name="invoiceNo"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>GST Number</FormLabel>
+                              <FormLabel>Invoice Number</FormLabel>
                               <FormControl>
-                                <Input {...field} readOnly />
+                                <Input {...field} />
                               </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="invoiceDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Invoice Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="invoiceAmount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Invoice Amount</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="lrNo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>LR Number</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
                     </CardContent>
                   </Card>
+                  
+                  {/* Additional Options */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Additional Options</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="holdBills"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Hold Bills</FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="print"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Print after saving</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="yes">Yes</SelectItem>
+                                <SelectItem value="no">No</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="remarks"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Remarks</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Enter any additional remarks"
+                                className="resize-none"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
                 
-                {/* Invoice Details */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Invoice Details</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="lrNo"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>LR No.</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="invoiceNo"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Invoice No.</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="invoiceDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Invoice Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {/* Remarks */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Remarks</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FormField
-                      control={form.control}
-                      name="remarks"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Enter any additional notes or comments here" 
-                              className="min-h-[100px]"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
+                <div className="mt-6 flex justify-end space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setActiveTab("items")}
+                  >
+                    Next: Line Items
+                  </Button>
+                </div>
               </TabsContent>
               
               <TabsContent value="items">
                 <Card>
-                  <CardHeader className="py-4">
+                  <CardHeader>
                     <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">Line Items</CardTitle>
-                      <Button 
-                        onClick={addItemRow} 
-                        size="sm" 
-                        className="h-8 gap-1"
-                      >
-                        <FilePlus className="h-4 w-4" /> Add Item
+                      <CardTitle>Line Items</CardTitle>
+                      <Button type="button" onClick={addItemRow}>
+                        <FilePlus className="h-4 w-4 mr-2" /> Add Item
                       </Button>
                     </div>
                   </CardHeader>
@@ -820,26 +815,26 @@ export default function PurchaseEntry() {
                         <Table>
                           <TableHeader>
                             <TableRow className="bg-muted/50">
-                              <TableHead className="w-12">Sno</TableHead>
-                              <TableHead className="w-20">Code</TableHead>
-                              <TableHead className="min-w-[180px]">Description</TableHead>
-                              <TableHead className="w-24">Received Qty</TableHead>
-                              <TableHead className="w-24">Free Qty</TableHead>
-                              <TableHead className="w-24">Cost</TableHead>
-                              <TableHead className="w-24">HSN Code</TableHead>
-                              <TableHead className="w-20">Tax %</TableHead>
-                              <TableHead className="w-24">Disc Amt</TableHead>
-                              <TableHead className="w-24">Expiry Date</TableHead>
-                              <TableHead className="w-24">Net Cost</TableHead>
-                              <TableHead className="w-20">ROI %</TableHead>
-                              <TableHead className="w-24">Gross Profit %</TableHead>
-                              <TableHead className="w-24">Selling Price</TableHead>
-                              <TableHead className="w-20">MRP</TableHead>
-                              <TableHead className="w-24">Amount</TableHead>
-                              <TableHead className="w-24">Net Amount</TableHead>
-                              <TableHead className="w-24">Cash Disc %</TableHead>
-                              <TableHead className="w-24">Cash Disc Amt</TableHead>
-                              <TableHead className="w-12">Actions</TableHead>
+                              <TableHead className="w-10">Sno</TableHead>
+                              <TableHead className="w-16">Code</TableHead>
+                              <TableHead className="min-w-[120px]">Description</TableHead>
+                              <TableHead className="w-20">Received Qty</TableHead>
+                              <TableHead className="w-16">Free Qty</TableHead>
+                              <TableHead className="w-16">Cost</TableHead>
+                              <TableHead className="w-16">HSN Code</TableHead>
+                              <TableHead className="w-12">Tax %</TableHead>
+                              <TableHead className="w-16">Disc Amt</TableHead>
+                              <TableHead className="w-24">Exp. Date</TableHead>
+                              <TableHead className="w-16">Net Cost</TableHead>
+                              <TableHead className="w-12">ROI %</TableHead>
+                              <TableHead className="w-16">Gross Profit %</TableHead>
+                              <TableHead className="w-16">Selling Price</TableHead>
+                              <TableHead className="w-12">MRP</TableHead>
+                              <TableHead className="w-16">Amount</TableHead>
+                              <TableHead className="w-16">Net Amount</TableHead>
+                              <TableHead className="w-16">Cash %</TableHead>
+                              <TableHead className="w-16">Cash Amt</TableHead>
+                              <TableHead className="w-10">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -870,54 +865,45 @@ export default function PurchaseEntry() {
                                         <FormControl>
                                           <Popover>
                                             <PopoverTrigger asChild>
-                                              <Button 
-                                                variant="outline" 
-                                                className="w-full justify-start font-normal"
-                                              >
-                                                {field.value !== 0 
-                                                  ? products.find((p: any) => p.id === field.value)?.name || "Select product" 
-                                                  : "Select product"}
+                                              <Button variant="outline" className="w-full justify-start">
+                                                {field.value || "Select Product"}
                                               </Button>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-80 p-0" align="start">
-                                              <div className="p-2">
+                                            <PopoverContent className="w-80 p-0">
+                                              <div className="px-4 py-2 border-b">
                                                 <Input
                                                   placeholder="Search products..."
-                                                  className="mb-2"
                                                   value={searchTerm}
                                                   onChange={(e) => setSearchTerm(e.target.value)}
+                                                  className="w-full"
                                                 />
-                                                <div className="max-h-[200px] overflow-y-auto">
-                                                  {filteredProducts.length > 0 ? (
-                                                    <div className="grid gap-1">
-                                                      {filteredProducts.map((product: any) => (
-                                                        <Button
-                                                          key={product.id}
-                                                          variant="ghost"
-                                                          className="justify-start font-normal"
-                                                          onClick={() => {
-                                                            handleProductSelect(product.id, index);
-                                                            setSearchTerm("");
-                                                          }}
-                                                        >
-                                                          <span>{product.name}</span>
-                                                          <span className="ml-auto text-muted-foreground">
-                                                            {product.sku}
-                                                          </span>
-                                                        </Button>
-                                                      ))}
+                                              </div>
+                                              <div className="max-h-60 overflow-y-auto">
+                                                {filteredProducts.length === 0 ? (
+                                                  <div className="p-4 text-center text-sm text-muted-foreground">
+                                                    No products found
+                                                  </div>
+                                                ) : (
+                                                  filteredProducts.map((product: any) => (
+                                                    <div
+                                                      key={product.id}
+                                                      className="px-4 py-2 cursor-pointer hover:bg-muted"
+                                                      onClick={() => {
+                                                        handleProductSelect(product.id, index);
+                                                        setSearchTerm("");
+                                                      }}
+                                                    >
+                                                      <div className="font-medium">{product.name}</div>
+                                                      <div className="text-sm text-muted-foreground">
+                                                        SKU: {product.sku} | Stock: {product.stockQuantity} | Price: ${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
+                                                      </div>
                                                     </div>
-                                                  ) : (
-                                                    <p className="text-center py-2 text-sm text-muted-foreground">
-                                                      No products found
-                                                    </p>
-                                                  )}
-                                                </div>
+                                                  ))
+                                                )}
                                               </div>
                                             </PopoverContent>
                                           </Popover>
                                         </FormControl>
-                                        <FormMessage />
                                       </FormItem>
                                     )}
                                   />
@@ -929,9 +915,15 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input className="w-20" {...field} />
+                                          <Input 
+                                            {...field} 
+                                            className="w-full text-xs"
+                                            onChange={(e) => {
+                                              field.onChange(e);
+                                              recalculateAmounts(index);
+                                            }}
+                                          />
                                         </FormControl>
-                                        <FormMessage />
                                       </FormItem>
                                     )}
                                   />
@@ -943,7 +935,10 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input className="w-20" {...field} />
+                                          <Input 
+                                            {...field} 
+                                            className="w-full text-xs"
+                                          />
                                         </FormControl>
                                       </FormItem>
                                     )}
@@ -956,9 +951,15 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input className="w-20" {...field} />
+                                          <Input 
+                                            {...field} 
+                                            className="w-full text-xs"
+                                            onChange={(e) => {
+                                              field.onChange(e);
+                                              recalculateAmounts(index);
+                                            }}
+                                          />
                                         </FormControl>
-                                        <FormMessage />
                                       </FormItem>
                                     )}
                                   />
@@ -970,7 +971,7 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input className="w-20" {...field} />
+                                          <Input {...field} className="w-full text-xs" />
                                         </FormControl>
                                       </FormItem>
                                     )}
@@ -983,7 +984,14 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input className="w-20" {...field} />
+                                          <Input 
+                                            {...field} 
+                                            className="w-full text-xs"
+                                            onChange={(e) => {
+                                              field.onChange(e);
+                                              recalculateAmounts(index);
+                                            }}
+                                          />
                                         </FormControl>
                                       </FormItem>
                                     )}
@@ -996,7 +1004,31 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input className="w-20" {...field} />
+                                          <Input 
+                                            {...field} 
+                                            className="w-full text-xs"
+                                            onChange={(e) => {
+                                              field.onChange(e);
+                                              recalculateAmounts(index);
+                                            }}
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.expiryDate`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input 
+                                            type="date" 
+                                            {...field} 
+                                            className="w-full text-xs" 
+                                          />
                                         </FormControl>
                                       </FormItem>
                                     )}
@@ -1009,7 +1041,93 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input className="w-20" readOnly {...field} />
+                                          <Input 
+                                            {...field} 
+                                            readOnly 
+                                            className="w-full text-xs bg-muted"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.roiPercent`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <div className="flex items-center">
+                                            <Input 
+                                              {...field} 
+                                              readOnly 
+                                              className="w-full text-xs bg-muted"
+                                            />
+                                            <span className="ml-1">%</span>
+                                          </div>
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.grossProfitPercent`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <div className="flex items-center">
+                                            <Input 
+                                              {...field} 
+                                              readOnly 
+                                              className="w-full text-xs bg-muted"
+                                            />
+                                            <span className="ml-1">%</span>
+                                          </div>
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.sellingPrice`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <div className="flex items-center">
+                                            <span className="mr-1">$</span>
+                                            <Input 
+                                              {...field} 
+                                              className="w-full text-xs"
+                                              onChange={(e) => {
+                                                field.onChange(e);
+                                                recalculateAmounts(index);
+                                              }}
+                                            />
+                                          </div>
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.mrp`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <div className="flex items-center">
+                                            <span className="mr-1">$</span>
+                                            <Input 
+                                              {...field} 
+                                              className="w-full text-xs"
+                                            />
+                                          </div>
                                         </FormControl>
                                       </FormItem>
                                     )}
@@ -1022,7 +1140,71 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input className="w-20" readOnly {...field} />
+                                          <Input 
+                                            {...field} 
+                                            readOnly 
+                                            className="w-full text-xs bg-muted"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.netAmount`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input 
+                                            {...field} 
+                                            readOnly 
+                                            className="w-full text-xs bg-muted"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.cashDiscountPercent`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <div className="flex items-center">
+                                            <span className="mr-1">%</span>
+                                            <Input 
+                                              {...field} 
+                                              className="w-full text-xs"
+                                              onChange={(e) => {
+                                                field.onChange(e);
+                                                recalculateAmounts(index);
+                                              }}
+                                            />
+                                          </div>
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.cashDiscountAmount`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <div className="flex items-center">
+                                            <span className="mr-1">$</span>
+                                            <Input 
+                                              {...field} 
+                                              readOnly 
+                                              className="w-full text-xs bg-muted"
+                                            />
+                                          </div>
                                         </FormControl>
                                       </FormItem>
                                     )}
@@ -1030,12 +1212,13 @@ export default function PurchaseEntry() {
                                 </TableCell>
                                 <TableCell>
                                   <Button
+                                    type="button"
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => removeItemRow(index)}
                                     disabled={form.getValues("items").length <= 1}
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-4 w-4 text-destructive" />
                                   </Button>
                                 </TableCell>
                               </TableRow>
@@ -1047,117 +1230,260 @@ export default function PurchaseEntry() {
                   </CardContent>
                 </Card>
                 
-                {/* Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="md:col-span-2">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Additional Charges</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="freightAmount"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Freight Amount</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={form.control}
-                            name="packingCharge"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Packing Charge</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={form.control}
-                            name="otherCharge"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Other Charge</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={form.control}
-                            name="manualDiscountAmount"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Manual Discount</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
+                <div className="mt-6 flex justify-between">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setActiveTab("details")}
+                  >
+                    Back: Purchase Details
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setActiveTab("summary")}
+                  >
+                    Next: Summary
+                  </Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="summary">
+                <div className="grid gap-6 md:grid-cols-2">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Order Summary</CardTitle>
+                      <CardTitle>Purchase Summary</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="text-muted-foreground">Gross Amount:</div>
-                        <div className="text-right font-medium">
-                          ₹{form.getValues("grossAmount") || "0.00"}
-                        </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="grossAmount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Gross Amount</FormLabel>
+                              <FormControl>
+                                <Input {...field} readOnly className="bg-muted" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                         
-                        <div className="text-muted-foreground">Item Discount:</div>
-                        <div className="text-right font-medium">
-                          ₹{form.getValues("itemDiscountAmount") || "0.00"}
-                        </div>
-                        
-                        <div className="text-muted-foreground">Tax Amount:</div>
-                        <div className="text-right font-medium">
-                          ₹{form.getValues("taxAmount") || "0.00"}
-                        </div>
-                        
-                        <div className="text-muted-foreground">Additional Charges:</div>
-                        <div className="text-right font-medium">
-                          ₹{(
-                            (Number(form.getValues("freightAmount")) || 0) +
-                            (Number(form.getValues("packingCharge")) || 0) +
-                            (Number(form.getValues("otherCharge")) || 0)
-                          ).toFixed(2)}
-                        </div>
-                        
-                        <div className="text-muted-foreground">Manual Discount:</div>
-                        <div className="text-right font-medium">
-                          ₹{form.getValues("manualDiscountAmount") || "0.00"}
-                        </div>
+                        <FormField
+                          control={form.control}
+                          name="itemDiscountAmount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Discount Amount</FormLabel>
+                              <FormControl>
+                                <Input {...field} readOnly className="bg-muted" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                       </div>
                       
-                      <Separator />
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="text-base font-semibold">Payable Amount:</div>
-                        <div className="text-right text-base font-bold">
-                          ₹{form.getValues("payableAmount") || "0.00"}
-                        </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="taxAmount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tax Amount</FormLabel>
+                              <FormControl>
+                                <Input {...field} readOnly className="bg-muted" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="cashDiscountAmount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Cash Discount</FormLabel>
+                              <FormControl>
+                                <Input {...field} readOnly className="bg-muted" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </CardContent>
                   </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Additional Charges</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="surchargeAmount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Surcharge</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    // Trigger recalculation of payable amount
+                                    const items = form.getValues("items");
+                                    if (items.length > 0) {
+                                      // Just using this to trigger the useEffect
+                                      form.setValue("items", [...items]);
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="freightAmount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Freight Charges</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    // Trigger recalculation of payable amount
+                                    const items = form.getValues("items");
+                                    if (items.length > 0) {
+                                      form.setValue("items", [...items]);
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="packingCharge"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Packing Charges</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    // Trigger recalculation of payable amount
+                                    const items = form.getValues("items");
+                                    if (items.length > 0) {
+                                      form.setValue("items", [...items]);
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="otherCharge"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Other Charges</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    // Trigger recalculation of payable amount
+                                    const items = form.getValues("items");
+                                    if (items.length > 0) {
+                                      form.setValue("items", [...items]);
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="manualDiscountAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Additional Discount</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  // Trigger recalculation of payable amount
+                                  const items = form.getValues("items");
+                                  if (items.length > 0) {
+                                    form.setValue("items", [...items]);
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Final Amount</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="col-span-3"></div>
+                      <FormField
+                        control={form.control}
+                        name="payableAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Payable Amount</FormLabel>
+                            <FormControl>
+                              <Input {...field} readOnly className="bg-muted text-lg font-bold" />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <div className="mt-6 flex justify-between">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setActiveTab("items")}
+                  >
+                    Back: Line Items
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={createPurchaseMutation.isPending}
+                  >
+                    {createPurchaseMutation.isPending ? (
+                      "Saving..."
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" /> Save Purchase
+                      </>
+                    )}
+                  </Button>
                 </div>
               </TabsContent>
             </Tabs>
