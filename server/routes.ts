@@ -65,16 +65,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUserByUsername(username);
       if (!user) {
-        return done(null, false, { message: 'Incorrect username.' });
+        return done(null, false, { message: 'Invalid username or password.' });
       }
       
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return done(null, false, { message: 'Incorrect password.' });
+      // Check if user is active
+      if (!user.active) {
+        return done(null, false, { message: 'Account is disabled. Please contact an administrator.' });
       }
       
-      return done(null, user);
+      // Verify password
+      try {
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+          return done(null, false, { message: 'Invalid username or password.' });
+        }
+        
+        return done(null, user);
+      } catch (error) {
+        console.error('Password verification error:', error);
+        return done(null, false, { message: 'Authentication error. Please try again.' });
+      }
     } catch (error) {
+      console.error('Login error:', error);
       return done(error);
     }
   }));
@@ -93,50 +105,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Authentication routes
-  app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
-    // Remove password field from response
-    const user = { ...req.user as any };
-    delete user.password;
-    res.json({ user });
+  app.post('/api/auth/login', (req, res, next) => {
+    passport.authenticate('local', (err, user, info) => {
+      if (err) {
+        console.error('Login error:', err);
+        return res.status(500).json({ message: 'Internal server error during login' });
+      }
+      
+      if (!user) {
+        return res.status(401).json({ message: info?.message || 'Invalid username or password' });
+      }
+      
+      // Log the user in
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error('Session login error:', loginErr);
+          return res.status(500).json({ message: 'Error establishing session' });
+        }
+        
+        // Remove password from response
+        const userResponse = { ...user };
+        if (userResponse.password) delete userResponse.password;
+        
+        return res.json({ user: userResponse });
+      });
+    })(req, res, next);
   });
   
   app.post('/api/auth/register', async (req, res) => {
     try {
-      // Validate user data
-      const userData = schema.userInsertSchema.parse(req.body);
-      
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(userData.username);
-      if (existingUser) {
-        return res.status(400).json({ message: 'Username already exists' });
-      }
-      
-      // Hash password
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
-      // Create user (default role is 'cashier' as defined in schema)
-      const newUser = await storage.createUser({
-        ...userData,
-        password: hashedPassword
-      });
-      
-      // Auto login after registration
-      req.login(newUser, (err) => {
-        if (err) {
-          return res.status(500).json({ message: 'Error logging in after registration' });
+      // Validate user data with more specific error messages
+      try {
+        const userData = schema.userInsertSchema.parse(req.body);
+        
+        // Check if username already exists
+        const existingUser = await storage.getUserByUsername(userData.username);
+        if (existingUser) {
+          return res.status(400).json({ message: 'Username already exists' });
         }
         
-        // Remove password from response
-        const user = { ...newUser };
-        delete user.password;
-        res.status(201).json({ user });
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ errors: error.errors });
+        // Hash password
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
+        
+        // Set default values for new user
+        const userToCreate = {
+          ...userData,
+          password: hashedPassword,
+          role: userData.role || 'cashier', // Default role
+          active: true, // Account active by default
+          image: userData.image || null
+        };
+        
+        // Create user
+        const newUser = await storage.createUser(userToCreate);
+        
+        // Auto login after registration
+        req.login(newUser, (err) => {
+          if (err) {
+            console.error('Error logging in after registration:', err);
+            return res.status(500).json({ message: 'Account created but error logging in automatically. Please login manually.' });
+          }
+          
+          // Remove password from response
+          const userResponse = { ...newUser };
+          if (userResponse.password) {
+            delete userResponse.password;
+          }
+          
+          res.status(201).json({ user: userResponse });
+        });
+      } catch (zodError) {
+        if (zodError instanceof z.ZodError) {
+          // Format validation errors for better readability
+          const formattedErrors = zodError.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }));
+          return res.status(400).json({ 
+            message: 'Validation failed',
+            errors: formattedErrors 
+          });
+        }
+        throw zodError; // Re-throw if not a ZodError
       }
+    } catch (error) {
       console.error('Error registering user:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: 'Internal server error during registration' });
     }
   });
 

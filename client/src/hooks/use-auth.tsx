@@ -45,8 +45,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/auth/login", credentials);
-      return await res.json();
+      try {
+        const res = await apiRequest("POST", "/api/auth/login", credentials);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Login failed. Please check your credentials.");
+        }
+        return await res.json();
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Login failed. Please try again.");
+      }
     },
     onSuccess: (data: { user: User }) => {
       queryClient.setQueryData(["/api/auth/user"], data);
