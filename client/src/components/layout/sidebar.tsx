@@ -85,6 +85,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       ]
     },
     {
+      id: "contacts",
+      label: "Contacts",
+      icon: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>,
+      items: [
+        { href: "/suppliers", icon: <GalleryHorizontalIcon className="h-5 w-5" />, label: "Suppliers" },
+        { href: "/customers", icon: <UsersIcon className="h-5 w-5" />, label: "Customers" },
+        { href: "/customer-groups", icon: <UsersIcon className="h-5 w-5" />, label: "Customer Groups" },
+        { href: "/import-contacts", icon: <ArrowDownIcon className="h-5 w-5" />, label: "Import Contacts" }
+      ]
+    },
+    {
       id: "products",
       items: [{ href: "/products", icon: <PackageIcon className="h-5 w-5" />, label: "Products" }]
     },
