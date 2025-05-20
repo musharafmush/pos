@@ -471,41 +471,60 @@ export default function Suppliers() {
                   )}
                 </div>
               ) : (
-                <div className="rounded-md border">
+                <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-slate-50">
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Contact Person</TableHead>
-                        <TableHead>Contact Information</TableHead>
-                        <TableHead>GST/Tax ID</TableHead>
-                        <TableHead>Address</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Name</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Contact Details</TableHead>
+                        <TableHead className="font-semibold text-slate-700">GST/Tax ID</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Address</TableHead>
+                        <TableHead className="text-right font-semibold text-slate-700">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredSuppliers.map((supplier: any) => (
-                        <TableRow key={supplier.id}>
-                          <TableCell className="font-medium">{supplier.name}</TableCell>
-                          <TableCell>{supplier.contactPerson || '—'}</TableCell>
-                          <TableCell>
-                            {supplier.email && (
-                              <div className="flex items-center gap-1">
-                                <Badge variant="outline" className="font-normal">Email</Badge>
-                                <span>{supplier.email}</span>
-                              </div>
-                            )}
-                            {supplier.phone && (
-                              <div className="flex items-center gap-1 mt-1">
-                                <Badge variant="outline" className="font-normal">Phone</Badge>
-                                <span>{supplier.phone}</span>
+                        <TableRow key={supplier.id} className="hover:bg-slate-50">
+                          <TableCell className="font-medium text-slate-800">
+                            <div>{supplier.name}</div>
+                            {supplier.contactPerson && (
+                              <div className="text-sm text-slate-500 mt-1 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 mr-1"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                {supplier.contactPerson}
                               </div>
                             )}
                           </TableCell>
-                          <TableCell>{supplier.taxId || '—'}</TableCell>
                           <TableCell>
-                            <div className="max-w-[250px] truncate">
-                              {supplier.address || '—'}
+                            <div className="space-y-1">
+                              {supplier.email && (
+                                <div className="flex items-center text-slate-700">
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2 text-slate-500"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                                  <span>{supplier.email}</span>
+                                </div>
+                              )}
+                              {supplier.phone && (
+                                <div className="flex items-center text-slate-700">
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2 text-slate-500"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                  <span>{supplier.phone}</span>
+                                </div>
+                              )}
+                              {!supplier.email && !supplier.phone && (
+                                <span className="text-slate-400 italic">No contact information</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-slate-700">
+                            {supplier.taxId ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-800 border border-blue-200">
+                                {supplier.taxId}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 italic">No tax ID provided</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-[250px] truncate text-slate-700">
+                              {supplier.address || <span className="text-slate-400 italic">No address provided</span>}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
@@ -515,9 +534,10 @@ export default function Suppliers() {
                                   <Button 
                                     variant="outline" 
                                     size="icon"
+                                    className="h-8 w-8 border-slate-300 hover:bg-slate-100"
                                     onClick={() => handleEdit(supplier)}
                                   >
-                                    <Pencil className="h-4 w-4" />
+                                    <Pencil className="h-4 w-4 text-blue-600" />
                                   </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[500px]">
