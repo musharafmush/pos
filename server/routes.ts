@@ -977,8 +977,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const purchaseItems = items.map((item: any) => ({
         productId: item.productId,
         quantity: parseInt(item.receivedQty),
-        unitCost: item.cost.toString(),
-        subtotal: item.amount.toString()
+        unitCost: parseFloat(item.cost), // Convert to number for calculation
+        subtotal: parseFloat(item.amount || "0")
       }));
       
       // Create purchase with items
@@ -994,19 +994,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert items to match the expected format
       const formattedItems = purchaseItems.map(item => ({
         productId: item.productId,
-        quantity: parseInt(item.quantity.toString()),
-        unitCost: parseFloat(item.unitCost)
+        quantity: item.quantity,
+        unitCost: item.unitCost
       }));
       
-      // Create the purchase in the database
-      const newPurchase = await storage.createPurchase(
-        userId, 
-        parseInt(supplierId),
-        formattedItems,
-        purchaseData
-      );
-      
-      res.status(201).json(newPurchase);
+      try {
+        // Create the purchase in the database
+        const newPurchase = await storage.createPurchase(
+          userId, 
+          parseInt(supplierId.toString()),
+          formattedItems,
+          purchaseData
+        );
+        
+        res.status(201).json(newPurchase);
+      } catch (error) {
+        console.error('Error in createPurchase:', error);
+        res.status(500).json({ message: 'Failed to create purchase', error: (error as Error).message });
+      }
     } catch (error) {
       console.error('Error creating purchase:', error);
       res.status(500).json({ message: 'Internal server error' });
