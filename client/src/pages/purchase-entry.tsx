@@ -192,9 +192,22 @@ export default function PurchaseEntry() {
   const { data: suppliers = [] } = useQuery({
     queryKey: ["/api/suppliers"],
     queryFn: async () => {
-      const res = await fetch("/api/suppliers");
-      if (!res.ok) throw new Error("Failed to fetch suppliers");
-      return res.json();
+      try {
+        const res = await fetch("/api/suppliers");
+        if (!res.ok) throw new Error("Failed to fetch suppliers");
+        const data = await res.json();
+        return data.map((supplier: any) => ({
+          id: supplier.id,
+          name: supplier.name,
+          code: supplier.id.toString(),
+          phone: supplier.phone || "",
+          mobile: supplier.phone || "", // Using phone as mobile if available
+          gstNo: supplier.taxId || ""
+        }));
+      } catch (error) {
+        console.error("Error fetching suppliers:", error);
+        return [];
+      }
     },
   });
   
@@ -202,9 +215,23 @@ export default function PurchaseEntry() {
   const { data: products = [] } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
-      const res = await fetch("/api/products");
-      if (!res.ok) throw new Error("Failed to fetch products");
-      return res.json();
+      try {
+        const res = await fetch("/api/products");
+        if (!res.ok) throw new Error("Failed to fetch products");
+        const data = await res.json();
+        return data.map((product: any) => ({
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          price: product.price,
+          cost: product.cost || product.price, // Use price as default cost if cost is not available
+          hsnCode: product.hsnCode || "",
+          stockQuantity: product.stockQuantity || 0
+        }));
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        return [];
+      }
     },
   });
   

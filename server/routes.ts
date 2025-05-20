@@ -920,6 +920,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Supplier routes for purchase entry form
+  app.get('/api/suppliers', isAuthenticated, async (req, res) => {
+    try {
+      const suppliers = await storage.listSuppliers();
+      res.json(suppliers);
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Product routes for purchase entry form
+  app.get('/api/products', isAuthenticated, async (req, res) => {
+    try {
+      const products = await storage.listProducts();
+      res.json(products);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Purchase management routes
+  app.get('/api/purchases', isAuthenticated, async (req, res) => {
+    try {
+      const purchases = await storage.listPurchases();
+      res.json(purchases);
+    } catch (error) {
+      console.error('Error fetching purchases:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/purchases', isAuthenticated, async (req, res) => {
+    try {
+      // Extract main purchase fields
+      const { 
+        poNo, poDate, dueDate, paymentType, supplierId, 
+        invoiceNo, invoiceDate, remarks, items, 
+        grossAmount, itemDiscountAmount, taxAmount 
+      } = req.body;
+      
+      // Create the purchase object
+      const purchase = {
+        orderNumber: poNo || `PO-${Date.now()}`,
+        orderDate: new Date(poDate),
+        dueDate: new Date(dueDate),
+        supplierId: parseInt(supplierId),
+        status: 'pending',
+        total: grossAmount ? grossAmount.toString() : '0',
+        notes: remarks
+      };
+      
+      // Process purchase items
+      const purchaseItems = items.map((item: any) => ({
+        productId: item.productId,
+        quantity: parseInt(item.receivedQty),
+        unitCost: item.cost.toString(),
+        subtotal: item.amount.toString()
+      }));
+      
+      // Create purchase with items
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      const purchaseData = {
+        status: 'pending'
+      };
+      
+      // Convert items to match the expected format
+      const formattedItems = purchaseItems.map(item => ({
+        productId: item.productId,
+        quantity: parseInt(item.quantity.toString()),
+        unitCost: parseFloat(item.unitCost)
+      }));
+      
+      // Create the purchase in the database
+      const newPurchase = await storage.createPurchase(
+        userId, 
+        parseInt(supplierId),
+        formattedItems,
+        purchaseData
+      );
+      
+      res.status(201).json(newPurchase);
+    } catch (error) {
+      console.error('Error creating purchase:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/purchases/:id', isAuthenticated, async (req, res) => {
+    try {
+      const purchaseId = parseInt(req.params.id);
+      const purchase = await storage.getPurchaseById(purchaseId);
+      
+      if (!purchase) {
+        return res.status(404).json({ message: 'Purchase not found' });
+      }
+      
+      res.json(purchase);
+    } catch (error) {
+      console.error('Error fetching purchase:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
 
