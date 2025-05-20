@@ -288,37 +288,75 @@ export default function PurchaseEntry() {
     }
   };
   
+  // Function to recalculate amounts for a specific item
+  const recalculateAmounts = (index: number) => {
+    // Get all the values
+    const receivedQty = Number(form.getValues(`items.${index}.receivedQty`)) || 0;
+    const cost = Number(form.getValues(`items.${index}.cost`)) || 0;
+    const discountAmount = Number(form.getValues(`items.${index}.discountAmount`)) || 0;
+    const taxPercent = Number(form.getValues(`items.${index}.taxPercent`)) || 0;
+    const sellingPrice = Number(form.getValues(`items.${index}.sellingPrice`)) || 0;
+    const cashDiscountPercent = Number(form.getValues(`items.${index}.cashDiscountPercent`)) || 0;
+
+    // Calculate basic amounts
+    const amount = receivedQty * cost;
+    const amountAfterDisc = amount - discountAmount;
+    const taxAmount = amountAfterDisc * (taxPercent / 100);
+    const netAmount = amountAfterDisc + taxAmount;
+    const cashDiscountAmount = amount * (cashDiscountPercent / 100);
+
+    // Calculate net cost (including tax, discounts)
+    const netCost = netAmount / receivedQty; // Per unit cost after all calculations
+
+    // Calculate profit metrics if selling price is available
+    let roiPercent = 0;
+    let grossProfitPercent = 0;
+    
+    if (sellingPrice > 0 && netCost > 0) {
+      roiPercent = ((sellingPrice - netCost) / netCost) * 100;
+      grossProfitPercent = ((sellingPrice - netCost) / sellingPrice) * 100;
+    }
+
+    // Update calculated fields
+    form.setValue(`items.${index}.amount`, amount.toFixed(2));
+    form.setValue(`items.${index}.netAmount`, netAmount.toFixed(2));
+    form.setValue(`items.${index}.netCost`, netCost.toFixed(2));
+    form.setValue(`items.${index}.cashDiscountAmount`, cashDiscountAmount.toFixed(2));
+    form.setValue(`items.${index}.roiPercent`, roiPercent.toFixed(2));
+    form.setValue(`items.${index}.grossProfitPercent`, grossProfitPercent.toFixed(2));
+  };
+
   // Calculate totals whenever items change
   useEffect(() => {
     if (watchedItems && watchedItems.length > 0) {
       let grossAmount = 0;
       let totalDiscount = 0;
       let totalTax = 0;
+      let totalCashDiscount = 0;
       
-      watchedItems.forEach(item => {
-        const qty = Number(item.receivedQty) || 0;
-        const cost = Number(item.cost) || 0;
-        const discAmt = Number(item.discountAmount) || 0;
-        const taxPct = Number(item.taxPercent) || 0;
+      watchedItems.forEach((item, index) => {
+        // Recalculate each item to ensure consistency
+        recalculateAmounts(index);
         
-        const itemAmount = qty * cost;
-        const itemAmountAfterDisc = itemAmount - discAmt;
-        const taxAmount = itemAmountAfterDisc * (taxPct / 100);
+        // Add to totals
+        const amount = Number(form.getValues(`items.${index}.amount`)) || 0;
+        const discountAmount = Number(form.getValues(`items.${index}.discountAmount`)) || 0;
+        const taxPercent = Number(form.getValues(`items.${index}.taxPercent`)) || 0;
+        const amountAfterDisc = amount - discountAmount;
+        const taxAmount = amountAfterDisc * (taxPercent / 100);
+        const cashDiscountAmount = Number(form.getValues(`items.${index}.cashDiscountAmount`)) || 0;
         
-        // Update calculated fields in the item
-        const index = watchedItems.indexOf(item);
-        form.setValue(`items.${index}.amount`, itemAmount.toFixed(2));
-        form.setValue(`items.${index}.netAmount`, (itemAmountAfterDisc + taxAmount).toFixed(2));
-        
-        grossAmount += itemAmount;
-        totalDiscount += discAmt;
+        grossAmount += amount;
+        totalDiscount += discountAmount;
         totalTax += taxAmount;
+        totalCashDiscount += cashDiscountAmount;
       });
       
       // Update summary fields
       form.setValue("grossAmount", grossAmount.toFixed(2));
       form.setValue("itemDiscountAmount", totalDiscount.toFixed(2));
       form.setValue("taxAmount", totalTax.toFixed(2));
+      form.setValue("cashDiscountAmount", totalCashDiscount.toFixed(2));
       
       // Calculate payable amount
       const surchargeAmount = Number(form.getValues("surchargeAmount")) || 0;
@@ -330,7 +368,8 @@ export default function PurchaseEntry() {
       const payableAmount = (
         grossAmount - 
         totalDiscount + 
-        totalTax +
+        totalTax -
+        totalCashDiscount +
         surchargeAmount +
         freightAmount +
         packingCharge +
