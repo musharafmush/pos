@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,7 +75,7 @@ export default function Settings() {
   });
 
   // Set form default values when user data is loaded
-  React.useEffect(() => {
+  useEffect(() => {
     if (userData?.user) {
       profileForm.reset({
         name: userData.user.name || "",

@@ -370,13 +370,16 @@ export const storage = {
       query = query.where(eq(sales.customerId, customerId));
     }
 
-    return await query
-      .orderBy(desc(sales.createdAt))
-      .limit(limit)
-      .offset(offset)
-      .leftJoin(users, eq(users.id, sales.userId))
-      .leftJoin(customers, eq(customers.id, sales.customerId))
-      .all();
+    return await db.query.sales.findMany({
+      where: query,
+      limit: limit,
+      offset: offset,
+      orderBy: [desc(sales.createdAt)],
+      with: {
+        user: true,
+        customer: true
+      }
+    });
   },
 
   async getRecentSales(limit: number = 5): Promise<Sale[]> {
@@ -586,13 +589,16 @@ export const storage = {
       query = query.where(eq(purchases.status, status));
     }
 
-    return await query
-      .orderBy(desc(purchases.orderDate))
-      .limit(limit)
-      .offset(offset)
-      .leftJoin(suppliers, eq(suppliers.id, purchases.supplierId))
-      .leftJoin(users, eq(users.id, purchases.userId))
-      .all();
+    return await db.query.purchases.findMany({
+      where: query,
+      limit: limit,
+      offset: offset,
+      orderBy: [desc(purchases.orderDate)],
+      with: {
+        supplier: true,
+        user: true
+      }
+    });
   },
 
   // Dashboard stats
