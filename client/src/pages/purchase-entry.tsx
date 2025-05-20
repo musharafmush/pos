@@ -308,7 +308,7 @@ export default function PurchaseEntry() {
     const cashDiscountAmount = amount * (cashDiscountPercent / 100);
 
     // Calculate net cost (including tax, discounts)
-    const netCost = netAmount / receivedQty; // Per unit cost after all calculations
+    const netCost = receivedQty > 0 ? netAmount / receivedQty : 0; // Per unit cost after all calculations
 
     // Calculate profit metrics if selling price is available
     let roiPercent = 0;
