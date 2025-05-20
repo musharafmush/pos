@@ -661,6 +661,19 @@ export default function PurchaseEntry() {
                             </FormItem>
                           )}
                         />
+
+                        <FormField
+                          control={form.control}
+                          name="supplierGstNo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>GST Number</FormLabel>
+                              <FormControl>
+                                <Input {...field} readOnly />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </CardContent>
                   </Card>
