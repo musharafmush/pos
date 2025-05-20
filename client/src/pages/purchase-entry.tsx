@@ -843,7 +843,7 @@ export default function PurchaseEntry() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {form.getValues("items").map((item, index) => (
+                            {form.getValues("items").map((_, index) => (
                               <TableRow key={index}>
                                 <TableCell className="font-medium">
                                   {index + 1}
@@ -851,20 +851,7 @@ export default function PurchaseEntry() {
                                 <TableCell>
                                   <FormField
                                     control={form.control}
-                                    name={`items.${index}.code`}
-                                    render={({ field }) => (
-                                      <FormItem className="space-y-0">
-                                        <FormControl>
-                                          <Input {...field} className="w-full" />
-                                        </FormControl>
-                                      </FormItem>
-                                    )}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <FormField
-                                    control={form.control}
-                                    name={`items.${index}.productName`}
+                                    name={`items.${index}.productId`}
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
