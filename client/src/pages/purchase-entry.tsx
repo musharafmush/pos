@@ -146,6 +146,8 @@ type PurchaseEntryFormValues = z.infer<typeof purchaseEntrySchema>;
 // Empty purchase item for initialization
 const emptyPurchaseItem = {
   productId: 0,
+  code: "",
+  productName: "",
   description: "",
   receivedQty: "1",
   freeQty: "0",
@@ -778,15 +780,24 @@ export default function PurchaseEntry() {
                           <TableHeader>
                             <TableRow className="bg-muted/50">
                               <TableHead className="w-12">Sno</TableHead>
-                              <TableHead className="min-w-[200px]">Item</TableHead>
-                              <TableHead className="w-24">Qty</TableHead>
+                              <TableHead className="w-20">Code</TableHead>
+                              <TableHead className="min-w-[180px]">Description</TableHead>
+                              <TableHead className="w-24">Received Qty</TableHead>
                               <TableHead className="w-24">Free Qty</TableHead>
                               <TableHead className="w-24">Cost</TableHead>
-                              <TableHead className="w-24">HSN</TableHead>
-                              <TableHead className="w-24">Tax %</TableHead>
+                              <TableHead className="w-24">HSN Code</TableHead>
+                              <TableHead className="w-20">Tax %</TableHead>
                               <TableHead className="w-24">Disc Amt</TableHead>
+                              <TableHead className="w-24">Expiry Date</TableHead>
                               <TableHead className="w-24">Net Cost</TableHead>
+                              <TableHead className="w-20">ROI %</TableHead>
+                              <TableHead className="w-24">Gross Profit %</TableHead>
+                              <TableHead className="w-24">Selling Price</TableHead>
+                              <TableHead className="w-20">MRP</TableHead>
                               <TableHead className="w-24">Amount</TableHead>
+                              <TableHead className="w-24">Net Amount</TableHead>
+                              <TableHead className="w-24">Cash Disc %</TableHead>
+                              <TableHead className="w-24">Cash Disc Amt</TableHead>
                               <TableHead className="w-12">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
