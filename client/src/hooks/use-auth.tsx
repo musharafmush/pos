@@ -77,8 +77,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
-      const res = await apiRequest("POST", "/api/auth/register", userData);
-      return await res.json();
+      try {
+        const res = await apiRequest("POST", "/api/auth/register", userData);
+        if (!res.ok) {
+          const errorData = await res.json();
+          // Check if we have detailed validation errors
+          if (errorData.errors && Array.isArray(errorData.errors)) {
+            const errorMessages = errorData.errors.map((err: any) => 
+              `${err.field}: ${err.message}`
+            ).join(', ');
+            throw new Error(errorMessages);
+          }
+          throw new Error(errorData.message || "Registration failed. Please try again.");
+        }
+        return await res.json();
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Registration failed. Please try again.");
+      }
     },
     onSuccess: (data: { user: User }) => {
       queryClient.setQueryData(["/api/auth/user"], data);
@@ -98,7 +116,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/auth/logout");
+      try {
+        const res = await apiRequest("POST", "/api/auth/logout");
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Logout failed. Please try again.");
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Logout failed. Please try again.");
+      }
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/auth/user"], null);
@@ -106,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Logged out",
         description: "You have been logged out successfully.",
       });
+      // Redirect to login page (handled by protected routes)
     },
     onError: (error: Error) => {
       toast({
