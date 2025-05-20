@@ -102,7 +102,7 @@ const purchaseEntrySchema = z.object({
       receivedQty: z.string()
         .min(1, "Quantity is required")
         .refine(val => !isNaN(Number(val)) && Number(val) > 0, "Must be a positive number"),
-      freeQty: z.string().optional(),
+      freeQty: z.string().default("0"),
       cost: z.string()
         .min(1, "Cost is required")
         .refine(val => !isNaN(Number(val)) && Number(val) >= 0, "Must be a positive number"),
@@ -110,15 +110,15 @@ const purchaseEntrySchema = z.object({
       taxPercent: z.string().default("0"),
       discountAmount: z.string().default("0"),
       expiryDate: z.string().optional(),
-      netCost: z.string().optional(),
-      roiPercent: z.string().optional(),
-      grossProfitPercent: z.string().optional(),
-      sellingPrice: z.string().optional(),
-      mrp: z.string().optional(),
-      amount: z.string().optional(),
-      netAmount: z.string().optional(),
-      cashDiscountPercent: z.string().optional(),
-      cashDiscountAmount: z.string().optional(),
+      netCost: z.string().default("0"),
+      roiPercent: z.string().default("0"),
+      grossProfitPercent: z.string().default("0"),
+      sellingPrice: z.string().default("0"),
+      mrp: z.string().default("0"),
+      amount: z.string().default("0"),
+      netAmount: z.string().default("0"),
+      cashDiscountPercent: z.string().default("0"),
+      cashDiscountAmount: z.string().default("0"),
     })
   ).min(1, "At least one item is required"),
   
@@ -855,7 +855,7 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input {...field} className="w-full" />
+                                          <Input {...field} className="w-full text-xs" />
                                         </FormControl>
                                       </FormItem>
                                     )}
