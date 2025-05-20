@@ -19,7 +19,13 @@ const loginSchema = z.object({
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Must be a valid email").optional().or(z.literal('')),
 });
@@ -193,8 +199,30 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••" {...field} />
+                            <div className="relative">
+                              <Input type="password" placeholder="••••••" {...field} />
+                            </div>
                           </FormControl>
+                          <div className="text-xs space-y-1 mt-1">
+                            <p className="font-medium text-muted-foreground">Password must contain:</p>
+                            <ul className="space-y-1 pl-4 list-disc">
+                              <li className={`${field.value.length >= 8 ? 'text-green-500' : 'text-muted-foreground'}`}>
+                                Minimum 8 characters
+                              </li>
+                              <li className={`${/[A-Z]/.test(field.value) ? 'text-green-500' : 'text-muted-foreground'}`}>
+                                At least one uppercase letter
+                              </li>
+                              <li className={`${/[a-z]/.test(field.value) ? 'text-green-500' : 'text-muted-foreground'}`}>
+                                At least one lowercase letter
+                              </li>
+                              <li className={`${/[0-9]/.test(field.value) ? 'text-green-500' : 'text-muted-foreground'}`}>
+                                At least one number
+                              </li>
+                              <li className={`${/[^A-Za-z0-9]/.test(field.value) ? 'text-green-500' : 'text-muted-foreground'}`}>
+                                At least one special character
+                              </li>
+                            </ul>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
