@@ -819,7 +819,7 @@ export default function PurchaseEntry() {
                       <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
-                            <TableRow className="bg-muted/50">
+                            <TableRow className="bg-muted/50 sticky top-0">
                               <TableHead className="w-12">Sno</TableHead>
                               <TableHead className="w-20">Code</TableHead>
                               <TableHead className="min-w-[180px]">Description</TableHead>
@@ -868,7 +868,75 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Popover>
+                                          <Select
+                                            disabled={createPurchaseMutation.isPending}
+                                            value={field.value}
+                                            onValueChange={(value) => {
+                                              field.onChange(value);
+                                              
+                                              const product = products.find(
+                                                (p: any) => p.name === value
+                                              );
+                                              
+                                              if (product) {
+                                                form.setValue(
+                                                  `items.${index}.productId`,
+                                                  product.id
+                                                );
+                                                form.setValue(
+                                                  `items.${index}.code`,
+                                                  product.sku || ""
+                                                );
+                                                form.setValue(
+                                                  `items.${index}.cost`,
+                                                  product.cost?.toString() || "0"
+                                                );
+                                                form.setValue(
+                                                  `items.${index}.hsnCode`,
+                                                  product.hsnCode || ""
+                                                );
+                                                form.setValue(
+                                                  `items.${index}.sellingPrice`,
+                                                  product.price?.toString() || "0"
+                                                );
+                                                form.setValue(
+                                                  `items.${index}.mrp`,
+                                                  ((parseFloat(product.price?.toString() || "0")) * 1.1).toFixed(2)
+                                                );
+                                                // Initialize quantities
+                                                form.setValue(
+                                                  `items.${index}.receivedQty`,
+                                                  "1"
+                                                );
+                                                form.setValue(
+                                                  `items.${index}.freeQty`,
+                                                  "0"
+                                                );
+                                                // Calculate amounts
+                                                recalculateAmounts(index);
+                                              }
+                                            }}
+                                          >
+                                            <FormControl>
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select product" />
+                                              </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                              {filteredProducts.map((product: any) => (
+                                                <SelectItem
+                                                  key={product.id}
+                                                  value={product.name}
+                                                >
+                                                  {product.name}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
                                             <PopoverTrigger asChild>
                                               <Button 
                                                 variant="outline" 
