@@ -9,7 +9,7 @@ import POS from "@/pages/pos";
 import Products from "@/pages/products";
 import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
-import PurchaseEntry from "@/pages/purchase-entry";
+import PurchaseEntry from "@/pages/purchase-entry-simple";
 import Reports from "@/pages/reports";
 import Users from "@/pages/users";
 import Settings from "@/pages/settings";
