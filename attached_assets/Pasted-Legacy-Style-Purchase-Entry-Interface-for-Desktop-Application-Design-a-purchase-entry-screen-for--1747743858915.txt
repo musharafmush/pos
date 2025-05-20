@@ -1,0 +1,64 @@
+Legacy-Style Purchase Entry Interface for Desktop Application
+
+Design a purchase entry screen for a desktop-based inventory management or POS system, inspired by traditional ERP software .
+
+🧾 Core Functional Sections:
+1. Top Navigation Bar:
+Menu options: Sales, Purchase, Branch, Inventory, Production, Accounts, Reports, Alert, Tools, Window, Help, Exit
+
+Toolbar icons for quick access to common features (hoverable, tooltip-enabled)
+
+Location/Division selector dropdowns
+
+2. Header Form Section (Purchase Details):
+Fields include:
+
+PO No, PO Date, Due Date, Hold Bills, Print (dropdown), payment type, company, division, location, 
+
+Invoice details: LR No, Invoice No, Invoice Date, Invoice 	Amount, Gross Amount, item Disc Amount, cash Dise%, 	cash Discount, tax Amount, Surcharge Amount, Freight 		Amt, packing charge, other charge, manual Discount Amt, 	PR Adjusted Amt, other charge tax, Extra cess, Roundoff 	Amt, Payable Amt, Preight Payable, packing payable, 	Goods Tes.
+
+Supplier Details: Code, Short Name, Name, Telephone, Mobile, Cash Discount %, GST NO.
+
+Payment Type (dropdown)
+
+Layout: Two-column table/grid format
+
+3. Main Entry Table:
+Grid-style input form with the following columns:
+
+Sno, Code, Description, Received Qty, Free Qty, Cost, HSN Code, Tax %, Discount Amount, Expiry Date, Net Cost, ROI %, Gross Profit %, Selling Price, MRP, Amount, Net Amount, Cash Discount %, Cash Discount Amount
+
+Rows: Editable cells for product entry
+
+Horizontal scrolling support
+
+4. Bottom Panel:
+Remarks field (text area)
+
+Summary display: Net Amount in large font (highlighted)
+
+Function Key Shortcuts Bar:
+
+F1 to F12 for various actions (e.g., F5 Save, F6 Clear, F8 Print, F12 Close)
+
+Indicate tooltips for each function
+
+🖥️ Design & UX Guidelines:
+Mimic retro Windows desktop style
+
+Use borders, grid lines, and standard form controls
+
+Ensure keyboard navigation with focus indicators
+
+Support for high data-density, batch input use case
+
+💡 Suggestions:
+Consider modernizing this UI with:
+
+React (for web-based admin panel)
+
+Electron (for desktop app interface)
+
+Tabular libraries like ag-Grid or Handsontable for the data entry grid
+
+Let me know if you'd like a modern redesign version of this prompt too!
