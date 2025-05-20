@@ -12,6 +12,7 @@ import {
   LogOutIcon,
   UserIcon,
   ArrowRightLeft,
+  ArrowDownIcon,
   Loader2,
   Calculator
 } from "lucide-react";
