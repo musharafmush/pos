@@ -244,57 +244,114 @@ export default function Suppliers() {
           
           <Dialog>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="mr-2 h-4 w-4" /> Add Supplier
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle>Add New Supplier</DialogTitle>
+                <DialogTitle className="text-xl">Add New Supplier</DialogTitle>
                 <DialogDescription>
-                  Enter the supplier details below. Click save when you're done.
+                  Enter the supplier details below. Fields marked with * are required.
                 </DialogDescription>
               </DialogHeader>
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name *</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
+                    <h3 className="text-sm font-medium text-slate-500 pb-2 border-b">Basic Information</h3>
+                    
                     <FormField
                       control={form.control}
-                      name="email"
+                      name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel className="text-slate-800">Company/Supplier Name *</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input {...field} placeholder="Enter supplier or company name" className="focus-visible:ring-blue-500" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="taxId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-slate-800">GST/Tax ID</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="e.g. 29AADCB2230M1ZP" className="focus-visible:ring-blue-500" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="contactPerson"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-slate-800">Contact Person</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Name of point of contact" className="focus-visible:ring-blue-500" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
+                    <h3 className="text-sm font-medium text-slate-500 pb-2 border-b">Contact Information</h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-slate-800">Email Address</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="email@example.com" className="focus-visible:ring-blue-500" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-slate-800">Phone Number</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="e.g. +1 555-123-4567" className="focus-visible:ring-blue-500" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
                     <FormField
                       control={form.control}
-                      name="phone"
+                      name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone</FormLabel>
+                          <FormLabel className="text-slate-800">Address</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Textarea 
+                              {...field} 
+                              placeholder="Full address including city, state and postal code"
+                              className="resize-none focus-visible:ring-blue-500"
+                              rows={3}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -302,29 +359,22 @@ export default function Suppliers() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="contactPerson"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Contact Person</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
+                    <h3 className="text-sm font-medium text-slate-500 pb-2 border-b">Additional Information</h3>
                     
                     <FormField
                       control={form.control}
-                      name="taxId"
+                      name="notes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>GST/Tax ID</FormLabel>
+                          <FormLabel className="text-slate-800">Notes</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Textarea 
+                              {...field} 
+                              placeholder="Additional information about this supplier"
+                              className="resize-none focus-visible:ring-blue-500"
+                              rows={3}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -332,55 +382,26 @@ export default function Suppliers() {
                     />
                   </div>
                   
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            {...field} 
-                            className="resize-none"
-                            rows={2}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Notes</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            {...field} 
-                            className="resize-none"
-                            rows={2}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <DialogFooter>
+                  <DialogFooter className="mt-6 pt-4 border-t">
                     <DialogClose asChild>
-                      <Button type="button" variant="outline">Cancel</Button>
+                      <Button type="button" variant="outline" className="border-slate-300">Cancel</Button>
                     </DialogClose>
                     <Button 
                       type="submit"
+                      className="bg-blue-600 hover:bg-blue-700"
                       disabled={createSupplierMutation.isPending}
                     >
                       {createSupplierMutation.isPending ? (
-                        "Saving..."
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Saving...
+                        </>
                       ) : (
                         <>
-                          <Save className="mr-2 h-4 w-4" /> Save
+                          <Save className="mr-2 h-4 w-4" /> Save Supplier
                         </>
                       )}
                     </Button>
@@ -391,35 +412,63 @@ export default function Suppliers() {
           </Dialog>
         </div>
         
-        <Card>
-          <CardHeader>
+        <Card className="border-0 shadow-md">
+          <CardHeader className="bg-white rounded-t-lg border-b">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Supplier List</CardTitle>
+                <CardTitle className="text-xl text-slate-800">Supplier Directory</CardTitle>
                 <CardDescription>
                   Manage your suppliers and their contact information
                 </CardDescription>
               </div>
               <div className="relative w-64">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Search suppliers..."
-                  className="pl-8"
+                  className="pl-8 border-slate-300 focus-visible:ring-blue-500"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
+              <div className="flex justify-center items-center h-48 bg-white">
+                <svg className="animate-spin -ml-1 mr-2 h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="text-slate-600 font-medium">Loading suppliers...</span>
               </div>
             ) : (
               filteredSuppliers.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {searchTerm ? "No suppliers found matching your search" : "No suppliers added yet"}
+                <div className="text-center p-10 bg-white">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+                    {searchTerm ? (
+                      <Search className="h-8 w-8 text-slate-400" />
+                    ) : (
+                      <Plus className="h-8 w-8 text-slate-400" />
+                    )}
+                  </div>
+                  {searchTerm ? (
+                    <>
+                      <p className="text-lg font-medium text-slate-800 mb-2">No matching suppliers</p>
+                      <p className="text-slate-500">No suppliers match your search term "<span className="font-medium">{searchTerm}</span>"</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-lg font-medium text-slate-800 mb-2">No suppliers found</p>
+                      <p className="text-slate-500 mb-6">Get started by adding your first supplier</p>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button className="bg-blue-600 hover:bg-blue-700">
+                            <Plus className="mr-2 h-4 w-4" /> Add Your First Supplier
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="rounded-md border">
@@ -482,43 +531,100 @@ export default function Suppliers() {
                                   {editingSupplier && (
                                     <Form {...form}>
                                       <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-4">
-                                        <FormField
-                                          control={form.control}
-                                          name="name"
-                                          render={({ field }) => (
-                                            <FormItem>
-                                              <FormLabel>Name *</FormLabel>
-                                              <FormControl>
-                                                <Input {...field} />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
-                                        
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
+                                          <h3 className="text-sm font-medium text-slate-500 pb-2 border-b">Basic Information</h3>
+                                          
                                           <FormField
                                             control={form.control}
-                                            name="email"
+                                            name="name"
                                             render={({ field }) => (
                                               <FormItem>
-                                                <FormLabel>Email</FormLabel>
+                                                <FormLabel className="text-slate-800">Company/Supplier Name *</FormLabel>
                                                 <FormControl>
-                                                  <Input {...field} />
+                                                  <Input {...field} placeholder="Enter supplier or company name" className="focus-visible:ring-blue-500" />
                                                 </FormControl>
                                                 <FormMessage />
                                               </FormItem>
                                             )}
                                           />
                                           
+                                          <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                              control={form.control}
+                                              name="taxId"
+                                              render={({ field }) => (
+                                                <FormItem>
+                                                  <FormLabel className="text-slate-800">GST/Tax ID</FormLabel>
+                                                  <FormControl>
+                                                    <Input {...field} placeholder="e.g. 29AADCB2230M1ZP" className="focus-visible:ring-blue-500" />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                            
+                                            <FormField
+                                              control={form.control}
+                                              name="contactPerson"
+                                              render={({ field }) => (
+                                                <FormItem>
+                                                  <FormLabel className="text-slate-800">Contact Person</FormLabel>
+                                                  <FormControl>
+                                                    <Input {...field} placeholder="Name of point of contact" className="focus-visible:ring-blue-500" />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
+                                          <h3 className="text-sm font-medium text-slate-500 pb-2 border-b">Contact Information</h3>
+                                          
+                                          <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                              control={form.control}
+                                              name="email"
+                                              render={({ field }) => (
+                                                <FormItem>
+                                                  <FormLabel className="text-slate-800">Email Address</FormLabel>
+                                                  <FormControl>
+                                                    <Input {...field} placeholder="email@example.com" className="focus-visible:ring-blue-500" />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                            
+                                            <FormField
+                                              control={form.control}
+                                              name="phone"
+                                              render={({ field }) => (
+                                                <FormItem>
+                                                  <FormLabel className="text-slate-800">Phone Number</FormLabel>
+                                                  <FormControl>
+                                                    <Input {...field} placeholder="e.g. +1 555-123-4567" className="focus-visible:ring-blue-500" />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                          </div>
+                                          
                                           <FormField
                                             control={form.control}
-                                            name="phone"
+                                            name="address"
                                             render={({ field }) => (
                                               <FormItem>
-                                                <FormLabel>Phone</FormLabel>
+                                                <FormLabel className="text-slate-800">Address</FormLabel>
                                                 <FormControl>
-                                                  <Input {...field} />
+                                                  <Textarea 
+                                                    {...field} 
+                                                    placeholder="Full address including city, state and postal code"
+                                                    className="resize-none focus-visible:ring-blue-500"
+                                                    rows={3}
+                                                  />
                                                 </FormControl>
                                                 <FormMessage />
                                               </FormItem>
@@ -526,29 +632,22 @@ export default function Suppliers() {
                                           />
                                         </div>
                                         
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <FormField
-                                            control={form.control}
-                                            name="contactPerson"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel>Contact Person</FormLabel>
-                                                <FormControl>
-                                                  <Input {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
+                                        <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
+                                          <h3 className="text-sm font-medium text-slate-500 pb-2 border-b">Additional Information</h3>
                                           
                                           <FormField
                                             control={form.control}
-                                            name="taxId"
+                                            name="notes"
                                             render={({ field }) => (
                                               <FormItem>
-                                                <FormLabel>GST/Tax ID</FormLabel>
+                                                <FormLabel className="text-slate-800">Notes</FormLabel>
                                                 <FormControl>
-                                                  <Input {...field} />
+                                                  <Textarea 
+                                                    {...field} 
+                                                    placeholder="Additional information about this supplier"
+                                                    className="resize-none focus-visible:ring-blue-500"
+                                                    rows={3}
+                                                  />
                                                 </FormControl>
                                                 <FormMessage />
                                               </FormItem>
@@ -556,47 +655,12 @@ export default function Suppliers() {
                                           />
                                         </div>
                                         
-                                        <FormField
-                                          control={form.control}
-                                          name="address"
-                                          render={({ field }) => (
-                                            <FormItem>
-                                              <FormLabel>Address</FormLabel>
-                                              <FormControl>
-                                                <Textarea 
-                                                  {...field} 
-                                                  className="resize-none"
-                                                  rows={2}
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
-                                        
-                                        <FormField
-                                          control={form.control}
-                                          name="notes"
-                                          render={({ field }) => (
-                                            <FormItem>
-                                              <FormLabel>Notes</FormLabel>
-                                              <FormControl>
-                                                <Textarea 
-                                                  {...field} 
-                                                  className="resize-none"
-                                                  rows={2}
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
-                                        
-                                        <DialogFooter>
+                                        <DialogFooter className="mt-6 pt-4 border-t">
                                           <DialogClose asChild>
                                             <Button 
                                               type="button" 
                                               variant="outline"
+                                              className="border-slate-300"
                                               onClick={() => setEditingSupplier(null)}
                                             >
                                               Cancel
@@ -604,13 +668,20 @@ export default function Suppliers() {
                                           </DialogClose>
                                           <Button 
                                             type="submit"
+                                            className="bg-blue-600 hover:bg-blue-700"
                                             disabled={updateSupplierMutation.isPending}
                                           >
                                             {updateSupplierMutation.isPending ? (
-                                              "Saving..."
+                                              <>
+                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Updating...
+                                              </>
                                             ) : (
                                               <>
-                                                <Save className="mr-2 h-4 w-4" /> Save
+                                                <Save className="mr-2 h-4 w-4" /> Update Supplier
                                               </>
                                             )}
                                           </Button>
