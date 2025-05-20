@@ -102,7 +102,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     },
     {
       id: "purchases",
-      items: [{ href: "/purchases", icon: <GalleryHorizontalIcon className="h-5 w-5" />, label: "Purchases" }]
+      label: "Purchases",
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"/></svg>,
+      items: [
+        { href: "/purchases", icon: <GalleryHorizontalIcon className="h-5 w-5" />, label: "List Purchases" },
+        { href: "/purchases/add", icon: <PlusIcon className="h-5 w-5" />, label: "Add Purchase" },
+        { href: "/purchases/return", icon: <ArrowRightLeft className="h-5 w-5" />, label: "List Purchase Return" }
+      ]
     },
     {
       id: "sales",
