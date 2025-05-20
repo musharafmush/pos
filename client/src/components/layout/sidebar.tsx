@@ -13,6 +13,7 @@ import {
   UserIcon,
   ArrowRightLeft,
   ArrowDownIcon,
+  PlusIcon,
   Loader2,
   Calculator
 } from "lucide-react";
