@@ -308,7 +308,7 @@ export default function PurchaseEntry() {
     const cashDiscountAmount = amount * (cashDiscountPercent / 100);
 
     // Calculate net cost (including tax, discounts)
-    const netCost = receivedQty > 0 ? netAmount / receivedQty : 0; // Per unit cost after all calculations
+    const netCost = netAmount / receivedQty; // Per unit cost after all calculations
 
     // Calculate profit metrics if selling price is available
     let roiPercent = 0;
@@ -843,7 +843,7 @@ export default function PurchaseEntry() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {form.getValues("items").map((_, index) => (
+                            {form.getValues("items").map((item, index) => (
                               <TableRow key={index}>
                                 <TableCell className="font-medium">
                                   {index + 1}
@@ -851,7 +851,20 @@ export default function PurchaseEntry() {
                                 <TableCell>
                                   <FormField
                                     control={form.control}
-                                    name={`items.${index}.productId`}
+                                    name={`items.${index}.code`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input {...field} className="w-full" />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.productName`}
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
