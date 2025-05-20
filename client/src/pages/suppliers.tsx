@@ -717,7 +717,7 @@ export default function Suppliers() {
                                   <Button
                                     variant="outline"
                                     size="icon"
-                                    className="text-destructive hover:bg-destructive/10"
+                                    className="h-8 w-8 border-slate-300 hover:bg-red-50 text-red-600 hover:text-red-700 hover:border-red-200"
                                     onClick={() => handleDeleteClick(supplier.id)}
                                   >
                                     <Trash2 className="h-4 w-4" />
