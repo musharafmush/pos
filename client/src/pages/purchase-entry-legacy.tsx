@@ -617,8 +617,14 @@ export default function PurchaseEntryLegacy() {
 
             {/* Products List - Legacy Style Table */}
             <div className="border border-gray-300 rounded-md overflow-hidden">
-              <div className="bg-blue-50 py-2 px-4 border-b font-semibold">
-                Products List
+              <div className="bg-blue-50 py-2 px-4 border-b font-semibold flex justify-between items-center">
+                <div className="flex items-center">
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  Products List
+                </div>
+                <div className="text-xs bg-gray-100 px-3 py-1 rounded border border-gray-300">
+                  Total Items: {fields.length}
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -1028,19 +1034,19 @@ export default function PurchaseEntryLegacy() {
                   </tbody>
                   <tfoot>
                     <tr className="bg-gray-100 font-medium">
-                      <td colSpan={3} className="p-2 border-r text-right">
+                      <td colSpan={3} className="px-3 py-2 border-r text-right font-semibold">
                         Total:
                       </td>
-                      <td className="p-2 border-r text-center">
+                      <td className="px-3 py-2 border-r text-center font-semibold">
                         {form.getValues("items")?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}
                       </td>
-                      <td className="p-2 border-r"></td>
-                      <td className="p-2 border-r"></td>
-                      <td colSpan={7} className="p-2 border-r"></td>
-                      <td colSpan={3} className="p-2 border-r text-right">
-                        {form.getValues("items")?.reduce((sum, item) => sum + (item.subtotal || 0), 0).toFixed(2) || "0.00"}
+                      <td className="px-3 py-2 border-r"></td>
+                      <td className="px-3 py-2 border-r"></td>
+                      <td colSpan={7} className="px-3 py-2 border-r"></td>
+                      <td colSpan={3} className="px-3 py-2 border-r text-right font-semibold">
+                        ₹{form.getValues("items")?.reduce((sum, item) => sum + (item.subtotal || 0), 0).toFixed(2) || "0.00"}
                       </td>
-                      <td colSpan={3} className="p-2"></td>
+                      <td colSpan={3} className="px-3 py-2"></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -1070,10 +1076,11 @@ export default function PurchaseEntryLegacy() {
               </div>
             </div>
             
-            <div className="flex justify-end space-x-4 pt-4">
+            <div className="flex justify-end space-x-4 pt-4 border-t mt-4">
               <Button
                 type="button"
                 variant="outline"
+                className="bg-gray-50 border-gray-400 h-9"
                 onClick={() => {
                   form.reset();
                 }}
@@ -1083,6 +1090,7 @@ export default function PurchaseEntryLegacy() {
               <Button
                 type="submit"
                 disabled={createPurchaseMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700 h-9"
               >
                 {createPurchaseMutation.isPending ? (
                   "Saving..."
