@@ -117,14 +117,19 @@ export default function PurchaseEntryLegacy() {
   const form = useForm<PurchaseEntryFormValues>({
     resolver: zodResolver(purchaseEntrySchema),
     defaultValues: {
-      orderNumber: `PO-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      orderNumber: `PO-${Date.now()}`,
+      poNo: "",
+      supplierId: 0,
       poDate: today,
       invoiceDate: today,
+      invoiceNo: "",
+      invoiceAmount: "0",
       dueDate: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      paymentMethod: "cash",
+      paymentMethod: "Cash",
       paymentType: "Credit",
       draft: "No",
       status: "pending",
+      remarks: "",
       items: [
         {
           productId: 0,
@@ -141,7 +146,8 @@ export default function PurchaseEntryLegacy() {
           sellingPrice: 0,
           mrp: 0,
           subtotal: 0,
-          cashDiscount: 0
+          cashDiscount: 0,
+          hsnCode: ""
         }
       ]
     }
@@ -284,8 +290,15 @@ export default function PurchaseEntryLegacy() {
   // Handle form submission
   const onSubmit = (data: PurchaseEntryFormValues) => {
     try {
-      // Create a simplified purchase object that matches exactly what the server expects
-      const simplifiedData = {
+      // Calculate total purchase value to send to server
+      const totalValue = data.items.reduce((total, item) => {
+        const qty = Number(item.quantity) || 0;
+        const cost = Number(item.unitCost) || 0;
+        return total + (qty * cost);
+      }, 0);
+      
+      // Create purchase data with exactly the fields expected by server
+      const purchaseData = {
         supplierId: Number(data.supplierId) || 1,
         orderNumber: data.orderNumber || `PO-${Date.now()}`,
         poNo: data.poNo || "",
@@ -299,21 +312,28 @@ export default function PurchaseEntryLegacy() {
         paymentType: data.paymentType || "Credit",
         draft: data.draft || "No",
         remarks: data.remarks || "",
+        total: totalValue.toString(), // Add the total value
         items: data.items.map(item => {
-          // Only include the fields the server actually needs
+          // Ensure all values are valid numbers
+          const productId = Number(item.productId) || 1;
+          const quantity = Number(item.quantity) || 1;
+          const unitCost = Number(item.unitCost) || 0;
+          
           return {
-            productId: Number(item.productId) || 1, // Defaulting to ID 1 if invalid
-            quantity: Number(item.quantity) || 1,    // Default to 1 if invalid
-            unitCost: Number(item.unitCost) || 0     // Default to 0 if invalid
+            productId,
+            quantity,
+            unitCost,
+            // Include optional fields as needed
+            hsnCode: item.hsnCode || "",
+            taxPercentage: Number(item.taxPercentage) || 0,
+            discount: Number(item.discount) || 0,
+            discountPercent: Number(item.discountPercent) || 0
           };
         })
       };
       
-      // Log the simplified data
-      console.log("Submitting purchase with simplified data:", simplifiedData);
-      
-      // Send only what the server needs to process
-      createPurchaseMutation.mutate(simplifiedData);
+      console.log("Submitting purchase:", purchaseData);
+      createPurchaseMutation.mutate(purchaseData);
     } catch (error) {
       console.error("Error preparing purchase data:", error);
       toast({
