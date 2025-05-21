@@ -283,7 +283,43 @@ export default function PurchaseEntryLegacy() {
 
   // Handle form submission
   const onSubmit = (data: PurchaseEntryFormValues) => {
-    createPurchaseMutation.mutate(data);
+    // Ensure all number values are valid before submission
+    const cleanedData = {
+      ...data,
+      items: data.items.map(item => {
+        // Make sure all numeric fields have valid values
+        const ensureNumber = (value: any) => {
+          const num = parseFloat(value);
+          return isNaN(num) ? 0 : num;
+        };
+        
+        return {
+          ...item,
+          productId: ensureNumber(item.productId),
+          quantity: ensureNumber(item.quantity),
+          unitCost: ensureNumber(item.unitCost),
+          taxPercentage: ensureNumber(item.taxPercentage),
+          discount: ensureNumber(item.discount),
+          discountPercent: ensureNumber(item.discountPercent),
+          netCost: ensureNumber(item.netCost),
+          roi: ensureNumber(item.roi),
+          grossProfit: ensureNumber(item.grossProfit),
+          sellingPrice: ensureNumber(item.sellingPrice),
+          mrp: ensureNumber(item.mrp),
+          subtotal: ensureNumber(item.subtotal)
+        };
+      })
+    };
+    
+    // Force clean any other numeric values
+    if (typeof cleanedData.supplierId !== 'number' || isNaN(cleanedData.supplierId)) {
+      cleanedData.supplierId = 1; // Default to first supplier if invalid
+    }
+    
+    // Log the cleaned data before submission
+    console.log("Submitting purchase with cleaned data:", cleanedData);
+    
+    createPurchaseMutation.mutate(cleanedData);
   };
 
   // Filter suppliers based on search term
