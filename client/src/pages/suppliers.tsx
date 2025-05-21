@@ -9,7 +9,16 @@ import {
   Pencil, 
   Trash2, 
   Save,
-  X
+  X,
+  Building2,
+  Mail,
+  Phone,
+  FileText,
+  User,
+  MapPin,
+  CreditCard,
+  Check,
+  Info
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -21,7 +30,14 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -40,6 +56,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -70,9 +93,27 @@ const supplierFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Must provide a valid email").optional().or(z.literal('')),
   phone: z.string().optional().or(z.literal('')),
+  mobileNo: z.string().optional().or(z.literal('')),
+  extensionNumber: z.string().optional().or(z.literal('')),
+  faxNo: z.string().optional().or(z.literal('')),
   contactPerson: z.string().optional().or(z.literal('')),
+  // Address fields
   address: z.string().optional().or(z.literal('')),
+  building: z.string().optional().or(z.literal('')),
+  street: z.string().optional().or(z.literal('')),
+  city: z.string().optional().or(z.literal('')),
+  state: z.string().optional().or(z.literal('')),
+  country: z.string().optional().or(z.literal('')),
+  pinCode: z.string().optional().or(z.literal('')),
+  landmark: z.string().optional().or(z.literal('')),
+  // Business details
   taxId: z.string().optional().or(z.literal('')),
+  registrationType: z.string().optional().or(z.literal('')),
+  registrationNumber: z.string().optional().or(z.literal('')),
+  supplierType: z.string().optional().or(z.literal('')),
+  creditDays: z.string().optional().or(z.literal('')),
+  discountPercent: z.string().optional().or(z.literal('')),
+  status: z.string().optional().or(z.literal('active')),
   notes: z.string().optional().or(z.literal(''))
 });
 
@@ -93,9 +134,25 @@ export default function Suppliers() {
       name: "",
       email: "",
       phone: "",
+      mobileNo: "",
+      extensionNumber: "",
+      faxNo: "",
       contactPerson: "",
       address: "",
+      building: "",
+      street: "",
+      city: "",
+      state: "",
+      country: "",
+      pinCode: "",
+      landmark: "",
       taxId: "",
+      registrationType: "",
+      registrationNumber: "",
+      supplierType: "",
+      creditDays: "",
+      discountPercent: "",
+      status: "active",
       notes: ""
     },
   });
@@ -216,9 +273,25 @@ export default function Suppliers() {
       name: supplier.name || "",
       email: supplier.email || "",
       phone: supplier.phone || "",
+      mobileNo: supplier.mobileNo || "",
+      extensionNumber: supplier.extensionNumber || "",
+      faxNo: supplier.faxNo || "",
       contactPerson: supplier.contactPerson || "",
       address: supplier.address || "",
+      building: supplier.building || "",
+      street: supplier.street || "",
+      city: supplier.city || "",
+      state: supplier.state || "",
+      country: supplier.country || "",
+      pinCode: supplier.pinCode || "",
+      landmark: supplier.landmark || "",
       taxId: supplier.taxId || "",
+      registrationType: supplier.registrationType || "",
+      registrationNumber: supplier.registrationNumber || "",
+      supplierType: supplier.supplierType || "",
+      creditDays: supplier.creditDays || "",
+      discountPercent: supplier.discountPercent || "",
+      status: supplier.status || "active",
       notes: supplier.notes || ""
     });
   };
