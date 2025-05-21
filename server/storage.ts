@@ -56,10 +56,15 @@ export const storage = {
     return user || null;
   },
 
-  async createUser(user: { username: string; password: string; name: string; email?: string; role?: string }): Promise<User> {
+  async createUser(user: { username?: string; password: string; name: string; email: string; role?: string }): Promise<User> {
     const hashedPassword = await bcrypt.hash(user.password, 10);
+    
+    // Generate username from email if not provided
+    const username = user.username || user.email.split('@')[0] + '_' + Math.floor(Math.random() * 1000);
+    
     const [newUser] = await db.insert(users).values({
       ...user,
+      username,
       password: hashedPassword
     }).returning();
     return newUser;
