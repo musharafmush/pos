@@ -151,20 +151,6 @@ export const purchaseItems = pgTable('purchase_items', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
-// Contacts table
-export const contacts = pgTable('contacts', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  email: text('email'),
-  phone: text('phone'),
-  role: text('role'),
-  department: text('department'),
-  notes: text('notes'),
-  supplierId: integer('supplier_id').references(() => suppliers.id).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull()
-});
-
 // Define relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products)
@@ -197,12 +183,7 @@ export const saleItemsRelations = relations(saleItems, ({ one }) => ({
 }));
 
 export const suppliersRelations = relations(suppliers, ({ many }) => ({
-  purchases: many(purchases),
-  contacts: many(contacts)
-}));
-
-export const contactsRelations = relations(contacts, ({ one }) => ({
-  supplier: one(suppliers, { fields: [contacts.supplierId], references: [suppliers.id] })
+  purchases: many(purchases)
 }));
 
 export const purchasesRelations = relations(purchases, ({ one, many }) => ({
@@ -333,16 +314,3 @@ export const purchaseItemInsertSchema = createInsertSchema(purchaseItems, {
 export type PurchaseItemInsert = z.infer<typeof purchaseItemInsertSchema>;
 export const purchaseItemSelectSchema = createSelectSchema(purchaseItems);
 export type PurchaseItem = z.infer<typeof purchaseItemSelectSchema>;
-
-// Contacts validation schema
-export const contactInsertSchema = createInsertSchema(contacts, {
-  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
-  email: (schema) => schema.email("Must provide a valid email").optional().or(z.literal('')),
-  phone: (schema) => schema.optional(),
-  role: (schema) => schema.optional(),
-  department: (schema) => schema.optional(),
-  notes: (schema) => schema.optional()
-});
-export type ContactInsert = z.infer<typeof contactInsertSchema>;
-export const contactSelectSchema = createSelectSchema(contacts);
-export type Contact = z.infer<typeof contactSelectSchema>;

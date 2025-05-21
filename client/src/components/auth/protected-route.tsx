@@ -1,7 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
-import { PageContainer } from "@/components/layout/page-container";
 
 interface ProtectedRouteProps {
   path: string;
@@ -44,9 +43,7 @@ export function ProtectedRoute({
 
   return (
     <Route path={path}>
-      <PageContainer>
-        <Component />
-      </PageContainer>
+      <Component />
     </Route>
   );
 }

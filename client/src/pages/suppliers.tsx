@@ -74,6 +74,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 
 // Form schema for supplier management
 const supplierFormSchema = z.object({
@@ -316,444 +317,233 @@ export default function Suppliers() {
   };
   
   return (
-    <div className="container max-w-7xl pb-8">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
+    <DashboardLayout>
+      <div className="container max-w-7xl pb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
+          
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={handleAddSupplier}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Supplier
+          </Button>
+        </div>
         
-        <Button 
-          className="bg-blue-600 hover:bg-blue-700"
-          onClick={handleAddSupplier}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Supplier
-        </Button>
-      </div>
-      
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle>Supplier Management</CardTitle>
-          <div className="flex items-center mt-2">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-              <Input
-                placeholder="Search suppliers..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Supplier Management</CardTitle>
+            <div className="flex items-center mt-2">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                <Input
+                  placeholder="Search suppliers..."
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50">
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact Person</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>GST/Tax ID</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <div className="flex justify-center">
-                        <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      </div>
-                    </TableCell>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead>Name</TableHead>
+                    <TableHead>Contact Person</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>GST/Tax ID</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : filteredSuppliers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      {searchTerm ? (
-                        <div>
-                          <div className="text-lg mb-1">No suppliers match your search</div>
-                          <div className="text-sm text-slate-500">Try a different search term or clear the search</div>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <div className="flex justify-center">
+                          <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
                         </div>
-                      ) : (
-                        <div>
-                          <div className="text-lg mb-1">No suppliers found</div>
-                          <div className="text-sm text-slate-500">Add your first supplier to get started</div>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredSuppliers.map((supplier: any) => (
-                    <TableRow key={supplier.id}>
-                      <TableCell className="font-medium">{supplier.name}</TableCell>
-                      <TableCell>{supplier.contactPerson || 'N/A'}</TableCell>
-                      <TableCell>{supplier.email || 'N/A'}</TableCell>
-                      <TableCell>
-                        {supplier.taxId ? (
-                          <div className="flex items-center">
-                            <span className="mr-2">{supplier.taxId}</span>
-                            {/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/i.test(supplier.taxId) && (
-                              <div className="rounded-full bg-green-100 p-1" title="Valid GST Format">
-                                <Check className="h-3 w-3 text-green-600" />
-                              </div>
-                            )}
-                          </div>
-                        ) : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <span 
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            supplier.status === 'active'
-                              ? 'bg-green-100 text-green-800' 
-                              : supplier.status === 'inactive'
-                                ? 'bg-slate-100 text-slate-800' 
-                                : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {supplier.status === 'active' 
-                            ? 'Active' 
-                            : supplier.status === 'inactive' 
-                              ? 'Inactive' 
-                              : 'On Hold'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(supplier)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                          <Pencil className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteClick(supplier.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                  ) : filteredSuppliers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        {searchTerm ? (
+                          <div>
+                            <div className="text-lg mb-1">No suppliers match your search</div>
+                            <div className="text-sm text-slate-500">Try a different search term or clear the search</div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="text-lg mb-1">No suppliers found</div>
+                            <div className="text-sm text-slate-500">Add your first supplier to get started</div>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredSuppliers.map((supplier: any) => (
+                      <TableRow key={supplier.id}>
+                        <TableCell className="font-medium">{supplier.name}</TableCell>
+                        <TableCell>{supplier.contactPerson || 'N/A'}</TableCell>
+                        <TableCell>{supplier.email || 'N/A'}</TableCell>
+                        <TableCell>
+                          {supplier.taxId ? (
+                            <div className="flex items-center">
+                              <span className="mr-2">{supplier.taxId}</span>
+                              {/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/i.test(supplier.taxId) && (
+                                <div className="rounded-full bg-green-100 p-1" title="Valid GST Format">
+                                  <Check className="h-3 w-3 text-green-600" />
+                                </div>
+                              )}
+                            </div>
+                          ) : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <span 
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              supplier.status === 'active'
+                                ? 'bg-green-100 text-green-800' 
+                                : supplier.status === 'inactive'
+                                  ? 'bg-slate-100 text-slate-800' 
+                                  : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {supplier.status === 'active' 
+                              ? 'Active' 
+                              : supplier.status === 'inactive' 
+                                ? 'Inactive' 
+                                : 'On Hold'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(supplier)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(supplier.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       
       {/* Supplier Form Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="w-[90vw] max-w-[800px] max-h-[85vh] overflow-y-auto">
           <DialogHeader className="border-b pb-4 sticky top-0 bg-white z-10">
-            <DialogTitle>{editingSupplier ? "Edit Supplier" : "Add Supplier"}</DialogTitle>
+            <DialogTitle className="text-xl text-blue-700 flex items-center">
+              <Building2 className="h-6 w-6 mr-2" />
+              {editingSupplier ? "Edit Supplier" : "Add New Supplier"}
+            </DialogTitle>
             <DialogDescription>
-              {editingSupplier 
-                ? "Update the supplier details below." 
-                : "Fill in the information below to add a new supplier."}
+              Enter the supplier details below. Fields marked with <span className="text-red-500">*</span> are required.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex border-b space-x-1 mt-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab("general")}
-              className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
-                activeTab === "general" 
-                  ? "border-blue-600 text-blue-600" 
-                  : "border-transparent hover:border-gray-300"
-              }`}
-            >
-              General
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("address")}
-              className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
-                activeTab === "address" 
-                  ? "border-blue-600 text-blue-600" 
-                  : "border-transparent hover:border-gray-300"
-              }`}
-            >
-              Address
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("business")}
-              className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
-                activeTab === "business" 
-                  ? "border-blue-600 text-blue-600" 
-                  : "border-transparent hover:border-gray-300"
-              }`}
-            >
-              Business Details
-            </button>
-          </div>
-          
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-              {/* General Information */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
+              {/* Tabs Header - Legacy Style */}
+              <div className="mb-4 bg-gray-100 border rounded-t-md sticky top-20 z-10">
+                <div className="flex">
+                  <div
+                    onClick={() => setActiveTab("general")}
+                    className={`px-4 py-2 cursor-pointer flex items-center gap-2 ${
+                      activeTab === "general" 
+                        ? "bg-white border-t-2 border-t-blue-500 font-medium" 
+                        : "bg-gray-100 hover:bg-gray-200"
+                    }`}
+                  >
+                    <Building2 className="h-4 w-4" /> General
+                  </div>
+                  <div
+                    onClick={() => setActiveTab("contact")}
+                    className={`px-4 py-2 cursor-pointer flex items-center gap-2 ${
+                      activeTab === "contact" 
+                        ? "bg-white border-t-2 border-t-blue-500 font-medium" 
+                        : "bg-gray-100 hover:bg-gray-200"
+                    }`}
+                  >
+                    <Phone className="h-4 w-4" /> Contact Details
+                  </div>
+                  <div
+                    onClick={() => setActiveTab("business")}
+                    className={`px-4 py-2 cursor-pointer flex items-center gap-2 ${
+                      activeTab === "business" 
+                        ? "bg-white border-t-2 border-t-blue-500 font-medium" 
+                        : "bg-gray-100 hover:bg-gray-200"
+                    }`}
+                  >
+                    <FileText className="h-4 w-4" /> Business Settings
+                  </div>
+                </div>
+              </div>
+              
+              {/* General Information Tab */}
               {activeTab === "general" && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Supplier Name *</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="contactPerson"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Contact Person</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <div className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
+                  <div className="bg-blue-50 border-b border-blue-100 -m-5 mb-4 p-3 rounded-t-lg">
+                    <h3 className="text-base font-medium text-blue-700 flex items-center">
+                      <Building2 className="h-5 w-5 mr-2 text-blue-600" />
+                      Supplier Information
+                    </h3>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="mobileNo"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Mobile Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="extensionNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Extension Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="faxNo"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Fax Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {/* Address Information */}
-              {activeTab === "address" && (
-                <div className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="address"
+                    name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Complete Address</FormLabel>
+                        <FormLabel className="text-slate-800 flex items-center">
+                          Company/Supplier Name <span className="text-red-500 ml-1">*</span>
+                          <div className="ml-2 cursor-help group relative">
+                            <Info className="h-4 w-4 text-slate-400" />
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                              Company or business name of the supplier
+                            </div>
+                          </div>
+                        </FormLabel>
                         <FormControl>
-                          <Textarea {...field} value={field.value || ""} />
+                          <div className="relative">
+                            <Building2 className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                            <Input {...field} placeholder="Enter supplier or company name" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="building"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Building/Floor</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="street"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Street/Area</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>State</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="country"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Country</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="pinCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>PIN Code</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="landmark"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Landmark</FormLabel>
-                        <FormControl>
-                          <Input {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
-              
-              {/* Business Details */}
-              {activeTab === "business" && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="taxId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>GST/Tax ID</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="registrationType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Registration Type</FormLabel>
+                          <FormLabel className="text-slate-800">Registration Type</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -773,17 +563,96 @@ export default function Suppliers() {
                         </FormItem>
                       )}
                     />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
                     <FormField
                       control={form.control}
                       name="registrationNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Registration Number</FormLabel>
+                          <FormLabel className="text-slate-800">Registration Number</FormLabel>
                           <FormControl>
-                            <Input {...field} value={field.value || ""} />
+                            <Input {...field} placeholder="e.g. 12ABCDE1234F1Z5" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="taxId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            GST/Tax ID
+                            <div className="ml-2 cursor-help group relative">
+                              <Info className="h-4 w-4 text-slate-400" />
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                Tax identification number for business transactions
+                              </div>
+                            </div>
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <CreditCard className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                              <Input 
+                                {...field} 
+                                placeholder="e.g. 29AADCB2230M1ZP" 
+                                className="pl-10"
+                                onChange={(e) => {
+                                  // Update the field value
+                                  field.onChange(e);
+                                  
+                                  // Auto-fill functionality for GST/Tax ID
+                                  const taxId = e.target.value;
+                                  if (taxId.length >= 15) {
+                                    // If the GST/Tax ID matches the Indian format
+                                    if (/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/i.test(taxId)) {
+                                      // Extract state code from GST
+                                      const stateCode = taxId.substring(0, 2);
+                                      const stateMap: { [key: string]: string } = {
+                                        '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab',
+                                        '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana',
+                                        '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh',
+                                        '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh',
+                                        '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram',
+                                        '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam',
+                                        '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha',
+                                        '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
+                                        '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa',
+                                        '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry',
+                                        '36': 'Telangana', '37': 'Andhra Pradesh'
+                                      };
+                                      
+                                      // Set registration type to Regular by default for GST holders
+                                      form.setValue('registrationType', 'regular');
+                                      form.setValue('country', 'India');
+                                      
+                                      // Set state from GST code
+                                      if (stateMap[stateCode]) {
+                                        form.setValue('state', stateMap[stateCode]);
+                                      }
+                                      
+                                      // Set registration number same as GST ID
+                                      form.setValue('registrationNumber', taxId);
+                                      
+                                      // Show success message
+                                      toast({
+                                        title: "Details updated",
+                                        description: "Registration information has been populated based on GST number.",
+                                      });
+                                    }
+                                  }
+                                }}
+                              />
+                              {field.value && (
+                                <div className="absolute right-3 top-2.5">
+                                  <Check className="h-5 w-5 text-green-500" />
+                                </div>
+                              )}
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -795,7 +664,7 @@ export default function Suppliers() {
                       name="supplierType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Supplier Type</FormLabel>
+                          <FormLabel className="text-slate-800">Supplier Type</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -810,7 +679,6 @@ export default function Suppliers() {
                               <SelectItem value="wholesaler">Wholesaler</SelectItem>
                               <SelectItem value="distributor">Distributor</SelectItem>
                               <SelectItem value="retailer">Retailer</SelectItem>
-                              <SelectItem value="service">Service Provider</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -819,15 +687,348 @@ export default function Suppliers() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800">Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value || "active"}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                              <SelectItem value="onhold">On Hold</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="contactPerson"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Contact Person
+                            <div className="ml-2 cursor-help group relative">
+                              <Info className="h-4 w-4 text-slate-400" />
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                Primary person to contact at this supplier
+                              </div>
+                            </div>
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                              <Input {...field} placeholder="Name of point of contact" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Contact Information Tab */}
+              {activeTab === "contact" && (
+                <div className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
+                  <div className="bg-blue-50 border-b border-blue-100 -m-5 mb-4 p-3 rounded-t-lg">
+                    <h3 className="text-base font-medium text-blue-700 flex items-center">
+                      <Phone className="h-5 w-5 mr-2 text-blue-600" />
+                      Contact Information
+                    </h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Email Address
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Mail className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                              <Input {...field} type="email" placeholder="email@company.com" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Phone Number
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Phone className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                              <Input {...field} placeholder="+1 (555) 123-4567" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="mobileNo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Mobile Number
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Mobile number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="extensionNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Extension Number
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Office extension" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="faxNo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-800 flex items-center">
+                          Fax Number
+                        </FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Fax number (if available)" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="bg-blue-50 border-b border-blue-100 -mx-5 mt-6 mb-4 p-3">
+                    <h3 className="text-base font-medium text-blue-700 flex items-center">
+                      <MapPin className="h-5 w-5 mr-2 text-blue-600" />
+                      Address Details
+                    </h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="building"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800">
+                            Building/Premise
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Building name or number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="street"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800">
+                            Street Address
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Street name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800">
+                            City
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="City name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800">
+                            State/Province
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="State or province" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800">
+                            Country
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value || "India"}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select country" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="India">India</SelectItem>
+                              <SelectItem value="United States">United States</SelectItem>
+                              <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                              <SelectItem value="Canada">Canada</SelectItem>
+                              <SelectItem value="Australia">Australia</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="pinCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-800">
+                            PIN/ZIP Code
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Postal code" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="landmark"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-800">
+                          Landmark
+                        </FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Nearby landmark for easy location" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-800 flex items-center">
+                          Complete Address
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                            <Textarea {...field} placeholder="Full address (generated from the fields above or enter manually)" className="pl-10 focus-visible:ring-blue-500 focus-visible:border-blue-500 min-h-[80px]" />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+              
+              {/* Business Settings Tab */}
+              {activeTab === "business" && (
+                <div className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
+                  <div className="bg-blue-50 border-b border-blue-100 -m-5 mb-4 p-3 rounded-t-lg">
+                    <h3 className="text-base font-medium text-blue-700 flex items-center">
+                      <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                      Business Settings
+                    </h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="creditDays"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Credit Period (Days)</FormLabel>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Credit Period (Days)
+                            <div className="ml-2 cursor-help group relative">
+                              <Info className="h-4 w-4 text-slate-400" />
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                Days allowed for payment after purchase
+                              </div>
+                            </div>
+                          </FormLabel>
                           <FormControl>
-                            <Input type="number" {...field} value={field.value || ""} />
+                            <Input {...field} placeholder="e.g. 30" type="number" min="0" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -839,38 +1040,18 @@ export default function Suppliers() {
                       name="discountPercent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Default Discount %</FormLabel>
+                          <FormLabel className="text-slate-800 flex items-center">
+                            Default Discount (%)
+                            <div className="ml-2 cursor-help group relative">
+                              <Info className="h-4 w-4 text-slate-400" />
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                Standard discount percentage for this supplier
+                              </div>
+                            </div>
+                          </FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" {...field} value={field.value || ""} />
+                            <Input {...field} placeholder="e.g. 5" type="number" min="0" max="100" step="0.01" />
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="inactive">Inactive</SelectItem>
-                              <SelectItem value="on_hold">On Hold</SelectItem>
-                            </SelectContent>
-                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -882,39 +1063,57 @@ export default function Suppliers() {
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Notes</FormLabel>
+                        <FormLabel className="text-slate-800 flex items-center">
+                          Notes & Additional Information
+                        </FormLabel>
                         <FormControl>
-                          <Textarea {...field} value={field.value || ""} />
+                          <Textarea {...field} placeholder="Any additional information about this supplier" className="focus-visible:ring-blue-500 focus-visible:border-blue-500 min-h-[120px]" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  
+                  <div className="flex items-center p-4 mt-2 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="rounded-full bg-blue-100 p-2 mr-3">
+                      <Info className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="text-sm text-slate-700">
+                      <p className="font-medium">Important Information</p>
+                      <p>All purchase orders for this supplier will use these default settings unless overridden.</p>
+                    </div>
+                  </div>
                 </div>
               )}
               
-              <DialogFooter className="sticky bottom-0 pt-4 pb-2 bg-white border-t z-10">
+              <DialogFooter className="pt-4 border-t sticky bottom-0 bg-white">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={handleCloseForm}
+                  className="border-slate-300"
                 >
-                  Cancel
+                  <X className="mr-2 h-4 w-4" /> Cancel
                 </Button>
                 <Button 
                   type="submit" 
                   className="bg-blue-600 hover:bg-blue-700"
                   disabled={createSupplierMutation.isPending || updateSupplierMutation.isPending}
                 >
-                  {createSupplierMutation.isPending || updateSupplierMutation.isPending ? (
-                    <div className="flex items-center">
+                  {(createSupplierMutation.isPending || updateSupplierMutation.isPending) ? (
+                    <>
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       Saving...
-                    </div>
-                  ) : editingSupplier ? 'Update Supplier' : 'Add Supplier'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      {editingSupplier ? 'Update Supplier' : 'Create Supplier'}
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -926,31 +1125,30 @@ export default function Suppliers() {
       <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the supplier 
-              and remove their data from the system.
+              Are you sure you want to delete this supplier? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogAction 
               onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700"
             >
               {deleteSupplierMutation.isPending ? (
-                <div className="flex items-center">
+                <>
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   Deleting...
-                </div>
+                </>
               ) : 'Delete Supplier'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </DashboardLayout>
   );
 }
