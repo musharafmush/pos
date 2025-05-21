@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
-import { Sidebar } from "@/components/layout/sidebar";
+import { PageContainer } from "@/components/layout/page-container";
 
 interface ProtectedRouteProps {
   path: string;
@@ -44,12 +44,9 @@ export function ProtectedRoute({
 
   return (
     <Route path={path}>
-      <div className="flex h-screen bg-background">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto">
-          <Component />
-        </main>
-      </div>
+      <PageContainer>
+        <Component />
+      </PageContainer>
     </Route>
   );
 }
