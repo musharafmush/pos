@@ -353,7 +353,7 @@ export default function Suppliers() {
                     <TableHead>Name</TableHead>
                     <TableHead>Contact Person</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
+                    <TableHead>GST/Tax ID</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -392,7 +392,18 @@ export default function Suppliers() {
                         <TableCell className="font-medium">{supplier.name}</TableCell>
                         <TableCell>{supplier.contactPerson || 'N/A'}</TableCell>
                         <TableCell>{supplier.email || 'N/A'}</TableCell>
-                        <TableCell>{supplier.phone || 'N/A'}</TableCell>
+                        <TableCell>
+                          {supplier.taxId ? (
+                            <div className="flex items-center">
+                              <span className="mr-2">{supplier.taxId}</span>
+                              {/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/i.test(supplier.taxId) && (
+                                <div className="rounded-full bg-green-100 p-1" title="Valid GST Format">
+                                  <Check className="h-3 w-3 text-green-600" />
+                                </div>
+                              )}
+                            </div>
+                          ) : 'N/A'}
+                        </TableCell>
                         <TableCell>
                           <span 
                             className={`px-2 py-1 text-xs font-medium rounded-full ${
