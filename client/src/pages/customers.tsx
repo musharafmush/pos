@@ -58,7 +58,11 @@ import {
   Phone,
   Mail,
   MapPin,
-  User2
+  User2,
+  Eye,
+  FileText,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 import { 
   AlertDialog,
@@ -85,8 +89,11 @@ type CustomerFormValues = z.infer<typeof customerFormSchema>;
 export default function Customers() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortField, setSortField] = useState<string>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -212,18 +219,54 @@ export default function Customers() {
     }
   };
 
-  // Filter customers based on search query
-  const filteredCustomers = customers.filter((customer) => {
-    if (!searchQuery) return true;
+  // Filter and sort customers
+  const filteredAndSortedCustomers = customers
+    .filter((customer) => {
+      if (!searchQuery) return true;
+      
+      const search = searchQuery.toLowerCase();
+      return (
+        customer.name.toLowerCase().includes(search) ||
+        (customer.email && customer.email.toLowerCase().includes(search)) ||
+        (customer.phone && customer.phone.toLowerCase().includes(search)) ||
+        (customer.address && customer.address.toLowerCase().includes(search))
+      );
+    })
+    .sort((a, b) => {
+      let valueA, valueB;
+      
+      // Handle different field types
+      switch(sortField) {
+        case "name":
+          valueA = a.name.toLowerCase();
+          valueB = b.name.toLowerCase();
+          break;
+        case "email":
+          valueA = (a.email || "").toLowerCase();
+          valueB = (b.email || "").toLowerCase();
+          break;
+        case "phone":
+          valueA = (a.phone || "").toLowerCase();
+          valueB = (b.phone || "").toLowerCase();
+          break;
+        default:
+          valueA = a.name.toLowerCase();
+          valueB = b.name.toLowerCase();
+      }
+      
+      // Sort direction
+      if (sortDirection === "asc") {
+        return valueA.localeCompare(valueB);
+      } else {
+        return valueB.localeCompare(valueA);
+      }
+    });
     
-    const search = searchQuery.toLowerCase();
-    return (
-      customer.name.toLowerCase().includes(search) ||
-      (customer.email && customer.email.toLowerCase().includes(search)) ||
-      (customer.phone && customer.phone.toLowerCase().includes(search)) ||
-      (customer.address && customer.address.toLowerCase().includes(search))
-    );
-  });
+  // Handle viewing a customer's details
+  const handleViewCustomer = (customer: Customer) => {
+    setCurrentCustomer(customer);
+    setIsViewOpen(true);
+  };
 
   return (
     <div className="container mx-auto py-6 max-w-6xl">
@@ -335,7 +378,7 @@ export default function Customers() {
         <div className="flex justify-center items-center h-96">
           <p>Loading customers...</p>
         </div>
-      ) : filteredCustomers.length === 0 ? (
+      ) : filteredAndSortedCustomers.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <User2 className="h-10 w-10 text-muted-foreground mb-4" />
@@ -369,7 +412,7 @@ export default function Customers() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCustomers.map((customer) => (
+              {filteredAndSortedCustomers.map((customer: Customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.email || "-"}</TableCell>
