@@ -61,7 +61,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -73,7 +72,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 
@@ -395,28 +393,21 @@ export default function Suppliers() {
                         <TableCell>{supplier.email || 'N/A'}</TableCell>
                         <TableCell>{supplier.phone || 'N/A'}</TableCell>
                         <TableCell>
-                          <Badge 
-                            variant={
-                              supplier.status === 'active' 
-                                ? 'default' 
-                                : supplier.status === 'inactive' 
-                                  ? 'secondary' 
-                                  : 'outline'
-                            }
-                            className={
+                          <span 
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
                               supplier.status === 'active'
-                                ? 'bg-green-100 text-green-800 hover:bg-green-100' 
+                                ? 'bg-green-100 text-green-800' 
                                 : supplier.status === 'inactive'
-                                  ? 'bg-slate-100 text-slate-800 hover:bg-slate-100' 
-                                  : 'bg-amber-100 text-amber-800 hover:bg-amber-100'
-                            }
+                                  ? 'bg-slate-100 text-slate-800' 
+                                  : 'bg-amber-100 text-amber-800'
+                            }`}
                           >
                             {supplier.status === 'active' 
                               ? 'Active' 
                               : supplier.status === 'inactive' 
                                 ? 'Inactive' 
                                 : 'On Hold'}
-                          </Badge>
+                          </span>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -450,8 +441,8 @@ export default function Suppliers() {
       
       {/* Supplier Form Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="sm:max-w-[800px]">
-          <DialogHeader className="border-b pb-4">
+        <DialogContent className="w-[90vw] max-w-[800px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="border-b pb-4 sticky top-0 bg-white z-10">
             <DialogTitle className="text-xl text-blue-700 flex items-center">
               <Building2 className="h-6 w-6 mr-2" />
               {editingSupplier ? "Edit Supplier" : "Add New Supplier"}
@@ -464,7 +455,7 @@ export default function Suppliers() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
               {/* Tabs Header - Legacy Style */}
-              <div className="mb-4 bg-gray-100 border rounded-t-md">
+              <div className="mb-4 bg-gray-100 border rounded-t-md sticky top-20 z-10">
                 <div className="flex">
                   <div
                     onClick={() => setActiveTab("general")}
@@ -1026,7 +1017,7 @@ export default function Suppliers() {
                 </div>
               )}
               
-              <DialogFooter className="pt-4 border-t">
+              <DialogFooter className="pt-4 border-t sticky bottom-0 bg-white">
                 <Button 
                   type="button" 
                   variant="outline" 
