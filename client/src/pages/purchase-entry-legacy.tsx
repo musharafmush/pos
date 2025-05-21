@@ -682,7 +682,7 @@ export default function PurchaseEntryLegacy() {
                             <div className="flex items-center gap-1">
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button variant="outline" size="sm" className="h-8 w-8 p-0 min-w-0">
+                                  <Button variant="outline" size="sm" className="h-8 w-8 p-0 min-w-0 border-gray-300">
                                     <ChevronDown className="h-4 w-4" />
                                   </Button>
                                 </PopoverTrigger>
@@ -741,6 +741,7 @@ export default function PurchaseEntryLegacy() {
                                     <Input 
                                       {...field} 
                                       className="h-5 w-28 inline-block px-1 py-0 mx-1 border-gray-300 text-xs"
+                                      value={field.value || ""}
                                     />
                                   )}
                                 />
@@ -764,6 +765,22 @@ export default function PurchaseEntryLegacy() {
                               </div>
                               <div className="text-xs text-gray-500">
                                 <span>Current stock: 0 Pc(s)</span>
+                              </div>
+                              <div className="ml-1">
+                                <span className="font-medium text-xs text-gray-500">Memory:</span>
+                                <Select 
+                                  value="64 GB" 
+                                  onValueChange={() => {}}
+                                >
+                                  <SelectTrigger className="h-5 w-24 inline-flex px-1 py-0 mx-1 border-gray-300 text-xs">
+                                    <SelectValue placeholder="Memory" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="64 GB">64 GB</SelectItem>
+                                    <SelectItem value="128 GB">128 GB</SelectItem>
+                                    <SelectItem value="256 GB">256 GB</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                             </div>
                           </div>
