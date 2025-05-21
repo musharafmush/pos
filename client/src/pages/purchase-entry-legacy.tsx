@@ -96,7 +96,8 @@ const purchaseEntrySchema = z.object({
       sellingPrice: z.coerce.number().optional(),
       mrp: z.coerce.number().optional(),
       subtotal: z.coerce.number().optional(),
-      cashDiscount: z.coerce.number().optional()
+      cashDiscount: z.coerce.number().optional(),
+      expiryDate: z.date().optional()
     })
   ).min(1, "At least one item is required")
 });
@@ -632,7 +633,7 @@ export default function PurchaseEntryLegacy() {
                       <th className="px-3 py-3 border-r w-20 text-center">HSN Code</th>
                       <th className="px-3 py-3 border-r w-14 text-center">Tax %</th>
                       <th className="px-3 py-3 border-r w-16 text-center">Dis Amt</th>
-                      <th className="px-3 py-3 border-r w-16 text-center">ExpDt</th>
+                      <th className="px-3 py-3 border-r w-24 text-center">ExpDt</th>
                       <th className="px-3 py-3 border-r w-14 text-center">Dis %</th>
                       <th className="px-3 py-3 border-r w-20 text-right">NetCost</th>
                       <th className="px-3 py-3 border-r w-16 text-center">R.O.I %</th>
@@ -842,7 +843,19 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="px-3 py-3 border-r"></td>
+                        <td className="px-3 py-3 border-r">
+                          <Input 
+                            type="date"
+                            className="h-8 text-sm"
+                            value={""}
+                            onChange={(e) => {
+                              const date = e.target.value ? new Date(e.target.value) : undefined;
+                              const itemsValue = form.getValues("items");
+                              itemsValue[index].expiryDate = date;
+                              form.setValue("items", itemsValue);
+                            }}
+                          />
+                        </td>
                         <td className="px-3 py-3 border-r text-center">
                           <FormField
                             control={form.control}

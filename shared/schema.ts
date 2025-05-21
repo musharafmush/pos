@@ -130,6 +130,14 @@ export const purchaseItems = pgTable('purchase_items', {
   quantity: integer('quantity').notNull(),
   unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
   subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
+  expiryDate: timestamp('expiry_date'),
+  hsnCode: text('hsn_code'),
+  taxPercentage: decimal('tax_percentage', { precision: 5, scale: 2 }),
+  discountAmount: decimal('discount_amount', { precision: 10, scale: 2 }),
+  discountPercent: decimal('discount_percent', { precision: 5, scale: 2 }),
+  netCost: decimal('net_cost', { precision: 10, scale: 2 }),
+  sellingPrice: decimal('selling_price', { precision: 10, scale: 2 }),
+  mrp: decimal('mrp', { precision: 10, scale: 2 }),
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
