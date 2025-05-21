@@ -89,7 +89,7 @@ export default function AuthPage() {
               <CardHeader>
                 <CardTitle>Login</CardTitle>
                 <CardDescription>
-                  Enter your username and password to sign in
+                  Enter your email and password to sign in
                 </CardDescription>
               </CardHeader>
               <CardContent>

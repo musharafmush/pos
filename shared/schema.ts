@@ -196,10 +196,10 @@ export const customerSelectSchema = createSelectSchema(customers);
 export type Customer = z.infer<typeof customerSelectSchema>;
 
 export const userInsertSchema = createInsertSchema(users, {
-  username: (schema) => schema.min(3, "Username must be at least 3 characters"),
+  username: (schema) => schema.min(3, "Username must be at least 3 characters").optional(),
   password: (schema) => schema.min(6, "Password must be at least 6 characters"),
   name: (schema) => schema.min(2, "Name must be at least 2 characters"),
-  email: (schema) => schema.email("Must provide a valid email").optional().or(z.literal('')),
+  email: (schema) => schema.email("Must provide a valid email"),
   role: (schema) => schema.optional(),
   image: (schema) => schema.optional(),
   active: (schema) => schema.optional()

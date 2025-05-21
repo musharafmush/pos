@@ -145,18 +145,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const userData = schema.userInsertSchema.parse(req.body);
         
-        // Check if username or email already exists
-        const existingUsername = await storage.getUserByUsername(userData.username);
-        if (existingUsername) {
-          return res.status(400).json({ message: 'Username already exists' });
+        // If username is provided, check if it already exists
+        if (userData.username) {
+          const existingUsername = await storage.getUserByUsername(userData.username);
+          if (existingUsername) {
+            return res.status(400).json({ message: 'Username already exists' });
+          }
         }
         
-        // If email is provided, check if it's already in use
-        if (userData.email) {
-          const existingEmail = await storage.getUserByEmail(userData.email);
-          if (existingEmail) {
-            return res.status(400).json({ message: 'Email already exists' });
-          }
+        // Always check if email already exists since it's required now
+        const existingEmail = await storage.getUserByEmail(userData.email);
+        if (existingEmail) {
+          return res.status(400).json({ message: 'Email already exists' });
         }
         
         // Hash password
