@@ -1080,6 +1080,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/purchases', isAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string || '20');
+      const offset = parseInt(req.query.offset as string || '0');
+      
+      // Use direct DB query to avoid the complex ORM issues
+      const result = await db.query.purchases.findMany({
+        limit,
+        offset,
+        orderBy: (purchases, { desc }) => [desc(purchases.createdAt)],
+        with: {
+          supplier: true,
+          user: true
+        }
+      });
+      
+      console.log(`Found ${result.length} purchases`);
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching purchases:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/purchases/:id', isAuthenticated, async (req, res) => {
     try {
       const purchaseId = parseInt(req.params.id);
