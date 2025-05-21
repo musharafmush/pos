@@ -120,10 +120,19 @@ export default function Contacts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
       toast({
-        title: "Contact created",
-        description: "The contact has been created successfully.",
+        title: "Success",
+        description: "Contact added successfully",
       });
       setIsAddOpen(false);
+      createForm.reset({
+        name: "",
+        email: "",
+        phone: "",
+        role: "",
+        department: "",
+        notes: "",
+        supplierId: 0
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -143,8 +152,8 @@ export default function Contacts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
       toast({
-        title: "Contact updated",
-        description: "The contact has been updated successfully.",
+        title: "Success",
+        description: "Contact updated successfully",
       });
       setIsEditOpen(false);
     },
@@ -166,8 +175,8 @@ export default function Contacts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
       toast({
-        title: "Contact deleted",
-        description: "The contact has been deleted successfully.",
+        title: "Success",
+        description: "Contact deleted successfully",
       });
     },
     onError: (error: Error) => {
@@ -254,254 +263,266 @@ export default function Contacts() {
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-6xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Supplier Contacts</h1>
-        <div className="flex gap-2">
-          <div className="relative w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search contacts..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <SheetTrigger asChild>
-              <Button>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Contact
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="sm:max-w-md">
-              <SheetHeader>
-                <SheetTitle>Add New Contact</SheetTitle>
-                <SheetDescription>
-                  Add a new contact for a supplier. Fill in the details and click save.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-6">
-                <Form {...createForm}>
-                  <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
-                    <FormField
-                      control={createForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="John Doe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={createForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="john@example.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={createForm.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone</FormLabel>
-                          <FormControl>
-                            <Input placeholder="(555) 123-4567" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={createForm.control}
-                      name="role"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Role</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Sales Manager" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={createForm.control}
-                      name="department"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Department</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Sales" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={createForm.control}
-                      name="supplierId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Supplier</FormLabel>
-                          <Select 
-                            onValueChange={(value) => field.onChange(parseInt(value))} 
-                            defaultValue={field.value.toString() || undefined}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a supplier" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {suppliers.map((supplier) => (
-                                <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                                  {supplier.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={createForm.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Notes</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Additional information..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setIsAddOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        disabled={createMutation.isPending}
-                      >
-                        {createMutation.isPending ? "Saving..." : "Save Contact"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </div>
-            </SheetContent>
-          </Sheet>
+    <div className="h-full">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Contacts</h1>
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700" 
+            onClick={() => setIsAddOpen(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Contact
+          </Button>
         </div>
+
+        <Card className="border rounded-md overflow-hidden">
+          <CardHeader className="bg-white py-4 px-6 border-b">
+            <CardTitle className="text-lg font-medium">Contact Management</CardTitle>
+          </CardHeader>
+          <div className="p-4 border-b bg-gray-50">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search contacts..."
+                className="pl-8 h-9 bg-white"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="overflow-hidden">
+            <Table>
+              <TableHeader className="bg-gray-50">
+                <TableRow>
+                  <TableHead className="font-medium text-gray-700">Name</TableHead>
+                  <TableHead className="font-medium text-gray-700">Supplier</TableHead>
+                  <TableHead className="font-medium text-gray-700">Role</TableHead>
+                  <TableHead className="font-medium text-gray-700">Email</TableHead>
+                  <TableHead className="font-medium text-gray-700">Phone</TableHead>
+                  <TableHead className="font-medium text-gray-700 w-[100px] text-center">Status</TableHead>
+                  <TableHead className="w-[100px] text-center font-medium text-gray-700">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingContacts || isLoadingSuppliers ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                      </div>
+                      <p className="mt-2 text-sm text-gray-500">Loading contacts...</p>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredContacts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        {searchQuery 
+                          ? "No contacts match your search criteria" 
+                          : "No contacts found. Click 'Add Contact' to create one."}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredContacts.map((contact) => (
+                    <TableRow key={contact.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">{contact.name}</TableCell>
+                      <TableCell>{getSupplierName(contact.supplierId)}</TableCell>
+                      <TableCell>{contact.role || "—"}</TableCell>
+                      <TableCell>{contact.email || "—"}</TableCell>
+                      <TableCell>{contact.phone || "—"}</TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Active
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleEditContact(contact)}
+                            className="h-8 w-8 text-blue-500"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the contact "{contact.name}". 
+                                  This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(contact.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       </div>
 
-      {isLoadingContacts || isLoadingSuppliers ? (
-        <div className="flex justify-center items-center h-96">
-          <p>Loading contacts...</p>
-        </div>
-      ) : filteredContacts.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-10">
-            <User2 className="h-10 w-10 text-muted-foreground mb-4" />
-            <CardTitle className="text-xl mb-2">No Contacts Found</CardTitle>
-            <CardDescription className="text-center max-w-md mb-4">
-              {searchQuery 
-                ? "No contacts match your search criteria. Try a different search term." 
-                : "You haven't added any supplier contacts yet. Click 'Add Contact' to get started."}
-            </CardDescription>
-            {!searchQuery && (
-              <Button 
-                onClick={() => setIsAddOpen(true)}
-                className="mt-2"
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Your First Contact
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="bg-white rounded-md shadow overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredContacts.map((contact) => (
-                <TableRow key={contact.id}>
-                  <TableCell className="font-medium">{contact.name}</TableCell>
-                  <TableCell>{getSupplierName(contact.supplierId)}</TableCell>
-                  <TableCell>{contact.role || "-"}</TableCell>
-                  <TableCell>{contact.email || "-"}</TableCell>
-                  <TableCell>{contact.phone || "-"}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEditContact(contact)}
+      {/* Add Contact Sheet */}
+      <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Add New Contact</SheetTitle>
+            <SheetDescription>
+              Add a new contact for a supplier. Fill in the details and click save.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            <Form {...createForm}>
+              <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
+                <FormField
+                  control={createForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="john@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="(555) 123-4567" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Sales Manager" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="department"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Department</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Sales" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="supplierId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supplier</FormLabel>
+                      <Select 
+                        onValueChange={(value) => field.onChange(parseInt(value))} 
+                        defaultValue={field.value.toString() || undefined}
                       >
-                        <Pencil className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete the contact "{contact.name}". 
-                              This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deleteMutation.mutate(contact.id)}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a supplier" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {suppliers.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Additional information..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsAddOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={createMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {createMutation.isPending ? "Saving..." : "Save Contact"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Edit Contact Sheet */}
       <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -509,7 +530,7 @@ export default function Contacts() {
           <SheetHeader>
             <SheetTitle>Edit Contact</SheetTitle>
             <SheetDescription>
-              Update the contact details and click save when you're done.
+              Update contact information and click save when done.
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6">
@@ -588,7 +609,7 @@ export default function Contacts() {
                       <FormLabel>Supplier</FormLabel>
                       <Select 
                         onValueChange={(value) => field.onChange(parseInt(value))} 
-                        defaultValue={field.value.toString()}
+                        value={field.value.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -631,6 +652,7 @@ export default function Contacts() {
                   <Button 
                     type="submit" 
                     disabled={updateMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     {updateMutation.isPending ? "Saving..." : "Save Changes"}
                   </Button>
