@@ -124,15 +124,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication routes
   app.post('/api/auth/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
+    console.log('Login request received:', req.body.usernameOrEmail);
+    
+    passport.authenticate('local', (err: Error | null, user: any, info: { message: string } | undefined) => {
       if (err) {
         console.error('Login error:', err);
         return res.status(500).json({ message: 'Internal server error during login' });
       }
       
       if (!user) {
+        console.log('Authentication failed:', info?.message);
         return res.status(401).json({ message: info?.message || 'Invalid username or password' });
       }
+      
+      console.log('Authentication successful for user:', user.id);
       
       // Log the user in
       req.login(user, (loginErr) => {
@@ -140,6 +145,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Session login error:', loginErr);
           return res.status(500).json({ message: 'Error establishing session' });
         }
+        
+        console.log('Session created successfully');
         
         // Remove password from response
         const userResponse = { ...user };

@@ -13,8 +13,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 const loginSchema = z.object({
-  usernameOrEmail: z.string().min(3, "Please enter your email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  usernameOrEmail: z.string().min(3, "Please enter your email address or username"),
+  password: z.string().min(1, "Password is required"),
 });
 
 const registerSchema = z.object({
