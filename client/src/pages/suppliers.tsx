@@ -126,6 +126,7 @@ export default function Suppliers() {
   const [editingSupplier, setEditingSupplier] = useState<any>(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("general");
   
   // Initialize form for adding/editing suppliers
   const form = useForm<SupplierFormValues>({
@@ -321,11 +322,11 @@ export default function Suppliers() {
                 <Plus className="mr-2 h-4 w-4" /> Add Supplier
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[650px]">
+            <DialogContent className="sm:max-w-[800px]">
               <DialogHeader className="border-b pb-4">
                 <DialogTitle className="text-xl text-blue-700 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-                  Add New Supplier
+                  <Building2 className="h-6 w-6 mr-2" />
+                  {editingSupplier ? "Edit Supplier" : "Add New Supplier"}
                 </DialogTitle>
                 <DialogDescription>
                   Enter the supplier details below. Fields marked with <span className="text-red-500">*</span> are required.
@@ -333,12 +334,26 @@ export default function Suppliers() {
               </DialogHeader>
               
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
-                  <div className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
-                    <h3 className="text-base font-medium text-blue-700 pb-2 border-b flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-                      Basic Information
-                    </h3>
+                <form onSubmit={form.handleSubmit(editingSupplier ? onEditSubmit : onSubmit)} className="space-y-5 py-2">
+                  <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 mb-4">
+                      <TabsTrigger value="general" className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" /> General
+                      </TabsTrigger>
+                      <TabsTrigger value="contact" className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" /> Contact Details
+                      </TabsTrigger>
+                      <TabsTrigger value="business" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" /> Business Settings
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    {/* General Information Tab */}
+                    <TabsContent value="general" className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
+                      <h3 className="text-base font-medium text-blue-700 pb-2 border-b flex items-center">
+                        <Building2 className="h-5 w-5 mr-2 text-blue-600" />
+                        General Information
+                      </h3>
                     
                     <FormField
                       control={form.control}
