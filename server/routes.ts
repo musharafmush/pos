@@ -68,11 +68,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     async (usernameOrEmail, password, done) => {
       try {
+        console.log('Login attempt with:', usernameOrEmail);
+        
         // Find user by either username or email
         const user = await storage.getUserByUsernameOrEmail(usernameOrEmail);
+        
         if (!user) {
+          console.log('User not found for:', usernameOrEmail);
           return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
         }
+        
+        console.log('User found:', user.id, user.email);
         
         // Check if user is active
         if (!user.active) {
@@ -81,11 +87,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Verify password
         try {
+          console.log('Attempting password verification');
           const isValidPassword = await bcrypt.compare(password, user.password);
+          console.log('Password validation result:', isValidPassword);
+          
           if (!isValidPassword) {
+            console.log('Password verification failed');
             return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
           }
           
+          console.log('Authentication successful, user logged in');
           return done(null, user);
         } catch (error) {
           console.error('Password verification error:', error);
