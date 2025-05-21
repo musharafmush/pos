@@ -583,7 +583,64 @@ export default function Suppliers() {
                             </div>
                           </FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g. 29AADCB2230M1ZP" />
+                            <div className="relative">
+                              <CreditCard className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                              <Input 
+                                {...field} 
+                                placeholder="e.g. 29AADCB2230M1ZP" 
+                                className="pl-10"
+                                onChange={(e) => {
+                                  // Update the field value
+                                  field.onChange(e);
+                                  
+                                  // Auto-fill functionality for GST/Tax ID
+                                  const taxId = e.target.value;
+                                  if (taxId.length >= 15) {
+                                    // If the GST/Tax ID matches the Indian format
+                                    if (/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/i.test(taxId)) {
+                                      // Extract state code from GST
+                                      const stateCode = taxId.substring(0, 2);
+                                      const stateMap: { [key: string]: string } = {
+                                        '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab',
+                                        '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana',
+                                        '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh',
+                                        '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh',
+                                        '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram',
+                                        '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam',
+                                        '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha',
+                                        '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
+                                        '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa',
+                                        '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry',
+                                        '36': 'Telangana', '37': 'Andhra Pradesh'
+                                      };
+                                      
+                                      // Set registration type to Regular by default for GST holders
+                                      form.setValue('registrationType', 'regular');
+                                      form.setValue('country', 'India');
+                                      
+                                      // Set state from GST code
+                                      if (stateMap[stateCode]) {
+                                        form.setValue('state', stateMap[stateCode]);
+                                      }
+                                      
+                                      // Set registration number same as GST ID
+                                      form.setValue('registrationNumber', taxId);
+                                      
+                                      // Show success message
+                                      toast({
+                                        title: "Details updated",
+                                        description: "Registration information has been populated based on GST number.",
+                                      });
+                                    }
+                                  }
+                                }}
+                              />
+                              {field.value && (
+                                <div className="absolute right-3 top-2.5">
+                                  <Check className="h-5 w-5 text-green-500" />
+                                </div>
+                              )}
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
