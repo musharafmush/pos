@@ -335,29 +335,53 @@ export default function Suppliers() {
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(editingSupplier ? onEditSubmit : onSubmit)} className="space-y-5 py-2">
-                  <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 mb-4">
-                      <TabsTrigger value="general" className="flex items-center gap-2">
+                  {/* Tabs Header */}
+                  <div className="mb-6 border-b">
+                    <div className="flex space-x-4 mb-0">
+                      <div
+                        onClick={() => setActiveTab("general")}
+                        className={`px-4 py-2 cursor-pointer flex items-center gap-2 border-b-2 -mb-px ${
+                          activeTab === "general" 
+                            ? "border-blue-500 text-blue-600 font-medium" 
+                            : "border-transparent hover:text-gray-600"
+                        }`}
+                      >
                         <Building2 className="h-4 w-4" /> General
-                      </TabsTrigger>
-                      <TabsTrigger value="contact" className="flex items-center gap-2">
+                      </div>
+                      <div
+                        onClick={() => setActiveTab("contact")}
+                        className={`px-4 py-2 cursor-pointer flex items-center gap-2 border-b-2 -mb-px ${
+                          activeTab === "contact" 
+                            ? "border-blue-500 text-blue-600 font-medium" 
+                            : "border-transparent hover:text-gray-600"
+                        }`}
+                      >
                         <Phone className="h-4 w-4" /> Contact Details
-                      </TabsTrigger>
-                      <TabsTrigger value="business" className="flex items-center gap-2">
+                      </div>
+                      <div
+                        onClick={() => setActiveTab("business")}
+                        className={`px-4 py-2 cursor-pointer flex items-center gap-2 border-b-2 -mb-px ${
+                          activeTab === "business" 
+                            ? "border-blue-500 text-blue-600 font-medium" 
+                            : "border-transparent hover:text-gray-600"
+                        }`}
+                      >
                         <FileText className="h-4 w-4" /> Business Settings
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    {/* General Information Tab */}
-                    <TabsContent value="general" className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* General Information Tab */}
+                  {activeTab === "general" && (
+                    <div className="space-y-4 border rounded-lg p-5 bg-white shadow-sm">
                       <h3 className="text-base font-medium text-blue-700 pb-2 border-b flex items-center">
                         <Building2 className="h-5 w-5 mr-2 text-blue-600" />
                         General Information
                       </h3>
                     
-                    <FormField
-                      control={form.control}
-                      name="name"
+                      <FormField
+                        control={form.control}
+                        name="name"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-slate-800 flex items-center">
