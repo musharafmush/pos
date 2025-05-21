@@ -178,6 +178,16 @@ export default function PurchaseEntryLegacy() {
       return await res.json();
     }
   });
+  
+  // Fetch purchase recommendations
+  const { data: recommendations, isLoading: isLoadingRecommendations } = useQuery({
+    queryKey: ["/api/purchase-recommendations"],
+    queryFn: async () => {
+      const res = await fetch("/api/purchase-recommendations");
+      if (!res.ok) throw new Error("Failed to fetch purchase recommendations");
+      return await res.json();
+    }
+  });
 
   // Create purchase mutation
   const createPurchaseMutation = useMutation({
@@ -287,6 +297,65 @@ export default function PurchaseEntryLegacy() {
     }
   };
 
+  // Create auto-generated purchase order from recommendations
+  const createAutoPurchaseOrder = (supplierId: number) => {
+    if (!recommendations) return;
+    
+    try {
+      // Generate order number
+      const orderNumber = `PO-${Date.now()}`;
+      
+      // Get products for this supplier
+      const totalValue = recommendations.products.reduce((total, product, index) => {
+        const qty = recommendations.recommendedQuantity[index] || 1;
+        const cost = typeof product.cost === 'number' ? product.cost : parseFloat(product.cost || "0");
+        return total + (qty * cost);
+      }, 0);
+      
+      // Create purchase data
+      const purchaseData = {
+        supplierId: supplierId,
+        orderNumber: orderNumber,
+        poNo: `AUTO-${Date.now()}`,
+        poDate: new Date(),
+        dueDate: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        invoiceDate: new Date(),
+        invoiceNo: "",
+        invoiceAmount: "0",
+        status: "pending",
+        paymentMethod: "Cash",
+        paymentType: "Credit",
+        draft: "No",
+        remarks: "Auto-generated purchase order for low stock items",
+        total: totalValue.toString(),
+        items: recommendations.products.map((product, index) => {
+          const recommendedQty = recommendations.recommendedQuantity[index] || 1;
+          const unitCost = typeof product.cost === 'number' ? product.cost : parseFloat(product.cost || "0");
+          
+          return {
+            productId: product.id,
+            quantity: recommendedQty,
+            unitCost: unitCost,
+            hsnCode: product.hsnCode || "",
+            taxPercentage: 0,
+            discount: 0,
+            discountPercent: 0
+          };
+        })
+      };
+      
+      console.log("Submitting auto-generated purchase:", purchaseData);
+      createPurchaseMutation.mutate(purchaseData);
+    } catch (error) {
+      console.error("Error creating auto purchase order:", error);
+      toast({
+        variant: "destructive",
+        title: "Error creating auto purchase order",
+        description: "Failed to create automated purchase order. Please try again."
+      });
+    }
+  };
+
   // Handle form submission
   const onSubmit = (data: PurchaseEntryFormValues) => {
     try {
@@ -387,6 +456,72 @@ export default function PurchaseEntryLegacy() {
             </div>
           </div>
         </div>
+        
+        {/* Recommendations Panel */}
+        {recommendations && recommendations.products && recommendations.products.length > 0 && (
+          <Card className="shadow-sm mb-4 bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-bold text-blue-700">Stock Replenishment Recommendations</h3>
+                <div className="text-sm text-blue-600">{recommendations.products.length} low stock products found</div>
+              </div>
+              
+              <div className="mb-3">
+                <p className="text-sm text-gray-700 mb-2">
+                  These products are low in stock and need to be replenished. Create purchase orders automatically with recommended suppliers.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2 mt-3">
+                  {recommendations.recommendedSuppliers.map(supplier => (
+                    <Button 
+                      key={supplier.id}
+                      variant="outline"
+                      className="h-10 border-blue-300 bg-blue-100 hover:bg-blue-200 text-blue-800"
+                      onClick={() => createAutoPurchaseOrder(supplier.id)}
+                    >
+                      <Building2 className="mr-2 h-4 w-4" /> 
+                      Create PO with {supplier.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="border border-blue-200 rounded-md overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-blue-100">
+                    <TableRow>
+                      <TableHead className="text-xs font-bold text-blue-900 w-12">#</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900">Product</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900 text-right w-20">Current</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900 text-right w-20">Threshold</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900 text-right w-24">Recommended</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="bg-white">
+                    {recommendations.products.slice(0, 5).map((product, index) => (
+                      <TableRow key={product.id} className="text-xs">
+                        <TableCell className="py-1 px-2">{index + 1}</TableCell>
+                        <TableCell className="py-1 px-2 font-medium">{product.name}</TableCell>
+                        <TableCell className="py-1 px-2 text-right text-red-600">{product.stockQuantity}</TableCell>
+                        <TableCell className="py-1 px-2 text-right">{product.alertThreshold}</TableCell>
+                        <TableCell className="py-1 px-2 text-right font-medium text-blue-700">
+                          {recommendations.recommendedQuantity[index] || 0}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {recommendations.products.length > 5 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-xs py-1 italic text-gray-500">
+                          {recommendations.products.length - 5} more items...
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
