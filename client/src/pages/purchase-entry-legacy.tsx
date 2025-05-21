@@ -844,17 +844,23 @@ export default function PurchaseEntryLegacy() {
                           />
                         </td>
                         <td className="px-3 py-3 border-r">
-                          <Input 
-                            type="date"
-                            className="h-8 text-sm"
-                            value={""}
-                            onChange={(e) => {
-                              const date = e.target.value ? new Date(e.target.value) : undefined;
-                              const itemsValue = form.getValues("items");
-                              itemsValue[index].expiryDate = date;
-                              form.setValue("items", itemsValue);
-                            }}
-                          />
+                          <div className="flex">
+                            <Input 
+                              type="date"
+                              className="h-8 text-sm w-full"
+                              value={(form.watch(`items.${index}`)?.expiryDate instanceof Date) ? 
+                                form.watch(`items.${index}`).expiryDate.toISOString().split('T')[0] : 
+                                ""}
+                              onChange={(e) => {
+                                const date = e.target.value ? new Date(e.target.value) : undefined;
+                                const itemsValue = form.getValues("items");
+                                if (itemsValue[index]) {
+                                  itemsValue[index].expiryDate = date;
+                                  form.setValue("items", itemsValue);
+                                }
+                              }}
+                            />
+                          </div>
                         </td>
                         <td className="px-3 py-3 border-r text-center">
                           <FormField
