@@ -854,14 +854,15 @@ export default function PurchaseEntryLegacy() {
                             <Input 
                               type="date"
                               className="h-8 text-sm w-full"
-                              value={(form.watch(`items.${index}`)?.expiryDate instanceof Date) ? 
-                                form.watch(`items.${index}`).expiryDate.toISOString().split('T')[0] : 
-                                ""}
+                              value=""
                               onChange={(e) => {
                                 const date = e.target.value ? new Date(e.target.value) : undefined;
-                                const itemsValue = form.getValues("items");
-                                if (itemsValue[index]) {
-                                  itemsValue[index].expiryDate = date;
+                                const itemsValue = [...form.getValues("items")];
+                                if (itemsValue && itemsValue[index]) {
+                                  itemsValue[index] = {
+                                    ...itemsValue[index],
+                                    expiryDate: date
+                                  };
                                   form.setValue("items", itemsValue);
                                 }
                               }}
