@@ -166,11 +166,8 @@ async function seed() {
       });
 
       if (!existingProduct) {
-        const validatedProduct = schema.productInsertSchema.parse({
-          ...product,
-          price: parseFloat(product.price),
-          cost: parseFloat(product.cost)
-        });
+        // The schema will now handle the string-to-number conversion for price and cost
+        const validatedProduct = schema.productInsertSchema.parse(product);
         await db.insert(schema.products).values(validatedProduct);
         console.log(`Created product: ${product.name}`);
       } else {

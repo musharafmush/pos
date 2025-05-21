@@ -173,8 +173,9 @@ export type Category = z.infer<typeof categorySelectSchema>;
 export const productInsertSchema = createInsertSchema(products, {
   name: (schema) => schema.min(2, "Name must be at least 2 characters"),
   sku: (schema) => schema.min(2, "SKU must be at least 2 characters"),
-  price: (schema) => schema.min(0, "Price must be at least 0"),
-  cost: (schema) => schema.min(0, "Cost must be at least 0"),
+  // Use coerce to transform string values to numbers if needed
+  price: (schema) => z.coerce.number().min(0, "Price must be at least 0"),
+  cost: (schema) => z.coerce.number().min(0, "Cost must be at least 0"),
   stockQuantity: (schema) => schema.min(0, "Stock quantity must be at least 0"),
   alertThreshold: (schema) => schema.min(0, "Alert threshold must be at least 0"),
   barcode: (schema) => schema.optional(),

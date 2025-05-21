@@ -89,8 +89,15 @@ export default function AuthPage() {
               <CardHeader>
                 <CardTitle>Login</CardTitle>
                 <CardDescription>
-                  Enter your email and password to sign in
+                  Enter your email/username and password to sign in
                 </CardDescription>
+                <div className="mt-2 rounded-lg border border-border bg-primary/5 p-3 text-sm">
+                  <p>Test accounts:</p>
+                  <ul className="mt-1 ml-4 list-disc">
+                    <li><strong>Admin:</strong> admin / admin123</li>
+                    <li><strong>Cashier:</strong> cashier / cashier123</li>
+                  </ul>
+                </div>
               </CardHeader>
               <CardContent>
                 <Form {...loginForm}>
@@ -100,9 +107,9 @@ export default function AuthPage() {
                       name="usernameOrEmail"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email Address</FormLabel>
+                          <FormLabel>Email or Username</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="Enter your email address" {...field} />
+                            <Input placeholder="Enter your email or username" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
