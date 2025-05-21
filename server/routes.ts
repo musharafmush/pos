@@ -61,35 +61,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  passport.use(new LocalStrategy(async (username, password, done) => {
-    try {
-      const user = await storage.getUserByUsername(username);
-      if (!user) {
-        return done(null, false, { message: 'Invalid username or password.' });
-      }
-      
-      // Check if user is active
-      if (!user.active) {
-        return done(null, false, { message: 'Account is disabled. Please contact an administrator.' });
-      }
-      
-      // Verify password
+  passport.use(new LocalStrategy(
+    {
+      usernameField: 'usernameOrEmail',
+      passwordField: 'password'
+    },
+    async (usernameOrEmail, password, done) => {
       try {
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
-          return done(null, false, { message: 'Invalid username or password.' });
+        // Find user by either username or email
+        const user = await storage.getUserByUsernameOrEmail(usernameOrEmail);
+        if (!user) {
+          return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
         }
         
-        return done(null, user);
+        // Check if user is active
+        if (!user.active) {
+          return done(null, false, { message: 'Account is disabled. Please contact an administrator.' });
+        }
+        
+        // Verify password
+        try {
+          const isValidPassword = await bcrypt.compare(password, user.password);
+          if (!isValidPassword) {
+            return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
+          }
+          
+          return done(null, user);
+        } catch (error) {
+          console.error('Password verification error:', error);
+          return done(null, false, { message: 'Authentication error. Please try again.' });
+        }
       } catch (error) {
-        console.error('Password verification error:', error);
-        return done(null, false, { message: 'Authentication error. Please try again.' });
+        console.error('Login error:', error);
+        return done(error);
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      return done(error);
     }
-  }));
+  ));
 
   passport.serializeUser((user: any, done) => {
     done(null, user.id);

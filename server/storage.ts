@@ -26,15 +26,34 @@ import bcrypt from "bcryptjs";
 export const storage = {
   // User related operations
   async getUserByUsername(username: string): Promise<User | null> {
-    return await db.query.users.findFirst({
+    const user = await db.query.users.findFirst({
       where: eq(users.username, username)
     });
+    return user || null;
+  },
+  
+  async getUserByEmail(email: string): Promise<User | null> {
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, email)
+    });
+    return user || null;
+  },
+  
+  async getUserByUsernameOrEmail(usernameOrEmail: string): Promise<User | null> {
+    const user = await db.query.users.findFirst({
+      where: or(
+        eq(users.username, usernameOrEmail),
+        eq(users.email, usernameOrEmail)
+      )
+    });
+    return user || null;
   },
 
   async getUserById(id: number): Promise<User | null> {
-    return await db.query.users.findFirst({
+    const user = await db.query.users.findFirst({
       where: eq(users.id, id)
     });
+    return user || null;
   },
 
   async createUser(user: { username: string; password: string; name: string; email?: string; role?: string }): Promise<User> {
