@@ -151,6 +151,20 @@ export const purchaseItems = pgTable('purchase_items', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
+// Contacts table
+export const contacts = pgTable('contacts', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  role: text('role'),
+  department: text('department'),
+  notes: text('notes'),
+  supplierId: integer('supplier_id').references(() => suppliers.id).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
 // Define relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products)
@@ -183,7 +197,12 @@ export const saleItemsRelations = relations(saleItems, ({ one }) => ({
 }));
 
 export const suppliersRelations = relations(suppliers, ({ many }) => ({
-  purchases: many(purchases)
+  purchases: many(purchases),
+  contacts: many(contacts)
+}));
+
+export const contactsRelations = relations(contacts, ({ one }) => ({
+  supplier: one(suppliers, { fields: [contacts.supplierId], references: [suppliers.id] })
 }));
 
 export const purchasesRelations = relations(purchases, ({ one, many }) => ({
