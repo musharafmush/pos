@@ -237,12 +237,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/auth/user', (req, res) => {
-    if (!req.user) {
+    console.log('User session check');
+    
+    if (!req.isAuthenticated() || !req.user) {
+      console.log('User not authenticated');
       return res.status(401).json({ message: "Not authenticated" });
     }
     
+    console.log('User authenticated:', req.user.id);
     const user = { ...req.user as any };
-    delete user.password;
+    
+    // Safety check to ensure password is never sent to client
+    if (user.password) {
+      delete user.password;
+    }
+    
     res.json({ user });
   });
 
