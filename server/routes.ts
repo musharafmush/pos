@@ -364,6 +364,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+  
+  // Purchase recommendations API
+  app.get('/api/purchase-recommendations', isAuthenticated, async (req, res) => {
+    try {
+      const recommendations = await storage.getRecommendedPurchaseItems();
+      res.json(recommendations);
+    } catch (error) {
+      console.error('Error generating purchase recommendations:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 
   app.get('/api/products/:id', async (req, res) => {
     try {

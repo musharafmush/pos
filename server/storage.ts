@@ -197,6 +197,86 @@ export const storage = {
       limit
     });
   },
+  
+  async getRecommendedPurchaseItems(): Promise<{ 
+    products: Product[]; 
+    recommendedQuantity: number[];
+    recommendedSuppliers: { id: number; name: string }[];
+  }> {
+    try {
+      // Get all products that are below threshold
+      const lowStockProducts = await db.query.products.findMany({
+        where: sql`${products.stockQuantity} <= ${products.alertThreshold}`,
+        with: { category: true },
+        orderBy: products.stockQuantity
+      });
+      
+      // Calculate recommended quantities (threshold + 20% buffer - current stock)
+      const recommendedQuantities = lowStockProducts.map(product => {
+        return Math.max(
+          Math.ceil(product.alertThreshold * 1.2) - product.stockQuantity, 
+          1
+        );
+      });
+      
+      // Get suppliers who have supplied these products in the past
+      const supplierIds = new Set<number>();
+      
+      // Get previous purchases for these products to find the best suppliers
+      for (const product of lowStockProducts) {
+        const previousPurchaseItems = await db.query.purchaseItems.findMany({
+          where: eq(purchaseItems.productId, product.id),
+          with: {
+            purchase: {
+              with: {
+                supplier: true
+              }
+            }
+          },
+          orderBy: (purchaseItems, { desc }) => [desc(purchaseItems.createdAt)],
+          limit: 3
+        });
+        
+        // Add supplier IDs from recent purchases
+        for (const item of previousPurchaseItems) {
+          if (item.purchase?.supplier) {
+            supplierIds.add(item.purchase.supplier.id);
+          }
+        }
+      }
+      
+      // If no suppliers found from purchase history, get any active suppliers
+      let recommendedSuppliers = [];
+      if (supplierIds.size > 0) {
+        recommendedSuppliers = await db.query.suppliers.findMany({
+          where: sql`${suppliers.id} IN (${Array.from(supplierIds).join(',')})`,
+          columns: {
+            id: true,
+            name: true
+          }
+        });
+      } else {
+        // Get any active suppliers if no purchase history
+        recommendedSuppliers = await db.query.suppliers.findMany({
+          where: eq(suppliers.status, 'active'),
+          columns: {
+            id: true,
+            name: true
+          },
+          limit: 3
+        });
+      }
+      
+      return { 
+        products: lowStockProducts, 
+        recommendedQuantity: recommendedQuantities,
+        recommendedSuppliers: recommendedSuppliers
+      };
+    } catch (error) {
+      console.error("Error generating purchase recommendations:", error);
+      return { products: [], recommendedQuantity: [], recommendedSuppliers: [] };
+    }
+  },
 
   async updateProductStock(id: number, quantity: number): Promise<Product | null> {
     const [updatedProduct] = await db.update(products)
