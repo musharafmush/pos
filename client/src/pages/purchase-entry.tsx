@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
   Calendar, 
@@ -10,7 +10,13 @@ import {
   Trash2, 
   Save, 
   Printer, 
-  XCircle 
+  XCircle,
+  Search,
+  Plus,
+  ChevronDown,
+  Building2,
+  Calculator,
+  ClipboardList
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
