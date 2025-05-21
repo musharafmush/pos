@@ -13,12 +13,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 const loginSchema = z.object({
-  usernameOrEmail: z.string().min(3, "Please enter a valid username or email"),
+  usernameOrEmail: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const registerSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  username: z.string().min(3, "Username must be at least 3 characters").optional(),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -27,7 +27,7 @@ const registerSchema = z.object({
     .regex(/[0-9]/, "Password must contain at least one number")
     .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Must be a valid email").optional().or(z.literal('')),
+  email: z.string().email("Must be a valid email"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -100,9 +100,9 @@ export default function AuthPage() {
                       name="usernameOrEmail"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username or Email</FormLabel>
+                          <FormLabel>Email Address</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your username or email" {...field} />
+                            <Input type="email" placeholder="Enter your email address" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -155,7 +155,7 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel>Username (Optional)</FormLabel>
                           <FormControl>
                             <Input placeholder="username" {...field} />
                           </FormControl>
@@ -183,7 +183,7 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email (Optional)</FormLabel>
+                          <FormLabel>Email Address</FormLabel>
                           <FormControl>
                             <Input type="email" placeholder="user@example.com" {...field} />
                           </FormControl>
