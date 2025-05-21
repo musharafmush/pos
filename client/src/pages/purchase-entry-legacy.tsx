@@ -630,25 +630,18 @@ export default function PurchaseEntryLegacy() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-100 border-b text-left">
-                      <th className="px-3 py-3 border-r w-12">S.No</th>
-                      <th className="px-3 py-3 border-r w-24">Code</th>
-                      <th className="px-3 py-3 border-r w-[160px]">Description</th>
-                      <th className="px-3 py-3 border-r w-20 text-center">Recd Qty</th>
-                      <th className="px-3 py-3 border-r w-14 text-center">FOC</th>
-                      <th className="px-3 py-3 border-r w-20 text-right">Cost</th>
-                      <th className="px-3 py-3 border-r w-20 text-center">HSN Code</th>
-                      <th className="px-3 py-3 border-r w-14 text-center">Tax %</th>
-                      <th className="px-3 py-3 border-r w-16 text-center">Dis Amt</th>
-                      <th className="px-3 py-3 border-r w-24 text-center">ExpDt</th>
-                      <th className="px-3 py-3 border-r w-14 text-center">Dis %</th>
-                      <th className="px-3 py-3 border-r w-20 text-right">NetCost</th>
-                      <th className="px-3 py-3 border-r w-16 text-center">R.O.I %</th>
-                      <th className="px-3 py-3 border-r w-20 text-center">Gross Profit</th>
-                      <th className="px-3 py-3 border-r w-20 text-center">Selling</th>
-                      <th className="px-3 py-3 border-r w-16 text-center">M.R.P</th>
-                      <th className="px-3 py-3 border-r w-20 text-right">Amount</th>
-                      <th className="px-3 py-3 border-r w-16 text-center">Net Amt</th>
-                      <th className="px-3 py-3 border-r w-16 text-center">CashDisAmt</th>
+                      <th className="px-3 py-2 border-r w-8 text-center">#</th>
+                      <th className="px-3 py-2 border-r w-[250px]">Item Description</th>
+                      <th className="px-3 py-2 border-r w-16 text-center">Qty</th>
+                      <th className="px-3 py-2 border-r w-20 text-center">Price</th>
+                      <th className="px-3 py-2 border-r w-16 text-center">Disc</th>
+                      <th className="px-3 py-2 border-r w-20 text-center">Net Price</th>
+                      <th className="px-3 py-2 border-r w-20 text-center">Total</th>
+                      <th className="px-3 py-2 border-r w-14 text-center">Tax %</th>
+                      <th className="px-3 py-2 border-r w-16 text-center">Tax Amt</th>
+                      <th className="px-3 py-2 border-r w-20 text-center">MRP</th>
+                      <th className="px-3 py-2 border-r w-16 text-center">Margin %</th>
+                      <th className="px-3 py-2 border-r w-20 text-center">Final Amt</th>
                       <th className="p-2 w-10 text-center">
                         <Button 
                           type="button" 
@@ -683,75 +676,99 @@ export default function PurchaseEntryLegacy() {
                   <tbody>
                     {fields.map((field, index) => (
                       <tr key={field.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <td className="px-3 py-3 border-r text-center">{index + 1}</td>
-                        <td className="px-3 py-3 border-r">
-                          <div className="flex items-center gap-1">
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.code`}
-                              render={({ field }) => (
-                                <FormItem className="w-full m-0">
-                                  <FormControl>
-                                    <Input {...field} className="h-8 text-sm" readOnly />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-8 w-8 p-0 min-w-0">
-                                  <ChevronDown className="h-4 w-4" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80 p-0" align="start">
-                                <div className="p-2 border-b">
-                                  <div className="relative">
-                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                                    <Input
-                                      placeholder="Search products..."
-                                      className="pl-8 h-9"
-                                      value={productSearchTerm}
-                                      onChange={(e) => setProductSearchTerm(e.target.value)}
-                                      ref={productSearchRef}
-                                    />
-                                  </div>
-                                </div>
-                                <div className="max-h-60 overflow-y-auto">
-                                  {filteredProducts.length === 0 ? (
-                                    <div className="py-2 px-3 text-center text-sm text-gray-500">
-                                      No products found
+                        <td className="px-3 py-2 border-r text-center">{index + 1}</td>
+                        <td className="px-3 py-2 border-r">
+                          <div className="flex flex-col gap-0">
+                            <div className="flex items-center gap-1">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="sm" className="h-8 w-8 p-0 min-w-0">
+                                    <ChevronDown className="h-4 w-4" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 p-0" align="start">
+                                  <div className="p-2 border-b">
+                                    <div className="relative">
+                                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                                      <Input
+                                        placeholder="Search products..."
+                                        className="pl-8 h-9"
+                                        value={productSearchTerm}
+                                        onChange={(e) => setProductSearchTerm(e.target.value)}
+                                        ref={productSearchRef}
+                                      />
                                     </div>
-                                  ) : (
-                                    filteredProducts.map((product: any) => (
-                                      <div
-                                        key={product.id}
-                                        className="py-1.5 px-3 text-sm cursor-pointer hover:bg-gray-100"
-                                        onClick={() => handleProductSelect(product.id, index)}
-                                      >
-                                        <div className="font-medium">{product.name}</div>
-                                        <div className="text-xs text-gray-500">{product.sku} - ₹{product.price}</div>
+                                  </div>
+                                  <div className="max-h-60 overflow-y-auto">
+                                    {filteredProducts.length === 0 ? (
+                                      <div className="py-2 px-3 text-center text-sm text-gray-500">
+                                        No products found
                                       </div>
-                                    ))
+                                    ) : (
+                                      filteredProducts.map((product: any) => (
+                                        <div
+                                          key={product.id}
+                                          className="py-1.5 px-3 text-sm cursor-pointer hover:bg-gray-100"
+                                          onClick={() => handleProductSelect(product.id, index)}
+                                        >
+                                          <div className="font-medium">{product.name}</div>
+                                          <div className="text-xs text-gray-500">{product.sku} - ₹{product.price}</div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                              <FormField
+                                control={form.control}
+                                name={`items.${index}.description`}
+                                render={({ field }) => (
+                                  <FormItem className="w-full m-0">
+                                    <FormControl>
+                                      <Input {...field} className="h-8 text-sm font-medium" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            <div className="ml-9 -mt-1 flex gap-2 text-xs text-gray-500">
+                              <div>
+                                <span className="font-medium">(Code:</span> 
+                                <FormField
+                                  control={form.control}
+                                  name={`items.${index}.code`}
+                                  render={({ field }) => (
+                                    <Input 
+                                      {...field} 
+                                      className="h-5 w-28 inline-block px-1 py-0 mx-1 border-gray-300 text-xs"
+                                    />
                                   )}
-                                </div>
-                              </PopoverContent>
-                            </Popover>
+                                />
+                                <span>)</span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Color:</span>
+                                <Select 
+                                  value="Black" 
+                                  onValueChange={() => {}}
+                                >
+                                  <SelectTrigger className="h-5 w-24 inline-flex px-1 py-0 mx-1 border-gray-300 text-xs">
+                                    <SelectValue placeholder="Color" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Black">Black</SelectItem>
+                                    <SelectItem value="Gray">Gray</SelectItem>
+                                    <SelectItem value="White">White</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span>Current stock: 0 Pc(s)</span>
+                              </div>
+                            </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3 border-r">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.description`}
-                            render={({ field }) => (
-                              <FormItem className="m-0">
-                                <FormControl>
-                                  <Input {...field} className="h-8 text-sm" />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </td>
-                        <td className="px-3 py-3 border-r">
+                        <td className="px-3 py-2 border-r">
                           <FormField
                             control={form.control}
                             name={`items.${index}.quantity`}
@@ -761,7 +778,7 @@ export default function PurchaseEntryLegacy() {
                                   <Input 
                                     {...field} 
                                     type="number"
-                                    className="h-8 text-sm text-right"
+                                    className="h-8 text-sm text-center"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       handleItemChange(index);
@@ -771,9 +788,21 @@ export default function PurchaseEntryLegacy() {
                               </FormItem>
                             )}
                           />
+                          <Select 
+                            value="Piece" 
+                            onValueChange={() => {}}
+                          >
+                            <SelectTrigger className="h-6 w-full text-xs mt-1 border-gray-300">
+                              <SelectValue placeholder="Unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Piece">Piece</SelectItem>
+                              <SelectItem value="Box">Box</SelectItem>
+                              <SelectItem value="Dozen">Dozen</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </td>
-                        <td className="px-3 py-3 border-r text-center">0</td>
-                        <td className="px-3 py-3 border-r">
+                        <td className="px-3 py-2 border-r">
                           <FormField
                             control={form.control}
                             name={`items.${index}.unitCost`}
@@ -795,81 +824,7 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="px-3 py-3 border-r text-center">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.hsnCode`}
-                            render={({ field }) => (
-                              <FormItem className="m-0">
-                                <FormControl>
-                                  <Input {...field} className="h-8 text-sm" />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </td>
-                        <td className="px-3 py-3 border-r text-center">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.taxPercentage`}
-                            render={({ field }) => (
-                              <FormItem className="m-0">
-                                <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    type="number" 
-                                    step="0.01"
-                                    className="h-8 text-sm text-right"
-                                    onChange={(e) => {
-                                      field.onChange(e);
-                                      handleItemChange(index);
-                                    }}
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </td>
-                        <td className="px-3 py-3 border-r text-right">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.discount`}
-                            render={({ field }) => (
-                              <FormItem className="m-0">
-                                <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    type="number" 
-                                    step="0.01"
-                                    className="h-8 text-sm text-right"
-                                    readOnly
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </td>
-                        <td className="px-3 py-3 border-r">
-                          <div className="flex">
-                            <Input 
-                              type="date"
-                              className="h-8 text-sm w-full"
-                              value=""
-                              onChange={(e) => {
-                                const date = e.target.value ? new Date(e.target.value) : undefined;
-                                const itemsValue = [...form.getValues("items")];
-                                if (itemsValue && itemsValue[index]) {
-                                  itemsValue[index] = {
-                                    ...itemsValue[index],
-                                    expiryDate: date
-                                  };
-                                  form.setValue("items", itemsValue);
-                                }
-                              }}
-                            />
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 border-r text-center">
+                        <td className="px-3 py-2 border-r">
                           <FormField
                             control={form.control}
                             name={`items.${index}.discountPercent`}
@@ -880,7 +835,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-8 text-sm text-right"
+                                    className="h-8 text-sm text-center"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       handleItemChange(index);
@@ -891,7 +846,7 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="px-3 py-3 border-r text-right">
+                        <td className="px-3 py-2 border-r">
                           <FormField
                             control={form.control}
                             name={`items.${index}.netCost`}
@@ -910,10 +865,10 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="px-3 py-3 border-r text-center">
+                        <td className="px-3 py-2 border-r">
                           <FormField
                             control={form.control}
-                            name={`items.${index}.roi`}
+                            name={`items.${index}.subtotal`}
                             render={({ field }) => (
                               <FormItem className="m-0">
                                 <FormControl>
@@ -921,7 +876,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-8 text-sm text-right"
+                                    className="h-8 text-sm text-right font-semibold"
                                     readOnly
                                   />
                                 </FormControl>
@@ -929,10 +884,10 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="px-3 py-3 border-r text-center">
+                        <td className="px-3 py-2 border-r">
                           <FormField
                             control={form.control}
-                            name={`items.${index}.grossProfit`}
+                            name={`items.${index}.taxPercentage`}
                             render={({ field }) => (
                               <FormItem className="m-0">
                                 <FormControl>
@@ -940,26 +895,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-8 text-sm text-right"
-                                    readOnly
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </td>
-                        <td className="px-3 py-3 border-r text-center">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.sellingPrice`}
-                            render={({ field }) => (
-                              <FormItem className="m-0">
-                                <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    type="number" 
-                                    step="0.01"
-                                    className="h-8 text-sm text-right"
+                                    className="h-8 text-sm text-center"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       handleItemChange(index);
@@ -970,7 +906,26 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="px-3 py-3 border-r text-center">
+                        <td className="px-3 py-2 border-r">
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.discount`}
+                            render={({ field }) => (
+                              <FormItem className="m-0">
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="number" 
+                                    step="0.01"
+                                    className="h-8 text-sm text-right"
+                                    readOnly
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </td>
+                        <td className="px-3 py-2 border-r">
                           <FormField
                             control={form.control}
                             name={`items.${index}.mrp`}
@@ -988,10 +943,10 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="px-3 py-3 border-r text-right">
+                        <td className="px-3 py-2 border-r">
                           <FormField
                             control={form.control}
-                            name={`items.${index}.subtotal`}
+                            name={`items.${index}.roi`}
                             render={({ field }) => (
                               <FormItem className="m-0">
                                 <FormControl>
@@ -999,7 +954,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-8 text-sm text-right"
+                                    className="h-8 text-sm text-center"
                                     readOnly
                                   />
                                 </FormControl>
@@ -1007,11 +962,13 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="px-3 py-3 border-r text-right">
-                          {form.watch(`items.${index}.netCost`)}
+                        <td className="px-3 py-2 border-r">
+                          <div className="bg-gray-50 rounded border border-gray-300 px-2 py-1 text-sm font-semibold text-right">
+                            {(form.watch(`items.${index}.subtotal`) || 0) + 
+                             (form.watch(`items.${index}.discount`) || 0)}
+                          </div>
                         </td>
-                        <td className="px-3 py-3 border-r text-right">0.00</td>
-                        <td className="px-3 py-3 text-center">
+                        <td className="px-3 py-2 text-center">
                           <Button
                             type="button"
                             variant="ghost"
@@ -1035,7 +992,7 @@ export default function PurchaseEntryLegacy() {
                   </tbody>
                   <tfoot>
                     <tr className="bg-gray-100 font-medium">
-                      <td colSpan={3} className="px-3 py-2 border-r text-right font-semibold">
+                      <td colSpan={2} className="px-3 py-2 border-r text-right font-semibold">
                         Total:
                       </td>
                       <td className="px-3 py-2 border-r text-center font-semibold">
@@ -1043,11 +1000,22 @@ export default function PurchaseEntryLegacy() {
                       </td>
                       <td className="px-3 py-2 border-r"></td>
                       <td className="px-3 py-2 border-r"></td>
-                      <td colSpan={7} className="px-3 py-2 border-r"></td>
-                      <td colSpan={3} className="px-3 py-2 border-r text-right font-semibold">
+                      <td className="px-3 py-2 border-r"></td>
+                      <td className="px-3 py-2 border-r text-right font-semibold">
                         ₹{form.getValues("items")?.reduce((sum, item) => sum + (item.subtotal || 0), 0).toFixed(2) || "0.00"}
                       </td>
-                      <td colSpan={3} className="px-3 py-2"></td>
+                      <td className="px-3 py-2 border-r"></td>
+                      <td className="px-3 py-2 border-r"></td>
+                      <td className="px-3 py-2 border-r"></td>
+                      <td className="px-3 py-2 border-r"></td>
+                      <td className="px-3 py-2 border-r text-right font-semibold">
+                        ₹{form.getValues("items")?.reduce((sum, item) => {
+                          const subtotal = item.subtotal || 0;
+                          const discount = item.discount || 0;
+                          return sum + subtotal + discount;
+                        }, 0).toFixed(2) || "0.00"}
+                      </td>
+                      <td className="px-3 py-2"></td>
                     </tr>
                   </tfoot>
                 </table>
