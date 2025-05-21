@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Contact, Supplier } from "@shared/schema";
+import { Customer } from "@shared/schema";
 
 // UI Components
 import {
@@ -16,6 +16,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -41,14 +49,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Pencil,
   Trash2,
@@ -57,7 +57,7 @@ import {
   UserPlus,
   Phone,
   Mail,
-  Building,
+  MapPin,
   User2
 } from "lucide-react";
 import { 
@@ -72,196 +72,168 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-// Form schema
-const contactFormSchema = z.object({
+// Form schemas
+const customerFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Must be a valid email").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
-  role: z.string().optional().or(z.literal("")),
-  department: z.string().optional().or(z.literal("")),
-  notes: z.string().optional().or(z.literal("")),
-  supplierId: z.coerce.number().min(1, "A supplier must be selected")
+  address: z.string().optional().or(z.literal(""))
 });
 
-type ContactFormValues = z.infer<typeof contactFormSchema>;
+type CustomerFormValues = z.infer<typeof customerFormSchema>;
 
-export default function Contacts() {
+export default function Customers() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [currentContact, setCurrentContact] = useState<Contact | null>(null);
+  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get all contacts
-  const { data: contacts = [], isLoading: isLoadingContacts } = useQuery<Contact[]>({
-    queryKey: ['/api/contacts'],
+  // Query to get customers
+  const { data: customers = [], isLoading } = useQuery<Customer[]>({
+    queryKey: ['/api/customers'],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/contacts");
+      const res = await apiRequest("GET", "/api/customers");
       return await res.json();
     }
   });
 
-  // Get all suppliers for dropdown
-  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery<Supplier[]>({
-    queryKey: ['/api/suppliers'],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/suppliers");
-      return await res.json();
-    }
-  });
-
-  // Mutation to create contact
+  // Mutation to create a new customer
   const createMutation = useMutation({
-    mutationFn: async (data: ContactFormValues) => {
-      const res = await apiRequest("POST", "/api/contacts", data);
+    mutationFn: async (data: CustomerFormValues) => {
+      const res = await apiRequest("POST", "/api/customers", data);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({
-        title: "Contact created",
-        description: "The contact has been created successfully.",
+        title: "Customer created",
+        description: "The customer has been created successfully.",
       });
       setIsAddOpen(false);
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create contact. Please try again.",
+        description: error.message || "Failed to create customer. Please try again.",
         variant: "destructive",
       });
     }
   });
 
-  // Mutation to update contact
+  // Mutation to update a customer
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: ContactFormValues }) => {
-      const res = await apiRequest("PATCH", `/api/contacts/${id}`, data);
+    mutationFn: async ({ id, data }: { id: number; data: CustomerFormValues }) => {
+      const res = await apiRequest("PUT", `/api/customers/${id}`, data);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({
-        title: "Contact updated",
-        description: "The contact has been updated successfully.",
+        title: "Customer updated",
+        description: "The customer has been updated successfully.",
       });
       setIsEditOpen(false);
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update contact. Please try again.",
+        description: error.message || "Failed to update customer. Please try again.",
         variant: "destructive",
       });
     }
   });
 
-  // Mutation to delete contact
+  // Mutation to delete a customer
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/contacts/${id}`);
+      const res = await apiRequest("DELETE", `/api/customers/${id}`);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({
-        title: "Contact deleted",
-        description: "The contact has been deleted successfully.",
+        title: "Customer deleted",
+        description: "The customer has been deleted successfully.",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete contact. Please try again.",
+        description: error.message || "Failed to delete customer. Please try again.",
         variant: "destructive",
       });
     }
   });
 
   // Create form
-  const createForm = useForm<ContactFormValues>({
-    resolver: zodResolver(contactFormSchema),
+  const createForm = useForm<CustomerFormValues>({
+    resolver: zodResolver(customerFormSchema),
     defaultValues: {
       name: "",
       email: "",
       phone: "",
-      role: "",
-      department: "",
-      notes: "",
-      supplierId: 0
+      address: ""
     }
   });
 
   // Edit form
-  const editForm = useForm<ContactFormValues>({
-    resolver: zodResolver(contactFormSchema),
+  const editForm = useForm<CustomerFormValues>({
+    resolver: zodResolver(customerFormSchema),
     defaultValues: {
-      name: currentContact?.name || "",
-      email: currentContact?.email || "",
-      phone: currentContact?.phone || "",
-      role: currentContact?.role || "",
-      department: currentContact?.department || "",
-      notes: currentContact?.notes || "",
-      supplierId: currentContact?.supplierId || 0
+      name: currentCustomer?.name || "",
+      email: currentCustomer?.email || "",
+      phone: currentCustomer?.phone || "",
+      address: currentCustomer?.address || ""
     }
   });
 
-  // Handle edit contact
-  const handleEditContact = (contact: Contact) => {
-    setCurrentContact(contact);
+  // Reset and open edit form
+  const handleEditCustomer = (customer: Customer) => {
+    setCurrentCustomer(customer);
     editForm.reset({
-      name: contact.name,
-      email: contact.email || "",
-      phone: contact.phone || "",
-      role: contact.role || "",
-      department: contact.department || "",
-      notes: contact.notes || "",
-      supplierId: contact.supplierId
+      name: customer.name,
+      email: customer.email || "",
+      phone: customer.phone || "",
+      address: customer.address || ""
     });
     setIsEditOpen(true);
   };
 
-  // Form submission handlers
-  const onCreateSubmit = (data: ContactFormValues) => {
+  // Handle form submission
+  const onCreateSubmit = (data: CustomerFormValues) => {
     createMutation.mutate(data);
   };
 
-  const onEditSubmit = (data: ContactFormValues) => {
-    if (currentContact) {
-      updateMutation.mutate({ id: currentContact.id, data });
+  const onEditSubmit = (data: CustomerFormValues) => {
+    if (currentCustomer) {
+      updateMutation.mutate({ id: currentCustomer.id, data });
     }
   };
 
-  // Filter contacts based on search query
-  const filteredContacts = contacts.filter((contact) => {
+  // Filter customers based on search query
+  const filteredCustomers = customers.filter((customer) => {
     if (!searchQuery) return true;
     
     const search = searchQuery.toLowerCase();
     return (
-      contact.name.toLowerCase().includes(search) ||
-      (contact.email && contact.email.toLowerCase().includes(search)) ||
-      (contact.phone && contact.phone.toLowerCase().includes(search)) ||
-      (contact.role && contact.role.toLowerCase().includes(search)) ||
-      (contact.department && contact.department.toLowerCase().includes(search))
+      customer.name.toLowerCase().includes(search) ||
+      (customer.email && customer.email.toLowerCase().includes(search)) ||
+      (customer.phone && customer.phone.toLowerCase().includes(search)) ||
+      (customer.address && customer.address.toLowerCase().includes(search))
     );
   });
-
-  // Get supplier name by id
-  const getSupplierName = (supplierId: number) => {
-    const supplier = suppliers.find(s => s.id === supplierId);
-    return supplier ? supplier.name : "Unknown Supplier";
-  };
 
   return (
     <div className="container mx-auto py-6 max-w-6xl">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Supplier Contacts</h1>
+        <h1 className="text-3xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <div className="relative w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search contacts..."
+              placeholder="Search customers..."
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -271,14 +243,14 @@ export default function Contacts() {
             <SheetTrigger asChild>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Add Contact
+                Add Customer
               </Button>
             </SheetTrigger>
             <SheetContent className="sm:max-w-md">
               <SheetHeader>
-                <SheetTitle>Add New Contact</SheetTitle>
+                <SheetTitle>Add New Customer</SheetTitle>
                 <SheetDescription>
-                  Add a new contact for a supplier. Fill in the details and click save.
+                  Fill in the customer details and click save when you're done.
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-6">
@@ -325,65 +297,12 @@ export default function Contacts() {
                     />
                     <FormField
                       control={createForm.control}
-                      name="role"
+                      name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Role</FormLabel>
+                          <FormLabel>Address</FormLabel>
                           <FormControl>
-                            <Input placeholder="Sales Manager" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={createForm.control}
-                      name="department"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Department</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Sales" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={createForm.control}
-                      name="supplierId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Supplier</FormLabel>
-                          <Select 
-                            onValueChange={(value) => field.onChange(parseInt(value))} 
-                            defaultValue={field.value.toString() || undefined}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a supplier" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {suppliers.map((supplier) => (
-                                <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                                  {supplier.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={createForm.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Notes</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Additional information..." {...field} />
+                            <Input placeholder="123 Main St, City, State" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -401,7 +320,7 @@ export default function Contacts() {
                         type="submit" 
                         disabled={createMutation.isPending}
                       >
-                        {createMutation.isPending ? "Saving..." : "Save Contact"}
+                        {createMutation.isPending ? "Saving..." : "Save Customer"}
                       </Button>
                     </div>
                   </form>
@@ -412,19 +331,19 @@ export default function Contacts() {
         </div>
       </div>
 
-      {isLoadingContacts || isLoadingSuppliers ? (
+      {isLoading ? (
         <div className="flex justify-center items-center h-96">
-          <p>Loading contacts...</p>
+          <p>Loading customers...</p>
         </div>
-      ) : filteredContacts.length === 0 ? (
+      ) : filteredCustomers.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <User2 className="h-10 w-10 text-muted-foreground mb-4" />
-            <CardTitle className="text-xl mb-2">No Contacts Found</CardTitle>
+            <CardTitle className="text-xl mb-2">No Customers Found</CardTitle>
             <CardDescription className="text-center max-w-md mb-4">
               {searchQuery 
-                ? "No contacts match your search criteria. Try a different search term." 
-                : "You haven't added any supplier contacts yet. Click 'Add Contact' to get started."}
+                ? "No customers match your search criteria. Try a different search term." 
+                : "You haven't added any customers yet. Click 'Add Customer' to get started."}
             </CardDescription>
             {!searchQuery && (
               <Button 
@@ -432,7 +351,7 @@ export default function Contacts() {
                 className="mt-2"
               >
                 <UserPlus className="mr-2 h-4 w-4" />
-                Add Your First Contact
+                Add Your First Customer
               </Button>
             )}
           </CardContent>
@@ -443,27 +362,27 @@ export default function Contacts() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Role</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead>Address</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredContacts.map((contact) => (
-                <TableRow key={contact.id}>
-                  <TableCell className="font-medium">{contact.name}</TableCell>
-                  <TableCell>{getSupplierName(contact.supplierId)}</TableCell>
-                  <TableCell>{contact.role || "-"}</TableCell>
-                  <TableCell>{contact.email || "-"}</TableCell>
-                  <TableCell>{contact.phone || "-"}</TableCell>
+              {filteredCustomers.map((customer) => (
+                <TableRow key={customer.id}>
+                  <TableCell className="font-medium">{customer.name}</TableCell>
+                  <TableCell>{customer.email || "-"}</TableCell>
+                  <TableCell>{customer.phone || "-"}</TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    {customer.address || "-"}
+                  </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleEditContact(contact)}
+                        onClick={() => handleEditCustomer(customer)}
                       >
                         <Pencil className="h-4 w-4" />
                         <span className="sr-only">Edit</span>
@@ -479,14 +398,14 @@ export default function Contacts() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete the contact "{contact.name}". 
+                              This will permanently delete the customer "{customer.name}". 
                               This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => deleteMutation.mutate(contact.id)}
+                              onClick={() => deleteMutation.mutate(customer.id)}
                               className="bg-red-600 hover:bg-red-700"
                             >
                               Delete
@@ -503,13 +422,13 @@ export default function Contacts() {
         </div>
       )}
 
-      {/* Edit Contact Sheet */}
+      {/* Edit Customer Sheet */}
       <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>Edit Contact</SheetTitle>
+            <SheetTitle>Edit Customer</SheetTitle>
             <SheetDescription>
-              Update the contact details and click save when you're done.
+              Update the customer details and click save when you're done.
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6">
@@ -556,65 +475,12 @@ export default function Contacts() {
                 />
                 <FormField
                   control={editForm.control}
-                  name="role"
+                  name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <FormLabel>Address</FormLabel>
                       <FormControl>
                         <Input {...field} value={field.value || ""} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={editForm.control}
-                  name="department"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Department</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ""} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={editForm.control}
-                  name="supplierId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supplier</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))} 
-                        defaultValue={field.value.toString()}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a supplier" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {suppliers.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={editForm.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} value={field.value || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

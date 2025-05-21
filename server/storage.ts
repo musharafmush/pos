@@ -369,6 +369,66 @@ export const storage = {
       orderBy: suppliers.name
     });
   },
+  
+  // Contact management operations
+  async getContactById(id: number): Promise<Contact | null> {
+    const contact = await db.query.contacts.findFirst({
+      where: eq(contacts.id, id),
+      with: {
+        supplier: true
+      }
+    });
+    return contact || null;
+  },
+  
+  async createContact(contact: {
+    name: string;
+    email?: string;
+    phone?: string;
+    role?: string;
+    department?: string;
+    notes?: string;
+    supplierId: number;
+  }): Promise<Contact> {
+    const [newContact] = await db.insert(contacts).values({
+      name: contact.name,
+      email: contact.email || null,
+      phone: contact.phone || null,
+      role: contact.role || null,
+      department: contact.department || null,
+      notes: contact.notes || null,
+      supplierId: contact.supplierId
+    }).returning();
+    return newContact;
+  },
+  
+  async updateContact(id: number, contact: Partial<Contact>): Promise<Contact | null> {
+    const [updatedContact] = await db.update(contacts)
+      .set({
+        ...contact,
+        updatedAt: new Date()
+      })
+      .where(eq(contacts.id, id))
+      .returning();
+    return updatedContact || null;
+  },
+  
+  async deleteContact(id: number): Promise<boolean> {
+    const result = await db.delete(contacts)
+      .where(eq(contacts.id, id))
+      .returning({ id: contacts.id });
+    return result.length > 0;
+  },
+  
+  async listContacts(): Promise<Contact[]> {
+    const contactsList = await db.query.contacts.findMany({
+      with: {
+        supplier: true
+      },
+      orderBy: contacts.name
+    });
+    return contactsList;
+  },
 
   // Sale related operations
   async createSale(
