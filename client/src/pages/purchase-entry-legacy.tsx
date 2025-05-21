@@ -618,25 +618,25 @@ export default function PurchaseEntryLegacy() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-100 border-b text-left">
-                      <th className="p-2 border-r w-10">S.No</th>
-                      <th className="p-2 border-r w-16">Code</th>
-                      <th className="p-2 border-r">Description</th>
-                      <th className="p-2 border-r w-14 text-center">Recd Qty</th>
-                      <th className="p-2 border-r w-12 text-center">FOC</th>
-                      <th className="p-2 border-r w-16 text-right">Cost</th>
-                      <th className="p-2 border-r w-16 text-center">HSN Code</th>
-                      <th className="p-2 border-r w-12 text-center">Tax %</th>
-                      <th className="p-2 border-r w-14 text-center">Dis Amt</th>
-                      <th className="p-2 border-r w-16 text-center">ExpDt</th>
-                      <th className="p-2 border-r w-12 text-center">Dis %</th>
-                      <th className="p-2 border-r w-16 text-right">NetCost</th>
-                      <th className="p-2 border-r w-14 text-center">R.O.I %</th>
-                      <th className="p-2 border-r w-16 text-center">Gross Profit</th>
-                      <th className="p-2 border-r w-16 text-center">Selling</th>
-                      <th className="p-2 border-r w-14 text-center">M.R.P</th>
-                      <th className="p-2 border-r w-16 text-right">Amount</th>
-                      <th className="p-2 border-r w-12 text-center">Net Amt</th>
-                      <th className="p-2 border-r w-14 text-center">ashDisAmt</th>
+                      <th className="px-3 py-3 border-r w-12">S.No</th>
+                      <th className="px-3 py-3 border-r w-24">Code</th>
+                      <th className="px-3 py-3 border-r w-[160px]">Description</th>
+                      <th className="px-3 py-3 border-r w-20 text-center">Recd Qty</th>
+                      <th className="px-3 py-3 border-r w-14 text-center">FOC</th>
+                      <th className="px-3 py-3 border-r w-20 text-right">Cost</th>
+                      <th className="px-3 py-3 border-r w-20 text-center">HSN Code</th>
+                      <th className="px-3 py-3 border-r w-14 text-center">Tax %</th>
+                      <th className="px-3 py-3 border-r w-16 text-center">Dis Amt</th>
+                      <th className="px-3 py-3 border-r w-16 text-center">ExpDt</th>
+                      <th className="px-3 py-3 border-r w-14 text-center">Dis %</th>
+                      <th className="px-3 py-3 border-r w-20 text-right">NetCost</th>
+                      <th className="px-3 py-3 border-r w-16 text-center">R.O.I %</th>
+                      <th className="px-3 py-3 border-r w-20 text-center">Gross Profit</th>
+                      <th className="px-3 py-3 border-r w-20 text-center">Selling</th>
+                      <th className="px-3 py-3 border-r w-16 text-center">M.R.P</th>
+                      <th className="px-3 py-3 border-r w-20 text-right">Amount</th>
+                      <th className="px-3 py-3 border-r w-16 text-center">Net Amt</th>
+                      <th className="px-3 py-3 border-r w-16 text-center">CashDisAmt</th>
                       <th className="p-2 w-10 text-center">
                         <Button 
                           type="button" 
@@ -671,8 +671,8 @@ export default function PurchaseEntryLegacy() {
                   <tbody>
                     {fields.map((field, index) => (
                       <tr key={field.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <td className="p-2 border-r text-center">{index + 1}</td>
-                        <td className="p-2 border-r">
+                        <td className="px-3 py-3 border-r text-center">{index + 1}</td>
+                        <td className="px-3 py-3 border-r">
                           <div className="flex items-center gap-1">
                             <FormField
                               control={form.control}
@@ -680,15 +680,15 @@ export default function PurchaseEntryLegacy() {
                               render={({ field }) => (
                                 <FormItem className="w-full m-0">
                                   <FormControl>
-                                    <Input {...field} className="h-7 text-sm" readOnly />
+                                    <Input {...field} className="h-8 text-sm" readOnly />
                                   </FormControl>
                                 </FormItem>
                               )}
                             />
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-7 w-7 p-0 min-w-0">
-                                  <ChevronDown className="h-3.5 w-3.5" />
+                                <Button variant="outline" size="sm" className="h-8 w-8 p-0 min-w-0">
+                                  <ChevronDown className="h-4 w-4" />
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-80 p-0" align="start">
@@ -726,20 +726,20 @@ export default function PurchaseEntryLegacy() {
                             </Popover>
                           </div>
                         </td>
-                        <td className="p-2 border-r">
+                        <td className="px-3 py-3 border-r">
                           <FormField
                             control={form.control}
                             name={`items.${index}.description`}
                             render={({ field }) => (
                               <FormItem className="m-0">
                                 <FormControl>
-                                  <Input {...field} className="h-7 text-sm" />
+                                  <Input {...field} className="h-8 text-sm" />
                                 </FormControl>
                               </FormItem>
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r">
+                        <td className="px-3 py-3 border-r">
                           <FormField
                             control={form.control}
                             name={`items.${index}.quantity`}
@@ -749,7 +749,7 @@ export default function PurchaseEntryLegacy() {
                                   <Input 
                                     {...field} 
                                     type="number"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       handleItemChange(index);
@@ -760,8 +760,8 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-center">0</td>
-                        <td className="p-2 border-r">
+                        <td className="px-3 py-3 border-r text-center">0</td>
+                        <td className="px-3 py-3 border-r">
                           <FormField
                             control={form.control}
                             name={`items.${index}.unitCost`}
@@ -769,10 +769,10 @@ export default function PurchaseEntryLegacy() {
                               <FormItem className="m-0">
                                 <FormControl>
                                   <Input 
-                                    {...field} 
+                                    {...field}
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       handleItemChange(index);
@@ -783,20 +783,20 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-center">
+                        <td className="px-3 py-3 border-r text-center">
                           <FormField
                             control={form.control}
                             name={`items.${index}.hsnCode`}
                             render={({ field }) => (
                               <FormItem className="m-0">
                                 <FormControl>
-                                  <Input {...field} className="h-7 text-sm" />
+                                  <Input {...field} className="h-8 text-sm" />
                                 </FormControl>
                               </FormItem>
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-center">
+                        <td className="px-3 py-3 border-r text-center">
                           <FormField
                             control={form.control}
                             name={`items.${index}.taxPercentage`}
@@ -807,7 +807,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       handleItemChange(index);
@@ -818,7 +818,7 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-right">
+                        <td className="px-3 py-3 border-r text-right">
                           <FormField
                             control={form.control}
                             name={`items.${index}.discount`}
@@ -829,7 +829,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     readOnly
                                   />
                                 </FormControl>
@@ -837,8 +837,8 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r"></td>
-                        <td className="p-2 border-r text-center">
+                        <td className="px-3 py-3 border-r"></td>
+                        <td className="px-3 py-3 border-r text-center">
                           <FormField
                             control={form.control}
                             name={`items.${index}.discountPercent`}
@@ -849,7 +849,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       handleItemChange(index);
@@ -860,7 +860,7 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-right">
+                        <td className="px-3 py-3 border-r text-right">
                           <FormField
                             control={form.control}
                             name={`items.${index}.netCost`}
@@ -871,7 +871,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     readOnly
                                   />
                                 </FormControl>
@@ -879,7 +879,7 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-center">
+                        <td className="px-3 py-3 border-r text-center">
                           <FormField
                             control={form.control}
                             name={`items.${index}.roi`}
@@ -890,7 +890,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     readOnly
                                   />
                                 </FormControl>
@@ -898,7 +898,7 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-center">
+                        <td className="px-3 py-3 border-r text-center">
                           <FormField
                             control={form.control}
                             name={`items.${index}.grossProfit`}
@@ -909,7 +909,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     readOnly
                                   />
                                 </FormControl>
@@ -917,7 +917,7 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-center">
+                        <td className="px-3 py-3 border-r text-center">
                           <FormField
                             control={form.control}
                             name={`items.${index}.sellingPrice`}
@@ -928,7 +928,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       handleItemChange(index);
@@ -939,7 +939,7 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-center">
+                        <td className="px-3 py-3 border-r text-center">
                           <FormField
                             control={form.control}
                             name={`items.${index}.mrp`}
@@ -950,14 +950,14 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                   />
                                 </FormControl>
                               </FormItem>
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-right">
+                        <td className="px-3 py-3 border-r text-right">
                           <FormField
                             control={form.control}
                             name={`items.${index}.subtotal`}
@@ -968,7 +968,7 @@ export default function PurchaseEntryLegacy() {
                                     {...field} 
                                     type="number" 
                                     step="0.01"
-                                    className="h-7 text-sm text-right"
+                                    className="h-8 text-sm text-right"
                                     readOnly
                                   />
                                 </FormControl>
@@ -976,16 +976,16 @@ export default function PurchaseEntryLegacy() {
                             )}
                           />
                         </td>
-                        <td className="p-2 border-r text-right">
+                        <td className="px-3 py-3 border-r text-right">
                           {form.watch(`items.${index}.netCost`)}
                         </td>
-                        <td className="p-2 border-r text-right">0.00</td>
-                        <td className="p-2 text-center">
+                        <td className="px-3 py-3 border-r text-right">0.00</td>
+                        <td className="px-3 py-3 text-center">
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
                             onClick={() => remove(index)}
                           >
                             <XCircle className="h-4 w-4" />
