@@ -302,25 +302,30 @@ export default function PurchaseEntryLegacy() {
   return (
     <DashboardLayout>
       <div className="container max-w-full pb-8 px-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold tracking-tight">Purchase (Local)</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Printer className="mr-2 h-4 w-4" /> Print
-            </Button>
-            <Button 
-              onClick={form.handleSubmit(onSubmit)}
-              disabled={createPurchaseMutation.isPending}
-              size="sm"
-            >
-              {createPurchaseMutation.isPending ? (
-                "Saving..."
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" /> Save
-                </>
-              )}
-            </Button>
+        <div className="border-b border-gray-300 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="bg-gray-100 border border-gray-300 py-2 px-4">
+              <h1 className="text-xl font-bold tracking-tight">Purchase (Local)</h1>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <Button variant="outline" size="sm" className="h-9 bg-gray-50 border-gray-400">
+                <Printer className="mr-2 h-4 w-4" /> Print
+              </Button>
+              <Button 
+                onClick={form.handleSubmit(onSubmit)}
+                disabled={createPurchaseMutation.isPending}
+                size="sm"
+                className="h-9 bg-blue-600 hover:bg-blue-700"
+              >
+                {createPurchaseMutation.isPending ? (
+                  "Saving..."
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" /> Save
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
         
