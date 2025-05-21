@@ -9,6 +9,7 @@ import {
   saleItems,
   purchases,
   purchaseItems,
+  contacts,
   User,
   Product,
   Category,
@@ -17,7 +18,8 @@ import {
   Sale,
   SaleItem,
   Purchase,
-  PurchaseItem
+  PurchaseItem,
+  Contact
 } from "@shared/schema";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";

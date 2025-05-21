@@ -333,3 +333,16 @@ export const purchaseItemInsertSchema = createInsertSchema(purchaseItems, {
 export type PurchaseItemInsert = z.infer<typeof purchaseItemInsertSchema>;
 export const purchaseItemSelectSchema = createSelectSchema(purchaseItems);
 export type PurchaseItem = z.infer<typeof purchaseItemSelectSchema>;
+
+// Contacts validation schema
+export const contactInsertSchema = createInsertSchema(contacts, {
+  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
+  email: (schema) => schema.email("Must provide a valid email").optional().or(z.literal('')),
+  phone: (schema) => schema.optional(),
+  role: (schema) => schema.optional(),
+  department: (schema) => schema.optional(),
+  notes: (schema) => schema.optional()
+});
+export type ContactInsert = z.infer<typeof contactInsertSchema>;
+export const contactSelectSchema = createSelectSchema(contacts);
+export type Contact = z.infer<typeof contactSelectSchema>;
