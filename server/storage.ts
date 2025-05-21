@@ -536,12 +536,26 @@ export const storage = {
 
     // Add purchase items
     for (const item of items) {
+      // Convert all values to their appropriate types to avoid NaN issues
+      const productId = typeof item.productId === 'number' ? item.productId : 0;
+      const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
+      const unitCost = typeof item.unitCost === 'number' ? item.unitCost : 0;
+      const subtotal = quantity * unitCost;
+      
+      console.log("Inserting purchase item:", { 
+        purchaseId: purchase.id, 
+        productId, 
+        quantity, 
+        unitCost, 
+        subtotal 
+      });
+      
       await db.insert(purchaseItems).values({
         purchaseId: purchase.id,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitCost: item.unitCost.toString(),
-        subtotal: (item.quantity * Number(item.unitCost)).toString()
+        productId,
+        quantity,
+        unitCost: unitCost.toString(),
+        subtotal: subtotal.toString()
       });
     }
 

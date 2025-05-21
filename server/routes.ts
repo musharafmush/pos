@@ -524,15 +524,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Purchase must have at least one item' });
       }
       
-      const parsedItems = items.map(item => ({
-        productId: item.productId,
-        quantity: parseInt(item.quantity),
-        unitCost: parseFloat(item.unitCost)
-      }));
+      const parsedItems = items.map(item => {
+        // Ensure all values are valid numbers
+        const ensureInt = (val: any) => {
+          const num = parseInt(val);
+          return isNaN(num) ? 0 : num;
+        };
+        
+        const ensureFloat = (val: any) => {
+          const num = parseFloat(val);
+          return isNaN(num) ? 0 : num;
+        };
+        
+        return {
+          productId: ensureInt(item.productId),
+          quantity: ensureInt(item.quantity),
+          unitCost: ensureFloat(item.unitCost)
+        };
+      });
 
+      // Ensure supplier ID is a valid number
+      const suppId = parseInt(supplierId);
+      const validSupplierId = isNaN(suppId) ? 1 : suppId;
+      
+      console.log("Creating purchase with supplier ID:", validSupplierId);
+      console.log("Parsed items:", JSON.stringify(parsedItems));
+      
       const purchase = await storage.createPurchase(
         (req.user as any).id,
-        parseInt(supplierId),
+        validSupplierId,
         parsedItems,
         purchaseData
       );

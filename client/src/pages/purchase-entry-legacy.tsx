@@ -283,43 +283,45 @@ export default function PurchaseEntryLegacy() {
 
   // Handle form submission
   const onSubmit = (data: PurchaseEntryFormValues) => {
-    // Ensure all number values are valid before submission
-    const cleanedData = {
-      ...data,
-      items: data.items.map(item => {
-        // Make sure all numeric fields have valid values
-        const ensureNumber = (value: any) => {
-          const num = parseFloat(value);
-          return isNaN(num) ? 0 : num;
-        };
-        
-        return {
-          ...item,
-          productId: ensureNumber(item.productId),
-          quantity: ensureNumber(item.quantity),
-          unitCost: ensureNumber(item.unitCost),
-          taxPercentage: ensureNumber(item.taxPercentage),
-          discount: ensureNumber(item.discount),
-          discountPercent: ensureNumber(item.discountPercent),
-          netCost: ensureNumber(item.netCost),
-          roi: ensureNumber(item.roi),
-          grossProfit: ensureNumber(item.grossProfit),
-          sellingPrice: ensureNumber(item.sellingPrice),
-          mrp: ensureNumber(item.mrp),
-          subtotal: ensureNumber(item.subtotal)
-        };
-      })
-    };
-    
-    // Force clean any other numeric values
-    if (typeof cleanedData.supplierId !== 'number' || isNaN(cleanedData.supplierId)) {
-      cleanedData.supplierId = 1; // Default to first supplier if invalid
+    try {
+      // Create a simplified purchase object that matches exactly what the server expects
+      const simplifiedData = {
+        supplierId: Number(data.supplierId) || 1,
+        orderNumber: data.orderNumber || `PO-${Date.now()}`,
+        poNo: data.poNo || "",
+        poDate: data.poDate || new Date(),
+        dueDate: data.dueDate || new Date(),
+        invoiceDate: data.invoiceDate || new Date(),
+        invoiceNo: data.invoiceNo || "",
+        invoiceAmount: data.invoiceAmount || "0",
+        status: data.status || "pending",
+        paymentMethod: data.paymentMethod || "Cash",
+        paymentType: data.paymentType || "Credit",
+        draft: data.draft || "No",
+        remarks: data.remarks || "",
+        items: data.items.map(item => {
+          // Only include the fields the server actually needs
+          return {
+            productId: Number(item.productId) || 1, // Defaulting to ID 1 if invalid
+            quantity: Number(item.quantity) || 1,    // Default to 1 if invalid
+            unitCost: Number(item.unitCost) || 0     // Default to 0 if invalid
+          };
+        })
+      };
+      
+      // Log the simplified data
+      console.log("Submitting purchase with simplified data:", simplifiedData);
+      
+      // Send only what the server needs to process
+      createPurchaseMutation.mutate(simplifiedData);
+    } catch (error) {
+      console.error("Error preparing purchase data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error preparing purchase data",
+        description: "Please check all fields and try again."
+      });
     }
-    
-    // Log the cleaned data before submission
-    console.log("Submitting purchase with cleaned data:", cleanedData);
-    
-    createPurchaseMutation.mutate(cleanedData);
   };
 
   // Filter suppliers based on search term
