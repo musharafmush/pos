@@ -299,6 +299,12 @@ export default function PurchaseEntry() {
     }
   }, [existingPurchase, isEditMode, form, today, toast]);
 
+  // Setup field array for items
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "items"
+  });
+  
   // Watch form values to calculate totals
   const watchedItems = form.watch("items");
   
@@ -397,18 +403,13 @@ export default function PurchaseEntry() {
   
   // Function to add a new item row
   const addItemRow = () => {
-    const currentItems = form.getValues("items");
-    form.setValue("items", [...currentItems, { ...emptyPurchaseItem }]);
+    append({ ...emptyPurchaseItem });
   };
   
   // Function to remove an item row
   const removeItemRow = (index: number) => {
-    const currentItems = form.getValues("items");
-    if (currentItems.length > 1) {
-      form.setValue(
-        "items",
-        currentItems.filter((_, i) => i !== index)
-      );
+    if (fields.length > 1) {
+      remove(index);
     }
   };
   
