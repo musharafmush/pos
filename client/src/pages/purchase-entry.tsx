@@ -1108,14 +1108,18 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input 
-                                            {...field} 
-                                            className="w-full text-xs"
-                                            onChange={(e) => {
-                                              field.onChange(e);
-                                              recalculateAmounts(index);
-                                            }}
-                                          />
+                                          <div className="relative">
+                                            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                            <Input 
+                                              {...field} 
+                                              className="w-full text-xs pl-6"
+                                              placeholder="0.00"
+                                              onChange={(e) => {
+                                                field.onChange(e);
+                                                recalculateAmounts(index);
+                                              }}
+                                            />
+                                          </div>
                                         </FormControl>
                                       </FormItem>
                                     )}
@@ -1161,14 +1165,18 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input 
-                                            {...field} 
-                                            className="w-full text-xs"
-                                            onChange={(e) => {
-                                              field.onChange(e);
-                                              recalculateAmounts(index);
-                                            }}
-                                          />
+                                          <div className="relative">
+                                            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                            <Input 
+                                              {...field} 
+                                              className="w-full text-xs pl-6"
+                                              placeholder="0.00"
+                                              onChange={(e) => {
+                                                field.onChange(e);
+                                                recalculateAmounts(index);
+                                              }}
+                                            />
+                                          </div>
                                         </FormControl>
                                       </FormItem>
                                     )}
@@ -1198,11 +1206,15 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input 
-                                            {...field} 
-                                            readOnly 
-                                            className="w-full text-xs bg-muted"
-                                          />
+                                          <div className="relative">
+                                            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                            <Input 
+                                              {...field} 
+                                              readOnly 
+                                              className="w-full text-xs bg-muted pl-6"
+                                              placeholder="0.00"
+                                            />
+                                          </div>
                                         </FormControl>
                                       </FormItem>
                                     )}
@@ -1289,8 +1301,9 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <div className="flex items-center justify-center p-2 bg-gray-50 rounded-md">
-                                            <div className="font-medium text-sm">{Number(field.value || 0).toFixed(2)}</div>
+                                          <div className="flex items-center justify-center p-2 bg-blue-50 rounded-md">
+                                            <span className="text-sm font-medium text-blue-700">$</span>
+                                            <div className="font-medium text-sm text-blue-700 ml-1">{Number(field.value || 0).toFixed(2)}</div>
                                           </div>
                                         </FormControl>
                                       </FormItem>
