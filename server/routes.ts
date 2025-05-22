@@ -993,23 +993,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // In-memory storage for currency settings (temporary solution)
+  let currencySettings = {
+    baseCurrency: "USD",
+    currencySymbol: "$",
+    currencyPosition: "before",
+    decimalPlaces: "2",
+    thousandSeparator: ",",
+    decimalSeparator: ".",
+    enableMultiCurrency: false,
+    exchangeRateProvider: "",
+    autoUpdateRates: false,
+  };
+
   // Currency Settings endpoints
   app.get('/api/settings/currency', isAuthenticated, async (req, res) => {
     try {
-      // Return default settings since we don't have a settings table yet
-      const defaultSettings = {
-        baseCurrency: "USD",
-        currencySymbol: "$",
-        currencyPosition: "before",
-        decimalPlaces: "2",
-        thousandSeparator: ",",
-        decimalSeparator: ".",
-        enableMultiCurrency: false,
-        exchangeRateProvider: "",
-        autoUpdateRates: false,
-      };
-      
-      res.json(defaultSettings);
+      res.json(currencySettings);
     } catch (error) {
       console.error("Error fetching currency settings:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -1035,8 +1035,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required currency settings" });
       }
 
-      // Save settings (for now just return success - in future versions this would save to database)
-      const updatedSettings = {
+      // Save settings to memory
+      currencySettings = {
         baseCurrency,
         currencySymbol,
         currencyPosition,
@@ -1048,9 +1048,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         autoUpdateRates,
       };
 
+      console.log("Currency settings saved:", currencySettings);
+
       res.json({
         message: "Currency settings updated successfully",
-        settings: updatedSettings,
+        settings: currencySettings,
       });
     } catch (error) {
       console.error("Error updating currency settings:", error);

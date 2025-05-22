@@ -6,6 +6,14 @@ import { z } from 'zod';
 // User roles enum
 export const userRoleEnum = pgEnum('user_role', ['admin', 'cashier', 'manager']);
 
+// Settings table for storing application settings
+export const settings = pgTable('settings', {
+  id: serial('id').primaryKey(),
+  key: text('key').notNull().unique(),
+  value: text('value').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
 // Categories table
 export const categories = pgTable('categories', {
   id: serial('id').primaryKey(),
@@ -314,3 +322,11 @@ export const purchaseItemInsertSchema = createInsertSchema(purchaseItems, {
 export type PurchaseItemInsert = z.infer<typeof purchaseItemInsertSchema>;
 export const purchaseItemSelectSchema = createSelectSchema(purchaseItems);
 export type PurchaseItem = z.infer<typeof purchaseItemSelectSchema>;
+
+export const settingsInsertSchema = createInsertSchema(settings, {
+  key: (schema) => schema.min(1, "Key must not be empty"),
+  value: (schema) => schema.min(1, "Value must not be empty")
+});
+export type SettingsInsert = z.infer<typeof settingsInsertSchema>;
+export const settingsSelectSchema = createSelectSchema(settings);
+export type Settings = z.infer<typeof settingsSelectSchema>;
