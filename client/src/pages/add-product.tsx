@@ -26,7 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { X } from "lucide-react";
+import { X, Plus, RotateCcw } from "lucide-react";
 
 // Form schema
 const productFormSchema = z.object({
@@ -224,298 +224,351 @@ export default function AddProduct() {
     switch (activeSection) {
       case "item-info":
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="itemCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      Item Code <span className="text-red-500 ml-1">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="23222" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div />
-            </div>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">Item Information</h2>
+              
+              <div className="grid grid-cols-2 gap-8 mb-6">
+                <FormField
+                  control={form.control}
+                  name="itemCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700 flex items-center">
+                        Item Code <span className="text-red-500 ml-1">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="23222" 
+                          className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div />
+              </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="itemName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      Item Name <span className="text-red-500 ml-1">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="BUCKET 4" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div />
-            </div>
+              <div className="grid grid-cols-2 gap-8 mb-6">
+                <FormField
+                  control={form.control}
+                  name="itemName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700 flex items-center">
+                        Item Name <span className="text-red-500 ml-1">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="BUCKET 4" 
+                          className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div />
+              </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="manufacturerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      Manufacturer Name <span className="text-red-500 ml-1">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select manufacturer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {suppliers.map((supplier: any) => (
-                            <SelectItem key={supplier.id} value={supplier.name}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div />
-            </div>
+              <div className="grid grid-cols-2 gap-8 mb-6">
+                <FormField
+                  control={form.control}
+                  name="manufacturerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700 flex items-center">
+                        Manufacturer Name <span className="text-red-500 ml-1">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="flex gap-2">
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                              <SelectValue placeholder="Select manufacturer" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {suppliers.map((supplier: any) => (
+                                <SelectItem key={supplier.id} value={supplier.name}>
+                                  {supplier.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button type="button" size="sm" className="mt-1 bg-blue-600 hover:bg-blue-700 px-3">
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div />
+              </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="supplierName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      Supplier Name <span className="text-red-500 ml-1">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select supplier" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {suppliers.map((supplier: any) => (
-                            <SelectItem key={supplier.id} value={supplier.name}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div />
-            </div>
+              <div className="grid grid-cols-2 gap-8 mb-6">
+                <FormField
+                  control={form.control}
+                  name="supplierName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700 flex items-center">
+                        Supplier Name <span className="text-red-500 ml-1">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="flex gap-2">
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                              <SelectValue placeholder="Select supplier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {suppliers.map((supplier: any) => (
+                                <SelectItem key={supplier.id} value={supplier.name}>
+                                  {supplier.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button type="button" size="sm" className="mt-1 bg-blue-600 hover:bg-blue-700 px-3">
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div />
+              </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="alias"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Alias</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter alias..." 
-                        className="min-h-[100px]" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="aboutProduct"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>About Product</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter product description..." 
-                        className="min-h-[100px]" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-8">
+                <FormField
+                  control={form.control}
+                  name="alias"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Alias</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Enter alias..." 
+                          className="mt-1 min-h-[120px] border-gray-300 focus:border-blue-500 focus:ring-blue-500" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="aboutProduct"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">About Product</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Enter product description..." 
+                          className="mt-1 min-h-[120px] border-gray-300 focus:border-blue-500 focus:ring-blue-500" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
           </div>
         );
 
       case "category-info":
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="itemProductType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Item Product Type</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Standard" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Standard">Standard</SelectItem>
-                          <SelectItem value="Service">Service</SelectItem>
-                          <SelectItem value="Bundle">Bundle</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div />
-            </div>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">Category Information</h2>
+              
+              <div className="grid grid-cols-2 gap-8 mb-6">
+                <FormField
+                  control={form.control}
+                  name="itemProductType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Item Product Type</FormLabel>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                            <SelectValue placeholder="Standard" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Standard">Standard</SelectItem>
+                            <SelectItem value="Service">Service</SelectItem>
+                            <SelectItem value="Bundle">Bundle</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div />
+              </div>
 
-            <h3 className="text-lg font-medium text-blue-600">Category</h3>
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-blue-600 mb-6">Category</h3>
+                
+                <div className="grid grid-cols-2 gap-8 mb-6">
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700 flex items-center">
+                          DEPARTMENT <span className="text-red-500 ml-1">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                <SelectValue placeholder="Select department" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.map((category: any) => (
+                                  <SelectItem key={category.id} value={category.name}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button type="button" size="sm" className="mt-1 bg-blue-600 hover:bg-blue-700 px-3">
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="mainCategory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700">MAIN CATEGORY</FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                <SelectValue placeholder="Select main category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.map((category: any) => (
+                                  <SelectItem key={category.id} value={category.name}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button type="button" size="sm" className="mt-1 bg-blue-600 hover:bg-blue-700 px-3">
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="department"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      DEPARTMENT <span className="text-red-500 ml-1">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((category: any) => (
-                            <SelectItem key={category.id} value={category.name}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="mainCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>MAIN CATEGORY</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select main category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((category: any) => (
-                            <SelectItem key={category.id} value={category.name}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                <div className="grid grid-cols-2 gap-8 mb-6">
+                  <FormField
+                    control={form.control}
+                    name="subCategory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700">SUB CATEGORY</FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                <SelectValue placeholder="Select sub category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="subcategory1">Sub Category 1</SelectItem>
+                                <SelectItem value="subcategory2">Sub Category 2</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button type="button" size="sm" className="mt-1 bg-blue-600 hover:bg-blue-700 px-3">
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="brand"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700">BRAND</FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                <SelectValue placeholder="Select brand" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="brand1">Brand 1</SelectItem>
+                                <SelectItem value="brand2">Brand 2</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button type="button" size="sm" className="mt-1 bg-blue-600 hover:bg-blue-700 px-3">
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="subCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>SUB CATEGORY</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select sub category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="subcategory1">Sub Category 1</SelectItem>
-                          <SelectItem value="subcategory2">Sub Category 2</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="brand"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>BRAND</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select brand" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="brand1">Brand 1</SelectItem>
-                          <SelectItem value="brand2">Brand 2</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="buyer"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      BUYER <span className="text-red-500 ml-1">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select buyer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="buyer1">Buyer 1</SelectItem>
-                          <SelectItem value="buyer2">Buyer 2</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div />
+                <div className="grid grid-cols-2 gap-8">
+                  <FormField
+                    control={form.control}
+                    name="buyer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700 flex items-center">
+                          BUYER <span className="text-red-500 ml-1">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                <SelectValue placeholder="Select buyer" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="buyer1">Buyer 1</SelectItem>
+                                <SelectItem value="buyer2">Buyer 2</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button type="button" size="sm" className="mt-1 bg-blue-600 hover:bg-blue-700 px-3">
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div />
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -1091,111 +1144,110 @@ export default function AddProduct() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-gray-900">Add Item</h1>
-            <Button
-              variant="outline"
-              onClick={() => window.history.back()}
-              className="flex items-center gap-2"
-            >
-              <X className="h-4 w-4" />
-              Close
-            </Button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-300 px-6 py-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+            <h1 className="text-lg font-medium text-gray-800">Add Item</h1>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => window.history.back()}
+            className="text-gray-600 border-gray-300 hover:bg-gray-50 text-sm px-4 py-1"
+          >
+            Close
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex">
+        {/* Left Sidebar Navigation */}
+        <div className="w-64 bg-white border-r border-gray-300 min-h-screen">
+          <div className="p-0">
+            {/* Tab Headers */}
+            <div className="flex border-b border-gray-300">
+              <button
+                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  isGeneralInfo 
+                    ? 'border-blue-500 text-blue-600 bg-blue-50' 
+                    : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsGeneralInfo(true)}
+              >
+                General Information
+              </button>
+              <button
+                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  !isGeneralInfo 
+                    ? 'border-blue-500 text-blue-600 bg-blue-50' 
+                    : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsGeneralInfo(false)}
+              >
+                Outlet Specific
+              </button>
+            </div>
+
+            {/* Navigation Items */}
+            <nav className="py-2">
+              {navigationSections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`w-full flex items-center px-4 py-3 text-sm font-medium text-left transition-colors border-l-4 ${
+                    activeSection === section.id
+                      ? 'bg-blue-50 text-blue-700 border-blue-600'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800 border-transparent'
+                  }`}
+                >
+                  <span className={`mr-3 w-2 h-2 rounded-full ${
+                    activeSection === section.id ? 'bg-blue-600' : 'bg-gray-400'
+                  }`} />
+                  {section.label}
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
 
-        <div className="flex">
-          {/* Left Sidebar Navigation */}
-          <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
-            <div className="p-4">
-              {/* Tab Headers */}
-              <div className="flex mb-4 border-b">
-                <button
-                  className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                    isGeneralInfo 
-                      ? 'border-blue-500 text-blue-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                  onClick={() => setIsGeneralInfo(true)}
-                >
-                  General Information
-                </button>
-                <button
-                  className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                    !isGeneralInfo 
-                      ? 'border-blue-500 text-blue-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                  onClick={() => setIsGeneralInfo(false)}
-                >
-                  Outlet Specific
-                </button>
-              </div>
-
-              {/* Navigation Items */}
-              <nav className="space-y-1">
-                {navigationSections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-left ${
-                      activeSection === section.id
-                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    <span className={`mr-2 w-2 h-2 rounded-full ${
-                      section.id === 'item-info' ? 'bg-blue-600' : 'bg-gray-300'
-                    }`} />
-                    {section.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col bg-white">
+          <div className="flex-1 p-8">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {renderSection()}
+              </form>
+            </Form>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col">
-            <div className="flex-1 p-6">
-              <Card>
-                <CardContent className="p-6">
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)}>
-                      {renderSection()}
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Fixed Bottom Action Bar */}
-            <div className="bg-white border-t border-gray-200 px-6 py-4">
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleReset}
-                  disabled={createProductMutation.isPending}
-                >
-                  Reset
-                </Button>
-                <Button
-                  type="submit"
-                  onClick={form.handleSubmit(onSubmit)}
-                  disabled={createProductMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {createProductMutation.isPending ? "Adding..." : "Add"}
-                </Button>
-              </div>
+          {/* Fixed Bottom Action Bar */}
+          <div className="bg-gray-50 border-t border-gray-300 px-8 py-4">
+            <div className="flex justify-start space-x-3">
+              <Button
+                type="submit"
+                onClick={form.handleSubmit(onSubmit)}
+                disabled={createProductMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-sm font-medium"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {createProductMutation.isPending ? "Adding..." : "Add"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleReset}
+                disabled={createProductMutation.isPending}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 text-sm font-medium"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset
+              </Button>
             </div>
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
