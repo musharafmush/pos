@@ -52,7 +52,10 @@ import {
   BarcodeIcon,
   ExternalLinkIcon,
   TrendingUpIcon,
-  AlertTriangleIcon
+  AlertTriangleIcon,
+  EyeIcon,
+  CopyIcon,
+  ArchiveIcon
 } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -86,6 +89,7 @@ export default function Products() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -238,6 +242,11 @@ export default function Products() {
     updateProductMutation.mutate({ ...data, id: selectedProduct.id });
   };
 
+  const handleView = (product: any) => {
+    setSelectedProduct(product);
+    setIsViewDialogOpen(true);
+  };
+
   const handleEdit = (product: any) => {
     setSelectedProduct(product);
     editForm.reset({
@@ -254,6 +263,47 @@ export default function Products() {
       active: product.active,
     });
     setIsEditDialogOpen(true);
+  };
+
+  const handleDuplicate = (product: any) => {
+    form.reset({
+      name: `${product.name} (Copy)`,
+      sku: `${product.sku}-copy`,
+      description: product.description || "",
+      price: parseFloat(product.price),
+      cost: parseFloat(product.cost),
+      categoryId: product.categoryId,
+      stockQuantity: 0,
+      alertThreshold: product.alertThreshold,
+      barcode: "",
+      image: product.image || "",
+      active: true,
+    });
+    setIsAddDialogOpen(true);
+    toast({
+      title: "Product duplicated",
+      description: "Product details copied. Adjust as needed and save.",
+    });
+  };
+
+  const handleToggleActive = async (product: any) => {
+    try {
+      await apiRequest("PUT", `/api/products/${product.id}`, {
+        ...product,
+        active: !product.active
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({
+        title: product.active ? "Product deactivated" : "Product activated",
+        description: `${product.name} is now ${!product.active ? 'active' : 'inactive'}.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update product status.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDelete = (product: any) => {
@@ -452,9 +502,22 @@ export default function Products() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleView(product)}>
+                                <EyeIcon className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEdit(product)}>
                                 <PencilIcon className="h-4 w-4 mr-2" />
-                                Edit
+                                Edit Product
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDuplicate(product)}>
+                                <CopyIcon className="h-4 w-4 mr-2" />
+                                Duplicate
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleToggleActive(product)}>
+                                <ArchiveIcon className="h-4 w-4 mr-2" />
+                                {product.active ? 'Deactivate' : 'Activate'}
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => handleDelete(product)}
@@ -886,6 +949,142 @@ export default function Products() {
               disabled={deleteProductMutation.isPending}
             >
               {deleteProductMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Product View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PackageIcon className="h-5 w-5 text-blue-600" />
+              Product Details
+            </DialogTitle>
+            <DialogDescription>
+              View complete information for {selectedProduct?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedProduct && (
+            <div className="space-y-6">
+              {/* Product Image and Basic Info */}
+              <div className="flex items-start gap-4">
+                <div className="h-16 w-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                  {selectedProduct.image ? (
+                    <img 
+                      src={selectedProduct.image} 
+                      alt={selectedProduct.name} 
+                      className="h-16 w-16 rounded-lg object-cover" 
+                    />
+                  ) : (
+                    <PackageIcon className="h-8 w-8 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedProduct.name}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    SKU: {selectedProduct.sku}
+                  </p>
+                  {selectedProduct.barcode && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                      <BarcodeIcon className="h-3 w-3" />
+                      {selectedProduct.barcode}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    selectedProduct.active 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:bg-opacity-30 dark:text-green-300'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:bg-opacity-30 dark:text-red-300'
+                  }`}>
+                    {selectedProduct.active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Product Details Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Category</label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                      {selectedProduct.category?.name || "Uncategorized"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Selling Price</label>
+                    <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                      ${typeof selectedProduct.price === 'number' 
+                        ? selectedProduct.price.toFixed(2) 
+                        : parseFloat(selectedProduct.price).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Stock Quantity</label>
+                    <p className={`text-lg font-semibold ${
+                      selectedProduct.stockQuantity <= selectedProduct.alertThreshold
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-green-600 dark:text-green-400'
+                    }`}>
+                      {selectedProduct.stockQuantity}
+                      {selectedProduct.stockQuantity <= selectedProduct.alertThreshold && (
+                        <span className="ml-2 text-xs text-red-600 dark:text-red-400">(Low Stock)</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Cost Price</label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                      ${typeof selectedProduct.cost === 'number' 
+                        ? selectedProduct.cost.toFixed(2) 
+                        : parseFloat(selectedProduct.cost).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Profit Margin</label>
+                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                      ${(parseFloat(selectedProduct.price) - parseFloat(selectedProduct.cost)).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Alert Threshold</label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                      {selectedProduct.alertThreshold}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {selectedProduct.description && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Description</label>
+                  <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                    {selectedProduct.description}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setIsViewDialogOpen(false);
+              handleEdit(selectedProduct);
+            }}>
+              <PencilIcon className="h-4 w-4 mr-2" />
+              Edit Product
             </Button>
           </DialogFooter>
         </DialogContent>
