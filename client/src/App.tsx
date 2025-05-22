@@ -15,6 +15,7 @@ import Reports from "@/pages/reports";
 import Users from "@/pages/users";
 import Settings from "@/pages/settings";
 import Suppliers from "@/pages/suppliers";
+import Customers from "@/pages/customers";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -33,6 +34,7 @@ function Router() {
       <ProtectedRoute path="/users" component={Users} adminOnly />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/suppliers" component={Suppliers} />
+      <ProtectedRoute path="/customers" component={Customers} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
