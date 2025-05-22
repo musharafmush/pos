@@ -259,19 +259,19 @@ export default function Purchases() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Purchase Orders</h2>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Purchase Orders</h2>
           <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
             <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input 
-                placeholder="Search purchase orders"
+                placeholder="Search purchases..."
                 className="pl-10 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             </div>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <PlusIcon className="h-5 w-5 mr-2" />
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-blue-500 hover:bg-blue-600">
+              <PlusIcon className="h-4 w-4 mr-2" />
               New Purchase
             </Button>
           </div>
