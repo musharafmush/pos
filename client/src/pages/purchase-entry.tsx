@@ -575,87 +575,155 @@ export default function PurchaseEntry() {
               </TabsList>
               
               <TabsContent value="details">
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 lg:grid-cols-3">
                   {/* Purchase Order Details */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Order Details</CardTitle>
+                  <Card className="lg:col-span-2">
+                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+                      <CardTitle className="flex items-center gap-2 text-blue-900">
+                        <Calendar className="h-5 w-5" />
+                        Order Details
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="poNo"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>PO Number</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Auto-generated" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="poDate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>PO Date</FormLabel>
-                              <FormControl>
-                                <div className="flex">
+                    <CardContent className="space-y-6 p-6">
+                      {/* Order Information */}
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h3 className="font-medium text-gray-900 mb-4">Order Information</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="poNo"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium text-gray-700">PO Number</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Auto-generated" 
+                                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    {...field} 
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="poDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium text-gray-700">PO Date</FormLabel>
+                                <FormControl>
                                   <Input
                                     type="date"
+                                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                     {...field}
                                   />
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="dueDate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Due Date</FormLabel>
-                              <FormControl>
-                                <div className="flex">
+                      {/* Due Date and Payment */}
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h3 className="font-medium text-gray-900 mb-4">Payment & Delivery</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="dueDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium text-gray-700">Due Date</FormLabel>
+                                <FormControl>
                                   <Input
                                     type="date"
+                                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                     {...field}
                                   />
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="paymentType"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium text-gray-700">Payment Type</FormLabel>
+                                <Select 
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                      <SelectValue placeholder="Select payment method" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="cash">💵 Cash</SelectItem>
+                                    <SelectItem value="credit">💳 Credit</SelectItem>
+                                    <SelectItem value="cheque">📝 Cheque</SelectItem>
+                                    <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Supplier Details */}
+                  <Card>
+                    <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg">
+                      <CardTitle className="flex items-center gap-2 text-green-900">
+                        <Building2 className="h-5 w-5" />
+                        Supplier Information
+                      </CardTitle>
+                      <p className="text-sm text-green-700 mt-1">Select a supplier to auto-fill details</p>
+                    </CardHeader>
+                    <CardContent className="space-y-6 p-6">
+                      {/* Supplier Selection */}
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                         <FormField
                           control={form.control}
-                          name="paymentType"
+                          name="supplierId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Payment Type</FormLabel>
+                              <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                <Search className="h-4 w-4" />
+                                Select Supplier *
+                              </FormLabel>
                               <Select 
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                onValueChange={(value) => {
+                                  field.onChange(parseInt(value));
+                                  handleSupplierChange(value);
+                                }}
+                                value={field.value ? field.value.toString() : ""}
                               >
                                 <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
+                                  <SelectTrigger className="bg-white border-green-300 focus:border-green-500 focus:ring-green-500">
+                                    <SelectValue placeholder="🏢 Choose your supplier..." />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="cash">Cash</SelectItem>
-                                  <SelectItem value="credit">Credit</SelectItem>
-                                  <SelectItem value="cheque">Cheque</SelectItem>
-                                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                                  {suppliers.map((supplier: any) => (
+                                    <SelectItem 
+                                      key={supplier.id} 
+                                      value={supplier.id.toString()}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <Building2 className="h-4 w-4 text-gray-500" />
+                                        {supplier.name}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -663,48 +731,6 @@ export default function PurchaseEntry() {
                           )}
                         />
                       </div>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Supplier Details */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Supplier Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="supplierId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Supplier</FormLabel>
-                            <Select 
-                              onValueChange={(value) => {
-                                field.onChange(parseInt(value));
-                                handleSupplierChange(value);
-                              }}
-                              value={field.value ? field.value.toString() : ""}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a supplier" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {suppliers.map((supplier: any) => (
-                                  <SelectItem 
-                                    key={supplier.id} 
-                                    value={supplier.id.toString()}
-                                  >
-                                    {supplier.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
