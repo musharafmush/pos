@@ -187,7 +187,7 @@ export default function PurchaseEntry() {
   const editId = urlParams.get('edit');
   const isEditMode = !!editId;
   
-  // Initialize form
+  // Initialize form with proper default values for all fields
   const form = useForm<PurchaseEntryFormValues>({
     resolver: zodResolver(purchaseEntrySchema),
     defaultValues: {
@@ -196,6 +196,26 @@ export default function PurchaseEntry() {
       paymentType: "cash",
       holdBills: false,
       print: "yes",
+      supplierCode: "",
+      supplierName: "",
+      supplierPhone: "",
+      supplierMobile: "",
+      supplierGstNo: "",
+      invoiceNo: "",
+      invoiceDate: "",
+      invoiceAmount: "0",
+      lrNo: "",
+      remarks: "",
+      grossAmount: "0",
+      itemDiscountAmount: "0",
+      taxAmount: "0",
+      cashDiscountAmount: "0",
+      surchargeAmount: "0",
+      freightAmount: "0",
+      packingCharge: "0",
+      otherCharge: "0",
+      manualDiscountAmount: "0",
+      payableAmount: "0",
       items: [{ ...emptyPurchaseItem }],
     },
   });
@@ -1469,7 +1489,10 @@ export default function PurchaseEntry() {
                             <FormItem>
                               <FormLabel>Gross Amount</FormLabel>
                               <FormControl>
-                                <Input {...field} readOnly className="bg-muted" />
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                                  <Input {...field} value={field.value || "0"} readOnly className="bg-muted pl-6 font-semibold" />
+                                </div>
                               </FormControl>
                             </FormItem>
                           )}
@@ -1482,7 +1505,10 @@ export default function PurchaseEntry() {
                             <FormItem>
                               <FormLabel>Discount Amount</FormLabel>
                               <FormControl>
-                                <Input {...field} readOnly className="bg-muted" />
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                                  <Input {...field} value={field.value || "0"} readOnly className="bg-muted pl-6 font-semibold" />
+                                </div>
                               </FormControl>
                             </FormItem>
                           )}
@@ -1497,7 +1523,10 @@ export default function PurchaseEntry() {
                             <FormItem>
                               <FormLabel>Tax Amount</FormLabel>
                               <FormControl>
-                                <Input {...field} readOnly className="bg-muted" />
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                                  <Input {...field} value={field.value || "0"} readOnly className="bg-muted pl-6 font-semibold" />
+                                </div>
                               </FormControl>
                             </FormItem>
                           )}
