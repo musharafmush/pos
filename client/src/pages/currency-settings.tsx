@@ -140,9 +140,12 @@ export default function CurrencySettings() {
     const thousandSep = form.watch("thousandSeparator") || ",";
     const decimalSep = form.watch("decimalSeparator") || ".";
 
-    const formattedAmount = amount.toFixed(decimals)
-      .replace(".", decimalSep)
-      .replace(/\B(?=(\d{3})+(?!\d))/g, thousandSep);
+    let formattedAmount = amount.toFixed(decimals).replace(".", decimalSep);
+    
+    // Only add thousand separator if it's not "none"
+    if (thousandSep !== "none") {
+      formattedAmount = formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, thousandSep);
+    }
 
     return position === "before" 
       ? `${symbol}${formattedAmount}`
@@ -297,7 +300,7 @@ export default function CurrencySettings() {
                               <SelectItem value=",">, (comma)</SelectItem>
                               <SelectItem value=".">(period)</SelectItem>
                               <SelectItem value=" ">(space)</SelectItem>
-                              <SelectItem value="">(none)</SelectItem>
+                              <SelectItem value="none">(none)</SelectItem>
                             </SelectContent>
                           </Select>
                         </FormControl>
