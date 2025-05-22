@@ -84,14 +84,15 @@ export default function Dashboard() {
           <Card className="p-6 shadow-sm border-none">
             <div className="flex flex-col">
               <div className="flex items-center mb-2">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-100 mr-3">
-                  <CreditCardIcon className="h-6 w-6 text-yellow-500" />
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100 mr-3">
+                  <ArrowUpIcon className="h-6 w-6 text-purple-500" />
                 </div>
-                <div className="font-medium text-sm text-gray-500">Invoice due</div>
+                <div className="font-medium text-sm text-gray-500">Smart Freight Distribution</div>
               </div>
               <div className="text-2xl font-bold mb-2">
-                {isLoading ? "..." : formatCurrency("0.00")}
+                {isLoading ? "..." : formatCurrency(dashboardStats?.totalFreightDistributed || "0")}
               </div>
+              <div className="text-xs text-gray-400">Across all purchase orders</div>
             </div>
           </Card>
           
