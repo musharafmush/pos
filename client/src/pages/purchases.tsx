@@ -270,6 +270,14 @@ export default function Purchases() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <Button 
+              variant="outline" 
+              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+              onClick={() => window.location.href = "/purchase-entry-modern"}
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Modern Purchase
+            </Button>
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <PlusIcon className="h-5 w-5 mr-2" />
               New Purchase
