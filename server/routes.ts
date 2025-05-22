@@ -1475,6 +1475,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Smart Freight Distribution API - Get total distributed freight
+  app.get('/api/freight/total-distributed', isAuthenticated, async (req, res) => {
+    try {
+      const totalFreight = await storage.getTotalFreightDistributed();
+      res.json({ totalFreightDistributed: totalFreight });
+    } catch (error) {
+      console.error('Error fetching total freight distributed:', error);
+      res.status(500).json({ message: 'Failed to fetch freight data' });
+    }
+  });
+
+  // Smart Product Cost API - Get true cost with freight allocation
+  app.get('/api/products/:id/true-cost', isAuthenticated, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const costData = await storage.getProductTrueCost(productId);
+      res.json(costData);
+    } catch (error) {
+      console.error('Error fetching product true cost:', error);
+      res.status(500).json({ message: 'Failed to fetch product cost data' });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
 

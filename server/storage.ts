@@ -791,5 +791,60 @@ export const storage = {
       inventoryValue,
       lowStockCount
     };
+  },
+
+  // Smart Freight Distribution - Get total distributed freight across all purchase orders
+  async getTotalFreightDistributed(): Promise<string> {
+    try {
+      const result = await db
+        .select({
+          totalFreight: sql`COALESCE(SUM(CAST(${purchases.freight} AS DECIMAL)), 0)`
+        })
+        .from(purchases)
+        .where(sql`${purchases.freight} IS NOT NULL AND ${purchases.freight} != '0'`)
+        .execute();
+      
+      return result[0]?.totalFreight?.toString() || "0";
+    } catch (error) {
+      console.error('Error calculating total freight distributed:', error);
+      return "0";
+    }
+  },
+
+  // Smart Product Cost Calculation with Freight Distribution
+  async getProductTrueCost(productId: number): Promise<{ baseCost: string; allocatedFreight: string; trueCost: string }> {
+    try {
+      // Get product's base cost
+      const product = await this.getProductById(productId);
+      if (!product) {
+        return { baseCost: "0", allocatedFreight: "0", trueCost: "0" };
+      }
+
+      // Calculate allocated freight based on purchase history
+      const freightAllocation = await db
+        .select({
+          totalFreight: sql`COALESCE(SUM(
+            CAST(${purchases.freight} AS DECIMAL) * 
+            (CAST(${purchaseItems.amount} AS DECIMAL) / CAST(${purchases.subTotal} AS DECIMAL))
+          ), 0)`
+        })
+        .from(purchaseItems)
+        .innerJoin(purchases, sql`${purchases.id} = ${purchaseItems.purchaseId}`)
+        .where(sql`${purchaseItems.productId} = ${productId}`)
+        .execute();
+
+      const allocatedFreight = freightAllocation[0]?.totalFreight?.toString() || "0";
+      const baseCost = product.cost || "0";
+      const trueCost = (Number(baseCost) + Number(allocatedFreight)).toString();
+
+      return {
+        baseCost,
+        allocatedFreight,
+        trueCost
+      };
+    } catch (error) {
+      console.error('Error calculating product true cost:', error);
+      return { baseCost: "0", allocatedFreight: "0", trueCost: "0" };
+    }
   }
 };
