@@ -121,6 +121,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       label: "Purchases",
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"/></svg>,
       items: [
+        { href: "/purchase-dashboard", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, label: "Purchase Dashboard" },
         { href: "/purchases", icon: <GalleryHorizontalIcon className="h-5 w-5" />, label: "List Purchases" },
         { href: "/purchase-entry", icon: <PlusIcon className="h-5 w-5" />, label: "Purchase Entry" },
         { href: "/purchases/add", icon: <PlusIcon className="h-5 w-5" />, label: "Add Purchase" },

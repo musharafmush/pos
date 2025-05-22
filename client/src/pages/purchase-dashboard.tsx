@@ -89,7 +89,7 @@ export default function PurchaseDashboard() {
     const statusConfig = {
       pending: { label: "Pending", variant: "secondary" as const, icon: Clock },
       ordered: { label: "Ordered", variant: "default" as const, icon: ShoppingCart },
-      received: { label: "Received", variant: "success" as const, icon: CheckCircle },
+      received: { label: "Received", variant: "default" as const, icon: CheckCircle },
       cancelled: { label: "Cancelled", variant: "destructive" as const, icon: AlertTriangle }
     };
 
