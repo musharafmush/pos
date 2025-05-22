@@ -182,6 +182,11 @@ export default function PurchaseEntry() {
   const [searchTerm, setSearchTerm] = useState("");
   const today = format(new Date(), "yyyy-MM-dd");
   
+  // Check if we're in edit mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get('edit');
+  const isEditMode = !!editId;
+  
   // Initialize form
   const form = useForm<PurchaseEntryFormValues>({
     resolver: zodResolver(purchaseEntrySchema),
@@ -195,6 +200,82 @@ export default function PurchaseEntry() {
     },
   });
   
+  // Fetch purchase data for editing
+  const { data: existingPurchase, isLoading: purchaseLoading } = useQuery({
+    queryKey: ['/api/purchases', editId],
+    queryFn: async () => {
+      if (!editId) return null;
+      const res = await fetch(`/api/purchases/${editId}`);
+      if (!res.ok) throw new Error('Failed to fetch purchase');
+      return res.json();
+    },
+    enabled: !!editId,
+  });
+  
+  // Effect to populate form when editing existing purchase
+  useEffect(() => {
+    if (existingPurchase && isEditMode) {
+      // Format dates properly
+      const poDate = existingPurchase.orderDate 
+        ? format(new Date(existingPurchase.orderDate), "yyyy-MM-dd")
+        : today;
+      const dueDate = existingPurchase.expectedDate 
+        ? format(new Date(existingPurchase.expectedDate), "yyyy-MM-dd")
+        : today;
+      
+      // Populate form with existing data
+      form.reset({
+        poNo: existingPurchase.orderNumber || "",
+        poDate: poDate,
+        dueDate: dueDate,
+        paymentType: "cash", // Default since not in schema
+        supplierId: existingPurchase.supplierId || 0,
+        supplierCode: existingPurchase.supplier?.id?.toString() || "",
+        supplierName: existingPurchase.supplier?.name || "",
+        supplierPhone: existingPurchase.supplier?.phone || "",
+        supplierMobile: existingPurchase.supplier?.phone || "",
+        supplierGstNo: existingPurchase.supplier?.taxId || "",
+        invoiceNo: existingPurchase.invoiceNumber || "",
+        invoiceDate: existingPurchase.invoiceDate ? format(new Date(existingPurchase.invoiceDate), "yyyy-MM-dd") : "",
+        invoiceAmount: existingPurchase.totalAmount?.toString() || "0",
+        holdBills: false,
+        print: "yes",
+        remarks: existingPurchase.notes || "",
+        items: existingPurchase.items?.length > 0 
+          ? existingPurchase.items.map((item: any) => ({
+              productId: item.productId || 0,
+              productName: item.product?.name || "",
+              code: item.product?.sku || "",
+              description: item.product?.description || "",
+              receivedQty: item.quantity?.toString() || "1",
+              freeQty: "0",
+              cost: item.unitCost?.toString() || "0",
+              hsnCode: item.product?.hsnCode || "",
+              taxPercent: "0",
+              discountAmount: "0",
+              expiryDate: "",
+              netCost: item.unitCost?.toString() || "0",
+              roiPercent: "0",
+              grossProfitPercent: "0",
+              sellingPrice: item.product?.price?.toString() || "0",
+              mrp: item.product?.price?.toString() || "0",
+              amount: (Number(item.quantity || 0) * Number(item.unitCost || 0)).toString(),
+              netAmount: (Number(item.quantity || 0) * Number(item.unitCost || 0)).toString(),
+              cashDiscountPercent: "0",
+              cashDiscountAmount: "0",
+            }))
+          : [{ ...emptyPurchaseItem }],
+        grossAmount: existingPurchase.totalAmount?.toString() || "0",
+        payableAmount: existingPurchase.totalAmount?.toString() || "0",
+      });
+      
+      toast({
+        title: "Editing purchase order",
+        description: `Loaded purchase order ${existingPurchase.orderNumber}`,
+      });
+    }
+  }, [existingPurchase, isEditMode, form, today, toast]);
+
   // Watch form values to calculate totals
   const watchedItems = form.watch("items");
   
@@ -253,26 +334,36 @@ export default function PurchaseEntry() {
       )
     : products;
   
-  // Create purchase mutation
-  const createPurchaseMutation = useMutation({
+  // Create/Update purchase mutation
+  const savePurchaseMutation = useMutation({
     mutationFn: async (data: PurchaseEntryFormValues) => {
-      const res = await apiRequest("POST", "/api/purchases", data);
-      return await res.json();
+      if (isEditMode) {
+        const res = await apiRequest("PUT", `/api/purchases/${editId}`, data);
+        return await res.json();
+      } else {
+        const res = await apiRequest("POST", "/api/purchases", data);
+        return await res.json();
+      }
     },
     onSuccess: () => {
       toast({
-        title: "Purchase order created",
-        description: "The purchase order has been successfully created.",
+        title: isEditMode ? "Purchase order updated" : "Purchase order created",
+        description: isEditMode 
+          ? "The purchase order has been successfully updated."
+          : "The purchase order has been successfully created.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-      form.reset();
-      form.setValue("items", [{ ...emptyPurchaseItem }]);
-      form.setValue("poDate", today);
-      form.setValue("dueDate", today);
+      
+      if (!isEditMode) {
+        form.reset();
+        form.setValue("items", [{ ...emptyPurchaseItem }]);
+        form.setValue("poDate", today);
+        form.setValue("dueDate", today);
+      }
     },
     onError: (error) => {
       toast({
-        title: "Error creating purchase order",
+        title: isEditMode ? "Error updating purchase order" : "Error creating purchase order",
         description: error.message,
         variant: "destructive",
       });
@@ -424,7 +515,7 @@ export default function PurchaseEntry() {
   };
   
   const onSubmit = (data: PurchaseEntryFormValues) => {
-    createPurchaseMutation.mutate(data);
+    savePurchaseMutation.mutate(data);
   };
   
   return (
@@ -444,13 +535,13 @@ export default function PurchaseEntry() {
             
             <Button 
               onClick={form.handleSubmit(onSubmit)}
-              disabled={createPurchaseMutation.isPending}
+              disabled={savePurchaseMutation.isPending}
             >
-              {createPurchaseMutation.isPending ? (
+              {savePurchaseMutation.isPending ? (
                 "Saving..."
               ) : (
                 <>
-                  <Save className="mr-2 h-4 w-4" /> Save
+                  <Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update" : "Save"}
                 </>
               )}
             </Button>
