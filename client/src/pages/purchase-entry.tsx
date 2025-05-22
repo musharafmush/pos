@@ -941,21 +941,11 @@ export default function PurchaseEntry() {
               
               <TabsContent value="items">
                 <Card>
-                  <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg">
+                  <CardHeader>
                     <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle className="flex items-center gap-2 text-purple-900">
-                          <ClipboardList className="h-5 w-5" />
-                          Purchase Line Items
-                        </CardTitle>
-                        <p className="text-sm text-purple-700 mt-1">Add products to your purchase order</p>
-                      </div>
-                      <Button 
-                        type="button" 
-                        onClick={addItemRow}
-                        className="bg-purple-600 hover:bg-purple-700 text-white"
-                      >
-                        <Plus className="h-4 w-4 mr-2" /> Add New Item
+                      <CardTitle>Line Items</CardTitle>
+                      <Button type="button" onClick={addItemRow}>
+                        <FilePlus className="h-4 w-4 mr-2" /> Add Item
                       </Button>
                     </div>
                   </CardHeader>
@@ -964,30 +954,53 @@ export default function PurchaseEntry() {
                       <div className="min-w-[2400px] bg-white">
                         <Table className="text-sm">
                           <TableHeader>
-                            <TableRow className="bg-gray-50 border-b">
-                              <TableHead className="w-12 text-center text-xs text-gray-600 font-medium px-2 py-3">#</TableHead>
-                              <TableHead className="min-w-[200px] text-left text-xs text-gray-600 font-medium px-3 py-3">Product</TableHead>
-                              <TableHead className="w-20 text-center text-xs text-gray-600 font-medium px-2 py-3">Qty</TableHead>
-                              <TableHead className="w-20 text-center text-xs text-gray-600 font-medium px-2 py-3">Free</TableHead>
-                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">Cost</TableHead>
-                              <TableHead className="w-20 text-center text-xs text-gray-600 font-medium px-2 py-3">Tax%</TableHead>
-                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">Disc</TableHead>
-                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">Net Cost</TableHead>
-                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">MRP</TableHead>
-                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">🧮 Total</TableHead>
-                              <TableHead className="w-20 text-center text-xs text-gray-600 font-medium px-2 py-3">📍 Location</TableHead>
-                              <TableHead className="w-16 text-center text-xs text-gray-600 font-medium px-2 py-3">⚡ Actions</TableHead>
+                            <TableRow className="bg-blue-50 border-b-2">
+                              <TableHead className="w-20 text-center font-bold border-r px-3 py-4">Sno</TableHead>
+                              <TableHead className="w-40 font-bold border-r px-3 py-4">Code</TableHead>
+                              <TableHead className="min-w-[200px] font-bold border-r px-3 py-4">Product Name</TableHead>
+                              <TableHead className="min-w-[180px] font-bold border-r px-3 py-4">Description</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Received Qty</TableHead>
+                              <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Free Qty</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Cost</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">HSN Code</TableHead>
+                              <TableHead className="w-24 text-center font-bold border-r px-3 py-4">Tax %</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Disc Amt</TableHead>
+                              <TableHead className="w-40 text-center font-bold border-r px-3 py-4">Exp. Date</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Net Cost</TableHead>
+                              <TableHead className="w-28 text-center font-bold border-r px-3 py-4">ROI %</TableHead>
+                              <TableHead className="w-40 text-center font-bold border-r px-3 py-4">Gross Profit %</TableHead>
+                              <TableHead className="w-40 text-center font-bold border-r px-3 py-4">Selling Price</TableHead>
+                              <TableHead className="w-32 text-center font-bold border-r px-3 py-4">MRP</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Amount</TableHead>
+                              <TableHead className="w-40 text-center font-bold border-r px-3 py-4">Net Amount</TableHead>
+                              <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Cash %</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Cash Amt</TableHead>
+                              <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Batch No</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Location</TableHead>
+                              <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Unit</TableHead>
+                              <TableHead className="w-24 text-center font-bold px-3 py-4">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {form.getValues("items").map((item, index) => (
-                              <TableRow key={index} className="hover:bg-gray-50 border-b">
-                                <TableCell className="text-center py-2 text-sm text-gray-600">
+                              <TableRow key={index} className="hover:bg-muted/30">
+                                <TableCell className="font-medium text-center py-4">
                                   {index + 1}
                                 </TableCell>
-                                
-                                {/* Product Selection - Clean and Simple */}
-                                <TableCell className="py-2">
+                                <TableCell className="py-4">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.code`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input {...field} className="w-full h-10" placeholder="Code" />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="py-4">
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.productName`}
@@ -996,40 +1009,37 @@ export default function PurchaseEntry() {
                                         <FormControl>
                                           <Popover>
                                             <PopoverTrigger asChild>
-                                              <Button 
-                                                variant="ghost" 
-                                                className="w-full h-8 justify-start text-left px-2 text-sm hover:bg-gray-100"
-                                              >
-                                                {field.value || "Select product..."}
+                                              <Button variant="outline" className="w-full h-10 justify-start">
+                                                {field.value || "Select Product"}
                                               </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-80 p-0">
-                                              <div className="px-3 py-2 border-b">
+                                              <div className="px-4 py-2 border-b">
                                                 <Input
                                                   placeholder="Search products..."
                                                   value={searchTerm}
                                                   onChange={(e) => setSearchTerm(e.target.value)}
-                                                  className="w-full h-8 text-sm"
+                                                  className="w-full"
                                                 />
                                               </div>
-                                              <div className="max-h-48 overflow-y-auto">
+                                              <div className="max-h-60 overflow-y-auto">
                                                 {filteredProducts.length === 0 ? (
-                                                  <div className="p-4 text-center text-sm text-gray-500">
+                                                  <div className="p-4 text-center text-sm text-muted-foreground">
                                                     No products found
                                                   </div>
                                                 ) : (
                                                   filteredProducts.map((product: any) => (
                                                     <div
                                                       key={product.id}
-                                                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                                                      className="px-4 py-2 cursor-pointer hover:bg-muted"
                                                       onClick={() => {
                                                         handleProductSelect(product.id, index);
                                                         setSearchTerm("");
                                                       }}
                                                     >
                                                       <div className="font-medium">{product.name}</div>
-                                                      <div className="text-xs text-gray-500">
-                                                        {product.sku} • Stock: {product.stockQuantity} • ₹{typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
+                                                      <div className="text-sm text-muted-foreground">
+                                                        SKU: {product.sku} | Stock: {product.stockQuantity} | Price: ${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
                                                       </div>
                                                     </div>
                                                   ))
@@ -1042,8 +1052,20 @@ export default function PurchaseEntry() {
                                     )}
                                   />
                                 </TableCell>
-                                {/* Quantity */}
-                                <TableCell className="py-2">
+                                <TableCell className="py-4">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.description`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input {...field} className="w-full h-10" placeholder="Description" />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="py-4">
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.receivedQty`}
@@ -1052,9 +1074,7 @@ export default function PurchaseEntry() {
                                         <FormControl>
                                           <Input 
                                             {...field} 
-                                            type="number"
-                                            className="w-full h-8 text-sm text-center border-gray-200"
-                                            placeholder="0"
+                                            className="w-full text-xs"
                                             onChange={(e) => {
                                               field.onChange(e);
                                               recalculateAmounts(index);
@@ -1065,9 +1085,7 @@ export default function PurchaseEntry() {
                                     )}
                                   />
                                 </TableCell>
-                                
-                                {/* Free Qty */}
-                                <TableCell className="py-2">
+                                <TableCell>
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.freeQty`}
@@ -1076,18 +1094,14 @@ export default function PurchaseEntry() {
                                         <FormControl>
                                           <Input 
                                             {...field} 
-                                            type="number"
-                                            className="w-full h-8 text-sm text-center border-gray-200"
-                                            placeholder="0"
+                                            className="w-full text-xs"
                                           />
                                         </FormControl>
                                       </FormItem>
                                     )}
                                   />
                                 </TableCell>
-                                
-                                {/* Cost */}
-                                <TableCell className="py-2">
+                                <TableCell>
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.cost`}
