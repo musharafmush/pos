@@ -18,6 +18,7 @@ import Settings from "@/pages/settings";
 import Suppliers from "@/pages/suppliers";
 import Customers from "@/pages/customers";
 import AddProduct from "@/pages/add-product";
+import PrintLabels from "@/pages/print-labels";
 import CurrencySettings from "@/pages/currency-settings";
 import BusinessSettings from "@/pages/business-settings";
 import AuthPage from "@/pages/auth-page";
