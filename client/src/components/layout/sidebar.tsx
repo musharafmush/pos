@@ -99,7 +99,22 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     },
     {
       id: "products",
-      items: [{ href: "/products", icon: <PackageIcon className="h-5 w-5" />, label: "Products" }]
+      label: "Products",
+      icon: <PackageIcon className="h-5 w-5" />,
+      items: [
+        { href: "/products", icon: <PackageIcon className="h-5 w-5" />, label: "List Products" },
+        { href: "/products/add", icon: <PlusIcon className="h-5 w-5" />, label: "Add Product" },
+        { href: "/products/update-price", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Update Price" },
+        { href: "/products/labels", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Print Labels" },
+        { href: "/products/variations", icon: <GalleryHorizontalIcon className="h-5 w-5" />, label: "Variations" },
+        { href: "/products/import", icon: <ArrowDownIcon className="h-5 w-5" />, label: "Import Products" },
+        { href: "/products/opening-stock", icon: <PackageIcon className="h-5 w-5" />, label: "Import Opening Stock" },
+        { href: "/products/selling-price-group", icon: <BarChart4Icon className="h-5 w-5" />, label: "Selling Price Group" },
+        { href: "/products/units", icon: <Calculator className="h-5 w-5" />, label: "Units" },
+        { href: "/categories", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, label: "Categories" },
+        { href: "/products/brands", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>, label: "Brands" },
+        { href: "/products/warranties", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label: "Warranties" }
+      ]
     },
     {
       id: "purchases",
