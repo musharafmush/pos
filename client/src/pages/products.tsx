@@ -959,23 +959,7 @@ export default function Products() {
       </Dialog>
     </DashboardLayout>
   );
-}
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsEditDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
+} 
                   type="submit" 
                   disabled={updateProductMutation.isPending}
                 >
