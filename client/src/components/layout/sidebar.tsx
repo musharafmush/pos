@@ -131,12 +131,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [{ href: "/pos", icon: <ShoppingBagIcon className="h-5 w-5" />, label: "Sell" }]
     },
     {
-      id: "stockTransfers",
-      items: [{ href: "/inventory", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Stock Transfers" }]
-    },
-    {
-      id: "stockAdjustment",
-      items: [{ href: "/adjustments", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Stock Adjustment" }]
+      id: "inventory",
+      label: "Inventory",
+      icon: <PackageIcon className="h-5 w-5" />,
+      items: [
+        { href: "/inventory", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Stock Transfers" },
+        { href: "/inventory-forecasting", icon: <BarChart4Icon className="h-5 w-5" />, label: "Inventory Forecasting" },
+        { href: "/adjustments", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Stock Adjustment" }
+      ]
     },
     {
       id: "reports",
