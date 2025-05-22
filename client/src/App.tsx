@@ -9,6 +9,7 @@ import POS from "@/pages/pos";
 import Products from "@/pages/products";
 import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
+import PurchaseDashboard from "@/pages/purchase-dashboard";
 import PurchaseEntry from "@/pages/purchase-entry";
 import PurchaseEntryLegacy from "@/pages/purchase-entry-legacy";
 import Reports from "@/pages/reports";
@@ -32,6 +33,7 @@ function Router() {
       <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/purchases" component={Purchases} />
+      <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
       <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
       <ProtectedRoute path="/purchase-entry-legacy" component={PurchaseEntryLegacy} />
       <ProtectedRoute path="/reports" component={Reports} />
