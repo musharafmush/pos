@@ -1318,8 +1318,8 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="flex items-center justify-center p-2 bg-green-50 rounded-md">
-                                            <span className="text-sm font-medium text-green-700">$</span>
-                                            <div className="font-medium text-sm text-green-700 ml-1">{Number(field.value || 0).toFixed(2)}</div>
+                                            <span className="text-sm font-medium text-green-700">₹</span>
+                                            <div className="font-medium text-sm text-green-700 ml-1">{Number(field.value || 0).toFixed(0)}</div>
                                           </div>
                                         </FormControl>
                                       </FormItem>
@@ -1357,7 +1357,7 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="flex items-center justify-center p-2 bg-gray-50 rounded-md">
-                                            <span className="text-sm">$</span>
+                                            <span className="text-sm">₹</span>
                                             <div className="font-medium text-sm ml-1">{field.value || "0"}</div>
                                           </div>
                                         </FormControl>
