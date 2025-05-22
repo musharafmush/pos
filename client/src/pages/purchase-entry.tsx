@@ -509,6 +509,7 @@ export default function PurchaseEntry() {
         ).toFixed(0);
         
         // Distribute additional charges to line items amounts
+        const totalAdditionalCharges = surchargeAmount + freightAmount + packingCharge + otherCharge;
         if (totalAdditionalCharges > 0 && watchedItems.length > 0) {
           watchedItems.forEach((item, index) => {
             const itemAmount = Number(form.getValues(`items.${index}.amount`)) || 0;
