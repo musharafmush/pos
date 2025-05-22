@@ -511,18 +511,31 @@ export default function PurchaseEntry() {
         // Distribute additional charges to line items amounts
         const totalAdditionalCharges = surchargeAmount + freightAmount + packingCharge + otherCharge;
         if (totalAdditionalCharges > 0 && watchedItems.length > 0) {
+          // First, get the base amounts (without additional charges)
+          const baseGrossAmount = watchedItems.reduce((sum, item, index) => {
+            const qty = Number(form.getValues(`items.${index}.qty`)) || 0;
+            const cost = Number(form.getValues(`items.${index}.cost`)) || 0;
+            return sum + (qty * cost);
+          }, 0);
+          
           watchedItems.forEach((item, index) => {
-            const itemAmount = Number(form.getValues(`items.${index}.amount`)) || 0;
-            const proportion = grossAmount > 0 ? itemAmount / grossAmount : 0;
-            const itemAdditionalCharge = (surchargeAmount + freightAmount + packingCharge + otherCharge) * proportion;
+            const qty = Number(form.getValues(`items.${index}.qty`)) || 0;
+            const cost = Number(form.getValues(`items.${index}.cost`)) || 0;
+            const baseAmount = qty * cost;
             
-            // Add additional charges to line item amount
-            const newLineItemAmount = itemAmount + itemAdditionalCharge;
+            // Calculate proportion based on base amount
+            const proportion = baseGrossAmount > 0 ? baseAmount / baseGrossAmount : 0;
+            const itemAdditionalCharge = totalAdditionalCharges * proportion;
+            
+            // Set new amounts with additional charges
+            const newLineItemAmount = baseAmount + itemAdditionalCharge;
             form.setValue(`items.${index}.amount`, newLineItemAmount.toFixed(0));
             
-            // Update net amount as well
-            const currentNetAmount = Number(form.getValues(`items.${index}.netAmount`)) || 0;
-            form.setValue(`items.${index}.netAmount`, (currentNetAmount + itemAdditionalCharge).toFixed(0));
+            // Update net amount (after taxes)
+            const taxRate = Number(form.getValues(`items.${index}.taxRate`)) || 0;
+            const taxAmount = newLineItemAmount * (taxRate / 100);
+            const netAmount = newLineItemAmount + taxAmount;
+            form.setValue(`items.${index}.netAmount`, netAmount.toFixed(0));
           });
         }
 
