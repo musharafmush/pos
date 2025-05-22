@@ -123,7 +123,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [
         { href: "/purchase-dashboard", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, label: "Purchase Dashboard" },
         { href: "/purchase-entry", icon: <PlusIcon className="h-5 w-5" />, label: "Purchase Entry" },
-        { href: "/purchases/add", icon: <PlusIcon className="h-5 w-5" />, label: "Add Purchase" },
         { href: "/purchases/return", icon: <ArrowRightLeft className="h-5 w-5" />, label: "List Purchase Return" }
       ]
     },
