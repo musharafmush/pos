@@ -1319,11 +1319,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the purchase order
       const purchase = await storage.createPurchase(
         poData.supplierId,
-        poData.orderNumber,
-        poData.orderDate,
-        poData.expectedDate,
-        poData.status,
-        poData.items,
+        poData.orderNumber || `PO-${Date.now()}`,
+        poData.orderDate || new Date(),
+        poData.expectedDate || new Date(),
+        poData.status || 'pending',
+        poData.items || [],
         poData.notes || ''
       );
       

@@ -44,10 +44,10 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        {/* Welcome header */}
+        {/* Enhanced Welcome header with dynamic greeting */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-            Welcome Admin, <span className="text-yellow-500">👋</span>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+            Welcome {currentUser?.name || 'Admin'}, <span className="text-yellow-500">👋</span>
           </h2>
         </div>
 
