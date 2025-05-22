@@ -564,7 +564,44 @@ export default function PurchaseEntry() {
   };
   
   const onSubmit = (data: PurchaseEntryFormValues) => {
-    savePurchaseMutation.mutate(data);
+    // Enhanced data processing to include freight charges in line items
+    const enhancedData = { ...data };
+    
+    // Get additional charges
+    const freightAmount = Number(data.freightAmount) || 0;
+    const packingCharge = Number(data.packingCharge) || 0;
+    const otherCharge = Number(data.otherCharge) || 0;
+    const surchargeAmount = Number(data.surchargeAmount) || 0;
+    
+    // Total additional charges to distribute
+    const totalAdditionalCharges = freightAmount + packingCharge + otherCharge + surchargeAmount;
+    
+    if (totalAdditionalCharges > 0 && data.items && data.items.length > 0) {
+      // Calculate total line items amount for proportional distribution
+      const totalLineItemAmount = data.items.reduce((sum, item) => {
+        return sum + (Number(item.amount) || 0);
+      }, 0);
+      
+      // Distribute additional charges proportionally across line items
+      enhancedData.items = data.items.map((item) => {
+        const itemAmount = Number(item.amount) || 0;
+        const proportion = totalLineItemAmount > 0 ? itemAmount / totalLineItemAmount : 0;
+        const itemAdditionalCharge = totalAdditionalCharges * proportion;
+        
+        // Add freight and other charges to line item details for database storage
+        return {
+          ...item,
+          freightCharge: (freightAmount * proportion).toFixed(0),
+          packingCharge: (packingCharge * proportion).toFixed(0),
+          otherCharge: (otherCharge * proportion).toFixed(0),
+          surchargeAmount: (surchargeAmount * proportion).toFixed(0),
+          totalAdditionalCharge: itemAdditionalCharge.toFixed(0),
+          finalNetAmount: (Number(item.netAmount) + itemAdditionalCharge).toFixed(0)
+        };
+      });
+    }
+    
+    savePurchaseMutation.mutate(enhancedData);
   };
   
   return (
