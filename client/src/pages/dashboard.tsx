@@ -23,10 +23,12 @@ import {
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFormatCurrency } from "@/lib/currency";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const currentUser = queryClient.getQueryData<{ user: any }>(["/api/auth/user"])?.user;
+  const formatCurrency = useFormatCurrency();
 
   const { data: dashboardStats, isLoading } = useQuery({
     queryKey: ['/api/dashboard/stats'],
@@ -60,7 +62,7 @@ export default function Dashboard() {
                 <div className="font-medium text-sm text-gray-500">Total Sales</div>
               </div>
               <div className="text-2xl font-bold mb-2">
-                $ {isLoading ? "..." : parseFloat(dashboardStats?.todaySales || "12647.27").toFixed(2)}
+                {isLoading ? "..." : formatCurrency(dashboardStats?.todaySales || "0")}
               </div>
             </div>
           </Card>
@@ -74,7 +76,7 @@ export default function Dashboard() {
                 <div className="font-medium text-sm text-gray-500">Net</div>
               </div>
               <div className="text-2xl font-bold mb-2">
-                $ {isLoading ? "..." : parseFloat(dashboardStats?.todaySales || "12647.27").toFixed(2)}
+                {isLoading ? "..." : formatCurrency(dashboardStats?.todaySales || "0")}
               </div>
             </div>
           </Card>
