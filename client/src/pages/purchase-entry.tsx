@@ -906,54 +906,54 @@ export default function PurchaseEntry() {
                       </Button>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="rounded-md border overflow-hidden">
-                      <div className="overflow-x-auto">
+                  <CardContent className="p-0">
+                    <div className="w-full overflow-x-auto">
+                      <div className="min-w-[1800px]">
                         <Table>
                           <TableHeader>
                             <TableRow className="bg-muted/50">
-                              <TableHead className="w-10">Sno</TableHead>
-                              <TableHead className="w-16">Code</TableHead>
-                              <TableHead className="min-w-[120px]">Description</TableHead>
-                              <TableHead className="w-20">Received Qty</TableHead>
-                              <TableHead className="w-16">Free Qty</TableHead>
-                              <TableHead className="w-16">Cost</TableHead>
-                              <TableHead className="w-16">HSN Code</TableHead>
-                              <TableHead className="w-12">Tax %</TableHead>
-                              <TableHead className="w-16">Disc Amt</TableHead>
-                              <TableHead className="w-24">Exp. Date</TableHead>
-                              <TableHead className="w-16">Net Cost</TableHead>
-                              <TableHead className="w-12">ROI %</TableHead>
-                              <TableHead className="w-16">Gross Profit %</TableHead>
-                              <TableHead className="w-16">Selling Price</TableHead>
-                              <TableHead className="w-12">MRP</TableHead>
-                              <TableHead className="w-16">Amount</TableHead>
-                              <TableHead className="w-16">Net Amount</TableHead>
-                              <TableHead className="w-16">Cash %</TableHead>
-                              <TableHead className="w-16">Cash Amt</TableHead>
-                              <TableHead className="w-10">Actions</TableHead>
+                              <TableHead className="w-16 text-center font-semibold">Sno</TableHead>
+                              <TableHead className="w-32 font-semibold">Code</TableHead>
+                              <TableHead className="min-w-[200px] font-semibold">Description</TableHead>
+                              <TableHead className="w-32 text-center font-semibold">Received Qty</TableHead>
+                              <TableHead className="w-24 text-center font-semibold">Free Qty</TableHead>
+                              <TableHead className="w-28 text-center font-semibold">Cost</TableHead>
+                              <TableHead className="w-28 text-center font-semibold">HSN Code</TableHead>
+                              <TableHead className="w-20 text-center font-semibold">Tax %</TableHead>
+                              <TableHead className="w-28 text-center font-semibold">Disc Amt</TableHead>
+                              <TableHead className="w-36 text-center font-semibold">Exp. Date</TableHead>
+                              <TableHead className="w-28 text-center font-semibold">Net Cost</TableHead>
+                              <TableHead className="w-20 text-center font-semibold">ROI %</TableHead>
+                              <TableHead className="w-32 text-center font-semibold">Gross Profit %</TableHead>
+                              <TableHead className="w-32 text-center font-semibold">Selling Price</TableHead>
+                              <TableHead className="w-24 text-center font-semibold">MRP</TableHead>
+                              <TableHead className="w-28 text-center font-semibold">Amount</TableHead>
+                              <TableHead className="w-32 text-center font-semibold">Net Amount</TableHead>
+                              <TableHead className="w-24 text-center font-semibold">Cash %</TableHead>
+                              <TableHead className="w-28 text-center font-semibold">Cash Amt</TableHead>
+                              <TableHead className="w-20 text-center font-semibold">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {form.getValues("items").map((item, index) => (
-                              <TableRow key={index}>
-                                <TableCell className="font-medium">
+                              <TableRow key={index} className="hover:bg-muted/30">
+                                <TableCell className="font-medium text-center py-4">
                                   {index + 1}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="py-4">
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.code`}
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input {...field} className="w-full text-xs" />
+                                          <Input {...field} className="w-full h-10" placeholder="Code" />
                                         </FormControl>
                                       </FormItem>
                                     )}
                                   />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="py-4">
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.productName`}
@@ -962,7 +962,7 @@ export default function PurchaseEntry() {
                                         <FormControl>
                                           <Popover>
                                             <PopoverTrigger asChild>
-                                              <Button variant="outline" className="w-full justify-start">
+                                              <Button variant="outline" className="w-full h-10 justify-start">
                                                 {field.value || "Select Product"}
                                               </Button>
                                             </PopoverTrigger>
