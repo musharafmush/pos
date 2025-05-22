@@ -1317,11 +1317,10 @@ export default function PurchaseEntry() {
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input 
-                                            {...field} 
-                                            readOnly 
-                                            className="w-full text-xs bg-muted"
-                                          />
+                                          <div className="flex items-center justify-center p-2 bg-green-50 rounded-md">
+                                            <span className="text-sm font-medium text-green-700">$</span>
+                                            <div className="font-medium text-sm text-green-700 ml-1">{Number(field.value || 0).toFixed(2)}</div>
+                                          </div>
                                         </FormControl>
                                       </FormItem>
                                     )}
