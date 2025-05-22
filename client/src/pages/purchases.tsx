@@ -270,7 +270,10 @@ export default function Purchases() {
               />
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             </div>
-            <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-blue-500 hover:bg-blue-600">
+            <Button 
+              onClick={() => window.location.href = "/purchase-entry-legacy"} 
+              className="bg-blue-500 hover:bg-blue-600"
+            >
               <PlusIcon className="h-4 w-4 mr-2" />
               New Purchase
             </Button>
