@@ -33,6 +33,7 @@ function Router() {
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/add-product" component={AddProduct} />
+      <ProtectedRoute path="/print-labels" component={PrintLabels} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/purchases" component={Purchases} />
       <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
