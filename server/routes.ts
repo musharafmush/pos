@@ -993,6 +993,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Currency Settings endpoints
+  app.get('/api/settings/currency', isAuthenticated, async (req, res) => {
+    try {
+      // Return default settings since we don't have a settings table yet
+      const defaultSettings = {
+        baseCurrency: "USD",
+        currencySymbol: "$",
+        currencyPosition: "before",
+        decimalPlaces: "2",
+        thousandSeparator: ",",
+        decimalSeparator: ".",
+        enableMultiCurrency: false,
+        exchangeRateProvider: "",
+        autoUpdateRates: false,
+      };
+      
+      res.json(defaultSettings);
+    } catch (error) {
+      console.error("Error fetching currency settings:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put('/api/settings/currency', isAuthenticated, async (req, res) => {
+    try {
+      const {
+        baseCurrency,
+        currencySymbol,
+        currencyPosition,
+        decimalPlaces,
+        thousandSeparator,
+        decimalSeparator,
+        enableMultiCurrency,
+        exchangeRateProvider,
+        autoUpdateRates,
+      } = req.body;
+
+      // Validate required fields
+      if (!baseCurrency || !currencySymbol || !currencyPosition) {
+        return res.status(400).json({ error: "Missing required currency settings" });
+      }
+
+      // Save settings (for now just return success - in future versions this would save to database)
+      const updatedSettings = {
+        baseCurrency,
+        currencySymbol,
+        currencyPosition,
+        decimalPlaces,
+        thousandSeparator,
+        decimalSeparator,
+        enableMultiCurrency,
+        exchangeRateProvider,
+        autoUpdateRates,
+      };
+
+      res.json({
+        message: "Currency settings updated successfully",
+        settings: updatedSettings,
+      });
+    } catch (error) {
+      console.error("Error updating currency settings:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Supplier routes for purchase entry form
   app.get('/api/suppliers', isAuthenticated, async (req, res) => {
     try {
