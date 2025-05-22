@@ -292,18 +292,12 @@ export default function Products() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
+            <Link href="/add-product">
+              <Button className="bg-blue-600 hover:bg-blue-700">
                 <PlusIcon className="h-4 w-4 mr-2" />
-                Quick Add
+                Add Product
               </Button>
-              <Link href="/add-product">
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                  Add Product
-                </Button>
-              </Link>
-            </div>
+            </Link>
           </div>
         </div>
 
