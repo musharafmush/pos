@@ -436,37 +436,7 @@ export default function PurchaseEntry() {
     }
   };
 
-  // Smart keyboard shortcuts for better efficiency
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+N: Add new line item
-      if (e.ctrlKey && e.key === 'n') {
-        e.preventDefault();
-        addItemRow();
-      }
-      
-      // Ctrl+S: Save purchase order
-      if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        form.handleSubmit(onSubmit)();
-      }
-      
-      // F9: Quick focus on first empty product field
-      if (e.key === 'F9') {
-        e.preventDefault();
-        const emptyIndex = fields.findIndex((_, index) => 
-          !form.getValues(`items.${index}.productId`)
-        );
-        if (emptyIndex !== -1) {
-          const productField = document.querySelector(`[name="items.${emptyIndex}.productId"]`) as HTMLElement;
-          productField?.focus();
-        }
-      }
-    };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [fields, form, addItemRow, onSubmit]);
   
   // Function to recalculate amounts for a specific item
   const recalculateAmounts = (index: number) => {
@@ -712,6 +682,38 @@ export default function PurchaseEntry() {
     
     savePurchaseMutation.mutate(enhancedData);
   };
+
+  // Setup keyboard shortcuts after onSubmit is defined
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+N: Add new line item
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        addItemRow();
+      }
+      
+      // Ctrl+S: Save purchase order
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        form.handleSubmit(onSubmit)();
+      }
+      
+      // F9: Quick focus on first empty product field
+      if (e.key === 'F9') {
+        e.preventDefault();
+        const emptyIndex = fields.findIndex((_, index) => 
+          !form.getValues(`items.${index}.productId`)
+        );
+        if (emptyIndex !== -1) {
+          const productField = document.querySelector(`[name="items.${emptyIndex}.productId"]`) as HTMLElement;
+          productField?.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fields, form, addItemRow, onSubmit]);
   
   return (
     <DashboardLayout>
