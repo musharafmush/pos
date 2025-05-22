@@ -427,13 +427,19 @@ export default function PurchaseEntry() {
       grossProfitPercent = ((sellingPrice - netCost) / sellingPrice) * 100;
     }
 
-    // Update calculated fields
-    form.setValue(`items.${index}.amount`, amount.toFixed(2));
-    form.setValue(`items.${index}.netAmount`, netAmount.toFixed(2));
-    form.setValue(`items.${index}.netCost`, netCost.toFixed(2));
-    form.setValue(`items.${index}.cashDiscountAmount`, cashDiscountAmount.toFixed(2));
+    // Update calculated fields with Indian Rupees formatting (no decimal places for currency)
+    form.setValue(`items.${index}.amount`, amount.toFixed(0));
+    form.setValue(`items.${index}.netAmount`, netAmount.toFixed(0));
+    form.setValue(`items.${index}.netCost`, netCost.toFixed(0));
+    form.setValue(`items.${index}.cashDiscountAmount`, cashDiscountAmount.toFixed(0));
     form.setValue(`items.${index}.roiPercent`, roiPercent.toFixed(2));
     form.setValue(`items.${index}.grossProfitPercent`, grossProfitPercent.toFixed(2));
+    
+    // Trigger real-time UI updates
+    setTimeout(() => {
+      form.trigger(`items.${index}.amount`);
+      form.trigger(`items.${index}.netAmount`);
+    }, 0);
   };
 
   // Calculate totals whenever items change
@@ -462,11 +468,11 @@ export default function PurchaseEntry() {
         totalCashDiscount += cashDiscountAmount;
       });
       
-      // Update summary fields
-      form.setValue("grossAmount", grossAmount.toFixed(2));
-      form.setValue("itemDiscountAmount", totalDiscount.toFixed(2));
-      form.setValue("taxAmount", totalTax.toFixed(2));
-      form.setValue("cashDiscountAmount", totalCashDiscount.toFixed(2));
+      // Update summary fields with Indian Rupees formatting (no decimals)
+      form.setValue("grossAmount", grossAmount.toFixed(0));
+      form.setValue("itemDiscountAmount", totalDiscount.toFixed(0));
+      form.setValue("taxAmount", totalTax.toFixed(0));
+      form.setValue("cashDiscountAmount", totalCashDiscount.toFixed(0));
       
       // Calculate payable amount
       const surchargeAmount = Number(form.getValues("surchargeAmount")) || 0;
@@ -485,7 +491,7 @@ export default function PurchaseEntry() {
         packingCharge +
         otherCharge -
         manualDiscountAmount
-      ).toFixed(2);
+      ).toFixed(0);
       
       form.setValue("payableAmount", payableAmount);
       form.setValue("invoiceAmount", payableAmount);
