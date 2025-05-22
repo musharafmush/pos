@@ -1039,7 +1039,7 @@ export default function PurchaseEntry() {
                                                     >
                                                       <div className="font-medium">{product.name}</div>
                                                       <div className="text-sm text-muted-foreground">
-                                                        SKU: {product.sku} | Stock: {product.stockQuantity} | Price: ${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
+                                                        SKU: {product.sku} | Stock: {product.stockQuantity} | Price: ₹{typeof product.price === 'number' ? product.price.toFixed(0) : product.price}
                                                       </div>
                                                     </div>
                                                   ))
