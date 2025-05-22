@@ -508,6 +508,23 @@ export default function PurchaseEntry() {
           manualDiscountAmount
         ).toFixed(0);
         
+        // Distribute additional charges to line items amounts
+        if (totalAdditionalCharges > 0 && watchedItems.length > 0) {
+          watchedItems.forEach((item, index) => {
+            const itemAmount = Number(form.getValues(`items.${index}.amount`)) || 0;
+            const proportion = grossAmount > 0 ? itemAmount / grossAmount : 0;
+            const itemAdditionalCharge = (surchargeAmount + freightAmount + packingCharge + otherCharge) * proportion;
+            
+            // Add additional charges to line item amount
+            const newLineItemAmount = itemAmount + itemAdditionalCharge;
+            form.setValue(`items.${index}.amount`, newLineItemAmount.toFixed(0));
+            
+            // Update net amount as well
+            const currentNetAmount = Number(form.getValues(`items.${index}.netAmount`)) || 0;
+            form.setValue(`items.${index}.netAmount`, (currentNetAmount + itemAdditionalCharge).toFixed(0));
+          });
+        }
+
         // AUTO UPDATE final amounts instantly
         form.setValue("payableAmount", payableAmount);
         form.setValue("invoiceAmount", payableAmount);
@@ -515,6 +532,11 @@ export default function PurchaseEntry() {
         // Force UI refresh to show changes immediately
         setTimeout(() => {
           form.trigger(["grossAmount", "taxAmount", "payableAmount"]);
+          // Also trigger line items to show updated amounts
+          watchedItems.forEach((_, index) => {
+            form.trigger(`items.${index}.amount`);
+            form.trigger(`items.${index}.netAmount`);
+          });
         }, 0);
       }
     };
