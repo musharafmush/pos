@@ -49,8 +49,12 @@ import {
   PencilIcon, 
   TrashIcon,
   PackageIcon,
-  BarcodeIcon
+  BarcodeIcon,
+  ExternalLinkIcon,
+  TrendingUpIcon,
+  AlertTriangleIcon
 } from "lucide-react";
+import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -267,23 +271,107 @@ export default function Products() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Products</h2>
+        {/* Enhanced Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-3">
+              <PackageIcon className="h-8 w-8 text-blue-600" />
+              Products Dashboard
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Manage your product inventory and catalog
+            </p>
+          </div>
           <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input 
-                placeholder="Search products"
-                className="pl-10 w-full"
+                placeholder="Search products by name, SKU, or barcode..."
+                className="pl-10 w-full sm:w-80"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add Product
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Quick Add
+              </Button>
+              <Link href="/add-product">
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <ExternalLinkIcon className="h-4 w-4 mr-2" />
+                  Add Product
+                </Button>
+              </Link>
+            </div>
           </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <PackageIcon className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Products</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {products?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <TrendingUpIcon className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Products</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {products?.filter((p: any) => p.active)?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <AlertTriangleIcon className="h-6 w-6 text-orange-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Low Stock</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {products?.filter((p: any) => p.stockQuantity <= p.alertThreshold)?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <BarcodeIcon className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Categories</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {categories?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
