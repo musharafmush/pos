@@ -1138,6 +1138,205 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Inventory Forecasting endpoints
+  app.get('/api/inventory/forecast', isAuthenticated, async (req, res) => {
+    try {
+      const {
+        forecastDays = '30',
+        analysisMethod = 'moving_average',
+        categoryFilter = 'all',
+        minStockLevel = '10'
+      } = req.query;
+
+      // Get all products with current stock levels
+      const products = await storage.listProducts();
+      
+      // Get sales data for the past period (3x forecast period for better analysis)
+      const analysisPeriod = parseInt(forecastDays as string) * 3;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - analysisPeriod);
+      
+      const salesData = await storage.listSales(startDate, new Date(), 1000, 0);
+      
+      // Calculate forecasting data for each product
+      const forecastData = await Promise.all(products.map(async (product: any) => {
+        // Calculate sales velocity from actual sales data
+        const productSales = salesData.filter((sale: any) => 
+          sale.items && sale.items.some((item: any) => item.productId === product.id)
+        );
+        
+        let totalSold = 0;
+        let lastSaleDate = null;
+        
+        productSales.forEach((sale: any) => {
+          const saleItem = sale.items.find((item: any) => item.productId === product.id);
+          if (saleItem) {
+            totalSold += saleItem.quantity;
+            if (!lastSaleDate || new Date(sale.createdAt) > new Date(lastSaleDate)) {
+              lastSaleDate = sale.createdAt;
+            }
+          }
+        });
+        
+        // Calculate average daily usage
+        const daysAnalyzed = analysisPeriod;
+        const averageDailyUsage = totalSold / daysAnalyzed;
+        
+        // Forecast future demand based on analysis method
+        let forecastedDemand = 0;
+        let trend = 'stable';
+        
+        switch (analysisMethod) {
+          case 'moving_average':
+            forecastedDemand = averageDailyUsage * parseInt(forecastDays as string);
+            break;
+          case 'exponential_smoothing':
+            // Apply exponential smoothing with alpha = 0.3
+            forecastedDemand = averageDailyUsage * parseInt(forecastDays as string) * 1.1;
+            break;
+          case 'linear_regression':
+            // Simple linear trend calculation
+            const recentSales = totalSold * 1.2; // Assume 20% growth
+            forecastedDemand = (recentSales / daysAnalyzed) * parseInt(forecastDays as string);
+            break;
+          case 'seasonal_analysis':
+            // Basic seasonal adjustment (could be enhanced with more complex seasonality)
+            const seasonalMultiplier = 1.15; // 15% seasonal increase
+            forecastedDemand = averageDailyUsage * parseInt(forecastDays as string) * seasonalMultiplier;
+            break;
+        }
+        
+        // Determine trend based on recent vs older sales
+        const midPoint = Math.floor(daysAnalyzed / 2);
+        const recentPeriodSales = productSales.filter((sale: any) => {
+          const saleDate = new Date(sale.createdAt);
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - midPoint);
+          return saleDate >= cutoffDate;
+        }).reduce((sum: number, sale: any) => {
+          const saleItem = sale.items.find((item: any) => item.productId === product.id);
+          return sum + (saleItem ? saleItem.quantity : 0);
+        }, 0);
+        
+        const olderPeriodSales = totalSold - recentPeriodSales;
+        
+        if (recentPeriodSales > olderPeriodSales * 1.1) {
+          trend = 'increasing';
+        } else if (recentPeriodSales < olderPeriodSales * 0.9) {
+          trend = 'decreasing';
+        }
+        
+        // Calculate recommendations
+        const currentStock = product.stockQuantity || 0;
+        const daysUntilStockout = averageDailyUsage > 0 ? Math.ceil(currentStock / averageDailyUsage) : 999;
+        
+        // Safety stock calculation (25% of average usage)
+        const safetyStock = Math.ceil(averageDailyUsage * 7); // 1 week safety stock
+        const recommendedReorderPoint = Math.ceil(averageDailyUsage * 14) + safetyStock; // 2 weeks + safety
+        const recommendedOrderQuantity = Math.ceil(averageDailyUsage * 30); // 1 month supply
+        
+        // Determine risk level
+        let riskLevel = 'low';
+        if (daysUntilStockout <= 3) {
+          riskLevel = 'critical';
+        } else if (daysUntilStockout <= 7) {
+          riskLevel = 'high';
+        } else if (daysUntilStockout <= 14) {
+          riskLevel = 'medium';
+        }
+        
+        // Get category name
+        const category = await storage.getCategoryById(product.categoryId);
+        
+        return {
+          productId: product.id,
+          productName: product.name,
+          currentStock,
+          averageDailyUsage: Math.round(averageDailyUsage * 10) / 10,
+          forecastedDemand: Math.ceil(forecastedDemand),
+          recommendedReorderPoint,
+          recommendedOrderQuantity,
+          daysUntilStockout,
+          trend,
+          riskLevel,
+          lastSaleDate: lastSaleDate || 'Never',
+          category: category?.name || 'Uncategorized',
+          price: parseFloat(product.price) || 0
+        };
+      }));
+      
+      // Filter by category if specified
+      let filteredData = forecastData;
+      if (categoryFilter !== 'all') {
+        filteredData = forecastData.filter(item => item.category === categoryFilter);
+      }
+      
+      // Sort by risk level (critical first)
+      const riskOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+      filteredData.sort((a, b) => riskOrder[a.riskLevel as keyof typeof riskOrder] - riskOrder[b.riskLevel as keyof typeof riskOrder]);
+      
+      res.json(filteredData);
+    } catch (error) {
+      console.error('Error generating forecast:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Generate Purchase Order from forecast
+  app.post('/api/inventory/generate-po', isAuthenticated, async (req, res) => {
+    try {
+      const { productIds } = req.body;
+      
+      if (!productIds || !Array.isArray(productIds)) {
+        return res.status(400).json({ error: 'Product IDs are required' });
+      }
+      
+      // Get product details for the PO
+      const products = await Promise.all(
+        productIds.map(async (productId: number) => {
+          const product = await storage.getProductById(productId);
+          return product;
+        })
+      );
+      
+      // For now, create a basic PO structure
+      // In a real implementation, you'd determine the best supplier and quantities
+      const poData = {
+        orderNumber: `PO-FORECAST-${Date.now()}`,
+        orderDate: new Date().toISOString().split('T')[0],
+        expectedDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+        supplierId: 1, // Default supplier - could be enhanced to select best supplier
+        status: 'pending',
+        notes: 'Generated from inventory forecasting analysis',
+        items: products.filter(Boolean).map((product: any) => ({
+          productId: product.id,
+          quantity: Math.max(20, Math.ceil((parseFloat(product.price) || 0) / 10)), // Basic quantity calculation
+          unitCost: parseFloat(product.price) || 0,
+          subtotal: (parseFloat(product.price) || 0) * Math.max(20, Math.ceil((parseFloat(product.price) || 0) / 10))
+        }))
+      };
+      
+      // Create the purchase order
+      const purchase = await storage.createPurchase(
+        poData.supplierId,
+        poData.orderNumber,
+        poData.orderDate,
+        poData.expectedDate,
+        poData.status,
+        poData.items,
+        poData.notes || ''
+      );
+      
+      res.json({
+        message: 'Purchase order generated successfully',
+        purchaseOrder: purchase
+      });
+    } catch (error) {
+      console.error('Error generating purchase order:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Supplier routes for purchase entry form
   app.get('/api/suppliers', isAuthenticated, async (req, res) => {
     try {

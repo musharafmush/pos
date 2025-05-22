@@ -19,6 +19,7 @@ import Suppliers from "@/pages/suppliers";
 import Customers from "@/pages/customers";
 import AddProduct from "@/pages/add-product";
 import PrintLabels from "@/pages/print-labels";
+import InventoryForecasting from "@/pages/inventory-forecasting";
 import CurrencySettings from "@/pages/currency-settings";
 import BusinessSettings from "@/pages/business-settings";
 import AuthPage from "@/pages/auth-page";
@@ -35,6 +36,7 @@ function Router() {
       <ProtectedRoute path="/add-product" component={AddProduct} />
       <ProtectedRoute path="/print-labels" component={PrintLabels} />
       <ProtectedRoute path="/inventory" component={Inventory} />
+      <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
       <ProtectedRoute path="/purchases" component={Purchases} />
       <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
       <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
