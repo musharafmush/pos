@@ -112,7 +112,9 @@ export default function Customers() {
       taxNumber: "",
       creditLimit: "",
       businessName: "",
-    }
+    },
+    // This ensures the form doesn't switch from uncontrolled to controlled
+    mode: "onChange"
   });
 
   // Edit customer form
@@ -126,7 +128,9 @@ export default function Customers() {
       taxNumber: "",
       creditLimit: "",
       businessName: "",
-    }
+    },
+    // This ensures the form doesn't switch from uncontrolled to controlled
+    mode: "onChange"
   });
 
   // Create customer mutation
