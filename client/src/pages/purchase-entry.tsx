@@ -456,61 +456,73 @@ export default function PurchaseEntry() {
     }, 0);
   };
 
-  // Calculate totals whenever items change
+  // Auto-update Purchase Summary calculations
   useEffect(() => {
-    if (watchedItems && watchedItems.length > 0) {
-      let grossAmount = 0;
-      let totalDiscount = 0;
-      let totalTax = 0;
-      let totalCashDiscount = 0;
-      
-      watchedItems.forEach((item, index) => {
-        // Recalculate each item to ensure consistency
-        recalculateAmounts(index);
+    const updateSummary = () => {
+      if (watchedItems && watchedItems.length > 0) {
+        let grossAmount = 0;
+        let totalDiscount = 0;
+        let totalTax = 0;
+        let totalCashDiscount = 0;
         
-        // Add to totals
-        const amount = Number(form.getValues(`items.${index}.amount`)) || 0;
-        const discountAmount = Number(form.getValues(`items.${index}.discountAmount`)) || 0;
-        const taxPercent = Number(form.getValues(`items.${index}.taxPercent`)) || 0;
-        const amountAfterDisc = amount - discountAmount;
-        const taxAmount = amountAfterDisc * (taxPercent / 100);
-        const cashDiscountAmount = Number(form.getValues(`items.${index}.cashDiscountAmount`)) || 0;
+        watchedItems.forEach((item, index) => {
+          // Recalculate each item to ensure consistency
+          recalculateAmounts(index);
+          
+          // Add to totals
+          const amount = Number(form.getValues(`items.${index}.amount`)) || 0;
+          const discountAmount = Number(form.getValues(`items.${index}.discountAmount`)) || 0;
+          const taxPercent = Number(form.getValues(`items.${index}.taxPercent`)) || 0;
+          const amountAfterDisc = amount - discountAmount;
+          const taxAmount = amountAfterDisc * (taxPercent / 100);
+          const cashDiscountAmount = Number(form.getValues(`items.${index}.cashDiscountAmount`)) || 0;
+          
+          grossAmount += amount;
+          totalDiscount += discountAmount;
+          totalTax += taxAmount;
+          totalCashDiscount += cashDiscountAmount;
+        });
         
-        grossAmount += amount;
-        totalDiscount += discountAmount;
-        totalTax += taxAmount;
-        totalCashDiscount += cashDiscountAmount;
-      });
-      
-      // Update summary fields with Indian Rupees formatting (no decimals)
-      form.setValue("grossAmount", grossAmount.toFixed(0));
-      form.setValue("itemDiscountAmount", totalDiscount.toFixed(0));
-      form.setValue("taxAmount", totalTax.toFixed(0));
-      form.setValue("cashDiscountAmount", totalCashDiscount.toFixed(0));
-      
-      // Calculate payable amount
-      const surchargeAmount = Number(form.getValues("surchargeAmount")) || 0;
-      const freightAmount = Number(form.getValues("freightAmount")) || 0;
-      const packingCharge = Number(form.getValues("packingCharge")) || 0;
-      const otherCharge = Number(form.getValues("otherCharge")) || 0;
-      const manualDiscountAmount = Number(form.getValues("manualDiscountAmount")) || 0;
-      
-      const payableAmount = (
-        grossAmount - 
-        totalDiscount + 
-        totalTax -
-        totalCashDiscount +
-        surchargeAmount +
-        freightAmount +
-        packingCharge +
-        otherCharge -
-        manualDiscountAmount
-      ).toFixed(0);
-      
-      form.setValue("payableAmount", payableAmount);
-      form.setValue("invoiceAmount", payableAmount);
-    }
-  }, [watchedItems, form]);
+        // Update summary fields with Indian Rupees formatting (no decimals) - AUTO CHANGE
+        form.setValue("grossAmount", grossAmount.toFixed(0));
+        form.setValue("itemDiscountAmount", totalDiscount.toFixed(0));
+        form.setValue("taxAmount", totalTax.toFixed(0));
+        form.setValue("cashDiscountAmount", totalCashDiscount.toFixed(0));
+        
+        // Calculate payable amount with all additional charges - AUTO CHANGE
+        const surchargeAmount = Number(form.getValues("surchargeAmount")) || 0;
+        const freightAmount = Number(form.getValues("freightAmount")) || 0;
+        const packingCharge = Number(form.getValues("packingCharge")) || 0;
+        const otherCharge = Number(form.getValues("otherCharge")) || 0;
+        const manualDiscountAmount = Number(form.getValues("manualDiscountAmount")) || 0;
+        
+        const payableAmount = (
+          grossAmount - 
+          totalDiscount + 
+          totalTax -
+          totalCashDiscount +
+          surchargeAmount +
+          freightAmount +
+          packingCharge +
+          otherCharge -
+          manualDiscountAmount
+        ).toFixed(0);
+        
+        // AUTO UPDATE final amounts instantly
+        form.setValue("payableAmount", payableAmount);
+        form.setValue("invoiceAmount", payableAmount);
+        
+        // Force UI refresh to show changes immediately
+        setTimeout(() => {
+          form.trigger(["grossAmount", "taxAmount", "payableAmount"]);
+        }, 0);
+      }
+    };
+    
+    // Call update immediately and also watch for any changes
+    updateSummary();
+    
+  }, [watchedItems, form, form.watch("surchargeAmount"), form.watch("freightAmount"), form.watch("packingCharge"), form.watch("otherCharge"), form.watch("manualDiscountAmount")]);
   
   // Function to handle supplier selection with auto-pull
   const handleSupplierChange = (supplierId: string) => {
