@@ -1539,7 +1539,10 @@ export default function PurchaseEntry() {
                             <FormItem>
                               <FormLabel>Cash Discount</FormLabel>
                               <FormControl>
-                                <Input {...field} readOnly className="bg-muted" />
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                                  <Input {...field} value={field.value || "0"} readOnly className="bg-muted pl-6 font-semibold" />
+                                </div>
                               </FormControl>
                             </FormItem>
                           )}
@@ -1690,7 +1693,10 @@ export default function PurchaseEntry() {
                           <FormItem>
                             <FormLabel>Payable Amount</FormLabel>
                             <FormControl>
-                              <Input {...field} readOnly className="bg-muted text-lg font-bold" />
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-600 text-lg font-bold">₹</span>
+                                <Input {...field} value={field.value || "0"} readOnly className="bg-green-50 border-green-200 text-lg font-bold pl-8 text-green-700" />
+                              </div>
                             </FormControl>
                           </FormItem>
                         )}
