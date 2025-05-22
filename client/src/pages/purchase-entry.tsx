@@ -401,17 +401,72 @@ export default function PurchaseEntry() {
     },
   });
   
-  // Function to add a new item row
+  // Enhanced function to add a new item row with smart defaults
   const addItemRow = () => {
-    append({ ...emptyPurchaseItem });
+    append({ 
+      ...emptyPurchaseItem,
+      receivedQty: "1", // Smart default quantity
+      freeQty: "0",
+      taxPercent: "18", // Common GST rate in India
+      discountAmount: "0",
+      unit: "PCS"
+    });
+    
+    // Show user feedback
+    toast({
+      title: "New Line Added! ✨",
+      description: "Ready for product selection with smart defaults",
+    });
   };
   
-  // Function to remove an item row
+  // Enhanced function to remove an item row with confirmation
   const removeItemRow = (index: number) => {
     if (fields.length > 1) {
       remove(index);
+      toast({
+        title: "Line Item Removed! 🗑️",
+        description: "Item removed and totals updated automatically",
+      });
+    } else {
+      toast({
+        title: "Cannot Remove! ⚠️",
+        description: "At least one line item is required",
+        variant: "destructive",
+      });
     }
   };
+
+  // Smart keyboard shortcuts for better efficiency
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+N: Add new line item
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        addItemRow();
+      }
+      
+      // Ctrl+S: Save purchase order
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        form.handleSubmit(onSubmit)();
+      }
+      
+      // F9: Quick focus on first empty product field
+      if (e.key === 'F9') {
+        e.preventDefault();
+        const emptyIndex = fields.findIndex((_, index) => 
+          !form.getValues(`items.${index}.productId`)
+        );
+        if (emptyIndex !== -1) {
+          const productField = document.querySelector(`[name="items.${emptyIndex}.productId"]`) as HTMLElement;
+          productField?.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fields, form, addItemRow, onSubmit]);
   
   // Function to recalculate amounts for a specific item
   const recalculateAmounts = (index: number) => {
@@ -580,21 +635,40 @@ export default function PurchaseEntry() {
     }
   };
   
-  // Function to handle product selection
+  // Enhanced function to handle product selection with auto-fill and validation
   const handleProductSelect = (productId: number, index: number) => {
     const product = products.find((p: any) => p.id === productId);
     
     if (product) {
+      // Auto-fill all product details instantly
       form.setValue(`items.${index}.productId`, productId);
       form.setValue(`items.${index}.code`, product.sku || "");
+      form.setValue(`items.${index}.productName`, product.name);
       form.setValue(`items.${index}.description`, product.name);
-      form.setValue(`items.${index}.cost`, typeof product.cost === 'number' ? product.cost.toString() : product.cost);
+      form.setValue(`items.${index}.cost`, typeof product.cost === 'number' ? product.cost.toString() : product.cost || "0");
       form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
-      form.setValue(`items.${index}.sellingPrice`, typeof product.price === 'number' ? product.price.toString() : product.price);
-      form.setValue(`items.${index}.mrp`, typeof product.price === 'number' ? product.price.toString() : product.price);
+      form.setValue(`items.${index}.sellingPrice`, typeof product.price === 'number' ? product.price.toString() : product.price || "0");
+      form.setValue(`items.${index}.mrp`, typeof product.price === 'number' ? product.price.toString() : product.price || "0");
+      form.setValue(`items.${index}.unit`, "PCS");
       
-      // Recalculate amounts for this item
-      recalculateAmounts(index);
+      // Set intelligent default quantity
+      form.setValue(`items.${index}.receivedQty`, "1");
+      
+      // Auto-calculate initial amounts
+      const cost = Number(product.cost) || 0;
+      form.setValue(`items.${index}.amount`, cost.toString());
+      form.setValue(`items.${index}.netAmount`, cost.toString());
+      
+      // Recalculate amounts for this item with enhanced calculations
+      setTimeout(() => {
+        recalculateAmounts(index);
+      }, 100);
+      
+      // Show success feedback
+      toast({
+        title: "Product Added! 🎉",
+        description: `${product.name} added with smart defaults`,
+      });
     }
   };
   
