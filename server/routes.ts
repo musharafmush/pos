@@ -1060,6 +1060,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Business Settings endpoints
+  let businessSettings = {
+    businessName: "Awesome Shop",
+    currency: "USD",
+    currencySymbolPlacement: "before",
+    defaultProfitPercent: "25.00",
+    timezone: "America/Phoenix",
+    startDate: "01/01/2018",
+    financialYearStartMonth: "January",
+    stockAccountingMethod: "FIFO (First In First Out)",
+    transactionEditDays: "30",
+    dateFormat: "mm/dd/yyyy",
+    timeFormat: "24 Hour",
+    currencyPrecision: "2",
+    quantityPrecision: "2",
+  };
+
+  app.get('/api/settings/business', isAuthenticated, async (req, res) => {
+    try {
+      res.json(businessSettings);
+    } catch (error) {
+      console.error("Error fetching business settings:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put('/api/settings/business', isAuthenticated, async (req, res) => {
+    try {
+      const {
+        businessName,
+        currency,
+        currencySymbolPlacement,
+        defaultProfitPercent,
+        timezone,
+        startDate,
+        financialYearStartMonth,
+        stockAccountingMethod,
+        transactionEditDays,
+        dateFormat,
+        timeFormat,
+        currencyPrecision,
+        quantityPrecision,
+      } = req.body;
+
+      // Validate required fields
+      if (!businessName || !currency || !currencySymbolPlacement) {
+        return res.status(400).json({ error: "Missing required business settings" });
+      }
+
+      // Save settings to memory
+      businessSettings = {
+        businessName,
+        currency,
+        currencySymbolPlacement,
+        defaultProfitPercent,
+        timezone,
+        startDate,
+        financialYearStartMonth,
+        stockAccountingMethod,
+        transactionEditDays,
+        dateFormat,
+        timeFormat,
+        currencyPrecision,
+        quantityPrecision,
+      };
+
+      console.log("Business settings saved:", businessSettings);
+
+      res.json({
+        message: "Business settings updated successfully",
+        settings: businessSettings,
+      });
+    } catch (error) {
+      console.error("Error updating business settings:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Supplier routes for purchase entry form
   app.get('/api/suppliers', isAuthenticated, async (req, res) => {
     try {

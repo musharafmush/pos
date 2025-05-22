@@ -18,6 +18,7 @@ import Suppliers from "@/pages/suppliers";
 import Customers from "@/pages/customers";
 import AddProduct from "@/pages/add-product";
 import CurrencySettings from "@/pages/currency-settings";
+import BusinessSettings from "@/pages/business-settings";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -39,6 +40,7 @@ function Router() {
       <ProtectedRoute path="/suppliers" component={Suppliers} />
       <ProtectedRoute path="/customers" component={Customers} />
       <ProtectedRoute path="/settings/currency" component={CurrencySettings} />
+      <ProtectedRoute path="/settings/business" component={BusinessSettings} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
