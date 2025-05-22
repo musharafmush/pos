@@ -16,6 +16,7 @@ import Users from "@/pages/users";
 import Settings from "@/pages/settings";
 import Suppliers from "@/pages/suppliers";
 import Customers from "@/pages/customers";
+import AddProduct from "@/pages/add-product";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -26,6 +27,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/pos" component={POS} />
       <ProtectedRoute path="/products" component={Products} />
+      <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/purchases" component={Purchases} />
       <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
