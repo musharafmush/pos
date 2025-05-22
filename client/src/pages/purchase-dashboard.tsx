@@ -71,7 +71,7 @@ import {
   Download
 } from "lucide-react";
 import { useFormatCurrency } from "@/lib/currency";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -79,6 +79,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 export default function PurchaseDashboard() {
   const formatCurrency = useFormatCurrency();
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all_statuses");
   const [supplierFilter, setSupplierFilter] = useState("all_suppliers");
@@ -200,8 +201,12 @@ export default function PurchaseDashboard() {
   };
 
   const handleEdit = (purchase: any) => {
-    // Navigate to edit page
-    window.location.href = `/purchase-entry?edit=${purchase.id}`;
+    // Navigate to edit page using wouter navigation
+    setLocation(`/purchase-entry?edit=${purchase.id}`);
+    toast({
+      title: "Opening for edit",
+      description: `Editing purchase order ${purchase.orderNumber || `PO-${purchase.id}`}`,
+    });
   };
 
   const handleDelete = (purchase: any) => {
