@@ -923,7 +923,8 @@ export default function PurchaseEntry() {
                             <TableRow className="bg-blue-50 border-b-2">
                               <TableHead className="w-20 text-center font-bold border-r px-3 py-4">Sno</TableHead>
                               <TableHead className="w-40 font-bold border-r px-3 py-4">Code</TableHead>
-                              <TableHead className="min-w-[250px] font-bold border-r px-3 py-4">Description</TableHead>
+                              <TableHead className="min-w-[200px] font-bold border-r px-3 py-4">Product Name</TableHead>
+                              <TableHead className="min-w-[180px] font-bold border-r px-3 py-4">Description</TableHead>
                               <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Received Qty</TableHead>
                               <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Free Qty</TableHead>
                               <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Cost</TableHead>
@@ -1017,7 +1018,20 @@ export default function PurchaseEntry() {
                                     )}
                                   />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="py-4">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.description`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input {...field} className="w-full h-10" placeholder="Description" />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="py-4">
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.receivedQty`}
