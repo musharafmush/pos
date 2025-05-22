@@ -342,6 +342,8 @@ export default function PurchaseEntry() {
         product.sku.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : products;
+
+
   
   // Create/Update purchase mutation
   const savePurchaseMutation = useMutation({
@@ -490,18 +492,24 @@ export default function PurchaseEntry() {
     }
   }, [watchedItems, form]);
   
-  // Function to handle supplier selection
+  // Function to handle supplier selection with auto-pull
   const handleSupplierChange = (supplierId: string) => {
     const id = parseInt(supplierId);
-    const supplier = suppliers.find((s: any) => s.id === id);
+    const supplier = suppliers?.find((s: any) => s.id === id);
     
     if (supplier) {
+      // Automatically fill all supplier details
       form.setValue("supplierId", id);
-      form.setValue("supplierCode", supplier.code || "");
+      form.setValue("supplierCode", supplier.id?.toString() || "");
       form.setValue("supplierName", supplier.name || "");
       form.setValue("supplierPhone", supplier.phone || "");
-      form.setValue("supplierMobile", supplier.mobile || "");
-      form.setValue("supplierGstNo", supplier.gstNo || "");
+      form.setValue("supplierMobile", supplier.phone || "");
+      form.setValue("supplierGstNo", supplier.taxId || "");
+      
+      toast({
+        title: "Supplier information loaded",
+        description: `Successfully loaded details for ${supplier.name}`,
+      });
     }
   };
   
