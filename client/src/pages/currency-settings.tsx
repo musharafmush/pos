@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -88,7 +88,7 @@ export default function CurrencySettings() {
 
   const form = useForm<CurrencySettingsValues>({
     resolver: zodResolver(currencySettingsSchema),
-    defaultValues: currentSettings || {
+    defaultValues: {
       baseCurrency: "USD",
       currencySymbol: "$",
       currencyPosition: "before",
@@ -96,8 +96,14 @@ export default function CurrencySettings() {
       thousandSeparator: ",",
       decimalSeparator: ".",
     },
-    values: currentSettings,
   });
+
+  // Update form values when data loads
+  React.useEffect(() => {
+    if (currentSettings) {
+      form.reset(currentSettings);
+    }
+  }, [currentSettings, form]);
 
   const updateCurrencyMutation = useMutation({
     mutationFn: async (data: CurrencySettingsValues) => {
