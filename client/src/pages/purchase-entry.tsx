@@ -1557,13 +1557,13 @@ export default function PurchaseEntry() {
                   </Button>
                   <Button 
                     type="submit"
-                    disabled={createPurchaseMutation.isPending}
+                    disabled={savePurchaseMutation.isPending}
                   >
-                    {createPurchaseMutation.isPending ? (
+                    {savePurchaseMutation.isPending ? (
                       "Saving..."
                     ) : (
                       <>
-                        <Save className="mr-2 h-4 w-4" /> Save Purchase
+                        <Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update Purchase" : "Save Purchase"}
                       </>
                     )}
                   </Button>
