@@ -90,7 +90,7 @@ export default function Dashboard() {
                 <div className="font-medium text-sm text-gray-500">Invoice due</div>
               </div>
               <div className="text-2xl font-bold mb-2">
-                $ {isLoading ? "..." : "0.00"}
+                {isLoading ? "..." : formatCurrency("0.00")}
               </div>
             </div>
           </Card>
@@ -104,7 +104,7 @@ export default function Dashboard() {
                 <div className="font-medium text-sm text-gray-500">Total Sell Return</div>
               </div>
               <div className="text-2xl font-bold mb-2">
-                $ {isLoading ? "..." : "0.00"}
+                {isLoading ? "..." : formatCurrency("0.00")}
               </div>
             </div>
           </Card>
@@ -118,7 +118,7 @@ export default function Dashboard() {
                 <div className="font-medium text-sm text-gray-500">Total Purchase</div>
               </div>
               <div className="text-2xl font-bold mb-2">
-                $ {isLoading ? "..." : "0.00"}
+                {isLoading ? "..." : formatCurrency("0.00")}
               </div>
             </div>
           </Card>
@@ -132,7 +132,7 @@ export default function Dashboard() {
                 <div className="font-medium text-sm text-gray-500">Purchase Due</div>
               </div>
               <div className="text-2xl font-bold mb-2">
-                $ {isLoading ? "..." : "0.00"}
+                {isLoading ? "..." : formatCurrency("0.00")}
               </div>
             </div>
           </Card>
@@ -146,7 +146,7 @@ export default function Dashboard() {
                 <div className="font-medium text-sm text-gray-500">Total Purchase Return</div>
               </div>
               <div className="text-2xl font-bold mb-2">
-                $ {isLoading ? "..." : "0.00"}
+                {isLoading ? "..." : formatCurrency("0.00")}
               </div>
             </div>
           </Card>
@@ -160,7 +160,7 @@ export default function Dashboard() {
                 <div className="font-medium text-sm text-gray-500">Expense</div>
               </div>
               <div className="text-2xl font-bold mb-2">
-                $ {isLoading ? "..." : "0.00"}
+                {isLoading ? "..." : formatCurrency("0.00")}
               </div>
             </div>
           </Card>

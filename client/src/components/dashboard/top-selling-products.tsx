@@ -2,12 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
 import { PackageIcon } from "lucide-react";
+import { useFormatCurrency } from "@/lib/currency";
 
 interface TopSellingProductsProps {
   className?: string;
 }
 
 export function TopSellingProducts({ className }: TopSellingProductsProps) {
+  const formatCurrency = useFormatCurrency();
   const { data: topProducts, isLoading } = useQuery({
     queryKey: ['/api/dashboard/top-products'],
     queryFn: async () => {
@@ -61,9 +63,9 @@ export function TopSellingProducts({ className }: TopSellingProductsProps) {
                     </TableCell>
                     <TableCell className="py-3">
                       <span className="text-sm text-gray-700 dark:text-gray-300">
-                        ${typeof item.product.price === 'number' 
+                        {formatCurrency(typeof item.product.price === 'number' 
                           ? item.product.price.toFixed(2) 
-                          : parseFloat(item.product.price).toFixed(2)}
+                          : parseFloat(item.product.price).toFixed(2))}
                       </span>
                     </TableCell>
                     <TableCell className="py-3">
@@ -73,7 +75,7 @@ export function TopSellingProducts({ className }: TopSellingProductsProps) {
                     </TableCell>
                     <TableCell className="py-3 text-right">
                       <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                        ${parseFloat(item.revenue).toFixed(2)}
+                        {formatCurrency(parseFloat(item.revenue).toFixed(2))}
                       </span>
                     </TableCell>
                   </TableRow>
