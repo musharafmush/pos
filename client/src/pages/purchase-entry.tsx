@@ -125,6 +125,9 @@ const purchaseEntrySchema = z.object({
       netAmount: z.string().default("0"),
       cashDiscountPercent: z.string().default("0"),
       cashDiscountAmount: z.string().default("0"),
+      batchNo: z.string().optional(),
+      location: z.string().optional(),
+      unit: z.string().default("PCS"),
     })
   ).min(1, "At least one item is required"),
   
@@ -173,6 +176,9 @@ const emptyPurchaseItem = {
   netAmount: "0",
   cashDiscountPercent: "0",
   cashDiscountAmount: "0",
+  batchNo: "",
+  location: "",
+  unit: "PCS",
 };
 
 // Main component
@@ -263,6 +269,9 @@ export default function PurchaseEntry() {
               netAmount: (Number(item.quantity || 0) * Number(item.unitCost || 0)).toString(),
               cashDiscountPercent: "0",
               cashDiscountAmount: "0",
+              batchNo: "",
+              location: "",
+              unit: "PCS",
             }))
           : [{ ...emptyPurchaseItem }],
         grossAmount: existingPurchase.totalAmount?.toString() || "0",
@@ -907,31 +916,34 @@ export default function PurchaseEntry() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="w-full overflow-x-auto">
-                      <div className="min-w-[1800px]">
-                        <Table>
+                    <div className="w-full overflow-x-auto border rounded-lg">
+                      <div className="min-w-[2400px] bg-white">
+                        <Table className="text-sm">
                           <TableHeader>
-                            <TableRow className="bg-muted/50">
-                              <TableHead className="w-16 text-center font-semibold">Sno</TableHead>
-                              <TableHead className="w-32 font-semibold">Code</TableHead>
-                              <TableHead className="min-w-[200px] font-semibold">Description</TableHead>
-                              <TableHead className="w-32 text-center font-semibold">Received Qty</TableHead>
-                              <TableHead className="w-24 text-center font-semibold">Free Qty</TableHead>
-                              <TableHead className="w-28 text-center font-semibold">Cost</TableHead>
-                              <TableHead className="w-28 text-center font-semibold">HSN Code</TableHead>
-                              <TableHead className="w-20 text-center font-semibold">Tax %</TableHead>
-                              <TableHead className="w-28 text-center font-semibold">Disc Amt</TableHead>
-                              <TableHead className="w-36 text-center font-semibold">Exp. Date</TableHead>
-                              <TableHead className="w-28 text-center font-semibold">Net Cost</TableHead>
-                              <TableHead className="w-20 text-center font-semibold">ROI %</TableHead>
-                              <TableHead className="w-32 text-center font-semibold">Gross Profit %</TableHead>
-                              <TableHead className="w-32 text-center font-semibold">Selling Price</TableHead>
-                              <TableHead className="w-24 text-center font-semibold">MRP</TableHead>
-                              <TableHead className="w-28 text-center font-semibold">Amount</TableHead>
-                              <TableHead className="w-32 text-center font-semibold">Net Amount</TableHead>
-                              <TableHead className="w-24 text-center font-semibold">Cash %</TableHead>
-                              <TableHead className="w-28 text-center font-semibold">Cash Amt</TableHead>
-                              <TableHead className="w-20 text-center font-semibold">Actions</TableHead>
+                            <TableRow className="bg-blue-50 border-b-2">
+                              <TableHead className="w-20 text-center font-bold border-r px-3 py-4">Sno</TableHead>
+                              <TableHead className="w-40 font-bold border-r px-3 py-4">Code</TableHead>
+                              <TableHead className="min-w-[250px] font-bold border-r px-3 py-4">Description</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Received Qty</TableHead>
+                              <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Free Qty</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Cost</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">HSN Code</TableHead>
+                              <TableHead className="w-24 text-center font-bold border-r px-3 py-4">Tax %</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Disc Amt</TableHead>
+                              <TableHead className="w-40 text-center font-bold border-r px-3 py-4">Exp. Date</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Net Cost</TableHead>
+                              <TableHead className="w-28 text-center font-bold border-r px-3 py-4">ROI %</TableHead>
+                              <TableHead className="w-40 text-center font-bold border-r px-3 py-4">Gross Profit %</TableHead>
+                              <TableHead className="w-40 text-center font-bold border-r px-3 py-4">Selling Price</TableHead>
+                              <TableHead className="w-32 text-center font-bold border-r px-3 py-4">MRP</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Amount</TableHead>
+                              <TableHead className="w-40 text-center font-bold border-r px-3 py-4">Net Amount</TableHead>
+                              <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Cash %</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Cash Amt</TableHead>
+                              <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Batch No</TableHead>
+                              <TableHead className="w-36 text-center font-bold border-r px-3 py-4">Location</TableHead>
+                              <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Unit</TableHead>
+                              <TableHead className="w-24 text-center font-bold px-3 py-4">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1293,7 +1305,58 @@ export default function PurchaseEntry() {
                                     )}
                                   />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="py-4">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.batchNo`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input {...field} className="w-full h-10" placeholder="Batch #" />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="py-4">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.location`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Input {...field} className="w-full h-10" placeholder="Location" />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="py-4">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.unit`}
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-0">
+                                        <FormControl>
+                                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <SelectTrigger className="w-full h-10">
+                                              <SelectValue placeholder="Unit" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="PCS">PCS</SelectItem>
+                                              <SelectItem value="KG">KG</SelectItem>
+                                              <SelectItem value="LTR">LTR</SelectItem>
+                                              <SelectItem value="BOX">BOX</SelectItem>
+                                              <SelectItem value="PACK">PACK</SelectItem>
+                                              <SelectItem value="DOZEN">DOZEN</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="py-4">
                                   <Button
                                     type="button"
                                     variant="ghost"
