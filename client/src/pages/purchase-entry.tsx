@@ -964,141 +964,86 @@ export default function PurchaseEntry() {
                       <div className="min-w-[2400px] bg-white">
                         <Table className="text-sm">
                           <TableHeader>
-                            <TableRow className="bg-gradient-to-r from-purple-100 to-pink-100 border-b-2 border-purple-200">
-                              <TableHead className="w-16 text-center font-bold border-r border-purple-200 px-2 py-4 text-purple-900">#</TableHead>
-                              <TableHead className="min-w-[250px] font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                🛍️ Product Details
-                              </TableHead>
-                              <TableHead className="w-32 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                📦 Qty
-                              </TableHead>
-                              <TableHead className="w-32 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                🎁 Free
-                              </TableHead>
-                              <TableHead className="w-36 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                💰 Cost
-                              </TableHead>
-                              <TableHead className="w-32 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                📋 HSN
-                              </TableHead>
-                              <TableHead className="w-24 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                🏷️ Tax%
-                              </TableHead>
-                              <TableHead className="w-36 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                💸 Discount
-                              </TableHead>
-                              <TableHead className="w-36 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                📅 Expiry
-                              </TableHead>
-                              <TableHead className="w-36 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                💵 Net Cost
-                              </TableHead>
-                              <TableHead className="w-36 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                💹 Selling Price
-                              </TableHead>
-                              <TableHead className="w-32 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                🏪 MRP
-                              </TableHead>
-                              <TableHead className="w-36 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                🧮 Total
-                              </TableHead>
-                              <TableHead className="w-32 text-center font-bold border-r border-purple-200 px-3 py-4 text-purple-900">
-                                📍 Location
-                              </TableHead>
-                              <TableHead className="w-24 text-center font-bold px-3 py-4 text-purple-900">
-                                ⚡ Actions
-                              </TableHead>
+                            <TableRow className="bg-gray-50 border-b">
+                              <TableHead className="w-12 text-center text-xs text-gray-600 font-medium px-2 py-3">#</TableHead>
+                              <TableHead className="min-w-[200px] text-left text-xs text-gray-600 font-medium px-3 py-3">Product</TableHead>
+                              <TableHead className="w-20 text-center text-xs text-gray-600 font-medium px-2 py-3">Qty</TableHead>
+                              <TableHead className="w-20 text-center text-xs text-gray-600 font-medium px-2 py-3">Free</TableHead>
+                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">Cost</TableHead>
+                              <TableHead className="w-20 text-center text-xs text-gray-600 font-medium px-2 py-3">Tax%</TableHead>
+                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">Disc</TableHead>
+                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">Net Cost</TableHead>
+                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">MRP</TableHead>
+                              <TableHead className="w-24 text-center text-xs text-gray-600 font-medium px-2 py-3">🧮 Total</TableHead>
+                              <TableHead className="w-20 text-center text-xs text-gray-600 font-medium px-2 py-3">📍 Location</TableHead>
+                              <TableHead className="w-16 text-center text-xs text-gray-600 font-medium px-2 py-3">⚡ Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {form.getValues("items").map((item, index) => (
-                              <TableRow key={index} className="hover:bg-purple-50/50 border-b border-purple-100">
-                                <TableCell className="font-bold text-center py-4 text-purple-700 bg-purple-50">
+                              <TableRow key={index} className="hover:bg-gray-50 border-b">
+                                <TableCell className="text-center py-2 text-sm text-gray-600">
                                   {index + 1}
                                 </TableCell>
                                 
-                                {/* Product Selection Column - Combined */}
-                                <TableCell className="py-4">
-                                  <div className="space-y-2">
-                                    <FormField
-                                      control={form.control}
-                                      name={`items.${index}.productName`}
-                                      render={({ field }) => (
-                                        <FormItem className="space-y-0">
-                                          <FormControl>
-                                            <Popover>
-                                              <PopoverTrigger asChild>
-                                                <Button 
-                                                  variant="outline" 
-                                                  className="w-full h-10 justify-start bg-white hover:bg-purple-50 border-purple-200"
-                                                >
-                                                  <Search className="h-4 w-4 mr-2 text-purple-500" />
-                                                  {field.value || "🔍 Select Product..."}
-                                                </Button>
-                                              </PopoverTrigger>
-                                              <PopoverContent className="w-96 p-0 shadow-lg border-purple-200">
-                                                <div className="px-4 py-3 border-b bg-purple-50">
-                                                  <Input
-                                                    placeholder="🔍 Search products by name or SKU..."
-                                                    value={searchTerm}
-                                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                                    className="w-full border-purple-200 focus:border-purple-500"
-                                                  />
-                                                </div>
-                                                <div className="max-h-64 overflow-y-auto">
-                                                  {filteredProducts.length === 0 ? (
-                                                    <div className="p-6 text-center text-sm text-gray-500">
-                                                      <Search className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                                                      No products found
-                                                    </div>
-                                                  ) : (
-                                                    filteredProducts.map((product: any) => (
-                                                      <div
-                                                        key={product.id}
-                                                        className="px-4 py-3 cursor-pointer hover:bg-purple-50 border-b border-gray-100 transition-colors"
-                                                        onClick={() => {
-                                                          handleProductSelect(product.id, index);
-                                                          setSearchTerm("");
-                                                        }}
-                                                      >
-                                                        <div className="font-semibold text-gray-900">{product.name}</div>
-                                                        <div className="text-sm text-gray-600 mt-1 flex items-center gap-4">
-                                                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                                                            📦 SKU: {product.sku}
-                                                          </span>
-                                                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                                                            📊 Stock: {product.stockQuantity}
-                                                          </span>
-                                                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                                                            💰 ₹{typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
-                                                          </span>
-                                                        </div>
-                                                      </div>
-                                                    ))
-                                                  )}
-                                                </div>
-                                              </PopoverContent>
-                                            </Popover>
-                                          </FormControl>
-                                        </FormItem>
-                                      )}
-                                    />
-                                  </div>
-                                </TableCell>
-                                <TableCell className="py-4">
+                                {/* Product Selection - Clean and Simple */}
+                                <TableCell className="py-2">
                                   <FormField
                                     control={form.control}
-                                    name={`items.${index}.description`}
+                                    name={`items.${index}.productName`}
                                     render={({ field }) => (
                                       <FormItem className="space-y-0">
                                         <FormControl>
-                                          <Input {...field} className="w-full h-10" placeholder="Description" />
+                                          <Popover>
+                                            <PopoverTrigger asChild>
+                                              <Button 
+                                                variant="ghost" 
+                                                className="w-full h-8 justify-start text-left px-2 text-sm hover:bg-gray-100"
+                                              >
+                                                {field.value || "Select product..."}
+                                              </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-80 p-0">
+                                              <div className="px-3 py-2 border-b">
+                                                <Input
+                                                  placeholder="Search products..."
+                                                  value={searchTerm}
+                                                  onChange={(e) => setSearchTerm(e.target.value)}
+                                                  className="w-full h-8 text-sm"
+                                                />
+                                              </div>
+                                              <div className="max-h-48 overflow-y-auto">
+                                                {filteredProducts.length === 0 ? (
+                                                  <div className="p-4 text-center text-sm text-gray-500">
+                                                    No products found
+                                                  </div>
+                                                ) : (
+                                                  filteredProducts.map((product: any) => (
+                                                    <div
+                                                      key={product.id}
+                                                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                                                      onClick={() => {
+                                                        handleProductSelect(product.id, index);
+                                                        setSearchTerm("");
+                                                      }}
+                                                    >
+                                                      <div className="font-medium">{product.name}</div>
+                                                      <div className="text-xs text-gray-500">
+                                                        {product.sku} • Stock: {product.stockQuantity} • ₹{typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
+                                                      </div>
+                                                    </div>
+                                                  ))
+                                                )}
+                                              </div>
+                                            </PopoverContent>
+                                          </Popover>
                                         </FormControl>
                                       </FormItem>
                                     )}
                                   />
                                 </TableCell>
-                                <TableCell className="py-4">
+                                {/* Quantity */}
+                                <TableCell className="py-2">
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.receivedQty`}
@@ -1107,7 +1052,9 @@ export default function PurchaseEntry() {
                                         <FormControl>
                                           <Input 
                                             {...field} 
-                                            className="w-full text-xs"
+                                            type="number"
+                                            className="w-full h-8 text-sm text-center border-gray-200"
+                                            placeholder="0"
                                             onChange={(e) => {
                                               field.onChange(e);
                                               recalculateAmounts(index);
@@ -1118,7 +1065,9 @@ export default function PurchaseEntry() {
                                     )}
                                   />
                                 </TableCell>
-                                <TableCell>
+                                
+                                {/* Free Qty */}
+                                <TableCell className="py-2">
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.freeQty`}
@@ -1127,14 +1076,18 @@ export default function PurchaseEntry() {
                                         <FormControl>
                                           <Input 
                                             {...field} 
-                                            className="w-full text-xs"
+                                            type="number"
+                                            className="w-full h-8 text-sm text-center border-gray-200"
+                                            placeholder="0"
                                           />
                                         </FormControl>
                                       </FormItem>
                                     )}
                                   />
                                 </TableCell>
-                                <TableCell>
+                                
+                                {/* Cost */}
+                                <TableCell className="py-2">
                                   <FormField
                                     control={form.control}
                                     name={`items.${index}.cost`}
