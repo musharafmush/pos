@@ -1109,11 +1109,11 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="relative">
-                                            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
                                             <Input 
                                               {...field} 
                                               className="w-full text-xs pl-6"
-                                              placeholder="0.00"
+                                              placeholder="0"
                                               onChange={(e) => {
                                                 field.onChange(e);
                                                 recalculateAmounts(index);
@@ -1166,11 +1166,11 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="relative">
-                                            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
                                             <Input 
                                               {...field} 
                                               className="w-full text-xs pl-6"
-                                              placeholder="0.00"
+                                              placeholder="0"
                                               onChange={(e) => {
                                                 field.onChange(e);
                                                 recalculateAmounts(index);
@@ -1207,12 +1207,12 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="relative">
-                                            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
                                             <Input 
                                               {...field} 
                                               readOnly 
                                               className="w-full text-xs bg-muted pl-6"
-                                              placeholder="0.00"
+                                              placeholder="0"
                                             />
                                           </div>
                                         </FormControl>
@@ -1260,7 +1260,7 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="flex items-center justify-center p-2 bg-gray-50 rounded-md">
-                                            <span className="text-sm">$</span>
+                                            <span className="text-sm">₹</span>
                                             <Input 
                                               {...field} 
                                               className="w-full text-xs border-none bg-transparent p-0 focus-visible:ring-0"
@@ -1283,7 +1283,7 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="flex items-center justify-center p-2 bg-gray-50 rounded-md">
-                                            <span className="text-sm">$</span>
+                                            <span className="text-sm">₹</span>
                                             <Input 
                                               {...field} 
                                               className="w-full text-xs border-none bg-transparent p-0 focus-visible:ring-0"
@@ -1302,8 +1302,8 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="flex items-center justify-center p-2 bg-blue-50 rounded-md">
-                                            <span className="text-sm font-medium text-blue-700">$</span>
-                                            <div className="font-medium text-sm text-blue-700 ml-1">{Number(field.value || 0).toFixed(2)}</div>
+                                            <span className="text-sm font-medium text-blue-700">₹</span>
+                                            <div className="font-medium text-sm text-blue-700 ml-1">{Number(field.value || 0).toFixed(0)}</div>
                                           </div>
                                         </FormControl>
                                       </FormItem>
