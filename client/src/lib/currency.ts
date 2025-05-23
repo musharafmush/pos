@@ -9,8 +9,8 @@ export function useCurrencySettings() {
         const res = await fetch("/api/settings/currency");
         if (!res.ok) {
           return {
-            baseCurrency: "USD",
-            currencySymbol: "$",
+            baseCurrency: "INR",
+            currencySymbol: "₹",
             currencyPosition: "before",
             decimalPlaces: "2",
             thousandSeparator: ",",
@@ -20,8 +20,8 @@ export function useCurrencySettings() {
         return await res.json();
       } catch (error) {
         return {
-          baseCurrency: "USD",
-          currencySymbol: "$",
+          baseCurrency: "INR",
+          currencySymbol: "₹",
           currencyPosition: "before",
           decimalPlaces: "2",
           thousandSeparator: ",",
@@ -45,7 +45,7 @@ export function formatCurrency(
   }
 ) {
   const defaultSettings = {
-    currencySymbol: "$",
+    currencySymbol: "₹",
     currencyPosition: "before" as const,
     decimalPlaces: "2",
     thousandSeparator: ",",
