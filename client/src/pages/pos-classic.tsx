@@ -41,8 +41,15 @@ export default function POSClassic() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [taxRate, setTaxRate] = useState(18); // GST rate
   const [isProcessing, setIsProcessing] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+  const [quickSaleMode, setQuickSaleMode] = useState(false);
+  const [holdSales, setHoldSales] = useState<Array<{id: string, cart: CartItem[], customer: Customer | null, timestamp: Date}>>([]);
+  const [showHoldSales, setShowHoldSales] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
