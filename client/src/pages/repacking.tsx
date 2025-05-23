@@ -530,7 +530,7 @@ export default function Repacking() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <span>{product.stockQuantity}</span>
-                            {product.stockQuantity <= (product.lowStockThreshold || 10) && (
+                            {product.stockQuantity <= (product.alertThreshold || 10) && (
                               <Badge variant="destructive" className="text-xs">Low</Badge>
                             )}
                           </div>

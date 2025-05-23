@@ -104,6 +104,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [
         { href: "/products", icon: <PackageIcon className="h-5 w-5" />, label: "List Products" },
         { href: "/products/add", icon: <PlusIcon className="h-5 w-5" />, label: "Add Product" },
+        { href: "/products/repacking", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Repacking" },
         { href: "/products/update-price", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Update Price" },
         { href: "/print-labels", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Print Labels" },
         { href: "/products/variations", icon: <GalleryHorizontalIcon className="h-5 w-5" />, label: "Variations" },
