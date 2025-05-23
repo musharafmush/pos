@@ -456,7 +456,7 @@ export default function PurchaseEntry() {
 
 
   
-  // Function to recalculate amounts for a specific item
+  // Function to recalculate amounts for a specific item with freight distribution
   const recalculateAmounts = (index: number) => {
     // Get all the values
     const receivedQty = Number(form.getValues(`items.${index}.receivedQty`)) || 0;
@@ -470,10 +470,37 @@ export default function PurchaseEntry() {
     const amount = receivedQty * cost;
     const amountAfterDisc = amount - discountAmount;
     const taxAmount = amountAfterDisc * (taxPercent / 100);
-    const netAmount = amountAfterDisc + taxAmount;
+    let netAmount = amountAfterDisc + taxAmount;
     const cashDiscountAmount = amount * (cashDiscountPercent / 100);
 
-    // Calculate net cost (including tax, discounts)
+    // Get freight charges and other additional costs
+    const freightAmount = Number(form.getValues("freightAmount")) || 0;
+    const packingCharge = Number(form.getValues("packingCharge")) || 0;
+    const otherCharge = Number(form.getValues("otherCharge")) || 0;
+    const surchargeAmount = Number(form.getValues("surchargeAmount")) || 0;
+    
+    // Calculate total additional charges
+    const totalAdditionalCharges = freightAmount + packingCharge + otherCharge + surchargeAmount;
+    
+    // Distribute freight and additional charges to net amount based on proportion
+    if (totalAdditionalCharges > 0 && amount > 0) {
+      // Calculate total gross amount from all items
+      const allItems = form.getValues("items") || [];
+      const totalGrossAmount = allItems.reduce((total: number, item: any) => {
+        const itemQty = Number(item.receivedQty) || 0;
+        const itemCost = Number(item.cost) || 0;
+        return total + (itemQty * itemCost);
+      }, 0);
+      
+      if (totalGrossAmount > 0) {
+        // Calculate this item's proportion of total and add freight accordingly
+        const itemProportion = amount / totalGrossAmount;
+        const itemFreightShare = totalAdditionalCharges * itemProportion;
+        netAmount = netAmount + itemFreightShare;
+      }
+    }
+
+    // Calculate net cost (including tax, discounts, and freight)
     const netCost = receivedQty > 0 ? netAmount / receivedQty : 0;
 
     // Calculate profit metrics if selling price is available
