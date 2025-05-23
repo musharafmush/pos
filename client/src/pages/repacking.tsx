@@ -104,10 +104,10 @@ export default function Repacking() {
         name: data.targetProductName,
         sku: data.targetProductSku,
         description: data.description || `Repacked from ${selectedSourceProduct?.name}`,
-        price: data.targetUnitPrice,
-        stockQuantity: data.targetQuantity,
-        categoryId: data.categoryId ? parseInt(data.categoryId) : null,
-        alertThreshold: Math.floor(data.targetQuantity * 0.1),
+        price: Number(data.targetUnitPrice),
+        stockQuantity: Number(data.targetQuantity),
+        categoryId: data.categoryId ? Number(data.categoryId) : undefined,
+        alertThreshold: Math.floor(Number(data.targetQuantity) * 0.1),
       };
 
       // Create the new product
