@@ -216,7 +216,19 @@ export default function PurchaseEntry() {
       otherCharge: "0",
       manualDiscountAmount: "0",
       payableAmount: "0",
-      items: [{ ...emptyPurchaseItem }],
+      items: [{
+        ...emptyPurchaseItem,
+        receivedQty: "0",
+        freeQty: "0", 
+        cost: "0",
+        taxPercent: "0",
+        discountAmount: "0",
+        netCost: "0",
+        amount: "0",
+        netAmount: "0",
+        sellingPrice: "0",
+        mrp: "0"
+      }],
     },
   });
   
@@ -401,14 +413,20 @@ export default function PurchaseEntry() {
     },
   });
   
-  // Enhanced function to add a new item row with smart defaults
+  // Enhanced function to add a new item row with clean defaults
   const addItemRow = () => {
     append({ 
       ...emptyPurchaseItem,
-      receivedQty: "1", // Smart default quantity
+      receivedQty: "0", // Empty default - no quantity until product is selected
       freeQty: "0",
-      taxPercent: "18", // Common GST rate in India
+      cost: "0", // Empty cost
+      taxPercent: "0", // Empty tax
       discountAmount: "0",
+      netCost: "0", // Empty net cost
+      amount: "0", // Empty amount
+      netAmount: "0", // Empty net amount
+      sellingPrice: "0", // Empty selling price
+      mrp: "0", // Empty MRP
       unit: "PCS"
     });
     
