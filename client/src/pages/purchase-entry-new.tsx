@@ -230,8 +230,11 @@ export default function PurchaseEntryNew() {
   // Save purchase mutation
   const savePurchaseMutation = useMutation({
     mutationFn: async (data: PurchaseEntryFormValues) => {
-      return apiRequest("/api/purchases", {
+      const response = await fetch("/api/purchases", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           ...data,
           grossAmount: Number(data.grossAmount),
@@ -250,6 +253,12 @@ export default function PurchaseEntryNew() {
           }))
         }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create purchase order');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
