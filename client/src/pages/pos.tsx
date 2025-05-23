@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SearchIcon, PlusIcon, MinusIcon, XIcon, CreditCardIcon, ReceiptIcon } from "lucide-react";
+import { SearchIcon, PlusIcon, MinusIcon, XIcon, CreditCardIcon, ReceiptIcon, PrinterIcon } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -52,6 +52,8 @@ export default function POS() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [customerNote, setCustomerNote] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastSaleData, setLastSaleData] = useState<any>(null);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const formatCurrency = useFormatCurrency();
@@ -78,6 +80,34 @@ export default function POS() {
       return response.json();
     },
     enabled: searchTerm.length > 0
+  });
+
+  // Fetch business settings for receipt header
+  const { data: businessSettings } = useQuery({
+    queryKey: ['/api/settings/business'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/settings/business');
+        if (!response.ok) {
+          return {
+            businessName: "Awesome Shop",
+            address: "",
+            phone: "",
+            email: "",
+            taxNumber: ""
+          };
+        }
+        return response.json();
+      } catch (error) {
+        return {
+          businessName: "Awesome Shop",
+          address: "",
+          phone: "",
+          email: "",
+          taxNumber: ""
+        };
+      }
+    }
   });
 
   useEffect(() => {
@@ -228,6 +258,145 @@ export default function POS() {
     return calculateSubtotal() + calculateTax();
   };
 
+  const generateReceipt = (saleData: any) => {
+    const now = new Date();
+    const receiptContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Receipt - ${saleData.orderNumber}</title>
+    <style>
+        @page { 
+            size: 80mm auto; 
+            margin: 0; 
+        }
+        body { 
+            font-family: monospace; 
+            font-size: 12px; 
+            margin: 5mm; 
+            line-height: 1.4;
+        }
+        .center { text-align: center; }
+        .left { text-align: left; }
+        .right { text-align: right; }
+        .bold { font-weight: bold; }
+        .line { border-top: 1px dashed #000; margin: 5px 0; }
+        .header { margin-bottom: 10px; }
+        .item-row { display: flex; justify-content: space-between; margin: 2px 0; }
+        .total-section { margin-top: 10px; }
+        .thank-you { margin-top: 15px; text-align: center; font-size: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header center">
+        <div class="bold" style="font-size: 16px;">${businessSettings?.businessName || 'Awesome Shop'}</div>
+        ${businessSettings?.address ? `<div>${businessSettings.address}</div>` : ''}
+        ${businessSettings?.phone ? `<div>Phone: ${businessSettings.phone}</div>` : ''}
+        ${businessSettings?.email ? `<div>Email: ${businessSettings.email}</div>` : ''}
+        ${businessSettings?.taxNumber ? `<div>Tax ID: ${businessSettings.taxNumber}</div>` : ''}
+    </div>
+    
+    <div class="line"></div>
+    
+    <div>
+        <div><strong>Receipt #:</strong> ${saleData.orderNumber}</div>
+        <div><strong>Date:</strong> ${now.toLocaleDateString('en-IN')} ${now.toLocaleTimeString('en-IN')}</div>
+        <div><strong>Cashier:</strong> ${saleData.cashier || 'Admin'}</div>
+        ${saleData.customer ? `<div><strong>Customer:</strong> ${saleData.customer}</div>` : ''}
+    </div>
+    
+    <div class="line"></div>
+    
+    <div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold;">
+            <span>Item</span>
+            <span>Qty</span>
+            <span>Price</span>
+            <span>Total</span>
+        </div>
+        <div class="line"></div>
+        ${cart.map(item => `
+            <div>
+                <div>${item.name}</div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                    <span>SKU: ${item.sku}</span>
+                    <span>${item.quantity}</span>
+                    <span>${formatCurrency(item.price)}</span>
+                    <span>${formatCurrency(item.total)}</span>
+                </div>
+            </div>
+        `).join('')}
+    </div>
+    
+    <div class="line"></div>
+    
+    <div class="total-section">
+        <div style="display: flex; justify-content: space-between;">
+            <span>Subtotal:</span>
+            <span>${formatCurrency(calculateSubtotal())}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <span>Tax (7%):</span>
+            <span>${formatCurrency(calculateTax())}</span>
+        </div>
+        <div class="line"></div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
+            <span>TOTAL:</span>
+            <span>${formatCurrency(calculateTotal())}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+            <span>Payment Method:</span>
+            <span>${paymentMethod.toUpperCase()}</span>
+        </div>
+    </div>
+    
+    ${customerNote ? `
+    <div class="line"></div>
+    <div>
+        <strong>Note:</strong> ${customerNote}
+    </div>
+    ` : ''}
+    
+    <div class="thank-you">
+        <div>Thank you for your business!</div>
+        <div>Visit us again soon</div>
+        ${businessSettings?.phone ? `<div>Call us: ${businessSettings.phone}</div>` : ''}
+    </div>
+</body>
+</html>
+    `;
+    
+    return receiptContent;
+  };
+
+  const printReceipt = (saleData: any) => {
+    const receiptContent = generateReceipt(saleData);
+    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    
+    if (printWindow) {
+      printWindow.document.write(receiptContent);
+      printWindow.document.close();
+      
+      // Wait for content to load then print
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.close();
+      };
+      
+      toast({
+        title: "Receipt printed",
+        description: "Receipt has been sent to printer",
+      });
+    } else {
+      toast({
+        title: "Print blocked",
+        description: "Please allow popups to print receipts",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleCheckout = async () => {
     if (cart.length === 0) {
       toast({
@@ -255,16 +424,28 @@ export default function POS() {
       };
       
       // Create sale
-      await apiRequest("POST", "/api/sales", saleData);
+      const response = await apiRequest("POST", "/api/sales", saleData);
+      const saleResult = await response.json();
+      
+      // Store sale data for printing
+      const completedSale = {
+        ...saleResult,
+        items: cart,
+        cashier: 'Admin'
+      };
+      setLastSaleData(completedSale);
       
       toast({
         title: "Sale complete",
         description: "Sale has been successfully processed",
       });
       
-      // Clear cart
+      // Clear cart and close dialog
       setCart([]);
       setCheckoutDialogOpen(false);
+      
+      // Show print dialog
+      setShowPrintDialog(true);
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
@@ -473,17 +654,29 @@ export default function POS() {
                   </div>
                 </div>
                 
-                <div className="w-full mt-4 grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="w-full">
-                    Clear Sale
-                  </Button>
-                  <Button 
-                    className="w-full" 
-                    onClick={() => setCheckoutDialogOpen(true)}
-                    disabled={cart.length === 0}
-                  >
-                    Checkout
-                  </Button>
+                <div className="w-full mt-4 space-y-2">
+                  {lastSaleData && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full gap-2"
+                      onClick={() => printReceipt(lastSaleData)}
+                    >
+                      <PrinterIcon className="h-4 w-4" />
+                      Print Last Receipt
+                    </Button>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="w-full">
+                      Clear Sale
+                    </Button>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => setCheckoutDialogOpen(true)}
+                      disabled={cart.length === 0}
+                    >
+                      Checkout
+                    </Button>
+                  </div>
                 </div>
               </CardFooter>
             </Card>
@@ -561,6 +754,61 @@ export default function POS() {
                 <CreditCardIcon className="h-4 w-4" />
               )}
               {isProcessing ? "Processing..." : "Complete Sale"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Receipt Dialog */}
+      <Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ReceiptIcon className="h-5 w-5" />
+              Sale Completed Successfully
+            </DialogTitle>
+            <DialogDescription>
+              Your sale has been processed. Would you like to print a receipt for the customer?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {lastSaleData && (
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">Receipt #:</span>
+                  <span>{lastSaleData.orderNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Total Amount:</span>
+                  <span className="font-bold text-primary">{formatCurrency(lastSaleData.total || calculateTotal())}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Payment Method:</span>
+                  <span className="capitalize">{paymentMethod}</span>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowPrintDialog(false)}
+            >
+              Skip Printing
+            </Button>
+            <Button 
+              onClick={() => {
+                if (lastSaleData) {
+                  printReceipt(lastSaleData);
+                }
+                setShowPrintDialog(false);
+              }}
+              className="gap-2"
+            >
+              <PrinterIcon className="h-4 w-4" />
+              Print Receipt
             </Button>
           </DialogFooter>
         </DialogContent>
