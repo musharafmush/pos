@@ -8,8 +8,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import pgSession from "connect-pg-simple";
-import { pool } from "@db";
+import { db } from "@db";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -44,17 +43,11 @@ const isAdmin = hasRole(['admin']);
 const isAdminOrManager = hasRole(['admin', 'manager']);
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Configure session storage
-  const PostgresqlStore = pgSession(session);
-  const sessionStore = new PostgresqlStore({
-    pool: pool, // Use the same pool we use for the database
-    tableName: 'user_sessions',
-    createTableIfMissing: true,
-  });
+  // Configure session storage for desktop SQLite mode
+  // Use memory store for desktop app - perfect for offline use
 
   // Configure sessions
   app.use(session({
-    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'POSAPPSECRET',
     resave: false,
     saveUninitialized: false,

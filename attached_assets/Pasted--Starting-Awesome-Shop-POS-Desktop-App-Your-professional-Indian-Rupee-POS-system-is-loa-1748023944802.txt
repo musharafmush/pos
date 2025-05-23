@@ -1,0 +1,64 @@
+­ƒÜÇ Starting Awesome Shop POS Desktop App...
+­ƒÆ░ Your professional Indian Rupee POS system is loading!
+Ô£à Starting desktop application...
+🚀 Launching Awesome Shop POS Desktop App...
+💰 Your professional Indian Rupee POS system is starting!
+🔧 Setting up offline database...
+
+🎯 Features ready in your desktop app:
+  ✓ Indian Rupee formatting (₹100)
+  ✓ Professional purchase entry with freight distribution
+  ✓ Clean line items with proper calculations
+  ✓ Keyboard shortcuts for faster operations
+
+⌨️  Keyboard Shortcuts:
+  Ctrl+N: New Purchase Order
+  Ctrl+S: New Sale
+  Ctrl+D: Dashboard
+  Ctrl+P: Products
+
+🖥️  Your POS system will open in a desktop window shortly...
+📊 Creating fresh database for first-time use...
+⚠️ ERROR: Input redirection is not supported, exiting the process immediately.
+📊 > rest-express@1.0.0 dev
+> tsx server/index.ts
+⚠️ C:\Users\2024\Downloads\New folder\RetailPro\AwesomeShopPOS-Portable\app\server\routes.ts:12
+import { pool } from "@db";
+         ^
+
+SyntaxError: The requested module '@db' does not provide an export named 'pool'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:180:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:263:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+
+Node.js v22.14.0
+📊 C:\Users\2024\Downloads\New folder\RetailPro\AwesomeShopPOS-Portable\app>
+❌ Error starting desktop app: Error: Command failed: set DESKTOP_MODE=true && start /B npm run dev && timeout /t 3 && npx electron electron/main.js
+ERROR: Input redirection is not supported, exiting the process immediately.
+C:\Users\2024\Downloads\New folder\RetailPro\AwesomeShopPOS-Portable\app\server\routes.ts:12
+import { pool } from "@db";
+         ^
+
+SyntaxError: The requested module '@db' does not provide an export named 'pool'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:180:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:263:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+
+Node.js v22.14.0
+
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at ChildProcess.exithandler (node:child_process:414:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12) {
+  code: 1,
+  killed: false,
+  signal: null,
+  cmd: 'set DESKTOP_MODE=true && start /B npm run dev && timeout /t 3 && npx electron electron/main.js'
+}
+Press any key to continue . . .
