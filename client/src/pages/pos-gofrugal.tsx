@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import { SearchIcon, UserIcon, CreditCardIcon, PrinterIcon, Calculator } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,564 +35,504 @@ interface CartItem extends Product {
 
 export default function POSGofrugal() {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
+  const [showCheckout, setShowCheckout] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  
+  const [customerCode, setCustomerCode] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerDoor, setCustomerDoor] = useState("");
+  const [customerStreet, setCustomerStreet] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [salesMan, setSalesMan] = useState("ADMIN");
+  const [doorDelivery, setDoorDelivery] = useState("No");
+  const [printOption, setPrintOption] = useState("Yes");
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const formatCurrency = useFormatCurrency();
 
-  // Fetch products
-  const { data: products } = useQuery({
+  const { data: products } = useQuery<Product[]>({
     queryKey: ["/api/products"],
-    queryFn: async () => {
-      const response = await fetch("/api/products");
-      if (!response.ok) throw new Error("Failed to fetch products");
-      return response.json();
-    },
   });
 
-  // Fetch customers
-  const { data: customers } = useQuery({
+  const { data: customers } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
-    queryFn: async () => {
-      const response = await fetch("/api/customers");
-      if (!response.ok) throw new Error("Failed to fetch customers");
-      return response.json();
-    },
   });
 
-  // Calculate totals
-  const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-  const taxRate = 18; // GST rate
-  const taxAmount = (subtotal * taxRate) / 100;
-  const netAmount = subtotal + taxAmount;
+  const filteredProducts = products?.filter((product: Product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
-  // Add product to cart
   const addToCart = (product: Product) => {
-    const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
-    
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
-      
-      if (existingItem) {
-        return prevCart.map(item =>
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * price }
+            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * Number(item.price) }
             : item
         );
-      } else {
-        return [...prevCart, { ...product, quantity: 1, total: price }];
       }
+      return [...prev, { ...product, quantity: 1, total: Number(product.price) }];
     });
   };
 
-  // Update quantity
-  const updateQuantity = (productId: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeFromCart(productId);
+  const updateQuantity = (id: number, quantity: number) => {
+    if (quantity <= 0) {
+      setCart(prev => prev.filter(item => item.id !== id));
       return;
     }
-
-    setCart(prevCart =>
-      prevCart.map(item => {
-        if (item.id === productId) {
-          const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
-          return { ...item, quantity: newQuantity, total: newQuantity * price };
-        }
-        return item;
-      })
+    setCart(prev =>
+      prev.map(item =>
+        item.id === id
+          ? { ...item, quantity, total: quantity * Number(item.price) }
+          : item
+      )
     );
   };
 
-  // Remove from cart
-  const removeFromCart = (productId: number) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
-  };
+  const cartTotal = cart.reduce((sum, item) => sum + item.total, 0);
+  const tax = cartTotal * 0.18; // 18% GST
+  const finalTotal = cartTotal + tax;
+  const change = Number(amountPaid) - finalTotal;
 
-  // Process sale
-  const processSale = async () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) {
-      toast({
-        title: "Cart is empty",
-        description: "Please add items to cart before processing sale",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Cart is empty", variant: "destructive" });
       return;
     }
 
     setIsProcessing(true);
-
     try {
       const saleData = {
-        customerId: selectedCustomer?.id,
+        customerId: selectedCustomer ? parseInt(selectedCustomer) : null,
         items: cart.map(item => ({
           productId: item.id,
           quantity: item.quantity,
-          unitPrice: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
-          total: item.total,
+          price: item.price,
+          total: item.total
         })),
-        subtotal,
-        discount: 0,
-        tax: taxAmount,
-        total: netAmount,
+        subtotal: cartTotal.toString(),
+        tax: tax.toString(),
+        total: finalTotal.toString(),
         paymentMethod,
-        amountPaid: parseFloat(amountPaid) || netAmount,
+        amountPaid: amountPaid || finalTotal.toString(),
+        change: change > 0 ? change.toString() : "0",
+        orderNumber: `ORD-${Date.now()}`
       };
 
-      await apiRequest("POST", "/api/sales", saleData);
-
-      toast({
-        title: "Sale completed successfully! 🎉",
-        description: `Sale of ${formatCurrency(netAmount)} processed`,
+      await apiRequest("/api/sales", {
+        method: "POST",
+        body: JSON.stringify(saleData),
       });
 
-      // Clear cart and reset form
+      // Update product stock
+      for (const item of cart) {
+        await apiRequest(`/api/products/${item.id}/stock`, {
+          method: "PATCH",
+          body: JSON.stringify({ quantity: -item.quantity }),
+        });
+      }
+
+      toast({ title: "Success", description: "Sale completed successfully!" });
       setCart([]);
-      setSelectedCustomer(null);
+      setSelectedCustomer("");
       setAmountPaid("");
-      setShowPaymentDialog(false);
+      setShowCheckout(false);
+      setCustomerCode("");
+      setCustomerName("");
+      setCustomerDoor("");
+      setCustomerStreet("");
+      setCustomerAddress("");
       
-      // Refresh products to update stock
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-
-    } catch (error: any) {
-      toast({
-        title: "Sale failed",
-        description: error.message || "Failed to process sale",
-        variant: "destructive",
-      });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to complete sale", variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  return (
-    <div className="h-screen bg-gray-100 font-sans text-sm overflow-hidden">
-      {/* Header Bar */}
-      <div className="bg-gray-300 border border-gray-400 h-8 flex items-center justify-between px-4">
-        <div className="flex items-center space-x-8">
-          <span className="font-bold text-gray-800">GOFRUGAL</span>
-          <span className="text-gray-700">Sales</span>
-        </div>
-        <div className="flex items-center space-x-4 text-xs">
-          <span>₹</span>
-          <button className="bg-gray-200 border border-gray-400 px-2 py-1">_</button>
-          <button className="bg-gray-200 border border-gray-400 px-2 py-1">□</button>
-          <button className="bg-gray-200 border border-gray-400 px-2 py-1">×</button>
-        </div>
-      </div>
+  const handleKeyPress = (e: React.KeyboardEvent, product: Product) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      addToCart(product);
+    }
+  };
 
-      {/* Main Content */}
-      <div className="flex h-full">
-        {/* Left Section */}
-        <div className="flex-1 p-2">
-          {/* Customer Information Panel */}
-          <div className="bg-blue-100 border border-gray-400 mb-2">
-            <div className="bg-blue-200 border-b border-gray-400 px-2 py-1 text-xs font-semibold">
-              QuickEdit Customer
+  return (
+    <DashboardLayout>
+      <div className="h-screen bg-gray-100 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-2 shadow-lg">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-xl font-bold">GOFRUGAL</h1>
+              <span className="text-lg">Sales</span>
             </div>
-            <div className="p-2 grid grid-cols-4 gap-2 text-xs">
+            <div className="flex items-center space-x-4 text-sm">
+              <span>Bill No: {Date.now().toString().slice(-6)}</span>
+              <span>Date: {new Date().toLocaleDateString('en-GB')}</span>
+              <span>Time: {new Date().toLocaleTimeString()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-12 gap-3 p-3 h-full">
+          {/* Left Panel - Customer & Product Search */}
+          <div className="col-span-8 space-y-3">
+            {/* Customer Section */}
+            <Card className="border-2 border-blue-200 shadow-md">
+              <CardHeader className="py-2 bg-blue-50">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <UserIcon className="h-4 w-4" />
+                  QuickEdit Customer
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-3">
+                <div className="grid grid-cols-5 gap-3 text-sm">
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-700">Code*</Label>
+                    <Input 
+                      className="h-8 text-xs border-gray-300" 
+                      value={customerCode}
+                      onChange={(e) => setCustomerCode(e.target.value)}
+                      placeholder="Customer Code"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-700">Name*</Label>
+                    <Input 
+                      className="h-8 text-xs border-gray-300" 
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Customer Name"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-700">Door No.</Label>
+                    <Input 
+                      className="h-8 text-xs border-gray-300" 
+                      value={customerDoor}
+                      onChange={(e) => setCustomerDoor(e.target.value)}
+                      placeholder="Door Number"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-700">Street</Label>
+                    <Input 
+                      className="h-8 text-xs border-gray-300" 
+                      value={customerStreet}
+                      onChange={(e) => setCustomerStreet(e.target.value)}
+                      placeholder="Street"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-700">Address</Label>
+                    <Input 
+                      className="h-8 text-xs border-gray-300" 
+                      value={customerAddress}
+                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      placeholder="Address"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sales Information */}
+            <Card className="border-2 border-green-200 shadow-md">
+              <CardHeader className="py-2 bg-green-50">
+                <CardTitle className="text-sm">Sales Information</CardTitle>
+              </CardHeader>
+              <CardContent className="py-3">
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-700">Sales Man</Label>
+                    <Select value={salesMan} onValueChange={setSalesMan}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ADMIN">ADMIN</SelectItem>
+                        <SelectItem value="SALES1">SALES1</SelectItem>
+                        <SelectItem value="SALES2">SALES2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-700">Door Delivery</Label>
+                    <Select value={doorDelivery} onValueChange={setDoorDelivery}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="No">No</SelectItem>
+                        <SelectItem value="Yes">Yes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-700">Print</Label>
+                    <Select value={printOption} onValueChange={setPrintOption}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Yes">Yes</SelectItem>
+                        <SelectItem value="No">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Product Search */}
+            <Card className="shadow-md">
+              <CardHeader className="py-2">
+                <div className="flex items-center space-x-2">
+                  <SearchIcon className="h-4 w-4" />
+                  <Input
+                    placeholder="Search products by name or SKU..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+              </CardHeader>
+            </Card>
+
+            {/* Products Grid */}
+            <Card className="flex-1 shadow-md">
+              <CardContent className="p-3">
+                <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                  {products?.slice(0, 8).map((product: Product) => (
+                    <Button
+                      key={product.id}
+                      variant="outline"
+                      className="h-20 p-2 flex flex-col justify-center text-xs hover:bg-blue-50 border-gray-300"
+                      onClick={() => addToCart(product)}
+                      onKeyDown={(e) => handleKeyPress(e, product)}
+                    >
+                      <div className="font-semibold text-center text-gray-800">{product.name}</div>
+                      <div className="text-blue-600 font-bold">{formatCurrency(Number(product.price))}</div>
+                      <div className="text-gray-500">Stock: {product.stockQuantity || 0}</div>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Panel - Cart & Billing */}
+          <div className="col-span-4 space-y-3">
+            {/* Items Table */}
+            <Card className="shadow-md">
+              <CardHeader className="py-2 bg-gray-50">
+                <CardTitle className="text-sm">Items</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="max-h-40 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="h-8">
+                        <TableHead className="text-xs p-2">S.No</TableHead>
+                        <TableHead className="text-xs p-2">Code</TableHead>
+                        <TableHead className="text-xs p-2">Description</TableHead>
+                        <TableHead className="text-xs p-2">Qty</TableHead>
+                        <TableHead className="text-xs p-2">Rate</TableHead>
+                        <TableHead className="text-xs p-2">Amount</TableHead>
+                        <TableHead className="text-xs p-2">Stock</TableHead>
+                        <TableHead className="text-xs p-2">M.R.P</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cart.map((item, index) => (
+                        <TableRow key={item.id} className="h-8">
+                          <TableCell className="text-xs p-2">{index + 1}</TableCell>
+                          <TableCell className="text-xs p-2">{item.sku}</TableCell>
+                          <TableCell className="text-xs p-2">{item.name}</TableCell>
+                          <TableCell className="text-xs p-2">
+                            <Input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
+                              className="h-6 w-12 text-xs"
+                              min="0"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs p-2">{formatCurrency(Number(item.price))}</TableCell>
+                          <TableCell className="text-xs p-2">{formatCurrency(item.total)}</TableCell>
+                          <TableCell className="text-xs p-2">{item.stockQuantity || 0}</TableCell>
+                          <TableCell className="text-xs p-2">{formatCurrency(Number(item.price))}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Billing Details */}
+            <Card className="shadow-md">
+              <CardHeader className="py-2 bg-gray-50">
+                <CardTitle className="text-sm">Billing Details</CardTitle>
+              </CardHeader>
+              <CardContent className="py-3 space-y-2">
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Sub Total:</span>
+                    <span className="font-semibold">{formatCurrency(cartTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Tax (18%):</span>
+                    <span className="font-semibold">{formatCurrency(tax)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Discount:</span>
+                    <span className="font-semibold">{formatCurrency(0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Round Off:</span>
+                    <span className="font-semibold">{formatCurrency(0)}</span>
+                  </div>
+                  <hr className="my-2" />
+                  <div className="flex justify-between text-lg font-bold text-blue-600">
+                    <span>Net Amount:</span>
+                    <span>{formatCurrency(finalTotal)}</span>
+                  </div>
+                </div>
+
+                {/* Delivery Boy Section */}
+                <div className="mt-4">
+                  <Label className="text-xs font-semibold text-gray-700">Delivery Boy</Label>
+                  <Select>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select Delivery Boy" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="boy1">Delivery Boy 1</SelectItem>
+                      <SelectItem value="boy2">Delivery Boy 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-2 mt-4">
+                  <Button 
+                    onClick={() => setShowCheckout(true)}
+                    disabled={cart.length === 0}
+                    className="w-full bg-green-600 hover:bg-green-700 text-sm h-8"
+                  >
+                    <CreditCardIcon className="h-4 w-4 mr-2" />
+                    Complete Sale
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full text-sm h-8"
+                    onClick={() => setCart([])}
+                  >
+                    Clear Cart
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Function Keys */}
+            <Card className="shadow-md">
+              <CardContent className="p-2">
+                <div className="grid grid-cols-3 gap-1 text-xs">
+                  <div className="text-center py-1 bg-gray-100 rounded">F2: Item</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F3: Qty</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F4: Price</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F5: Disc</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F6: Tax</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F7: Print</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F8: Hold</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F9: Recall</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F10: Pay</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F11: Reports</div>
+                  <div className="text-center py-1 bg-gray-100 rounded">F12: Exit</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Checkout Dialog */}
+        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Complete Sale</DialogTitle>
+              <DialogDescription>
+                Process payment for this sale
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
               <div>
-                <Label className="text-xs">Code*</Label>
-                <Select onValueChange={(value) => {
-                  const customer = customers?.find((c: Customer) => c.id.toString() === value);
-                  setSelectedCustomer(customer || null);
-                }}>
-                  <SelectTrigger className="h-6 text-xs">
-                    <SelectValue placeholder="15643" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers?.map((customer: Customer) => (
-                      <SelectItem key={customer.id} value={customer.id.toString()}>
-                        {customer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Name*</Label>
-                <Input 
-                  className="h-6 text-xs" 
-                  value={selectedCustomer?.name || "SURYA"} 
-                  placeholder="SURYA"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Door/No</Label>
-                <Input className="h-6 text-xs" />
-              </div>
-              <div>
-                <Label className="text-xs">Street</Label>
-                <Input className="h-6 text-xs" />
-              </div>
-              <div>
-                <Label className="text-xs">Address</Label>
-                <Select>
-                  <SelectTrigger className="h-6 text-xs">
+                <Label>Payment Method</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="address1">Address 1</SelectItem>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="upi">UPI</SelectItem>
+                    <SelectItem value="credit">Credit</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-3 grid grid-cols-3 gap-2">
-                <div>
-                  <Label className="text-xs">Sales Man</Label>
-                  <Input className="h-6 text-xs" value="HoldSkills" readOnly />
+              <div>
+                <Label>Amount Paid</Label>
+                <Input
+                  type="number"
+                  value={amountPaid}
+                  onChange={(e) => setAmountPaid(e.target.value)}
+                  placeholder={finalTotal.toString()}
+                />
+              </div>
+              <div className="text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span>Total:</span>
+                  <span>{formatCurrency(finalTotal)}</span>
                 </div>
-                <div>
-                  <Label className="text-xs">Door Delivery</Label>
-                  <Select defaultValue="no">
-                    <SelectTrigger className="h-6 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Print</Label>
-                  <Select defaultValue="yes">
-                    <SelectTrigger className="h-6 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {amountPaid && (
+                  <div className="flex justify-between">
+                    <span>Change:</span>
+                    <span className={change >= 0 ? "text-green-600" : "text-red-600"}>
+                      {formatCurrency(Math.abs(change))}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Items Table */}
-          <div className="bg-white border border-gray-400 flex-1">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-blue-200 text-xs h-8">
-                  <TableHead className="border-r border-gray-400 text-center w-12">S.No</TableHead>
-                  <TableHead className="border-r border-gray-400 text-center w-20">Code</TableHead>
-                  <TableHead className="border-r border-gray-400">Description</TableHead>
-                  <TableHead className="border-r border-gray-400 text-center w-16">Qty</TableHead>
-                  <TableHead className="border-r border-gray-400 text-center w-20">Rate</TableHead>
-                  <TableHead className="border-r border-gray-400 text-center w-24">Amount</TableHead>
-                  <TableHead className="border-r border-gray-400 text-center w-16">Stock</TableHead>
-                  <TableHead className="text-center w-16">M.R.P</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {cart.map((item, index) => (
-                  <TableRow key={item.id} className="text-xs h-6">
-                    <TableCell className="border-r border-gray-300 text-center">{index + 1}</TableCell>
-                    <TableCell className="border-r border-gray-300">{item.sku}</TableCell>
-                    <TableCell className="border-r border-gray-300">{item.name}</TableCell>
-                    <TableCell className="border-r border-gray-300 text-center">
-                      <Input 
-                        className="h-5 text-xs text-center border-0 p-0"
-                        value={item.quantity}
-                        onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
-                      />
-                    </TableCell>
-                    <TableCell className="border-r border-gray-300 text-right">{formatCurrency(item.price)}</TableCell>
-                    <TableCell className="border-r border-gray-300 text-right">{formatCurrency(item.total)}</TableCell>
-                    <TableCell className="border-r border-gray-300 text-center">{item.stockQuantity}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
-                  </TableRow>
-                ))}
-                {/* Empty rows to fill space */}
-                {Array.from({ length: Math.max(0, 15 - cart.length) }, (_, i) => (
-                  <TableRow key={`empty-${i}`} className="text-xs h-6">
-                    <TableCell className="border-r border-gray-300"></TableCell>
-                    <TableCell className="border-r border-gray-300"></TableCell>
-                    <TableCell className="border-r border-gray-300"></TableCell>
-                    <TableCell className="border-r border-gray-300"></TableCell>
-                    <TableCell className="border-r border-gray-300"></TableCell>
-                    <TableCell className="border-r border-gray-300"></TableCell>
-                    <TableCell className="border-r border-gray-300"></TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Bottom Function Keys */}
-          <div className="bg-gray-200 border border-gray-400 p-1 mt-2">
-            <div className="grid grid-cols-6 gap-1 text-xs">
-              <div className="text-center">
-                <div>F6</div>
-                <div>Rs.100</div>
-                <div>Ctrl = 1</div>
-              </div>
-              <div className="text-center">
-                <div>F7</div>
-                <div>Rs.500</div>
-                <div>Ctrl = 2</div>
-              </div>
-              <div className="text-center">
-                <div>F8</div>
-                <div>Rs.1000</div>
-                <div>Ctrl = 4</div>
-              </div>
-              <div className="text-center">
-                <div>F9</div>
-                <div>Rs.2000</div>
-                <div>Ctrl = 5</div>
-              </div>
-              <div className="col-span-2"></div>
-            </div>
-          </div>
-
-          {/* Product Selection Area */}
-          <div className="bg-blue-100 border border-gray-400 p-2 mt-2">
-            <div className="text-xs">Ctrl + W/H/S/T/O - Enter Name or press Enter</div>
-            <div className="grid grid-cols-4 gap-2 mt-2">
-              {products?.slice(0, 8).map((product: Product) => (
-                <Button
-                  key={product.id}
-                  variant="outline"
-                  className="h-8 text-xs p-1 justify-start"
-                  onClick={() => addToCart(product)}
-                >
-                  {product.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Function Key Bar */}
-          <div className="bg-blue-800 text-white p-1 mt-2 grid grid-cols-12 gap-1 text-xs">
-            <div className="text-center">F2<br/>ItemCode</div>
-            <div className="text-center">F3<br/>SalesHis</div>
-            <div className="text-center">F4<br/>QuikAdd Cust</div>
-            <div className="text-center">F5<br/>CashDisc</div>
-            <div className="text-center">F6<br/>ViewBills</div>
-            <div className="text-center">F7<br/>Tender</div>
-            <div className="text-center">F8<br/>ClearScreen</div>
-            <div className="text-center">F9<br/>ReprintBill</div>
-            <div className="text-center">F10<br/>CashHand</div>
-            <div className="text-center">F11<br/>HoldBill</div>
-            <div className="text-center">F12<br/>SelectCust</div>
-            <div className="text-center">Close</div>
-          </div>
-        </div>
-
-        {/* Right Section - Billing Details */}
-        <div className="w-80 bg-gray-100 border-l border-gray-400 p-2">
-          {/* Delivery Boy Section */}
-          <div className="bg-blue-100 border border-gray-400 mb-2">
-            <div className="bg-blue-200 border-b border-gray-400 px-2 py-1 text-xs font-semibold">
-              DELIVERY BOY
-            </div>
-            <div className="p-2 text-xs">
-              <Select>
-                <SelectTrigger className="h-6 text-xs">
-                  <SelectValue placeholder="D" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="d1">Delivery Boy 1</SelectItem>
-                  <SelectItem value="d2">Delivery Boy 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Bill Summary */}
-          <div className="bg-gray-200 border border-gray-400 mb-2 p-2 text-xs">
-            <div className="flex justify-between">
-              <span>Bill No</span>
-              <span className="font-bold">{Date.now().toString().slice(-6)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Bill Date</span>
-              <span>{new Date().toLocaleDateString('en-GB')}</span>
-            </div>
-          </div>
-
-          {/* Billing Details */}
-          <div className="bg-blue-100 border border-gray-400 flex-1">
-            <div className="space-y-1 p-2 text-xs">
-              <div className="flex justify-between">
-                <span>Tax Amt (incl)</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Surcharge (incl)</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Gross Amt</span>
-                <span>{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Item Discount</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Item Scheme amt</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Cash Bag %</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Cash Discount</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Bill Scheme %</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Bill Scheme amt</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Coupon Discount</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax Amt</span>
-                <span>{formatCurrency(taxAmount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Surcharge</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Service Charge %</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Service Charge</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Freight Amt</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Packing charge</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Other charge</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>Extra charges</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>RoundOff Amt</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between">
-                <span>R.O.I Avg%</span>
-                <span></span>
-              </div>
-              <div className="flex justify-between font-bold bg-blue-200 px-1">
-                <span>Album Charge</span>
-                <span>{formatCurrency(netAmount)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Net Amount Display */}
-          <div className="bg-white border-2 border-blue-600 mt-4 p-4 text-center">
-            <div className="text-lg font-bold text-blue-600">Net Amount</div>
-            <div className="text-4xl font-bold text-blue-600">
-              {formatCurrency(netAmount)}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-4">
-            <Button 
-              className="w-full bg-green-600 hover:bg-green-700 mb-2"
-              onClick={() => setShowPaymentDialog(true)}
-              disabled={cart.length === 0}
-            >
-              Process Sale
-            </Button>
-            <Button 
-              variant="outline"
-              className="w-full"
-              onClick={() => setCart([])}
-            >
-              Clear Cart
-            </Button>
-          </div>
-        </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCheckout(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCheckout} disabled={isProcessing}>
+                {isProcessing ? (
+                  <>
+                    <Calculator className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CreditCardIcon className="h-4 w-4 mr-2" />
+                    Complete Sale
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Process Payment</DialogTitle>
-            <DialogDescription>
-              Complete the sale for {formatCurrency(netAmount)}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
-              <Label>Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="upi">UPI</SelectItem>
-                  <SelectItem value="credit">Credit</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label>Amount Paid</Label>
-              <Input
-                type="number"
-                value={amountPaid}
-                onChange={(e) => setAmountPaid(e.target.value)}
-                placeholder={netAmount.toString()}
-              />
-            </div>
-            
-            {paymentMethod === "cash" && parseFloat(amountPaid) > netAmount && (
-              <div className="bg-green-50 p-3 rounded">
-                <div className="font-semibold">Change: {formatCurrency(parseFloat(amountPaid) - netAmount)}</div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={processSale}
-              disabled={isProcessing}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {isProcessing ? "Processing..." : "Complete Sale"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </DashboardLayout>
   );
 }

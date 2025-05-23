@@ -203,6 +203,7 @@ export default function POSClassic() {
             </div>
           </div>
         </div>
+
         <div className="grid grid-cols-12 gap-2 h-full">
           {/* Left Panel - Customer & Product Search */}
           <div className="col-span-8 space-y-2">
