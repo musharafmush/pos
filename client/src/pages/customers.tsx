@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Filter, Pencil, Trash2, Mail, Phone, MapPin } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useFormatCurrency } from "@/lib/currency";
 import { format } from "date-fns";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 
@@ -90,6 +91,7 @@ export default function Customers() {
   const [entriesPerPage, setEntriesPerPage] = useState<number>(25);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const formatCurrency = useFormatCurrency();
 
   // Fetch customers
   const { data: customers = [] } = useQuery({
@@ -363,7 +365,7 @@ export default function Customers() {
                           <FormItem>
                             <FormLabel>Credit Limit</FormLabel>
                             <FormControl>
-                              <Input placeholder="0.00" {...field} />
+                              <Input placeholder="₹0" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -501,10 +503,10 @@ export default function Customers() {
                           )}
                         </TableCell>
                         <TableCell>{customer.taxId || '-'}</TableCell>
-                        <TableCell>$ {customer.creditLimit || '0.00'}</TableCell>
+                        <TableCell>{formatCurrency(customer.creditLimit || 0)}</TableCell>
                         <TableCell>{customer.paymentTerm || '-'}</TableCell>
-                        <TableCell>$ {customer.openingBalance || '0.00'}</TableCell>
-                        <TableCell>$ {customer.advanceBalance || '0.00'}</TableCell>
+                        <TableCell>{formatCurrency(customer.openingBalance || 0)}</TableCell>
+                        <TableCell>{formatCurrency(customer.advanceBalance || 0)}</TableCell>
                         <TableCell>
                           {customer.createdAt 
                             ? format(new Date(customer.createdAt), 'MM/dd/yyyy')
