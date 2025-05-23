@@ -24,7 +24,13 @@ const filesToCopy = [
   'start-desktop.js',
   'generated-icon.png',
   'package.json',
-  'package-lock.json'
+  'package-lock.json',
+  'vite.config.ts',
+  'tsconfig.json',
+  'tailwind.config.ts',
+  'postcss.config.js',
+  'components.json',
+  'drizzle.config.ts'
 ];
 
 console.log('📋 Copying essential files...');
