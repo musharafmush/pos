@@ -20,6 +20,7 @@ import Customers from "@/pages/customers";
 import AddProduct from "@/pages/add-product";
 import PrintLabels from "@/pages/print-labels";
 import InventoryForecasting from "@/pages/inventory-forecasting";
+import Repacking from "@/pages/repacking";
 import CurrencySettings from "@/pages/currency-settings";
 import BusinessSettings from "@/pages/business-settings";
 import AuthPage from "@/pages/auth-page";
@@ -34,6 +35,8 @@ function Router() {
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/add-product" component={AddProduct} />
+      <ProtectedRoute path="/products/repacking" component={Repacking} />
+      <ProtectedRoute path="/repacking" component={Repacking} />
       <ProtectedRoute path="/print-labels" component={PrintLabels} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
