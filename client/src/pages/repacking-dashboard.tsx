@@ -89,7 +89,7 @@ export default function RepackingDashboard() {
       targetQuantityCreated: product.stockQuantity,
       costSavings: basePrice * 0.20, // 20% cost savings through repacking
       profitMargin: 35, // 35% profit margin on repacked items
-      repackedAt: product.createdAt?.toISOString() || new Date().toISOString(),
+      repackedAt: product.createdAt ? new Date(product.createdAt).toISOString() : new Date().toISOString(),
     };
   });
 
