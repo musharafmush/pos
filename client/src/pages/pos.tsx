@@ -356,9 +356,7 @@ export default function POS() {
                           {product.category?.name || "Uncategorized"}
                         </p>
                         <p className="font-bold text-primary mt-1">
-                          ${typeof product.price === 'number' 
-                            ? product.price.toFixed(2) 
-                            : parseFloat(product.price).toFixed(2)}
+                          {formatCurrency(product.price)}
                         </p>
                       </button>
                     ))}
@@ -435,7 +433,7 @@ export default function POS() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            ${item.total.toFixed(2)}
+                            {formatCurrency(item.total)}
                           </TableCell>
                           <TableCell>
                             <Button
@@ -463,15 +461,15 @@ export default function POS() {
                 <div className="w-full space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                    <span className="font-medium text-gray-800 dark:text-gray-200">${calculateSubtotal().toFixed(2)}</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(calculateSubtotal())}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Tax (7%)</span>
-                    <span className="font-medium text-gray-800 dark:text-gray-200">${calculateTax().toFixed(2)}</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(calculateTax())}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-lg font-bold text-gray-800 dark:text-gray-100">Total</span>
-                    <span className="text-lg font-bold text-primary">${calculateTotal().toFixed(2)}</span>
+                    <span className="text-lg font-bold text-primary">{formatCurrency(calculateTotal())}</span>
                   </div>
                 </div>
                 
@@ -531,15 +529,15 @@ export default function POS() {
             <div className="space-y-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-md">
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200">${calculateSubtotal().toFixed(2)}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(calculateSubtotal())}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Tax</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200">${calculateTax().toFixed(2)}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(calculateTax())}</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
                 <span className="font-bold text-gray-800 dark:text-gray-100">Total Amount</span>
-                <span className="font-bold text-primary">${calculateTotal().toFixed(2)}</span>
+                <span className="font-bold text-primary">{formatCurrency(calculateTotal())}</span>
               </div>
             </div>
           </div>
