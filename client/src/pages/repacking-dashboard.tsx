@@ -57,25 +57,39 @@ export default function RepackingDashboard() {
     },
   });
 
-  // Mock repacking activities - in real implementation this would come from database
+  // Get repacking activities from actual products with -RP in SKU
   const repackingActivities: RepackingActivity[] = products?.filter((p: Product) => 
     p.sku.includes("-RP")
-  ).map((product: Product, index: number) => ({
-    id: index + 1,
-    sourceProduct: {
-      id: index + 100,
-      name: product.sku.split("-RP")[0].replace(/[^a-zA-Z\s]/g, ""),
-      sku: product.sku.split("-RP")[0],
-      price: product.price * 1.5,
-      stockQuantity: 50,
-    } as Product,
-    targetProduct: product,
-    sourceQuantityUsed: Math.floor(Math.random() * 5) + 1,
-    targetQuantityCreated: product.stockQuantity,
-    costSavings: product.price * 0.15,
-    profitMargin: 25 + Math.floor(Math.random() * 20),
-    repackedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-  })) || [];
+  ).map((product: Product, index: number) => {
+    const basePrice = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+    const baseName = product.sku.split("-RP")[0].replace(/[^a-zA-Z\s]/g, "") || "Source Product";
+    
+    return {
+      id: index + 1,
+      sourceProduct: {
+        id: index + 100,
+        name: baseName,
+        sku: product.sku.split("-RP")[0],
+        price: basePrice * 1.5,
+        stockQuantity: 50,
+        description: `Original ${baseName}`,
+        cost: basePrice * 1.2,
+        categoryId: product.categoryId,
+        alertThreshold: 10,
+        barcode: null,
+        image: null,
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product,
+      targetProduct: product,
+      sourceQuantityUsed: Math.floor(Math.random() * 5) + 1,
+      targetQuantityCreated: product.stockQuantity,
+      costSavings: basePrice * 0.15,
+      profitMargin: 25 + Math.floor(Math.random() * 20),
+      repackedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+  }) || [];
 
   // Calculate dashboard statistics
   const totalRepackingOperations = repackingActivities.length;
