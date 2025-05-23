@@ -130,7 +130,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     },
     {
       id: "sales",
-      items: [{ href: "/pos", icon: <ShoppingBagIcon className="h-5 w-5" />, label: "Sell" }]
+      label: "Sales",
+      icon: <ShoppingBagIcon className="h-5 w-5" />,
+      items: [
+        { href: "/pos", icon: <ShoppingBagIcon className="h-5 w-5" />, label: "Modern POS" },
+        { href: "/pos-classic", icon: <Calculator className="h-5 w-5" />, label: "Classic POS" },
+        { href: "/pos-gofrugal", icon: <Calculator className="h-5 w-5" />, label: "Gofrugal Style POS" }
+      ]
     },
     {
       id: "inventory",

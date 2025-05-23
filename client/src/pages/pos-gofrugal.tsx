@@ -125,17 +125,11 @@ export default function POSGofrugal() {
         orderNumber: `ORD-${Date.now()}`
       };
 
-      await apiRequest("/api/sales", {
-        method: "POST",
-        body: JSON.stringify(saleData),
-      });
+      await apiRequest("/api/sales", "POST", saleData);
 
       // Update product stock
       for (const item of cart) {
-        await apiRequest(`/api/products/${item.id}/stock`, {
-          method: "PATCH",
-          body: JSON.stringify({ quantity: -item.quantity }),
-        });
+        await apiRequest(`/api/products/${item.id}/stock`, "PATCH", { quantity: -item.quantity });
       }
 
       toast({ title: "Success", description: "Sale completed successfully!" });

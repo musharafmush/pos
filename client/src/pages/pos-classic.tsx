@@ -583,6 +583,7 @@ export default function POSClassic() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+          </div>
         </div>
       </div>
     </DashboardLayout>
