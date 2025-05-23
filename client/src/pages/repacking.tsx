@@ -119,9 +119,18 @@ export default function Repacking() {
       // Update source product stock (reduce by consumed quantity)
       if (selectedSourceProduct) {
         const newSourceStock = selectedSourceProduct.stockQuantity - data.sourceQuantity;
-        await apiRequest("PUT", `/api/products/${selectedSourceProduct.id}`, {
+        const updateData = {
+          name: selectedSourceProduct.name,
+          sku: selectedSourceProduct.sku,
+          description: selectedSourceProduct.description,
+          price: Number(selectedSourceProduct.price),
+          cost: Number(selectedSourceProduct.cost || selectedSourceProduct.price),
           stockQuantity: newSourceStock,
-        });
+          categoryId: selectedSourceProduct.categoryId,
+          alertThreshold: selectedSourceProduct.alertThreshold,
+          active: selectedSourceProduct.active
+        };
+        await apiRequest("PUT", `/api/products/${selectedSourceProduct.id}`, updateData);
       }
 
       return { newProduct, sourceProduct: selectedSourceProduct };
@@ -171,9 +180,10 @@ export default function Repacking() {
     setSelectedSourceProduct(product);
     form.setValue("sourceProductId", product.id.toString());
     
-    // Auto-generate SKU for target product
-    const timestamp = Date.now().toString().slice(-4);
-    form.setValue("targetProductSku", `${product.sku}-RP${timestamp}`);
+    // Auto-generate unique SKU for target product with random suffix
+    const timestamp = Date.now();
+    const randomSuffix = Math.floor(Math.random() * 10000);
+    form.setValue("targetProductSku", `${product.sku}-RP${timestamp}-${randomSuffix}`);
     setCurrentStep(2);
   };
 
