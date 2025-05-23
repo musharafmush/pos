@@ -7,11 +7,11 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import Dashboard from "@/pages/dashboard";
 import POS from "@/pages/pos";
 import POSGofrugal from "@/pages/pos-gofrugal";
+import PurchaseEntry from "@/pages/purchase-entry";
 import Products from "@/pages/products";
 import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
 import PurchaseDashboard from "@/pages/purchase-dashboard";
-import PurchaseEntry from "@/pages/purchase-entry";
 import PurchaseEntryLegacy from "@/pages/purchase-entry-legacy";
 import Reports from "@/pages/reports";
 import Users from "@/pages/users";
@@ -35,6 +35,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/pos" component={POS} />
       <ProtectedRoute path="/pos-gofrugal" component={POSGofrugal} />
+      <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/add-product" component={AddProduct} />
@@ -47,7 +48,6 @@ function Router() {
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
       <ProtectedRoute path="/purchases" component={Purchases} />
       <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
-      <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
       <ProtectedRoute path="/purchase-entry-legacy" component={PurchaseEntryLegacy} />
       <ProtectedRoute path="/reports" component={Reports} />
       <ProtectedRoute path="/users" component={Users} adminOnly />
