@@ -584,30 +584,17 @@ export default function PurchaseEntry() {
         // Distribute additional charges to line items amounts
         const totalAdditionalCharges = surchargeAmount + freightAmount + packingCharge + otherCharge;
         
-        // Always recalculate line items - first calculate base amounts, then add charges
+        // Keep line items amounts clean - NO freight charges in Amount column
         watchedItems.forEach((item, index) => {
           const qty = Number(form.getValues(`items.${index}.receivedQty`)) || 0;
           const cost = Number(form.getValues(`items.${index}.cost`)) || 0;
           const baseAmount = qty * cost;
           
-          // Start with base amount
-          let finalAmount = baseAmount;
+          // Amount column should ALWAYS show pure base cost (no freight)
+          form.setValue(`items.${index}.amount`, baseAmount.toFixed(0));
           
-          // Add proportional additional charges if any
-          if (totalAdditionalCharges > 0 && grossAmount > 0) {
-            const proportion = baseAmount / grossAmount;
-            const itemAdditionalCharge = totalAdditionalCharges * proportion;
-            finalAmount = baseAmount + itemAdditionalCharge;
-          }
-          
-          // Update amount field
-          form.setValue(`items.${index}.amount`, finalAmount.toFixed(0));
-          
-          // Update net amount (after taxes)
-          const taxRate = Number(form.getValues(`items.${index}.taxRate`)) || 0;
-          const taxAmount = finalAmount * (taxRate / 100);
-          const netAmount = finalAmount + taxAmount;
-          form.setValue(`items.${index}.netAmount`, netAmount.toFixed(0));
+          // Net amount calculation is handled in recalculateAmounts function
+          // No need to update here as it's done in the recalculateAmounts function
         });
 
         // AUTO UPDATE final amounts instantly
