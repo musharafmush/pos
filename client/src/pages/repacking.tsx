@@ -105,9 +105,11 @@ export default function Repacking() {
         sku: data.targetProductSku,
         description: data.description || `Repacked from ${selectedSourceProduct?.name}`,
         price: Number(data.targetUnitPrice),
+        cost: Number(data.targetUnitPrice) * 0.8, // Set cost as 80% of price
         stockQuantity: Number(data.targetQuantity),
-        categoryId: data.categoryId ? Number(data.categoryId) : undefined,
+        categoryId: data.categoryId ? Number(data.categoryId) : 1, // Default to first category if none selected
         alertThreshold: Math.floor(Number(data.targetQuantity) * 0.1),
+        active: true,
       };
 
       // Create the new product
