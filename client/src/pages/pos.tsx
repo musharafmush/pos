@@ -24,6 +24,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFormatCurrency } from "@/lib/currency";
 
 interface Product {
   id: number;
@@ -53,6 +54,7 @@ export default function POS() {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const formatCurrency = useFormatCurrency();
 
   const { data: products } = useQuery({
     queryKey: ['/api/products'],
@@ -323,9 +325,7 @@ export default function POS() {
                           {product.category?.name || "Uncategorized"}
                         </p>
                         <p className="font-bold text-primary mt-1">
-                          ${typeof product.price === 'number' 
-                            ? product.price.toFixed(2) 
-                            : parseFloat(product.price).toFixed(2)}
+                          {formatCurrency(product.price)}
                         </p>
                       </button>
                     ))}
