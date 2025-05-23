@@ -557,7 +557,7 @@ export default function PurchaseEntry() {
         
         // Always recalculate line items - first calculate base amounts, then add charges
         watchedItems.forEach((item, index) => {
-          const qty = Number(form.getValues(`items.${index}.qty`)) || 0;
+          const qty = Number(form.getValues(`items.${index}.receivedQty`)) || 0;
           const cost = Number(form.getValues(`items.${index}.cost`)) || 0;
           const baseAmount = qty * cost;
           
@@ -1500,8 +1500,14 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="flex items-center justify-center p-2 bg-blue-50 rounded-md">
-                                            <span className="text-sm font-medium text-blue-700">₹</span>
-                                            <div className="font-medium text-sm text-blue-700 ml-1">{Number(field.value || 0).toFixed(0)}</div>
+                                            {Number(field.value || 0) > 0 ? (
+                                              <>
+                                                <span className="text-sm font-medium text-blue-700">₹</span>
+                                                <div className="font-medium text-sm text-blue-700 ml-1">{Number(field.value || 0).toFixed(0)}</div>
+                                              </>
+                                            ) : (
+                                              <div className="text-sm text-gray-400">-</div>
+                                            )}
                                           </div>
                                         </FormControl>
                                       </FormItem>
@@ -1516,8 +1522,14 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="flex items-center justify-center p-2 bg-green-50 rounded-md">
-                                            <span className="text-sm font-medium text-green-700">₹</span>
-                                            <div className="font-medium text-sm text-green-700 ml-1">{Number(field.value || 0).toFixed(0)}</div>
+                                            {Number(field.value || 0) > 0 ? (
+                                              <>
+                                                <span className="text-sm font-medium text-green-700">₹</span>
+                                                <div className="font-medium text-sm text-green-700 ml-1">{Number(field.value || 0).toFixed(0)}</div>
+                                              </>
+                                            ) : (
+                                              <div className="text-sm text-gray-400">-</div>
+                                            )}
                                           </div>
                                         </FormControl>
                                       </FormItem>
@@ -1555,8 +1567,14 @@ export default function PurchaseEntry() {
                                       <FormItem className="space-y-0">
                                         <FormControl>
                                           <div className="flex items-center justify-center p-2 bg-gray-50 rounded-md">
-                                            <span className="text-sm">₹</span>
-                                            <div className="font-medium text-sm ml-1">{field.value || "0"}</div>
+                                            {Number(field.value || 0) > 0 ? (
+                                              <>
+                                                <span className="text-sm">₹</span>
+                                                <div className="font-medium text-sm ml-1">{Number(field.value || 0).toFixed(0)}</div>
+                                              </>
+                                            ) : (
+                                              <div className="text-sm text-gray-400">-</div>
+                                            )}
                                           </div>
                                         </FormControl>
                                       </FormItem>
