@@ -3,6 +3,7 @@
   "productName": "Awesome Shop POS",
   "description": "Professional Point of Sale System for Indian Retail Businesses",
   "author": "Awesome Shop",
+  "main": "electron/main.js",
   "directories": {
     "output": "dist-electron"
   },
