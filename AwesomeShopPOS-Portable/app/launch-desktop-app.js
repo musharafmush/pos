@@ -3,8 +3,12 @@
 console.log('🚀 Launching Awesome Shop POS Desktop App...');
 console.log('💰 Your professional Indian Rupee POS system is starting!');
 
-const { exec } = require('child_process');
-const path = require('path');
+import { exec } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Start the web server and open in Electron
 const startCommand = process.platform === 'win32' 
