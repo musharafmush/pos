@@ -1,19 +1,32 @@
 #!/usr/bin/env node
 
-console.log('🚀 Launching Awesome Shop POS Desktop App...');
-console.log('💰 Your professional Indian Rupee POS system is starting!');
-
 import { exec } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+console.log('🚀 Launching Awesome Shop POS Desktop App...');
+console.log('💰 Your professional Indian Rupee POS system is starting!');
+
+// Initialize SQLite database for desktop mode
+console.log('🔧 Setting up offline database...');
+exec('tsx db/sqlite-migrate.ts', (error) => {
+  if (error) {
+    console.log('📊 Creating fresh database for first-time use...');
+  } else {
+    console.log('✅ Database ready for offline use!');
+  }
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Set desktop mode environment variable for SQLite
+process.env.DESKTOP_MODE = 'true';
+
 // Start the web server and open in Electron
 const startCommand = process.platform === 'win32' 
-  ? 'start /B npm run dev && timeout /t 3 && npx electron electron/main.js'
-  : 'npm run dev & sleep 3 && npx electron electron/main.js';
+  ? 'set DESKTOP_MODE=true && start /B npm run dev && timeout /t 3 && npx electron electron/main.js'
+  : 'DESKTOP_MODE=true npm run dev & sleep 3 && npx electron electron/main.js';
 
 const child = exec(startCommand, (error, stdout, stderr) => {
   if (error) {

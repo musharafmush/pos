@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 
+import { exec } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 console.log('🚀 Launching Awesome Shop POS Desktop App...');
 console.log('💰 Your professional Indian Rupee POS system is starting!');
 
 // Initialize SQLite database for desktop mode
 console.log('🔧 Setting up offline database...');
-exec('node -e "import(\'./db/sqlite-migrate.js\')"', (error) => {
+exec('tsx db/sqlite-migrate.ts', (error) => {
   if (error) {
-    console.log('📊 Database already initialized or creating fresh database...');
+    console.log('📊 Creating fresh database for first-time use...');
   } else {
     console.log('✅ Database ready for offline use!');
   }
 });
-
-import { exec } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
