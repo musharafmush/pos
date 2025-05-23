@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import Dashboard from "@/pages/dashboard";
 import POS from "@/pages/pos";
 import POSClassic from "@/pages/pos-classic";
+import POSGofrugal from "@/pages/pos-gofrugal";
 import Products from "@/pages/products";
 import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
@@ -35,6 +36,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/pos" component={POS} />
       <ProtectedRoute path="/pos-classic" component={POSClassic} />
+      <ProtectedRoute path="/pos-gofrugal" component={POSGofrugal} />
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/add-product" component={AddProduct} />

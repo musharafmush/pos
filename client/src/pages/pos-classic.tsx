@@ -189,21 +189,20 @@ export default function POSClassic() {
 
   return (
     <DashboardLayout>
-      <div className="h-screen bg-gray-100 p-2">
+      <div className="h-screen bg-gray-200 overflow-hidden">
         {/* Header */}
-        <div className="bg-blue-800 text-white p-3 mb-2 rounded-t-lg">
+        <div className="bg-gray-300 border-b-2 border-gray-400 p-1">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-bold">AWESOME SHOP</h1>
-              <span className="text-lg">Sales</span>
+              <h1 className="text-lg font-bold text-gray-800">GOFRUGAL</h1>
+              <span className="text-lg text-gray-700">Sales</span>
             </div>
             <div className="flex items-center space-x-4">
-              <span>Bill No: {Date.now().toString().slice(-6)}</span>
-              <span>Date: {new Date().toLocaleDateString()}</span>
+              <span className="text-sm text-gray-700">Bill No: {Date.now().toString().slice(-6)}</span>
+              <span className="text-sm text-gray-700">Date: {new Date().toLocaleDateString('en-GB')}</span>
             </div>
           </div>
         </div>
-
         <div className="grid grid-cols-12 gap-2 h-full">
           {/* Left Panel - Customer & Product Search */}
           <div className="col-span-8 space-y-2">
@@ -583,6 +582,7 @@ export default function POSClassic() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     </DashboardLayout>
   );
