@@ -13,10 +13,16 @@ import { pool } from "@db";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
+  console.log('Authentication check:', {
+    isAuth: req.isAuthenticated(),
+    user: req.user,
+    session: req.session?.passport
+  });
+  
   if (req.isAuthenticated()) {
     return next();
   }
-  return res.status(401).json({ message: "Unauthorized" });
+  return res.status(401).json({ message: "Not authenticated" });
 };
 
 // Define role-based middleware
