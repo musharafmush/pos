@@ -19,6 +19,7 @@ import {
   ClipboardList
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useFormatCurrency } from "@/lib/currency";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 
@@ -178,8 +179,10 @@ const emptyPurchaseItem = {
 // Main component
 export default function PurchaseEntry() {
   const { toast } = useToast();
+  const formatCurrency = useFormatCurrency();
   const [activeTab, setActiveTab] = useState("details");
   const [searchTerm, setSearchTerm] = useState("");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
   const today = format(new Date(), "yyyy-MM-dd");
   
   // Check if we're in edit mode
@@ -539,7 +542,7 @@ export default function PurchaseEntry() {
         
         // Always recalculate line items - first calculate base amounts, then add charges
         watchedItems.forEach((item, index) => {
-          const qty = Number(form.getValues(`items.${index}.qty`)) || 0;
+          const qty = Number(form.getValues(`items.${index}.receivedQty`)) || 0;
           const cost = Number(form.getValues(`items.${index}.cost`)) || 0;
           const baseAmount = qty * cost;
           
@@ -557,7 +560,7 @@ export default function PurchaseEntry() {
           form.setValue(`items.${index}.amount`, finalAmount.toFixed(0));
           
           // Update net amount (after taxes)
-          const taxRate = Number(form.getValues(`items.${index}.taxRate`)) || 0;
+          const taxRate = Number(form.getValues(`items.${index}.taxPercent`)) || 0;
           const taxAmount = finalAmount * (taxRate / 100);
           const netAmount = finalAmount + taxAmount;
           form.setValue(`items.${index}.netAmount`, netAmount.toFixed(0));

@@ -47,8 +47,9 @@ function Router() {
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
       <ProtectedRoute path="/purchases" component={Purchases} />
       <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
-      <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
+      <ProtectedRoute path="/purchase-entry" component={lazy(() => import("./pages/purchase-entry-new")).default} />
       <ProtectedRoute path="/purchase-entry-legacy" component={PurchaseEntryLegacy} />
+      <ProtectedRoute path="/purchase-entry-old" component={PurchaseEntry} />
       <ProtectedRoute path="/reports" component={Reports} />
       <ProtectedRoute path="/users" component={Users} adminOnly />
       <ProtectedRoute path="/settings" component={Settings} />
