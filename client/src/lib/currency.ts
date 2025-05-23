@@ -12,7 +12,7 @@ export function useCurrencySettings() {
             baseCurrency: "INR",
             currencySymbol: "₹",
             currencyPosition: "before",
-            decimalPlaces: "2",
+            decimalPlaces: "0",
             thousandSeparator: ",",
             decimalSeparator: ".",
           };
@@ -23,7 +23,7 @@ export function useCurrencySettings() {
           baseCurrency: "INR",
           currencySymbol: "₹",
           currencyPosition: "before",
-          decimalPlaces: "2",
+          decimalPlaces: "0",
           thousandSeparator: ",",
           decimalSeparator: ".",
         };
@@ -47,7 +47,7 @@ export function formatCurrency(
   const defaultSettings = {
     currencySymbol: "₹",
     currencyPosition: "before" as const,
-    decimalPlaces: "2",
+    decimalPlaces: "0",
     thousandSeparator: ",",
     decimalSeparator: ".",
   };
