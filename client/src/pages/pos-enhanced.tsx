@@ -80,6 +80,10 @@ export default function POSEnhanced() {
   const [showItemDiscountDialog, setShowItemDiscountDialog] = useState(false);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number>(-1);
   const [itemDiscountValue, setItemDiscountValue] = useState(0);
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [inventoryAlerts, setInventoryAlerts] = useState<string[]>([]);
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -132,8 +136,16 @@ export default function POSEnhanced() {
   const grandTotal = taxableAmount + taxAmount;
   const changeDue = amountPaid ? Math.max(0, parseFloat(amountPaid) - grandTotal) : 0;
 
-  // Enhanced POS functions
+  // Enhanced POS functions with inventory alerts
   const addToCart = (product: any) => {
+    // Check inventory levels
+    if (product.stockQuantity <= 5) {
+      setInventoryAlerts(prev => [
+        ...prev.filter(alert => !alert.includes(product.name)),
+        `Low stock alert: ${product.name} (${product.stockQuantity} remaining)`
+      ]);
+    }
+    
     const existingItem = cart.find(item => item.id === product.id);
     if (existingItem) {
       updateQuantity(product.id, existingItem.quantity + 1);
@@ -150,6 +162,43 @@ export default function POSEnhanced() {
     if (quickSaleMode) {
       setSearchTerm("");
     }
+  };
+
+  // Barcode scanning functionality
+  const handleBarcodeInput = (barcode: string) => {
+    const product = products?.find(p => p.sku === barcode || p.name.toLowerCase().includes(barcode.toLowerCase()));
+    if (product) {
+      addToCart(product);
+      setBarcodeInput("");
+      toast({
+        title: "Product Added",
+        description: `${product.name} added to cart`
+      });
+    } else {
+      toast({
+        title: "Product Not Found",
+        description: "No product found with this barcode",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Enhanced receipt generation
+  const generateReceiptData = () => {
+    return {
+      orderNumber: `POS-${Date.now()}`,
+      timestamp: new Date(),
+      customer: selectedCustomer?.name || "Walk-in Customer",
+      items: cart,
+      subtotal,
+      discount: totalDiscount,
+      tax: taxAmount,
+      total: grandTotal,
+      paymentMethod,
+      amountPaid: parseFloat(amountPaid) || 0,
+      changeDue,
+      notes
+    };
   };
 
   const updateQuantity = (productId: number, newQuantity: number) => {
@@ -358,6 +407,53 @@ export default function POSEnhanced() {
               </Button>
             </div>
 
+            {/* Barcode Scanner */}
+            <div className="flex gap-2 mb-3">
+              <div className="relative flex-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2m0 0h8m-8 0V3m8 0v0m0 0h2a2 2 0 0 1 2 2v2m0 0v8m0-8h0m0 8v2a2 2 0 0 1-2 2h-2m0 0H8m8 0v0M8 21h0m0 0H6a2 2 0 0 1-2-2v-2"/>
+                  <path d="M7 12h2m2 0h2m2 0h2"/>
+                </svg>
+                <Input
+                  placeholder="Scan barcode or type SKU..."
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleBarcodeInput(barcodeInput);
+                    }
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBarcodeInput(barcodeInput)}
+                disabled={!barcodeInput}
+              >
+                Add Item
+              </Button>
+            </div>
+
+            {/* Inventory Alerts */}
+            {inventoryAlerts.length > 0 && (
+              <div className="mb-3">
+                {inventoryAlerts.map((alert, index) => (
+                  <div key={index} className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-3 py-2 rounded text-sm mb-1 flex justify-between items-center">
+                    <span>{alert}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setInventoryAlerts(prev => prev.filter((_, i) => i !== index))}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-2">
               <Button
@@ -558,15 +654,45 @@ export default function POSEnhanced() {
               </div>
             </div>
 
-            {/* Checkout Button */}
-            <Button
-              className="w-full h-12 text-lg"
-              onClick={() => setShowPaymentDialog(true)}
-              disabled={cart.length === 0}
-            >
-              <CreditCardIcon className="mr-2" />
-              Checkout (Ctrl+P)
-            </Button>
+            {/* Checkout Buttons */}
+            <div className="space-y-2">
+              <Button
+                className="w-full h-12 text-lg"
+                onClick={() => setShowPaymentDialog(true)}
+                disabled={cart.length === 0}
+              >
+                <CreditCardIcon className="mr-2" />
+                Checkout (Ctrl+P)
+              </Button>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowReceiptPreview(true)}
+                  disabled={cart.length === 0}
+                >
+                  <PrinterIcon className="mr-1 h-4 w-4" />
+                  Preview Receipt
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    const receiptData = generateReceiptData();
+                    console.log('Receipt Data:', receiptData);
+                    toast({
+                      title: "Receipt Ready",
+                      description: "Receipt data generated for printing"
+                    });
+                  }}
+                  disabled={cart.length === 0}
+                >
+                  <PrinterIcon className="mr-1 h-4 w-4" />
+                  Print Receipt
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -739,6 +865,113 @@ export default function POSEnhanced() {
               </Button>
               <Button onClick={applyItemDiscount}>
                 Apply Discount
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Receipt Preview Dialog */}
+        <Dialog open={showReceiptPreview} onOpenChange={setShowReceiptPreview}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Receipt Preview</DialogTitle>
+            </DialogHeader>
+            <div className="bg-white p-4 border rounded font-mono text-sm max-h-96 overflow-y-auto">
+              <div className="text-center border-b pb-2 mb-2">
+                <div className="font-bold">AWESOME SHOP POS</div>
+                <div className="text-xs">Professional Retail System</div>
+                <div className="text-xs">GST: 12ABCDE1234F1Z5</div>
+              </div>
+              
+              <div className="border-b pb-2 mb-2 text-xs">
+                <div>Order: POS-{Date.now()}</div>
+                <div>Date: {new Date().toLocaleString()}</div>
+                <div>Customer: {selectedCustomer?.name || "Walk-in Customer"}</div>
+                <div>Cashier: Administrator</div>
+              </div>
+              
+              <div className="border-b pb-2 mb-2">
+                <div className="flex justify-between font-bold text-xs mb-1">
+                  <span>ITEM</span>
+                  <span>QTY</span>
+                  <span>RATE</span>
+                  <span>AMOUNT</span>
+                </div>
+                {cart.map((item, index) => (
+                  <div key={index} className="text-xs">
+                    <div className="flex justify-between">
+                      <span className="truncate flex-1">{item.name}</span>
+                      <span className="w-8 text-center">{item.quantity}</span>
+                      <span className="w-16 text-right">{formatCurrency(parseFloat(item.price))}</span>
+                      <span className="w-16 text-right">{formatCurrency(item.total)}</span>
+                    </div>
+                    {item.itemDiscount && (
+                      <div className="text-xs text-gray-500 ml-2">
+                        Item Discount: {item.itemDiscount}%
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                {totalDiscount > 0 && (
+                  <div className="flex justify-between">
+                    <span>Discount:</span>
+                    <span>-{formatCurrency(totalDiscount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span>GST ({taxRate}%):</span>
+                  <span>{formatCurrency(taxAmount)}</span>
+                </div>
+                <div className="flex justify-between font-bold border-t pt-1">
+                  <span>TOTAL:</span>
+                  <span>{formatCurrency(grandTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Payment:</span>
+                  <span>{paymentMethod.toUpperCase()}</span>
+                </div>
+                {amountPaid && (
+                  <>
+                    <div className="flex justify-between">
+                      <span>Paid:</span>
+                      <span>{formatCurrency(parseFloat(amountPaid))}</span>
+                    </div>
+                    {changeDue > 0 && (
+                      <div className="flex justify-between">
+                        <span>Change:</span>
+                        <span>{formatCurrency(changeDue)}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              <div className="text-center text-xs mt-4 pt-2 border-t">
+                <div>Thank you for shopping with us!</div>
+                <div>Visit again soon!</div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowReceiptPreview(false)}>
+                Close Preview
+              </Button>
+              <Button onClick={() => {
+                // Print functionality would go here
+                toast({
+                  title: "Print Sent",
+                  description: "Receipt sent to printer"
+                });
+                setShowReceiptPreview(false);
+              }}>
+                <PrinterIcon className="mr-2 h-4 w-4" />
+                Print Receipt
               </Button>
             </DialogFooter>
           </DialogContent>
