@@ -466,12 +466,14 @@ export default function PurchaseEntry() {
     const sellingPrice = Number(form.getValues(`items.${index}.sellingPrice`)) || 0;
     const cashDiscountPercent = Number(form.getValues(`items.${index}.cashDiscountPercent`)) || 0;
 
-    // Calculate basic amounts
+    // Calculate basic amounts (Amount column - without freight)
     const amount = receivedQty * cost;
     const amountAfterDisc = amount - discountAmount;
     const taxAmount = amountAfterDisc * (taxPercent / 100);
-    let netAmount = amountAfterDisc + taxAmount;
     const cashDiscountAmount = amount * (cashDiscountPercent / 100);
+    
+    // Base net amount (before freight distribution)
+    let netAmount = amountAfterDisc + taxAmount;
 
     // Get freight charges and other additional costs
     const freightAmount = Number(form.getValues("freightAmount")) || 0;
@@ -482,7 +484,7 @@ export default function PurchaseEntry() {
     // Calculate total additional charges
     const totalAdditionalCharges = freightAmount + packingCharge + otherCharge + surchargeAmount;
     
-    // Distribute freight and additional charges to net amount based on proportion
+    // Distribute freight and additional charges ONLY to net amount (not to basic amount)
     if (totalAdditionalCharges > 0 && amount > 0) {
       // Calculate total gross amount from all items
       const allItems = form.getValues("items") || [];
@@ -493,7 +495,7 @@ export default function PurchaseEntry() {
       }, 0);
       
       if (totalGrossAmount > 0) {
-        // Calculate this item's proportion of total and add freight accordingly
+        // Calculate this item's proportion of total and add freight to NET AMOUNT only
         const itemProportion = amount / totalGrossAmount;
         const itemFreightShare = totalAdditionalCharges * itemProportion;
         netAmount = netAmount + itemFreightShare;
