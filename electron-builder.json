@@ -1,0 +1,43 @@
+{
+  "appId": "com.awesomeshop.pos",
+  "productName": "Awesome Shop POS",
+  "description": "Professional Point of Sale System for Indian Retail Businesses",
+  "author": "Awesome Shop",
+  "main": "electron/main.js",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/main.js",
+    "generated-icon.png"
+  ],
+  "extraResources": [
+    {
+      "from": "generated-icon.png",
+      "to": "icon.png"
+    }
+  ],
+  "win": {
+    "target": "nsis",
+    "icon": "generated-icon.png",
+    "requestedExecutionLevel": "asInvoker"
+  },
+  "mac": {
+    "target": "dmg",
+    "icon": "generated-icon.png",
+    "category": "public.app-category.business"
+  },
+  "linux": {
+    "target": "AppImage",
+    "icon": "generated-icon.png",
+    "category": "Office"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Awesome Shop POS"
+  }
+}
