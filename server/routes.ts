@@ -8,7 +8,8 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { db } from "@db";
+import pgSession from "connect-pg-simple";
+import { pool } from "@db";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -43,11 +44,17 @@ const isAdmin = hasRole(['admin']);
 const isAdminOrManager = hasRole(['admin', 'manager']);
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Configure session storage for desktop SQLite mode
-  // Use memory store for desktop app - perfect for offline use
+  // Configure session storage
+  const PostgresqlStore = pgSession(session);
+  const sessionStore = new PostgresqlStore({
+    pool: pool, // Use the same pool we use for the database
+    tableName: 'user_sessions',
+    createTableIfMissing: true,
+  });
 
   // Configure sessions
   app.use(session({
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'POSAPPSECRET',
     resave: false,
     saveUninitialized: false,
@@ -392,27 +399,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/products', isAuthenticated, async (req, res) => {
-    console.log('Creating product with data:', req.body);
-    
-    // Create product response directly to avoid database column issues
-    const newProduct = {
-      id: Date.now(),
-      name: req.body.name || 'New Product',
-      description: req.body.description || '',
-      sku: req.body.sku || `SKU-${Date.now()}`,
-      price: req.body.price?.toString() || '0',
-      cost: req.body.cost?.toString() || '0',
-      categoryId: Number(req.body.categoryId) || 1,
-      stockQuantity: Number(req.body.stockQuantity) || 0,
-      alertThreshold: Number(req.body.alertThreshold) || 10,
-      barcode: req.body.barcode || null,
-      image: req.body.image || null,
-      active: req.body.active !== false,
-      createdAt: new Date()
-    };
-
-    console.log('Product created successfully:', newProduct.name);
-    res.status(201).json(newProduct);
+    try {
+      const productData = schema.productInsertSchema.parse(req.body);
+      const product = await storage.createProduct(productData);
+      res.status(201).json(product);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error('Error creating product:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
   app.put('/api/products/:id', isAuthenticated, async (req, res) => {

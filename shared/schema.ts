@@ -36,7 +36,8 @@ export const products = pgTable('products', {
   barcode: text('barcode'),
   image: text('image'),
   active: boolean('active').notNull().default(true),
-  createdAt: timestamp('created_at').defaultNow().notNull()
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
 
 // Customers table
