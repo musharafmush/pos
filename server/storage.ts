@@ -153,7 +153,7 @@ export const storage = {
     image?: string;
     active?: boolean;
   }): Promise<Product> {
-    // Prepare product data without updatedAt field to avoid column errors
+    // Prepare product data that matches your current database structure
     const productData = {
       name: product.name,
       description: product.description || "",
@@ -163,8 +163,8 @@ export const storage = {
       categoryId: product.categoryId,
       stockQuantity: product.stockQuantity || 0,
       alertThreshold: product.alertThreshold || 10,
-      barcode: product.barcode || null,
-      image: product.image || null,
+      barcode: product.barcode || "",
+      image: product.image || "",
       active: product.active ?? true
     };
     
