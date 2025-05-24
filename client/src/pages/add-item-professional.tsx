@@ -171,7 +171,10 @@ export default function AddItemProfessional() {
         sku: data.itemCode,
         description: data.aboutProduct,
         price: parseFloat(data.price),
+        mrp: parseFloat(data.mrp),
         cost: data.cost ? parseFloat(data.cost) : 0,
+        weight: data.weight ? parseFloat(data.weight) : null,
+        weightUnit: data.weightUnit,
         stockQuantity: parseInt(data.stockQuantity),
         categoryId: data.categoryId,
         barcode: "", // Can be added later

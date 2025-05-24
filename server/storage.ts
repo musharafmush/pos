@@ -158,10 +158,10 @@ export const storage = {
     
     const insertProduct = sqlite.prepare(`
       INSERT INTO products (
-        name, description, sku, price, cost, category_id, 
+        name, description, sku, price, mrp, cost, weight, weight_unit, category_id, 
         stock_quantity, alert_threshold, barcode, image, active,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `);
     
     const result = insertProduct.run(
@@ -169,7 +169,10 @@ export const storage = {
       product.description || null,
       product.sku,
       product.price.toString(),
-      product.cost.toString(),
+      product.mrp?.toString() || product.price.toString(),
+      product.cost?.toString() || '0',
+      product.weight?.toString() || null,
+      product.weightUnit || 'kg',
       product.categoryId,
       product.stockQuantity || 0,
       product.alertThreshold || 5,
