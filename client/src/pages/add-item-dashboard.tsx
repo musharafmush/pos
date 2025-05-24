@@ -50,7 +50,9 @@ import {
   WeightIcon,
   TagIcon,
   CalendarIcon,
-  XIcon
+  XIcon,
+  WarehouseIcon,
+  QrCodeIcon
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
@@ -69,7 +71,13 @@ export default function AddItemDashboard() {
     description: "",
     price: "",
     mrp: "",
+    cost: "",
     stockQuantity: "",
+    alertThreshold: "",
+    barcode: "",
+    weight: "",
+    weightUnit: "kg",
+    categoryId: "",
     active: true
   });
 
@@ -79,6 +87,11 @@ export default function AddItemDashboard() {
   // Fetch products
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["/api/products"],
+  });
+
+  // Fetch categories for the edit form
+  const { data: categories = [] } = useQuery({
+    queryKey: ["/api/categories"],
   });
 
   // Delete product mutation
@@ -147,7 +160,13 @@ export default function AddItemDashboard() {
       description: product.description || "",
       price: product.price.toString(),
       mrp: product.mrp?.toString() || product.price.toString(),
+      cost: product.cost?.toString() || "0",
       stockQuantity: product.stockQuantity.toString(),
+      alertThreshold: product.alertThreshold?.toString() || "5",
+      barcode: product.barcode || "",
+      weight: product.weight || "",
+      weightUnit: product.weightUnit || "kg",
+      categoryId: product.categoryId.toString(),
       active: product.active,
     });
     setIsEditDialogOpen(true);
@@ -163,9 +182,15 @@ export default function AddItemDashboard() {
     const updates = {
       name: editForm.name,
       description: editForm.description,
-      price: parseFloat(editForm.price),
-      mrp: parseFloat(editForm.mrp),
+      price: editForm.price,
+      mrp: editForm.mrp,
+      cost: editForm.cost,
       stockQuantity: parseInt(editForm.stockQuantity),
+      alertThreshold: parseInt(editForm.alertThreshold),
+      barcode: editForm.barcode,
+      weight: editForm.weight || null,
+      weightUnit: editForm.weightUnit || null,
+      categoryId: parseInt(editForm.categoryId),
       active: editForm.active,
     };
 
@@ -690,73 +715,190 @@ export default function AddItemDashboard() {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Product Dialog */}
+        {/* Edit Product Dialog - Comprehensive Form */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <EditIcon className="w-5 h-5" />
-                Edit Product
+                Edit Product - {selectedProduct?.name}
               </DialogTitle>
               <DialogDescription>
-                Update product information
+                Update complete product information including pricing, inventory, and specifications
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 py-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Product Name</label>
-                <Input
-                  value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  placeholder="Enter product name"
-                />
+            <div className="grid grid-cols-3 gap-6 py-6">
+              {/* Basic Information Section */}
+              <div className="col-span-3">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <PackageIcon className="w-5 h-5" />
+                  Basic Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Product Name *</label>
+                    <Input
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      placeholder="Enter product name"
+                      className="border-gray-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Category *</label>
+                    <select
+                      value={editForm.categoryId}
+                      onChange={(e) => setEditForm({ ...editForm, categoryId: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Category</option>
+                      {categories?.map((category: any) => (
+                        <option key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Description</label>
+                    <Input
+                      value={editForm.description}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      placeholder="Enter product description"
+                      className="border-gray-300"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Price</label>
-                <Input
-                  type="number"
-                  value={editForm.price}
-                  onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
-                  placeholder="Enter price"
-                />
+
+              {/* Pricing Section */}
+              <div className="col-span-3">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <DollarSignIcon className="w-5 h-5" />
+                  Pricing Details
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Cost Price *</label>
+                    <Input
+                      type="number"
+                      value={editForm.cost}
+                      onChange={(e) => setEditForm({ ...editForm, cost: e.target.value })}
+                      placeholder="Enter cost price"
+                      className="border-gray-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Selling Price *</label>
+                    <Input
+                      type="number"
+                      value={editForm.price}
+                      onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                      placeholder="Enter selling price"
+                      className="border-gray-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">MRP *</label>
+                    <Input
+                      type="number"
+                      value={editForm.mrp}
+                      onChange={(e) => setEditForm({ ...editForm, mrp: e.target.value })}
+                      placeholder="Enter MRP"
+                      className="border-gray-300"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">MRP</label>
-                <Input
-                  type="number"
-                  value={editForm.mrp}
-                  onChange={(e) => setEditForm({ ...editForm, mrp: e.target.value })}
-                  placeholder="Enter MRP"
-                />
+
+              {/* Inventory Section */}
+              <div className="col-span-3">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <WarehouseIcon className="w-5 h-5" />
+                  Inventory Management
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Stock Quantity *</label>
+                    <Input
+                      type="number"
+                      value={editForm.stockQuantity}
+                      onChange={(e) => setEditForm({ ...editForm, stockQuantity: e.target.value })}
+                      placeholder="Enter stock quantity"
+                      className="border-gray-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Alert Threshold</label>
+                    <Input
+                      type="number"
+                      value={editForm.alertThreshold}
+                      onChange={(e) => setEditForm({ ...editForm, alertThreshold: e.target.value })}
+                      placeholder="Enter alert threshold"
+                      className="border-gray-300"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Stock Quantity</label>
-                <Input
-                  type="number"
-                  value={editForm.stockQuantity}
-                  onChange={(e) => setEditForm({ ...editForm, stockQuantity: e.target.value })}
-                  placeholder="Enter stock quantity"
-                />
+
+              {/* Product Details Section */}
+              <div className="col-span-3">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <BarCodeIcon className="w-5 h-5" />
+                  Product Details
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Barcode</label>
+                    <Input
+                      value={editForm.barcode}
+                      onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
+                      placeholder="Enter barcode"
+                      className="border-gray-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Weight</label>
+                    <Input
+                      type="number"
+                      value={editForm.weight}
+                      onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
+                      placeholder="Enter weight"
+                      className="border-gray-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Weight Unit</label>
+                    <select
+                      value={editForm.weightUnit}
+                      onChange={(e) => setEditForm({ ...editForm, weightUnit: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="kg">Kilograms (kg)</option>
+                      <option value="g">Grams (g)</option>
+                      <option value="lb">Pounds (lb)</option>
+                      <option value="oz">Ounces (oz)</option>
+                      <option value="piece">Piece</option>
+                      <option value="liter">Liter (L)</option>
+                      <option value="ml">Milliliter (ml)</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div className="col-span-2 space-y-2">
-                <label className="text-sm font-medium">Description</label>
-                <Input
-                  value={editForm.description}
-                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  placeholder="Enter product description"
-                />
-              </div>
-              <div className="col-span-2 space-y-2">
-                <div className="flex items-center space-x-2">
+
+              {/* Status Section */}
+              <div className="col-span-3">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Product Status</h3>
+                <div className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    id="active"
+                    id="activeStatus"
                     checked={editForm.active}
                     onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
-                    className="rounded"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <label htmlFor="active" className="text-sm font-medium">
-                    Product is active
+                  <label htmlFor="activeStatus" className="text-sm font-medium text-gray-700">
+                    Product is active and available for sale
                   </label>
                 </div>
               </div>
@@ -768,6 +910,7 @@ export default function AddItemDashboard() {
               <Button 
                 onClick={handleUpdateProduct}
                 disabled={updateProductMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 {updateProductMutation.isPending ? "Updating..." : "Update Product"}
               </Button>
