@@ -107,6 +107,7 @@ type ProductFormValues = z.infer<typeof productFormSchema>;
 
 export default function AddItemProfessional() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [currentSection, setCurrentSection] = useState("item-information");
 
   // Fetch categories
@@ -226,7 +227,7 @@ export default function AddItemProfessional() {
               </div>
               <h1 className="text-xl font-semibold">Add Item</h1>
             </div>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setLocation("/")}>
               <XIcon className="w-4 h-4 mr-2" />
               Close
             </Button>
