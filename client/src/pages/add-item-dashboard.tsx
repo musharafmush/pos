@@ -255,22 +255,33 @@ export default function AddItemDashboard() {
   const handleUpdateProduct = async () => {
     if (!selectedProduct) return;
 
+    // Validate required fields
+    if (!editForm.name || !editForm.itemCode || !editForm.categoryId) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const updates = {
-      name: editForm.name,
-      description: editForm.aboutProduct,
-      sku: editForm.itemCode,
+      name: editForm.name.trim(),
+      description: editForm.aboutProduct?.trim() || '',
+      sku: editForm.itemCode.trim(),
       price: parseFloat(editForm.price) || 0,
       mrp: parseFloat(editForm.mrp) || 0,
       cost: parseFloat(editForm.cost) || 0,
       stockQuantity: parseInt(editForm.stockQuantity) || 0,
       alertThreshold: parseInt(editForm.alertThreshold) || 5,
-      barcode: editForm.barcode,
-      weight: editForm.weight || null,
+      barcode: editForm.barcode?.trim() || null,
+      weight: editForm.weight?.trim() || null,
       weightUnit: editForm.weightUnit || null,
       categoryId: parseInt(editForm.categoryId),
       active: editForm.active,
     };
 
+    console.log('Updating product with data:', updates);
     updateProductMutation.mutate({ id: selectedProduct.id, updates });
   };
 
