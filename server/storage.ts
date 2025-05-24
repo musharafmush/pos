@@ -153,7 +153,19 @@ export const storage = {
     image?: string;
     active?: boolean;
   }): Promise<Product> {
-    const [newProduct] = await db.insert(products).values(product).returning();
+    // Convert numbers to strings for SQLite compatibility
+    const productData = {
+      ...product,
+      price: product.price.toString(),
+      cost: product.cost.toString(),
+      stockQuantity: product.stockQuantity || 0,
+      alertThreshold: product.alertThreshold || 5,
+      active: product.active !== false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const [newProduct] = await db.insert(products).values(productData).returning();
     return newProduct;
   },
 
