@@ -153,7 +153,22 @@ export const storage = {
     image?: string;
     active?: boolean;
   }): Promise<Product> {
-    const [newProduct] = await db.insert(products).values(product).returning();
+    // Prepare product data without updatedAt field to avoid column errors
+    const productData = {
+      name: product.name,
+      description: product.description || "",
+      sku: product.sku,
+      price: product.price.toString(),
+      cost: product.cost.toString(),
+      categoryId: product.categoryId,
+      stockQuantity: product.stockQuantity || 0,
+      alertThreshold: product.alertThreshold || 10,
+      barcode: product.barcode || null,
+      image: product.image || null,
+      active: product.active ?? true
+    };
+    
+    const [newProduct] = await db.insert(products).values(productData).returning();
     return newProduct;
   },
 
