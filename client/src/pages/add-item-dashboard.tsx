@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   PlusIcon,
   PackageIcon,
@@ -30,20 +49,128 @@ import {
   DollarSignIcon,
   WeightIcon,
   TagIcon,
-  CalendarIcon
+  CalendarIcon,
+  XIcon
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { Product } from "@shared/schema";
 import { Link } from "wouter";
 
 export default function AddItemDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    mrp: "",
+    stockQuantity: "",
+    active: true
+  });
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch products
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["/api/products"],
   });
+
+  // Delete product mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      const response = await apiRequest(`/api/products/${productId}`, {
+        method: "DELETE",
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Success",
+        description: "Product deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete product",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update product mutation
+  const updateProductMutation = useMutation({
+    mutationFn: async (data: { id: number; updates: Partial<Product> }) => {
+      const response = await apiRequest(`/api/products/${data.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data.updates),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Product updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update product",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler functions
+  const handleViewProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setEditForm({
+      name: product.name,
+      description: product.description || "",
+      price: product.price.toString(),
+      mrp: product.mrp?.toString() || product.price.toString(),
+      stockQuantity: product.stockQuantity.toString(),
+      active: product.active,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteProduct = async (productId: number) => {
+    deleteProductMutation.mutate(productId);
+  };
+
+  const handleUpdateProduct = async () => {
+    if (!selectedProduct) return;
+
+    const updates = {
+      name: editForm.name,
+      description: editForm.description,
+      price: parseFloat(editForm.price),
+      mrp: parseFloat(editForm.mrp),
+      stockQuantity: parseInt(editForm.stockQuantity),
+      active: editForm.active,
+    };
+
+    updateProductMutation.mutate({ id: selectedProduct.id, updates });
+  };
 
   // Calculate statistics
   const totalProducts = products.length;
@@ -352,15 +479,46 @@ export default function AddItemDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleViewProduct(product)}
+                                title="View Product"
+                              >
                                 <EyeIcon className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleEditProduct(product)}
+                                title="Edit Product"
+                              >
                                 <EditIcon className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
-                                <TrashIcon className="w-4 h-4" />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" title="Delete Product">
+                                    <TrashIcon className="w-4 h-4 text-red-600" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDeleteProduct(product.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -445,6 +603,177 @@ export default function AddItemDashboard() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* View Product Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <PackageIcon className="w-5 h-5" />
+                Product Details
+              </DialogTitle>
+              <DialogDescription>
+                Complete information about this product
+              </DialogDescription>
+            </DialogHeader>
+            {selectedProduct && (
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Product Name</label>
+                    <p className="text-lg font-semibold">{selectedProduct.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Description</label>
+                    <p className="text-gray-800">{selectedProduct.description || "No description"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">SKU</label>
+                    <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedProduct.sku}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Category</label>
+                    <p className="text-gray-800">{selectedProduct.categoryId}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Price</label>
+                    <p className="text-lg font-semibold text-green-600">
+                      {formatCurrency(parseFloat(selectedProduct.price.toString()))}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">MRP</label>
+                    <p className="text-lg font-semibold">
+                      {formatCurrency(parseFloat(selectedProduct.mrp?.toString() || selectedProduct.price.toString()))}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Stock Quantity</label>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-semibold">{selectedProduct.stockQuantity}</p>
+                      <Badge variant={selectedProduct.stockQuantity <= 5 ? "destructive" : "secondary"}>
+                        {selectedProduct.stockQuantity <= 5 ? "Low Stock" : "In Stock"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Status</label>
+                    <Badge variant={selectedProduct.active ? "default" : "secondary"}>
+                      {selectedProduct.active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  {selectedProduct.weight && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Weight</label>
+                      <p className="text-gray-800">{selectedProduct.weight} {selectedProduct.weightUnit}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                Close
+              </Button>
+              {selectedProduct && (
+                <Button onClick={() => {
+                  setIsViewDialogOpen(false);
+                  handleEditProduct(selectedProduct);
+                }}>
+                  <EditIcon className="w-4 h-4 mr-2" />
+                  Edit Product
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Product Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <EditIcon className="w-5 h-5" />
+                Edit Product
+              </DialogTitle>
+              <DialogDescription>
+                Update product information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Product Name</label>
+                <Input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder="Enter product name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Price</label>
+                <Input
+                  type="number"
+                  value={editForm.price}
+                  onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                  placeholder="Enter price"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">MRP</label>
+                <Input
+                  type="number"
+                  value={editForm.mrp}
+                  onChange={(e) => setEditForm({ ...editForm, mrp: e.target.value })}
+                  placeholder="Enter MRP"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Stock Quantity</label>
+                <Input
+                  type="number"
+                  value={editForm.stockQuantity}
+                  onChange={(e) => setEditForm({ ...editForm, stockQuantity: e.target.value })}
+                  placeholder="Enter stock quantity"
+                />
+              </div>
+              <div className="col-span-2 space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                <Input
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  placeholder="Enter product description"
+                />
+              </div>
+              <div className="col-span-2 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="active"
+                    checked={editForm.active}
+                    onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
+                    className="rounded"
+                  />
+                  <label htmlFor="active" className="text-sm font-medium">
+                    Product is active
+                  </label>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdateProduct}
+                disabled={updateProductMutation.isPending}
+              >
+                {updateProductMutation.isPending ? "Updating..." : "Update Product"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
