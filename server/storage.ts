@@ -378,8 +378,31 @@ export const storage = {
     address?: string;
     contactPerson?: string;
   }): Promise<Supplier> {
-    const [newSupplier] = await db.insert(suppliers).values(supplier).returning();
-    return newSupplier;
+    // Use SQLite database directly for compatibility
+    const { sqlite } = await import('@db');
+    
+    const insertSupplier = sqlite.prepare(`
+      INSERT INTO suppliers (
+        name, email, phone, address, contact_person, created_at
+      ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+    
+    const result = insertSupplier.run(
+      supplier.name,
+      supplier.email || null,
+      supplier.phone || null,
+      supplier.address || null,
+      supplier.contactPerson || null
+    );
+    
+    // Fetch the created supplier
+    const getSupplier = sqlite.prepare('SELECT * FROM suppliers WHERE id = ?');
+    const newSupplier = getSupplier.get(result.lastInsertRowid);
+    
+    return {
+      ...newSupplier,
+      createdAt: new Date(newSupplier.created_at)
+    };
   },
 
   async updateSupplier(id: number, supplier: Partial<Supplier>): Promise<Supplier | null> {
