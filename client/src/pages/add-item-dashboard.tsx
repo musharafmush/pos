@@ -853,7 +853,9 @@ export default function AddItemDashboard() {
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">Item Information</h2>
-                      <p className="text-sm text-gray-500 mt-1">Update complete product information</p>
+                      <DialogDescription className="text-sm text-gray-500 mt-1">
+                        Update complete product information
+                      </DialogDescription>
                     </div>
                     <Button
                       variant="outline"
