@@ -41,6 +41,7 @@ function Router() {
       <ProtectedRoute path="/pos-enhanced" component={POSEnhanced} />
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/products-enhanced" component={ProductsEnhanced} />
+      <ProtectedRoute path="/product-manager" component={ProductManager} />
       <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/add-product" component={AddProduct} />
       <ProtectedRoute path="/products/repacking" component={Repacking} />
