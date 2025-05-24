@@ -194,11 +194,38 @@ export const storage = {
   },
 
   async updateProduct(id: number, product: Partial<Product>): Promise<Product | null> {
+    // Transform the data to match the database schema
+    const updateData: any = {};
+    if (product.name !== undefined) updateData.name = product.name;
+    if (product.description !== undefined) updateData.description = product.description;
+    if (product.sku !== undefined) updateData.sku = product.sku;
+    if (product.price !== undefined) updateData.price = product.price.toString();
+    if (product.mrp !== undefined) updateData.mrp = product.mrp.toString();
+    if (product.cost !== undefined) updateData.cost = product.cost.toString();
+    if (product.stockQuantity !== undefined) updateData.stockQuantity = product.stockQuantity;
+    if (product.alertThreshold !== undefined) updateData.alertThreshold = product.alertThreshold;
+    if (product.barcode !== undefined) updateData.barcode = product.barcode;
+    if (product.weight !== undefined) updateData.weight = product.weight;
+    if (product.weightUnit !== undefined) updateData.weightUnit = product.weightUnit;
+    if (product.categoryId !== undefined) updateData.categoryId = product.categoryId;
+    if (product.active !== undefined) updateData.active = product.active ? 1 : 0;
+    if (product.image !== undefined) updateData.image = product.image;
+    
+    // Add updated timestamp
+    updateData.updatedAt = new Date();
+    
     const [updatedProduct] = await db.update(products)
-      .set(product)
+      .set(updateData)
       .where(eq(products.id, id))
       .returning();
-    return updatedProduct || null;
+      
+    if (!updatedProduct) return null;
+    
+    // Get the updated product with category
+    return await db.query.products.findFirst({
+      where: eq(products.id, id),
+      with: { category: true }
+    }) || null;
   },
 
   async deleteProduct(id: number): Promise<boolean> {
