@@ -253,12 +253,13 @@ export default function AddItemDashboard() {
 
     const updates = {
       name: editForm.name,
-      description: editForm.description,
-      price: editForm.price,
-      mrp: editForm.mrp,
-      cost: editForm.cost,
-      stockQuantity: parseInt(editForm.stockQuantity),
-      alertThreshold: parseInt(editForm.alertThreshold),
+      description: editForm.aboutProduct,
+      sku: editForm.itemCode,
+      price: parseFloat(editForm.price) || 0,
+      mrp: parseFloat(editForm.mrp) || 0,
+      cost: parseFloat(editForm.cost) || 0,
+      stockQuantity: parseInt(editForm.stockQuantity) || 0,
+      alertThreshold: parseInt(editForm.alertThreshold) || 5,
       barcode: editForm.barcode,
       weight: editForm.weight || null,
       weightUnit: editForm.weightUnit || null,
@@ -789,7 +790,7 @@ export default function AddItemDashboard() {
 
         {/* Comprehensive Edit Product Dialog - Professional Layout */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0">
+          <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0" aria-describedby="edit-product-description">
             <div className="flex h-full">
               {/* Sidebar Navigation */}
               <div className="w-64 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto">
@@ -798,6 +799,9 @@ export default function AddItemDashboard() {
                     <EditIcon className="w-5 h-5" />
                     Edit Item
                   </DialogTitle>
+                  <DialogDescription id="edit-product-description" className="sr-only">
+                    Edit product information including details, pricing, and inventory
+                  </DialogDescription>
                 </DialogHeader>
                 
                 <div className="space-y-2">
