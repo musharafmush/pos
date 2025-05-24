@@ -393,11 +393,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/products', isAuthenticated, async (req, res) => {
     try {
-      const productData = schema.productInsertSchema.parse(req.body);
+      console.log('Product creation request body:', req.body);
+      
+      // Ensure required fields have default values if missing
+      const requestData = {
+        ...req.body,
+        mrp: req.body.mrp || req.body.price || 0,
+        weight: req.body.weight || null,
+        weightUnit: req.body.weightUnit || 'kg',
+        stockQuantity: req.body.stockQuantity || 0,
+        alertThreshold: req.body.alertThreshold || 5,
+        active: req.body.active !== false
+      };
+      
+      console.log('Processed product data:', requestData);
+      const productData = schema.productInsertSchema.parse(requestData);
+      console.log('Validated product data:', productData);
+      
       const product = await storage.createProduct(productData);
+      console.log('Created product:', product);
       res.status(201).json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('Validation errors:', error.errors);
         return res.status(400).json({ errors: error.errors });
       }
       console.error('Error creating product:', error);

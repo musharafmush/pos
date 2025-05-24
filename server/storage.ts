@@ -145,7 +145,10 @@ export const storage = {
     description?: string;
     sku: string;
     price: number;
+    mrp: number;
     cost: number;
+    weight?: number;
+    weightUnit?: string;
     categoryId: number;
     stockQuantity?: number;
     alertThreshold?: number;
