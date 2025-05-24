@@ -11,6 +11,7 @@ import POSEnhanced from "@/pages/pos-enhanced";
 import Products from "@/pages/products";
 import ProductsEnhanced from "@/pages/products-enhanced";
 import ProductManager from "@/pages/product-manager";
+import AddItemProfessional from "@/pages/add-item-professional";
 import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
 import PurchaseDashboard from "@/pages/purchase-dashboard";
@@ -42,6 +43,7 @@ function Router() {
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/products-enhanced" component={ProductsEnhanced} />
       <ProtectedRoute path="/product-manager" component={ProductManager} />
+      <ProtectedRoute path="/add-item-professional" component={AddItemProfessional} />
       <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/add-product" component={AddProduct} />
       <ProtectedRoute path="/products/repacking" component={Repacking} />
