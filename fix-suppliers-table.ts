@@ -25,7 +25,13 @@ try {
     { name: 'default_discount', type: 'TEXT', default: "'0'" },
     { name: 'notes', type: 'TEXT', default: 'NULL' },
     { name: 'mobile_no', type: 'TEXT', default: 'NULL' },
-    { name: 'status', type: 'TEXT', default: "'active'" }
+    { name: 'status', type: 'TEXT', default: "'active'" },
+    { name: 'extension_number', type: 'TEXT', default: 'NULL' },
+    { name: 'fax', type: 'TEXT', default: 'NULL' },
+    { name: 'country', type: 'TEXT', default: 'NULL' },
+    { name: 'state', type: 'TEXT', default: 'NULL' },
+    { name: 'city', type: 'TEXT', default: 'NULL' },
+    { name: 'pincode', type: 'TEXT', default: 'NULL' }
   ];
 
   for (const column of requiredColumns) {
