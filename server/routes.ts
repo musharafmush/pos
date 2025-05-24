@@ -578,13 +578,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string || '20');
       const offset = parseInt(req.query.offset as string || '0');
-      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
-      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
-      const supplierId = req.query.supplierId ? parseInt(req.query.supplierId as string) : undefined;
-      const status = req.query.status as string;
       
-      const purchases = await storage.listPurchases(limit, offset, startDate, endDate, supplierId, status);
-      res.json(purchases);
+      // Use direct DB query to avoid the complex ORM issues
+      const result = await db.query.purchases.findMany({
+        limit,
+        offset,
+        orderBy: (purchases, { desc }) => [desc(purchases.createdAt)],
+        with: {
+          supplier: true,
+          user: true
+        }
+      });
+      
+      console.log(`Found ${result.length} purchases`);
+      res.json(result);
     } catch (error) {
       console.error('Error fetching purchases:', error);
       res.status(500).json({ message: 'Internal server error' });
