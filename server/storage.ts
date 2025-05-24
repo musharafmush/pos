@@ -330,8 +330,30 @@ export const storage = {
   },
 
   async createCustomer(customer: { name: string; email?: string; phone?: string; address?: string }): Promise<Customer> {
-    const [newCustomer] = await db.insert(customers).values(customer).returning();
-    return newCustomer;
+    // Use SQLite database directly for compatibility
+    const { sqlite } = await import('@db');
+    
+    const insertCustomer = sqlite.prepare(`
+      INSERT INTO customers (
+        name, email, phone, address, created_at
+      ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+    
+    const result = insertCustomer.run(
+      customer.name,
+      customer.email || null,
+      customer.phone || null,
+      customer.address || null
+    );
+    
+    // Fetch the created customer
+    const getCustomer = sqlite.prepare('SELECT * FROM customers WHERE id = ?');
+    const newCustomer = getCustomer.get(result.lastInsertRowid);
+    
+    return {
+      ...newCustomer,
+      createdAt: new Date(newCustomer.created_at)
+    };
   },
 
   async updateCustomer(id: number, customer: Partial<Customer>): Promise<Customer | null> {
