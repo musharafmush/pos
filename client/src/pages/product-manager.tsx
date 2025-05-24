@@ -57,6 +57,9 @@ const productFormSchema = z.object({
   barcode: z.string().optional(),
   brand: z.string().optional(),
   manufacturer: z.string().optional(),
+  gstRate: z.string().optional(),
+  hsnCode: z.string().optional(),
+  taxType: z.string().default("inclusive"),
   active: z.boolean().default(true),
 });
 
@@ -102,6 +105,9 @@ export default function ProductManager() {
       barcode: "",
       brand: "",
       manufacturer: "",
+      gstRate: "18",
+      hsnCode: "",
+      taxType: "inclusive",
       active: true,
     },
   });
@@ -120,6 +126,9 @@ export default function ProductManager() {
       barcode: "",
       brand: "",
       manufacturer: "",
+      gstRate: "18",
+      hsnCode: "",
+      taxType: "inclusive",
       active: true,
     },
   });
@@ -512,6 +521,9 @@ export default function ProductManager() {
                             <div className="text-xs text-muted-foreground">
                               Cost: {formatCurrency(parseFloat(product.cost?.toString() || "0"))}
                             </div>
+                            <div className="text-xs text-blue-600 font-medium">
+                              GST: 18% | HSN: 1006
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -765,6 +777,67 @@ export default function ProductManager() {
                               <FormControl>
                                 <Input {...field} type="number" step="0.01" placeholder="0.00" />
                               </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mt-4">
+                        <FormField
+                          control={addForm.control}
+                          name="gstRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>GST Rate (%)</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select GST rate" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="0">0% (Nil)</SelectItem>
+                                  <SelectItem value="5">5%</SelectItem>
+                                  <SelectItem value="12">12%</SelectItem>
+                                  <SelectItem value="18">18%</SelectItem>
+                                  <SelectItem value="28">28%</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={addForm.control}
+                          name="hsnCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>HSN Code</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Enter HSN code" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={addForm.control}
+                          name="taxType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tax Type</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select tax type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="inclusive">Tax Inclusive</SelectItem>
+                                  <SelectItem value="exclusive">Tax Exclusive</SelectItem>
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
