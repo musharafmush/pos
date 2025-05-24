@@ -4,67 +4,92 @@ import path from 'path';
 const dbPath = path.join(process.cwd(), 'pos-data.db');
 const db = new Database(dbPath);
 
-console.log('Completing database setup...');
+console.log('🔧 Complete database setup for SQLite compatibility...');
 
 try {
-  // Fix the subtotal calculation with proper SQL syntax
-  console.log('Updating sale_items subtotal values...');
+  // === FIX SUPPLIERS TABLE ===
+  console.log('\n📋 Checking suppliers table...');
+  const suppliersInfo = db.prepare("PRAGMA table_info(suppliers)").all();
+  const supplierColumns = suppliersInfo.map((col: any) => col.name);
   
-  // Use a safer approach - update records one by one with proper calculation
-  const saleItems = db.prepare("SELECT id, quantity, price FROM sale_items WHERE subtotal = '0' OR subtotal IS NULL").all();
-  
-  if (saleItems.length > 0) {
-    const updateSubtotal = db.prepare("UPDATE sale_items SET subtotal = ? WHERE id = ?");
-    
-    for (const item of saleItems) {
-      const quantity = parseFloat(item.quantity || '0');
-      const price = parseFloat(item.price || '0');
-      const subtotal = (quantity * price).toString();
-      updateSubtotal.run(subtotal, item.id);
+  const requiredSupplierColumns = [
+    'registration_number', 'website', 'bank_name', 'bank_account', 'ifsc_code',
+    'credit_period', 'credit_limit', 'default_discount', 'notes', 'mobile_no',
+    'status', 'extension_number', 'fax', 'fax_no', 'country', 'state', 'city',
+    'pincode', 'pin_code', 'building', 'street', 'area', 'landmark'
+  ];
+
+  for (const column of requiredSupplierColumns) {
+    if (!supplierColumns.includes(column)) {
+      console.log(`Adding suppliers.${column}...`);
+      if (column === 'credit_period') {
+        db.exec(`ALTER TABLE suppliers ADD COLUMN ${column} INTEGER DEFAULT 30`);
+      } else if (column === 'credit_limit' || column === 'default_discount') {
+        db.exec(`ALTER TABLE suppliers ADD COLUMN ${column} TEXT DEFAULT '0'`);
+      } else if (column === 'status') {
+        db.exec(`ALTER TABLE suppliers ADD COLUMN ${column} TEXT DEFAULT 'active'`);
+      } else {
+        db.exec(`ALTER TABLE suppliers ADD COLUMN ${column} TEXT DEFAULT NULL`);
+      }
+      console.log(`✅ Added ${column}`);
     }
+  }
+
+  // === FIX SALE_ITEMS TABLE ===
+  console.log('\n📋 Checking sale_items table...');
+  const saleItemsInfo = db.prepare("PRAGMA table_info(sale_items)").all();
+  const saleItemsColumns = saleItemsInfo.map((col: any) => col.name);
+  
+  if (!saleItemsColumns.includes('unit_price')) {
+    console.log('Adding sale_items.unit_price...');
+    db.exec("ALTER TABLE sale_items ADD COLUMN unit_price TEXT DEFAULT '0'");
     
-    console.log(`✅ Updated subtotal for ${saleItems.length} sale items`);
+    // Update existing records
+    const updateResult = db.prepare("UPDATE sale_items SET unit_price = price WHERE unit_price = '0' OR unit_price IS NULL").run();
+    console.log(`✅ Added unit_price and updated ${updateResult.changes} records`);
   }
 
-  // Ensure all required columns exist with proper fallback handling
-  console.log('Verifying all table structures...');
+  // === TEST ALL QUERIES ===
+  console.log('\n🧪 Testing database queries...');
   
-  // Check sales table has all required columns
-  const salesCols = db.prepare("PRAGMA table_info(sales)").all();
-  const salesColumnNames = salesCols.map(col => col.name);
-  
-  if (!salesColumnNames.includes('status')) {
-    db.exec('ALTER TABLE sales ADD COLUMN status TEXT DEFAULT "completed"');
-    console.log('✅ Added status column to sales table');
-  }
-
-  // Test all critical queries to ensure they work
-  console.log('Testing database queries...');
-  
-  // Test sales query
-  const testSales = db.prepare(`
-    SELECT id, order_number, total, 
-           COALESCE(discount, '0') as discount,
-           COALESCE(status, 'completed') as status,
+  // Test suppliers query
+  const testSuppliers = db.prepare(`
+    SELECT id, name, email, phone, address, contact_person, tax_id,
+           COALESCE(registration_number, '') as registration_number,
+           COALESCE(website, '') as website,
+           COALESCE(status, 'active') as status,
            created_at
-    FROM sales LIMIT 1
+    FROM suppliers LIMIT 1
   `).all();
-  console.log('✅ Sales query working');
+  console.log('✅ Suppliers query working');
 
-  // Test sale_items query  
+  // Test sale_items query
   const testSaleItems = db.prepare(`
-    SELECT id, sale_id, product_id, quantity, price,
-           COALESCE(subtotal, total) as subtotal
-    FROM sale_items LIMIT 1
+    SELECT si.id, si.sale_id, si.product_id, si.quantity,
+           COALESCE(si.unit_price, si.price) as unit_price,
+           si.price, si.total
+    FROM sale_items si LIMIT 1
   `).all();
   console.log('✅ Sale_items query working');
 
-  console.log('✅ Database setup completed successfully!');
-  console.log('Your POS system is now fully operational.');
+  // Test sales with items query (the one that was failing)
+  const testSalesWithItems = db.prepare(`
+    SELECT s.id, s.order_number, s.total, s.created_at,
+           si.quantity, COALESCE(si.unit_price, si.price) as unit_price
+    FROM sales s
+    LEFT JOIN sale_items si ON s.id = si.sale_id
+    LIMIT 1
+  `).all();
+  console.log('✅ Sales with items query working');
+
+  console.log('\n🎉 All database fixes completed successfully!');
+  console.log('✅ Suppliers table: Complete with all required columns');
+  console.log('✅ Sale_items table: unit_price column added and working');
+  console.log('✅ All queries tested and functional');
 
 } catch (error) {
-  console.error('❌ Error completing database setup:', error);
+  console.error('❌ Error in database setup:', error);
 } finally {
   db.close();
-  console.log('Database connection closed');
+  console.log('\n🔐 Database connection closed');
 }
