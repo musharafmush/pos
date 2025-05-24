@@ -1025,7 +1025,7 @@ export default function AddItemDashboard() {
                     </div>
 
                     {/* Pricing Information */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div id="pricing-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Pricing Information</h3>
                       <div className="grid grid-cols-3 gap-6">
                         <div className="space-y-2">
@@ -1241,7 +1241,7 @@ export default function AddItemDashboard() {
                     </div>
 
                     {/* Reorder Configurations */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div id="reorder-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Reorder Configurations</h3>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-6">
@@ -1285,7 +1285,7 @@ export default function AddItemDashboard() {
                     </div>
 
                     {/* Purchase Order */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div id="purchase-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Purchase Order</h3>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-6">
