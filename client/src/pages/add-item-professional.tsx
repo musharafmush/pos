@@ -93,7 +93,10 @@ const productFormSchema = z.object({
   
   // Basic fields
   price: z.string().min(1, "Price is required"),
+  mrp: z.string().min(1, "MRP is required"),
   cost: z.string().optional(),
+  weight: z.string().optional(),
+  weightUnit: z.string().default("kg"),
   categoryId: z.number(),
   stockQuantity: z.string().min(0, "Stock quantity is required"),
   active: z.boolean().default(true),
@@ -150,7 +153,10 @@ export default function AddItemProfessional() {
       dailyAuditProcess: false,
       itemIngredients: "",
       price: "",
+      mrp: "",
       cost: "",
+      weight: "",
+      weightUnit: "kg",
       categoryId: categories[0]?.id || 1,
       stockQuantity: "0",
       active: true,
@@ -699,12 +705,21 @@ export default function AddItemProfessional() {
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
-                          name="price"
+                          name="sellBy"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Selling Price *</FormLabel>
+                              <FormLabel>Sell By</FormLabel>
                               <FormControl>
-                                <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="None">None</SelectItem>
+                                    <SelectItem value="Weight">Weight</SelectItem>
+                                    <SelectItem value="Unit">Unit</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -712,12 +727,12 @@ export default function AddItemProfessional() {
                         />
                         <FormField
                           control={form.control}
-                          name="cost"
+                          name="itemPerUnit"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Cost Price</FormLabel>
+                              <FormLabel>Item Per Unit *</FormLabel>
                               <FormControl>
-                                <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                                <Input {...field} placeholder="1" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -727,17 +742,168 @@ export default function AddItemProfessional() {
                       
                       <FormField
                         control={form.control}
-                        name="stockQuantity"
+                        name="maintainSellingMrpBy"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Stock Quantity</FormLabel>
+                            <FormLabel>Maintain Selling & M.R.P By *</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" placeholder="0" />
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Multiple Selling Price & Multiple MRP">Multiple Selling Price & Multiple MRP</SelectItem>
+                                  <SelectItem value="Single Selling Price & Single MRP">Single Selling Price & Single MRP</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+                      
+                      <div className="grid grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="batchSelection"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Batch Selection</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Not Applicable">Not Applicable</SelectItem>
+                                    <SelectItem value="FIFO">FIFO</SelectItem>
+                                    <SelectItem value="LIFO">LIFO</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="flex items-center space-x-3">
+                          <FormField
+                            control={form.control}
+                            name="isWeighable"
+                            render={({ field }) => (
+                              <FormItem className="flex items-center space-x-3">
+                                <FormControl>
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                </FormControl>
+                                <FormLabel>Is Weighable</FormLabel>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                      
+                      <Separator />
+                      
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold mb-4 text-green-800">Price & Weight Information</h3>
+                        
+                        <div className="grid grid-cols-3 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="mrp"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>MRP (₹) *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} type="number" step="1" placeholder="₹ 0" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="price"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Selling Price (₹) *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} type="number" step="1" placeholder="₹ 0" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="cost"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Cost Price (₹)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} type="number" step="1" placeholder="₹ 0" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-6 mt-4">
+                          <FormField
+                            control={form.control}
+                            name="weight"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Weight</FormLabel>
+                                <FormControl>
+                                  <Input {...field} type="number" step="0.001" placeholder="0.000" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="weightUnit"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Weight Unit</FormLabel>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="kg">Kilogram (kg)</SelectItem>
+                                      <SelectItem value="g">Gram (g)</SelectItem>
+                                      <SelectItem value="mg">Milligram (mg)</SelectItem>
+                                      <SelectItem value="l">Litre (l)</SelectItem>
+                                      <SelectItem value="ml">Millilitre (ml)</SelectItem>
+                                      <SelectItem value="piece">Piece</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <FormField
+                          control={form.control}
+                          name="stockQuantity"
+                          render={({ field }) => (
+                            <FormItem className="mt-4">
+                              <FormLabel>Stock Quantity</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="number" placeholder="0" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 )}
