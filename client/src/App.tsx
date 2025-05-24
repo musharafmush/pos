@@ -13,6 +13,7 @@ import ProductsEnhanced from "@/pages/products-enhanced";
 import ProductManager from "@/pages/product-manager";
 import AddItemProfessional from "@/pages/add-item-professional";
 import AddItemDashboard from "@/pages/add-item-dashboard";
+import RepackingProfessional from "@/pages/repacking-professional";
 
 import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
@@ -47,6 +48,7 @@ function Router() {
       <ProtectedRoute path="/product-manager" component={ProductManager} />
       <ProtectedRoute path="/add-item-professional" component={AddItemProfessional} />
       <ProtectedRoute path="/add-item-dashboard" component={AddItemDashboard} />
+      <ProtectedRoute path="/repacking-professional" component={RepackingProfessional} />
 
       <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/add-product" component={AddProduct} />
