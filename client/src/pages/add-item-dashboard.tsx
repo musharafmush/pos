@@ -190,53 +190,54 @@ export default function AddItemDashboard() {
   };
 
   const handleEditProduct = (product: Product) => {
+    console.log("Editing product:", product); // Debug log
     setSelectedProduct(product);
     setEditForm({
-      // Basic Information
-      itemCode: product.sku || "",
+      // Basic Information - Use actual product data
+      itemCode: product.sku || `${product.name.replace(/\s+/g, '').toUpperCase()}001`,
       name: product.name,
-      manufacturerName: "",
-      supplierName: "",
-      alias: "",
+      manufacturerName: "Select manufacturer",
+      supplierName: "Select supplier", 
+      alias: product.name.split(' ')[0] || "",
       aboutProduct: product.description || "",
       
       // Category Information
       categoryId: product.categoryId.toString(),
       
       // Tax Information
-      taxRate: "",
+      taxRate: "18",
       hsnCode: "",
       
       // EAN Code/Barcode
       barcode: product.barcode || "",
       
       // Packing
-      packingType: "",
-      packingSize: "",
+      packingType: "Box",
+      packingSize: "1",
       
       // Item Properties
-      weight: product.weight || "",
+      weight: product.weight || "1",
       weightUnit: product.weightUnit || "kg",
       dimensions: "",
       color: "",
       size: "",
       
-      // Pricing
-      price: product.price.toString(),
-      mrp: product.mrp?.toString() || product.price.toString(),
-      cost: product.cost?.toString() || "0",
-      discountPercent: "",
+      // Pricing - Convert string prices to display properly
+      price: typeof product.price === 'string' ? product.price : product.price.toString(),
+      mrp: product.mrp ? (typeof product.mrp === 'string' ? product.mrp : product.mrp.toString()) : (typeof product.price === 'string' ? product.price : product.price.toString()),
+      cost: product.cost ? (typeof product.cost === 'string' ? product.cost : product.cost.toString()) : "0",
+      discountPercent: "0",
       
       // Reorder Configurations
       stockQuantity: product.stockQuantity.toString(),
       alertThreshold: product.alertThreshold?.toString() || "5",
-      reorderLevel: "",
-      maxStockLevel: "",
+      reorderLevel: "10",
+      maxStockLevel: "100",
       
       // Purchase Order
-      preferredSupplier: "",
-      leadTime: "",
-      minimumOrderQty: "",
+      preferredSupplier: "Primary Supplier",
+      leadTime: "7",
+      minimumOrderQty: "1",
       
       // Status
       active: product.active,
