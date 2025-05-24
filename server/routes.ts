@@ -429,12 +429,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const productData = req.body; // For PATCH, we accept partial updates
+      console.log('PATCH request received for product:', id, 'with data:', productData);
+      
       const product = await storage.updateProduct(id, productData);
       
       if (!product) {
+        console.log('Product not found for ID:', id);
         return res.status(404).json({ message: 'Product not found' });
       }
       
+      console.log('Product updated successfully:', product);
       res.json(product);
     } catch (error) {
       console.error('Error updating product:', error);

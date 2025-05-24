@@ -169,9 +169,12 @@ export default function AddItemDashboard() {
       const response = await apiRequest("PATCH", `/api/products/${data.id}`, data.updates);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Update successful, response:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/products"] });
       setIsEditDialogOpen(false);
+      setSelectedProduct(null);
       toast({
         title: "Success",
         description: "Product updated successfully",
