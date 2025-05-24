@@ -4,32 +4,78 @@ import path from 'path';
 const dbPath = path.join(process.cwd(), 'pos-data.db');
 const db = new Database(dbPath);
 
-console.log('Fixing database schema...');
+console.log('Fixing SQLite database schema for compatibility...');
 
 try {
-  // Check if updated_at column exists in products table
-  const productColumns = db.prepare("PRAGMA table_info(products)").all();
-  const hasUpdatedAt = productColumns.some((col: any) => col.name === 'updated_at');
+  // First, let's check what tables exist
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+  console.log('Existing tables:', tables);
+
+  // Update the products table to remove PostgreSQL-specific constraints
+  console.log('Updating products table schema...');
   
-  if (!hasUpdatedAt) {
-    console.log('Adding updated_at column to products table...');
-    db.exec('ALTER TABLE products ADD COLUMN updated_at DATETIME');
-    db.exec('UPDATE products SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL');
+  // Check if products table exists and its structure
+  const productTableInfo = db.prepare("PRAGMA table_info(products)").all();
+  console.log('Products table structure:', productTableInfo);
+
+  // Create a new products table with proper SQLite syntax
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS products_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      sku TEXT NOT NULL UNIQUE,
+      price TEXT NOT NULL,
+      cost TEXT NOT NULL,
+      category_id INTEGER NOT NULL,
+      stock_quantity INTEGER NOT NULL DEFAULT 0,
+      alert_threshold INTEGER NOT NULL DEFAULT 10,
+      barcode TEXT,
+      image TEXT,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Copy existing data if any
+  const existingProducts = db.prepare("SELECT COUNT(*) as count FROM products").get();
+  console.log('Existing products count:', existingProducts);
+
+  if (existingProducts.count > 0) {
+    console.log('Migrating existing product data...');
+    db.exec(`
+      INSERT INTO products_new (id, name, description, sku, price, cost, category_id, stock_quantity, alert_threshold, barcode, image, active, created_at, updated_at)
+      SELECT id, name, description, sku, price, cost, category_id, stock_quantity, alert_threshold, barcode, image, active, 
+             COALESCE(created_at, CURRENT_TIMESTAMP) as created_at,
+             COALESCE(updated_at, CURRENT_TIMESTAMP) as updated_at
+      FROM products
+    `);
   }
 
-  // Check if tax column exists in sales table
-  const salesColumns = db.prepare("PRAGMA table_info(sales)").all();
-  const hasTax = salesColumns.some((col: any) => col.name === 'tax');
-  
-  if (!hasTax) {
-    console.log('Adding tax column to sales table...');
-    db.exec('ALTER TABLE sales ADD COLUMN tax DECIMAL(10,2) DEFAULT 0');
-  }
+  // Replace the old table
+  db.exec('DROP TABLE IF EXISTS products');
+  db.exec('ALTER TABLE products_new RENAME TO products');
 
-  console.log('Database schema fixed successfully!');
+  console.log('✅ Products table schema updated successfully!');
   
+  // Test insertion
+  console.log('Testing product insertion...');
+  const testInsert = db.prepare(`
+    INSERT INTO products (name, description, sku, price, cost, category_id, stock_quantity, alert_threshold)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  
+  const result = testInsert.run('Test Product', 'Test Description', 'TEST001', '100', '80', 1, 50, 10);
+  console.log('✅ Test insertion successful:', result);
+  
+  // Clean up test data
+  db.prepare('DELETE FROM products WHERE sku = ?').run('TEST001');
+  console.log('✅ Test data cleaned up');
+
 } catch (error) {
-  console.error('Error fixing database schema:', error);
+  console.error('❌ Error fixing database schema:', error);
 } finally {
   db.close();
+  console.log('Database connection closed');
 }
