@@ -868,10 +868,10 @@ export default function AddItemDashboard() {
                     </Button>
                   </div>
 
-                  {/* Form Content */}
-                  <div className="space-y-8">
-                    {/* Item Information Section */}
+                  {/* Form Content - Item Information Section */}
+                  <div className="space-y-6">
                     <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">Item Code *</label>
