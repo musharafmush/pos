@@ -10,6 +10,7 @@ import POSGofrugal from "@/pages/pos-gofrugal";
 import POSEnhanced from "@/pages/pos-enhanced";
 import Products from "@/pages/products";
 import ProductsEnhanced from "@/pages/products-enhanced";
+import ProductManager from "@/pages/product-manager";
 import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
 import PurchaseDashboard from "@/pages/purchase-dashboard";
