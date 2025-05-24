@@ -1049,6 +1049,217 @@ export default function AddItemDashboard() {
                       </div>
                     </div>
 
+                    {/* Category Information */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Category Information</h3>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Primary Category</label>
+                          <select
+                            value={editForm.categoryId}
+                            onChange={(e) => setEditForm({ ...editForm, categoryId: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select Category</option>
+                            {categories?.map((category: any) => (
+                              <option key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Sub Category</label>
+                          <Input placeholder="Enter sub category" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tax Information */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Tax Information</h3>
+                      <div className="grid grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">GST Rate (%)</label>
+                          <select
+                            value={editForm.taxRate}
+                            onChange={(e) => setEditForm({ ...editForm, taxRate: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="0">0%</option>
+                            <option value="5">5%</option>
+                            <option value="12">12%</option>
+                            <option value="18">18%</option>
+                            <option value="28">28%</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">HSN Code</label>
+                          <Input
+                            value={editForm.hsnCode}
+                            onChange={(e) => setEditForm({ ...editForm, hsnCode: e.target.value })}
+                            placeholder="Enter HSN code"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Tax Type</label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="inclusive">Inclusive</option>
+                            <option value="exclusive">Exclusive</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* EAN Code/Barcode */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">EAN Code/Barcode</h3>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Barcode/EAN</label>
+                          <Input
+                            value={editForm.barcode}
+                            onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
+                            placeholder="Enter barcode or EAN"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Barcode Type</label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="EAN13">EAN-13</option>
+                            <option value="EAN8">EAN-8</option>
+                            <option value="UPC">UPC</option>
+                            <option value="CODE128">Code 128</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Packing */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Packing</h3>
+                      <div className="grid grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Packing Type</label>
+                          <select
+                            value={editForm.packingType}
+                            onChange={(e) => setEditForm({ ...editForm, packingType: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="Box">Box</option>
+                            <option value="Bag">Bag</option>
+                            <option value="Bottle">Bottle</option>
+                            <option value="Packet">Packet</option>
+                            <option value="Can">Can</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Packing Size</label>
+                          <Input
+                            value={editForm.packingSize}
+                            onChange={(e) => setEditForm({ ...editForm, packingSize: e.target.value })}
+                            placeholder="1"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Units per Pack</label>
+                          <Input type="number" placeholder="1" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Reorder Configurations */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Reorder Configurations</h3>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Reorder Level</label>
+                            <Input
+                              type="number"
+                              value={editForm.reorderLevel}
+                              onChange={(e) => setEditForm({ ...editForm, reorderLevel: e.target.value })}
+                              placeholder="10"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Max Stock Level</label>
+                            <Input
+                              type="number"
+                              value={editForm.maxStockLevel}
+                              onChange={(e) => setEditForm({ ...editForm, maxStockLevel: e.target.value })}
+                              placeholder="100"
+                            />
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <h4 className="font-medium text-blue-900 mb-2">Stock Status</h4>
+                          <div className="text-sm space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-blue-700">Current Stock:</span>
+                              <span className="font-medium">{editForm.stockQuantity || '0'} units</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-blue-700">Status:</span>
+                              <span className={`font-medium ${Number(editForm.stockQuantity || 0) <= Number(editForm.alertThreshold || 0) 
+                                ? 'text-red-600' : 'text-green-600'}`}>
+                                {Number(editForm.stockQuantity || 0) <= Number(editForm.alertThreshold || 0) 
+                                  ? 'Low Stock' : 'In Stock'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Purchase Order */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Purchase Order</h3>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Preferred Supplier</label>
+                            <select
+                              value={editForm.preferredSupplier}
+                              onChange={(e) => setEditForm({ ...editForm, preferredSupplier: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Select Supplier</option>
+                              <option value="Primary Supplier">Primary Supplier</option>
+                              <option value="Backup Supplier">Backup Supplier</option>
+                              <option value="Local Distributor">Local Distributor</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Lead Time (Days)</label>
+                            <Input
+                              type="number"
+                              value={editForm.leadTime}
+                              onChange={(e) => setEditForm({ ...editForm, leadTime: e.target.value })}
+                              placeholder="7"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Minimum Order Qty</label>
+                            <Input
+                              type="number"
+                              value={editForm.minimumOrderQty}
+                              onChange={(e) => setEditForm({ ...editForm, minimumOrderQty: e.target.value })}
+                              placeholder="1"
+                            />
+                          </div>
+                        </div>
+                        <div className="bg-yellow-50 p-4 rounded-lg">
+                          <h4 className="font-medium text-yellow-900 mb-2">Purchase Recommendation</h4>
+                          <div className="text-sm text-yellow-800">
+                            {Number(editForm.stockQuantity || 0) <= Number(editForm.reorderLevel || 0) 
+                              ? `Reorder needed! Suggested quantity: ${Number(editForm.maxStockLevel || 0) - Number(editForm.stockQuantity || 0)} units`
+                              : 'Stock levels are adequate'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Status */}
                     <div className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Item Status</h3>
