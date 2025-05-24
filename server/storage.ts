@@ -153,23 +153,41 @@ export const storage = {
     image?: string;
     active?: boolean;
   }): Promise<Product> {
-    // Convert numbers to strings for SQLite compatibility
-    const productData = {
-      name: product.name,
-      description: product.description || null,
-      sku: product.sku,
-      price: product.price.toString(),
-      cost: product.cost.toString(),
-      categoryId: product.categoryId,
-      stockQuantity: product.stockQuantity || 0,
-      alertThreshold: product.alertThreshold || 5,
-      barcode: product.barcode || null,
-      image: product.image || null,
-      active: product.active !== false
-    };
+    // Import SQLite database directly
+    const { sqlite } = await import('@db');
     
-    const [newProduct] = await db.insert(products).values(productData).returning();
-    return newProduct;
+    const insertProduct = sqlite.prepare(`
+      INSERT INTO products (
+        name, description, sku, price, cost, category_id, 
+        stock_quantity, alert_threshold, barcode, image, active,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `);
+    
+    const result = insertProduct.run(
+      product.name,
+      product.description || null,
+      product.sku,
+      product.price.toString(),
+      product.cost.toString(),
+      product.categoryId,
+      product.stockQuantity || 0,
+      product.alertThreshold || 5,
+      product.barcode || null,
+      product.image || null,
+      product.active !== false ? 1 : 0
+    );
+    
+    // Fetch the created product
+    const getProduct = sqlite.prepare('SELECT * FROM products WHERE id = ?');
+    const newProduct = getProduct.get(result.lastInsertRowid);
+    
+    return {
+      ...newProduct,
+      active: Boolean(newProduct.active),
+      createdAt: new Date(newProduct.created_at),
+      updatedAt: new Date(newProduct.updated_at)
+    };
   },
 
   async updateProduct(id: number, product: Partial<Product>): Promise<Product | null> {
