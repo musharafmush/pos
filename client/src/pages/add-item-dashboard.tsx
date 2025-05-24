@@ -704,13 +704,13 @@ export default function AddItemDashboard() {
 
         {/* View Product Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl" aria-describedby="view-product-description">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <PackageIcon className="w-5 h-5" />
                 Product Details
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription id="view-product-description">
                 Complete information about this product
               </DialogDescription>
             </DialogHeader>
@@ -875,7 +875,7 @@ export default function AddItemDashboard() {
                           <Input
                             value={editForm.itemCode}
                             onChange={(e) => setEditForm({ ...editForm, itemCode: e.target.value })}
-                            placeholder="Enter item code"
+                            placeholder="RICE001"
                             className="bg-gray-50"
                           />
                         </div>
@@ -884,7 +884,7 @@ export default function AddItemDashboard() {
                           <Input
                             value={editForm.name}
                             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                            placeholder="Enter item name"
+                            placeholder="Rice (1kg)"
                           />
                         </div>
                         <div className="space-y-2">
