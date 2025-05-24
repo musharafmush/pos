@@ -415,8 +415,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error('Validation errors:', error.errors);
-        return res.status(400).json({ errors: error.errors });
+        console.error('Validation errors:', JSON.stringify(error.errors, null, 2));
+        const detailedErrors = error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          received: err.received,
+          expected: err.expected
+        }));
+        console.error('Detailed validation errors:', detailedErrors);
+        return res.status(400).json({ errors: error.errors, details: detailedErrors });
       }
       console.error('Error creating product:', error);
       res.status(500).json({ message: 'Internal server error' });
