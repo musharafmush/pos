@@ -10,7 +10,6 @@ import POSGofrugal from "@/pages/pos-gofrugal";
 import POSEnhanced from "@/pages/pos-enhanced";
 import Products from "@/pages/products";
 import ProductsEnhanced from "@/pages/products-enhanced";
-import ProductsGSTEnhanced from "@/pages/products-gst-enhanced";
 import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
 import PurchaseDashboard from "@/pages/purchase-dashboard";
@@ -41,7 +40,6 @@ function Router() {
       <ProtectedRoute path="/pos-enhanced" component={POSEnhanced} />
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/products-enhanced" component={ProductsEnhanced} />
-      <ProtectedRoute path="/products-gst" component={ProductsGSTEnhanced} />
       <ProtectedRoute path="/products/add" component={AddProduct} />
       <ProtectedRoute path="/add-product" component={AddProduct} />
       <ProtectedRoute path="/products/repacking" component={Repacking} />
