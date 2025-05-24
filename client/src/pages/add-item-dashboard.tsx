@@ -792,7 +792,7 @@ export default function AddItemDashboard() {
         {/* Comprehensive Edit Product Dialog - Professional Layout */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0" aria-describedby="edit-product-description">
-            <div className="flex h-full">
+            <div className="flex h-[90vh]">
               {/* Sidebar Navigation */}
               <div className="w-64 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto">
                 <DialogHeader className="mb-6">
@@ -847,8 +847,8 @@ export default function AddItemDashboard() {
               </div>
 
               {/* Main Content */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="p-6">
+              <div className="flex-1 overflow-y-auto bg-white">
+                <div className="p-6 min-h-full">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-6">
                     <div>
