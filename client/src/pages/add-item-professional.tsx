@@ -911,7 +911,428 @@ export default function AddItemProfessional() {
                   </Card>
                 )}
 
-                {/* Other sections can be added similarly */}
+                {/* EAN Code/Barcode Section */}
+                {currentSection === "ean-code-barcode" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3Icon className="w-5 h-5" />
+                        EAN Code/Barcode Configuration
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="flex items-center space-x-3">
+                        <FormField
+                          control={form.control}
+                          name="eanCodeRequired"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center space-x-3">
+                              <FormControl>
+                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                              <FormLabel>EAN Code Required</FormLabel>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h3 className="font-medium mb-3">Barcode Configuration</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Configure barcode settings for this product. This will help in quick scanning and inventory management.
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Barcode Type</label>
+                            <Select>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select barcode type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ean13">EAN-13</SelectItem>
+                                <SelectItem value="ean8">EAN-8</SelectItem>
+                                <SelectItem value="code128">Code 128</SelectItem>
+                                <SelectItem value="code39">Code 39</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Auto Generate</label>
+                            <Button variant="outline" className="w-full">
+                              Generate Barcode
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Packing Section */}
+                {currentSection === "packing" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BoxIcon className="w-5 h-5" />
+                        Packing
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="weightsPerUnit"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Weights Per Unit</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="1" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="batchExpiryDetails"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Batch/Expiry Date Details</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Not Required">Not Required</SelectItem>
+                                    <SelectItem value="Batch Only">Batch Only</SelectItem>
+                                    <SelectItem value="Expiry Only">Expiry Only</SelectItem>
+                                    <SelectItem value="Both Required">Both Required</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="bg-orange-50 p-4 rounded-lg">
+                        <h3 className="font-medium mb-3">Packaging Information</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Package Type</label>
+                            <Select>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="box">Box</SelectItem>
+                                <SelectItem value="bottle">Bottle</SelectItem>
+                                <SelectItem value="packet">Packet</SelectItem>
+                                <SelectItem value="bag">Bag</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Units per Package</label>
+                            <Input placeholder="1" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Package Weight</label>
+                            <Input placeholder="0.000 kg" />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Item Properties Section */}
+                {currentSection === "item-properties" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <SettingsIcon className="w-5 h-5" />
+                        Item Properties
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="decimalPoint"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Decimal Point</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="0">0 (No decimals)</SelectItem>
+                                    <SelectItem value="1">1 decimal place</SelectItem>
+                                    <SelectItem value="2">2 decimal places</SelectItem>
+                                    <SelectItem value="3">3 decimal places</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="imageAlignment"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Image Alignment</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select alignment" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="left">Left</SelectItem>
+                                    <SelectItem value="center">Center</SelectItem>
+                                    <SelectItem value="right">Right</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="productType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Product Type *</FormLabel>
+                            <FormControl>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="NA">N/A</SelectItem>
+                                  <SelectItem value="FMCG">FMCG</SelectItem>
+                                  <SelectItem value="Electronics">Electronics</SelectItem>
+                                  <SelectItem value="Clothing">Clothing</SelectItem>
+                                  <SelectItem value="Food">Food & Beverages</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="bg-purple-50 p-4 rounded-lg">
+                        <h3 className="font-medium mb-3">Additional Properties</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Perishable Item</span>
+                            <Switch />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Temperature Controlled</span>
+                            <Switch />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Fragile Item</span>
+                            <Switch />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Track Serial Numbers</span>
+                            <Switch />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Reorder Configurations Section */}
+                {currentSection === "reorder-configurations" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <PackageIcon className="w-5 h-5" />
+                        Reorder Configurations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="skuType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>SKU Type</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Put Away">Put Away</SelectItem>
+                                    <SelectItem value="Fast Moving">Fast Moving</SelectItem>
+                                    <SelectItem value="Slow Moving">Slow Moving</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="indentType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Indent Type</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Manual">Manual</SelectItem>
+                                    <SelectItem value="Automatic">Automatic</SelectItem>
+                                    <SelectItem value="Semi-Automatic">Semi-Automatic</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <h3 className="font-medium mb-3">Reorder Parameters</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Minimum Stock Level</label>
+                            <Input placeholder="10" type="number" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Reorder Point</label>
+                            <Input placeholder="20" type="number" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Economic Order Quantity</label>
+                            <Input placeholder="100" type="number" />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Purchase Order Section */}
+                {currentSection === "purchase-order" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <ShoppingCartIcon className="w-5 h-5" />
+                        Purchase Order
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="gateKeeperMargin"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Gate Keeper Margin %</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="0" type="number" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h3 className="font-medium mb-3">Purchase Settings</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Default Supplier</label>
+                            <Select>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select supplier" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="supplier1">Supplier 1</SelectItem>
+                                <SelectItem value="supplier2">Supplier 2</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Lead Time (Days)</label>
+                            <Input placeholder="7" type="number" />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Other Information Section */}
+                {currentSection === "other-information" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <InfoIcon className="w-5 h-5" />
+                        Other Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="itemIngredients"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Item Ingredients</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Enter item ingredients if applicable" rows={4} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h3 className="font-medium mb-3">Additional Notes</h3>
+                        <Textarea placeholder="Any additional notes or special instructions for this product..." rows={3} />
+                      </div>
+                      
+                      <div className="bg-yellow-50 p-4 rounded-lg">
+                        <h3 className="font-medium mb-3">Compliance Information</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">FDA Approved</span>
+                            <Switch />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">BIS Certified</span>
+                            <Switch />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Organic Certified</span>
+                            <Switch />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex justify-end gap-4 pt-6 border-t">
