@@ -677,22 +677,49 @@ export const storage = {
       status?: string;
     }
   ): Promise<Purchase> {
-    // Generate unique order number
-    const orderNumber = `PO-${Date.now().toString().substring(7)}${Math.floor(Math.random() * 1000)}`;
+    // Use SQLite database directly for compatibility
+    const { sqlite } = await import('@db');
+    
+    // Generate unique purchase number
+    const purchaseNumber = `PO-${Date.now().toString().substring(7)}${Math.floor(Math.random() * 1000)}`;
 
     // Calculate total
     const total = items.reduce((sum, item) => sum + item.quantity * Number(item.unitCost), 0);
 
-    // Create purchase transaction
-    const [purchase] = await db.insert(purchases).values({
-      orderNumber,
+    // Create purchase transaction with SQLite-compatible approach
+    const insertPurchase = sqlite.prepare(`
+      INSERT INTO purchases (
+        supplier_id, user_id, purchase_number, order_date, total, 
+        status, created_at, order_number, sub_total, freight_cost, 
+        other_charges, discount_amount
+      ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)
+    `);
+    
+    const result = insertPurchase.run(
       supplierId,
       userId,
-      total: total.toString(),
-      status: purchaseData.status || 'pending'
-    }).returning();
+      purchaseNumber,
+      new Date().toISOString(),
+      total.toString(),
+      purchaseData.status || 'pending',
+      purchaseNumber, // order_number (same as purchase_number)
+      total.toString(), // sub_total
+      "0", // freight_cost
+      "0", // other_charges
+      "0"  // discount_amount
+    );
+    
+    // Fetch the created purchase
+    const getPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?');
+    const purchase = getPurchase.get(result.lastInsertRowid);
 
-    // Add purchase items
+    // Add purchase items using SQLite directly
+    const insertPurchaseItem = sqlite.prepare(`
+      INSERT INTO purchase_items (
+        purchase_id, product_id, quantity, cost, total, amount
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    
     for (const item of items) {
       // Convert all values to their appropriate types to avoid NaN issues
       const productId = typeof item.productId === 'number' ? item.productId : 0;
@@ -708,16 +735,20 @@ export const storage = {
         subtotal 
       });
       
-      await db.insert(purchaseItems).values({
-        purchaseId: purchase.id,
+      insertPurchaseItem.run(
+        purchase.id,
         productId,
         quantity,
-        unitCost: unitCost.toString(),
-        subtotal: subtotal.toString()
-      });
+        unitCost.toString(),
+        subtotal.toString(),
+        subtotal.toString() // amount (same as total for now)
+      );
     }
 
-    return purchase;
+    return {
+      ...purchase,
+      createdAt: new Date(purchase.created_at)
+    };
   },
 
   async getPurchaseById(id: number): Promise<Purchase | null> {
