@@ -1084,7 +1084,7 @@ export default function AddItemDashboard() {
                     </div>
 
                     {/* Product Properties */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div id="properties-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Product Properties</h3>
                       <div className="grid grid-cols-3 gap-6">
                         <div className="space-y-2">
@@ -1208,7 +1208,7 @@ export default function AddItemDashboard() {
                     </div>
 
                     {/* Packing */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div id="packing-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Packing</h3>
                       <div className="grid grid-cols-3 gap-6">
                         <div className="space-y-2">
