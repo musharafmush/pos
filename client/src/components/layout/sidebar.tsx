@@ -111,6 +111,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         { href: "/products/repacking", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Repacking" },
         { href: "/repacking-professional", icon: <Calculator className="h-5 w-5" />, label: "Professional Repacking" },
         { href: "/repacking-dashboard", icon: <BarChart4Icon className="h-5 w-5" />, label: "Repacking Dashboard" },
+        { href: "/repacking-dashboard-professional", icon: <BarChart4Icon className="h-5 w-5" />, label: "Professional Dashboard" },
         { href: "/products/update-price", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Update Price" },
         { href: "/print-labels", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Print Labels" },
         { href: "/products/variations", icon: <GalleryHorizontalIcon className="h-5 w-5" />, label: "Variations" },
