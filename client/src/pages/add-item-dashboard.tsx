@@ -166,14 +166,8 @@ export default function AddItemDashboard() {
   // Update product mutation
   const updateProductMutation = useMutation({
     mutationFn: async (data: { id: number; updates: Partial<Product> }) => {
-      const response = await apiRequest(`/api/products/${data.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data.updates),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      return response;
+      const response = await apiRequest("PATCH", `/api/products/${data.id}`, data.updates);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
