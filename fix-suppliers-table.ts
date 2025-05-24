@@ -36,7 +36,8 @@ try {
     { name: 'pin_code', type: 'TEXT', default: 'NULL' },
     { name: 'building', type: 'TEXT', default: 'NULL' },
     { name: 'street', type: 'TEXT', default: 'NULL' },
-    { name: 'area', type: 'TEXT', default: 'NULL' }
+    { name: 'area', type: 'TEXT', default: 'NULL' },
+    { name: 'landmark', type: 'TEXT', default: 'NULL' }
   ];
 
   for (const column of requiredColumns) {
