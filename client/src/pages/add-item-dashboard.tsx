@@ -118,6 +118,15 @@ export default function AddItemDashboard() {
   });
 
   const { toast } = useToast();
+  const [activeSection, setActiveSection] = useState("item-info");
+
+  const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId);
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
   const queryClient = useQueryClient();
 
   // Fetch products
@@ -806,40 +815,103 @@ export default function AddItemDashboard() {
                 </DialogHeader>
                 
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">General Information</div>
-                  <div className="bg-blue-100 text-blue-700 px-3 py-2 rounded-md text-sm flex items-center gap-2">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">General Information</div>
+                  <div 
+                    onClick={() => scrollToSection('item-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'item-info' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
                     <PackageIcon className="w-4 h-4" />
                     Item Information
                   </div>
-                  <div className="text-gray-600 px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 rounded-md cursor-pointer">
+                  <div 
+                    onClick={() => scrollToSection('category-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'category-info' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
                     <TagIcon className="w-4 h-4" />
                     Category Information
                   </div>
-                  <div className="text-gray-600 px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 rounded-md cursor-pointer">
+                  <div 
+                    onClick={() => scrollToSection('tax-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'tax-info' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
                     <DollarSignIcon className="w-4 h-4" />
                     Tax Information
                   </div>
-                  <div className="text-gray-600 px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 rounded-md cursor-pointer">
+                  <div 
+                    onClick={() => scrollToSection('barcode-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'barcode-info' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
                     <QrCodeIcon className="w-4 h-4" />
                     EAN Code/Barcode
                   </div>
-                  <div className="text-gray-600 px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 rounded-md cursor-pointer">
+                  <div 
+                    onClick={() => scrollToSection('packing-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'packing-info' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
                     <PackageIcon className="w-4 h-4" />
                     Packing
                   </div>
-                  <div className="text-gray-600 px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 rounded-md cursor-pointer">
+                  <div 
+                    onClick={() => scrollToSection('properties-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'properties-info' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
                     <WeightIcon className="w-4 h-4" />
                     Item Properties
                   </div>
-                  <div className="text-gray-600 px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 rounded-md cursor-pointer">
+                  <div 
+                    onClick={() => scrollToSection('pricing-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'pricing-info' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
                     <DollarSignIcon className="w-4 h-4" />
                     Pricing
                   </div>
-                  <div className="text-gray-600 px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 rounded-md cursor-pointer">
+                  <div 
+                    onClick={() => scrollToSection('reorder-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'reorder-info' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
                     <WarehouseIcon className="w-4 h-4" />
                     Reorder Configurations
                   </div>
-                  <div className="text-gray-600 px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 rounded-md cursor-pointer">
+                  <div 
+                    onClick={() => scrollToSection('purchase-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'purchase-info' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
                     <RefreshCcwIcon className="w-4 h-4" />
                     Purchase Order
                   </div>
@@ -870,7 +942,7 @@ export default function AddItemDashboard() {
 
                   {/* Form Content - Item Information Section */}
                   <div className="space-y-6">
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div id="item-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
@@ -1050,7 +1122,7 @@ export default function AddItemDashboard() {
                     </div>
 
                     {/* Category Information */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div id="category-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Category Information</h3>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
@@ -1076,7 +1148,7 @@ export default function AddItemDashboard() {
                     </div>
 
                     {/* Tax Information */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div id="tax-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Tax Information</h3>
                       <div className="grid grid-cols-3 gap-6">
                         <div className="space-y-2">
@@ -1112,7 +1184,7 @@ export default function AddItemDashboard() {
                     </div>
 
                     {/* EAN Code/Barcode */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div id="barcode-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">EAN Code/Barcode</h3>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
