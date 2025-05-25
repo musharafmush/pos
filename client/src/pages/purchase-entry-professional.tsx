@@ -34,6 +34,14 @@ const purchaseItemSchema = z.object({
   discountPercent: z.number().min(0).max(100, "Discount percentage must be between 0 and 100").optional(),
   expiryDate: z.string().optional(),
   batchNumber: z.string().optional(),
+  netCost: z.number().min(0, "Net cost cannot be negative").optional(),
+  roiPercent: z.number().min(0, "ROI percentage cannot be negative").optional(),
+  grossProfitPercent: z.number().min(0, "Gross profit percentage cannot be negative").optional(),
+  netAmount: z.number().min(0, "Net amount cannot be negative").optional(),
+  cashPercent: z.number().min(0).max(100, "Cash percentage must be between 0 and 100").optional(),
+  cashAmount: z.number().min(0, "Cash amount cannot be negative").optional(),
+  location: z.string().optional(),
+  unit: z.string().optional(),
 });
 
 const purchaseSchema = z.object({
@@ -484,22 +492,31 @@ export default function PurchaseEntryProfessional() {
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-gray-50">
+                        <TableRow className="bg-gray-50 text-xs">
                           <TableHead className="w-8">Sno</TableHead>
-                          <TableHead className="w-20">Code</TableHead>
-                          <TableHead className="min-w-48">Product Name</TableHead>
-                          <TableHead className="w-24 text-center">Qty</TableHead>
-                          <TableHead className="w-24 text-center">Rec Qty</TableHead>
-                          <TableHead className="w-24 text-center">Free Qty</TableHead>
-                          <TableHead className="w-24 text-right">Cost (₹)</TableHead>
-                          <TableHead className="w-24 text-right">MRP (₹)</TableHead>
-                          <TableHead className="w-20">HSN</TableHead>
-                          <TableHead className="w-20 text-center">Tax %</TableHead>
-                          <TableHead className="w-24 text-right">Disc %</TableHead>
-                          <TableHead className="w-20">Batch</TableHead>
-                          <TableHead className="w-24">Expiry</TableHead>
-                          <TableHead className="w-24 text-right">Amount (₹)</TableHead>
-                          <TableHead className="w-8"></TableHead>
+                          <TableHead className="w-16">Code</TableHead>
+                          <TableHead className="min-w-32">Product Name</TableHead>
+                          <TableHead className="w-20">Description</TableHead>
+                          <TableHead className="w-20 text-center">Received Qty</TableHead>
+                          <TableHead className="w-20 text-center">Free Qty</TableHead>
+                          <TableHead className="w-20 text-right">Cost</TableHead>
+                          <TableHead className="w-16">HSN Code</TableHead>
+                          <TableHead className="w-16 text-center">Tax %</TableHead>
+                          <TableHead className="w-20 text-right">Disc Amt</TableHead>
+                          <TableHead className="w-20">Exp. Date</TableHead>
+                          <TableHead className="w-20 text-right">Net Cost</TableHead>
+                          <TableHead className="w-16 text-center">ROI %</TableHead>
+                          <TableHead className="w-20 text-center">Gross Profit %</TableHead>
+                          <TableHead className="w-20 text-right">Selling Price</TableHead>
+                          <TableHead className="w-20 text-right">MRP</TableHead>
+                          <TableHead className="w-20 text-right">Amount</TableHead>
+                          <TableHead className="w-20 text-right">Net Amount</TableHead>
+                          <TableHead className="w-16 text-center">Cash %</TableHead>
+                          <TableHead className="w-20 text-right">Cash Amt</TableHead>
+                          <TableHead className="w-20">Batch No</TableHead>
+                          <TableHead className="w-20">Location</TableHead>
+                          <TableHead className="w-16">Unit</TableHead>
+                          <TableHead className="w-16">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -507,11 +524,11 @@ export default function PurchaseEntryProfessional() {
                           const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
                           
                           return (
-                            <TableRow key={field.id}>
+                            <TableRow key={field.id} className="text-xs">
                               <TableCell className="text-center font-medium">{index + 1}</TableCell>
                               
                               <TableCell>
-                                <span className="text-sm text-gray-600">
+                                <span className="text-xs text-gray-600">
                                   {selectedProduct?.sku || "Code"}
                                 </span>
                               </TableCell>
@@ -524,6 +541,7 @@ export default function PurchaseEntryProfessional() {
                                   if (product) {
                                     form.setValue(`items.${index}.unitCost`, parseFloat(product.price) || 0);
                                     form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
+                                    form.setValue(`items.${index}.mrp`, parseFloat(product.mrp) || 0);
                                     // Auto-calculate GST if available
                                     const gstRate = parseFloat(product.cgstRate || "0") + parseFloat(product.sgstRate || "0");
                                     if (gstRate > 0) {
@@ -531,7 +549,7 @@ export default function PurchaseEntryProfessional() {
                                     }
                                   }
                                 }}>
-                                  <SelectTrigger className="min-w-48">
+                                  <SelectTrigger className="min-w-32 text-xs">
                                     <SelectValue placeholder="Select Product" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -543,15 +561,11 @@ export default function PurchaseEntryProfessional() {
                                   </SelectContent>
                                 </Select>
                               </TableCell>
-                              
+
                               <TableCell>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  {...form.register(`items.${index}.quantity`, { valueAsNumber: true })}
-                                  className="w-20 text-center"
-                                  placeholder="1"
-                                />
+                                <span className="text-xs text-gray-600">
+                                  {selectedProduct?.description || "Description"}
+                                </span>
                               </TableCell>
                               
                               <TableCell>
@@ -559,7 +573,7 @@ export default function PurchaseEntryProfessional() {
                                   type="number"
                                   min="0"
                                   {...form.register(`items.${index}.receivedQty`, { valueAsNumber: true })}
-                                  className="w-20 text-center"
+                                  className="w-16 text-center text-xs"
                                   placeholder="0"
                                 />
                               </TableCell>
@@ -569,7 +583,7 @@ export default function PurchaseEntryProfessional() {
                                   type="number"
                                   min="0"
                                   {...form.register(`items.${index}.freeQty`, { valueAsNumber: true })}
-                                  className="w-20 text-center"
+                                  className="w-16 text-center text-xs"
                                   placeholder="0"
                                 />
                               </TableCell>
@@ -580,18 +594,7 @@ export default function PurchaseEntryProfessional() {
                                   min="0"
                                   step="0.01"
                                   {...form.register(`items.${index}.unitCost`, { valueAsNumber: true })}
-                                  className="w-24 text-right"
-                                  placeholder="0"
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  {...form.register(`items.${index}.mrp`, { valueAsNumber: true })}
-                                  className="w-24 text-right"
+                                  className="w-16 text-right text-xs"
                                   placeholder="0"
                                 />
                               </TableCell>
@@ -599,7 +602,7 @@ export default function PurchaseEntryProfessional() {
                               <TableCell>
                                 <Input
                                   {...form.register(`items.${index}.hsnCode`)}
-                                  className="w-20"
+                                  className="w-16 text-xs"
                                   placeholder="HSN"
                                   value={selectedProduct?.hsnCode || form.watch(`items.${index}.hsnCode`) || ""}
                                   onChange={(e) => form.setValue(`items.${index}.hsnCode`, e.target.value)}
@@ -613,7 +616,7 @@ export default function PurchaseEntryProfessional() {
                                   max="100"
                                   step="0.01"
                                   {...form.register(`items.${index}.taxPercentage`, { valueAsNumber: true })}
-                                  className="w-16 text-center"
+                                  className="w-12 text-center text-xs"
                                   placeholder="0"
                                 />
                               </TableCell>
@@ -622,10 +625,126 @@ export default function PurchaseEntryProfessional() {
                                 <Input
                                   type="number"
                                   min="0"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.discountAmount`, { valueAsNumber: true })}
+                                  className="w-16 text-right text-xs"
+                                  placeholder="0"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="date"
+                                  {...form.register(`items.${index}.expiryDate`)}
+                                  className="w-20 text-xs"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.netCost`, { valueAsNumber: true })}
+                                  className="w-16 text-right text-xs"
+                                  placeholder="0"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.roiPercent`, { valueAsNumber: true })}
+                                  className="w-12 text-center text-xs"
+                                  placeholder="0"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.grossProfitPercent`, { valueAsNumber: true })}
+                                  className="w-16 text-center text-xs"
+                                  placeholder="0"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.sellingPrice`, { valueAsNumber: true })}
+                                  className="w-16 text-right text-xs"
+                                  placeholder="0"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.mrp`, { valueAsNumber: true })}
+                                  className="w-16 text-right text-xs"
+                                  placeholder="0"
+                                />
+                              </TableCell>
+
+                              <TableCell className="text-right">
+                                {(() => {
+                                  const receivedQty = form.watch(`items.${index}.receivedQty`) || 0;
+                                  const cost = form.watch(`items.${index}.unitCost`) || 0;
+                                  const discountAmount = form.watch(`items.${index}.discountAmount`) || 0;
+                                  const taxPercent = form.watch(`items.${index}.taxPercentage`) || 0;
+                                  
+                                  const subtotal = receivedQty * cost;
+                                  const taxableAmount = subtotal - discountAmount;
+                                  const taxAmount = (taxableAmount * taxPercent) / 100;
+                                  const total = taxableAmount + taxAmount;
+                                  
+                                  return (
+                                    <span className="font-medium text-xs">
+                                      ₹{total.toFixed(0)}
+                                    </span>
+                                  );
+                                })()}
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.netAmount`, { valueAsNumber: true })}
+                                  className="w-16 text-right text-xs"
+                                  placeholder="0"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
                                   max="100"
                                   step="0.01"
-                                  {...form.register(`items.${index}.discountPercent`, { valueAsNumber: true })}
-                                  className="w-24 text-right"
+                                  {...form.register(`items.${index}.cashPercent`, { valueAsNumber: true })}
+                                  className="w-12 text-center text-xs"
+                                  placeholder="0"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.cashAmount`, { valueAsNumber: true })}
+                                  className="w-16 text-right text-xs"
                                   placeholder="0"
                                 />
                               </TableCell>
@@ -633,38 +752,25 @@ export default function PurchaseEntryProfessional() {
                               <TableCell>
                                 <Input
                                   {...form.register(`items.${index}.batchNumber`)}
-                                  className="w-20"
-                                  placeholder="Batch"
-                                />
-                              </TableCell>
-                              
-                              <TableCell>
-                                <Input
-                                  type="date"
-                                  {...form.register(`items.${index}.expiryDate`)}
-                                  className="w-24"
+                                  className="w-16 text-xs"
+                                  placeholder="Batch #"
                                 />
                               </TableCell>
 
-                              <TableCell className="text-right">
-                                {(() => {
-                                  const qty = form.watch(`items.${index}.quantity`) || 0;
-                                  const cost = form.watch(`items.${index}.unitCost`) || 0;
-                                  const discountPercent = form.watch(`items.${index}.discountPercent`) || 0;
-                                  const taxPercent = form.watch(`items.${index}.taxPercentage`) || 0;
-                                  
-                                  const subtotal = qty * cost;
-                                  const discountAmount = (subtotal * discountPercent) / 100;
-                                  const taxableAmount = subtotal - discountAmount;
-                                  const taxAmount = (taxableAmount * taxPercent) / 100;
-                                  const total = taxableAmount + taxAmount;
-                                  
-                                  return (
-                                    <span className="font-medium text-sm">
-                                      ₹{total.toFixed(0)}
-                                    </span>
-                                  );
-                                })()}
+                              <TableCell>
+                                <Input
+                                  {...form.register(`items.${index}.location`)}
+                                  className="w-16 text-xs"
+                                  placeholder="Location"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  {...form.register(`items.${index}.unit`)}
+                                  className="w-12 text-xs"
+                                  placeholder="PCS"
+                                />
                               </TableCell>
                               
                               <TableCell>
