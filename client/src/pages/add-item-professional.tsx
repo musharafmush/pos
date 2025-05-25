@@ -57,6 +57,13 @@ const productFormSchema = z.object({
   configItemWithCommodity: z.boolean().default(false),
   seniorExemptApplicable: z.boolean().default(false),
   
+  // GST Breakdown
+  cgstRate: z.string().optional(),
+  sgstRate: z.string().optional(),
+  igstRate: z.string().optional(),
+  cessRate: z.string().optional(),
+  taxCalculationMethod: z.string().optional(),
+  
   // EAN Code/Barcode
   eanCodeRequired: z.boolean().default(false),
   
@@ -603,8 +610,21 @@ export default function AddItemProfessional() {
                                     <SelectValue placeholder="640199002 (GST 12%)" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="640199002">640199002 (GST 12%)</SelectItem>
-                                    <SelectItem value="640199003">640199003 (GST 18%)</SelectItem>
+                                    <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
+                                    <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
+                                    <SelectItem value="17019900">17019900 - Sugar (5%)</SelectItem>
+                                    <SelectItem value="04070010">04070010 - Eggs (0%)</SelectItem>
+                                    <SelectItem value="64029100">64029100 - Footwear (18%)</SelectItem>
+                                    <SelectItem value="62019000">62019000 - Garments (12%)</SelectItem>
+                                    <SelectItem value="85171200">85171200 - Mobile Phone (12%)</SelectItem>
+                                    <SelectItem value="84713000">84713000 - Laptop (18%)</SelectItem>
+                                    <SelectItem value="33061000">33061000 - Toothpaste (18%)</SelectItem>
+                                    <SelectItem value="34012000">34012000 - Soap (18%)</SelectItem>
+                                    <SelectItem value="22021000">22021000 - Soft Drinks (28%)</SelectItem>
+                                    <SelectItem value="24021000">24021000 - Cigarettes (28%)</SelectItem>
+                                    <SelectItem value="87032390">87032390 - Car (28%)</SelectItem>
+                                    <SelectItem value="01010100">01010100 - Live Animals (0%)</SelectItem>
+                                    <SelectItem value="07010000">07010000 - Vegetables (0%)</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -624,9 +644,13 @@ export default function AddItemProfessional() {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="GST 12%">GST 12%</SelectItem>
-                                    <SelectItem value="GST 18%">GST 18%</SelectItem>
-                                    <SelectItem value="GST 28%">GST 28%</SelectItem>
+                                    <SelectItem value="GST 0%">GST 0% - Nil Rate (Basic necessities)</SelectItem>
+                                    <SelectItem value="GST 5%">GST 5% - Essential goods (Food grains, medicines)</SelectItem>
+                                    <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
+                                    <SelectItem value="GST 18%">GST 18% - Standard rate (Most goods & services)</SelectItem>
+                                    <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
+                                    <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
+                                    <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -634,6 +658,89 @@ export default function AddItemProfessional() {
                             </FormItem>
                           )}
                         />
+                      </div>
+                      
+                      {/* GST Breakdown Section */}
+                      <div className="border-t pt-6">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4">GST Breakdown & Compliance</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="cgstRate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>CGST Rate (%)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="9.00" type="number" step="0.01" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="sgstRate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>SGST Rate (%)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="9.00" type="number" step="0.01" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="igstRate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>IGST Rate (%)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="18.00" type="number" step="0.01" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-6 mt-4">
+                          <FormField
+                            control={form.control}
+                            name="taxCalculationMethod"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Tax Calculation Method</FormLabel>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select method" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="inclusive">Tax Inclusive</SelectItem>
+                                      <SelectItem value="exclusive">Tax Exclusive</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="cessRate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Cess Rate (%) - Optional</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-6">
