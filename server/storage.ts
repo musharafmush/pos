@@ -785,19 +785,24 @@ export const storage = {
   },
 
   async getPurchaseById(id: number): Promise<Purchase | null> {
-    const purchase = await db.query.purchases.findFirst({
-      where: eq(purchases.id, id),
-      with: {
-        supplier: true,
-        user: true,
-        items: {
-          with: {
-            product: true
+    try {
+      const purchase = await db.query.purchases.findFirst({
+        where: eq(purchases.id, id),
+        with: {
+          supplier: true,
+          user: true,
+          items: {
+            with: {
+              product: true
+            }
           }
         }
-      }
-    });
-    return purchase;
+      });
+      return purchase || null;
+    } catch (error) {
+      console.error("Error in getPurchaseById:", error);
+      return null;
+    }
   },
 
   async updatePurchaseStatus(id: number, status: string, receivedDate?: Date): Promise<Purchase | null> {
