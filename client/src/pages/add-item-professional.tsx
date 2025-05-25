@@ -67,8 +67,12 @@ const productFormSchema = z.object({
   // EAN Code/Barcode
   eanCodeRequired: z.boolean().default(false),
   
-  // Packing
+  // Weight & Packing (Enhanced for Bulk Items)
   weightsPerUnit: z.string().default("1"),
+  bulkWeight: z.string().optional(),
+  bulkWeightUnit: z.string().default("kg"),
+  packingType: z.string().default("Bulk"),
+  unitsPerPack: z.string().default("1"),
   batchExpiryDetails: z.string().default("Not Required"),
   
   // Item Properties
@@ -1075,60 +1079,105 @@ export default function AddItemProfessional() {
                           />
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-6 mt-4">
-                          <FormField
-                            control={form.control}
-                            name="weight"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Weight</FormLabel>
-                                <FormControl>
-                                  <Input {...field} type="number" step="0.001" placeholder="0.000" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="weightUnit"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Weight Unit</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="kg">Kilogram (kg)</SelectItem>
-                                      <SelectItem value="g">Gram (g)</SelectItem>
-                                      <SelectItem value="mg">Milligram (mg)</SelectItem>
-                                      <SelectItem value="l">Litre (l)</SelectItem>
-                                      <SelectItem value="ml">Millilitre (ml)</SelectItem>
-                                      <SelectItem value="piece">Piece</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                        {/* Enhanced Weight & Packing for Bulk Items */}
+                        <div className="bg-blue-50 p-4 rounded-lg mt-6">
+                          <h4 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
+                            <PackageIcon className="w-4 h-4" />
+                            Weight & Packing (Bulk Items)
+                          </h4>
+                          
+                          <div className="grid grid-cols-3 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="weight"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Weight (for 25kg = 25000)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} type="number" step="1" placeholder="25000" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="weightUnit"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Weight Unit</FormLabel>
+                                  <FormControl>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="g">Gram (g)</SelectItem>
+                                        <SelectItem value="kg">Kilogram (kg)</SelectItem>
+                                        <SelectItem value="mg">Milligram (mg)</SelectItem>
+                                        <SelectItem value="l">Litre (l)</SelectItem>
+                                        <SelectItem value="ml">Millilitre (ml)</SelectItem>
+                                        <SelectItem value="piece">Piece</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="stockQuantity"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Stock Quantity (bags/units)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} type="number" step="1" placeholder="5" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <FormField
+                              control={form.control}
+                              name="packingType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Packing Type</FormLabel>
+                                  <FormControl>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Bulk">Bulk</SelectItem>
+                                        <SelectItem value="Retail">Retail</SelectItem>
+                                        <SelectItem value="Wholesale">Wholesale</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="unitsPerPack"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Units Per Pack</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} type="number" step="1" placeholder="1" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                         </div>
-                        
-                        <FormField
-                          control={form.control}
-                          name="stockQuantity"
-                          render={({ field }) => (
-                            <FormItem className="mt-4">
-                              <FormLabel>Stock Quantity</FormLabel>
-                              <FormControl>
-                                <Input {...field} type="number" placeholder="0" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                       </div>
                     </CardContent>
                   </Card>
