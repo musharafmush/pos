@@ -63,7 +63,7 @@ export default function BulkItemCreator() {
         weight: data.weight,
         weightUnit: data.weightUnit,
         categoryId: data.categoryId,
-        stockQuantity: data.stockQuantity,
+        stockQuantity: Number(data.stockQuantity),
         active: true,
       };
 
