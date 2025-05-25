@@ -74,6 +74,11 @@ export default function RepackingProfessional() {
     },
   });
 
+  // Filter for bulk products (items with weight > 1000g)
+  const bulkProducts = products.filter((product: Product) => 
+    product.weight && parseFloat(product.weight) > 1000
+  );
+
   const form = useForm<RepackingFormValues>({
     resolver: zodResolver(repackingFormSchema),
     defaultValues: {
@@ -132,11 +137,23 @@ export default function RepackingProfessional() {
       
       // Update bulk product stock
       if (selectedProduct) {
-        const bulkWeightUsed = (data.unitWeight * data.repackQuantity) / 1000; // Convert to kg
-        const newBulkStock = Math.max(0, selectedProduct.stockQuantity - bulkWeightUsed);
+        const productWeight = parseFloat(selectedProduct.weight) || 0;
+        const productWeightUnit = selectedProduct.weightUnit || 'g';
+        
+        // Convert everything to grams for calculation
+        let productWeightInGrams = productWeight;
+        if (productWeightUnit === 'kg') {
+          productWeightInGrams = productWeight * 1000;
+        }
+        
+        // Calculate how much bulk stock is used per repacked unit
+        const totalRepackedWeight = data.unitWeight * data.repackQuantity;
+        const bulkUnitsUsed = totalRepackedWeight / productWeightInGrams;
+        
+        const newBulkStock = Math.max(0, selectedProduct.stockQuantity - bulkUnitsUsed);
         
         await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
-          stockQuantity: newBulkStock,
+          stockQuantity: Math.floor(newBulkStock),
         });
       }
 
@@ -299,9 +316,9 @@ export default function RepackingProfessional() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {products.map((product: Product) => (
+                              {bulkProducts.map((product: Product) => (
                                 <SelectItem key={product.id} value={product.id.toString()}>
-                                  {product.sku} - {product.name}
+                                  {product.sku} - {product.name} ({product.weight}{product.weightUnit})
                                 </SelectItem>
                               ))}
                             </SelectContent>
