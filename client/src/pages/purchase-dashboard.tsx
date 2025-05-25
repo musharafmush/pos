@@ -554,10 +554,18 @@ export default function PurchaseDashboard() {
                           <Badge variant="secondary">Pending</Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {formatCurrency(purchase.totalAmount || "0.00")}
+                          {formatCurrency(
+                            purchase.items?.reduce((sum: number, item: any) => sum + (item.subtotal || 0), 0) || 
+                            purchase.totalAmount || 
+                            "0.00"
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {formatCurrency(purchase.totalAmount || "0.00")}
+                          {formatCurrency(
+                            purchase.items?.reduce((sum: number, item: any) => sum + (item.subtotal || 0), 0) || 
+                            purchase.totalAmount || 
+                            "0.00"
+                          )}
                         </TableCell>
                         <TableCell>
                           {purchase.expectedDate ? format(new Date(purchase.expectedDate), 'MM/dd/yyyy') : 'N/A'}
