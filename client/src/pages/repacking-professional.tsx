@@ -150,7 +150,8 @@ export default function RepackingProfessional() {
         const totalRepackedWeight = data.unitWeight * data.repackQuantity;
         const bulkUnitsUsed = totalRepackedWeight / productWeightInGrams;
         
-        const newBulkStock = Math.max(0, selectedProduct.stockQuantity - bulkUnitsUsed);
+        // More conservative stock calculation - only reduce by fraction actually used
+        const newBulkStock = Math.max(0, selectedProduct.stockQuantity - Math.ceil(bulkUnitsUsed));
         
         await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
           stockQuantity: Math.floor(newBulkStock),
