@@ -605,10 +605,37 @@ export default function AddItemProfessional() {
                             <FormItem>
                               <FormLabel>HSN Code</FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="640199002 (GST 12%)" />
-                                  </SelectTrigger>
+                                <div className="space-y-2">
+                                  <Input 
+                                    value={field.value || ""}
+                                    placeholder="Enter HSN Code manually (e.g., 10019000)" 
+                                    onChange={(e) => {
+                                      const hsnValue = e.target.value;
+                                      field.onChange(hsnValue);
+                                      
+                                      // Auto-suggest GST code based on HSN
+                                      let suggestedGst = "";
+                                      if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
+                                        suggestedGst = "GST 0%";
+                                      } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17") || hsnValue.startsWith("21") || hsnValue.startsWith("30") || hsnValue.startsWith("49") || hsnValue.startsWith("63")) {
+                                        suggestedGst = "GST 5%";
+                                      } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("48") || hsnValue.startsWith("87120") || hsnValue.startsWith("90")) {
+                                        suggestedGst = "GST 12%";
+                                      } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("64") || hsnValue.startsWith("84") || hsnValue.startsWith("85") || hsnValue.startsWith("96") || hsnValue.startsWith("19") || hsnValue.startsWith("30059")) {
+                                        suggestedGst = "GST 18%";
+                                      } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032") || hsnValue.startsWith("87111")) {
+                                        suggestedGst = "GST 28%";
+                                      }
+                                      
+                                      if (suggestedGst && hsnValue.length >= 4) {
+                                        form.setValue("gstCode", suggestedGst);
+                                      }
+                                    }}
+                                  />
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Or select from common HSN codes" />
+                                    </SelectTrigger>
                                   <SelectContent className="max-h-80 overflow-y-auto">
                                     {/* Food & Beverages - 0% & 5% GST */}
                                     <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
@@ -661,6 +688,7 @@ export default function AddItemProfessional() {
                                     <SelectItem value="96085000">96085000 - Pens (18%)</SelectItem>
                                   </SelectContent>
                                 </Select>
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
