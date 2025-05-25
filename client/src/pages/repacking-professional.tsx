@@ -74,9 +74,9 @@ export default function RepackingProfessional() {
     },
   });
 
-  // Filter for bulk products (items with weight > 1000g)
+  // Show all products with stock > 0 for repacking (more flexible approach)
   const bulkProducts = products.filter((product: Product) => 
-    product.weight && parseFloat(product.weight) > 1000
+    product.stockQuantity > 0 && product.active
   );
 
   const form = useForm<RepackingFormValues>({
