@@ -714,16 +714,14 @@ export default function AddItemProfessional() {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 GST Code *
-                                {field.value && (
-                                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                                    Auto-updated from HSN
-                                  </span>
-                                )}
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                  Auto-updated from HSN
+                                </span>
                               </FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger className={field.value ? "border-green-500" : ""}>
-                                    <SelectValue placeholder="Will auto-update when HSN is entered" />
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="GST 5% - Essential goods (Food grains, medicines)" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="GST 0%">GST 0% - Nil Rate (Basic necessities)</SelectItem>
