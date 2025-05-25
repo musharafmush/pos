@@ -110,7 +110,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
 
         { href: "/repacking-professional", icon: <Calculator className="h-5 w-5" />, label: "Professional Repacking" },
-
+        { href: "/auto-repacking-professional", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 2v6.5l3 3L12 15V8.5l-3-3z"/><path d="m15 11 3 3-6 1 2-4z"/></svg>, label: "Auto Repacking Professional" },
         { href: "/repacking-dashboard-professional", icon: <BarChart4Icon className="h-5 w-5" />, label: "Professional Dashboard" },
         { href: "/products/update-price", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Update Price" },
         { href: "/print-labels", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Print Labels" },
