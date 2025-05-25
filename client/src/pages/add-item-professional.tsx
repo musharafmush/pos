@@ -1160,31 +1160,102 @@ export default function AddItemProfessional() {
                         />
                       </div>
                       
+                      {/* Manual Barcode Entry */}
+                      <FormField
+                        control={form.control}
+                        name="barcode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Manual Barcode Entry</FormLabel>
+                            <FormControl>
+                              <div className="space-y-3">
+                                <Input 
+                                  {...field} 
+                                  placeholder="Enter barcode manually (e.g., 1234567890123)" 
+                                  className="font-mono"
+                                />
+                                <div className="flex gap-2">
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      // Generate random 13-digit EAN code
+                                      const randomEAN = '2' + Math.random().toString().slice(2, 14);
+                                      field.onChange(randomEAN);
+                                    }}
+                                  >
+                                    Generate EAN-13
+                                  </Button>
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      // Generate random 12-digit UPC code
+                                      const randomUPC = Math.random().toString().slice(2, 14);
+                                      field.onChange(randomUPC);
+                                    }}
+                                  >
+                                    Generate UPC
+                                  </Button>
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => field.onChange("")}
+                                  >
+                                    Clear
+                                  </Button>
+                                </div>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Barcode Configuration</h3>
                         <p className="text-sm text-gray-600 mb-4">
                           Configure barcode settings for this product. This will help in quick scanning and inventory management.
                         </p>
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium">Barcode Type</label>
-                            <Select>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select barcode type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="ean13">EAN-13</SelectItem>
-                                <SelectItem value="ean8">EAN-8</SelectItem>
-                                <SelectItem value="code128">Code 128</SelectItem>
-                                <SelectItem value="code39">Code 39</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Auto Generate</label>
-                            <Button variant="outline" className="w-full">
-                              Generate Barcode
-                            </Button>
+                          <FormField
+                            control={form.control}
+                            name="barcodeType"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium">Barcode Type</FormLabel>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select barcode type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="ean13">EAN-13 (European)</SelectItem>
+                                      <SelectItem value="ean8">EAN-8 (Short)</SelectItem>
+                                      <SelectItem value="upc">UPC (Universal)</SelectItem>
+                                      <SelectItem value="code128">Code 128</SelectItem>
+                                      <SelectItem value="code39">Code 39</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Barcode Preview</label>
+                            <div className="border border-gray-300 rounded-md p-3 bg-white min-h-[40px] flex items-center">
+                              {form.watch("barcode") ? (
+                                <div className="font-mono text-sm">
+                                  {form.watch("barcode")}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 text-sm">No barcode entered</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
