@@ -476,7 +476,7 @@ export default function RepackingProfessional() {
                       <div>
                         <label className="text-sm font-medium text-gray-600">Weight</label>
                         <div className="text-lg font-mono bg-gray-50 p-2 rounded border text-center">
-                          {unitWeight}g
+                          {selectedProduct.weight}{selectedProduct.weightUnit}
                         </div>
                       </div>
                       <div>
