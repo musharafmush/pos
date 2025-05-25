@@ -609,22 +609,56 @@ export default function AddItemProfessional() {
                                   <SelectTrigger>
                                     <SelectValue placeholder="640199002 (GST 12%)" />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="max-h-80 overflow-y-auto">
+                                    {/* Food & Beverages - 0% & 5% GST */}
                                     <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
                                     <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
                                     <SelectItem value="17019900">17019900 - Sugar (5%)</SelectItem>
                                     <SelectItem value="04070010">04070010 - Eggs (0%)</SelectItem>
+                                    <SelectItem value="07010000">07010000 - Fresh Vegetables (0%)</SelectItem>
+                                    <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
+                                    <SelectItem value="19059090">19059090 - Biscuits (18%)</SelectItem>
+                                    <SelectItem value="21069099">21069099 - Spices & Condiments (5%)</SelectItem>
+                                    
+                                    {/* Textiles & Clothing - 5% & 12% GST */}
+                                    <SelectItem value="62019000">62019000 - Men's Garments (12%)</SelectItem>
+                                    <SelectItem value="62029000">62029000 - Women's Garments (12%)</SelectItem>
+                                    <SelectItem value="63010000">63010000 - Bed Sheets (5%)</SelectItem>
                                     <SelectItem value="64029100">64029100 - Footwear (18%)</SelectItem>
-                                    <SelectItem value="62019000">62019000 - Garments (12%)</SelectItem>
-                                    <SelectItem value="85171200">85171200 - Mobile Phone (12%)</SelectItem>
-                                    <SelectItem value="84713000">84713000 - Laptop (18%)</SelectItem>
+                                    
+                                    {/* Electronics - 12% & 18% GST */}
+                                    <SelectItem value="85171200">85171200 - Mobile Phones (12%)</SelectItem>
+                                    <SelectItem value="84713000">84713000 - Laptops (18%)</SelectItem>
+                                    <SelectItem value="85285200">85285200 - LED TV (18%)</SelectItem>
+                                    <SelectItem value="85287100">85287100 - Set Top Box (18%)</SelectItem>
+                                    <SelectItem value="85044090">85044090 - Mobile Charger (18%)</SelectItem>
+                                    
+                                    {/* Personal Care - 18% GST */}
                                     <SelectItem value="33061000">33061000 - Toothpaste (18%)</SelectItem>
                                     <SelectItem value="34012000">34012000 - Soap (18%)</SelectItem>
+                                    <SelectItem value="33051000">33051000 - Shampoo (18%)</SelectItem>
+                                    <SelectItem value="96031000">96031000 - Toothbrush (18%)</SelectItem>
+                                    
+                                    {/* Beverages & Luxury - 28% GST */}
                                     <SelectItem value="22021000">22021000 - Soft Drinks (28%)</SelectItem>
                                     <SelectItem value="24021000">24021000 - Cigarettes (28%)</SelectItem>
-                                    <SelectItem value="87032390">87032390 - Car (28%)</SelectItem>
-                                    <SelectItem value="01010100">01010100 - Live Animals (0%)</SelectItem>
-                                    <SelectItem value="07010000">07010000 - Vegetables (0%)</SelectItem>
+                                    <SelectItem value="22030000">22030000 - Beer (28%)</SelectItem>
+                                    <SelectItem value="22084000">22084000 - Wine (28%)</SelectItem>
+                                    
+                                    {/* Automobiles - 28% GST */}
+                                    <SelectItem value="87032390">87032390 - Passenger Cars (28%)</SelectItem>
+                                    <SelectItem value="87111000">87111000 - Motorcycles (28%)</SelectItem>
+                                    <SelectItem value="87120000">87120000 - Bicycles (12%)</SelectItem>
+                                    
+                                    {/* Medicines & Healthcare - 5% & 12% GST */}
+                                    <SelectItem value="30049099">30049099 - Medicines (5%)</SelectItem>
+                                    <SelectItem value="90183900">90183900 - Medical Equipment (12%)</SelectItem>
+                                    <SelectItem value="30059090">30059090 - Health Supplements (18%)</SelectItem>
+                                    
+                                    {/* Books & Stationery - 5% & 12% GST */}
+                                    <SelectItem value="49019900">49019900 - Books (5%)</SelectItem>
+                                    <SelectItem value="48201000">48201000 - Notebooks (12%)</SelectItem>
+                                    <SelectItem value="96085000">96085000 - Pens (18%)</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </FormControl>
