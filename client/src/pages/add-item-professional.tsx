@@ -629,6 +629,19 @@ export default function AddItemProfessional() {
                                       
                                       if (suggestedGst && hsnValue.length >= 4) {
                                         form.setValue("gstCode", suggestedGst);
+                                        
+                                        // Auto-calculate GST breakdown for intra-state transactions
+                                        const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
+                                        if (gstRate > 0) {
+                                          const cgstSgstRate = (gstRate / 2).toString();
+                                          form.setValue("cgstRate", cgstSgstRate);
+                                          form.setValue("sgstRate", cgstSgstRate);
+                                          form.setValue("igstRate", "0");
+                                        } else {
+                                          form.setValue("cgstRate", "0");
+                                          form.setValue("sgstRate", "0");
+                                          form.setValue("igstRate", "0");
+                                        }
                                       }
                                     }}
                                   />
@@ -699,11 +712,18 @@ export default function AddItemProfessional() {
                           name="gstCode"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>GST Code *</FormLabel>
+                              <FormLabel className="flex items-center gap-2">
+                                GST Code *
+                                {field.value && (
+                                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                    Auto-updated from HSN
+                                  </span>
+                                )}
+                              </FormLabel>
                               <FormControl>
                                 <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue />
+                                  <SelectTrigger className={field.value ? "border-green-500" : ""}>
+                                    <SelectValue placeholder="Will auto-update when HSN is entered" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="GST 0%">GST 0% - Nil Rate (Basic necessities)</SelectItem>
