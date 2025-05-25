@@ -473,11 +473,11 @@ export default function RepackingProfessional() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Weight</label>
                         <div className="text-lg font-mono bg-gray-50 p-2 rounded border text-center">
-                          {totalWeight}g
+                          {unitWeight}g
                         </div>
                       </div>
                       <div>
@@ -486,8 +486,8 @@ export default function RepackingProfessional() {
                           <div className="text-lg font-mono bg-gray-50 p-2 rounded border flex-1 text-center">
                             {formatCurrency(parseFloat(selectedProduct.cost))}
                           </div>
-                          <Badge variant="outline" className="text-xs">Latest sel</Badge>
-                          <div className="text-sm bg-yellow-100 px-2 py-1 rounded">
+                          <Badge variant="outline" className="text-xs bg-gray-100">Latest sel</Badge>
+                          <div className="text-sm bg-yellow-200 px-2 py-1 rounded font-medium">
                             {formatCurrency(parseFloat(selectedProduct.cost))}
                           </div>
                         </div>
@@ -497,19 +497,19 @@ export default function RepackingProfessional() {
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Current Stock</label>
-                        <div className="text-lg font-mono bg-blue-100 p-2 rounded border text-center">
+                        <div className="text-lg font-mono bg-blue-100 p-3 rounded border text-center">
                           {currentStock.toFixed(2)}
                         </div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Packed</label>
-                        <div className="text-lg font-mono bg-orange-100 p-2 rounded border text-center">
-                          {packedWeight.toFixed(2)}
+                        <div className="text-lg font-mono bg-orange-100 p-3 rounded border text-center">
+                          {repackQuantity.toFixed(2)}
                         </div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Avail for pack</label>
-                        <div className="text-lg font-mono bg-green-100 p-2 rounded border text-center">
+                        <div className="text-lg font-mono bg-green-100 p-3 rounded border text-center">
                           {availableForPack.toFixed(2)}
                         </div>
                       </div>
