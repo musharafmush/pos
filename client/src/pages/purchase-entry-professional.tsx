@@ -26,9 +26,14 @@ const purchaseItemSchema = z.object({
   receivedQty: z.number().min(0, "Received quantity cannot be negative").optional(),
   freeQty: z.number().min(0, "Free quantity cannot be negative").optional(),
   unitCost: z.number().min(0, "Unit cost must be at least 0"),
+  sellingPrice: z.number().min(0, "Selling price must be at least 0").optional(),
+  mrp: z.number().min(0, "MRP must be at least 0").optional(),
   hsnCode: z.string().optional(),
   taxPercentage: z.number().min(0).max(100, "Tax percentage must be between 0 and 100").optional(),
   discountAmount: z.number().min(0, "Discount amount cannot be negative").optional(),
+  discountPercent: z.number().min(0).max(100, "Discount percentage must be between 0 and 100").optional(),
+  expiryDate: z.string().optional(),
+  batchNumber: z.string().optional(),
 });
 
 const purchaseSchema = z.object({
@@ -39,7 +44,15 @@ const purchaseSchema = z.object({
   paymentTerms: z.string().optional(),
   paymentMethod: z.string().optional(),
   status: z.string().optional(),
+  priority: z.string().optional(),
+  shippingAddress: z.string().optional(),
+  billingAddress: z.string().optional(),
+  shippingMethod: z.string().optional(),
+  freightAmount: z.number().min(0, "Freight amount cannot be negative").optional(),
+  taxAmount: z.number().min(0, "Tax amount cannot be negative").optional(),
+  discountAmount: z.number().min(0, "Discount amount cannot be negative").optional(),
   remarks: z.string().optional(),
+  internalNotes: z.string().optional(),
   items: z.array(purchaseItemSchema).min(1, "At least one item is required"),
 });
 
@@ -348,13 +361,108 @@ export default function PurchaseEntryProfessional() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="remarks">Remarks</Label>
-                    <Textarea
-                      {...form.register("remarks")}
-                      placeholder="Additional notes or instructions..."
-                      rows={3}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Order Status</Label>
+                      <Select onValueChange={(value) => form.setValue("status", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="pending_approval">Pending Approval</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="ordered">Ordered</SelectItem>
+                          <SelectItem value="partially_received">Partially Received</SelectItem>
+                          <SelectItem value="received">Fully Received</SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="priority">Priority Level</Label>
+                      <Select onValueChange={(value) => form.setValue("priority", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="urgent">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="shippingMethod">Shipping Method</Label>
+                      <Select onValueChange={(value) => form.setValue("shippingMethod", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select shipping method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="standard">Standard Delivery</SelectItem>
+                          <SelectItem value="express">Express Delivery</SelectItem>
+                          <SelectItem value="overnight">Overnight</SelectItem>
+                          <SelectItem value="pickup">Supplier Pickup</SelectItem>
+                          <SelectItem value="freight">Freight</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="freightAmount">Freight Amount (₹)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...form.register("freightAmount", { valueAsNumber: true })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="shippingAddress">Shipping Address</Label>
+                      <Textarea
+                        {...form.register("shippingAddress")}
+                        placeholder="Enter shipping address..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="billingAddress">Billing Address</Label>
+                      <Textarea
+                        {...form.register("billingAddress")}
+                        placeholder="Enter billing address..."
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="remarks">Public Remarks</Label>
+                      <Textarea
+                        {...form.register("remarks")}
+                        placeholder="Remarks visible to supplier..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="internalNotes">Internal Notes</Label>
+                      <Textarea
+                        {...form.register("internalNotes")}
+                        placeholder="Internal notes (not visible to supplier)..."
+                        rows={3}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -380,14 +488,17 @@ export default function PurchaseEntryProfessional() {
                           <TableHead className="w-8">Sno</TableHead>
                           <TableHead className="w-20">Code</TableHead>
                           <TableHead className="min-w-48">Product Name</TableHead>
-                          <TableHead className="w-32">Description</TableHead>
-                          <TableHead className="w-24 text-center">Received Qty</TableHead>
+                          <TableHead className="w-24 text-center">Qty</TableHead>
+                          <TableHead className="w-24 text-center">Rec Qty</TableHead>
                           <TableHead className="w-24 text-center">Free Qty</TableHead>
-                          <TableHead className="w-24 text-right">Cost</TableHead>
-                          <TableHead className="w-20">HSN Code</TableHead>
+                          <TableHead className="w-24 text-right">Cost (₹)</TableHead>
+                          <TableHead className="w-24 text-right">MRP (₹)</TableHead>
+                          <TableHead className="w-20">HSN</TableHead>
                           <TableHead className="w-20 text-center">Tax %</TableHead>
-                          <TableHead className="w-24 text-right">Disc Amt</TableHead>
-                          <TableHead className="w-20">Exp</TableHead>
+                          <TableHead className="w-24 text-right">Disc %</TableHead>
+                          <TableHead className="w-20">Batch</TableHead>
+                          <TableHead className="w-24">Expiry</TableHead>
+                          <TableHead className="w-24 text-right">Amount (₹)</TableHead>
                           <TableHead className="w-8"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -434,9 +545,13 @@ export default function PurchaseEntryProfessional() {
                               </TableCell>
                               
                               <TableCell>
-                                <span className="text-sm text-gray-600">
-                                  {selectedProduct?.description || "Description"}
-                                </span>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  {...form.register(`items.${index}.quantity`, { valueAsNumber: true })}
+                                  className="w-20 text-center"
+                                  placeholder="1"
+                                />
                               </TableCell>
                               
                               <TableCell>
@@ -469,12 +584,25 @@ export default function PurchaseEntryProfessional() {
                                   placeholder="0"
                                 />
                               </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.mrp`, { valueAsNumber: true })}
+                                  className="w-24 text-right"
+                                  placeholder="0"
+                                />
+                              </TableCell>
                               
                               <TableCell>
                                 <Input
                                   {...form.register(`items.${index}.hsnCode`)}
                                   className="w-20"
-                                  placeholder="0"
+                                  placeholder="HSN"
+                                  value={selectedProduct?.hsnCode || form.watch(`items.${index}.hsnCode`) || ""}
+                                  onChange={(e) => form.setValue(`items.${index}.hsnCode`, e.target.value)}
                                 />
                               </TableCell>
                               
@@ -494,15 +622,49 @@ export default function PurchaseEntryProfessional() {
                                 <Input
                                   type="number"
                                   min="0"
+                                  max="100"
                                   step="0.01"
-                                  {...form.register(`items.${index}.discountAmount`, { valueAsNumber: true })}
+                                  {...form.register(`items.${index}.discountPercent`, { valueAsNumber: true })}
                                   className="w-24 text-right"
                                   placeholder="0"
                                 />
                               </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  {...form.register(`items.${index}.batchNumber`)}
+                                  className="w-20"
+                                  placeholder="Batch"
+                                />
+                              </TableCell>
                               
                               <TableCell>
-                                <span className="text-xs text-gray-500">dd-mm</span>
+                                <Input
+                                  type="date"
+                                  {...form.register(`items.${index}.expiryDate`)}
+                                  className="w-24"
+                                />
+                              </TableCell>
+
+                              <TableCell className="text-right">
+                                {(() => {
+                                  const qty = form.watch(`items.${index}.quantity`) || 0;
+                                  const cost = form.watch(`items.${index}.unitCost`) || 0;
+                                  const discountPercent = form.watch(`items.${index}.discountPercent`) || 0;
+                                  const taxPercent = form.watch(`items.${index}.taxPercentage`) || 0;
+                                  
+                                  const subtotal = qty * cost;
+                                  const discountAmount = (subtotal * discountPercent) / 100;
+                                  const taxableAmount = subtotal - discountAmount;
+                                  const taxAmount = (taxableAmount * taxPercent) / 100;
+                                  const total = taxableAmount + taxAmount;
+                                  
+                                  return (
+                                    <span className="font-medium text-sm">
+                                      ₹{total.toFixed(0)}
+                                    </span>
+                                  );
+                                })()}
                               </TableCell>
                               
                               <TableCell>
@@ -561,19 +723,68 @@ export default function PurchaseEntryProfessional() {
                     <div className="space-y-3">
                       <h3 className="font-semibold">Financial Summary</h3>
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Total Items:</span>
-                          <span className="font-medium">{fields.length}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Subtotal:</span>
-                          <span className="font-medium">{formatCurrency(calculateTotal())}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between text-lg font-semibold">
-                          <span>Total Amount:</span>
-                          <span className="text-blue-600">{formatCurrency(calculateTotal())}</span>
-                        </div>
+                        {(() => {
+                          const items = form.watch("items") || [];
+                          let subtotal = 0;
+                          let totalTax = 0;
+                          let totalDiscount = 0;
+                          let totalQuantity = 0;
+
+                          items.forEach((item: any) => {
+                            const qty = item.quantity || 0;
+                            const cost = item.unitCost || 0;
+                            const discountPercent = item.discountPercent || 0;
+                            const taxPercent = item.taxPercentage || 0;
+                            
+                            totalQuantity += qty;
+                            const itemSubtotal = qty * cost;
+                            subtotal += itemSubtotal;
+                            
+                            const itemDiscount = (itemSubtotal * discountPercent) / 100;
+                            totalDiscount += itemDiscount;
+                            
+                            const taxableAmount = itemSubtotal - itemDiscount;
+                            const itemTax = (taxableAmount * taxPercent) / 100;
+                            totalTax += itemTax;
+                          });
+
+                          const freightAmount = form.watch("freightAmount") || 0;
+                          const grandTotal = subtotal - totalDiscount + totalTax + freightAmount;
+
+                          return (
+                            <>
+                              <div className="flex justify-between">
+                                <span>Total Items:</span>
+                                <span className="font-medium">{fields.length}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Total Quantity:</span>
+                                <span className="font-medium">{totalQuantity}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Subtotal:</span>
+                                <span className="font-medium">₹{subtotal.toFixed(0)}</span>
+                              </div>
+                              <div className="flex justify-between text-red-600">
+                                <span>Total Discount:</span>
+                                <span className="font-medium">-₹{totalDiscount.toFixed(0)}</span>
+                              </div>
+                              <div className="flex justify-between text-green-600">
+                                <span>Total Tax (GST):</span>
+                                <span className="font-medium">+₹{totalTax.toFixed(0)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Freight Charges:</span>
+                                <span className="font-medium">+₹{freightAmount.toFixed(0)}</span>
+                              </div>
+                              <Separator />
+                              <div className="flex justify-between text-lg font-semibold">
+                                <span>Grand Total:</span>
+                                <span className="text-blue-600">₹{grandTotal.toFixed(0)}</span>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
