@@ -110,6 +110,13 @@ export default function AddItemProfessional() {
   const [, setLocation] = useLocation();
   const [currentSection, setCurrentSection] = useState("item-information");
 
+  // Generate default item code
+  const generateItemCode = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `ITM${timestamp}${randomNum}`;
+  };
+
   // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/categories"],
@@ -118,7 +125,7 @@ export default function AddItemProfessional() {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
-      itemCode: "",
+      itemCode: generateItemCode(),
       itemName: "",
       manufacturerName: "",
       supplierName: "",
@@ -290,7 +297,18 @@ export default function AddItemProfessional() {
                             <FormItem>
                               <FormLabel>Item Code *</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="23222" />
+                                <div className="flex gap-2">
+                                  <Input {...field} placeholder="Auto-generated code" />
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => field.onChange(generateItemCode())}
+                                    className="whitespace-nowrap"
+                                  >
+                                    Generate New
+                                  </Button>
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
