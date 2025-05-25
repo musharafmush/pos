@@ -629,7 +629,11 @@ export default function PurchaseDashboard() {
                   <div>
                     <label className="text-sm font-medium">Total Amount</label>
                     <p className="text-lg font-bold">
-                      {formatCurrency(selectedPurchase.totalAmount || "0.00")}
+                      {formatCurrency(
+                        selectedPurchase.items?.reduce((sum, item) => sum + (item.subtotal || 0), 0) || 
+                        selectedPurchase.totalAmount || 
+                        "0.00"
+                      )}
                     </p>
                   </div>
                   <div>
@@ -639,6 +643,37 @@ export default function PurchaseDashboard() {
                     </p>
                   </div>
                 </div>
+                
+                {/* Items List */}
+                {selectedPurchase?.items && selectedPurchase.items.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium mb-3">Purchase Items</h4>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Product</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Unit Cost</TableHead>
+                            <TableHead>Subtotal</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedPurchase.items.map((item, index) => (
+                            <TableRow key={index}>
+                              <TableCell>
+                                {item.product?.name || 'Unknown Product'}
+                              </TableCell>
+                              <TableCell>{item.quantity}</TableCell>
+                              <TableCell>{formatCurrency(item.unitCost || "0.00")}</TableCell>
+                              <TableCell>{formatCurrency(item.subtotal || "0.00")}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <DialogFooter>
