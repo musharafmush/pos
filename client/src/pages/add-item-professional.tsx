@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Category } from "@shared/schema";
+import type { Category, Supplier } from "@shared/schema";
 
 const productFormSchema = z.object({
   // Item Information
@@ -121,6 +121,16 @@ export default function AddItemProfessional() {
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/categories"],
   });
+
+  // Fetch suppliers
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["/api/suppliers"],
+    queryFn: async () => {
+      const response = await fetch("/api/suppliers");
+      if (!response.ok) throw new Error("Failed to fetch suppliers");
+      return response.json();
+    },
+  }) as { data: Supplier[] };
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -344,8 +354,11 @@ export default function AddItemProfessional() {
                                     <SelectValue placeholder="Select manufacturer" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="manufacturer1">Manufacturer 1</SelectItem>
-                                    <SelectItem value="manufacturer2">Manufacturer 2</SelectItem>
+                                    {suppliers.map((supplier: Supplier) => (
+                                      <SelectItem key={supplier.id} value={supplier.name}>
+                                        {supplier.name}
+                                      </SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -365,8 +378,11 @@ export default function AddItemProfessional() {
                                     <SelectValue placeholder="Select supplier" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="supplier1">Supplier 1</SelectItem>
-                                    <SelectItem value="supplier2">Supplier 2</SelectItem>
+                                    {suppliers.map((supplier: Supplier) => (
+                                      <SelectItem key={supplier.id} value={supplier.name}>
+                                        {supplier.name}
+                                      </SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                               </FormControl>
