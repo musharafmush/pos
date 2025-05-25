@@ -211,10 +211,9 @@ export default function RepackingProfessional() {
     ));
   };
 
-  const totalWeight = unitWeight * repackQuantity;
   const currentStock = selectedProduct?.stockQuantity || 0;
-  const packedWeight = totalWeight / 1000; // Convert to kg
-  const availableForPack = Math.max(0, currentStock - packedWeight);
+  const packedQuantity = repackQuantity;
+  const availableForPack = Math.max(0, currentStock - packedQuantity);
 
   return (
     <DashboardLayout>
@@ -504,7 +503,7 @@ export default function RepackingProfessional() {
                       <div>
                         <label className="text-sm font-medium text-gray-600">Packed</label>
                         <div className="text-lg font-mono bg-orange-100 p-3 rounded border text-center">
-                          {repackQuantity.toFixed(2)}
+                          {packedQuantity.toFixed(2)}
                         </div>
                       </div>
                       <div>
