@@ -839,7 +839,12 @@ export const storage = {
         orderBy: (purchases, { desc }) => [desc(purchases.createdAt)],
         with: {
           supplier: true,
-          user: true
+          user: true,
+          items: {
+            with: {
+              product: true
+            }
+          }
         }
       };
       
