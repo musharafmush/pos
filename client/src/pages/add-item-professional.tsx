@@ -1281,7 +1281,7 @@ export default function AddItemProfessional() {
                             <FormItem>
                               <FormLabel>Weights Per Unit</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="1" />
+                                <Input {...field} placeholder="1" type="number" step="0.001" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1296,7 +1296,7 @@ export default function AddItemProfessional() {
                               <FormControl>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                   <SelectTrigger>
-                                    <SelectValue />
+                                    <SelectValue placeholder="Expiry Only" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="Not Required">Not Required</SelectItem>
@@ -1315,28 +1315,58 @@ export default function AddItemProfessional() {
                       <div className="bg-orange-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Packaging Information</h3>
                         <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <label className="text-sm font-medium">Package Type</label>
-                            <Select>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="box">Box</SelectItem>
-                                <SelectItem value="bottle">Bottle</SelectItem>
-                                <SelectItem value="packet">Packet</SelectItem>
-                                <SelectItem value="bag">Bag</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Units per Package</label>
-                            <Input placeholder="1" />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Package Weight</label>
-                            <Input placeholder="0.000 kg" />
-                          </div>
+                          <FormField
+                            control={form.control}
+                            name="packageType"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium">Package Type</FormLabel>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="box">Box</SelectItem>
+                                      <SelectItem value="bottle">Bottle</SelectItem>
+                                      <SelectItem value="packet">Packet</SelectItem>
+                                      <SelectItem value="bag">Bag</SelectItem>
+                                      <SelectItem value="jar">Jar</SelectItem>
+                                      <SelectItem value="can">Can</SelectItem>
+                                      <SelectItem value="pouch">Pouch</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="unitsPerPackage"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium">Units per Package</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="1" type="number" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="packageWeight"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium">Package Weight</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0.000 kg" type="number" step="0.001" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
                       </div>
                     </CardContent>
