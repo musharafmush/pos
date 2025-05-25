@@ -786,19 +786,55 @@ export const storage = {
 
   async getPurchaseById(id: number): Promise<Purchase | null> {
     try {
-      const purchase = await db.query.purchases.findFirst({
-        where: eq(purchases.id, id),
-        with: {
-          supplier: true,
-          user: true,
-          items: {
-            with: {
-              product: true
-            }
+      // Use raw SQL query to avoid schema mismatch issues
+      const purchaseQuery = `
+        SELECT p.*, 
+               s.name as supplier_name, s.email as supplier_email,
+               u.name as user_name
+        FROM purchases p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?
+      `;
+      
+      const itemsQuery = `
+        SELECT pi.*, pr.name as product_name, pr.sku, pr.description
+        FROM purchase_items pi
+        LEFT JOIN products pr ON pi.product_id = pr.id
+        WHERE pi.purchase_id = ?
+      `;
+      
+      const sqlite = (db as any)._.session.db;
+      const purchase = sqlite.prepare(purchaseQuery).get(id);
+      
+      if (!purchase) {
+        return null;
+      }
+      
+      const items = sqlite.prepare(itemsQuery).all(id);
+      
+      // Transform to match expected format
+      return {
+        ...purchase,
+        supplier: {
+          id: purchase.supplier_id,
+          name: purchase.supplier_name,
+          email: purchase.supplier_email
+        },
+        user: {
+          id: purchase.user_id,
+          name: purchase.user_name
+        },
+        items: items.map((item: any) => ({
+          ...item,
+          product: {
+            id: item.product_id,
+            name: item.product_name,
+            sku: item.sku,
+            description: item.description
           }
-        }
-      });
-      return purchase || null;
+        }))
+      };
     } catch (error) {
       console.error("Error in getPurchaseById:", error);
       return null;
