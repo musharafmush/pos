@@ -1,4 +1,4 @@
-import { db } from "@db";
+import { db } from "../db/sqlite-index";
 import {
   users,
   products,
