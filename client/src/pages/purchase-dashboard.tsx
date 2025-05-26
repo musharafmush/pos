@@ -775,7 +775,7 @@ export default function PurchaseDashboard() {
                         Business Information
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-4">
+<CardContent className="pt-4">
                       <div className="space-y-4">
                         <div>
                           <label className="text-sm font-medium text-gray-600">Business</label>
@@ -842,7 +842,7 @@ export default function PurchaseDashboard() {
                   </CardContent>
                 </Card>
 
-                
+
                 {/* Purchase Items Table */}
                 <div className="bg-white border border-gray-200 rounded-lg">
                   <div className="px-6 py-4 border-b border-gray-200 bg-green-50">
