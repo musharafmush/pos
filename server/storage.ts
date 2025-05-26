@@ -814,7 +814,7 @@ export const storage = {
         WHERE pi.purchase_id = ?
       `;
 
-      const sqlite = (db as any)._.session.db;
+      const { sqlite } = await import('@db');
       const purchase = sqlite.prepare(purchaseQuery).get(id);
 
       if (!purchase) {

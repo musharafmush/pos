@@ -581,13 +581,34 @@ export default function PurchaseEntryProfessional() {
       }
 
       // Filter and validate items
-      const validItems = data.items.filter(item => item.productId && item.productId > 0);
+      const validItems = data.items.filter(item => {
+        const hasProduct = item.productId && item.productId > 0;
+        const hasQuantity = (Number(item.receivedQty) || Number(item.quantity) || 0) > 0;
+        const hasCost = (Number(item.unitCost) || 0) >= 0;
+        return hasProduct && hasQuantity && hasCost;
+      });
 
       if (validItems.length === 0) {
         toast({
           variant: "destructive",
           title: "Validation Error",
-          description: "Please add at least one product to the purchase order.",
+          description: "Please add at least one product with valid quantity and cost to the purchase order.",
+        });
+        return;
+      }
+
+      // Validate that all items have proper quantity and cost
+      const itemsWithIssues = validItems.filter(item => {
+        const quantity = Number(item.receivedQty) || Number(item.quantity) || 0;
+        const cost = Number(item.unitCost) || 0;
+        return quantity <= 0 || cost < 0;
+      });
+
+      if (itemsWithIssues.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: "All items must have a quantity greater than 0 and cost greater than or equal to 0.",
         });
         return;
       }
@@ -628,6 +649,8 @@ export default function PurchaseEntryProfessional() {
         // Items array in expected format
         items: validItems.map(item => ({
           productId: Number(item.productId),
+          quantity: Number(item.receivedQty) || Number(item.quantity) || 1,
+          unitCost: Number(item.unitCost) || 0,
           receivedQty: String(Number(item.receivedQty) || Number(item.quantity) || 1),
           freeQty: String(Number(item.freeQty) || 0),
           cost: String(Number(item.unitCost) || 0),
