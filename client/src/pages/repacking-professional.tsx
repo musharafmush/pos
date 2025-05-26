@@ -334,6 +334,11 @@ export default function RepackingProfessional() {
                             <SelectContent className="max-h-60 overflow-y-auto">
                               {bulkProducts
                                 .filter((product: Product) => {
+                                  // If no search term, show all products
+                                  if (!searchTerm.trim()) {
+                                    return true;
+                                  }
+                                  
                                   const search = searchTerm.toLowerCase();
                                   return (
                                     product.name.toLowerCase().includes(search) ||
@@ -354,13 +359,18 @@ export default function RepackingProfessional() {
                                 </SelectItem>
                               ))}
                               {bulkProducts.filter((product: Product) => {
+                                // If no search term, show all products
+                                if (!searchTerm.trim()) {
+                                  return true;
+                                }
+                                
                                 const search = searchTerm.toLowerCase();
                                 return (
                                   product.name.toLowerCase().includes(search) ||
                                   product.sku.toLowerCase().includes(search) ||
                                   (product.description && product.description.toLowerCase().includes(search))
                                 );
-                              }).length === 0 && searchTerm && (
+                              }).length === 0 && searchTerm.trim() && (
                                 <div className="p-2 text-center text-gray-500">
                                   No products found matching "{searchTerm}"
                                 </div>
