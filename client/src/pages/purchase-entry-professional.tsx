@@ -1115,13 +1115,20 @@ export default function PurchaseEntryProfessional() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Product</TableHead>
-                                <TableHead>Received Qty</TableHead>
-                                <TableHead>Cost</TableHead>
-                                <TableHead>Tax %</TableHead>
-                                <TableHead>Discount</TableHead>
-                                <TableHead>Net Amount</TableHead>
-                                <TableHead>Actions</TableHead>
+                                <TableHead className="w-[200px]">Product</TableHead>
+                                <TableHead className="w-[100px]">Code</TableHead>
+                                <TableHead className="w-[150px]">Description</TableHead>
+                                <TableHead className="w-[100px]">Qty</TableHead>
+                                <TableHead className="w-[100px]">Recv Qty</TableHead>
+                                <TableHead className="w-[100px]">Free Qty</TableHead>
+                                <TableHead className="w-[100px]">Unit Cost</TableHead>
+                                <TableHead className="w-[80px]">Tax %</TableHead>
+                                <TableHead className="w-[100px]">Discount</TableHead>
+                                <TableHead className="w-[100px]">HSN Code</TableHead>
+                                <TableHead className="w-[100px]">Batch No</TableHead>
+                                <TableHead className="w-[100px]">Expiry Date</TableHead>
+                                <TableHead className="w-[120px]">Net Amount</TableHead>
+                                <TableHead className="w-[80px]">Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1129,7 +1136,7 @@ export default function PurchaseEntryProfessional() {
                                 <TableRow key={field.id}>
                                   <TableCell>
                                     <Select onValueChange={(value) => handleProductSelection(index, parseInt(value))}>
-                                      <SelectTrigger>
+                                      <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select Product" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1144,8 +1151,36 @@ export default function PurchaseEntryProfessional() {
 
                                   <TableCell>
                                     <Input
+                                      className="w-full"
+                                      {...form.register(`items.${index}.code`)}
+                                      placeholder="Code"
+                                      readOnly
+                                    />
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <Input
+                                      className="w-full"
+                                      {...form.register(`items.${index}.description`)}
+                                      placeholder="Description"
+                                    />
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <Input
                                       type="number"
                                       min="0"
+                                      className="w-full"
+                                      {...form.register(`items.${index}.quantity`, { valueAsNumber: true })}
+                                      placeholder="1"
+                                    />
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      className="w-full"
                                       {...form.register(`items.${index}.receivedQty`, { valueAsNumber: true })}
                                       placeholder="0"
                                     />
@@ -1155,7 +1190,18 @@ export default function PurchaseEntryProfessional() {
                                     <Input
                                       type="number"
                                       min="0"
+                                      className="w-full"
+                                      {...form.register(`items.${index}.freeQty`, { valueAsNumber: true })}
+                                      placeholder="0"
+                                    />
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <Input
+                                      type="number"
+                                      min="0"
                                       step="0.01"
+                                      className="w-full"
                                       {...form.register(`items.${index}.unitCost`, { valueAsNumber: true })}
                                       placeholder="0"
                                     />
@@ -1167,8 +1213,9 @@ export default function PurchaseEntryProfessional() {
                                       min="0"
                                       max="100"
                                       step="0.01"
+                                      className="w-full"
                                       {...form.register(`items.${index}.taxPercentage`, { valueAsNumber: true })}
-                                      placeholder="0"
+                                      placeholder="18"
                                     />
                                   </TableCell>
 
@@ -1177,13 +1224,38 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
+                                      className="w-full"
                                       {...form.register(`items.${index}.discountAmount`, { valueAsNumber: true })}
                                       placeholder="0"
                                     />
                                   </TableCell>
 
                                   <TableCell>
-                                    <div className="text-sm font-medium">
+                                    <Input
+                                      className="w-full"
+                                      {...form.register(`items.${index}.hsnCode`)}
+                                      placeholder="HSN"
+                                    />
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <Input
+                                      className="w-full"
+                                      {...form.register(`items.${index}.batchNumber`)}
+                                      placeholder="Batch"
+                                    />
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <Input
+                                      type="date"
+                                      className="w-full"
+                                      {...form.register(`items.${index}.expiryDate`)}
+                                    />
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <div className="text-sm font-medium bg-gray-50 p-2 rounded">
                                       {formatCurrency(form.watch(`items.${index}.netAmount`) || 0)}
                                     </div>
                                   </TableCell>
@@ -1195,6 +1267,7 @@ export default function PurchaseEntryProfessional() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => removeItem(index)}
+                                        className="text-red-600 hover:text-red-800"
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
