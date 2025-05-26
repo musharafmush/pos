@@ -1527,6 +1527,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/purchases/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { 
+        poNo, poDate, dueDate, paymentType, supplierId, 
+        invoiceNo, invoiceDate, remarks, items, 
+        grossAmount, itemDiscountAmount, taxAmount 
+      } = req.body;
+      
+      // Update the purchase object
+      const purchaseUpdate = {
+        orderNumber: poNo,
+        orderDate: new Date(poDate),
+        dueDate: new Date(dueDate),
+        supplierId: parseInt(supplierId),
+        total: grossAmount ? grossAmount.toString() : '0',
+        notes: remarks
+      };
+      
+      const updatedPurchase = await storage.updatePurchase(id, purchaseUpdate, items);
+      
+      if (!updatedPurchase) {
+        return res.status(404).json({ message: 'Purchase not found' });
+      }
+      
+      res.json(updatedPurchase);
+    } catch (error) {
+      console.error('Error updating purchase:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.delete('/api/purchases/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

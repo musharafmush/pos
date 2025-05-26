@@ -841,6 +841,91 @@ export const storage = {
     }
   },
 
+  async updatePurchase(
+    id: number, 
+    purchaseData: Partial<Purchase>,
+    items?: { productId: number; quantity: number; unitCost: number }[]
+  ): Promise<Purchase | null> {
+    try {
+      // Import SQLite database directly
+      const { sqlite } = await import('@db');
+      
+      // Update the main purchase record
+      const updateFields = [];
+      const updateValues = [];
+      
+      if (purchaseData.orderNumber) {
+        updateFields.push('order_number = ?', 'purchase_number = ?');
+        updateValues.push(purchaseData.orderNumber, purchaseData.orderNumber);
+      }
+      
+      if (purchaseData.orderDate) {
+        updateFields.push('order_date = ?');
+        updateValues.push(purchaseData.orderDate.toISOString());
+      }
+      
+      if (purchaseData.supplierId) {
+        updateFields.push('supplier_id = ?');
+        updateValues.push(purchaseData.supplierId);
+      }
+      
+      if (purchaseData.total) {
+        updateFields.push('total = ?', 'sub_total = ?');
+        updateValues.push(purchaseData.total, purchaseData.total);
+      }
+      
+      if (purchaseData.notes) {
+        updateFields.push('notes = ?');
+        updateValues.push(purchaseData.notes);
+      }
+      
+      updateValues.push(id);
+      
+      if (updateFields.length > 0) {
+        const updatePurchaseStmt = sqlite.prepare(
+          `UPDATE purchases SET ${updateFields.join(', ')} WHERE id = ?`
+        );
+        updatePurchaseStmt.run(...updateValues);
+      }
+      
+      // Update purchase items if provided
+      if (items && items.length > 0) {
+        // Delete existing items
+        const deleteItemsStmt = sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?');
+        deleteItemsStmt.run(id);
+        
+        // Insert new items
+        const insertPurchaseItem = sqlite.prepare(`
+          INSERT INTO purchase_items (
+            purchase_id, product_id, quantity, cost, total, amount
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        
+        for (const item of items) {
+          const productId = typeof item.productId === 'number' ? item.productId : 0;
+          const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
+          const unitCost = typeof item.unitCost === 'number' ? item.unitCost : 0;
+          const subtotal = quantity * unitCost;
+          
+          insertPurchaseItem.run(
+            id,
+            productId,
+            quantity,
+            unitCost.toString(),
+            subtotal.toString(),
+            subtotal.toString()
+          );
+        }
+      }
+      
+      // Return the updated purchase
+      return await this.getPurchaseById(id);
+    } catch (error) {
+      console.error("Error in updatePurchase:", error);
+      return null;
+    }
+  },
+
   async deletePurchase(id: number): Promise<boolean> {
     try {
       // Import SQLite database directly like other methods
