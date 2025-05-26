@@ -865,7 +865,7 @@ export const storage = {
 
       console.log('Found purchase:', purchase);
 
-      // Get purchase items with safe column access
+      // Get purchase items with safe column access (handle missing columns)
       const itemsQuery = `
         SELECT 
           pi.id,
@@ -892,7 +892,7 @@ export const storage = {
           COALESCE(pi.cash_amount, '0') as cash_amount,
           COALESCE(pi.received_qty, pi.quantity) as received_qty,
           COALESCE(pi.free_qty, 0) as free_qty,
-          COALESCE(pi.created_at, CURRENT_TIMESTAMP) as created_at,
+          CURRENT_TIMESTAMP as created_at,
           p.name as product_name,
           p.sku as product_sku,
           p.description as product_description

@@ -109,6 +109,31 @@ async function fixPurchaseEditIssues() {
       console.error('❌ Test query still failing:', error.message);
     }
     
+    // Fix sales_items unit_price column issue
+    try {
+      console.log('Fixing sales_items unit_price column...');
+      
+      // Check if sale_items table exists and add unit_price if missing
+      const saleItemsInfo = db.prepare("PRAGMA table_info(sale_items)").all();
+      const saleItemsColumns = saleItemsInfo.map((col: any) => col.name);
+      
+      if (!saleItemsColumns.includes('unit_price')) {
+        db.exec('ALTER TABLE sale_items ADD COLUMN unit_price TEXT DEFAULT "0"');
+        console.log('✅ Added unit_price column to sale_items');
+      }
+      
+      // Update existing records
+      db.prepare(`
+        UPDATE sale_items 
+        SET unit_price = COALESCE(price, '0') 
+        WHERE unit_price IS NULL OR unit_price = ''
+      `).run();
+      
+      console.log('✅ Fixed sales_items unit_price column');
+    } catch (error) {
+      console.log('sales_items fix error:', error.message);
+    }
+    
     db.close();
     console.log('🎯 Database schema fixed successfully!');
     
