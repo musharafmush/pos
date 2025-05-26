@@ -504,13 +504,16 @@ export default function PurchaseEntryProfessional() {
   const savePurchaseMutation = useMutation({
     mutationFn: async (data: PurchaseFormData) => {
       let response;
-      if (isEditMode) {
-        response = await apiRequest("PUT", `/api/purchases/${editId}`, data);
-      } else {
-        response = await apiRequest("POST", "/api/purchases", data);
-      }
+      const url = isEditMode ? `/api/purchases/${editId}` : "/api/purchases";
+      const method = isEditMode ? "PUT" : "POST";
+      
+      console.log(`${method} ${url} with data:`, data);
+      
+      response = await apiRequest(method, url, data);
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
         throw new Error(isEditMode ? "Failed to update purchase order" : "Failed to create purchase order");
       }
       return response.json();
@@ -640,47 +643,50 @@ export default function PurchaseEntryProfessional() {
       const purchaseData = {
         // Core purchase details
         supplierId: Number(data.supplierId),
-        poNo: data.orderNumber,
-        poDate: data.orderDate,
+        orderNumber: data.orderNumber,
+        orderDate: data.orderDate,
+        expectedDate: data.expectedDate || data.orderDate,
         dueDate: data.expectedDate || data.orderDate,
-        paymentType: data.paymentMethod || "Credit",
-        status: data.status || "pending",
+        paymentMethod: data.paymentMethod || "Credit",
+        paymentTerms: data.paymentTerms || "Net 30",
+        status: data.status || "Pending",
 
         // Invoice details
-        invoiceNo: data.invoiceNumber || "",
+        invoiceNumber: data.invoiceNumber || "",
         invoiceDate: data.invoiceDate || "",
-        invoiceAmount: String(Number(data.invoiceAmount) || 0),
+        invoiceAmount: Number(data.invoiceAmount) || 0,
         remarks: data.remarks || "",
 
-        // Financial totals
-        grossAmount: String(totalValue),
-        itemDiscountAmount: String(Math.abs(summary.totalDiscount) || 0),
-        taxAmount: String(summary.totalTax || 0),
-        freightAmount: String(Number(data.freightAmount) || 0),
-        surchargeAmount: String(Number(data.surchargeAmount) || 0),
-        packingCharge: String(Number(data.packingCharges) || 0),
-        otherCharge: String(Number(data.otherCharges) || 0),
-        manualDiscountAmount: String(Number(data.additionalDiscount) || 0),
+        // Additional charges
+        freightAmount: Number(data.freightAmount) || 0,
+        surchargeAmount: Number(data.surchargeAmount) || 0,
+        packingCharges: Number(data.packingCharges) || 0,
+        otherCharges: Number(data.otherCharges) || 0,
+        additionalDiscount: Number(data.additionalDiscount) || 0,
 
         // Items array in expected format
         items: validItems.map(item => ({
           productId: Number(item.productId),
           quantity: Number(item.receivedQty) || Number(item.quantity) || 1,
+          receivedQty: Number(item.receivedQty) || Number(item.quantity) || 1,
+          freeQty: Number(item.freeQty) || 0,
           unitCost: Number(item.unitCost) || 0,
-          receivedQty: String(Number(item.receivedQty) || Number(item.quantity) || 1),
-          freeQty: String(Number(item.freeQty) || 0),
-          cost: String(Number(item.unitCost) || 0),
+          cost: Number(item.unitCost) || 0,
           hsnCode: item.hsnCode || "",
-          taxPercent: String(Number(item.taxPercentage) || 0),
-          discountAmount: String(Number(item.discountAmount) || 0),
+          taxPercentage: Number(item.taxPercentage) || 0,
+          discountAmount: Number(item.discountAmount) || 0,
+          discountPercent: Number(item.discountPercent) || 0,
           expiryDate: item.expiryDate || "",
           batchNumber: item.batchNumber || "",
-          sellingPrice: String(Number(item.sellingPrice) || 0),
-          mrp: String(Number(item.mrp) || 0),
-          amount: String((Number(item.receivedQty) || Number(item.quantity) || 1) * (Number(item.unitCost) || 0)),
-          netAmount: String(Number(item.netAmount) || 0),
+          sellingPrice: Number(item.sellingPrice) || 0,
+          mrp: Number(item.mrp) || 0,
+          netAmount: Number(item.netAmount) || 0,
           location: item.location || "",
           unit: item.unit || "PCS",
+          roiPercent: Number(item.roiPercent) || 0,
+          grossProfitPercent: Number(item.grossProfitPercent) || 0,
+          cashPercent: Number(item.cashPercent) || 0,
+          cashAmount: Number(item.cashAmount) || 0
         }))
       };
 

@@ -1019,7 +1019,7 @@ export const storage = {
   async updatePurchase(
     id: number, 
     purchaseData: Partial<Purchase>,
-    items?: { productId: number; quantity: number; unitCost: number; receivedQty?: number; cost?: number; amount?: string }[]
+    items?: any[]
   ): Promise<Purchase | null> {
     try {
       // Import SQLite database directly
@@ -1030,18 +1030,18 @@ export const storage = {
       const updateValues = [];
 
       if (purchaseData.orderNumber) {
-        updateFields.push('order_number = ?', 'purchase_number = ?');
-        updateValues.push(purchaseData.orderNumber, purchaseData.orderNumber);
+        updateFields.push('order_number = ?', 'purchase_number = ?', 'po_no = ?');
+        updateValues.push(purchaseData.orderNumber, purchaseData.orderNumber, purchaseData.orderNumber);
       }
 
       if (purchaseData.orderDate) {
-        updateFields.push('order_date = ?');
-        updateValues.push(purchaseData.orderDate.toISOString());
+        updateFields.push('order_date = ?', 'po_date = ?');
+        updateValues.push(purchaseData.orderDate.toISOString(), purchaseData.orderDate.toISOString());
       }
 
       if (purchaseData.dueDate) {
-        updateFields.push('expected_date = ?');
-        updateValues.push(purchaseData.dueDate.toISOString());
+        updateFields.push('due_date = ?', 'expected_date = ?');
+        updateValues.push(purchaseData.dueDate.toISOString(), purchaseData.dueDate.toISOString());
       }
 
       if (purchaseData.supplierId) {
@@ -1055,8 +1055,8 @@ export const storage = {
       }
 
       if (purchaseData.notes) {
-        updateFields.push('notes = ?');
-        updateValues.push(purchaseData.notes);
+        updateFields.push('notes = ?', 'remarks = ?');
+        updateValues.push(purchaseData.notes, purchaseData.notes);
       }
 
       // Add updated timestamp
@@ -1074,6 +1074,9 @@ export const storage = {
 
       // Update purchase items if provided
       if (items && items.length > 0) {
+        console.log('Updating purchase items for purchase ID:', id);
+        console.log('Items to update:', items);
+        
         // Delete existing items
         const deleteItemsStmt = sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?');
         deleteItemsStmt.run(id);
@@ -1090,10 +1093,12 @@ export const storage = {
         `);
 
         for (const item of items) {
-          const productId = typeof item.productId === 'number' ? item.productId : parseInt(item.productId as any) || 0;
+          const productId = Number(item.productId) || 0;
           const quantity = Number(item.receivedQty || item.quantity || 0);
           const unitCost = Number(item.cost || item.unitCost || 0);
           const subtotal = quantity * unitCost;
+          
+          console.log('Inserting item:', { productId, quantity, unitCost, subtotal });
 
           insertPurchaseItem.run(
             id,
@@ -1102,28 +1107,30 @@ export const storage = {
             unitCost.toString(),
             unitCost.toString(), // cost
             subtotal.toString(), // total
-            item.amount || subtotal.toString(), // amount
+            subtotal.toString(), // amount
             subtotal.toString(), // subtotal
             quantity, // received_qty
             Number(item.freeQty || 0), // free_qty
             item.expiryDate || '', // expiry_date
             item.hsnCode || '', // hsn_code
-            item.taxPercentage || '0', // tax_percentage
-            item.discountAmount || '0', // discount_amount
-            item.discountPercent || '0', // discount_percent
+            Number(item.taxPercentage || 0).toString(), // tax_percentage
+            Number(item.discountAmount || 0).toString(), // discount_amount
+            Number(item.discountPercent || 0).toString(), // discount_percent
             unitCost.toString(), // net_cost
-            item.sellingPrice || '0', // selling_price
-            item.mrp || '0', // mrp
+            Number(item.sellingPrice || 0).toString(), // selling_price
+            Number(item.mrp || 0).toString(), // mrp
             item.batchNumber || '', // batch_number
             item.location || '', // location
             item.unit || 'PCS', // unit
-            item.roiPercent || '0', // roi_percent
-            item.grossProfitPercent || '0', // gross_profit_percent
-            item.netAmount || subtotal.toString(), // net_amount
-            item.cashPercent || '0', // cash_percent
-            item.cashAmount || '0' // cash_amount
+            Number(item.roiPercent || 0).toString(), // roi_percent
+            Number(item.grossProfitPercent || 0).toString(), // gross_profit_percent
+            Number(item.netAmount || subtotal).toString(), // net_amount
+            Number(item.cashPercent || 0).toString(), // cash_percent
+            Number(item.cashAmount || 0).toString() // cash_amount
           );
         }
+        
+        console.log(`Successfully updated ${items.length} items for purchase ${id}`);
       }
 
       // Return the updated purchase

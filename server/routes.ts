@@ -1547,25 +1547,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('PUT /api/purchases/:id received data:', req.body);
       
       const { 
-        poNo, poDate, dueDate, paymentType, supplierId, 
-        invoiceNo, invoiceDate, remarks, items, 
-        grossAmount, itemDiscountAmount, taxAmount 
+        supplierId, orderNumber, orderDate, expectedDate, dueDate,
+        paymentTerms, paymentMethod, status, invoiceNumber, 
+        invoiceDate, invoiceAmount, remarks, items,
+        freightAmount, surchargeAmount, packingCharges, 
+        otherCharges, additionalDiscount
       } = req.body;
       
+      // Handle both professional and legacy format
+      const actualSupplierId = supplierId || req.body.supplier_id;
+      const actualOrderNumber = orderNumber || req.body.poNo || req.body.po_no;
+      const actualOrderDate = orderDate || req.body.poDate || req.body.po_date;
+      const actualDueDate = expectedDate || dueDate || req.body.due_date;
+      
       // Validate required fields
-      if (!poNo || !poDate || !supplierId) {
+      if (!actualOrderNumber || !actualOrderDate || !actualSupplierId) {
         return res.status(400).json({ 
-          message: 'Missing required fields: poNo, poDate, and supplierId are required' 
+          message: 'Missing required fields: orderNumber, orderDate, and supplierId are required' 
         });
+      }
+      
+      // Calculate total from items if not provided
+      let totalAmount = 0;
+      if (items && Array.isArray(items)) {
+        totalAmount = items.reduce((sum, item) => {
+          const qty = Number(item.receivedQty || item.quantity || 0);
+          const cost = Number(item.unitCost || item.cost || 0);
+          return sum + (qty * cost);
+        }, 0);
       }
       
       // Update the purchase object
       const purchaseUpdate = {
-        orderNumber: poNo,
-        orderDate: new Date(poDate),
-        dueDate: dueDate ? new Date(dueDate) : undefined,
-        supplierId: parseInt(supplierId.toString()),
-        total: grossAmount ? grossAmount.toString() : '0',
+        orderNumber: actualOrderNumber,
+        orderDate: new Date(actualOrderDate),
+        dueDate: actualDueDate ? new Date(actualDueDate) : undefined,
+        supplierId: parseInt(actualSupplierId.toString()),
+        total: totalAmount.toString(),
         notes: remarks || ''
       };
       
