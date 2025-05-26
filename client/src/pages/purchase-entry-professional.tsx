@@ -18,9 +18,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, Eye, Search, Filter } from "lucide-react";
+import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit, Eye, Search, Filter, Download, Upload } from "lucide-react";
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
@@ -103,25 +103,31 @@ interface Product {
 interface Purchase {
   id: number;
   orderNumber: string;
-  supplier: Supplier;
-  user: any;
-  total: string;
-  status: string;
+  supplierId: number;
+  supplier?: Supplier;
   orderDate: string;
-  createdAt: string;
+  expectedDate?: string;
+  status: string;
+  total: string;
   items?: any[];
+  createdAt: string;
 }
 
 export default function PurchaseEntryProfessional() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("list");
-  const [isCreateMode, setIsCreateMode] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
   const [viewingPurchase, setViewingPurchase] = useState<Purchase | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [supplierFilter, setSupplierFilter] = useState("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
+  
   const [summary, setSummary] = useState({
     totalItems: 0,
     totalQuantity: 0,
@@ -188,19 +194,9 @@ export default function PurchaseEntryProfessional() {
     name: "items",
   });
 
-  // Fetch purchases with search and filters
-  const { data: purchases = [], isLoading: purchasesLoading, refetch } = useQuery<Purchase[]>({
-    queryKey: ["/api/purchases", searchTerm, statusFilter, supplierFilter],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (searchTerm) params.append("search", searchTerm);
-      if (statusFilter !== "all") params.append("status", statusFilter);
-      if (supplierFilter !== "all") params.append("supplierId", supplierFilter);
-      
-      const response = await fetch(`/api/purchases?${params.toString()}`);
-      if (!response.ok) throw new Error("Failed to fetch purchases");
-      return response.json();
-    },
+  // Fetch all purchases
+  const { data: purchases = [], isLoading: isLoadingPurchases, refetch: refetchPurchases } = useQuery<Purchase[]>({
+    queryKey: ["/api/purchases"],
   });
 
   // Fetch suppliers
@@ -238,8 +234,8 @@ export default function PurchaseEntryProfessional() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
       form.reset();
-      setIsCreateMode(false);
-      setActiveTab("list");
+      setIsCreateDialogOpen(false);
+      setActiveTab("dashboard");
     },
     onError: (error: any) => {
       toast({
@@ -275,7 +271,8 @@ export default function PurchaseEntryProfessional() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
       setEditingPurchase(null);
-      setActiveTab("list");
+      setIsEditDialogOpen(false);
+      form.reset();
     },
     onError: (error: any) => {
       toast({
@@ -306,6 +303,8 @@ export default function PurchaseEntryProfessional() {
         description: "Purchase order deleted successfully!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      setIsDeleteDialogOpen(false);
+      setPurchaseToDelete(null);
     },
     onError: (error: any) => {
       toast({
@@ -367,15 +366,18 @@ export default function PurchaseEntryProfessional() {
         const itemCost = (item.unitCost || 0) * receivedQty;
         subtotal += itemCost;
 
+        // Calculate discount
         const discount = item.discountAmount || 0;
         totalDiscount += discount;
 
+        // Calculate tax (GST)
         const taxableAmount = itemCost - discount;
         const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
         totalTax += tax;
       }
     });
 
+    // Get additional charges from form
     const surchargeAmount = Number(watchedSurcharge) || 0;
     const packingCharges = Number(watchedPacking) || 0;
     const otherCharges = Number(watchedOther) || 0;
@@ -393,20 +395,24 @@ export default function PurchaseEntryProfessional() {
         const taxableAmount = itemCost - discount;
         const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
 
+        // Calculate net amount with additional charges distributed proportionally
         let netAmount = taxableAmount + tax;
         
+        // Distribute additional charges proportionally if there are charges and subtotal
         if (totalAdditionalCharges > 0 && subtotal > 0) {
           const itemProportion = itemCost / subtotal;
           const itemAdditionalCharges = totalAdditionalCharges * itemProportion;
           netAmount += itemAdditionalCharges;
         }
         
+        // Update the form value for this item's net amount
         form.setValue(`items.${index}.netAmount`, Math.round(netAmount * 100) / 100);
       }
     });
 
     const grandTotal = subtotal - totalDiscount + totalTax + totalAdditionalCharges - additionalDiscount;
 
+    // Update the summary state
     setSummary({
       totalItems,
       totalQuantity,
@@ -418,7 +424,7 @@ export default function PurchaseEntryProfessional() {
     });
   }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, form]);
 
-  // Product selection handler
+  // Dynamic product selection handler
   const handleProductSelection = (index: number, productId: number) => {
     const product = products.find(p => p.id === productId);
     if (product) {
@@ -499,7 +505,7 @@ export default function PurchaseEntryProfessional() {
     }
   };
 
-  // Form submission handler
+  // Handle form submission
   const onSubmit = (data: PurchaseFormData) => {
     try {
       if (!data.supplierId || data.supplierId === 0) {
@@ -586,296 +592,383 @@ export default function PurchaseEntryProfessional() {
     }
   };
 
-  // Edit purchase handler
-  const handleEditPurchase = (purchase: Purchase) => {
+  // Populate form with editing purchase data
+  const handleEdit = (purchase: Purchase) => {
     setEditingPurchase(purchase);
-    // Populate form with purchase data
+    // Reset form and populate with purchase data
     form.reset({
-      supplierId: purchase.supplier.id,
+      supplierId: purchase.supplierId,
       orderNumber: purchase.orderNumber,
-      orderDate: purchase.orderDate.split('T')[0],
+      orderDate: purchase.orderDate,
+      expectedDate: purchase.expectedDate || "",
       status: purchase.status,
-      // Add other fields as needed
-      items: purchase.items || [],
+      items: purchase.items || [{
+        productId: 0,
+        code: "",
+        description: "",
+        quantity: 1,
+        receivedQty: 0,
+        freeQty: 0,
+        unitCost: 0,
+        sellingPrice: 0,
+        mrp: 0,
+        hsnCode: "",
+        taxPercentage: 18,
+        discountAmount: 0,
+        expiryDate: "",
+        batchNumber: "",
+        netCost: 0,
+        roiPercent: 0,
+        grossProfitPercent: 0,
+        netAmount: 0,
+        cashPercent: 0,
+        cashAmount: 0,
+        location: "",
+        unit: "PCS",
+      }]
     });
-    setActiveTab("form");
+    setIsEditDialogOpen(true);
   };
 
-  // View purchase handler
-  const handleViewPurchase = async (purchase: Purchase) => {
-    try {
-      const response = await fetch(`/api/purchases/${purchase.id}`);
-      if (response.ok) {
-        const fullPurchase = await response.json();
-        setViewingPurchase(fullPurchase);
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load purchase details.",
-      });
-    }
+  // Handle view purchase
+  const handleView = (purchase: Purchase) => {
+    setViewingPurchase(purchase);
+    setIsViewDialogOpen(true);
   };
 
-  // Delete purchase handler
-  const handleDeletePurchase = (id: number) => {
-    deletePurchaseMutation.mutate(id);
-  };
-
-  // Start new purchase
-  const startNewPurchase = () => {
-    setEditingPurchase(null);
-    form.reset();
-    setIsCreateMode(true);
-    setActiveTab("form");
-  };
-
-  // Cancel form
-  const cancelForm = () => {
-    setIsCreateMode(false);
-    setEditingPurchase(null);
-    form.reset();
-    setActiveTab("list");
+  // Handle delete purchase
+  const handleDelete = (purchase: Purchase) => {
+    setPurchaseToDelete(purchase);
+    setIsDeleteDialogOpen(true);
   };
 
   // Filter purchases based on search and filters
   const filteredPurchases = purchases.filter(purchase => {
     const matchesSearch = !searchTerm || 
       purchase.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      purchase.supplier.name.toLowerCase().includes(searchTerm.toLowerCase());
+      purchase.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || purchase.status === statusFilter;
-    const matchesSupplier = supplierFilter === "all" || purchase.supplier.id.toString() === supplierFilter;
-    
+    const matchesSupplier = supplierFilter === "all" || purchase.supplierId.toString() === supplierFilter;
+
     return matchesSearch && matchesStatus && matchesSupplier;
   });
+
+  // Reset form for new purchase
+  const handleCreateNew = () => {
+    setEditingPurchase(null);
+    form.reset({
+      orderNumber: `PO-${Date.now().toString().slice(-8)}`,
+      orderDate: today,
+      expectedDate: "",
+      paymentTerms: "Net 30",
+      paymentMethod: "Credit",
+      status: "Pending",
+      freightAmount: 0,
+      surchargeAmount: 0,
+      packingCharges: 0,
+      otherCharges: 0,
+      additionalDiscount: 0,
+      invoiceNumber: "",
+      invoiceDate: "",
+      invoiceAmount: 0,
+      lrNumber: "",
+      remarks: "",
+      items: [{
+        productId: 0,
+        code: "",
+        description: "",
+        quantity: 1,
+        receivedQty: 0,
+        freeQty: 0,
+        unitCost: 0,
+        sellingPrice: 0,
+        mrp: 0,
+        hsnCode: "",
+        taxPercentage: 18,
+        discountAmount: 0,
+        expiryDate: "",
+        batchNumber: "",
+        netCost: 0,
+        roiPercent: 0,
+        grossProfitPercent: 0,
+        netAmount: 0,
+        cashPercent: 0,
+        cashAmount: 0,
+        location: "",
+        unit: "PCS",
+      }]
+    });
+    setIsCreateDialogOpen(true);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'received': return 'bg-blue-100 text-blue-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
     <DashboardLayout>
       <div className="container max-w-full pb-8 px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Purchase Management</h1>
-              <p className="text-muted-foreground">Create and manage purchase orders</p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Purchase Management Professional</h1>
+            <p className="text-muted-foreground">Complete CRUD operations for purchase orders</p>
           </div>
-
           <div className="flex items-center gap-2">
-            {activeTab === "form" && (
-              <>
-                <Button variant="outline" onClick={cancelForm}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={form.handleSubmit(onSubmit)}
-                  disabled={createPurchaseMutation.isPending || updatePurchaseMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {createPurchaseMutation.isPending || updatePurchaseMutation.isPending ? (
-                    "Saving..."
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      {editingPurchase ? "Update" : "Save"}
-                    </>
-                  )}
-                </Button>
-              </>
-            )}
-            {activeTab === "list" && (
-              <Button onClick={startNewPurchase} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="mr-2 h-4 w-4" />
-                New Purchase Order
-              </Button>
-            )}
+            <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" />
+              New Purchase Order
+            </Button>
           </div>
         </div>
 
-        {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="list">Purchase Orders</TabsTrigger>
-            <TabsTrigger value="form" disabled={!isCreateMode && !editingPurchase}>
-              {editingPurchase ? "Edit Purchase" : "New Purchase"}
-            </TabsTrigger>
+            <TabsTrigger value="dashboard">Purchase Dashboard</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           </TabsList>
 
-          {/* Purchase List Tab */}
-          <TabsContent value="list" className="space-y-4">
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-4">
             {/* Filters and Search */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Search className="h-5 w-5" />
+                  <Filter className="h-5 w-5" />
                   Search & Filters
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="search">Search</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
-                      id="search"
-                      placeholder="Search by order number or supplier..."
+                      placeholder="Search by PO number or supplier..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="status-filter">Status</Label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="received">Received</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="received">Received</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="supplier-filter">Supplier</Label>
-                    <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Suppliers" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Suppliers</SelectItem>
-                        {suppliers.map((supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter by supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Suppliers</SelectItem>
+                      {suppliers.map((supplier) => (
+                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                          {supplier.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                  <div className="flex items-end">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setSearchTerm("");
-                        setStatusFilter("all");
-                        setSupplierFilter("all");
-                      }}
-                    >
-                      Clear Filters
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Import
                     </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
+                      <p className="text-2xl font-bold">{purchases.length}</p>
+                    </div>
+                    <Package className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Pending Orders</p>
+                      <p className="text-2xl font-bold">{purchases.filter(p => p.status === 'pending').length}</p>
+                    </div>
+                    <Package className="h-8 w-8 text-yellow-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Completed Orders</p>
+                      <p className="text-2xl font-bold">{purchases.filter(p => p.status === 'received').length}</p>
+                    </div>
+                    <Package className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Value</p>
+                      <p className="text-2xl font-bold">
+                        {formatCurrency(purchases.reduce((sum, p) => sum + parseFloat(p.total || "0"), 0))}
+                      </p>
+                    </div>
+                    <Package className="h-8 w-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Purchase Orders Table */}
             <Card>
               <CardHeader>
-                <CardTitle>Purchase Orders ({filteredPurchases.length})</CardTitle>
+                <CardTitle>Purchase Orders</CardTitle>
               </CardHeader>
               <CardContent>
-                {purchasesLoading ? (
-                  <div className="text-center py-8">Loading purchases...</div>
-                ) : filteredPurchases.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Package className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-semibold text-gray-900">No purchase orders</h3>
-                    <p className="mt-1 text-sm text-gray-500">Get started by creating a new purchase order.</p>
-                    <div className="mt-6">
-                      <Button onClick={startNewPurchase}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Purchase Order
-                      </Button>
-                    </div>
-                  </div>
+                {isLoadingPurchases ? (
+                  <div className="text-center py-8">Loading purchase orders...</div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Order Number</TableHead>
-                        <TableHead>Supplier</TableHead>
-                        <TableHead>Order Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPurchases.map((purchase) => (
-                        <TableRow key={purchase.id}>
-                          <TableCell className="font-medium">{purchase.orderNumber}</TableCell>
-                          <TableCell>{purchase.supplier.name}</TableCell>
-                          <TableCell>{new Date(purchase.orderDate).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={
-                                purchase.status === "received" ? "default" : 
-                                purchase.status === "pending" ? "secondary" :
-                                purchase.status === "cancelled" ? "destructive" : "outline"
-                              }
-                            >
-                              {purchase.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatCurrency(parseFloat(purchase.total))}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleViewPurchase(purchase)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditPurchase(purchase)}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete the purchase order.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeletePurchase(purchase.id)}>
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>PO Number</TableHead>
+                          <TableHead>Supplier</TableHead>
+                          <TableHead>Order Date</TableHead>
+                          <TableHead>Expected Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPurchases.map((purchase) => (
+                          <TableRow key={purchase.id}>
+                            <TableCell className="font-medium">{purchase.orderNumber}</TableCell>
+                            <TableCell>{purchase.supplier?.name || 'Unknown Supplier'}</TableCell>
+                            <TableCell>{new Date(purchase.orderDate).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                              {purchase.expectedDate ? new Date(purchase.expectedDate).toLocaleDateString() : '-'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={`${getStatusColor(purchase.status)} px-2 py-1 text-xs font-medium`}>
+                                {purchase.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{formatCurrency(parseFloat(purchase.total || "0"))}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleView(purchase)}
+                                  title="View Details"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(purchase)}
+                                  title="Edit Purchase"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(purchase)}
+                                  title="Delete Purchase"
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {filteredPurchases.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                              No purchase orders found matching your criteria
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Purchase Form Tab */}
-          <TabsContent value="form" className="space-y-4">
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Purchase Analytics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  Analytics and reporting features coming soon...
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Create/Edit Purchase Dialog */}
+        <Dialog open={isCreateDialogOpen || isEditDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            setIsCreateDialogOpen(false);
+            setIsEditDialogOpen(false);
+            setEditingPurchase(null);
+          }
+        }}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingPurchase ? 'Edit Purchase Order' : 'Create New Purchase Order'}
+              </DialogTitle>
+              <DialogDescription>
+                {editingPurchase ? 'Update the purchase order details below.' : 'Fill in the details to create a new purchase order.'}
+              </DialogDescription>
+            </DialogHeader>
+
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <Tabs defaultValue="details" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="details">Purchase Details</TabsTrigger>
@@ -885,536 +978,346 @@ export default function PurchaseEntryProfessional() {
 
                   {/* Purchase Details Tab */}
                   <TabsContent value="details" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Package className="h-5 w-5" />
-                          Purchase Information
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="supplierId">Supplier *</Label>
-                            <Select onValueChange={(value) => form.setValue("supplierId", parseInt(value))}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select supplier" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {suppliers.map((supplier) => (
-                                  <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                                    {supplier.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="supplierId">Supplier *</Label>
+                        <Select onValueChange={(value) => form.setValue("supplierId", parseInt(value))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select supplier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {suppliers.map((supplier) => (
+                              <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                                {supplier.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="orderNumber">Order Number *</Label>
-                            <Input
-                              {...form.register("orderNumber")}
-                              placeholder="PO-12345"
-                            />
-                          </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="orderNumber">Order Number *</Label>
+                        <Input
+                          {...form.register("orderNumber")}
+                          placeholder="PO-12345"
+                        />
+                      </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="orderDate">Order Date *</Label>
-                            <Input
-                              type="date"
-                              {...form.register("orderDate")}
-                            />
-                          </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="orderDate">Order Date *</Label>
+                        <Input
+                          type="date"
+                          {...form.register("orderDate")}
+                        />
+                      </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="expectedDate">Expected Date</Label>
-                            <Input
-                              type="date"
-                              {...form.register("expectedDate")}
-                            />
-                          </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="expectedDate">Expected Date</Label>
+                        <Input
+                          type="date"
+                          {...form.register("expectedDate")}
+                        />
+                      </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="paymentTerms">Payment Terms</Label>
-                            <Select onValueChange={(value) => form.setValue("paymentTerms", value)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select payment terms" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Net 15">Net 15 Days</SelectItem>
-                                <SelectItem value="Net 30">Net 30 Days</SelectItem>
-                                <SelectItem value="Net 45">Net 45 Days</SelectItem>
-                                <SelectItem value="Net 60">Net 60 Days</SelectItem>
-                                <SelectItem value="Cash">Cash on Delivery</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="paymentTerms">Payment Terms</Label>
+                        <Select onValueChange={(value) => form.setValue("paymentTerms", value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select payment terms" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Net 15">Net 15 Days</SelectItem>
+                            <SelectItem value="Net 30">Net 30 Days</SelectItem>
+                            <SelectItem value="Net 45">Net 45 Days</SelectItem>
+                            <SelectItem value="Net 60">Net 60 Days</SelectItem>
+                            <SelectItem value="Cash">Cash on Delivery</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="paymentMethod">Payment Method</Label>
-                            <Select onValueChange={(value) => form.setValue("paymentMethod", value)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select payment method" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Credit">Credit</SelectItem>
-                                <SelectItem value="Cash">Cash</SelectItem>
-                                <SelectItem value="Cheque">Cheque</SelectItem>
-                                <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                                <SelectItem value="UPI">UPI</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Status</Label>
+                        <Select onValueChange={(value) => form.setValue("status", value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="ordered">Ordered</SelectItem>
+                            <SelectItem value="received">Received</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-                        {/* Additional Charges Section */}
-                        <Separator />
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4">Additional Charges</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="surchargeAmount">Surcharge (₹)</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                {...form.register("surchargeAmount", { 
-                                  valueAsNumber: true
-                                })}
-                                placeholder="0"
-                              />
-                            </div>
+                    {/* Additional Charges */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="freightAmount">Freight Charges (₹)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...form.register("freightAmount", { valueAsNumber: true })}
+                          placeholder="0"
+                        />
+                      </div>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="freightAmount">Freight Charges (₹)</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                {...form.register("freightAmount", { 
-                                  valueAsNumber: true
-                                })}
-                                placeholder="0"
-                              />
-                            </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="surchargeAmount">Surcharge (₹)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...form.register("surchargeAmount", { valueAsNumber: true })}
+                          placeholder="0"
+                        />
+                      </div>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="packingCharges">Packing Charges (₹)</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                {...form.register("packingCharges", { 
-                                  valueAsNumber: true
-                                })}
-                                placeholder="0"
-                              />
-                            </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="packingCharges">Packing Charges (₹)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...form.register("packingCharges", { valueAsNumber: true })}
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="otherCharges">Other Charges (₹)</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                {...form.register("otherCharges", { 
-                                  valueAsNumber: true
-                                })}
-                                placeholder="0"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="additionalDiscount">Additional Discount (₹)</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                {...form.register("additionalDiscount", { 
-                                  valueAsNumber: true
-                                })}
-                                placeholder="0"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Invoice Details Section */}
-                        <Separator />
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4">Invoice Details</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                              <Input
-                                {...form.register("invoiceNumber")}
-                                placeholder="Enter invoice number"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="invoiceDate">Invoice Date</Label>
-                              <Input
-                                type="date"
-                                {...form.register("invoiceDate")}
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="invoiceAmount">Invoice Amount</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                {...form.register("invoiceAmount", { valueAsNumber: true })}
-                                placeholder="0"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="lrNumber">LR Number</Label>
-                              <Input
-                                {...form.register("lrNumber")}
-                                placeholder="Enter LR number"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="remarks">Remarks</Label>
-                              <Textarea
-                                {...form.register("remarks")}
-                                placeholder="Enter remarks..."
-                                rows={3}
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="internalNotes">Internal Notes</Label>
-                              <Textarea
-                                {...form.register("internalNotes")}
-                                placeholder="Internal notes..."
-                                rows={3}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <div className="space-y-2">
+                      <Label htmlFor="remarks">Remarks</Label>
+                      <Textarea
+                        {...form.register("remarks")}
+                        placeholder="Enter any remarks..."
+                        rows={3}
+                      />
+                    </div>
                   </TabsContent>
 
                   {/* Line Items Tab */}
                   <TabsContent value="items" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle>Line Items</CardTitle>
-                          <Button onClick={addItem} size="sm" variant="outline">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Item
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-[200px]">Product</TableHead>
-                                <TableHead className="w-[100px]">Code</TableHead>
-                                <TableHead className="w-[150px]">Description</TableHead>
-                                <TableHead className="w-[100px]">Qty</TableHead>
-                                <TableHead className="w-[100px]">Recv Qty</TableHead>
-                                <TableHead className="w-[100px]">Free Qty</TableHead>
-                                <TableHead className="w-[100px]">Unit Cost</TableHead>
-                                <TableHead className="w-[80px]">Tax %</TableHead>
-                                <TableHead className="w-[100px]">Discount</TableHead>
-                                <TableHead className="w-[100px]">HSN Code</TableHead>
-                                <TableHead className="w-[100px]">Batch No</TableHead>
-                                <TableHead className="w-[100px]">Expiry Date</TableHead>
-                                <TableHead className="w-[120px]">Net Amount</TableHead>
-                                <TableHead className="w-[80px]">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {fields.map((field, index) => (
-                                <TableRow key={field.id}>
-                                  <TableCell>
-                                    <Select onValueChange={(value) => handleProductSelection(index, parseInt(value))}>
-                                      <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select Product" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {products.map((product) => (
-                                          <SelectItem key={product.id} value={product.id.toString()}>
-                                            {product.name}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </TableCell>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">Line Items</h3>
+                      <Button type="button" onClick={addItem} size="sm" variant="outline">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Item
+                      </Button>
+                    </div>
 
-                                  <TableCell>
-                                    <Input
-                                      className="w-full"
-                                      {...form.register(`items.${index}.code`)}
-                                      placeholder="Code"
-                                      readOnly
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      className="w-full"
-                                      {...form.register(`items.${index}.description`)}
-                                      placeholder="Description"
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      className="w-full"
-                                      {...form.register(`items.${index}.quantity`, { valueAsNumber: true })}
-                                      placeholder="1"
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      className="w-full"
-                                      {...form.register(`items.${index}.receivedQty`, { valueAsNumber: true })}
-                                      placeholder="0"
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      className="w-full"
-                                      {...form.register(`items.${index}.freeQty`, { valueAsNumber: true })}
-                                      placeholder="0"
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      className="w-full"
-                                      {...form.register(`items.${index}.unitCost`, { valueAsNumber: true })}
-                                      placeholder="0"
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      step="0.01"
-                                      className="w-full"
-                                      {...form.register(`items.${index}.taxPercentage`, { valueAsNumber: true })}
-                                      placeholder="18"
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      className="w-full"
-                                      {...form.register(`items.${index}.discountAmount`, { valueAsNumber: true })}
-                                      placeholder="0"
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      className="w-full"
-                                      {...form.register(`items.${index}.hsnCode`)}
-                                      placeholder="HSN"
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      className="w-full"
-                                      {...form.register(`items.${index}.batchNumber`)}
-                                      placeholder="Batch"
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Input
-                                      type="date"
-                                      className="w-full"
-                                      {...form.register(`items.${index}.expiryDate`)}
-                                    />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <div className="text-sm font-medium bg-gray-50 p-2 rounded">
-                                      {formatCurrency(form.watch(`items.${index}.netAmount`) || 0)}
-                                    </div>
-                                  </TableCell>
-
-                                  <TableCell>
-                                    {fields.length > 1 && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => removeItem(index)}
-                                        className="text-red-600 hover:text-red-800"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Product</TableHead>
+                            <TableHead>Qty</TableHead>
+                            <TableHead>Unit Cost</TableHead>
+                            <TableHead>Tax %</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {fields.map((field, index) => (
+                            <TableRow key={field.id}>
+                              <TableCell>
+                                <Select onValueChange={(value) => handleProductSelection(index, parseInt(value))}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select Product" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {products.map((product) => (
+                                      <SelectItem key={product.id} value={product.id.toString()}>
+                                        {product.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  {...form.register(`items.${index}.receivedQty`, { valueAsNumber: true })}
+                                  placeholder="0"
+                                  className="w-20"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.unitCost`, { valueAsNumber: true })}
+                                  placeholder="0"
+                                  className="w-24"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  {...form.register(`items.${index}.taxPercentage`, { valueAsNumber: true })}
+                                  placeholder="0"
+                                  className="w-20"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm font-medium">
+                                  {formatCurrency((form.watch(`items.${index}.receivedQty`) || 0) * (form.watch(`items.${index}.unitCost`) || 0))}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeItem(index)}
+                                  disabled={fields.length === 1}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </TabsContent>
 
                   {/* Summary Tab */}
                   <TabsContent value="summary" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Purchase Summary</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="bg-white border border-gray-200 rounded-lg p-6">
-                          <div className="grid grid-cols-2 gap-8">
-                            <div>
-                              <h3 className="text-lg font-semibold mb-4 text-gray-800">Order Details</h3>
-                              <div className="space-y-3">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Order Number:</span>
-                                  <span className="font-medium">{form.watch("orderNumber")}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Order Date:</span>
-                                  <span className="font-medium">{form.watch("orderDate")}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Status:</span>
-                                  <Badge variant="secondary">{form.watch("status") || "Pending"}</Badge>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <h3 className="text-lg font-semibold mb-4 text-gray-800">Financial Summary</h3>
-                              <div className="space-y-3">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Total Items:</span>
-                                  <span className="font-medium">{summary.totalItems}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Subtotal:</span>
-                                  <span className="font-medium">{formatCurrency(summary.subtotal)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Total Tax:</span>
-                                  <span className="font-medium">{formatCurrency(summary.totalTax)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Freight Charges:</span>
-                                  <span className="font-medium">{formatCurrency(summary.freightCharges)}</span>
-                                </div>
-                                <div className="border-t pt-3 mt-4">
-                                  <div className="flex justify-between text-xl font-bold text-blue-600">
-                                    <span>Grand Total:</span>
-                                    <span>{formatCurrency(summary.grandTotal)}</span>
-                                  </div>
-                                </div>
-                              </div>
+                    <div className="bg-gray-50 p-6 rounded-lg">
+                      <h3 className="text-lg font-semibold mb-4">Purchase Summary</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Total Items:</span>
+                            <span className="font-medium">{summary.totalItems}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Total Quantity:</span>
+                            <span className="font-medium">{summary.totalQuantity}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Subtotal:</span>
+                            <span className="font-medium">{formatCurrency(summary.subtotal)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Total Tax:</span>
+                            <span className="font-medium">{formatCurrency(summary.totalTax)}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Freight Charges:</span>
+                            <span className="font-medium">{formatCurrency(summary.freightCharges)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Total Discount:</span>
+                            <span className="font-medium text-red-600">{formatCurrency(summary.totalDiscount)}</span>
+                          </div>
+                          <div className="border-t pt-2">
+                            <div className="flex justify-between text-lg font-bold">
+                              <span>Grand Total:</span>
+                              <span className="text-blue-600">{formatCurrency(summary.grandTotal)}</span>
                             </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </TabsContent>
                 </Tabs>
+
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    setIsEditDialogOpen(false);
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={createPurchaseMutation.isPending || updatePurchaseMutation.isPending}
+                  >
+                    {createPurchaseMutation.isPending || updatePurchaseMutation.isPending ? "Saving..." : (editingPurchase ? "Update" : "Create")}
+                  </Button>
+                </DialogFooter>
               </form>
             </Form>
-          </TabsContent>
-        </Tabs>
+          </DialogContent>
+        </Dialog>
 
         {/* View Purchase Dialog */}
-        <Dialog open={!!viewingPurchase} onOpenChange={() => setViewingPurchase(null)}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>Purchase Order Details</DialogTitle>
               <DialogDescription>
-                View complete purchase order information
+                View complete details of purchase order {viewingPurchase?.orderNumber}
               </DialogDescription>
             </DialogHeader>
+            
             {viewingPurchase && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Order Number</Label>
-                    <p className="font-medium">{viewingPurchase.orderNumber}</p>
+                    <Label>PO Number</Label>
+                    <p className="text-sm font-medium">{viewingPurchase.orderNumber}</p>
                   </div>
                   <div>
                     <Label>Supplier</Label>
-                    <p className="font-medium">{viewingPurchase.supplier.name}</p>
+                    <p className="text-sm font-medium">{viewingPurchase.supplier?.name || 'Unknown'}</p>
                   </div>
                   <div>
                     <Label>Order Date</Label>
-                    <p className="font-medium">{new Date(viewingPurchase.orderDate).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium">{new Date(viewingPurchase.orderDate).toLocaleDateString()}</p>
                   </div>
                   <div>
                     <Label>Status</Label>
-                    <Badge variant="secondary">{viewingPurchase.status}</Badge>
+                    <Badge className={`${getStatusColor(viewingPurchase.status)} px-2 py-1 text-xs`}>
+                      {viewingPurchase.status}
+                    </Badge>
                   </div>
                   <div>
                     <Label>Total Amount</Label>
-                    <p className="font-medium text-lg">{formatCurrency(parseFloat(viewingPurchase.total))}</p>
+                    <p className="text-sm font-medium">{formatCurrency(parseFloat(viewingPurchase.total || "0"))}</p>
                   </div>
                 </div>
-                
-                {viewingPurchase.items && viewingPurchase.items.length > 0 && (
-                  <div>
-                    <Label>Items</Label>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Product</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Unit Cost</TableHead>
-                          <TableHead>Total</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {viewingPurchase.items.map((item: any, index: number) => (
-                          <TableRow key={index}>
-                            <TableCell>{item.product?.name || 'Unknown Product'}</TableCell>
-                            <TableCell>{item.quantity}</TableCell>
-                            <TableCell>{formatCurrency(parseFloat(item.cost || 0))}</TableCell>
-                            <TableCell>{formatCurrency(parseFloat(item.total || 0))}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
               </div>
             )}
+
             <DialogFooter>
-              <Button variant="outline" onClick={() => setViewingPurchase(null)}>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                 Close
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the purchase order
+                <strong> {purchaseToDelete?.orderNumber}</strong> and remove all associated data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (purchaseToDelete) {
+                    deletePurchaseMutation.mutate(purchaseToDelete.id);
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
