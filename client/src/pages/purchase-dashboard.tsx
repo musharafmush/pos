@@ -101,9 +101,7 @@ export default function PurchaseDashboard() {
   // Delete purchase mutation
   const deletePurchase = useMutation({
     mutationFn: async (purchaseId: number) => {
-      const response = await apiRequest(`/api/purchases/${purchaseId}`, {
-        method: "DELETE",
-      });
+      const response = await apiRequest("DELETE", `/api/purchases/${purchaseId}`);
       if (!response.ok) {
         throw new Error("Failed to delete purchase");
       }
