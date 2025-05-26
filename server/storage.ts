@@ -1094,22 +1094,24 @@ export const storage = {
 
         for (const item of items) {
           const productId = Number(item.productId) || 0;
-          const quantity = Number(item.receivedQty || item.quantity || 0);
+          // Handle both quantity and receivedQty fields
+          const receivedQty = Number(item.receivedQty || item.quantity || 0);
+          const quantity = Number(item.quantity || item.receivedQty || 0);
           const unitCost = Number(item.cost || item.unitCost || 0);
-          const subtotal = quantity * unitCost;
+          const subtotal = receivedQty * unitCost;
           
-          console.log('Inserting item:', { productId, quantity, unitCost, subtotal });
+          console.log('Inserting/updating item:', { productId, quantity, receivedQty, unitCost, subtotal });
 
           insertPurchaseItem.run(
             id,
             productId,
-            quantity,
+            quantity, // base quantity
             unitCost.toString(),
             unitCost.toString(), // cost
             subtotal.toString(), // total
             subtotal.toString(), // amount
             subtotal.toString(), // subtotal
-            quantity, // received_qty
+            receivedQty, // received_qty (this is what the professional form uses)
             Number(item.freeQty || 0), // free_qty
             item.expiryDate || '', // expiry_date
             item.hsnCode || '', // hsn_code
