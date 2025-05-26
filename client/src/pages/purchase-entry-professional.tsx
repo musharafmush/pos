@@ -320,6 +320,66 @@ export default function PurchaseEntryProfessional() {
     }
   };
 
+  // Handle form submission
+  const onSubmit = (data: PurchaseFormData) => {
+    try {
+      // Calculate total purchase value
+      const totalValue = data.items.reduce((total, item) => {
+        const qty = Number(item.receivedQty) || Number(item.quantity) || 0;
+        const cost = Number(item.unitCost) || 0;
+        return total + (qty * cost);
+      }, 0);
+
+      // Create purchase data with proper structure
+      const purchaseData = {
+        supplierId: Number(data.supplierId),
+        orderNumber: data.orderNumber,
+        orderDate: data.orderDate,
+        expectedDate: data.expectedDate || data.orderDate,
+        paymentTerms: data.paymentTerms || "Net 30",
+        paymentMethod: data.paymentMethod || "Credit",
+        status: data.status || "Pending",
+        priority: data.priority || "normal",
+        shippingAddress: data.shippingAddress || "",
+        billingAddress: data.billingAddress || "",
+        shippingMethod: data.shippingMethod || "standard",
+        freightAmount: Number(data.freightAmount) || 0,
+        taxAmount: Number(data.taxAmount) || summary.totalTax,
+        discountAmount: Number(data.discountAmount) || Math.abs(summary.totalDiscount),
+        remarks: data.remarks || "",
+        internalNotes: data.internalNotes || "",
+        total: totalValue.toString(),
+        items: data.items
+          .filter(item => item.productId && item.productId > 0)
+          .map(item => ({
+            productId: Number(item.productId),
+            quantity: Number(item.receivedQty) || Number(item.quantity) || 1,
+            unitCost: Number(item.unitCost) || 0,
+            taxPercentage: Number(item.taxPercentage) || 0,
+            discountAmount: Number(item.discountAmount) || 0,
+            hsnCode: item.hsnCode || "",
+            expiryDate: item.expiryDate || null,
+            batchNumber: item.batchNumber || "",
+            sellingPrice: Number(item.sellingPrice) || 0,
+            mrp: Number(item.mrp) || 0,
+            freeQty: Number(item.freeQty) || 0,
+            location: item.location || "",
+            unit: item.unit || "PCS",
+          }))
+      };
+
+      // Submit the purchase data
+      createPurchaseMutation.mutate(purchaseData);
+    } catch (error) {
+      console.error("Error preparing purchase data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to prepare purchase data. Please check your entries and try again.",
+      });
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="container max-w-full pb-8 px-4">
