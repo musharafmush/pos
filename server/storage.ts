@@ -832,29 +832,31 @@ export const storage = {
         return null;
       }
 
-      // Get purchase items with all required fields using raw SQL for better compatibility
+      // Get purchase items with safe column handling
       const items = await this.query(`
         SELECT 
-          pi.*,
+          pi.id,
+          pi.purchase_id,
+          pi.product_id,
+          COALESCE(pi.quantity, 0) as quantity,
+          COALESCE(pi.unit_cost, pi.cost, '0') as unit_cost,
+          COALESCE(pi.subtotal, pi.total, pi.amount, '0') as subtotal,
+          COALESCE(pi.tax_percentage, '0') as tax_percentage,
+          COALESCE(pi.discount_percent, '0') as discount_percent,
+          COALESCE(pi.discount_amount, '0') as discount_amount,
+          COALESCE(pi.net_cost, pi.unit_cost, pi.cost, '0') as net_cost,
+          COALESCE(pi.selling_price, '0') as selling_price,
+          COALESCE(pi.mrp, '0') as mrp,
+          COALESCE(pi.batch_number, '') as batch_number,
+          COALESCE(pi.expiry_date, '') as expiry_date,
+          COALESCE(pi.hsn_code, '') as hsn_code,
+          COALESCE(pi.received_qty, pi.quantity, 0) as received_qty,
+          COALESCE(pi.free_qty, 0) as free_qty,
+          COALESCE(pi.location, '') as location,
+          COALESCE(pi.unit, 'PCS') as unit,
           p.name as product_name,
           p.sku as product_sku,
-          p.price as product_price,
-          pi.quantity,
-          pi.unit_cost,
-          pi.subtotal,
-          pi.tax_percentage,
-          pi.discount_percent,
-          pi.discount_amount,
-          pi.net_cost,
-          pi.selling_price,
-          pi.mrp,
-          pi.batch_number,
-          pi.expiry_date,
-          pi.hsn_code,
-          pi.received_qty,
-          pi.free_qty,
-          pi.location,
-          pi.unit
+          p.price as product_price
         FROM purchase_items pi
         LEFT JOIN products p ON pi.product_id = p.id
         WHERE pi.purchase_id = ?
@@ -864,25 +866,43 @@ export const storage = {
       return {
         ...purchase,
         items: items.map((item: any) => ({
-          ...item,
+          id: item.id,
+          purchaseId: item.purchase_id,
+          productId: item.product_id,
+          quantity: Number(item.quantity) || 0,
+          unitCost: item.unit_cost || '0',
+          subtotal: item.subtotal || '0',
+          taxPercentage: item.tax_percentage || '0',
+          discountPercent: item.discount_percent || '0',
+          discountAmount: item.discount_amount || '0',
+          netCost: item.net_cost || '0',
+          sellingPrice: item.selling_price || '0',
+          mrp: item.mrp || '0',
+          batchNumber: item.batch_number || '',
+          expiryDate: item.expiry_date || '',
+          hsnCode: item.hsn_code || '',
+          receivedQty: Number(item.received_qty) || Number(item.quantity) || 0,
+          freeQty: Number(item.free_qty) || 0,
+          location: item.location || '',
+          unit: item.unit || 'PCS',
           product: {
             id: item.product_id,
-            name: item.product_name,
-            sku: item.product_sku,
-            price: item.product_price
+            name: item.product_name || 'Unknown Product',
+            sku: item.product_sku || '',
+            price: item.product_price || '0'
           },
-          productName: item.product_name,
-          code: item.product_sku,
-          cost: item.unit_cost,
-          receivedQty: item.received_qty || item.quantity,
-          unitCost: item.unit_cost,
-          taxPercentage: item.tax_percentage,
-          discountPercent: item.discount_percent
+          productName: item.product_name || 'Unknown Product',
+          code: item.product_sku || '',
+          cost: item.unit_cost || '0'
         }))
       };
     } catch (error) {
       console.error('Error fetching purchase by ID:', error);
-      throw error;
+      // Return purchase without items if items query fails
+      return {
+        ...purchase,
+        items: []
+      };
     }
   },
 

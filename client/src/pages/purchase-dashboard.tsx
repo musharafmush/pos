@@ -842,86 +842,127 @@ export default function PurchaseDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* Purchase Items with Professional Table */}
-                <Card className="border-2 border-green-200">
-                  <CardHeader className="bg-green-50">
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                
+                {/* Purchase Items Table */}
+                <div className="bg-white border border-gray-200 rounded-lg">
+                  <div className="px-6 py-4 border-b border-gray-200 bg-green-50">
+                    <div className="flex items-center gap-2">
                       <Package className="w-5 h-5 text-green-600" />
-                      Purchase Items
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-4">
-                    <div className="overflow-x-auto">
-                      <Table className="border">
-                        <TableHeader>
-                          <TableRow className="bg-green-100">
-                            <TableHead className="border font-bold text-center">#</TableHead>
-                            <TableHead className="border font-bold">Product Name</TableHead>
-                            <TableHead className="border font-bold text-center">SKU</TableHead>
-                            <TableHead className="border font-bold text-center">Purchase<br/>Quantity</TableHead>
-                            <TableHead className="border font-bold text-center">Unit Cost<br/>(Before<br/>Discount)</TableHead>
-                            <TableHead className="border font-bold text-center">Discount<br/>Percent</TableHead>
-                            <TableHead className="border font-bold text-center">Unit Cost<br/>(Before Tax)</TableHead>
-                            <TableHead className="border font-bold text-center">Subtotal<br/>(Before Tax)</TableHead>
-                            <TableHead className="border font-bold text-center">Tax</TableHead>
-                            <TableHead className="border font-bold text-center">Unit Cost Price<br/>(After Tax)</TableHead>
-                            <TableHead className="border font-bold text-center">Subtotal</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selectedPurchase.items?.map((item: any, index: number) => {
-                            const quantity = parseFloat(item.quantity || item.receivedQty || "0");
+                      <h3 className="text-lg font-semibold text-green-800">Purchase Items</h3>
+                      {selectedPurchase.items && (
+                        <span className="text-sm text-green-600">
+                          ({selectedPurchase.items.length} items)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="font-semibold text-gray-700">#</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Product Name</TableHead>
+                          <TableHead className="font-semibold text-gray-700">SKU</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-center">Purchase Quantity</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-right">Unit Cost (Before Discount)</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-center">Discount Percent</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-right">Unit Cost (Before Tax)</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-right">Subtotal (Before Tax)</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-center">Tax</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-right">Unit Cost Price (After Tax)</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-right">Subtotal</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedPurchase.items && selectedPurchase.items.length > 0 ? (
+                          selectedPurchase.items.map((item: any, index: number) => {
+                            const quantity = Number(item.receivedQty || item.quantity || 0);
                             const unitCost = parseFloat(item.unitCost || item.cost || "0");
                             const discountPercent = parseFloat(item.discountPercent || "0");
                             const taxPercent = parseFloat(item.taxPercentage || "0");
 
+                            // Calculate costs step by step
                             const unitCostAfterDiscount = unitCost * (1 - discountPercent / 100);
-                            const subtotalBeforeTax = quantity * unitCostAfterDiscount;
-                            const taxAmount = subtotalBeforeTax * (taxPercent / 100);
+                            const subtotalBeforeTax = unitCostAfterDiscount * quantity;
                             const unitCostAfterTax = unitCostAfterDiscount * (1 + taxPercent / 100);
-                            const subtotalAfterTax = subtotalBeforeTax + taxAmount;
+                            const finalSubtotal = unitCostAfterTax * quantity;
 
                             return (
-                              <TableRow key={index} className="hover:bg-gray-50">
-                                <TableCell className="border text-center font-medium">{index + 1}</TableCell>
-                                <TableCell className="border font-medium">
-                                  {item.product?.name || item.productName || "Unknown Product"}
+                              <TableRow key={item.id || index} className="hover:bg-gray-50">
+                                <TableCell className="py-3 text-center font-medium text-gray-600">
+                                  {index + 1}
                                 </TableCell>
-                                <TableCell className="border text-center">
-                                  {item.product?.sku || item.code || "N/A"}
+                                <TableCell className="py-3">
+                                  <div className="font-medium text-gray-900">
+                                    {item.product?.name || item.productName || 'Unknown Product'}
+                                  </div>
                                 </TableCell>
-                                <TableCell className="border text-center">
-                                  {quantity.toFixed(2)} Pieces
+                                <TableCell className="py-3">
+                                  <div className="font-mono text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                    {item.product?.sku || item.code || 'N/A'}
+                                  </div>
                                 </TableCell>
-                                <TableCell className="border text-right">
-                                  {formatCurrency(unitCost)}
+                                <TableCell className="py-3 text-center">
+                                  <span className="font-semibold text-blue-600">
+                                    {quantity}
+                                  </span>
                                 </TableCell>
-                                <TableCell className="border text-center">
-                                  {discountPercent.toFixed(2)}%
+                                <TableCell className="py-3 text-right">
+                                  <span className="font-semibold">
+                                    {formatCurrency(unitCost)}
+                                  </span>
                                 </TableCell>
-                                <TableCell className="border text-right">
-                                  {formatCurrency(unitCostAfterDiscount)}
+                                <TableCell className="py-3 text-center">
+                                  <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                    {discountPercent}%
+                                  </span>
                                 </TableCell>
-                                <TableCell className="border text-right">
-                                  {formatCurrency(subtotalBeforeTax)}
+                                <TableCell className="py-3 text-right">
+                                  <span className="font-semibold text-green-600">
+                                    {formatCurrency(unitCostAfterDiscount)}
+                                  </span>
                                 </TableCell>
-                                <TableCell className="border text-right">
-                                  {formatCurrency(taxAmount)}
+                                <TableCell className="py-3 text-right">
+                                  <span className="font-semibold">
+                                    {formatCurrency(subtotalBeforeTax)}
+                                  </span>
                                 </TableCell>
-                                <TableCell className="border text-right">
-                                  {formatCurrency(unitCostAfterTax)}
+                                <TableCell className="py-3 text-center">
+                                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                    {taxPercent}%
+                                  </span>
                                 </TableCell>
-                                <TableCell className="border text-right font-bold">
-                                  {formatCurrency(subtotalAfterTax)}
+                                <TableCell className="py-3 text-right">
+                                  <span className="font-bold text-green-700">
+                                    {formatCurrency(unitCostAfterTax)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="py-3 text-right">
+                                  <span className="font-bold text-lg text-green-700">
+                                    {formatCurrency(finalSubtotal)}
+                                  </span>
                                 </TableCell>
                               </TableRow>
                             );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
+                          })
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={11} className="py-8 text-center text-gray-500">
+                              <div className="flex flex-col items-center gap-2">
+                                <Package className="w-8 h-8 text-gray-300" />
+                                <span>No items found for this purchase order</span>
+                                <span className="text-sm text-gray-400">
+                                  Items may not have been properly saved or there was an error loading them.
+                                </span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
 
                 {/* Financial Summary */}
                 <Card className="border-2 border-purple-200">
