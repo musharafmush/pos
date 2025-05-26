@@ -221,8 +221,11 @@ export default function PurchaseEntryProfessional() {
     createPurchaseMutation.mutate(purchaseData);
   };
 
-  // Add new item
+  // Enhanced dynamic add item function
   const addItem = () => {
+    // Generate unique batch number for new items
+    const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
+    
     append({
       productId: 0,
       code: "",
@@ -236,8 +239,9 @@ export default function PurchaseEntryProfessional() {
       hsnCode: "",
       taxPercentage: 18,
       discountAmount: 0,
+      discountPercent: 0,
       expiryDate: "",
-      batchNumber: "",
+      batchNumber: newBatchNumber,
       netCost: 0,
       roiPercent: 0,
       grossProfitPercent: 0,
@@ -247,6 +251,58 @@ export default function PurchaseEntryProfessional() {
       location: "",
       unit: "PCS",
     });
+
+    toast({
+      title: "New Item Added! ✨",
+      description: `Line item ${fields.length + 1} added successfully. Ready for product selection.`,
+    });
+  };
+
+  // Enhanced remove item function with better validation
+  const removeItem = (index: number) => {
+    if (fields.length > 1) {
+      remove(index);
+      toast({
+        title: "Item Removed! 🗑️",
+        description: `Line item ${index + 1} removed successfully. Totals updated automatically.`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Cannot Remove! ⚠️",
+        description: "At least one line item is required for the purchase order.",
+      });
+    }
+  };
+
+  // Dynamic product selection handler
+  const handleProductSelection = (index: number, productId: number) => {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      // Auto-populate fields based on selected product
+      form.setValue(`items.${index}.productId`, productId);
+      form.setValue(`items.${index}.code`, product.sku || "");
+      form.setValue(`items.${index}.description`, product.description || product.name);
+      form.setValue(`items.${index}.unitCost`, parseFloat(product.price) || 0);
+      form.setValue(`items.${index}.mrp`, parseFloat(product.price) * 1.2 || 0); // Auto-calculate MRP with 20% markup
+      form.setValue(`items.${index}.sellingPrice`, parseFloat(product.price) || 0);
+      form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
+      
+      // Calculate GST automatically
+      const cgstRate = parseFloat(product.cgstRate || "0");
+      const sgstRate = parseFloat(product.sgstRate || "0");
+      const igstRate = parseFloat(product.igstRate || "0");
+      const totalGst = cgstRate + sgstRate + igstRate;
+      
+      if (totalGst > 0) {
+        form.setValue(`items.${index}.taxPercentage`, totalGst);
+      }
+
+      toast({
+        title: "Product Selected! 🎯",
+        description: `${product.name} added with auto-populated details.`,
+      });
+    }
   };
 
   // Calculate subtotal for an item
@@ -585,23 +641,7 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
                                 
                                 <TableCell className="border-r px-2 py-3">
-                                  <Select onValueChange={(value) => {
-                                    const productId = parseInt(value);
-                                    const product = products.find(p => p.id === productId);
-                                    form.setValue(`items.${index}.productId`, productId);
-                                    if (product) {
-                                      form.setValue(`items.${index}.code`, product.sku || "");
-                                      form.setValue(`items.${index}.description`, product.description || product.name);
-                                      form.setValue(`items.${index}.unitCost`, parseFloat(product.price) || 0);
-                                      form.setValue(`items.${index}.mrp`, parseFloat(product.mrp) || parseFloat(product.price) || 0);
-                                      form.setValue(`items.${index}.sellingPrice`, parseFloat(product.price) || 0);
-                                      form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
-                                      const gstRate = parseFloat(product.cgstRate || "0") + parseFloat(product.sgstRate || "0");
-                                      if (gstRate > 0) {
-                                        form.setValue(`items.${index}.taxPercentage`, gstRate);
-                                      }
-                                    }
-                                  }}>
+                                  <Select onValueChange={(value) => handleProductSelection(index, parseInt(value))}
                                     <SelectTrigger className="w-full">
                                       <SelectValue placeholder="Select Product" />
                                     </SelectTrigger>
@@ -630,7 +670,13 @@ export default function PurchaseEntryProfessional() {
                                   <Input
                                     type="number"
                                     min="0"
-                                    {...form.register(`items.${index}.receivedQty`, { valueAsNumber: true })}
+                                    {...form.register(`items.${index}.receivedQty`, { 
+                                      valueAsNumber: true,
+                                      onChange: () => {
+                                        // Trigger recalculation when quantity changes
+                                        setTimeout(() => form.trigger(`items.${index}`), 100);
+                                      }
+                                    })}
                                     className="w-full text-center text-xs"
                                     placeholder="0"
                                   />
@@ -653,7 +699,13 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      {...form.register(`items.${index}.unitCost`, { valueAsNumber: true })}
+                                      {...form.register(`items.${index}.unitCost`, { 
+                                        valueAsNumber: true,
+                                        onChange: () => {
+                                          // Trigger recalculation when cost changes
+                                          setTimeout(() => form.trigger(`items.${index}`), 100);
+                                        }
+                                      })}
                                       className="w-full text-right text-xs pl-6"
                                       placeholder="0"
                                     />
@@ -842,7 +894,7 @@ export default function PurchaseEntryProfessional() {
                                         type="button"
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => remove(index)}
+                                        onClick={() => removeItem(index)}
                                         className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-8 w-8 rounded-full"
                                         title="Delete item"
                                       >
