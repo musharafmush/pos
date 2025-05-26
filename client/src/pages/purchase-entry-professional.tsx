@@ -797,9 +797,13 @@ export default function PurchaseEntryProfessional() {
                       />
                     </div>
 
+                    {/* Payment Terms */}
                     <div className="space-y-2">
                       <Label htmlFor="paymentTerms">Payment Terms</Label>
-                      <Select onValueChange={(value) => form.setValue("paymentTerms", value)}>
+                      <Select 
+                        onValueChange={(value) => form.setValue("paymentTerms", value)}
+                        value={form.watch("paymentTerms") || ""}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select payment terms" />
                         </SelectTrigger>
@@ -843,8 +847,7 @@ export default function PurchaseEntryProfessional() {
                           <SelectItem value="approved">Approved</SelectItem>
                           <SelectItem value="ordered">Ordered</SelectItem>
                           <SelectItem value="partially_received">Partially Received</SelectItem>
-                          <SelectItem value="received">Fully Received</SelectItem>
-                          <SelectItem value="closed">Closed</SelectItem>
+                          <SelectItem value="received">Fully Received</SelectItem>                          <SelectItem value="closed">Closed</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                         </SelectContent>
                       </Select>
