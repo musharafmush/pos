@@ -179,10 +179,22 @@ export default function PurchaseEntryProfessional() {
 
   // Create purchase mutation
   const createPurchaseMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/purchases", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+    mutationFn: async (data: any) => {
+      const response = await fetch("/api/purchases", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create purchase order");
+      }
+
+      return response.json();
+    },
     onSuccess: () => {
       toast({
         title: "Success",
@@ -397,8 +409,30 @@ export default function PurchaseEntryProfessional() {
   // Handle form submission
   const onSubmit = (data: PurchaseFormData) => {
     try {
+      // Validate required fields
+      if (!data.supplierId || data.supplierId === 0) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: "Please select a supplier.",
+        });
+        return;
+      }
+
+      // Filter and validate items
+      const validItems = data.items.filter(item => item.productId && item.productId > 0);
+      
+      if (validItems.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: "Please add at least one product to the purchase order.",
+        });
+        return;
+      }
+
       // Calculate total purchase value
-      const totalValue = data.items.reduce((total, item) => {
+      const totalValue = validItems.reduce((total, item) => {
         const qty = Number(item.receivedQty) || Number(item.quantity) || 0;
         const cost = Number(item.unitCost) || 0;
         return total + (qty * cost);
@@ -412,7 +446,7 @@ export default function PurchaseEntryProfessional() {
         expectedDate: data.expectedDate || data.orderDate,
         paymentTerms: data.paymentTerms || "Net 30",
         paymentMethod: data.paymentMethod || "Credit",
-        status: data.status || "Pending",
+        status: data.status || "pending",
         priority: data.priority || "normal",
         shippingAddress: data.shippingAddress || "",
         billingAddress: data.billingAddress || "",
@@ -431,24 +465,24 @@ export default function PurchaseEntryProfessional() {
         remarks: data.remarks || "",
         internalNotes: data.internalNotes || "",
         total: totalValue.toString(),
-        items: data.items
-          .filter(item => item.productId && item.productId > 0)
-          .map(item => ({
-            productId: Number(item.productId),
-            quantity: Number(item.receivedQty) || Number(item.quantity) || 1,
-            unitCost: Number(item.unitCost) || 0,
-            taxPercentage: Number(item.taxPercentage) || 0,
-            discountAmount: Number(item.discountAmount) || 0,
-            hsnCode: item.hsnCode || "",
-            expiryDate: item.expiryDate || null,
-            batchNumber: item.batchNumber || "",
-            sellingPrice: Number(item.sellingPrice) || 0,
-            mrp: Number(item.mrp) || 0,
-            freeQty: Number(item.freeQty) || 0,
-            location: item.location || "",
-            unit: item.unit || "PCS",
-          }))
+        items: validItems.map(item => ({
+          productId: Number(item.productId),
+          quantity: Number(item.receivedQty) || Number(item.quantity) || 1,
+          unitCost: Number(item.unitCost) || 0,
+          taxPercentage: Number(item.taxPercentage) || 0,
+          discountAmount: Number(item.discountAmount) || 0,
+          hsnCode: item.hsnCode || "",
+          expiryDate: item.expiryDate || null,
+          batchNumber: item.batchNumber || "",
+          sellingPrice: Number(item.sellingPrice) || 0,
+          mrp: Number(item.mrp) || 0,
+          freeQty: Number(item.freeQty) || 0,
+          location: item.location || "",
+          unit: item.unit || "PCS",
+        }))
       };
+
+      console.log("Submitting purchase data:", purchaseData);
 
       // Submit the purchase data
       createPurchaseMutation.mutate(purchaseData);
@@ -481,7 +515,16 @@ export default function PurchaseEntryProfessional() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                toast({
+                  title: "Print Feature",
+                  description: "Print functionality will be available after saving the purchase order.",
+                });
+              }}
+            >
               <Printer className="mr-2 h-4 w-4" />
               Print
             </Button>
