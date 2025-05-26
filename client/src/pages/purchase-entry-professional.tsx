@@ -215,9 +215,18 @@ export default function PurchaseEntryProfessional() {
     let subtotal = 0;
     let totalDiscount = 0;
     let totalTax = 0;
-    let freightCharges = 0;
 
-    // First pass: Calculate basic amounts without additional charges
+    // Get additional charges from form first
+    const formData = form.getValues();
+    const surchargeAmount = Number(formData.surchargeAmount) || 0;
+    const packingCharges = Number(formData.packingCharges) || 0;
+    const otherCharges = Number(formData.otherCharges) || 0;
+    const additionalDiscount = Number(formData.additionalDiscount) || 0;
+    const freightCharges = Number(formData.freightAmount) || 0;
+
+    const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
+
+    // Calculate basic amounts and distribute additional charges
     items.forEach((item, index) => {
       if (item.productId && item.productId > 0) {
         totalItems++;
@@ -236,55 +245,21 @@ export default function PurchaseEntryProfessional() {
         const taxableAmount = itemCost - discount;
         const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
         totalTax += tax;
-      }
-    });
 
-    // Get additional charges from form
-    const formData = form.getValues();
-    const surchargeAmount = Number(formData.surchargeAmount) || 0;
-    const packingCharges = Number(formData.packingCharges) || 0;
-    const otherCharges = Number(formData.otherCharges) || 0;
-    const additionalDiscount = Number(formData.additionalDiscount) || 0;
-    freightCharges = Number(formData.freightAmount) || 0;
-
-    const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
-
-    // Second pass: Distribute additional charges proportionally to each line item
-    if (totalAdditionalCharges > 0 && subtotal > 0) {
-      items.forEach((item, index) => {
-        if (item.productId && item.productId > 0) {
-          const receivedQty = Number(item.receivedQty) || 0;
-          const itemCost = (item.unitCost || 0) * receivedQty;
-          const discount = item.discountAmount || 0;
-          const taxableAmount = itemCost - discount;
-          const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
-          
-          // Calculate this item's proportion of the total subtotal
+        // Calculate net amount with additional charges distributed proportionally
+        let netAmount = taxableAmount + tax;
+        
+        // Distribute additional charges proportionally if there are charges and subtotal
+        if (totalAdditionalCharges > 0 && subtotal > 0) {
           const itemProportion = itemCost / subtotal;
           const itemAdditionalCharges = totalAdditionalCharges * itemProportion;
-          
-          // Update the net amount to include distributed additional charges
-          const netAmountWithCharges = taxableAmount + tax + itemAdditionalCharges;
-          
-          // Update the form value for this item's net amount
-          form.setValue(`items.${index}.netAmount`, netAmountWithCharges);
+          netAmount += itemAdditionalCharges;
         }
-      });
-    } else {
-      // If no additional charges, set net amount to basic calculation
-      items.forEach((item, index) => {
-        if (item.productId && item.productId > 0) {
-          const receivedQty = Number(item.receivedQty) || 0;
-          const itemCost = (item.unitCost || 0) * receivedQty;
-          const discount = item.discountAmount || 0;
-          const taxableAmount = itemCost - discount;
-          const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
-          const netAmount = taxableAmount + tax;
-          
-          form.setValue(`items.${index}.netAmount`, netAmount);
-        }
-      });
-    }
+        
+        // Update the form value for this item's net amount
+        form.setValue(`items.${index}.netAmount`, Math.round(netAmount * 100) / 100);
+      }
+    });
 
     const grandTotal = subtotal - totalDiscount + totalTax + totalAdditionalCharges - additionalDiscount;
 
@@ -298,7 +273,7 @@ export default function PurchaseEntryProfessional() {
       freightCharges,
       grandTotal
     });
-  }, [watchedItems, form]);
+  }, [watchedItems, form.watch("surchargeAmount"), form.watch("freightAmount"), form.watch("packingCharges"), form.watch("otherCharges"), form.watch("additionalDiscount")]);
 
   // Dynamic product selection handler
   const handleProductSelection = (index: number, productId: number) => {
@@ -655,14 +630,7 @@ export default function PurchaseEntryProfessional() {
                         type="number"
                         step="0.01"
                         {...form.register("surchargeAmount", { 
-                          valueAsNumber: true,
-                          onChange: () => {
-                            // Trigger recalculation
-                            const items = form.getValues("items");
-                            if (items.length > 0) {
-                              form.setValue("items", [...items]);
-                            }
-                          }
+                          valueAsNumber: true
                         })}
                         placeholder="0"
                       />
@@ -674,14 +642,7 @@ export default function PurchaseEntryProfessional() {
                         type="number"
                         step="0.01"
                         {...form.register("freightAmount", { 
-                          valueAsNumber: true,
-                          onChange: () => {
-                            // Trigger recalculation
-                            const items = form.getValues("items");
-                            if (items.length > 0) {
-                              form.setValue("items", [...items]);
-                            }
-                          }
+                          valueAsNumber: true
                         })}
                         placeholder="0"
                       />
@@ -693,14 +654,7 @@ export default function PurchaseEntryProfessional() {
                         type="number"
                         step="0.01"
                         {...form.register("packingCharges", { 
-                          valueAsNumber: true,
-                          onChange: () => {
-                            // Trigger recalculation
-                            const items = form.getValues("items");
-                            if (items.length > 0) {
-                              form.setValue("items", [...items]);
-                            }
-                          }
+                          valueAsNumber: true
                         })}
                         placeholder="0"
                       />
@@ -712,14 +666,7 @@ export default function PurchaseEntryProfessional() {
                         type="number"
                         step="0.01"
                         {...form.register("otherCharges", { 
-                          valueAsNumber: true,
-                          onChange: () => {
-                            // Trigger recalculation
-                            const items = form.getValues("items");
-                            if (items.length > 0) {
-                              form.setValue("items", [...items]);
-                            }
-                          }
+                          valueAsNumber: true
                         })}
                         placeholder="0"
                       />
@@ -731,14 +678,7 @@ export default function PurchaseEntryProfessional() {
                         type="number"
                         step="0.01"
                         {...form.register("additionalDiscount", { 
-                          valueAsNumber: true,
-                          onChange: () => {
-                            // Trigger recalculation
-                            const items = form.getValues("items");
-                            if (items.length > 0) {
-                              form.setValue("items", [...items]);
-                            }
-                          }
+                          valueAsNumber: true
                         })}
                         placeholder="0"
                       />
