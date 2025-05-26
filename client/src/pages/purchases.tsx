@@ -270,13 +270,7 @@ export default function Purchases() {
               />
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             </div>
-            <Button 
-              onClick={() => window.location.href = "/purchase-entry-legacy"} 
-              className="bg-blue-500 hover:bg-blue-600"
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              New Purchase
-            </Button>
+            
           </div>
         </div>
 
@@ -362,160 +356,14 @@ export default function Purchases() {
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                 {searchTerm 
                   ? "No purchase orders found matching your search." 
-                  : "No purchase orders found. Create your first purchase order!"}
+                  : "No purchase orders found."}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Create Purchase Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Create Purchase Order</DialogTitle>
-            <DialogDescription>
-              Create a new purchase order from a supplier.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...purchaseForm}>
-            <form onSubmit={purchaseForm.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={purchaseForm.control}
-                name="supplierId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Supplier*</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value.toString()}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a supplier" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {suppliers?.map((supplier: any) => (
-                          <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-sm font-medium">Items*</h3>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={addItemField}
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Add Item
-                  </Button>
-                </div>
-                
-                <div className="space-y-4">
-                  {Array.from({ length: itemCount }).map((_, index) => (
-                    <div key={index} className="flex flex-col p-4 border border-gray-200 dark:border-gray-700 rounded-md space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-medium">Item {index + 1}</h4>
-                        {index > 0 && (
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeItemField(index)}
-                            className="h-6 w-6 rounded-full text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      
-                      <FormField
-                        control={purchaseForm.control}
-                        name={`items.${index}.productId`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Product*</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value.toString()}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a product" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {products?.map((product: any) => (
-                                  <SelectItem key={product.id} value={product.id.toString()}>
-                                    {product.name} (SKU: {product.sku})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={purchaseForm.control}
-                          name={`items.${index}.quantity`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Quantity*</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="1" placeholder="0" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={purchaseForm.control}
-                          name={`items.${index}.unitCost`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Unit Cost*</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="0.00" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsCreateDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createPurchaseMutation.isPending}
-                >
-                  {createPurchaseMutation.isPending ? "Creating..." : "Create Purchase Order"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      
 
       {/* View Purchase Dialog */}
       {selectedPurchase && (

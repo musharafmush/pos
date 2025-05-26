@@ -199,10 +199,10 @@ export default function PurchaseDashboard() {
   };
 
   const handleEdit = (purchase: any) => {
-    setLocation(`/purchase-entry-professional?edit=${purchase.id}`);
     toast({
-      title: "Opening for edit",
-      description: `Editing purchase order ${purchase.orderNumber || `PO-${purchase.id}`}`,
+      title: "Edit not available",
+      description: "Purchase order editing has been disabled.",
+      variant: "destructive",
     });
   };
 
@@ -275,12 +275,6 @@ export default function PurchaseDashboard() {
               <Button variant="outline" className="flex items-center gap-2 bg-white border-gray-300 hover:bg-gray-50">
                 <Building2 className="h-4 w-4" />
                 Manage Suppliers
-              </Button>
-            </Link>
-            <Link href="/purchase-entry-professional">
-              <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4" />
-                Create Purchase Order
               </Button>
             </Link>
           </div>
@@ -465,12 +459,9 @@ export default function PurchaseDashboard() {
                             </p>
                           </div>
                           {!searchTerm && statusFilter === "all_statuses" && supplierFilter === "all_suppliers" && (
-                            <Link href="/purchase-entry-professional">
-                              <Button className="mt-2 bg-blue-600 hover:bg-blue-700">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create Purchase Order
-                              </Button>
-                            </Link>
+                            <p className="mt-2 text-sm text-gray-500">
+                              Purchase orders will appear here when created
+                            </p>
                           )}
                         </div>
                       </TableCell>
