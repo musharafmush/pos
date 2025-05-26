@@ -243,7 +243,64 @@ export default function PurchaseEntryProfessional() {
         ? (existingPurchase.dueDate || existingPurchase.expectedDate || existingPurchase.due_date).split('T')[0]
         : "";
 
-      // Map database field names to form field names
+      // Map database field names to form field names with proper product information
+      const mappedItems = existingPurchase.items?.length > 0
+        ? existingPurchase.items.map((item: any) => {
+            // Find the product details to get name and sku
+            const product = products.find(p => p.id === (item.productId || item.product_id));
+            
+            return {
+              productId: item.productId || item.product_id || 0,
+              code: item.code || product?.sku || "",
+              description: item.description || product?.name || "",
+              quantity: Number(item.quantity) || 1,
+              receivedQty: Number(item.receivedQty || item.received_qty || item.quantity) || Number(item.quantity) || 1,
+              freeQty: Number(item.freeQty || item.free_qty) || 0,
+              unitCost: Number(item.unitCost || item.unit_cost || item.cost) || 0,
+              sellingPrice: Number(item.sellingPrice || item.selling_price) || 0,
+              mrp: Number(item.mrp) || 0,
+              hsnCode: item.hsnCode || item.hsn_code || product?.hsnCode || "",
+              taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent) || 18,
+              discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
+              discountPercent: Number(item.discountPercent || item.discount_percent) || 0,
+              expiryDate: item.expiryDate || item.expiry_date || "",
+              batchNumber: item.batchNumber || item.batch_number || "",
+              netCost: Number(item.netCost || item.net_cost) || 0,
+              roiPercent: Number(item.roiPercent || item.roi_percent) || 0,
+              grossProfitPercent: Number(item.grossProfitPercent || item.gross_profit_percent) || 0,
+              netAmount: Number(item.netAmount || item.net_amount || item.subtotal) || 0,
+              cashPercent: Number(item.cashPercent || item.cash_percent) || 0,
+              cashAmount: Number(item.cashAmount || item.cash_amount) || 0,
+              location: item.location || "",
+              unit: item.unit || "PCS",
+            };
+          })
+        : [{
+            productId: 0,
+            code: "",
+            description: "",
+            quantity: 1,
+            receivedQty: 0,
+            freeQty: 0,
+            unitCost: 0,
+            sellingPrice: 0,
+            mrp: 0,
+            hsnCode: "",
+            taxPercentage: 18,
+            discountAmount: 0,
+            discountPercent: 0,
+            expiryDate: "",
+            batchNumber: "",
+            netCost: 0,
+            roiPercent: 0,
+            grossProfitPercent: 0,
+            netAmount: 0,
+            cashPercent: 0,
+            cashAmount: 0,
+            location: "",
+            unit: "PCS",
+          }];
+
       const formData = {
         supplierId: existingPurchase.supplierId || existingPurchase.supplier_id || 0,
         orderNumber: existingPurchase.poNo || existingPurchase.orderNumber || existingPurchase.order_number || "",
@@ -265,57 +322,7 @@ export default function PurchaseEntryProfessional() {
         lrNumber: existingPurchase.lrNumber || existingPurchase.lr_number || "",
         remarks: existingPurchase.remarks || "",
         internalNotes: existingPurchase.internalNotes || existingPurchase.internal_notes || "",
-        items: existingPurchase.items?.length > 0
-          ? existingPurchase.items.map((item: any) => ({
-              productId: item.productId || item.product_id || 0,
-              code: item.code || "",
-              description: item.description || "",
-              quantity: Number(item.quantity) || 1,
-              receivedQty: Number(item.receivedQty || item.received_qty || item.quantity) || Number(item.quantity) || 1,
-              freeQty: Number(item.freeQty || item.free_qty) || 0,
-              unitCost: Number(item.unitCost || item.unit_cost || item.cost) || 0,
-              sellingPrice: Number(item.sellingPrice || item.selling_price) || 0,
-              mrp: Number(item.mrp) || 0,
-              hsnCode: item.hsnCode || item.hsn_code || "",
-              taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent) || 18,
-              discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
-              discountPercent: Number(item.discountPercent || item.discount_percent) || 0,
-              expiryDate: item.expiryDate || item.expiry_date || "",
-              batchNumber: item.batchNumber || item.batch_number || "",
-              netCost: Number(item.netCost || item.net_cost) || 0,
-              roiPercent: Number(item.roiPercent || item.roi_percent) || 0,
-              grossProfitPercent: Number(item.grossProfitPercent || item.gross_profit_percent) || 0,
-              netAmount: Number(item.netAmount || item.net_amount || item.subtotal) || 0,
-              cashPercent: Number(item.cashPercent || item.cash_percent) || 0,
-              cashAmount: Number(item.cashAmount || item.cash_amount) || 0,
-              location: item.location || "",
-              unit: item.unit || "PCS",
-            }))
-          : [{
-              productId: 0,
-              code: "",
-              description: "",
-              quantity: 1,
-              receivedQty: 0,
-              freeQty: 0,
-              unitCost: 0,
-              sellingPrice: 0,
-              mrp: 0,
-              hsnCode: "",
-              taxPercentage: 18,
-              discountAmount: 0,
-              discountPercent: 0,
-              expiryDate: "",
-              batchNumber: "",
-              netCost: 0,
-              roiPercent: 0,
-              grossProfitPercent: 0,
-              netAmount: 0,
-              cashPercent: 0,
-              cashAmount: 0,
-              location: "",
-              unit: "PCS",
-            }],
+        items: mappedItems,
       };
 
       console.log('Form data to populate:', formData);
@@ -335,7 +342,7 @@ export default function PurchaseEntryProfessional() {
         description: `Loaded purchase order ${formData.orderNumber}`,
       });
     }
-  }, [existingPurchase, isEditMode, form, today, toast]);
+  }, [existingPurchase, isEditMode, form, today, toast, products]);
 
   // Calculate totals when items or additional charges change
   useEffect(() => {
@@ -1156,9 +1163,19 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
 
                                 <TableCell className="border-r px-2 py-3">
-                                  <Select onValueChange={(value) => handleProductSelection(index, parseInt(value))}>
+                                  <Select 
+                                    onValueChange={(value) => handleProductSelection(index, parseInt(value))}
+                                    value={form.watch(`items.${index}.productId`)?.toString() || ""}
+                                  >
                                     <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Select Product" />
+                                      <SelectValue placeholder="Select Product">
+                                        {selectedProduct ? (
+                                          <div className="flex flex-col text-left">
+                                            <span className="font-medium text-sm">{selectedProduct.name}</span>
+                                            <span className="text-xs text-gray-500">{selectedProduct.sku}</span>
+                                          </div>
+                                        ) : "Select Product"}
+                                      </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                       {products.map((product) => (
@@ -1187,9 +1204,24 @@ export default function PurchaseEntryProfessional() {
                                     min="0"
                                     {...form.register(`items.${index}.receivedQty`, { 
                                       valueAsNumber: true,
-                                      onChange: () => {
-                                        // Trigger recalculation when quantity changes
-                                        setTimeout(() => form.trigger(`items.${index}`), 100);
+                                      onChange: (e) => {
+                                        const value = parseFloat(e.target.value) || 0;
+                                        form.setValue(`items.${index}.receivedQty`, value);
+                                        
+                                        // Recalculate net amount when quantity changes
+                                        const unitCost = form.getValues(`items.${index}.unitCost`) || 0;
+                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                        const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
+                                        
+                                        const subtotal = value * unitCost;
+                                        const taxableAmount = subtotal - discount;
+                                        const tax = (taxableAmount * taxPercentage) / 100;
+                                        const netAmount = taxableAmount + tax;
+                                        
+                                        form.setValue(`items.${index}.netAmount`, netAmount);
+                                        
+                                        // Trigger form validation
+                                        setTimeout(() => form.trigger(`items.${index}`), 50);
                                       }
                                     })}
                                     className="w-full text-center text-xs"
@@ -1220,17 +1252,20 @@ export default function PurchaseEntryProfessional() {
                                           const value = parseFloat(e.target.value) || 0;
                                           form.setValue(`items.${index}.unitCost`, value);
 
-                                          // Auto-calculate net amount
-                                          const quantity = form.getValues(`items.${index}.quantity`) || 0;
+                                          // Auto-calculate net amount using receivedQty
+                                          const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
                                           const discount = form.getValues(`items.${index}.discountAmount`) || 0;
                                           const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
 
-                                          const subtotal = value * quantity;
+                                          const subtotal = value * receivedQty;
                                           const taxableAmount = subtotal - discount;
                                           const tax = (taxableAmount * taxPercentage) / 100;
                                           const netAmount = taxableAmount + tax;
 
                                           form.setValue(`items.${index}.netAmount`, netAmount);
+                                          
+                                          // Trigger form validation
+                                          setTimeout(() => form.trigger(`items.${index}`), 50);
                                         }
                                       })}
                                       className="w-full text-right text-xs pl-6"
