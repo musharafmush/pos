@@ -864,7 +864,7 @@ export default function PurchaseDashboard() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {selectedPurchase.items && selectedPurchase.items.length > 0 ? (
+                    {selectedPurchase.items && Array.isArray(selectedPurchase.items) && selectedPurchase.items.length > 0 ? (
                       <div className="overflow-x-auto">
                         <Table className="text-sm">
                           <TableHeader>

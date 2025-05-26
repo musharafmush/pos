@@ -838,9 +838,9 @@ export const storage = {
         LEFT JOIN users u ON p.user_id = u.id
         WHERE p.id = ?
       `);
-      
+
       const purchase = getPurchaseStmt.get(id);
-      
+
       if (!purchase) {
         return null;
       }
@@ -858,7 +858,7 @@ export const storage = {
         WHERE pi.purchase_id = ?
         ORDER BY pi.id
       `);
-      
+
       const items = getItemsStmt.all(id);
 
       // Transform the purchase data to match expected format
@@ -1121,11 +1121,6 @@ export const storage = {
         with: {
           supplier: true,
           user: true,
-          items: {
-            with: {
-              product: true
-            }
-          }
         }
       };
 
@@ -1150,14 +1145,48 @@ export const storage = {
 
       // Apply conditions if any were provided
       if (conditions.length > 0) {
-        return await db.query.purchases.findMany({
+        const purchasesList = await db.query.purchases.findMany({
           ...query,
-          where: and(...conditions)
+          where: and(...conditions),
         });
-      }
+        // For each purchase, get the count of items
+        const purchasesWithItems = await Promise.all(
+          purchasesList.map(async (purchase) => {
+            const items = await db.query.purchaseItems.findMany({
+              where: eq(purchaseItems.purchaseId, purchase.id),
+              with: {
+                product: true
+              }
+            });
 
-      // Otherwise return without where clause
-      return await db.query.purchases.findMany(query);
+            return {
+              ...purchase,
+              items: items || []
+            };
+          })
+        );
+        return purchasesWithItems;
+      } else {
+        const purchasesList = await db.query.purchases.findMany({
+          ...query,
+        });
+         const purchasesWithItems = await Promise.all(
+          purchasesList.map(async (purchase) => {
+            const items = await db.query.purchaseItems.findMany({
+              where: eq(purchaseItems.purchaseId, purchase.id),
+              with: {
+                product: true
+              }
+            });
+
+            return {
+              ...purchase,
+              items: items || []
+            };
+          })
+        );
+        return purchasesWithItems;
+      }
     } catch (error) {
       console.error("Error in listPurchases:", error);
       return [];
