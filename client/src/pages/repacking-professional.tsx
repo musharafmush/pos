@@ -67,7 +67,7 @@ export default function RepackingProfessional() {
   const today = new Date().toISOString().split('T')[0];
 
   // Fetch products for bulk selection
-  const { data: products = [] } = useQuery({
+  const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
       const response = await fetch("/api/products");
@@ -77,9 +77,16 @@ export default function RepackingProfessional() {
   });
 
   // Show all products with stock > 0 for repacking (more flexible approach)
-  const bulkProducts = products.filter((product: Product) => 
-    product.stockQuantity > 0 && product.active
-  );
+  const bulkProducts = products.filter((product: Product) => {
+    // More lenient filtering - show products that are either active or have stock
+    const hasStock = product.stockQuantity > 0;
+    const isActive = product.active === true || product.active === 1;
+    
+    // Don't show already repacked items (those with REPACK in SKU)
+    const isNotRepacked = !product.sku.includes("REPACK");
+    
+    return hasStock && isActive && isNotRepacked;
+  });
 
   const form = useForm<RepackingFormValues>({
     resolver: zodResolver(repackingFormSchema),
@@ -305,12 +312,25 @@ export default function RepackingProfessional() {
                 {/* Product Selection with Search */}
                 <Card>
                   <CardContent className="p-4">
+                    {/* Debug Information */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
+                        <div className="font-medium mb-2">Debug Info:</div>
+                        <div>Total Products: {products.length}</div>
+                        <div>Products Loading: {productsLoading ? 'Yes' : 'No'}</div>
+                        <div>Products Error: {productsError ? productsError.message : 'None'}</div>
+                        <div>Bulk Products Available: {bulkProducts.length}</div>
+                        <div>Active Products: {products.filter((p: Product) => p.active).length}</div>
+                        <div>Products with Stock: {products.filter((p: Product) => p.stockQuantity > 0).length}</div>
+                      </div>
+                    )}
+                    
                     <FormField
                       control={form.control}
                       name="bulkProductId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Select Bulk Product</FormLabel>
+                          <FormLabel>Select Bulk Product ({bulkProducts.length} available)</FormLabel>
                           
                           {/* Search Input */}
                           <div className="mb-2">
@@ -328,7 +348,15 @@ export default function RepackingProfessional() {
                           <Select onValueChange={(value) => field.onChange(parseInt(value))}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select a bulk product to repack" />
+                                <SelectValue placeholder={
+                                  productsLoading 
+                                    ? "Loading products..." 
+                                    : productsError 
+                                      ? "Error loading products" 
+                                      : bulkProducts.length === 0 
+                                        ? "No bulk products available" 
+                                        : "Select a bulk product to repack"
+                                } />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="max-h-60 overflow-y-auto">
@@ -358,6 +386,38 @@ export default function RepackingProfessional() {
                                   </div>
                                 </SelectItem>
                               ))}
+                              {productsLoading && (
+                                <div className="p-2 text-center text-gray-500">
+                                  <div className="animate-pulse">Loading products...</div>
+                                </div>
+                              )}
+                              
+                              {productsError && (
+                                <div className="p-2 text-center text-red-500">
+                                  Error loading products: {productsError.message}
+                                </div>
+                              )}
+                              
+                              {!productsLoading && !productsError && products.length === 0 && (
+                                <div className="p-2 text-center text-gray-500">
+                                  No products found in database
+                                </div>
+                              )}
+                              
+                              {!productsLoading && !productsError && products.length > 0 && bulkProducts.length === 0 && (
+                                <div className="p-2 text-center text-yellow-600">
+                                  <div>No products available for repacking</div>
+                                  <div className="text-xs mt-1">
+                                    Products need stock > 0 and must be active
+                                  </div>
+                                  <div className="text-xs">
+                                    Total products: {products.length} | 
+                                    Active: {products.filter((p: Product) => p.active).length} | 
+                                    With Stock: {products.filter((p: Product) => p.stockQuantity > 0).length}
+                                  </div>
+                                </div>
+                              )}
+                              
                               {bulkProducts.filter((product: Product) => {
                                 // If no search term, show all products
                                 if (!searchTerm.trim()) {
@@ -370,7 +430,7 @@ export default function RepackingProfessional() {
                                   product.sku.toLowerCase().includes(search) ||
                                   (product.description && product.description.toLowerCase().includes(search))
                                 );
-                              }).length === 0 && searchTerm.trim() && (
+                              }).length === 0 && searchTerm.trim() && bulkProducts.length > 0 && (
                                 <div className="p-2 text-center text-gray-500">
                                   No products found matching "{searchTerm}"
                                 </div>
