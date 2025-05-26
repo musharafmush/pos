@@ -203,9 +203,11 @@ export default function PurchaseEntryProfessional() {
     items.forEach((item) => {
       if (item.productId && item.productId > 0) {
         totalItems++;
-        totalQuantity += item.quantity || 0;
+        // Use receivedQty instead of quantity for proper calculation
+        const receivedQty = Number(item.receivedQty) || 0;
+        totalQuantity += receivedQty;
 
-        const itemCost = (item.unitCost || 0) * (item.quantity || 0);
+        const itemCost = (item.unitCost || 0) * receivedQty;
         subtotal += itemCost;
 
         // Calculate discount
