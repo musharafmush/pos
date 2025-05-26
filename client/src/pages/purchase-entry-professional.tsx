@@ -217,16 +217,7 @@ export default function PurchaseEntryProfessional() {
     let totalTax = 0;
     let freightCharges = 0;
 
-    // Get additional charges from form
-    const formData = form.getValues();
-    const surchargeAmount = Number(formData.surchargeAmount) || 0;
-    const packingCharges = Number(formData.packingCharges) || 0;
-    const otherCharges = Number(formData.otherCharges) || 0;
-    const additionalDiscount = Number(formData.additionalDiscount) || 0;
-    freightCharges = Number(formData.freightAmount) || 0;
-
-    const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
-
+    // First pass: Calculate basic amounts without additional charges
     items.forEach((item, index) => {
       if (item.productId && item.productId > 0) {
         totalItems++;
@@ -245,9 +236,30 @@ export default function PurchaseEntryProfessional() {
         const taxableAmount = itemCost - discount;
         const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
         totalTax += tax;
+      }
+    });
 
-        // Distribute additional charges proportionally to each line item's net amount
-        if (totalAdditionalCharges > 0 && subtotal > 0) {
+    // Get additional charges from form
+    const formData = form.getValues();
+    const surchargeAmount = Number(formData.surchargeAmount) || 0;
+    const packingCharges = Number(formData.packingCharges) || 0;
+    const otherCharges = Number(formData.otherCharges) || 0;
+    const additionalDiscount = Number(formData.additionalDiscount) || 0;
+    freightCharges = Number(formData.freightAmount) || 0;
+
+    const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
+
+    // Second pass: Distribute additional charges proportionally to each line item
+    if (totalAdditionalCharges > 0 && subtotal > 0) {
+      items.forEach((item, index) => {
+        if (item.productId && item.productId > 0) {
+          const receivedQty = Number(item.receivedQty) || 0;
+          const itemCost = (item.unitCost || 0) * receivedQty;
+          const discount = item.discountAmount || 0;
+          const taxableAmount = itemCost - discount;
+          const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
+          
+          // Calculate this item's proportion of the total subtotal
           const itemProportion = itemCost / subtotal;
           const itemAdditionalCharges = totalAdditionalCharges * itemProportion;
           
@@ -257,8 +269,22 @@ export default function PurchaseEntryProfessional() {
           // Update the form value for this item's net amount
           form.setValue(`items.${index}.netAmount`, netAmountWithCharges);
         }
-      }
-    });
+      });
+    } else {
+      // If no additional charges, set net amount to basic calculation
+      items.forEach((item, index) => {
+        if (item.productId && item.productId > 0) {
+          const receivedQty = Number(item.receivedQty) || 0;
+          const itemCost = (item.unitCost || 0) * receivedQty;
+          const discount = item.discountAmount || 0;
+          const taxableAmount = itemCost - discount;
+          const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
+          const netAmount = taxableAmount + tax;
+          
+          form.setValue(`items.${index}.netAmount`, netAmount);
+        }
+      });
+    }
 
     const grandTotal = subtotal - totalDiscount + totalTax + totalAdditionalCharges - additionalDiscount;
 
@@ -628,7 +654,16 @@ export default function PurchaseEntryProfessional() {
                       <Input
                         type="number"
                         step="0.01"
-                        {...form.register("surchargeAmount", { valueAsNumber: true })}
+                        {...form.register("surchargeAmount", { 
+                          valueAsNumber: true,
+                          onChange: () => {
+                            // Trigger recalculation
+                            const items = form.getValues("items");
+                            if (items.length > 0) {
+                              form.setValue("items", [...items]);
+                            }
+                          }
+                        })}
                         placeholder="0"
                       />
                     </div>
@@ -638,7 +673,16 @@ export default function PurchaseEntryProfessional() {
                       <Input
                         type="number"
                         step="0.01"
-                        {...form.register("freightAmount", { valueAsNumber: true })}
+                        {...form.register("freightAmount", { 
+                          valueAsNumber: true,
+                          onChange: () => {
+                            // Trigger recalculation
+                            const items = form.getValues("items");
+                            if (items.length > 0) {
+                              form.setValue("items", [...items]);
+                            }
+                          }
+                        })}
                         placeholder="0"
                       />
                     </div>
@@ -648,7 +692,16 @@ export default function PurchaseEntryProfessional() {
                       <Input
                         type="number"
                         step="0.01"
-                        {...form.register("packingCharges", { valueAsNumber: true })}
+                        {...form.register("packingCharges", { 
+                          valueAsNumber: true,
+                          onChange: () => {
+                            // Trigger recalculation
+                            const items = form.getValues("items");
+                            if (items.length > 0) {
+                              form.setValue("items", [...items]);
+                            }
+                          }
+                        })}
                         placeholder="0"
                       />
                     </div>
@@ -658,7 +711,16 @@ export default function PurchaseEntryProfessional() {
                       <Input
                         type="number"
                         step="0.01"
-                        {...form.register("otherCharges", { valueAsNumber: true })}
+                        {...form.register("otherCharges", { 
+                          valueAsNumber: true,
+                          onChange: () => {
+                            // Trigger recalculation
+                            const items = form.getValues("items");
+                            if (items.length > 0) {
+                              form.setValue("items", [...items]);
+                            }
+                          }
+                        })}
                         placeholder="0"
                       />
                     </div>
@@ -668,7 +730,16 @@ export default function PurchaseEntryProfessional() {
                       <Input
                         type="number"
                         step="0.01"
-                        {...form.register("additionalDiscount", { valueAsNumber: true })}
+                        {...form.register("additionalDiscount", { 
+                          valueAsNumber: true,
+                          onChange: () => {
+                            // Trigger recalculation
+                            const items = form.getValues("items");
+                            if (items.length > 0) {
+                              form.setValue("items", [...items]);
+                            }
+                          }
+                        })}
                         placeholder="0"
                       />
                     </div>
