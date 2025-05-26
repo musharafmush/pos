@@ -190,7 +190,7 @@ export default function PurchaseDashboard() {
   };
 
   const handleDelete = async (purchase: Purchase) => {
-    deleteProcess.mutate(purchase.id);
+    deletePurchase.mutate(purchase.id);
   };
 
   if (error) {
