@@ -233,57 +233,61 @@ export default function PurchaseEntryProfessional() {
   // Effect to populate form when editing existing purchase
   useEffect(() => {
     if (existingPurchase && isEditMode) {
-      // Format dates properly
-      const orderDate = existingPurchase.poDate
-        ? existingPurchase.poDate.split('T')[0]
+      console.log('Loading existing purchase data:', existingPurchase);
+      
+      // Format dates properly - handle different possible date field names
+      const orderDate = existingPurchase.poDate || existingPurchase.orderDate || existingPurchase.order_date
+        ? (existingPurchase.poDate || existingPurchase.orderDate || existingPurchase.order_date).split('T')[0]
         : today;
-      const expectedDate = existingPurchase.dueDate
-        ? existingPurchase.dueDate.split('T')[0]
+      const expectedDate = existingPurchase.dueDate || existingPurchase.expectedDate || existingPurchase.due_date
+        ? (existingPurchase.dueDate || existingPurchase.expectedDate || existingPurchase.due_date).split('T')[0]
         : "";
 
-      // Populate form with existing data
-      form.reset({
-        supplierId: existingPurchase.supplierId || 0,
-        orderNumber: existingPurchase.poNo || "",
+      // Map database field names to form field names
+      const formData = {
+        supplierId: existingPurchase.supplierId || existingPurchase.supplier_id || 0,
+        orderNumber: existingPurchase.poNo || existingPurchase.orderNumber || existingPurchase.order_number || "",
         orderDate: orderDate,
         expectedDate: expectedDate,
         paymentTerms: existingPurchase.paymentTerms || "Net 30",
-        paymentMethod: existingPurchase.paymentType || "Credit",
+        paymentMethod: existingPurchase.paymentType || existingPurchase.paymentMethod || "Credit",
         status: existingPurchase.status || "Pending",
-        freightAmount: Number(existingPurchase.freightAmount) || 0,
-        surchargeAmount: Number(existingPurchase.surchargeAmount) || 0,
-        packingCharges: Number(existingPurchase.packingCharge) || 0,
-        otherCharges: Number(existingPurchase.otherCharge) || 0,
-        additionalDiscount: Number(existingPurchase.manualDiscountAmount) || 0,
-        invoiceNumber: existingPurchase.invoiceNo || "",
-        invoiceDate: existingPurchase.invoiceDate ? existingPurchase.invoiceDate.split('T')[0] : "",
-        invoiceAmount: Number(existingPurchase.invoiceAmount) || 0,
-        lrNumber: existingPurchase.lrNumber || "",
+        freightAmount: Number(existingPurchase.freightAmount || existingPurchase.freight_amount) || 0,
+        surchargeAmount: Number(existingPurchase.surchargeAmount || existingPurchase.surcharge_amount) || 0,
+        packingCharges: Number(existingPurchase.packingCharge || existingPurchase.packing_charge) || 0,
+        otherCharges: Number(existingPurchase.otherCharge || existingPurchase.other_charge) || 0,
+        additionalDiscount: Number(existingPurchase.manualDiscountAmount || existingPurchase.manual_discount_amount) || 0,
+        invoiceNumber: existingPurchase.invoiceNo || existingPurchase.invoice_no || "",
+        invoiceDate: existingPurchase.invoiceDate || existingPurchase.invoice_date 
+          ? (existingPurchase.invoiceDate || existingPurchase.invoice_date).split('T')[0] 
+          : "",
+        invoiceAmount: Number(existingPurchase.invoiceAmount || existingPurchase.invoice_amount) || 0,
+        lrNumber: existingPurchase.lrNumber || existingPurchase.lr_number || "",
         remarks: existingPurchase.remarks || "",
-        internalNotes: existingPurchase.internalNotes || "",
+        internalNotes: existingPurchase.internalNotes || existingPurchase.internal_notes || "",
         items: existingPurchase.items?.length > 0
           ? existingPurchase.items.map((item: any) => ({
-              productId: item.productId || 0,
+              productId: item.productId || item.product_id || 0,
               code: item.code || "",
               description: item.description || "",
-              quantity: Number(item.receivedQty) || Number(item.quantity) || 1,
-              receivedQty: Number(item.receivedQty) || 0,
-              freeQty: Number(item.freeQty) || 0,
-              unitCost: Number(item.cost) || 0,
-              sellingPrice: Number(item.sellingPrice) || 0,
+              quantity: Number(item.quantity) || 1,
+              receivedQty: Number(item.receivedQty || item.received_qty || item.quantity) || 0,
+              freeQty: Number(item.freeQty || item.free_qty) || 0,
+              unitCost: Number(item.unitCost || item.unit_cost || item.cost) || 0,
+              sellingPrice: Number(item.sellingPrice || item.selling_price) || 0,
               mrp: Number(item.mrp) || 0,
-              hsnCode: item.hsnCode || "",
-              taxPercentage: Number(item.taxPercent) || 18,
-              discountAmount: Number(item.discountAmount) || 0,
-              discountPercent: 0,
-              expiryDate: item.expiryDate || "",
-              batchNumber: item.batchNumber || "",
-              netCost: Number(item.netCost) || 0,
-              roiPercent: Number(item.roiPercent) || 0,
-              grossProfitPercent: Number(item.grossProfitPercent) || 0,
-              netAmount: Number(item.netAmount) || 0,
-              cashPercent: 0,
-              cashAmount: 0,
+              hsnCode: item.hsnCode || item.hsn_code || "",
+              taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent) || 18,
+              discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
+              discountPercent: Number(item.discountPercent || item.discount_percent) || 0,
+              expiryDate: item.expiryDate || item.expiry_date || "",
+              batchNumber: item.batchNumber || item.batch_number || "",
+              netCost: Number(item.netCost || item.net_cost) || 0,
+              roiPercent: Number(item.roiPercent || item.roi_percent) || 0,
+              grossProfitPercent: Number(item.grossProfitPercent || item.gross_profit_percent) || 0,
+              netAmount: Number(item.netAmount || item.net_amount || item.subtotal) || 0,
+              cashPercent: Number(item.cashPercent || item.cash_percent) || 0,
+              cashAmount: Number(item.cashAmount || item.cash_amount) || 0,
               location: item.location || "",
               unit: item.unit || "PCS",
             }))
@@ -312,11 +316,23 @@ export default function PurchaseEntryProfessional() {
               location: "",
               unit: "PCS",
             }],
-      });
+      };
+
+      console.log('Form data to populate:', formData);
+
+      // Populate form with existing data
+      form.reset(formData);
+
+      // Also set the supplier value in the select component
+      if (formData.supplierId) {
+        setTimeout(() => {
+          form.setValue("supplierId", formData.supplierId);
+        }, 100);
+      }
 
       toast({
         title: "Editing purchase order",
-        description: `Loaded purchase order ${existingPurchase.poNo}`,
+        description: `Loaded purchase order ${formData.orderNumber}`,
       });
     }
   }, [existingPurchase, isEditMode, form, today, toast]);
@@ -759,7 +775,10 @@ export default function PurchaseEntryProfessional() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="supplierId">Supplier *</Label>
-                      <Select onValueChange={(value) => form.setValue("supplierId", parseInt(value))}>
+                      <Select 
+                        onValueChange={(value) => form.setValue("supplierId", parseInt(value))}
+                        value={form.watch("supplierId")?.toString() || ""}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select supplier" />
                         </SelectTrigger>
