@@ -858,109 +858,187 @@ export default function PurchaseDashboard() {
                   </div>
 
                   <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="font-semibold text-gray-700">#</TableHead>
-                          <TableHead className="font-semibold text-gray-700">Product Name</TableHead>
-                          <TableHead className="font-semibold text-gray-700">SKU</TableHead>
-                          <TableHead className="font-semibold text-gray-700 text-center">Purchase Quantity</TableHead>
-                          <TableHead className="font-semibold text-gray-700 text-right">Unit Cost (Before Discount)</TableHead>
-                          <TableHead className="font-semibold text-gray-700 text-center">Discount Percent</TableHead>
-                          <TableHead className="font-semibold text-gray-700 text-right">Unit Cost (Before Tax)</TableHead>
-                          <TableHead className="font-semibold text-gray-700 text-right">Subtotal (Before Tax)</TableHead>
-                          <TableHead className="font-semibold text-gray-700 text-center">Tax</TableHead>
-                          <TableHead className="font-semibold text-gray-700 text-right">Unit Cost Price (After Tax)</TableHead>
-                          <TableHead className="font-semibold text-gray-700 text-right">Subtotal</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedPurchase.items && selectedPurchase.items.length > 0 ? (
-                          selectedPurchase.items.map((item: any, index: number) => {
-                            const quantity = Number(item.receivedQty || item.quantity || 0);
-                            const unitCost = parseFloat(item.unitCost || item.cost || "0");
-                            const discountPercent = parseFloat(item.discountPercent || "0");
-                            const taxPercent = parseFloat(item.taxPercentage || "0");
-
-                            // Calculate costs step by step
-                            const unitCostAfterDiscount = unitCost * (1 - discountPercent / 100);
-                            const subtotalBeforeTax = unitCostAfterDiscount * quantity;
-                            const unitCostAfterTax = unitCostAfterDiscount * (1 + taxPercent / 100);
-                            const finalSubtotal = unitCostAfterTax * quantity;
-
-                            return (
-                              <TableRow key={item.id || index} className="hover:bg-gray-50">
-                                <TableCell className="py-3 text-center font-medium text-gray-600">
-                                  {index + 1}
-                                </TableCell>
-                                <TableCell className="py-3">
-                                  <div className="font-medium text-gray-900">
-                                    {item.product?.name || item.productName || 'Unknown Product'}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="py-3">
-                                  <div className="font-mono text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                    {item.product?.sku || item.code || 'N/A'}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                  <span className="font-semibold text-blue-600">
-                                    {quantity}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="py-3 text-right">
-                                  <span className="font-semibold">
-                                    {formatCurrency(unitCost)}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                  <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                                    {discountPercent}%
-                                  </span>
-                                </TableCell>
-                                <TableCell className="py-3 text-right">
-                                  <span className="font-semibold text-green-600">
-                                    {formatCurrency(unitCostAfterDiscount)}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="py-3 text-right">
-                                  <span className="font-semibold">
-                                    {formatCurrency(subtotalBeforeTax)}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    {taxPercent}%
-                                  </span>
-                                </TableCell>
-                                <TableCell className="py-3 text-right">
-                                  <span className="font-bold text-green-700">
-                                    {formatCurrency(unitCostAfterTax)}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="py-3 text-right">
-                                  <span className="font-bold text-lg text-green-700">
-                                    {formatCurrency(finalSubtotal)}
-                                  </span>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={11} className="py-8 text-center text-gray-500">
-                              <div className="flex flex-col items-center gap-2">
-                                <Package className="w-8 h-8 text-gray-300" />
-                                <span>No items found for this purchase order</span>
-                                <span className="text-sm text-gray-400">
-                                  Items may not have been properly saved or there was an error loading them.
-                                </span>
-                              </div>
-                            </TableCell>
+                    <div className="min-w-[2400px] bg-white">
+                      <Table className="text-sm">
+                        <TableHeader>
+                          <TableRow className="bg-blue-50 border-b-2">
+                            <TableHead className="w-16 text-center font-bold border-r px-3 py-4">No</TableHead>
+                            <TableHead className="w-32 font-bold border-r px-3 py-4">Code</TableHead>
+                            <TableHead className="min-w-[180px] font-bold border-r px-3 py-4">Product Name</TableHead>
+                            <TableHead className="min-w-[160px] font-bold border-r px-3 py-4">Description</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Received Qty</TableHead>
+                            <TableHead className="w-24 text-center font-bold border-r px-3 py-4">Free Qty</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Cost</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">HSN Code</TableHead>
+                            <TableHead className="w-20 text-center font-bold border-r px-3 py-4">Tax %</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Disc Amt</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Exp. Date</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Net Cost</TableHead>
+                            <TableHead className="w-24 text-center font-bold border-r px-3 py-4">ROI %</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Gross Profit %</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Selling Price</TableHead>
+                            <TableHead className="w-24 text-center font-bold border-r px-3 py-4">MRP</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Amount</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Net Amount</TableHead>
+                            <TableHead className="w-20 text-center font-bold border-r px-3 py-4">Cash %</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Cash Amt</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Batch No</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Location</TableHead>
+                            <TableHead className="w-20 text-center font-bold px-3 py-4">Unit</TableHead>
                           </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedPurchase.items && selectedPurchase.items.length > 0 ? (
+                            selectedPurchase.items.map((item: any, index: number) => {
+                              const receivedQty = Number(item.receivedQty || item.quantity || 0);
+                              const freeQty = Number(item.freeQty || 0);
+                              const unitCost = parseFloat(item.unitCost || item.cost || "0");
+                              const discountAmount = parseFloat(item.discountAmount || "0");
+                              const taxPercent = parseFloat(item.taxPercentage || item.taxPercent || "0");
+                              const netCost = parseFloat(item.netCost || unitCost.toString());
+                              const roiPercent = parseFloat(item.roiPercent || "0");
+                              const grossProfitPercent = parseFloat(item.grossProfitPercent || "0");
+                              const sellingPrice = parseFloat(item.sellingPrice || "0");
+                              const mrp = parseFloat(item.mrp || "0");
+                              const amount = parseFloat(item.amount || (receivedQty * unitCost).toString());
+                              const netAmount = parseFloat(item.netAmount || amount.toString());
+                              const cashPercent = parseFloat(item.cashPercent || "0");
+                              const cashAmount = parseFloat(item.cashAmount || "0");
+
+                              return (
+                                <TableRow key={item.id || index} className="hover:bg-gray-50 border-b">
+                                  <TableCell className="text-center font-medium border-r px-3 py-3">
+                                    {index + 1}
+                                  </TableCell>
+                                  <TableCell className="border-r px-3 py-3">
+                                    <div className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                      {item.product?.sku || item.code || 'N/A'}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="border-r px-3 py-3">
+                                    <div className="font-medium text-gray-900 text-sm">
+                                      {item.product?.name || item.productName || 'Unknown Product'}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="border-r px-3 py-3">
+                                    <div className="text-sm text-gray-600">
+                                      {item.description || item.product?.description || '-'}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <span className="font-semibold text-blue-600">
+                                      {receivedQty}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <span className="text-sm">
+                                      {freeQty}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-sm font-semibold">
+                                      ₹{unitCost.toFixed(0)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-xs">
+                                      {item.hsnCode || item.product?.hsnCode || '-'}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                      {taxPercent}%
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-sm">
+                                      ₹{discountAmount.toFixed(0)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-xs">
+                                      {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('en-GB') : '-'}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-sm font-semibold text-green-600">
+                                      ₹{netCost.toFixed(0)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-xs bg-yellow-100 text-yellow-800 px-1 py-1 rounded">
+                                      {roiPercent.toFixed(2)}%
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-xs bg-purple-100 text-purple-800 px-1 py-1 rounded">
+                                      {grossProfitPercent.toFixed(2)}%
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-sm">
+                                      ₹{sellingPrice.toFixed(0)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-sm">
+                                      ₹{mrp.toFixed(0)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-sm font-semibold text-blue-700">
+                                      ₹{amount.toFixed(0)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-sm font-bold text-green-700">
+                                      ₹{netAmount.toFixed(0)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-xs">
+                                      {cashPercent.toFixed(1)}%
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-sm">
+                                      {cashAmount > 0 ? `₹${cashAmount.toFixed(0)}` : '-'}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-xs">
+                                      {item.batchNumber || item.batchNo || '-'}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r px-3 py-3">
+                                    <div className="text-xs">
+                                      {item.location || '-'}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center px-3 py-3">
+                                    <div className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                      {item.unit || 'PCS'}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={23} className="py-8 text-center text-gray-500">
+                                <div className="flex flex-col items-center gap-2">
+                                  <Package className="w-8 h-8 text-gray-300" />
+                                  <span>No items found for this purchase order</span>
+                                  <span className="text-sm text-gray-400">
+                                    Items may not have been properly saved or there was an error loading them.
+                                  </span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 </div>
 
