@@ -33,6 +33,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { 
   PlusIcon,
   PackageIcon,
@@ -52,7 +60,9 @@ import {
   CalendarIcon,
   XIcon,
   WarehouseIcon,
-  QrCodeIcon
+  QrCodeIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
@@ -66,6 +76,8 @@ export default function AddItemDashboard() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [editForm, setEditForm] = useState({
     // Basic Information
     itemCode: "",
@@ -302,8 +314,20 @@ export default function AddItemDashboard() {
     product.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
   // Recent products (last 10)
   const recentProducts = products.slice(-10).reverse();
+
+  // Reset to first page when search term changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   return (
     <DashboardLayout>
@@ -536,10 +560,23 @@ export default function AddItemDashboard() {
                       <Input
                         placeholder="Search products..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                         className="pl-10 w-64"
                       />
                     </div>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value={5}>5 per page</option>
+                      <option value={10}>10 per page</option>
+                      <option value={20}>20 per page</option>
+                      <option value={50}>50 per page</option>
+                    </select>
                     <Button variant="outline" size="sm">
                       <FilterIcon className="w-4 h-4" />
                     </Button>
@@ -563,7 +600,7 @@ export default function AddItemDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredProducts.slice(0, 10).map((product: Product) => (
+                      {paginatedProducts.map((product: Product) => (
                         <TableRow key={product.id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
@@ -641,6 +678,61 @@ export default function AddItemDashboard() {
                       ))}
                     </TableBody>
                   </Table>
+                )}
+                
+                {/* Pagination Controls */}
+                {filteredProducts.length > 0 && (
+                  <div className="flex items-center justify-between px-2 py-4">
+                    <div className="text-sm text-gray-700">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length} products
+                    </div>
+                    
+                    {totalPages > 1 && (
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious 
+                              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                              className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                          </PaginationItem>
+                          
+                          {/* Page Numbers */}
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNumber;
+                            if (totalPages <= 5) {
+                              pageNumber = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNumber = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNumber = totalPages - 4 + i;
+                            } else {
+                              pageNumber = currentPage - 2 + i;
+                            }
+                            
+                            return (
+                              <PaginationItem key={pageNumber}>
+                                <PaginationLink
+                                  onClick={() => setCurrentPage(pageNumber)}
+                                  isActive={currentPage === pageNumber}
+                                  className="cursor-pointer"
+                                >
+                                  {pageNumber}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          })}
+                          
+                          <PaginationItem>
+                            <PaginationNext 
+                              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                              className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
