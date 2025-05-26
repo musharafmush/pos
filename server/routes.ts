@@ -1424,6 +1424,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/purchases', isAuthenticated, async (req, res) => {
     try {
+      console.log('Purchase creation request received:', req.body);
+      
       // Extract main purchase fields
       const { 
         poNo, poDate, dueDate, paymentType, supplierId, 
@@ -1431,26 +1433,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         grossAmount, itemDiscountAmount, taxAmount 
       } = req.body;
       
-      // Create the purchase object
-      const purchase = {
-        orderNumber: poNo || `PO-${Date.now()}`,
-        orderDate: new Date(poDate),
-        dueDate: new Date(dueDate),
-        supplierId: parseInt(supplierId),
-        status: 'pending',
-        total: grossAmount ? grossAmount.toString() : '0',
-        notes: remarks
-      };
+      // Validation
+      if (!supplierId || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ 
+          message: 'Missing required fields: supplierId and items are required' 
+        });
+      }
       
-      // Process purchase items
-      const purchaseItems = items.map((item: any) => ({
-        productId: item.productId,
-        quantity: parseInt(item.receivedQty),
-        unitCost: parseFloat(item.cost), // Convert to number for calculation
-        subtotal: parseFloat(item.amount || "0")
-      }));
+      // Validate items
+      const validItems = items.filter(item => 
+        item.productId && 
+        Number(item.productId) > 0 && 
+        Number(item.receivedQty || item.quantity) > 0
+      );
       
-      // Create purchase with items
+      if (validItems.length === 0) {
+        return res.status(400).json({ 
+          message: 'At least one valid item with product and quantity is required' 
+        });
+      }
+      
+      // Process purchase items with proper error handling
+      const purchaseItems = validItems.map((item: any) => {
+        const productId = Number(item.productId);
+        const quantity = Number(item.receivedQty || item.quantity || 1);
+        const unitCost = Number(item.cost || item.unitCost || 0);
+        
+        if (isNaN(productId) || isNaN(quantity) || isNaN(unitCost)) {
+          throw new Error(`Invalid item data: productId=${item.productId}, quantity=${item.receivedQty || item.quantity}, cost=${item.cost || item.unitCost}`);
+        }
+        
+        return {
+          productId,
+          quantity,
+          unitCost
+        };
+      });
+      
+      console.log('Processed purchase items:', purchaseItems);
+      
+      // Get user ID
       const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized' });
@@ -1460,30 +1482,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'pending'
       };
       
-      // Convert items to match the expected format
-      const formattedItems = purchaseItems.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        unitCost: item.unitCost
-      }));
+      // Create the purchase in the database
+      const newPurchase = await storage.createPurchase(
+        userId, 
+        Number(supplierId),
+        purchaseItems,
+        purchaseData
+      );
       
-      try {
-        // Create the purchase in the database
-        const newPurchase = await storage.createPurchase(
-          userId, 
-          parseInt(supplierId.toString()),
-          formattedItems,
-          purchaseData
-        );
-        
-        res.status(201).json(newPurchase);
-      } catch (error) {
-        console.error('Error in createPurchase:', error);
-        res.status(500).json({ message: 'Failed to create purchase', error: (error as Error).message });
-      }
+      console.log('Purchase created successfully:', newPurchase);
+      res.status(201).json(newPurchase);
     } catch (error) {
       console.error('Error creating purchase:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ 
+        message: 'Failed to create purchase', 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
