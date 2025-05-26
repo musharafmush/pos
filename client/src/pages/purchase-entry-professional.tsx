@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Save, Printer, ArrowLeft, Trash2, Package } from "lucide-react";
 import { Link } from "wouter";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
 const purchaseItemSchema = z.object({
   productId: z.number().min(1, "Product is required"),
@@ -92,10 +93,19 @@ export default function PurchaseEntryProfessional() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("details");
-  
+  const [summary, setSummary] = useState({
+    totalItems: 0,
+    totalQuantity: 0,
+    subtotal: 0,
+    totalDiscount: 0,
+    totalTax: 0,
+    freightCharges: 0,
+    grandTotal: 0
+  });
+
   // Get current date for defaults
   const today = new Date().toISOString().split('T')[0];
-  
+
   const form = useForm<PurchaseFormData>({
     resolver: zodResolver(purchaseSchema),
     defaultValues: {
@@ -173,59 +183,94 @@ export default function PurchaseEntryProfessional() {
     },
   });
 
-  const onSubmit = (data: PurchaseFormData) => {
-    console.log("Form data:", data);
-    
-    // Validate items have proper values
-    const validItems = data.items.filter(item => item.productId > 0 && item.quantity > 0 && item.unitCost > 0);
-    
-    if (validItems.length === 0) {
+  // Watch for changes in items array to recalculate totals
+  const watchedItems = useWatch({
+    control: form.control,
+    name: "items"
+  });
+
+  // Calculate totals when items change
+  useEffect(() => {
+    const items = form.getValues("items") || [];
+
+    let totalItems = 0;
+    let totalQuantity = 0;
+    let subtotal = 0;
+    let totalDiscount = 0;
+    let totalTax = 0;
+    let freightCharges = 0;
+
+    items.forEach((item) => {
+      if (item.productId && item.productId > 0) {
+        totalItems++;
+        totalQuantity += item.quantity || 0;
+
+        const itemCost = (item.unitCost || 0) * (item.quantity || 0);
+        subtotal += itemCost;
+
+        // Calculate discount
+        const discount = item.discountAmount || 0;
+        totalDiscount += discount;
+
+        // Calculate tax (GST)
+        const taxableAmount = itemCost - discount;
+        const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
+        totalTax += tax;
+      }
+    });
+
+    // Add freight charges (could be configurable)
+    freightCharges = 0; // Set based on your business logic
+
+    const grandTotal = subtotal - totalDiscount + totalTax + freightCharges;
+
+    // Update the summary state
+    setSummary({
+      totalItems,
+      totalQuantity,
+      subtotal,
+      totalDiscount: -totalDiscount,
+      totalTax: totalTax,
+      freightCharges,
+      grandTotal
+    });
+  }, [watchedItems, form]);
+
+  // Dynamic product selection handler
+  const handleProductSelection = (index: number, productId: number) => {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      // Auto-populate fields based on selected product
+      form.setValue(`items.${index}.productId`, productId);
+      form.setValue(`items.${index}.code`, product.sku || "");
+      form.setValue(`items.${index}.description`, product.description || product.name);
+      form.setValue(`items.${index}.unitCost`, parseFloat(product.price) || 0);
+      form.setValue(`items.${index}.mrp`, parseFloat(product.price) * 1.2 || 0); // Auto-calculate MRP with 20% markup
+      form.setValue(`items.${index}.sellingPrice`, parseFloat(product.price) || 0);
+      form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
+
+      // Calculate GST automatically
+      const cgstRate = parseFloat(product.cgstRate || "0");
+      const sgstRate = parseFloat(product.sgstRate || "0");
+      const igstRate = parseFloat(product.igstRate || "0");
+      const totalGst = cgstRate + sgstRate + igstRate;
+
+      if (totalGst > 0) {
+        form.setValue(`items.${index}.taxPercentage`, totalGst);
+      }
+
       toast({
-        variant: "destructive",
-        title: "Invalid items",
-        description: "Please add at least one item with valid product, quantity, and unit cost.",
+        title: "Product Selected! 🎯",
+        description: `${product.name} added with auto-populated details.`,
       });
-      return;
     }
-
-    // Calculate total
-    const total = validItems.reduce((sum, item) => {
-      const subtotal = item.quantity * item.unitCost;
-      const discount = item.discountAmount || 0;
-      return sum + (subtotal - discount);
-    }, 0);
-
-    const purchaseData = {
-      supplierId: data.supplierId,
-      orderNumber: data.orderNumber,
-      orderDate: data.orderDate,
-      expectedDate: data.expectedDate || null,
-      paymentTerms: data.paymentTerms || "Net 30",
-      paymentMethod: data.paymentMethod || "Credit",
-      status: data.status || "Pending",
-      remarks: data.remarks || "",
-      total: total.toString(),
-      items: validItems.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        receivedQty: item.receivedQty || 0,
-        unitCost: item.unitCost,
-        subtotal: (item.quantity * item.unitCost) - (item.discountAmount || 0),
-        hsnCode: item.hsnCode || "",
-        taxPercentage: item.taxPercentage || 0,
-        discountAmount: item.discountAmount || 0,
-      })),
-    };
-
-    console.log("Submitting purchase data:", purchaseData);
-    createPurchaseMutation.mutate(purchaseData);
   };
 
   // Enhanced dynamic add item function
   const addItem = () => {
     // Generate unique batch number for new items
     const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
-    
+
     append({
       productId: 0,
       code: "",
@@ -275,52 +320,6 @@ export default function PurchaseEntryProfessional() {
     }
   };
 
-  // Dynamic product selection handler
-  const handleProductSelection = (index: number, productId: number) => {
-    const product = products.find(p => p.id === productId);
-    if (product) {
-      // Auto-populate fields based on selected product
-      form.setValue(`items.${index}.productId`, productId);
-      form.setValue(`items.${index}.code`, product.sku || "");
-      form.setValue(`items.${index}.description`, product.description || product.name);
-      form.setValue(`items.${index}.unitCost`, parseFloat(product.price) || 0);
-      form.setValue(`items.${index}.mrp`, parseFloat(product.price) * 1.2 || 0); // Auto-calculate MRP with 20% markup
-      form.setValue(`items.${index}.sellingPrice`, parseFloat(product.price) || 0);
-      form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
-      
-      // Calculate GST automatically
-      const cgstRate = parseFloat(product.cgstRate || "0");
-      const sgstRate = parseFloat(product.sgstRate || "0");
-      const igstRate = parseFloat(product.igstRate || "0");
-      const totalGst = cgstRate + sgstRate + igstRate;
-      
-      if (totalGst > 0) {
-        form.setValue(`items.${index}.taxPercentage`, totalGst);
-      }
-
-      toast({
-        title: "Product Selected! 🎯",
-        description: `${product.name} added with auto-populated details.`,
-      });
-    }
-  };
-
-  // Calculate subtotal for an item
-  const calculateSubtotal = (quantity: number, unitCost: number, discountAmount: number = 0) => {
-    return (quantity * unitCost) - discountAmount;
-  };
-
-  // Calculate total
-  const calculateTotal = () => {
-    const items = form.watch("items");
-    return items.reduce((sum, item) => {
-      if (item.productId > 0 && item.quantity > 0 && item.unitCost > 0) {
-        return sum + calculateSubtotal(item.quantity, item.unitCost, item.discountAmount || 0);
-      }
-      return sum;
-    }, 0);
-  };
-
   return (
     <DashboardLayout>
       <div className="container max-w-full pb-8 px-4">
@@ -338,7 +337,7 @@ export default function PurchaseEntryProfessional() {
               <p className="text-muted-foreground">Create new purchase order</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">
               <Printer className="mr-2 h-4 w-4" />
@@ -609,7 +608,7 @@ export default function PurchaseEntryProfessional() {
                         <TableBody>
                           {fields.map((field, index) => {
                             const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                            
+
                             // Calculate values
                             const qty = form.watch(`items.${index}.receivedQty`) || 0;
                             const freeQty = form.watch(`items.${index}.freeQty`) || 0;
@@ -618,20 +617,20 @@ export default function PurchaseEntryProfessional() {
                             const taxPercent = form.watch(`items.${index}.taxPercentage`) || 0;
                             const cashPercent = form.watch(`items.${index}.cashPercent`) || 0;
                             const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-                            
+
                             const amount = qty * cost;
                             const netCost = cost + (cost * taxPercent / 100) - discountAmount;
                             const netAmount = amount - discountAmount + (amount * taxPercent / 100);
                             const cashAmount = amount * cashPercent / 100;
                             const roiPercent = sellingPrice > 0 && netCost > 0 ? ((sellingPrice - netCost) / netCost) * 100 : 0;
                             const grossProfitPercent = sellingPrice > 0 ? ((sellingPrice - netCost) / sellingPrice) * 100 : 0;
-                            
+
                             return (
                               <TableRow key={field.id} className="hover:bg-gray-50">
                                 <TableCell className="text-center font-medium border-r px-2 py-3">
                                   {index + 1}
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     {...form.register(`items.${index}.code`)}
@@ -639,7 +638,7 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="Code"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Select onValueChange={(value) => handleProductSelection(index, parseInt(value))}>
                                     <SelectTrigger className="w-full">
@@ -657,7 +656,7 @@ export default function PurchaseEntryProfessional() {
                                     </SelectContent>
                                   </Select>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     {...form.register(`items.${index}.description`)}
@@ -665,7 +664,7 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="Description"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     type="number"
@@ -681,7 +680,7 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="0"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     type="number"
@@ -691,7 +690,7 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="0"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="relative">
                                     <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
@@ -701,9 +700,21 @@ export default function PurchaseEntryProfessional() {
                                       step="0.01"
                                       {...form.register(`items.${index}.unitCost`, { 
                                         valueAsNumber: true,
-                                        onChange: () => {
-                                          // Trigger recalculation when cost changes
-                                          setTimeout(() => form.trigger(`items.${index}`), 100);
+                                        onChange: (e) => {
+                                          const value = parseFloat(e.target.value) || 0;
+                                          form.setValue(`items.${index}.unitCost`, value);
+
+                                          // Auto-calculate net amount
+                                          const quantity = form.getValues(`items.${index}.quantity`) || 0;
+                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                          const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
+
+                                          const subtotal = value * quantity;
+                                          const taxableAmount = subtotal - discount;
+                                          const tax = (taxableAmount * taxPercentage) / 100;
+                                          const netAmount = taxableAmount + tax;
+
+                                          form.setValue(`items.${index}.netAmount`, netAmount);
                                         }
                                       })}
                                       className="w-full text-right text-xs pl-6"
@@ -711,7 +722,7 @@ export default function PurchaseEntryProfessional() {
                                     />
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     {...form.register(`items.${index}.hsnCode`)}
@@ -719,7 +730,7 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="HSN"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     type="number"
@@ -731,7 +742,7 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="0"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="relative">
                                     <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
@@ -745,7 +756,7 @@ export default function PurchaseEntryProfessional() {
                                     />
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     type="date"
@@ -754,28 +765,28 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="dd-mm-yyyy"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
                                     <span className="text-xs">₹</span>
                                     <span className="ml-1 font-medium">{netCost.toFixed(0)}</span>
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
                                     <span className="font-medium">{roiPercent.toFixed(2)}</span>
                                     <span className="text-xs ml-1">%</span>
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                    <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
+                                                                   <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
                                     <span className="text-xs ml-1">%</span>
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="relative">
                                     <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
@@ -789,7 +800,7 @@ export default function PurchaseEntryProfessional() {
                                     />
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="relative">
                                     <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
@@ -803,7 +814,7 @@ export default function PurchaseEntryProfessional() {
                                     />
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="flex items-center justify-center p-1 bg-blue-50 rounded text-xs">
                                     {amount > 0 ? (
@@ -816,7 +827,7 @@ export default function PurchaseEntryProfessional() {
                                     )}
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="flex items-center justify-center p-1 bg-green-50 rounded text-xs">
                                     {netAmount > 0 ? (
@@ -829,7 +840,7 @@ export default function PurchaseEntryProfessional() {
                                     )}
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     type="number"
@@ -841,7 +852,7 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="0"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
                                     {cashAmount > 0 ? (
@@ -854,7 +865,7 @@ export default function PurchaseEntryProfessional() {
                                     )}
                                   </div>
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     {...form.register(`items.${index}.batchNumber`)}
@@ -862,7 +873,7 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="Batch #"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Input
                                     {...form.register(`items.${index}.location`)}
@@ -870,7 +881,7 @@ export default function PurchaseEntryProfessional() {
                                     placeholder="Location"
                                   />
                                 </TableCell>
-                                
+
                                 <TableCell className="border-r px-2 py-3">
                                   <Select onValueChange={(value) => form.setValue(`items.${index}.unit`, value)} defaultValue="PCS">
                                     <SelectTrigger className="w-full text-xs">
@@ -886,7 +897,7 @@ export default function PurchaseEntryProfessional() {
                                     </SelectContent>
                                   </Select>
                                 </TableCell>
-                                
+
                                 <TableCell className="px-2 py-3">
                                   <div className="flex items-center justify-center">
                                     {fields.length > 1 ? (
@@ -932,94 +943,70 @@ export default function PurchaseEntryProfessional() {
                   <CardTitle>Purchase Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <h3 className="font-semibold">Order Details</h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Order Number:</span>
-                          <span className="font-medium">{form.watch("orderNumber")}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Order Date:</span>
-                          <span className="font-medium">{form.watch("orderDate")}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Payment Terms:</span>
-                          <span className="font-medium">{form.watch("paymentTerms") || "Net 30"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Status:</span>
-                          <Badge variant="secondary">{form.watch("status") || "Pending"}</Badge>
+                  
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <div className="grid grid-cols-2 gap-8">
+                      {/* Order Details */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 text-gray-800">Order Details</h3>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Order Number:</span>
+                            <span className="font-medium">{form.watch("orderNumber") || "PO-32232115"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Order Date:</span>
+                            <span className="font-medium">{form.watch("orderDate") || "2025-05-26"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Payment Terms:</span>
+                            <span className="font-medium">{form.watch("paymentTerms") || "Net 30"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Status:</span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                              {form.watch("status") || "Pending"}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="space-y-3">
-                      <h3 className="font-semibold">Financial Summary</h3>
-                      <div className="space-y-2 text-sm">
-                        {(() => {
-                          const items = form.watch("items") || [];
-                          let subtotal = 0;
-                          let totalTax = 0;
-                          let totalDiscount = 0;
-                          let totalQuantity = 0;
+                      {/* Financial Summary */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 text-gray-800">Financial Summary</h3>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Total Items:</span>
+                            <span className="font-medium">{summary.totalItems}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Total Quantity:</span>
+                            <span className="font-medium">{summary.totalQuantity}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Subtotal:</span>
+                            <span className="font-medium">{formatCurrency(summary.subtotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-red-600">
+                            <span>Total Discount:</span>
+                            <span className="font-medium">{formatCurrency(summary.totalDiscount)}</span>
+                          </div>
+                          <div className="flex justify-between text-green-600">
+                            <span>Total Tax (GST):</span>
+                            <span className="font-medium">+{formatCurrency(summary.totalTax)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Freight Charges:</span>
+                            <span className="font-medium">+{formatCurrency(summary.freightCharges)}</span>
+                          </div>
 
-                          items.forEach((item: any) => {
-                            const qty = item.quantity || 0;
-                            const cost = item.unitCost || 0;
-                            const discountPercent = item.discountPercent || 0;
-                            const taxPercent = item.taxPercentage || 0;
-                            
-                            totalQuantity += qty;
-                            const itemSubtotal = qty * cost;
-                            subtotal += itemSubtotal;
-                            
-                            const itemDiscount = (itemSubtotal * discountPercent) / 100;
-                            totalDiscount += itemDiscount;
-                            
-                            const taxableAmount = itemSubtotal - itemDiscount;
-                            const itemTax = (taxableAmount * taxPercent) / 100;
-                            totalTax += itemTax;
-                          });
-
-                          const freightAmount = form.watch("freightAmount") || 0;
-                          const grandTotal = subtotal - totalDiscount + totalTax + freightAmount;
-
-                          return (
-                            <>
-                              <div className="flex justify-between">
-                                <span>Total Items:</span>
-                                <span className="font-medium">{fields.length}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Total Quantity:</span>
-                                <span className="font-medium">{totalQuantity}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Subtotal:</span>
-                                <span className="font-medium">₹{subtotal.toFixed(0)}</span>
-                              </div>
-                              <div className="flex justify-between text-red-600">
-                                <span>Total Discount:</span>
-                                <span className="font-medium">-₹{totalDiscount.toFixed(0)}</span>
-                              </div>
-                              <div className="flex justify-between text-green-600">
-                                <span>Total Tax (GST):</span>
-                                <span className="font-medium">+₹{totalTax.toFixed(0)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Freight Charges:</span>
-                                <span className="font-medium">+₹{freightAmount.toFixed(0)}</span>
-                              </div>
-                              <Separator />
-                              <div className="flex justify-between text-lg font-semibold">
-                                <span>Grand Total:</span>
-                                <span className="text-blue-600">₹{grandTotal.toFixed(0)}</span>
-                              </div>
-                            </>
-                          );
-                        })()}
+                          <div className="border-t pt-3 mt-4">
+                            <div className="flex justify-between text-xl font-bold text-blue-600">
+                              <span>Grand Total:</span>
+                              <span>{formatCurrency(summary.grandTotal)}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1040,4 +1027,4 @@ export default function PurchaseEntryProfessional() {
       </div>
     </DashboardLayout>
   );
-}
+};
