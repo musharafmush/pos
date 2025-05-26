@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -159,7 +160,7 @@ export default function PurchaseDashboard() {
   const stats = {
     totalPurchases: purchases.length,
     pendingOrders: purchases.filter((p: any) => p.status === 'pending').length,
-    receivedOrders: purchases.filter((p: any) => p.status === 'received').length,
+    completedOrders: purchases.filter((p: any) => p.status === 'received').length,
     totalValue: purchases.reduce((sum: number, p: any) => sum + parseFloat(p.totalAmount || 0), 0)
   };
 
@@ -177,18 +178,16 @@ export default function PurchaseDashboard() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { label: "Pending", variant: "secondary" as const, icon: Clock },
-      ordered: { label: "Ordered", variant: "default" as const, icon: ShoppingCart },
-      received: { label: "Received", variant: "default" as const, icon: CheckCircle },
-      cancelled: { label: "Cancelled", variant: "destructive" as const, icon: AlertTriangle }
+      pending: { label: "Pending", variant: "default" as const, className: "bg-green-100 text-green-800 border-green-200" },
+      ordered: { label: "Ordered", variant: "default" as const, className: "bg-blue-100 text-blue-800 border-blue-200" },
+      received: { label: "Received", variant: "default" as const, className: "bg-green-100 text-green-800 border-green-200" },
+      cancelled: { label: "Cancelled", variant: "destructive" as const, className: "bg-red-100 text-red-800 border-red-200" }
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    const Icon = config.icon;
 
     return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
-        <Icon className="h-3 w-3" />
+      <Badge variant={config.variant} className={`${config.className} rounded-full px-3 py-1`}>
         {config.label}
       </Badge>
     );
@@ -201,8 +200,7 @@ export default function PurchaseDashboard() {
   };
 
   const handleEdit = (purchase: any) => {
-    // Navigate to edit page using wouter navigation
-    setLocation(`/purchase-entry?edit=${purchase.id}`);
+    setLocation(`/purchase-entry-professional?edit=${purchase.id}`);
     toast({
       title: "Opening for edit",
       description: `Editing purchase order ${purchase.orderNumber || `PO-${purchase.id}`}`,
@@ -234,12 +232,13 @@ export default function PurchaseDashboard() {
 
   const handleExportCSV = () => {
     const csvData = filteredPurchases.map((purchase: any) => ({
-      'Order Number': purchase.orderNumber || `PO-${purchase.id}`,
+      'Reference No': purchase.orderNumber || `PO-${purchase.id}`,
       'Supplier': purchase.supplier?.name || 'Unknown',
       'Date': purchase.orderDate ? format(new Date(purchase.orderDate), 'MM/dd/yyyy') : 'N/A',
-      'Total Amount': purchase.totalAmount || '0.00',
-      'Status': purchase.status,
-      'Items': purchase.items?.length || 0
+      'Grand Total': purchase.totalAmount || '0.00',
+      'Purchase Status': purchase.status,
+      'Payment Status': 'Pending',
+      'Expected On': purchase.expectedDate ? format(new Date(purchase.expectedDate), 'MM/dd/yyyy') : 'N/A'
     }));
     
     const csvContent = [
@@ -263,23 +262,24 @@ export default function PurchaseDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 bg-gray-50 min-h-screen p-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Purchase Management</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold text-gray-900">Purchase Management</h1>
+            <p className="text-gray-600 mt-1">
               Manage your purchase orders and supplier relationships
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Link href="/suppliers">
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button variant="outline" className="flex items-center gap-2 bg-white border-gray-300 hover:bg-gray-50">
                 <Building2 className="h-4 w-4" />
                 Manage Suppliers
               </Button>
             </Link>
-            <Link href="/purchase-entry">
-              <Button className="flex items-center gap-2">
+            <Link href="/purchase-entry-professional">
+              <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
                 <Plus className="h-4 w-4" />
                 Create Purchase Order
               </Button>
@@ -288,69 +288,77 @@ export default function PurchaseDashboard() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalPurchases}</div>
-              <p className="text-xs text-muted-foreground">
-                Purchase orders created
-              </p>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Total Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalPurchases}</p>
+                  <p className="text-xs text-gray-500 mt-1">Purchase orders created</p>
+                </div>
+                <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Package className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingOrders}</div>
-              <p className="text-xs text-muted-foreground">
-                Awaiting processing
-              </p>
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Pending Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.pendingOrders}</p>
+                  <p className="text-xs text-gray-500 mt-1">Awaiting processing</p>
+                </div>
+                <div className="h-12 w-12 bg-orange-50 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.receivedOrders}</div>
-              <p className="text-xs text-muted-foreground">
-                Successfully received
-              </p>
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Completed Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.completedOrders}</p>
+                  <p className="text-xs text-gray-500 mt-1">Successfully received</p>
+                </div>
+                <div className="h-12 w-12 bg-green-50 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalValue.toFixed(2))}</div>
-              <p className="text-xs text-muted-foreground">
-                Total purchase value
-              </p>
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Total Value</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalValue.toFixed(2))}</p>
+                  <p className="text-xs text-gray-500 mt-1">Total purchase value</p>
+                </div>
+                <div className="h-12 w-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Purchase Orders Table */}
-        <Card>
-          <CardHeader>
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold">All Purchases</CardTitle>
+              <CardTitle className="text-xl font-bold text-gray-900">All Purchases</CardTitle>
               <Button
                 onClick={handleExportCSV}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-white border-gray-300 hover:bg-gray-50"
               >
                 <Download className="h-4 w-4" />
                 Export CSV
@@ -358,12 +366,12 @@ export default function PurchaseDashboard() {
             </div>
             
             {/* Controls Row */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">Show</span>
+                  <span className="text-sm text-gray-600">Show</span>
                   <Select value={entriesPerPage} onValueChange={setEntriesPerPage}>
-                    <SelectTrigger className="w-20">
+                    <SelectTrigger className="w-20 h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -373,24 +381,24 @@ export default function PurchaseDashboard() {
                       <SelectItem value="100">100</SelectItem>
                     </SelectContent>
                   </Select>
-                  <span className="text-sm">entries</span>
+                  <span className="text-sm text-gray-600">entries</span>
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                   <Input
                     placeholder="Search orders..."
-                    className="pl-9 w-full sm:w-64"
+                    className="pl-9 w-full sm:w-64 h-9"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
                 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px]">
-                    <SelectValue placeholder="All Status" />
+                  <SelectTrigger className="w-full sm:w-[140px] h-9">
+                    <SelectValue placeholder="All Statuses" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all_statuses">All Statuses</SelectItem>
@@ -402,7 +410,7 @@ export default function PurchaseDashboard() {
                 </Select>
 
                 <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectTrigger className="w-full sm:w-[140px] h-9">
                     <SelectValue placeholder="All Suppliers" />
                   </SelectTrigger>
                   <SelectContent>
@@ -418,47 +426,39 @@ export default function PurchaseDashboard() {
             </div>
           </CardHeader>
           
-          <CardContent>
-            <div className="rounded-md border">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[120px]">Action</TableHead>
-                    <TableHead>
-                      <div className="flex items-center gap-1">
-                        Date
-                        <Button variant="ghost" size="sm" className="p-1 h-auto">
-                          <Calendar className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableHead>
-                    <TableHead>Reference No</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Purchase Status</TableHead>
-                    <TableHead>Payment Status</TableHead>
-                    <TableHead className="text-right">Grand Total</TableHead>
-                    <TableHead>Payment Due</TableHead>
-                    <TableHead>Expected On</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
+                  <TableRow className="bg-gray-50 border-y">
+                    <TableHead className="font-semibold text-gray-700 px-6 py-4">Action</TableHead>
+                    <TableHead className="font-semibold text-gray-700 py-4">Date</TableHead>
+                    <TableHead className="font-semibold text-gray-700 py-4">Reference No</TableHead>
+                    <TableHead className="font-semibold text-gray-700 py-4">Supplier</TableHead>
+                    <TableHead className="font-semibold text-gray-700 py-4">Purchase Status</TableHead>
+                    <TableHead className="font-semibold text-gray-700 py-4">Payment Status</TableHead>
+                    <TableHead className="font-semibold text-gray-700 py-4">Grand Total</TableHead>
+                    <TableHead className="font-semibold text-gray-700 py-4">Payment Due</TableHead>
+                    <TableHead className="font-semibold text-gray-700 py-4">Expected On</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8">
+                      <TableCell colSpan={9} className="text-center py-8">
                         <div className="flex justify-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : filteredPurchases.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8">
+                      <TableCell colSpan={9} className="text-center py-8">
                         <div className="flex flex-col items-center gap-2">
-                          <Package className="h-12 w-12 text-muted-foreground" />
+                          <Package className="h-12 w-12 text-gray-400" />
                           <div>
-                            <p className="text-lg font-medium">No purchase orders found</p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-lg font-medium text-gray-900">No purchase orders found</p>
+                            <p className="text-sm text-gray-500">
                               {searchTerm || statusFilter !== "all_statuses" || supplierFilter !== "all_suppliers"
                                 ? "Try adjusting your filters"
                                 : "Create your first purchase order to get started"
@@ -466,8 +466,8 @@ export default function PurchaseDashboard() {
                             </p>
                           </div>
                           {!searchTerm && statusFilter === "all_statuses" && supplierFilter === "all_suppliers" && (
-                            <Link href="/purchase-entry">
-                              <Button className="mt-2">
+                            <Link href="/purchase-entry-professional">
+                              <Button className="mt-2 bg-blue-600 hover:bg-blue-700">
                                 <Plus className="h-4 w-4 mr-2" />
                                 Create Purchase Order
                               </Button>
@@ -478,14 +478,14 @@ export default function PurchaseDashboard() {
                     </TableRow>
                   ) : (
                     filteredPurchases.map((purchase: any) => (
-                      <TableRow key={purchase.id}>
-                        <TableCell>
+                      <TableRow key={purchase.id} className="border-b hover:bg-gray-50">
+                        <TableCell className="px-6 py-4">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="h-8 w-20 px-2 text-xs"
+                                className="h-8 w-20 px-2 text-xs border-gray-300"
                               >
                                 Actions
                                 <ChevronDown className="h-3 w-3 ml-1" />
@@ -511,83 +511,45 @@ export default function PurchaseDashboard() {
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>
-                                <Tag className="h-4 w-4 mr-2" />
-                                Labels
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <CreditCard className="h-4 w-4 mr-2" />
-                                Add Payment
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <FileText className="h-4 w-4 mr-2" />
-                                View Payments
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <RefreshCw className="h-4 w-4 mr-2" />
-                                Purchase Return
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Truck className="h-4 w-4 mr-2" />
-                                Update Status
-                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
-                        <TableCell>
-                          {purchase.orderDate ? format(new Date(purchase.orderDate), 'MM/dd/yyyy HH:mm') : 'N/A'}
+                        <TableCell className="py-4 text-gray-900">
+                          {purchase.orderDate ? format(new Date(purchase.orderDate), 'MM/dd/yyyy') : 'N/A'}
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {purchase.orderNumber || `PO${purchase.id?.toString().padStart(4, '0')}`}
+                        <TableCell className="py-4 font-medium text-gray-900">
+                          {purchase.orderNumber || `PO-${purchase.id?.toString().padStart(9, '0')}`}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-4">
                           <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            {purchase.supplier?.name || 'Unknown Supplier'}
+                            <Building2 className="h-4 w-4 text-gray-400" />
+                            <span className="text-gray-900">{purchase.supplier?.name || 'mushu'}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-4">
                           {getStatusBadge(purchase.status)}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">Pending</Badge>
+                        <TableCell className="py-4">
+                          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 rounded-full px-3 py-1">
+                            Pending
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="py-4 font-medium text-gray-900">
                           {formatCurrency(
                             purchase.items?.reduce((sum: number, item: any) => sum + (item.subtotal || 0), 0) || 
                             purchase.totalAmount || 
                             "0.00"
                           )}
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="py-4 font-medium text-gray-900">
                           {formatCurrency(
                             purchase.items?.reduce((sum: number, item: any) => sum + (item.subtotal || 0), 0) || 
                             purchase.totalAmount || 
                             "0.00"
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-4 text-gray-900">
                           {purchase.expectedDate ? format(new Date(purchase.expectedDate), 'MM/dd/yyyy') : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleView(purchase)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                Quick View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(purchase)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))
