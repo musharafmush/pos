@@ -836,17 +836,31 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
                                 
                                 <TableCell className="px-2 py-3">
-                                  {fields.length > 1 && (
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => remove(index)}
-                                      className="text-red-600 hover:text-red-700 p-1"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  )}
+                                  <div className="flex items-center justify-center">
+                                    {fields.length > 1 ? (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => remove(index)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-8 w-8 rounded-full"
+                                        title="Delete item"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled
+                                        className="text-gray-300 p-1 h-8 w-8 rounded-full cursor-not-allowed"
+                                        title="Cannot delete the last item"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             );
