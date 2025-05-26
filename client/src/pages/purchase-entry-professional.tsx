@@ -114,6 +114,11 @@ export default function PurchaseEntryProfessional() {
   // Get current date for defaults
   const today = new Date().toISOString().split('T')[0];
 
+  // Check if we're in edit mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get('edit');
+  const isEditMode = !!editId;
+
   const form = useForm<PurchaseFormData>({
     resolver: zodResolver(purchaseSchema),
     defaultValues: {
@@ -133,6 +138,7 @@ export default function PurchaseEntryProfessional() {
       invoiceAmount: 0,
       lrNumber: "",
       remarks: "",
+      internalNotes: "",
       items: [
         {
           productId: 0,
@@ -147,6 +153,7 @@ export default function PurchaseEntryProfessional() {
           hsnCode: "",
           taxPercentage: 18,
           discountAmount: 0,
+          discountPercent: 0,
           expiryDate: "",
           batchNumber: "",
           netCost: 0,
@@ -170,6 +177,18 @@ export default function PurchaseEntryProfessional() {
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
+  });
+
+  // Fetch purchase data for editing
+  const { data: existingPurchase, isLoading: purchaseLoading } = useQuery({
+    queryKey: ['/api/purchases', editId],
+    queryFn: async () => {
+      if (!editId) return null;
+      const res = await fetch(`/api/purchases/${editId}`);
+      if (!res.ok) throw new Error('Failed to fetch purchase');
+      return res.json();
+    },
+    enabled: !!editId,
   });
 
   // Fetch products
@@ -210,6 +229,97 @@ export default function PurchaseEntryProfessional() {
     control: form.control,
     name: "additionalDiscount"
   });
+
+  // Effect to populate form when editing existing purchase
+  useEffect(() => {
+    if (existingPurchase && isEditMode) {
+      // Format dates properly
+      const orderDate = existingPurchase.poDate
+        ? existingPurchase.poDate.split('T')[0]
+        : today;
+      const expectedDate = existingPurchase.dueDate
+        ? existingPurchase.dueDate.split('T')[0]
+        : "";
+
+      // Populate form with existing data
+      form.reset({
+        supplierId: existingPurchase.supplierId || 0,
+        orderNumber: existingPurchase.poNo || "",
+        orderDate: orderDate,
+        expectedDate: expectedDate,
+        paymentTerms: existingPurchase.paymentTerms || "Net 30",
+        paymentMethod: existingPurchase.paymentType || "Credit",
+        status: existingPurchase.status || "Pending",
+        freightAmount: Number(existingPurchase.freightAmount) || 0,
+        surchargeAmount: Number(existingPurchase.surchargeAmount) || 0,
+        packingCharges: Number(existingPurchase.packingCharge) || 0,
+        otherCharges: Number(existingPurchase.otherCharge) || 0,
+        additionalDiscount: Number(existingPurchase.manualDiscountAmount) || 0,
+        invoiceNumber: existingPurchase.invoiceNo || "",
+        invoiceDate: existingPurchase.invoiceDate ? existingPurchase.invoiceDate.split('T')[0] : "",
+        invoiceAmount: Number(existingPurchase.invoiceAmount) || 0,
+        lrNumber: existingPurchase.lrNumber || "",
+        remarks: existingPurchase.remarks || "",
+        internalNotes: existingPurchase.internalNotes || "",
+        items: existingPurchase.items?.length > 0
+          ? existingPurchase.items.map((item: any) => ({
+              productId: item.productId || 0,
+              code: item.code || "",
+              description: item.description || "",
+              quantity: Number(item.receivedQty) || Number(item.quantity) || 1,
+              receivedQty: Number(item.receivedQty) || 0,
+              freeQty: Number(item.freeQty) || 0,
+              unitCost: Number(item.cost) || 0,
+              sellingPrice: Number(item.sellingPrice) || 0,
+              mrp: Number(item.mrp) || 0,
+              hsnCode: item.hsnCode || "",
+              taxPercentage: Number(item.taxPercent) || 18,
+              discountAmount: Number(item.discountAmount) || 0,
+              discountPercent: 0,
+              expiryDate: item.expiryDate || "",
+              batchNumber: item.batchNumber || "",
+              netCost: Number(item.netCost) || 0,
+              roiPercent: Number(item.roiPercent) || 0,
+              grossProfitPercent: Number(item.grossProfitPercent) || 0,
+              netAmount: Number(item.netAmount) || 0,
+              cashPercent: 0,
+              cashAmount: 0,
+              location: item.location || "",
+              unit: item.unit || "PCS",
+            }))
+          : [{
+              productId: 0,
+              code: "",
+              description: "",
+              quantity: 1,
+              receivedQty: 0,
+              freeQty: 0,
+              unitCost: 0,
+              sellingPrice: 0,
+              mrp: 0,
+              hsnCode: "",
+              taxPercentage: 18,
+              discountAmount: 0,
+              discountPercent: 0,
+              expiryDate: "",
+              batchNumber: "",
+              netCost: 0,
+              roiPercent: 0,
+              grossProfitPercent: 0,
+              netAmount: 0,
+              cashPercent: 0,
+              cashAmount: 0,
+              location: "",
+              unit: "PCS",
+            }],
+      });
+
+      toast({
+        title: "Editing purchase order",
+        description: `Loaded purchase order ${existingPurchase.poNo}`,
+      });
+    }
+  }, [existingPurchase, isEditMode, form, today, toast]);
 
   // Calculate totals when items or additional charges change
   useEffect(() => {
@@ -263,14 +373,14 @@ export default function PurchaseEntryProfessional() {
 
         // Calculate net amount with additional charges distributed proportionally
         let netAmount = taxableAmount + tax;
-        
+
         // Distribute additional charges proportionally if there are charges and subtotal
         if (totalAdditionalCharges > 0 && subtotal > 0) {
           const itemProportion = itemCost / subtotal;
           const itemAdditionalCharges = totalAdditionalCharges * itemProportion;
           netAmount += itemAdditionalCharges;
         }
-        
+
         // Update the form value for this item's net amount
         form.setValue(`items.${index}.netAmount`, Math.round(netAmount * 100) / 100);
       }
@@ -374,6 +484,89 @@ export default function PurchaseEntryProfessional() {
     }
   };
 
+  // Submit purchase order (create or update)
+  const savePurchaseMutation = useMutation({
+    mutationFn: async (data: PurchaseFormData) => {
+      let response;
+      if (isEditMode) {
+        response = await apiRequest("PUT", `/api/purchases/${editId}`, data);
+      } else {
+        response = await apiRequest("POST", "/api/purchases", data);
+      }
+
+      if (!response.ok) {
+        throw new Error(isEditMode ? "Failed to update purchase order" : "Failed to create purchase order");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: isEditMode ? "Purchase order updated" : "Purchase order created",
+        description: isEditMode
+          ? "The purchase order has been successfully updated."
+          : "The purchase order has been successfully created.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+
+      if (!isEditMode) {
+        // Reset form only for new purchases
+        form.reset({
+          orderNumber: `PO-${Date.now().toString().slice(-8)}`,
+          orderDate: today,
+          expectedDate: "",
+          paymentTerms: "Net 30",
+          paymentMethod: "Credit",
+          status: "Pending",
+          freightAmount: 0,
+          surchargeAmount: 0,
+          packingCharges: 0,
+          otherCharges: 0,
+          additionalDiscount: 0,
+          invoiceNumber: "",
+          invoiceDate: "",
+          invoiceAmount: 0,
+          lrNumber: "",
+          remarks: "",
+          internalNotes: "",
+          items: [
+            {
+              productId: 0,
+              code: "",
+              description: "",
+              quantity: 1,
+              receivedQty: 0,
+              freeQty: 0,
+              unitCost: 0,
+              sellingPrice: 0,
+              mrp: 0,
+              hsnCode: "",
+              taxPercentage: 18,
+              discountAmount: 0,
+              discountPercent: 0,
+              expiryDate: "",
+              batchNumber: "",
+              netCost: 0,
+              roiPercent: 0,
+              grossProfitPercent: 0,
+              netAmount: 0,
+              cashPercent: 0,
+              cashAmount: 0,
+              location: "",
+              unit: "PCS",
+            }
+          ],
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: isEditMode ? "Error updating purchase order" : "Error creating purchase order",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle form submission
   const onSubmit = (data: PurchaseFormData) => {
     try {
@@ -389,7 +582,7 @@ export default function PurchaseEntryProfessional() {
 
       // Filter and validate items
       const validItems = data.items.filter(item => item.productId && item.productId > 0);
-      
+
       if (validItems.length === 0) {
         toast({
           variant: "destructive",
@@ -415,13 +608,13 @@ export default function PurchaseEntryProfessional() {
         dueDate: data.expectedDate || data.orderDate,
         paymentType: data.paymentMethod || "Credit",
         status: data.status || "pending",
-        
+
         // Invoice details
         invoiceNo: data.invoiceNumber || "",
         invoiceDate: data.invoiceDate || "",
         invoiceAmount: String(Number(data.invoiceAmount) || 0),
         remarks: data.remarks || "",
-        
+
         // Financial totals
         grossAmount: String(totalValue),
         itemDiscountAmount: String(Math.abs(summary.totalDiscount) || 0),
@@ -431,7 +624,7 @@ export default function PurchaseEntryProfessional() {
         packingCharge: String(Number(data.packingCharges) || 0),
         otherCharge: String(Number(data.otherCharges) || 0),
         manualDiscountAmount: String(Number(data.additionalDiscount) || 0),
-        
+
         // Items array in expected format
         items: validItems.map(item => ({
           productId: Number(item.productId),
@@ -458,74 +651,7 @@ export default function PurchaseEntryProfessional() {
       setIsSaving(true);
 
       // Submit the purchase data using the standard API endpoint
-      fetch("/api/purchases", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(purchaseData),
-      })
-      .then(async (response) => {
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to create purchase order");
-        }
-        return response.json();
-      })
-      .then((result) => {
-        toast({
-          title: "Success! 🎉",
-          description: "Professional purchase order created successfully!",
-        });
-        queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-        
-        // Reset form after successful submission
-        form.reset({
-          orderNumber: `PO-${Date.now().toString().slice(-8)}`,
-          orderDate: today,
-          expectedDate: "",
-          paymentTerms: "Net 30",
-          paymentMethod: "Credit",
-          status: "Pending",
-          items: [
-            {
-              productId: 0,
-              code: "",
-              description: "",
-              quantity: 1,
-              receivedQty: 0,
-              freeQty: 0,
-              unitCost: 0,
-              sellingPrice: 0,
-              mrp: 0,
-              hsnCode: "",
-              taxPercentage: 18,
-              discountAmount: 0,
-              expiryDate: "",
-              batchNumber: "",
-              netCost: 0,
-              roiPercent: 0,
-              grossProfitPercent: 0,
-              netAmount: 0,
-              cashPercent: 0,
-              cashAmount: 0,
-              location: "",
-              unit: "PCS",
-            }
-          ],
-        });
-      })
-      .catch((error) => {
-        console.error("Error creating purchase:", error);
-        toast({
-          variant: "destructive",
-          title: "Error creating purchase order",
-          description: error.message || "Please try again.",
-        });
-      })
-      .finally(() => {
-        setIsSaving(false);
-      });
+      savePurchaseMutation.mutate(purchaseData);
     } catch (error) {
       console.error("Error preparing purchase data:", error);
       toast({
@@ -533,6 +659,8 @@ export default function PurchaseEntryProfessional() {
         title: "Error",
         description: "Failed to prepare purchase data. Please check your entries and try again.",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1273,7 +1401,7 @@ export default function PurchaseEntryProfessional() {
                   <CardTitle>Purchase Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  
+
                   <div className="bg-white border border-gray-200 rounded-lg p-6">
                     <div className="grid grid-cols-2 gap-8">
                       {/* Order Details */}

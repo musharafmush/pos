@@ -88,7 +88,6 @@ export default function PurchaseDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -183,8 +182,8 @@ export default function PurchaseDashboard() {
   };
 
   const handleEdit = (purchase: Purchase) => {
-    setSelectedPurchase(purchase);
-    setEditDialogOpen(true);
+    // Navigate to the purchase entry form in edit mode
+    window.location.href = `/purchase-entry-professional?edit=${purchase.id}`;
   };
 
   const handleDelete = async (purchase: Purchase) => {
