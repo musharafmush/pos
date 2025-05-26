@@ -81,10 +81,10 @@ export default function RepackingProfessional() {
     // More lenient filtering - show products that are either active or have stock
     const hasStock = product.stockQuantity > 0;
     const isActive = product.active === true || product.active === 1;
-    
+
     // Don't show already repacked items (those with REPACK in SKU)
     const isNotRepacked = !product.sku.includes("REPACK");
-    
+
     return hasStock && isActive && isNotRepacked;
   });
 
@@ -125,7 +125,7 @@ export default function RepackingProfessional() {
       // Generate unique SKU for repacked item
       const timestamp = Date.now();
       const repackedSku = `${selectedProduct?.sku}-REPACK-${timestamp}`;
-      
+
       const repackedProduct = {
         name: `${selectedProduct?.name} (Repacked ${data.unitWeight}g)`,
         description: `Repacked from ${selectedProduct?.name}`,
@@ -143,25 +143,25 @@ export default function RepackingProfessional() {
       };
 
       const response = await apiRequest("POST", "/api/products", repackedProduct);
-      
+
       // Update bulk product stock
       if (selectedProduct) {
         const productWeight = parseFloat(selectedProduct.weight) || 0;
         const productWeightUnit = selectedProduct.weightUnit || 'g';
-        
+
         // Convert everything to grams for calculation
         let productWeightInGrams = productWeight;
         if (productWeightUnit === 'kg') {
           productWeightInGrams = productWeight * 1000;
         }
-        
+
         // Calculate how much bulk stock is used per repacked unit
         const totalRepackedWeight = data.unitWeight * data.repackQuantity;
         const bulkUnitsUsed = totalRepackedWeight / productWeightInGrams;
-        
+
         // More conservative stock calculation - only reduce by fraction actually used
         const newBulkStock = Math.max(0, selectedProduct.stockQuantity - Math.ceil(bulkUnitsUsed));
-        
+
         await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
           stockQuantity: Math.floor(newBulkStock),
         });
@@ -324,14 +324,14 @@ export default function RepackingProfessional() {
                         <div>Products with Stock: {products.filter((p: Product) => p.stockQuantity > 0).length}</div>
                       </div>
                     )}
-                    
+
                     <FormField
                       control={form.control}
                       name="bulkProductId"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Select Bulk Product ({bulkProducts.length} available)</FormLabel>
-                          
+
                           {/* Search Input */}
                           <div className="mb-2">
                             <div className="relative">
@@ -344,7 +344,7 @@ export default function RepackingProfessional() {
                               <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             </div>
                           </div>
-                          
+
                           <Select onValueChange={(value) => field.onChange(parseInt(value))}>
                             <FormControl>
                               <SelectTrigger>
@@ -366,7 +366,7 @@ export default function RepackingProfessional() {
                                   if (!searchTerm.trim()) {
                                     return true;
                                   }
-                                  
+
                                   const search = searchTerm.toLowerCase();
                                   return (
                                     product.name.toLowerCase().includes(search) ||
@@ -391,19 +391,19 @@ export default function RepackingProfessional() {
                                   <div className="animate-pulse">Loading products...</div>
                                 </div>
                               )}
-                              
+
                               {productsError && (
                                 <div className="p-2 text-center text-red-500">
                                   Error loading products: {productsError.message}
                                 </div>
                               )}
-                              
+
                               {!productsLoading && !productsError && products.length === 0 && (
                                 <div className="p-2 text-center text-gray-500">
                                   No products found in database
                                 </div>
                               )}
-                              
+
                               {!productsLoading && !productsError && products.length > 0 && bulkProducts.length === 0 && (
                                 <div className="p-2 text-center text-yellow-600">
                                   <div>No products available for repacking</div>
@@ -417,13 +417,13 @@ export default function RepackingProfessional() {
                                   </div>
                                 </div>
                               )}
-                              
+
                               {bulkProducts.filter((product: Product) => {
                                 // If no search term, show all products
                                 if (!searchTerm.trim()) {
                                   return true;
                                 }
-                                
+
                                 const search = searchTerm.toLowerCase();
                                 return (
                                   product.name.toLowerCase().includes(search) ||
@@ -499,7 +499,7 @@ export default function RepackingProfessional() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="costPrice"
@@ -539,7 +539,7 @@ export default function RepackingProfessional() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="mrp"
@@ -570,7 +570,7 @@ export default function RepackingProfessional() {
                   <div className="bg-gray-100 border-b px-4 py-2">
                     <h3 className="font-semibold text-lg">Bulk Item Details</h3>
                   </div>
-                  
+
                   <div className="p-4 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -638,7 +638,7 @@ export default function RepackingProfessional() {
                           Add Entry
                         </Button>
                       </div>
-                      
+
                       <Table>
                         <TableHeader className="bg-blue-500">
                           <TableRow>
