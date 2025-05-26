@@ -177,40 +177,8 @@ export default function PurchaseEntryProfessional() {
     queryKey: ["/api/products"],
   });
 
-  // Create purchase mutation
-  const createPurchaseMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch("/api/purchases", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create purchase order");
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Purchase order created successfully!",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-      form.reset();
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Error creating purchase order",
-        description: error.message || "Please try again.",
-      });
-    },
-  });
+  // Loading state for save button
+  const [isSaving, setIsSaving] = useState(false);
 
   // Watch for changes in items array and additional charges to recalculate totals
   const watchedItems = useWatch({
@@ -438,54 +406,126 @@ export default function PurchaseEntryProfessional() {
         return total + (qty * cost);
       }, 0);
 
-      // Create purchase data with proper structure
+      // Create purchase data with proper structure for backend compatibility
       const purchaseData = {
+        // Core purchase details
         supplierId: Number(data.supplierId),
-        orderNumber: data.orderNumber,
-        orderDate: data.orderDate,
-        expectedDate: data.expectedDate || data.orderDate,
-        paymentTerms: data.paymentTerms || "Net 30",
-        paymentMethod: data.paymentMethod || "Credit",
+        poNo: data.orderNumber,
+        poDate: data.orderDate,
+        dueDate: data.expectedDate || data.orderDate,
+        paymentType: data.paymentMethod || "Credit",
         status: data.status || "pending",
-        priority: data.priority || "normal",
-        shippingAddress: data.shippingAddress || "",
-        billingAddress: data.billingAddress || "",
-        shippingMethod: data.shippingMethod || "standard",
-        freightAmount: Number(data.freightAmount) || 0,
-        surchargeAmount: Number(data.surchargeAmount) || 0,
-        packingCharges: Number(data.packingCharges) || 0,
-        otherCharges: Number(data.otherCharges) || 0,
-        additionalDiscount: Number(data.additionalDiscount) || 0,
-        taxAmount: Number(data.taxAmount) || summary.totalTax,
-        discountAmount: Number(data.discountAmount) || Math.abs(summary.totalDiscount),
-        invoiceNumber: data.invoiceNumber || "",
+        
+        // Invoice details
+        invoiceNo: data.invoiceNumber || "",
         invoiceDate: data.invoiceDate || "",
-        invoiceAmount: Number(data.invoiceAmount) || 0,
-        lrNumber: data.lrNumber || "",
+        invoiceAmount: String(Number(data.invoiceAmount) || 0),
         remarks: data.remarks || "",
-        internalNotes: data.internalNotes || "",
-        total: totalValue.toString(),
+        
+        // Financial totals
+        grossAmount: String(totalValue),
+        itemDiscountAmount: String(Math.abs(summary.totalDiscount) || 0),
+        taxAmount: String(summary.totalTax || 0),
+        freightAmount: String(Number(data.freightAmount) || 0),
+        surchargeAmount: String(Number(data.surchargeAmount) || 0),
+        packingCharge: String(Number(data.packingCharges) || 0),
+        otherCharge: String(Number(data.otherCharges) || 0),
+        manualDiscountAmount: String(Number(data.additionalDiscount) || 0),
+        
+        // Items array in expected format
         items: validItems.map(item => ({
           productId: Number(item.productId),
-          quantity: Number(item.receivedQty) || Number(item.quantity) || 1,
-          unitCost: Number(item.unitCost) || 0,
-          taxPercentage: Number(item.taxPercentage) || 0,
-          discountAmount: Number(item.discountAmount) || 0,
+          receivedQty: String(Number(item.receivedQty) || Number(item.quantity) || 1),
+          freeQty: String(Number(item.freeQty) || 0),
+          cost: String(Number(item.unitCost) || 0),
           hsnCode: item.hsnCode || "",
-          expiryDate: item.expiryDate || null,
+          taxPercent: String(Number(item.taxPercentage) || 0),
+          discountAmount: String(Number(item.discountAmount) || 0),
+          expiryDate: item.expiryDate || "",
           batchNumber: item.batchNumber || "",
-          sellingPrice: Number(item.sellingPrice) || 0,
-          mrp: Number(item.mrp) || 0,
-          freeQty: Number(item.freeQty) || 0,
+          sellingPrice: String(Number(item.sellingPrice) || 0),
+          mrp: String(Number(item.mrp) || 0),
+          amount: String((Number(item.receivedQty) || Number(item.quantity) || 1) * (Number(item.unitCost) || 0)),
+          netAmount: String(Number(item.netAmount) || 0),
           location: item.location || "",
           unit: item.unit || "PCS",
         }))
       };
 
-      console.log("Submitting purchase data:", purchaseData);
+      console.log("Submitting professional purchase data:", purchaseData);
 
-      // Submit the purchase data
-      createPurchaseMutation.mutate(purchaseData);
+      // Set saving state
+      setIsSaving(true);
+
+      // Submit the purchase data using the standard API endpoint
+      fetch("/api/purchases", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(purchaseData),
+      })
+      .then(async (response) => {
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to create purchase order");
+        }
+        return response.json();
+      })
+      .then((result) => {
+        toast({
+          title: "Success! 🎉",
+          description: "Professional purchase order created successfully!",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+        
+        // Reset form after successful submission
+        form.reset({
+          orderNumber: `PO-${Date.now().toString().slice(-8)}`,
+          orderDate: today,
+          expectedDate: "",
+          paymentTerms: "Net 30",
+          paymentMethod: "Credit",
+          status: "Pending",
+          items: [
+            {
+              productId: 0,
+              code: "",
+              description: "",
+              quantity: 1,
+              receivedQty: 0,
+              freeQty: 0,
+              unitCost: 0,
+              sellingPrice: 0,
+              mrp: 0,
+              hsnCode: "",
+              taxPercentage: 18,
+              discountAmount: 0,
+              expiryDate: "",
+              batchNumber: "",
+              netCost: 0,
+              roiPercent: 0,
+              grossProfitPercent: 0,
+              netAmount: 0,
+              cashPercent: 0,
+              cashAmount: 0,
+              location: "",
+              unit: "PCS",
+            }
+          ],
+        });
+      })
+      .catch((error) => {
+        console.error("Error creating purchase:", error);
+        toast({
+          variant: "destructive",
+          title: "Error creating purchase order",
+          description: error.message || "Please try again.",
+        });
+      })
+      .finally(() => {
+        setIsSaving(false);
+      });
     } catch (error) {
       console.error("Error preparing purchase data:", error);
       toast({
@@ -530,11 +570,11 @@ export default function PurchaseEntryProfessional() {
             </Button>
             <Button 
               onClick={form.handleSubmit(onSubmit)}
-              disabled={createPurchaseMutation.isPending}
+              disabled={isSaving}
               size="sm"
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {createPurchaseMutation.isPending ? (
+              {isSaving ? (
                 "Saving..."
               ) : (
                 <>
