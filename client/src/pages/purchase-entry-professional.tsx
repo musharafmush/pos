@@ -641,7 +641,7 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
                                 
                                 <TableCell className="border-r px-2 py-3">
-                                  <Select onValueChange={(value) => handleProductSelection(index, parseInt(value))}
+                                  <Select onValueChange={(value) => handleProductSelection(index, parseInt(value))}>
                                     <SelectTrigger className="w-full">
                                       <SelectValue placeholder="Select Product" />
                                     </SelectTrigger>
