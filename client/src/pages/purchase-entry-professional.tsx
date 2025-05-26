@@ -62,6 +62,10 @@ const purchaseSchema = z.object({
   freightAmount: z.number().min(0, "Freight amount cannot be negative").optional(),
   taxAmount: z.number().min(0, "Tax amount cannot be negative").optional(),
   discountAmount: z.number().min(0, "Discount amount cannot be negative").optional(),
+  invoiceNumber: z.string().optional(),
+  invoiceDate: z.string().optional(),
+  invoiceAmount: z.number().min(0, "Invoice amount cannot be negative").optional(),
+  lrNumber: z.string().optional(),
   remarks: z.string().optional(),
   internalNotes: z.string().optional(),
   items: z.array(purchaseItemSchema).min(1, "At least one item is required"),
@@ -115,6 +119,10 @@ export default function PurchaseEntryProfessional() {
       paymentTerms: "Net 30",
       paymentMethod: "Credit",
       status: "Pending",
+      invoiceNumber: "",
+      invoiceDate: "",
+      invoiceAmount: 0,
+      lrNumber: "",
       remarks: "",
       items: [
         {
@@ -348,6 +356,10 @@ export default function PurchaseEntryProfessional() {
         freightAmount: Number(data.freightAmount) || 0,
         taxAmount: Number(data.taxAmount) || summary.totalTax,
         discountAmount: Number(data.discountAmount) || Math.abs(summary.totalDiscount),
+        invoiceNumber: data.invoiceNumber || "",
+        invoiceDate: data.invoiceDate || "",
+        invoiceAmount: Number(data.invoiceAmount) || 0,
+        lrNumber: data.lrNumber || "",
         remarks: data.remarks || "",
         internalNotes: data.internalNotes || "",
         total: totalValue.toString(),
@@ -576,6 +588,51 @@ export default function PurchaseEntryProfessional() {
                         step="0.01"
                         {...form.register("freightAmount", { valueAsNumber: true })}
                         placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Invoice Details Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invoice Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                      <Input
+                        {...form.register("invoiceNumber")}
+                        placeholder="Enter invoice number"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="invoiceDate">Invoice Date</Label>
+                      <Input
+                        type="date"
+                        {...form.register("invoiceDate")}
+                        placeholder="dd-mm-yyyy"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="invoiceAmount">Invoice Amount</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...form.register("invoiceAmount", { valueAsNumber: true })}
+                        placeholder="0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="lrNumber">LR Number</Label>
+                      <Input
+                        {...form.register("lrNumber")}
+                        placeholder="Enter LR number"
                       />
                     </div>
                   </div>
