@@ -756,11 +756,15 @@ export const storage = {
     const getPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?');
     const purchase = getPurchase.get(result.lastInsertRowid);
 
-    // Add purchase items using SQLite directly
+    // Add purchase items using SQLite directly with all required fields
     const insertPurchaseItem = sqlite.prepare(`
       INSERT INTO purchase_items (
-        purchase_id, product_id, quantity, cost, total, amount
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        purchase_id, product_id, quantity, unit_cost, cost, total, amount, subtotal,
+        received_qty, free_qty, expiry_date, hsn_code, tax_percentage,
+        discount_amount, discount_percent, net_cost, selling_price, mrp,
+        batch_number, location, unit, roi_percent, gross_profit_percent,
+        net_amount, cash_percent, cash_amount
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const item of items) {
@@ -783,8 +787,28 @@ export const storage = {
         productId,
         quantity,
         unitCost.toString(),
-        subtotal.toString(),
-        subtotal.toString() // amount (same as total for now)
+        unitCost.toString(), // cost
+        subtotal.toString(), // total
+        subtotal.toString(), // amount
+        subtotal.toString(), // subtotal
+        quantity, // received_qty
+        0, // free_qty
+        '', // expiry_date
+        '', // hsn_code
+        '0', // tax_percentage
+        '0', // discount_amount
+        '0', // discount_percent
+        unitCost.toString(), // net_cost
+        '0', // selling_price
+        '0', // mrp
+        '', // batch_number
+        '', // location
+        'PCS', // unit
+        '0', // roi_percent
+        '0', // gross_profit_percent
+        subtotal.toString(), // net_amount
+        '0', // cash_percent
+        '0' // cash_amount
       );
     }
 
@@ -841,7 +865,7 @@ export const storage = {
 
       console.log('Found purchase:', purchase);
 
-      // Get purchase items
+      // Get purchase items with safe column access
       const itemsQuery = `
         SELECT 
           pi.id,
@@ -850,14 +874,24 @@ export const storage = {
           pi.quantity,
           pi.unit_cost,
           pi.subtotal,
-          pi.expiry_date,
-          pi.hsn_code,
-          pi.tax_percentage,
-          pi.discount_amount,
-          pi.discount_percent,
-          pi.net_cost,
-          pi.selling_price,
-          pi.mrp,
+          COALESCE(pi.expiry_date, '') as expiry_date,
+          COALESCE(pi.hsn_code, '') as hsn_code,
+          COALESCE(pi.tax_percentage, '0') as tax_percentage,
+          COALESCE(pi.discount_amount, '0') as discount_amount,
+          COALESCE(pi.discount_percent, '0') as discount_percent,
+          COALESCE(pi.net_cost, '0') as net_cost,
+          COALESCE(pi.selling_price, '0') as selling_price,
+          COALESCE(pi.mrp, '0') as mrp,
+          COALESCE(pi.batch_number, '') as batch_number,
+          COALESCE(pi.location, '') as location,
+          COALESCE(pi.unit, 'PCS') as unit,
+          COALESCE(pi.roi_percent, '0') as roi_percent,
+          COALESCE(pi.gross_profit_percent, '0') as gross_profit_percent,
+          COALESCE(pi.net_amount, '0') as net_amount,
+          COALESCE(pi.cash_percent, '0') as cash_percent,
+          COALESCE(pi.cash_amount, '0') as cash_amount,
+          COALESCE(pi.received_qty, pi.quantity) as received_qty,
+          COALESCE(pi.free_qty, 0) as free_qty,
           pi.created_at,
           p.name as product_name,
           p.sku as product_sku,
@@ -1044,17 +1078,21 @@ export const storage = {
         const deleteItemsStmt = sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?');
         deleteItemsStmt.run(id);
 
-        // Insert new items
+        // Insert new items with all required fields
         const insertPurchaseItem = sqlite.prepare(`
           INSERT INTO purchase_items (
-            purchase_id, product_id, quantity, cost, total, amount
-          ) VALUES (?, ?, ?, ?, ?, ?)
+            purchase_id, product_id, quantity, unit_cost, cost, total, amount, subtotal,
+            received_qty, free_qty, expiry_date, hsn_code, tax_percentage,
+            discount_amount, discount_percent, net_cost, selling_price, mrp,
+            batch_number, location, unit, roi_percent, gross_profit_percent,
+            net_amount, cash_percent, cash_amount
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         for (const item of items) {
           const productId = typeof item.productId === 'number' ? item.productId : parseInt(item.productId as any) || 0;
-          const quantity = item.receivedQty || item.quantity || 0;
-          const unitCost = item.cost || item.unitCost || 0;
+          const quantity = Number(item.receivedQty || item.quantity || 0);
+          const unitCost = Number(item.cost || item.unitCost || 0);
           const subtotal = quantity * unitCost;
 
           insertPurchaseItem.run(
@@ -1062,8 +1100,28 @@ export const storage = {
             productId,
             quantity,
             unitCost.toString(),
-            subtotal.toString(),
-            item.amount || subtotal.toString()
+            unitCost.toString(), // cost
+            subtotal.toString(), // total
+            item.amount || subtotal.toString(), // amount
+            subtotal.toString(), // subtotal
+            quantity, // received_qty
+            Number(item.freeQty || 0), // free_qty
+            item.expiryDate || '', // expiry_date
+            item.hsnCode || '', // hsn_code
+            item.taxPercentage || '0', // tax_percentage
+            item.discountAmount || '0', // discount_amount
+            item.discountPercent || '0', // discount_percent
+            unitCost.toString(), // net_cost
+            item.sellingPrice || '0', // selling_price
+            item.mrp || '0', // mrp
+            item.batchNumber || '', // batch_number
+            item.location || '', // location
+            item.unit || 'PCS', // unit
+            item.roiPercent || '0', // roi_percent
+            item.grossProfitPercent || '0', // gross_profit_percent
+            item.netAmount || subtotal.toString(), // net_amount
+            item.cashPercent || '0', // cash_percent
+            item.cashAmount || '0' // cash_amount
           );
         }
       }
