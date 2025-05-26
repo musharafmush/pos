@@ -22,6 +22,8 @@ import { Link } from "wouter";
 
 const purchaseItemSchema = z.object({
   productId: z.number().min(1, "Product is required"),
+  code: z.string().optional(),
+  description: z.string().optional(),
   quantity: z.number().min(1, "Quantity must be at least 1"),
   receivedQty: z.number().min(0, "Received quantity cannot be negative").optional(),
   freeQty: z.number().min(0, "Free quantity cannot be negative").optional(),
@@ -107,13 +109,27 @@ export default function PurchaseEntryProfessional() {
       items: [
         {
           productId: 0,
+          code: "",
+          description: "",
           quantity: 1,
           receivedQty: 0,
           freeQty: 0,
           unitCost: 0,
+          sellingPrice: 0,
+          mrp: 0,
           hsnCode: "",
           taxPercentage: 18,
           discountAmount: 0,
+          expiryDate: "",
+          batchNumber: "",
+          netCost: 0,
+          roiPercent: 0,
+          grossProfitPercent: 0,
+          netAmount: 0,
+          cashPercent: 0,
+          cashAmount: 0,
+          location: "",
+          unit: "PCS",
         }
       ],
     },
@@ -209,13 +225,27 @@ export default function PurchaseEntryProfessional() {
   const addItem = () => {
     append({
       productId: 0,
+      code: "",
+      description: "",
       quantity: 1,
       receivedQty: 0,
       freeQty: 0,
       unitCost: 0,
+      sellingPrice: 0,
+      mrp: 0,
       hsnCode: "",
       taxPercentage: 18,
       discountAmount: 0,
+      expiryDate: "",
+      batchNumber: "",
+      netCost: 0,
+      roiPercent: 0,
+      grossProfitPercent: 0,
+      netAmount: 0,
+      cashPercent: 0,
+      cashAmount: 0,
+      location: "",
+      unit: "PCS",
     });
   };
 
@@ -490,39 +520,82 @@ export default function PurchaseEntryProfessional() {
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-blue-50 border-b-2 border-blue-200">
-                          <TableHead className="w-12 text-center font-semibold">No</TableHead>
-                          <TableHead className="min-w-48 font-semibold">Product</TableHead>
-                          <TableHead className="w-20 text-center font-semibold">Qty</TableHead>
-                          <TableHead className="w-20 text-center font-semibold">Free</TableHead>
-                          <TableHead className="w-24 text-right font-semibold">Cost (₹)</TableHead>
-                          <TableHead className="w-20 text-center font-semibold">Tax %</TableHead>
-                          <TableHead className="w-24 text-right font-semibold">Disc (₹)</TableHead>
-                          <TableHead className="w-24 text-right font-semibold">MRP (₹)</TableHead>
-                          <TableHead className="w-28 text-right font-semibold">Amount (₹)</TableHead>
-                          <TableHead className="w-24">Batch/Exp</TableHead>
-                          <TableHead className="w-16 text-center">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {fields.map((field, index) => {
-                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                          
-                          return (
-                            <TableRow key={field.id} className="hover:bg-gray-50">
-                              <TableCell className="text-center font-medium text-sm">{index + 1}</TableCell>
-                              
-                              <TableCell>
-                                <div className="space-y-1">
+                    <div className="min-w-[2400px] bg-white">
+                      <Table className="text-sm">
+                        <TableHeader>
+                          <TableRow className="bg-blue-50 border-b-2 border-blue-200">
+                            <TableHead className="w-16 text-center font-bold border-r px-2 py-3">No</TableHead>
+                            <TableHead className="w-32 font-bold border-r px-2 py-3">Code</TableHead>
+                            <TableHead className="min-w-[200px] font-bold border-r px-2 py-3">Product Name</TableHead>
+                            <TableHead className="min-w-[150px] font-bold border-r px-2 py-3">Description</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Received Qty</TableHead>
+                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Free Qty</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Cost</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">HSN Code</TableHead>
+                            <TableHead className="w-20 text-center font-bold border-r px-2 py-3">Tax %</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Disc Amt</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Exp. Date</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Net Cost</TableHead>
+                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">ROI %</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Gross Profit %</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Selling Price</TableHead>
+                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">MRP</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Amount</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Net Amount</TableHead>
+                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Cash %</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Cash Amt</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Batch No</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Location</TableHead>
+                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Unit</TableHead>
+                            <TableHead className="w-20 text-center font-bold px-2 py-3">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {fields.map((field, index) => {
+                            const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
+                            
+                            // Calculate values
+                            const qty = form.watch(`items.${index}.receivedQty`) || 0;
+                            const freeQty = form.watch(`items.${index}.freeQty`) || 0;
+                            const cost = form.watch(`items.${index}.unitCost`) || 0;
+                            const discountAmount = form.watch(`items.${index}.discountAmount`) || 0;
+                            const taxPercent = form.watch(`items.${index}.taxPercentage`) || 0;
+                            const cashPercent = form.watch(`items.${index}.cashPercent`) || 0;
+                            const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
+                            
+                            const amount = qty * cost;
+                            const netCost = cost + (cost * taxPercent / 100) - discountAmount;
+                            const netAmount = amount - discountAmount + (amount * taxPercent / 100);
+                            const cashAmount = amount * cashPercent / 100;
+                            const roiPercent = sellingPrice > 0 && netCost > 0 ? ((sellingPrice - netCost) / netCost) * 100 : 0;
+                            const grossProfitPercent = sellingPrice > 0 ? ((sellingPrice - netCost) / sellingPrice) * 100 : 0;
+                            
+                            return (
+                              <TableRow key={field.id} className="hover:bg-gray-50">
+                                <TableCell className="text-center font-medium border-r px-2 py-3">
+                                  {index + 1}
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <Input
+                                    {...form.register(`items.${index}.code`)}
+                                    className="w-full text-xs"
+                                    placeholder="Code"
+                                  />
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
                                   <Select onValueChange={(value) => {
                                     const productId = parseInt(value);
                                     const product = products.find(p => p.id === productId);
                                     form.setValue(`items.${index}.productId`, productId);
                                     if (product) {
+                                      form.setValue(`items.${index}.code`, product.sku || "");
+                                      form.setValue(`items.${index}.description`, product.description || product.name);
                                       form.setValue(`items.${index}.unitCost`, parseFloat(product.price) || 0);
-                                      form.setValue(`items.${index}.mrp`, parseFloat(product.mrp) || 0);
+                                      form.setValue(`items.${index}.mrp`, parseFloat(product.mrp) || parseFloat(product.price) || 0);
+                                      form.setValue(`items.${index}.sellingPrice`, parseFloat(product.price) || 0);
+                                      form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
                                       const gstRate = parseFloat(product.cgstRate || "0") + parseFloat(product.sgstRate || "0");
                                       if (gstRate > 0) {
                                         form.setValue(`items.${index}.taxPercentage`, gstRate);
@@ -543,132 +616,244 @@ export default function PurchaseEntryProfessional() {
                                       ))}
                                     </SelectContent>
                                   </Select>
-                                  {selectedProduct && (
-                                    <div className="text-xs text-gray-600">
-                                      HSN: {selectedProduct.hsnCode || "N/A"}
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  {...form.register(`items.${index}.receivedQty`, { valueAsNumber: true })}
-                                  className="w-20 text-center"
-                                  placeholder="1"
-                                />
-                              </TableCell>
-                              
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  {...form.register(`items.${index}.freeQty`, { valueAsNumber: true })}
-                                  className="w-20 text-center"
-                                  placeholder="0"
-                                />
-                              </TableCell>
-                              
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  {...form.register(`items.${index}.unitCost`, { valueAsNumber: true })}
-                                  className="w-24 text-right"
-                                  placeholder="0.00"
-                                />
-                              </TableCell>
-                              
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  step="0.01"
-                                  {...form.register(`items.${index}.taxPercentage`, { valueAsNumber: true })}
-                                  className="w-20 text-center"
-                                  placeholder="18"
-                                />
-                              </TableCell>
-                              
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  {...form.register(`items.${index}.discountAmount`, { valueAsNumber: true })}
-                                  className="w-24 text-right"
-                                  placeholder="0.00"
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  {...form.register(`items.${index}.mrp`, { valueAsNumber: true })}
-                                  className="w-24 text-right"
-                                  placeholder="0.00"
-                                />
-                              </TableCell>
-
-                              <TableCell className="text-right">
-                                {(() => {
-                                  const qty = form.watch(`items.${index}.receivedQty`) || 0;
-                                  const cost = form.watch(`items.${index}.unitCost`) || 0;
-                                  const discountAmount = form.watch(`items.${index}.discountAmount`) || 0;
-                                  const taxPercent = form.watch(`items.${index}.taxPercentage`) || 0;
-                                  
-                                  const subtotal = qty * cost;
-                                  const taxableAmount = subtotal - discountAmount;
-                                  const taxAmount = (taxableAmount * taxPercent) / 100;
-                                  const total = taxableAmount + taxAmount;
-                                  
-                                  return (
-                                    <div className="font-semibold text-blue-600">
-                                      ₹{total.toFixed(0)}
-                                    </div>
-                                  );
-                                })()}
-                              </TableCell>
-
-                              <TableCell>
-                                <div className="space-y-1">
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <Input
+                                    {...form.register(`items.${index}.description`)}
+                                    className="w-full text-xs"
+                                    placeholder="Description"
+                                  />
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    {...form.register(`items.${index}.receivedQty`, { valueAsNumber: true })}
+                                    className="w-full text-center text-xs"
+                                    placeholder="0"
+                                  />
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    {...form.register(`items.${index}.freeQty`, { valueAsNumber: true })}
+                                    className="w-full text-center text-xs"
+                                    placeholder="0"
+                                  />
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      {...form.register(`items.${index}.unitCost`, { valueAsNumber: true })}
+                                      className="w-full text-right text-xs pl-6"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <Input
+                                    {...form.register(`items.${index}.hsnCode`)}
+                                    className="w-full text-center text-xs"
+                                    placeholder="HSN"
+                                  />
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    {...form.register(`items.${index}.taxPercentage`, { valueAsNumber: true })}
+                                    className="w-full text-center text-xs"
+                                    placeholder="0"
+                                  />
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      {...form.register(`items.${index}.discountAmount`, { valueAsNumber: true })}
+                                      className="w-full text-right text-xs pl-6"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <Input
+                                    type="date"
+                                    {...form.register(`items.${index}.expiryDate`)}
+                                    className="w-full text-xs"
+                                    placeholder="dd-mm-yyyy"
+                                  />
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                                    <span className="text-xs">₹</span>
+                                    <span className="ml-1 font-medium">{netCost.toFixed(0)}</span>
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                                    <span className="font-medium">{roiPercent.toFixed(2)}</span>
+                                    <span className="text-xs ml-1">%</span>
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                                    <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
+                                    <span className="text-xs ml-1">%</span>
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      {...form.register(`items.${index}.sellingPrice`, { valueAsNumber: true })}
+                                      className="w-full text-right text-xs pl-6"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      {...form.register(`items.${index}.mrp`, { valueAsNumber: true })}
+                                      className="w-full text-right text-xs pl-6"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="flex items-center justify-center p-1 bg-blue-50 rounded text-xs">
+                                    {amount > 0 ? (
+                                      <>
+                                        <span className="text-xs font-medium text-blue-700">₹</span>
+                                        <span className="font-medium text-blue-700 ml-1">{amount.toFixed(0)}</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="flex items-center justify-center p-1 bg-green-50 rounded text-xs">
+                                    {netAmount > 0 ? (
+                                      <>
+                                        <span className="text-xs font-medium text-green-700">₹</span>
+                                        <span className="font-medium text-green-700 ml-1">{netAmount.toFixed(0)}</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    {...form.register(`items.${index}.cashPercent`, { valueAsNumber: true })}
+                                    className="w-full text-center text-xs"
+                                    placeholder="0"
+                                  />
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                                    {cashAmount > 0 ? (
+                                      <>
+                                        <span className="text-xs">₹</span>
+                                        <span className="font-medium ml-1">{cashAmount.toFixed(0)}</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
                                   <Input
                                     {...form.register(`items.${index}.batchNumber`)}
                                     className="w-full text-xs"
                                     placeholder="Batch #"
                                   />
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
                                   <Input
-                                    type="date"
-                                    {...form.register(`items.${index}.expiryDate`)}
+                                    {...form.register(`items.${index}.location`)}
                                     className="w-full text-xs"
+                                    placeholder="Location"
                                   />
-                                </div>
-                              </TableCell>
-                              
-                              <TableCell>
-                                {fields.length > 1 && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => remove(index)}
-                                    className="text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                                </TableCell>
+                                
+                                <TableCell className="border-r px-2 py-3">
+                                  <Select onValueChange={(value) => form.setValue(`items.${index}.unit`, value)} defaultValue="PCS">
+                                    <SelectTrigger className="w-full text-xs">
+                                      <SelectValue placeholder="Unit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="PCS">PCS</SelectItem>
+                                      <SelectItem value="KG">KG</SelectItem>
+                                      <SelectItem value="LTR">LTR</SelectItem>
+                                      <SelectItem value="BOX">BOX</SelectItem>
+                                      <SelectItem value="PACK">PACK</SelectItem>
+                                      <SelectItem value="DOZEN">DOZEN</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                
+                                <TableCell className="px-2 py-3">
+                                  {fields.length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => remove(index)}
+                                      className="text-red-600 hover:text-red-700 p-1"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
