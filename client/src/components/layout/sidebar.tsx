@@ -272,7 +272,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         </>
                       )}
                     </button>
-                    
+
                     {isExpanded && open && (
                       <div className="bg-blue-800">
                         {group.items.map((item) => (
