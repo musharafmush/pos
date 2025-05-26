@@ -216,18 +216,8 @@ export default function PurchaseEntryProfessional() {
     let totalDiscount = 0;
     let totalTax = 0;
 
-    // Get additional charges from form first
-    const formData = form.getValues();
-    const surchargeAmount = Number(formData.surchargeAmount) || 0;
-    const packingCharges = Number(formData.packingCharges) || 0;
-    const otherCharges = Number(formData.otherCharges) || 0;
-    const additionalDiscount = Number(formData.additionalDiscount) || 0;
-    const freightCharges = Number(formData.freightAmount) || 0;
-
-    const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
-
-    // Calculate basic amounts and distribute additional charges
-    items.forEach((item, index) => {
+    // First pass: Calculate basic amounts without additional charges
+    items.forEach((item) => {
       if (item.productId && item.productId > 0) {
         totalItems++;
         // Use receivedQty instead of quantity for proper calculation
@@ -245,6 +235,27 @@ export default function PurchaseEntryProfessional() {
         const taxableAmount = itemCost - discount;
         const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
         totalTax += tax;
+      }
+    });
+
+    // Get additional charges from form
+    const formData = form.getValues();
+    const surchargeAmount = Number(formData.surchargeAmount) || 0;
+    const packingCharges = Number(formData.packingCharges) || 0;
+    const otherCharges = Number(formData.otherCharges) || 0;
+    const additionalDiscount = Number(formData.additionalDiscount) || 0;
+    const freightCharges = Number(formData.freightAmount) || 0;
+
+    const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
+
+    // Second pass: Distribute additional charges proportionally
+    items.forEach((item, index) => {
+      if (item.productId && item.productId > 0) {
+        const receivedQty = Number(item.receivedQty) || 0;
+        const itemCost = (item.unitCost || 0) * receivedQty;
+        const discount = item.discountAmount || 0;
+        const taxableAmount = itemCost - discount;
+        const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
 
         // Calculate net amount with additional charges distributed proportionally
         let netAmount = taxableAmount + tax;
