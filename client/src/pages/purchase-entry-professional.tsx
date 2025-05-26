@@ -217,7 +217,17 @@ export default function PurchaseEntryProfessional() {
     let totalTax = 0;
     let freightCharges = 0;
 
-    items.forEach((item) => {
+    // Get additional charges from form
+    const formData = form.getValues();
+    const surchargeAmount = Number(formData.surchargeAmount) || 0;
+    const packingCharges = Number(formData.packingCharges) || 0;
+    const otherCharges = Number(formData.otherCharges) || 0;
+    const additionalDiscount = Number(formData.additionalDiscount) || 0;
+    freightCharges = Number(formData.freightAmount) || 0;
+
+    const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
+
+    items.forEach((item, index) => {
       if (item.productId && item.productId > 0) {
         totalItems++;
         // Use receivedQty instead of quantity for proper calculation
@@ -235,18 +245,21 @@ export default function PurchaseEntryProfessional() {
         const taxableAmount = itemCost - discount;
         const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
         totalTax += tax;
+
+        // Distribute additional charges proportionally to each line item's net amount
+        if (totalAdditionalCharges > 0 && subtotal > 0) {
+          const itemProportion = itemCost / subtotal;
+          const itemAdditionalCharges = totalAdditionalCharges * itemProportion;
+          
+          // Update the net amount to include distributed additional charges
+          const netAmountWithCharges = taxableAmount + tax + itemAdditionalCharges;
+          
+          // Update the form value for this item's net amount
+          form.setValue(`items.${index}.netAmount`, netAmountWithCharges);
+        }
       }
     });
 
-    // Get additional charges from form
-    const formData = form.getValues();
-    const surchargeAmount = Number(formData.surchargeAmount) || 0;
-    const packingCharges = Number(formData.packingCharges) || 0;
-    const otherCharges = Number(formData.otherCharges) || 0;
-    const additionalDiscount = Number(formData.additionalDiscount) || 0;
-    freightCharges = Number(formData.freightAmount) || 0;
-
-    const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
     const grandTotal = subtotal - totalDiscount + totalTax + totalAdditionalCharges - additionalDiscount;
 
     // Update the summary state
