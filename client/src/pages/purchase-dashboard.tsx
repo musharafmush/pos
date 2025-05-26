@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -169,10 +168,10 @@ export default function PurchaseDashboard() {
     const matchesSearch = !searchTerm || 
       purchase.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       purchase.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === "all_statuses" || purchase.status === statusFilter;
     const matchesSupplier = supplierFilter === "all_suppliers" || purchase.supplierId?.toString() === supplierFilter;
-    
+
     return matchesSearch && matchesStatus && matchesSupplier;
   });
 
@@ -240,12 +239,12 @@ export default function PurchaseDashboard() {
       'Payment Status': 'Pending',
       'Expected On': purchase.expectedDate ? format(new Date(purchase.expectedDate), 'MM/dd/yyyy') : 'N/A'
     }));
-    
+
     const csvContent = [
       Object.keys(csvData[0] || {}).join(','),
       ...csvData.map(row => Object.values(row).join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -253,7 +252,7 @@ export default function PurchaseDashboard() {
     a.download = 'purchases.csv';
     a.click();
     window.URL.revokeObjectURL(url);
-    
+
     toast({
       title: "CSV exported",
       description: "Purchase data has been exported successfully.",
@@ -364,7 +363,7 @@ export default function PurchaseDashboard() {
                 Export CSV
               </Button>
             </div>
-            
+
             {/* Controls Row */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4">
               <div className="flex items-center gap-4">
@@ -384,7 +383,7 @@ export default function PurchaseDashboard() {
                   <span className="text-sm text-gray-600">entries</span>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -395,7 +394,7 @@ export default function PurchaseDashboard() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                
+
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full sm:w-[140px] h-9">
                     <SelectValue placeholder="All Statuses" />
@@ -425,7 +424,7 @@ export default function PurchaseDashboard() {
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
@@ -613,7 +612,7 @@ export default function PurchaseDashboard() {
                     </p>
                   </div>
                 </div>
-                
+
                 {/* Items List */}
                 {selectedPurchase?.items && selectedPurchase.items.length > 0 && (
                   <div className="mt-6">

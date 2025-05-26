@@ -844,7 +844,7 @@ export const storage = {
   async updatePurchase(
     id: number, 
     purchaseData: Partial<Purchase>,
-    items?: { productId: number; quantity: number; unitCost: number }[]
+    items?: { productId: number; quantity: number; unitCost: number; receivedQty?: number; cost?: number; amount?: string }[]
   ): Promise<Purchase | null> {
     try {
       // Import SQLite database directly
@@ -864,6 +864,11 @@ export const storage = {
         updateValues.push(purchaseData.orderDate.toISOString());
       }
       
+      if (purchaseData.dueDate) {
+        updateFields.push('expected_date = ?');
+        updateValues.push(purchaseData.dueDate.toISOString());
+      }
+      
       if (purchaseData.supplierId) {
         updateFields.push('supplier_id = ?');
         updateValues.push(purchaseData.supplierId);
@@ -879,9 +884,13 @@ export const storage = {
         updateValues.push(purchaseData.notes);
       }
       
+      // Add updated timestamp
+      updateFields.push('updated_at = ?');
+      updateValues.push(new Date().toISOString());
+      
       updateValues.push(id);
       
-      if (updateFields.length > 0) {
+      if (updateFields.length > 1) { // More than just the timestamp
         const updatePurchaseStmt = sqlite.prepare(
           `UPDATE purchases SET ${updateFields.join(', ')} WHERE id = ?`
         );
@@ -902,9 +911,9 @@ export const storage = {
         `);
         
         for (const item of items) {
-          const productId = typeof item.productId === 'number' ? item.productId : 0;
-          const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
-          const unitCost = typeof item.unitCost === 'number' ? item.unitCost : 0;
+          const productId = typeof item.productId === 'number' ? item.productId : parseInt(item.productId as any) || 0;
+          const quantity = item.receivedQty || item.quantity || 0;
+          const unitCost = item.cost || item.unitCost || 0;
           const subtotal = quantity * unitCost;
           
           insertPurchaseItem.run(
@@ -913,7 +922,7 @@ export const storage = {
             quantity,
             unitCost.toString(),
             subtotal.toString(),
-            subtotal.toString()
+            item.amount || subtotal.toString()
           );
         }
       }

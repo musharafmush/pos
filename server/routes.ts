@@ -1530,21 +1530,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/purchases/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      console.log('PUT /api/purchases/:id received data:', req.body);
+      
       const { 
         poNo, poDate, dueDate, paymentType, supplierId, 
         invoiceNo, invoiceDate, remarks, items, 
         grossAmount, itemDiscountAmount, taxAmount 
       } = req.body;
       
+      // Validate required fields
+      if (!poNo || !poDate || !supplierId) {
+        return res.status(400).json({ 
+          message: 'Missing required fields: poNo, poDate, and supplierId are required' 
+        });
+      }
+      
       // Update the purchase object
       const purchaseUpdate = {
         orderNumber: poNo,
         orderDate: new Date(poDate),
-        dueDate: new Date(dueDate),
-        supplierId: parseInt(supplierId),
+        dueDate: dueDate ? new Date(dueDate) : undefined,
+        supplierId: parseInt(supplierId.toString()),
         total: grossAmount ? grossAmount.toString() : '0',
-        notes: remarks
+        notes: remarks || ''
       };
+      
+      console.log('Updating purchase with:', purchaseUpdate);
+      console.log('Items to update:', items);
       
       const updatedPurchase = await storage.updatePurchase(id, purchaseUpdate, items);
       
@@ -1552,10 +1564,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Purchase not found' });
       }
       
+      console.log('Purchase updated successfully:', updatedPurchase.id);
       res.json(updatedPurchase);
     } catch (error) {
       console.error('Error updating purchase:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ 
+        message: 'Internal server error', 
+        error: error.message 
+      });
     }
   });
 
