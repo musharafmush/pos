@@ -27,7 +27,8 @@ import {
   PlusIcon,
   TrashIcon,
   Calculator,
-  BarChart3Icon
+  BarChart3Icon,
+  SearchIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
@@ -60,6 +61,7 @@ export default function RepackingProfessional() {
   const [, setLocation] = useLocation();
   const [repackEntries, setRepackEntries] = useState<RepackEntry[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Generate today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
@@ -300,7 +302,7 @@ export default function RepackingProfessional() {
                   </Table>
                 </div>
 
-                {/* Product Selection */}
+                {/* Product Selection with Search */}
                 <Card>
                   <CardContent className="p-4">
                     <FormField
@@ -309,18 +311,60 @@ export default function RepackingProfessional() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Select Bulk Product</FormLabel>
+                          
+                          {/* Search Input */}
+                          <div className="mb-2">
+                            <div className="relative">
+                              <Input
+                                placeholder="Search bulk products by name, SKU, or description..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 bg-white"
+                              />
+                              <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            </div>
+                          </div>
+                          
                           <Select onValueChange={(value) => field.onChange(parseInt(value))}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a bulk product to repack" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
-                              {bulkProducts.map((product: Product) => (
+                            <SelectContent className="max-h-60 overflow-y-auto">
+                              {bulkProducts
+                                .filter((product: Product) => {
+                                  const search = searchTerm.toLowerCase();
+                                  return (
+                                    product.name.toLowerCase().includes(search) ||
+                                    product.sku.toLowerCase().includes(search) ||
+                                    (product.description && product.description.toLowerCase().includes(search))
+                                  );
+                                })
+                                .map((product: Product) => (
                                 <SelectItem key={product.id} value={product.id.toString()}>
-                                  {product.sku} - {product.name} ({product.weight}{product.weightUnit})
+                                  <div className="flex flex-col">
+                                    <div className="font-medium">
+                                      {product.sku} - {product.name}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      Weight: {product.weight}{product.weightUnit} | Stock: {product.stockQuantity} | Price: ₹{product.price}
+                                    </div>
+                                  </div>
                                 </SelectItem>
                               ))}
+                              {bulkProducts.filter((product: Product) => {
+                                const search = searchTerm.toLowerCase();
+                                return (
+                                  product.name.toLowerCase().includes(search) ||
+                                  product.sku.toLowerCase().includes(search) ||
+                                  (product.description && product.description.toLowerCase().includes(search))
+                                );
+                              }).length === 0 && searchTerm && (
+                                <div className="p-2 text-center text-gray-500">
+                                  No products found matching "{searchTerm}"
+                                </div>
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
