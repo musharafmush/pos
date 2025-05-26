@@ -200,13 +200,38 @@ export default function PurchaseEntryProfessional() {
     },
   });
 
-  // Watch for changes in items array to recalculate totals
+  // Watch for changes in items array and additional charges to recalculate totals
   const watchedItems = useWatch({
     control: form.control,
     name: "items"
   });
 
-  // Calculate totals when items change
+  const watchedSurcharge = useWatch({
+    control: form.control,
+    name: "surchargeAmount"
+  });
+
+  const watchedFreight = useWatch({
+    control: form.control,
+    name: "freightAmount"
+  });
+
+  const watchedPacking = useWatch({
+    control: form.control,
+    name: "packingCharges"
+  });
+
+  const watchedOther = useWatch({
+    control: form.control,
+    name: "otherCharges"
+  });
+
+  const watchedAdditionalDiscount = useWatch({
+    control: form.control,
+    name: "additionalDiscount"
+  });
+
+  // Calculate totals when items or additional charges change
   useEffect(() => {
     const items = form.getValues("items") || [];
 
@@ -238,13 +263,12 @@ export default function PurchaseEntryProfessional() {
       }
     });
 
-    // Get additional charges from form
-    const formData = form.getValues();
-    const surchargeAmount = Number(formData.surchargeAmount) || 0;
-    const packingCharges = Number(formData.packingCharges) || 0;
-    const otherCharges = Number(formData.otherCharges) || 0;
-    const additionalDiscount = Number(formData.additionalDiscount) || 0;
-    const freightCharges = Number(formData.freightAmount) || 0;
+    // Get additional charges from form - use the watched values for real-time updates
+    const surchargeAmount = Number(watchedSurcharge) || 0;
+    const packingCharges = Number(watchedPacking) || 0;
+    const otherCharges = Number(watchedOther) || 0;
+    const additionalDiscount = Number(watchedAdditionalDiscount) || 0;
+    const freightCharges = Number(watchedFreight) || 0;
 
     const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
 
@@ -284,7 +308,7 @@ export default function PurchaseEntryProfessional() {
       freightCharges,
       grandTotal
     });
-  }, [watchedItems, form.watch("surchargeAmount"), form.watch("freightAmount"), form.watch("packingCharges"), form.watch("otherCharges"), form.watch("additionalDiscount")]);
+  }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, form]);
 
   // Dynamic product selection handler
   const handleProductSelection = (index: number, productId: number) => {
@@ -1053,10 +1077,10 @@ export default function PurchaseEntryProfessional() {
 
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="flex items-center justify-center p-1 bg-green-50 rounded text-xs">
-                                    {netAmount > 0 ? (
+                                    {form.watch(`items.${index}.netAmount`) > 0 ? (
                                       <>
                                         <span className="text-xs font-medium text-green-700">₹</span>
-                                        <span className="font-medium text-green-700 ml-1">{netAmount.toFixed(0)}</span>
+                                        <span className="font-medium text-green-700 ml-1">{Math.round(form.watch(`items.${index}.netAmount`))}</span>
                                       </>
                                     ) : (
                                       <span className="text-gray-400">-</span>
