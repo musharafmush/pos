@@ -1527,6 +1527,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/purchases/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deletePurchase(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: 'Purchase not found' });
+      }
+      
+      res.json({ message: 'Purchase deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting purchase:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Smart Freight Distribution API - Get total distributed freight
   app.get('/api/freight/total-distributed', isAuthenticated, async (req, res) => {
     try {

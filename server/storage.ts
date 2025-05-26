@@ -841,6 +841,25 @@ export const storage = {
     }
   },
 
+  async deletePurchase(id: number): Promise<boolean> {
+    try {
+      const sqlite = (db as any)._.session.db;
+      
+      // First delete purchase items
+      const deleteItemsStmt = sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?');
+      deleteItemsStmt.run(id);
+      
+      // Then delete the purchase
+      const deletePurchaseStmt = sqlite.prepare('DELETE FROM purchases WHERE id = ?');
+      const result = deletePurchaseStmt.run(id);
+      
+      return result.changes > 0;
+    } catch (error) {
+      console.error("Error in deletePurchase:", error);
+      return false;
+    }
+  },
+
   async updatePurchaseStatus(id: number, status: string, receivedDate?: Date): Promise<Purchase | null> {
     const [updatedPurchase] = await db.update(purchases)
       .set({
