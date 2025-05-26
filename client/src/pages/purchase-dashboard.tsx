@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -43,8 +42,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { 
-  Plus, 
   Building2, 
+  Plus, 
   MoreHorizontal, 
   Eye, 
   Edit, 
@@ -75,7 +74,10 @@ import {
   CreditCard,
   FileSpreadsheet,
   Printer,
-  PieChart
+  PieChart,
+  Store,
+  Calculator,
+  MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -674,10 +676,10 @@ export default function PurchaseDashboard() {
 
         {/* Enhanced View Dialog */}
         <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <FileText className="w-6 h-6" />
                 Purchase Order Details
               </DialogTitle>
               <DialogDescription>
@@ -686,124 +688,304 @@ export default function PurchaseDashboard() {
             </DialogHeader>
             {selectedPurchase && (
               <div className="space-y-6">
-                {/* Order Summary */}
-                <div className="grid grid-cols-2 gap-6 p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Order Number</label>
-                    <p className="text-lg font-semibold mt-1">
-                      {selectedPurchase.orderNumber || `PO-${selectedPurchase.id}`}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Status</label>
-                    <div className="mt-1">
-                      {getStatusBadge(selectedPurchase.status || "pending")}
+                {/* Top Header with Key Information */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Order Number</label>
+                      <p className="text-xl font-bold text-blue-800 mt-1">
+                        {selectedPurchase.orderNumber || `PO-${selectedPurchase.id}`}
+                      </p>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Order Date</label>
-                    <p className="text-lg font-semibold mt-1">
-                      {selectedPurchase.orderDate 
-                        ? format(new Date(selectedPurchase.orderDate), 'MMM dd, yyyy') 
-                        : 'N/A'
-                      }
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Total Amount</label>
-                    <p className="text-lg font-semibold text-green-600 mt-1">
-                      {formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || "0"))}
-                    </p>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Status</label>
+                      <div className="mt-1">
+                        {getStatusBadge(selectedPurchase.status || "pending")}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Order Date</label>
+                      <p className="text-lg font-semibold mt-1">
+                        {selectedPurchase.orderDate 
+                          ? format(new Date(selectedPurchase.orderDate), 'dd/MM/yyyy') 
+                          : 'N/A'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Total Amount</label>
+                      <p className="text-xl font-bold text-green-600 mt-1">
+                        {formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"))}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Supplier Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="w-5 h-5" />
-                      Supplier Information
+                {/* Business and Supplier Information Side by Side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Supplier Information */}
+                  <Card className="border-2 border-gray-200">
+                    <CardHeader className="bg-gray-50">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Building2 className="w-5 h-5 text-blue-600" />
+                        Supplier Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Name</label>
+                          <p className="text-lg font-semibold mt-1">
+                            {selectedPurchase.supplier?.name || "Not provided"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Email</label>
+                          <p className="text-base mt-1">
+                            {selectedPurchase.supplier?.email || "Not provided"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Phone</label>
+                          <p className="text-base mt-1">
+                            {selectedPurchase.supplier?.phone || "Not provided"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Address</label>
+                          <p className="text-base mt-1">
+                            {selectedPurchase.supplier?.address || "Not provided"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Tax Number</label>
+                          <p className="text-base mt-1">
+                            {selectedPurchase.supplier?.taxNumber || "Not provided"}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Business Information */}
+                  <Card className="border-2 border-gray-200">
+                    <CardHeader className="bg-gray-50">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Store className="w-5 h-5 text-green-600" />
+                        Business Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Business</label>
+                          <p className="text-lg font-semibold mt-1">Awesome Shop</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Address</label>
+                          <div className="text-base mt-1 space-y-1">
+                            <p>Linking Street</p>
+                            <p>Phoenix, Arizona, USA</p>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">GSTIN</label>
+                          <p className="text-base mt-1 font-mono">3412569900</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Date</label>
+                          <p className="text-base mt-1">
+                            {format(new Date(), 'dd/MM/yyyy')}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Order Details Card */}
+                <Card className="border-2 border-blue-200">
+                  <CardHeader className="bg-blue-50">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      Order Details
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
+                  <CardContent className="pt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Name</label>
-                        <p className="font-medium mt-1">{selectedPurchase.supplier?.name || 'Unknown Supplier'}</p>
+                        <label className="text-sm font-medium text-gray-600">Reference No:</label>
+                        <p className="text-base font-semibold mt-1">
+                          {selectedPurchase.orderNumber || `#PO${selectedPurchase.id}`}
+                        </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Email</label>
-                        <p className="font-medium mt-1">{selectedPurchase.supplier?.email || 'Not provided'}</p>
+                        <label className="text-sm font-medium text-gray-600">Order Date:</label>
+                        <p className="text-base font-semibold mt-1">
+                          {selectedPurchase.orderDate 
+                            ? format(new Date(selectedPurchase.orderDate), 'dd/MM/yyyy') 
+                            : 'N/A'
+                          }
+                        </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Phone</label>
-                        <p className="font-medium mt-1">{selectedPurchase.supplier?.phone || 'Not provided'}</p>
+                        <label className="text-sm font-medium text-gray-600">Purchase Status:</label>
+                        <p className="text-base font-semibold mt-1">
+                          {selectedPurchase.status?.charAt(0).toUpperCase() + selectedPurchase.status?.slice(1) || 'Pending'}
+                        </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Address</label>
-                        <p className="font-medium mt-1">{selectedPurchase.supplier?.address || 'Not provided'}</p>
+                        <label className="text-sm font-medium text-gray-600">Payment Status:</label>
+                        <p className="text-base font-semibold text-orange-600 mt-1">Due</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Items */}
-                {selectedPurchase.items && selectedPurchase.items.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Package className="w-5 h-5" />
-                        Order Items ({selectedPurchase.items.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
+                {/* Purchase Items with Professional Table */}
+                <Card className="border-2 border-green-200">
+                  <CardHeader className="bg-green-50">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Package className="w-5 h-5 text-green-600" />
+                      Purchase Items
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="overflow-x-auto">
+                      <Table className="border">
                         <TableHeader>
-                          <TableRow>
-                            <TableHead>Product</TableHead>
-                            <TableHead>Quantity</TableHead>
-                            <TableHead>Unit Cost</TableHead>
-                            <TableHead>Total</TableHead>
+                          <TableRow className="bg-green-100">
+                            <TableHead className="border font-bold text-center">#</TableHead>
+                            <TableHead className="border font-bold">Product Name</TableHead>
+                            <TableHead className="border font-bold text-center">SKU</TableHead>
+                            <TableHead className="border font-bold text-center">Purchase<br/>Quantity</TableHead>
+                            <TableHead className="border font-bold text-center">Unit Cost<br/>(Before<br/>Discount)</TableHead>
+                            <TableHead className="border font-bold text-center">Discount<br/>Percent</TableHead>
+                            <TableHead className="border font-bold text-center">Unit Cost<br/>(Before Tax)</TableHead>
+                            <TableHead className="border font-bold text-center">Subtotal<br/>(Before Tax)</TableHead>
+                            <TableHead className="border font-bold text-center">Tax</TableHead>
+                            <TableHead className="border font-bold text-center">Unit Cost Price<br/>(After Tax)</TableHead>
+                            <TableHead className="border font-bold text-center">Subtotal</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {selectedPurchase.items.map((item: any, index: number) => (
-                            <TableRow key={index}>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium">{item.product?.name || 'Unknown Product'}</p>
-                                  <p className="text-sm text-gray-500">{item.product?.sku || 'No SKU'}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>{item.quantity || 0}</TableCell>
-                              <TableCell>{formatCurrency(parseFloat(item.unitCost?.toString() || "0"))}</TableCell>
-                              <TableCell className="font-medium">
-                                {formatCurrency((item.quantity || 0) * parseFloat(item.unitCost?.toString() || "0"))}
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {selectedPurchase.items?.map((item: any, index: number) => {
+                            const quantity = parseFloat(item.quantity || item.receivedQty || "0");
+                            const unitCost = parseFloat(item.unitCost || item.cost || "0");
+                            const discountPercent = parseFloat(item.discountPercent || "0");
+                            const taxPercent = parseFloat(item.taxPercentage || "0");
+
+                            const unitCostAfterDiscount = unitCost * (1 - discountPercent / 100);
+                            const subtotalBeforeTax = quantity * unitCostAfterDiscount;
+                            const taxAmount = subtotalBeforeTax * (taxPercent / 100);
+                            const unitCostAfterTax = unitCostAfterDiscount * (1 + taxPercent / 100);
+                            const subtotalAfterTax = subtotalBeforeTax + taxAmount;
+
+                            return (
+                              <TableRow key={index} className="hover:bg-gray-50">
+                                <TableCell className="border text-center font-medium">{index + 1}</TableCell>
+                                <TableCell className="border font-medium">
+                                  {item.product?.name || item.productName || "Unknown Product"}
+                                </TableCell>
+                                <TableCell className="border text-center">
+                                  {item.product?.sku || item.code || "N/A"}
+                                </TableCell>
+                                <TableCell className="border text-center">
+                                  {quantity.toFixed(2)} Pieces
+                                </TableCell>
+                                <TableCell className="border text-right">
+                                  {formatCurrency(unitCost)}
+                                </TableCell>
+                                <TableCell className="border text-center">
+                                  {discountPercent.toFixed(2)}%
+                                </TableCell>
+                                <TableCell className="border text-right">
+                                  {formatCurrency(unitCostAfterDiscount)}
+                                </TableCell>
+                                <TableCell className="border text-right">
+                                  {formatCurrency(subtotalBeforeTax)}
+                                </TableCell>
+                                <TableCell className="border text-right">
+                                  {formatCurrency(taxAmount)}
+                                </TableCell>
+                                <TableCell className="border text-right">
+                                  {formatCurrency(unitCostAfterTax)}
+                                </TableCell>
+                                <TableCell className="border text-right font-bold">
+                                  {formatCurrency(subtotalAfterTax)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
-                    </CardContent>
-                  </Card>
-                )}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                {/* Notes */}
-                {selectedPurchase.notes && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Notes</CardTitle>
+                {/* Financial Summary */}
+                <Card className="border-2 border-purple-200">
+                  <CardHeader className="bg-purple-50">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Calculator className="w-5 h-5 text-purple-600" />
+                      Financial Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="font-medium">Subtotal (Before Tax):</span>
+                        <span className="font-semibold">
+                          {formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"))}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="font-medium">Total Discount:</span>
+                        <span className="font-semibold text-red-600">
+                          {formatCurrency(0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="font-medium">Total Tax (GST):</span>
+                        <span className="font-semibold text-green-600">
+                          {formatCurrency(0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-3 border-t-2 border-purple-300 bg-purple-50 px-4 rounded">
+                        <span className="text-lg font-bold">Grand Total:</span>
+                        <span className="text-xl font-bold text-purple-700">
+                          {formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"))}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Notes and Additional Information */}
+                {(selectedPurchase.notes || selectedPurchase.remarks) && (
+                  <Card className="border-2 border-gray-200">
+                    <CardHeader className="bg-gray-50">
+                      <CardTitle className="flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5" />
+                        Notes & Remarks
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700">{selectedPurchase.notes}</p>
+                    <CardContent className="pt-4">
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {selectedPurchase.notes || selectedPurchase.remarks}
+                      </p>
                     </CardContent>
                   </Card>
                 )}
               </div>
             )}
-            <DialogFooter>
+            <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
                 Close
+              </Button>
+              <Button variant="outline" onClick={() => window.print()}>
+                <Printer className="w-4 h-4 mr-2" />
+                Print
               </Button>
               {selectedPurchase && (
                 <Button onClick={() => {
