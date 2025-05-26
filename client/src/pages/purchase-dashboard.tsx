@@ -844,203 +844,131 @@ export default function PurchaseDashboard() {
 
 
                 {/* Purchase Items Table */}
-                <div className="bg-white border border-gray-200 rounded-lg">
-                  <div className="px-6 py-4 border-b border-gray-200 bg-green-50">
-                    <div className="flex items-center gap-2">
-                      <Package className="w-5 h-5 text-green-600" />
-                      <h3 className="text-lg font-semibold text-green-800">Purchase Items</h3>
-                      {selectedPurchase.items && (
-                        <span className="text-sm text-green-600">
-                          ({selectedPurchase.items.length} items)
-                        </span>
-                      )}
+                <Card className="border-2 border-green-200">
+                  <CardHeader className="bg-green-50 pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                          <Package className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-green-800">Purchase Items</h3>
+                          <p className="text-sm text-green-600">
+                            {selectedPurchase.items?.length || 0} item(s) in this order
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        Order #{selectedPurchase.orderNumber || selectedPurchase.id}
+                      </Badge>
                     </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[2400px] bg-white">
-                      <Table className="text-sm">
-                        <TableHeader>
-                          <TableRow className="bg-blue-50 border-b-2">
-                            <TableHead className="w-16 text-center font-bold border-r px-3 py-4">No</TableHead>
-                            <TableHead className="w-32 font-bold border-r px-3 py-4">Code</TableHead>
-                            <TableHead className="min-w-[180px] font-bold border-r px-3 py-4">Product Name</TableHead>
-                            <TableHead className="min-w-[160px] font-bold border-r px-3 py-4">Description</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Received Qty</TableHead>
-                            <TableHead className="w-24 text-center font-bold border-r px-3 py-4">Free Qty</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Cost</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">HSN Code</TableHead>
-                            <TableHead className="w-20 text-center font-bold border-r px-3 py-4">Tax %</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Disc Amt</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Exp. Date</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Net Cost</TableHead>
-                            <TableHead className="w-24 text-center font-bold border-r px-3 py-4">ROI %</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Gross Profit %</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Selling Price</TableHead>
-                            <TableHead className="w-24 text-center font-bold border-r px-3 py-4">MRP</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Amount</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-4">Net Amount</TableHead>
-                            <TableHead className="w-20 text-center font-bold border-r px-3 py-4">Cash %</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Cash Amt</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Batch No</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-4">Location</TableHead>
-                            <TableHead className="w-20 text-center font-bold px-3 py-4">Unit</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selectedPurchase.items && selectedPurchase.items.length > 0 ? (
-                            selectedPurchase.items.map((item: any, index: number) => {
-                              const receivedQty = Number(item.receivedQty || item.quantity || 0);
-                              const freeQty = Number(item.freeQty || 0);
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {selectedPurchase.items && selectedPurchase.items.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <Table className="text-sm">
+                          <TableHeader>
+                            <TableRow className="bg-blue-50 border-b-2">
+                              <TableHead className="w-12 text-center font-semibold">No</TableHead>
+                              <TableHead className="min-w-[120px] font-semibold">Product</TableHead>
+                              <TableHead className="w-20 text-center font-semibold">Qty</TableHead>
+                              <TableHead className="w-24 text-center font-semibold">Unit Cost</TableHead>
+                              <TableHead className="w-24 text-center font-semibold">Amount</TableHead>
+                              <TableHead className="w-20 text-center font-semibold">Tax %</TableHead>
+                              <TableHead className="w-24 text-center font-semibold">Net Amount</TableHead>
+                              <TableHead className="w-20 text-center font-semibold">Unit</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {selectedPurchase.items.map((item: any, index: number) => {
+                              const quantity = Number(item.receivedQty || item.quantity || 0);
                               const unitCost = parseFloat(item.unitCost || item.cost || "0");
-                              const discountAmount = parseFloat(item.discountAmount || "0");
+                              const amount = parseFloat(item.amount || (quantity * unitCost).toString());
                               const taxPercent = parseFloat(item.taxPercentage || item.taxPercent || "0");
-                              const netCost = parseFloat(item.netCost || unitCost.toString());
-                              const roiPercent = parseFloat(item.roiPercent || "0");
-                              const grossProfitPercent = parseFloat(item.grossProfitPercent || "0");
-                              const sellingPrice = parseFloat(item.sellingPrice || "0");
-                              const mrp = parseFloat(item.mrp || "0");
-                              const amount = parseFloat(item.amount || (receivedQty * unitCost).toString());
                               const netAmount = parseFloat(item.netAmount || amount.toString());
-                              const cashPercent = parseFloat(item.cashPercent || "0");
-                              const cashAmount = parseFloat(item.cashAmount || "0");
 
                               return (
-                                <TableRow key={item.id || index} className="hover:bg-gray-50 border-b">
-                                  <TableCell className="text-center font-medium border-r px-3 py-3">
+                                <TableRow key={item.id || index} className="hover:bg-gray-50">
+                                  <TableCell className="text-center font-medium">
                                     {index + 1}
                                   </TableCell>
-                                  <TableCell className="border-r px-3 py-3">
-                                    <div className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                      {item.product?.sku || item.code || 'N/A'}
+                                  <TableCell>
+                                    <div className="space-y-1">
+                                      <div className="font-medium text-gray-900">
+                                        {item.product?.name || item.productName || 'Unknown Product'}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        SKU: {item.product?.sku || item.code || 'N/A'}
+                                      </div>
+                                      {item.description && (
+                                        <div className="text-xs text-gray-600">
+                                          {item.description}
+                                        </div>
+                                      )}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="border-r px-3 py-3">
-                                    <div className="font-medium text-gray-900 text-sm">
-                                      {item.product?.name || item.productName || 'Unknown Product'}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="border-r px-3 py-3">
-                                    <div className="text-sm text-gray-600">
-                                      {item.description || item.product?.description || '-'}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <span className="font-semibold text-blue-600">
-                                      {receivedQty}
+                                  <TableCell className="text-center">
+                                    <span className="font-semibold text-blue-600 text-lg">
+                                      {quantity}
                                     </span>
                                   </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <span className="text-sm">
-                                      {freeQty}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-sm font-semibold">
-                                      ₹{unitCost.toFixed(0)}
+                                  <TableCell className="text-center">
+                                    <div className="font-semibold text-gray-900">
+                                      ₹{unitCost.toLocaleString('en-IN')}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-xs">
-                                      {item.hsnCode || item.product?.hsnCode || '-'}
+                                  <TableCell className="text-center">
+                                    <div className="font-semibold text-blue-700">
+                                      ₹{amount.toLocaleString('en-IN')}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                      {taxPercent}%
-                                    </span>
+                                  <TableCell className="text-center">
+                                    {taxPercent > 0 ? (
+                                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                        {taxPercent}%
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
                                   </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-sm">
-                                      ₹{discountAmount.toFixed(0)}
+                                  <TableCell className="text-center">
+                                    <div className="font-bold text-green-700 text-base">
+                                      ₹{netAmount.toLocaleString('en-IN')}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-xs">
-                                      {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('en-GB') : '-'}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-sm font-semibold text-green-600">
-                                      ₹{netCost.toFixed(0)}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-xs bg-yellow-100 text-yellow-800 px-1 py-1 rounded">
-                                      {roiPercent.toFixed(2)}%
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-xs bg-purple-100 text-purple-800 px-1 py-1 rounded">
-                                      {grossProfitPercent.toFixed(2)}%
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-sm">
-                                      ₹{sellingPrice.toFixed(0)}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-sm">
-                                      ₹{mrp.toFixed(0)}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-sm font-semibold text-blue-700">
-                                      ₹{amount.toFixed(0)}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-sm font-bold text-green-700">
-                                      ₹{netAmount.toFixed(0)}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-xs">
-                                      {cashPercent.toFixed(1)}%
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-sm">
-                                      {cashAmount > 0 ? `₹${cashAmount.toFixed(0)}` : '-'}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-xs">
-                                      {item.batchNumber || item.batchNo || '-'}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center border-r px-3 py-3">
-                                    <div className="text-xs">
-                                      {item.location || '-'}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center px-3 py-3">
-                                    <div className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                  <TableCell className="text-center">
+                                    <Badge variant="outline" className="text-xs">
                                       {item.unit || 'PCS'}
-                                    </div>
+                                    </Badge>
                                   </TableCell>
                                 </TableRow>
                               );
-                            })
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={23} className="py-8 text-center text-gray-500">
-                                <div className="flex flex-col items-center gap-2">
-                                  <Package className="w-8 h-8 text-gray-300" />
-                                  <span>No items found for this purchase order</span>
-                                  <span className="text-sm text-gray-400">
-                                    Items may not have been properly saved or there was an error loading them.
-                                  </span>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                </div>
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                            <Package className="w-8 h-8 text-gray-400" />
+                          </div>
+                          <div>
+                            <h4 className="text-lg font-semibold text-gray-900 mb-2">No Items Found</h4>
+                            <p className="text-gray-600 max-w-md">
+                              This purchase order doesn't have any items or they couldn't be loaded.
+                            </p>
+                          </div>
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md">
+                            <p className="text-sm text-yellow-800">
+                              <strong>Note:</strong> Items may not have been properly saved during order creation.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* Financial Summary */}
                 <Card className="border-2 border-purple-200">
