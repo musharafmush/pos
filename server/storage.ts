@@ -31,14 +31,14 @@ export const storage = {
     });
     return user || null;
   },
-
+  
   async getUserByEmail(email: string): Promise<User | null> {
     const user = await db.query.users.findFirst({
       where: eq(users.email, email)
     });
     return user || null;
   },
-
+  
   async getUserByUsernameOrEmail(usernameOrEmail: string): Promise<User | null> {
     const user = await db.query.users.findFirst({
       where: or(
@@ -58,10 +58,10 @@ export const storage = {
 
   async createUser(user: { username?: string; password: string; name: string; email: string; role?: string }): Promise<User> {
     const hashedPassword = await bcrypt.hash(user.password, 10);
-
+    
     // Generate username from email if not provided
     const username = user.username || user.email.split('@')[0] + '_' + Math.floor(Math.random() * 1000);
-
+    
     const [newUser] = await db.insert(users).values({
       ...user,
       username,
@@ -158,7 +158,7 @@ export const storage = {
   }): Promise<Product> {
     // Import SQLite database directly
     const { sqlite } = await import('@db');
-
+    
     const insertProduct = sqlite.prepare(`
       INSERT INTO products (
         name, description, sku, price, mrp, cost, weight, weight_unit, category_id, 
@@ -166,7 +166,7 @@ export const storage = {
         created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `);
-
+    
     const result = insertProduct.run(
       product.name,
       product.description || null,
@@ -183,11 +183,11 @@ export const storage = {
       product.image || null,
       product.active !== false ? 1 : 0
     );
-
+    
     // Fetch the created product
     const getProduct = sqlite.prepare('SELECT * FROM products WHERE id = ?');
     const newProduct = getProduct.get(result.lastInsertRowid);
-
+    
     return {
       ...newProduct,
       active: Boolean(newProduct.active),
@@ -213,17 +213,17 @@ export const storage = {
     if (product.categoryId !== undefined) updateData.categoryId = product.categoryId;
     if (product.active !== undefined) updateData.active = product.active ? 1 : 0;
     if (product.image !== undefined) updateData.image = product.image;
-
+    
     // Add updated timestamp
     updateData.updatedAt = new Date();
-
+    
     const [updatedProduct] = await db.update(products)
       .set(updateData)
       .where(eq(products.id, id))
       .returning();
-
+      
     if (!updatedProduct) return null;
-
+    
     // Get the updated product with category
     return await db.query.products.findFirst({
       where: eq(products.id, id),
@@ -263,7 +263,7 @@ export const storage = {
       limit
     });
   },
-
+  
   async getRecommendedPurchaseItems(): Promise<{ 
     products: Product[]; 
     recommendedQuantity: number[];
@@ -276,7 +276,7 @@ export const storage = {
         with: { category: true },
         orderBy: products.stockQuantity
       });
-
+      
       // Calculate recommended quantities (threshold + 20% buffer - current stock)
       const recommendedQuantities = lowStockProducts.map(product => {
         return Math.max(
@@ -284,10 +284,10 @@ export const storage = {
           1
         );
       });
-
+      
       // Get suppliers who have supplied these products in the past
       const supplierIds = new Set<number>();
-
+      
       // Get previous purchases for these products to find the best suppliers
       for (const product of lowStockProducts) {
         const previousPurchaseItems = await db.query.purchaseItems.findMany({
@@ -302,7 +302,7 @@ export const storage = {
           orderBy: (purchaseItems, { desc }) => [desc(purchaseItems.createdAt)],
           limit: 3
         });
-
+        
         // Add supplier IDs from recent purchases
         for (const item of previousPurchaseItems) {
           if (item.purchase?.supplier) {
@@ -310,7 +310,7 @@ export const storage = {
           }
         }
       }
-
+      
       // If no suppliers found from purchase history, get any active suppliers
       let recommendedSuppliers = [];
       if (supplierIds.size > 0) {
@@ -332,7 +332,7 @@ export const storage = {
           limit: 3
         });
       }
-
+      
       return { 
         products: lowStockProducts, 
         recommendedQuantity: recommendedQuantities,
@@ -365,24 +365,24 @@ export const storage = {
   async createCustomer(customer: { name: string; email?: string; phone?: string; address?: string }): Promise<Customer> {
     // Use SQLite database directly for compatibility
     const { sqlite } = await import('@db');
-
+    
     const insertCustomer = sqlite.prepare(`
       INSERT INTO customers (
         name, email, phone, address, created_at
       ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
-
+    
     const result = insertCustomer.run(
       customer.name,
       customer.email || null,
       customer.phone || null,
       customer.address || null
     );
-
+    
     // Fetch the created customer
     const getCustomer = sqlite.prepare('SELECT * FROM customers WHERE id = ?');
     const newCustomer = getCustomer.get(result.lastInsertRowid);
-
+    
     return {
       ...newCustomer,
       createdAt: new Date(newCustomer.created_at)
@@ -435,13 +435,13 @@ export const storage = {
   }): Promise<Supplier> {
     // Use SQLite database directly for compatibility
     const { sqlite } = await import('@db');
-
+    
     const insertSupplier = sqlite.prepare(`
       INSERT INTO suppliers (
         name, email, phone, address, contact_person, created_at
       ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
-
+    
     const result = insertSupplier.run(
       supplier.name,
       supplier.email || null,
@@ -449,11 +449,11 @@ export const storage = {
       supplier.address || null,
       supplier.contactPerson || null
     );
-
+    
     // Fetch the created supplier
     const getSupplier = sqlite.prepare('SELECT * FROM suppliers WHERE id = ?');
     const newSupplier = getSupplier.get(result.lastInsertRowid);
-
+    
     return {
       ...newSupplier,
       createdAt: new Date(newSupplier.created_at)
@@ -572,15 +572,15 @@ export const storage = {
     if (startDate) {
       query = query.where(gte(sales.createdAt, startDate));
     }
-
+    
     if (endDate) {
       query = query.where(lte(sales.createdAt, endDate));
     }
-
+    
     if (userId) {
       query = query.where(eq(sales.userId, userId));
     }
-
+    
     if (customerId) {
       query = query.where(eq(sales.customerId, customerId));
     }
@@ -626,7 +626,7 @@ export const storage = {
     if (startDate) {
       query = query.where(gte(sales.createdAt, startDate));
     }
-
+    
     if (endDate) {
       query = query.where(lte(sales.createdAt, endDate));
     }
@@ -642,7 +642,7 @@ export const storage = {
   async getDailySalesData(days: number = 7): Promise<{ date: string; total: string }[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-
+    
     const result = await db.select({
       date: sql`DATE(${sales.createdAt})`,
       total: sql`SUM(${sales.total})`
@@ -652,7 +652,7 @@ export const storage = {
     .groupBy(sql`DATE(${sales.createdAt})`)
     .orderBy(sql`DATE(${sales.createdAt})`)
     .execute();
-
+    
     return result.map(item => ({
       date: item.date?.toString() || "",
       total: item.total?.toString() || "0"
@@ -675,7 +675,7 @@ export const storage = {
     if (startDate) {
       query = query.where(gte(sales.createdAt, startDate));
     }
-
+    
     if (endDate) {
       query = query.where(lte(sales.createdAt, endDate));
     }
@@ -697,7 +697,7 @@ export const storage = {
         });
       }
     }
-
+    
     return topProducts;
   },
 
@@ -712,7 +712,7 @@ export const storage = {
   ): Promise<Purchase> {
     // Use SQLite database directly for compatibility
     const { sqlite } = await import('@db');
-
+    
     // Generate unique purchase number
     const purchaseNumber = `PO-${Date.now().toString().substring(7)}${Math.floor(Math.random() * 1000)}`;
 
@@ -727,7 +727,7 @@ export const storage = {
         other_charges, discount_amount
       ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)
     `);
-
+    
     const result = insertPurchase.run(
       supplierId,
       userId,
@@ -741,7 +741,7 @@ export const storage = {
       "0", // other_charges
       "0"  // discount_amount
     );
-
+    
     // Fetch the created purchase
     const getPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?');
     const purchase = getPurchase.get(result.lastInsertRowid);
@@ -752,14 +752,14 @@ export const storage = {
         purchase_id, product_id, quantity, cost, total, amount
       ) VALUES (?, ?, ?, ?, ?, ?)
     `);
-
+    
     for (const item of items) {
       // Convert all values to their appropriate types to avoid NaN issues
       const productId = typeof item.productId === 'number' ? item.productId : 0;
       const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
       const unitCost = typeof item.unitCost === 'number' ? item.unitCost : 0;
       const subtotal = quantity * unitCost;
-
+      
       console.log("Inserting purchase item:", { 
         purchaseId: purchase.id, 
         productId, 
@@ -767,7 +767,7 @@ export const storage = {
         unitCost, 
         subtotal 
       });
-
+      
       insertPurchaseItem.run(
         purchase.id,
         productId,
@@ -796,23 +796,23 @@ export const storage = {
         LEFT JOIN users u ON p.user_id = u.id
         WHERE p.id = ?
       `;
-
+      
       const itemsQuery = `
         SELECT pi.*, pr.name as product_name, pr.sku, pr.description
         FROM purchase_items pi
         LEFT JOIN products pr ON pi.product_id = pr.id
         WHERE pi.purchase_id = ?
       `;
-
+      
       const sqlite = (db as any)._.session.db;
       const purchase = sqlite.prepare(purchaseQuery).get(id);
-
+      
       if (!purchase) {
         return null;
       }
-
+      
       const items = sqlite.prepare(itemsQuery).all(id);
-
+      
       // Transform to match expected format
       return {
         ...purchase,
@@ -841,93 +841,27 @@ export const storage = {
     }
   },
 
-  async updatePurchaseStatus(id: number, status: string, receivedDate?: Date): Promise<any> {
-    try {
-      const updated = await db.update(purchases)
-        .set({ 
-          status,
-          receivedDate: receivedDate || null
-        })
-        .where(eq(purchases.id, id))
-        .returning();
+  async updatePurchaseStatus(id: number, status: string, receivedDate?: Date): Promise<Purchase | null> {
+    const [updatedPurchase] = await db.update(purchases)
+      .set({
+        status,
+        receivedDate: status === 'received' ? receivedDate || new Date() : undefined
+      })
+      .where(eq(purchases.id, id))
+      .returning();
 
-      return updated[0] || null;
-    } catch (error) {
-      console.error('Error updating purchase status:', error);
-      throw error;
-    }
-  },
+    // If status is 'received', update product stock
+    if (status === 'received') {
+      const purchaseItems = await db.query.purchaseItems.findMany({
+        where: eq(purchaseItems.purchaseId, id)
+      });
 
-  async updatePurchase(id: number, updateData: any): Promise<any> {
-    try {
-      const updated = await db.update(purchases)
-        .set({
-          supplierId: updateData.supplierId,
-          orderNumber: updateData.orderNumber,
-          orderDate: updateData.orderDate,
-          receivedDate: updateData.expectedDate,
-          paymentMethod: updateData.paymentMethod,
-          status: updateData.status,
-          total: updateData.total,
-          remarks: updateData.remarks,
-        })
-        .where(eq(purchases.id, id))
-        .returning();
-
-      return updated[0] || null;
-    } catch (error) {
-      console.error('Error updating purchase:', error);
-      throw error;
-    }
-  },
-
-  async updatePurchaseItems(purchaseId: number, items: any[]): Promise<void> {
-    try {
-      // Delete existing items
-      await db.delete(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
-
-      // Insert new items
-      for (const item of items) {
-        if (item.productId && item.productId > 0) {
-          await db.insert(purchaseItems).values({
-            purchaseId,
-            productId: item.productId,
-            quantity: item.quantity || 1,
-            unitCost: item.unitCost?.toString() || '0',
-            subtotal: ((item.quantity || 1) * (item.unitCost || 0)).toString(),
-            hsnCode: item.hsnCode,
-            taxPercentage: item.taxPercentage?.toString(),
-            discountAmount: item.discountAmount?.toString(),
-            expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
-          });
-        }
+      for (const item of purchaseItems) {
+        await this.updateProductStock(item.productId, item.quantity);
       }
-    } catch (error) {
-      console.error('Error updating purchase items:', error);
-      throw error;
     }
-  },
 
-  async deletePurchase(id: number): Promise<boolean> {
-    try {
-      const deleted = await db.delete(purchases)
-        .where(eq(purchases.id, id))
-        .returning();
-
-      return deleted.length > 0;
-    } catch (error) {
-      console.error('Error deleting purchase:', error);
-      throw error;
-    }
-  },
-
-  async deletePurchaseItems(purchaseId: number): Promise<void> {
-    try {
-      await db.delete(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
-    } catch (error) {
-      console.error('Error deleting purchase items:', error);
-      throw error;
-    }
+    return updatedPurchase || null;
   },
 
   async listPurchases(
@@ -954,26 +888,26 @@ export const storage = {
           }
         }
       };
-
+      
       // Add conditions if needed
       const conditions = [];
-
+      
       if (startDate) {
         conditions.push(gte(purchases.orderDate, startDate));
       }
-
+      
       if (endDate) {
         conditions.push(lte(purchases.orderDate, endDate));
       }
-
+      
       if (supplierId) {
         conditions.push(eq(purchases.supplierId, supplierId));
       }
-
+      
       if (status) {
         conditions.push(eq(purchases.status, status));
       }
-
+      
       // Apply conditions if any were provided
       if (conditions.length > 0) {
         return await db.query.purchases.findMany({
@@ -981,7 +915,7 @@ export const storage = {
           where: and(...conditions)
         });
       }
-
+      
       // Otherwise return without where clause
       return await db.query.purchases.findMany(query);
     } catch (error) {
@@ -1000,35 +934,35 @@ export const storage = {
     // Today's sales
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
+    
     const todaySalesResult = await db.select({
       total: sql`SUM(${sales.total})`
     })
     .from(sales)
     .where(gte(sales.createdAt, today))
     .execute();
-
+    
     const todaySales = todaySalesResult[0]?.total?.toString() || "0";
-
-    // Total orderstoday
+    
+    // Total orders today
     const totalOrdersResult = await db.select({
       count: sql`COUNT(*)`
     })
     .from(sales)
     .where(gte(sales.createdAt, today))
     .execute();
-
+    
     const totalOrders = Number(totalOrdersResult[0]?.count || 0);
-
+    
     // Inventory value
     const inventoryValueResult = await db.select({
       value: sql`SUM(${products.cost} * ${products.stockQuantity})`
     })
     .from(products)
     .execute();
-
+    
     const inventoryValue = inventoryValueResult[0]?.value?.toString() || "0";
-
+    
     // Low stock count
     const lowStockResult = await db.select({
       count: sql`COUNT(*)`
@@ -1036,9 +970,9 @@ export const storage = {
     .from(products)
     .where(sql`${products.stockQuantity} <= ${products.alertThreshold}`)
     .execute();
-
+    
     const lowStockCount = Number(lowStockResult[0]?.count || 0);
-
+    
     return {
       todaySales,
       totalOrders,
@@ -1057,7 +991,7 @@ export const storage = {
         .from(purchases)
         .where(sql`${purchases.freight} IS NOT NULL AND ${purchases.freight} != '0'`)
         .execute();
-
+      
       return result[0]?.totalFreight?.toString() || "0";
     } catch (error) {
       console.error('Error calculating total freight distributed:', error);
