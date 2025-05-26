@@ -843,7 +843,8 @@ export const storage = {
 
   async deletePurchase(id: number): Promise<boolean> {
     try {
-      const sqlite = (db as any)._.session.db;
+      // Import SQLite database directly like other methods
+      const { sqlite } = await import('@db');
       
       // First delete purchase items
       const deleteItemsStmt = sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?');
