@@ -1059,13 +1059,11 @@ export const storage = {
         updateValues.push(purchaseData.notes, purchaseData.notes);
       }
 
-      // Add updated timestamp
-      updateFields.push('updated_at = ?');
-      updateValues.push(new Date().toISOString());
+      // Remove updated_at reference since column doesn't exist
 
       updateValues.push(id);
 
-      if (updateFields.length > 1) { // More than just the timestamp
+      if (updateFields.length > 0) { // Check if there are fields to update
         const updatePurchaseStmt = sqlite.prepare(
           `UPDATE purchases SET ${updateFields.join(', ')} WHERE id = ?`
         );
