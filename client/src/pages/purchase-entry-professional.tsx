@@ -599,16 +599,6 @@ export default function PurchaseEntryProfessional() {
                         </SelectContent>
                       </Select>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="freightAmount">Freight Amount (₹)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...form.register("freightAmount", { valueAsNumber: true })}
-                        placeholder="0.00"
-                      />
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -626,6 +616,16 @@ export default function PurchaseEntryProfessional() {
                         type="number"
                         step="0.01"
                         {...form.register("surchargeAmount", { valueAsNumber: true })}
+                        placeholder="0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="freightAmount">Freight Charges (₹)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...form.register("freightAmount", { valueAsNumber: true })}
                         placeholder="0"
                       />
                     </div>
