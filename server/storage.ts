@@ -769,9 +769,9 @@ export const storage = {
 
     for (const item of items) {
       // Convert all values to their appropriate types to avoid NaN issues
-      const productId = typeof item.productId === 'number' ? item.productId : 0;
-      const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
-      const unitCost = typeof item.unitCost === 'number' ? item.unitCost : 0;
+      const productId = Number(item.productId) || 0;
+      const quantity = Number(item.quantity) || 0;
+      const unitCost = Number(item.unitCost) || 0;
       const subtotal = quantity * unitCost;
 
       console.log("Inserting purchase item:", { 
@@ -782,34 +782,39 @@ export const storage = {
         subtotal 
       });
 
-      insertPurchaseItem.run(
-        purchase.id,
-        productId,
-        quantity,
-        unitCost.toString(),
-        unitCost.toString(), // cost
-        subtotal.toString(), // total
-        subtotal.toString(), // amount
-        subtotal.toString(), // subtotal
-        quantity, // received_qty
-        0, // free_qty
-        '', // expiry_date
-        '', // hsn_code
-        '0', // tax_percentage
-        '0', // discount_amount
-        '0', // discount_percent
-        unitCost.toString(), // net_cost
-        '0', // selling_price
-        '0', // mrp
-        '', // batch_number
-        '', // location
-        'PCS', // unit
-        '0', // roi_percent
-        '0', // gross_profit_percent
-        subtotal.toString(), // net_amount
-        '0', // cash_percent
-        '0' // cash_amount
-      );
+      try {
+        insertPurchaseItem.run(
+          purchase.id,
+          productId,
+          quantity,
+          unitCost.toString(),
+          unitCost.toString(), // cost
+          subtotal.toString(), // total
+          subtotal.toString(), // amount
+          subtotal.toString(), // subtotal
+          quantity, // received_qty
+          0, // free_qty
+          null, // expiry_date
+          '', // hsn_code
+          '0', // tax_percentage
+          '0', // discount_amount
+          '0', // discount_percent
+          unitCost.toString(), // net_cost
+          '0', // selling_price
+          '0', // mrp
+          '', // batch_number
+          '', // location
+          'PCS', // unit
+          '0', // roi_percent
+          '0', // gross_profit_percent
+          subtotal.toString(), // net_amount
+          '0', // cash_percent
+          '0' // cash_amount
+        );
+        console.log(`Successfully inserted purchase item for product ${productId}`);
+      } catch (itemError) {
+        console.error(`Error inserting purchase item for product ${productId}:`, itemError);
+      }
     }
 
     return {
@@ -820,89 +825,114 @@ export const storage = {
 
   async getPurchaseById(id: number): Promise<any> {
     try {
-      const purchase = await db.query.purchases.findFirst({
-        where: eq(purchases.id, id),
-        with: {
-          supplier: true,
-          user: true
-        }
-      });
+      // Use SQLite directly for better compatibility
+      const { sqlite } = await import('@db');
 
+      // Get purchase basic info
+      const getPurchaseStmt = sqlite.prepare(`
+        SELECT p.*, s.name as supplier_name, s.email as supplier_email, 
+               s.phone as supplier_phone, s.address as supplier_address,
+               u.name as user_name, u.email as user_email
+        FROM purchases p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?
+      `);
+      
+      const purchase = getPurchaseStmt.get(id);
+      
       if (!purchase) {
         return null;
       }
 
-      // Get purchase items with safe column handling
-      const items = await this.query(`
+      // Get purchase items with all columns
+      const getItemsStmt = sqlite.prepare(`
         SELECT 
-          pi.id,
-          pi.purchase_id,
-          pi.product_id,
-          COALESCE(pi.quantity, 0) as quantity,
-          COALESCE(pi.unit_cost, pi.cost, '0') as unit_cost,
-          COALESCE(pi.subtotal, pi.total, pi.amount, '0') as subtotal,
-          COALESCE(pi.tax_percentage, '0') as tax_percentage,
-          COALESCE(pi.discount_percent, '0') as discount_percent,
-          COALESCE(pi.discount_amount, '0') as discount_amount,
-          COALESCE(pi.net_cost, pi.unit_cost, pi.cost, '0') as net_cost,
-          COALESCE(pi.selling_price, '0') as selling_price,
-          COALESCE(pi.mrp, '0') as mrp,
-          COALESCE(pi.batch_number, '') as batch_number,
-          COALESCE(pi.expiry_date, '') as expiry_date,
-          COALESCE(pi.hsn_code, '') as hsn_code,
-          COALESCE(pi.received_qty, pi.quantity, 0) as received_qty,
-          COALESCE(pi.free_qty, 0) as free_qty,
-          COALESCE(pi.location, '') as location,
-          COALESCE(pi.unit, 'PCS') as unit,
+          pi.*,
           p.name as product_name,
           p.sku as product_sku,
-          p.price as product_price
+          p.price as product_price,
+          p.description as product_description
         FROM purchase_items pi
         LEFT JOIN products p ON pi.product_id = p.id
         WHERE pi.purchase_id = ?
         ORDER BY pi.id
-      `, [id]);
+      `);
+      
+      const items = getItemsStmt.all(id);
 
-      return {
-        ...purchase,
+      // Transform the purchase data to match expected format
+      const transformedPurchase = {
+        id: purchase.id,
+        orderNumber: purchase.order_number || purchase.purchase_number || purchase.po_no,
+        supplierId: purchase.supplier_id,
+        userId: purchase.user_id,
+        total: purchase.total,
+        status: purchase.status,
+        orderDate: purchase.order_date || purchase.po_date,
+        expectedDate: purchase.expected_date || purchase.due_date,
+        receivedDate: purchase.received_date,
+        createdAt: new Date(purchase.created_at),
+        notes: purchase.notes || purchase.remarks,
+        supplier: {
+          id: purchase.supplier_id,
+          name: purchase.supplier_name || 'Unknown Supplier',
+          email: purchase.supplier_email,
+          phone: purchase.supplier_phone,
+          address: purchase.supplier_address
+        },
+        user: {
+          id: purchase.user_id,
+          name: purchase.user_name || 'Unknown User',
+          email: purchase.user_email
+        },
         items: items.map((item: any) => ({
           id: item.id,
           purchaseId: item.purchase_id,
           productId: item.product_id,
           quantity: Number(item.quantity) || 0,
-          unitCost: item.unit_cost || '0',
-          subtotal: item.subtotal || '0',
+          unitCost: item.unit_cost || item.cost || '0',
+          cost: item.unit_cost || item.cost || '0',
+          subtotal: item.subtotal || item.total || item.amount || '0',
+          total: item.total || item.subtotal || item.amount || '0',
+          amount: item.amount || item.total || item.subtotal || '0',
           taxPercentage: item.tax_percentage || '0',
           discountPercent: item.discount_percent || '0',
           discountAmount: item.discount_amount || '0',
-          netCost: item.net_cost || '0',
+          netCost: item.net_cost || item.unit_cost || item.cost || '0',
           sellingPrice: item.selling_price || '0',
           mrp: item.mrp || '0',
           batchNumber: item.batch_number || '',
+          batchNo: item.batch_number || '',
           expiryDate: item.expiry_date || '',
           hsnCode: item.hsn_code || '',
-          receivedQty: Number(item.received_qty) || Number(item.quantity) || 0,
+          receivedQty: Number(item.received_qty || item.quantity) || 0,
           freeQty: Number(item.free_qty) || 0,
           location: item.location || '',
           unit: item.unit || 'PCS',
+          roiPercent: item.roi_percent || '0',
+          grossProfitPercent: item.gross_profit_percent || '0',
+          netAmount: item.net_amount || item.amount || item.total || item.subtotal || '0',
+          cashPercent: item.cash_percent || '0',
+          cashAmount: item.cash_amount || '0',
           product: {
             id: item.product_id,
             name: item.product_name || 'Unknown Product',
             sku: item.product_sku || '',
-            price: item.product_price || '0'
+            price: item.product_price || '0',
+            description: item.product_description || ''
           },
           productName: item.product_name || 'Unknown Product',
           code: item.product_sku || '',
-          cost: item.unit_cost || '0'
+          description: item.product_description || ''
         }))
       };
+
+      console.log(`Found purchase ${id} with ${transformedPurchase.items.length} items`);
+      return transformedPurchase;
     } catch (error) {
       console.error('Error fetching purchase by ID:', error);
-      // Return purchase without items if items query fails
-      return {
-        ...purchase,
-        items: []
-      };
+      return null;
     }
   },
 
