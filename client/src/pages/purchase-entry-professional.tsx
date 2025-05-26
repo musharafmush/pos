@@ -60,6 +60,10 @@ const purchaseSchema = z.object({
   billingAddress: z.string().optional(),
   shippingMethod: z.string().optional(),
   freightAmount: z.number().min(0, "Freight amount cannot be negative").optional(),
+  surchargeAmount: z.number().min(0, "Surcharge amount cannot be negative").optional(),
+  packingCharges: z.number().min(0, "Packing charges cannot be negative").optional(),
+  otherCharges: z.number().min(0, "Other charges cannot be negative").optional(),
+  additionalDiscount: z.number().min(0, "Additional discount cannot be negative").optional(),
   taxAmount: z.number().min(0, "Tax amount cannot be negative").optional(),
   discountAmount: z.number().min(0, "Discount amount cannot be negative").optional(),
   invoiceNumber: z.string().optional(),
@@ -119,6 +123,11 @@ export default function PurchaseEntryProfessional() {
       paymentTerms: "Net 30",
       paymentMethod: "Credit",
       status: "Pending",
+      freightAmount: 0,
+      surchargeAmount: 0,
+      packingCharges: 0,
+      otherCharges: 0,
+      additionalDiscount: 0,
       invoiceNumber: "",
       invoiceDate: "",
       invoiceAmount: 0,
@@ -229,10 +238,16 @@ export default function PurchaseEntryProfessional() {
       }
     });
 
-    // Add freight charges (could be configurable)
-    freightCharges = 0; // Set based on your business logic
+    // Get additional charges from form
+    const formData = form.getValues();
+    const surchargeAmount = Number(formData.surchargeAmount) || 0;
+    const packingCharges = Number(formData.packingCharges) || 0;
+    const otherCharges = Number(formData.otherCharges) || 0;
+    const additionalDiscount = Number(formData.additionalDiscount) || 0;
+    freightCharges = Number(formData.freightAmount) || 0;
 
-    const grandTotal = subtotal - totalDiscount + totalTax + freightCharges;
+    const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
+    const grandTotal = subtotal - totalDiscount + totalTax + totalAdditionalCharges - additionalDiscount;
 
     // Update the summary state
     setSummary({
@@ -354,6 +369,10 @@ export default function PurchaseEntryProfessional() {
         billingAddress: data.billingAddress || "",
         shippingMethod: data.shippingMethod || "standard",
         freightAmount: Number(data.freightAmount) || 0,
+        surchargeAmount: Number(data.surchargeAmount) || 0,
+        packingCharges: Number(data.packingCharges) || 0,
+        otherCharges: Number(data.otherCharges) || 0,
+        additionalDiscount: Number(data.additionalDiscount) || 0,
         taxAmount: Number(data.taxAmount) || summary.totalTax,
         discountAmount: Number(data.discountAmount) || Math.abs(summary.totalDiscount),
         invoiceNumber: data.invoiceNumber || "",
@@ -588,6 +607,56 @@ export default function PurchaseEntryProfessional() {
                         step="0.01"
                         {...form.register("freightAmount", { valueAsNumber: true })}
                         placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Additional Charges Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Additional Charges</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="surchargeAmount">Surcharge (₹)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...form.register("surchargeAmount", { valueAsNumber: true })}
+                        placeholder="0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="packingCharges">Packing Charges (₹)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...form.register("packingCharges", { valueAsNumber: true })}
+                        placeholder="0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="otherCharges">Other Charges (₹)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...form.register("otherCharges", { valueAsNumber: true })}
+                        placeholder="0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="additionalDiscount">Additional Discount (₹)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...form.register("additionalDiscount", { valueAsNumber: true })}
+                        placeholder="0"
                       />
                     </div>
                   </div>
@@ -1117,6 +1186,22 @@ export default function PurchaseEntryProfessional() {
                           <div className="flex justify-between">
                             <span className="text-gray-600">Freight Charges:</span>
                             <span className="font-medium">+{formatCurrency(summary.freightCharges)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Surcharge:</span>
+                            <span className="font-medium">+{formatCurrency(Number(form.watch("surchargeAmount")) || 0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Packing Charges:</span>
+                            <span className="font-medium">+{formatCurrency(Number(form.watch("packingCharges")) || 0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Other Charges:</span>
+                            <span className="font-medium">+{formatCurrency(Number(form.watch("otherCharges")) || 0)}</span>
+                          </div>
+                          <div className="flex justify-between text-red-600">
+                            <span>Additional Discount:</span>
+                            <span className="font-medium">-{formatCurrency(Number(form.watch("additionalDiscount")) || 0)}</span>
                           </div>
 
                           <div className="border-t pt-3 mt-4">
