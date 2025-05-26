@@ -818,198 +818,68 @@ export const storage = {
     };
   },
 
-  async getPurchaseById(id: number) {
+  async getPurchaseById(id: number): Promise<any> {
     try {
-      console.log('Fetching purchase by ID:', id);
-
-      // First get the purchase details with supplier and user
-      const purchaseQuery = `
-        SELECT 
-          p.id,
-          p.order_number,
-          p.supplier_id,
-          p.user_id,
-          p.total,
-          p.status,
-          p.draft,
-          p.po_no,
-          p.po_date,
-          p.due_date,
-          p.invoice_no,
-          p.invoice_date,
-          p.invoice_amount,
-          p.payment_method,
-          p.payment_type,
-          p.remarks,
-          p.order_date,
-          p.received_date,
-          p.created_at,
-          s.name as supplier_name,
-          s.email as supplier_email,
-          s.phone as supplier_phone,
-          s.address as supplier_address,
-          u.name as user_name
-        FROM purchases p
-        LEFT JOIN suppliers s ON p.supplier_id = s.id
-        LEFT JOIN users u ON p.user_id = u.id
-        WHERE p.id = ?
-      `;
-
-      const { sqlite } = await import('@db');
-      const purchase = sqlite.prepare(purchaseQuery).get(id);
+      const purchase = await db.query.purchases.findFirst({
+        where: eq(purchases.id, id),
+        with: {
+          supplier: true,
+          user: true
+        }
+      });
 
       if (!purchase) {
-        console.log('Purchase not found for ID:', id);
         return null;
       }
 
-      console.log('Found purchase:', purchase);
-
-      // Get purchase items with safe column access (handle missing columns)
-      const itemsQuery = `
+      // Get purchase items with all required fields using raw SQL for better compatibility
+      const items = await this.query(`
         SELECT 
-          pi.id,
-          pi.purchase_id,
-          pi.product_id,
+          pi.*,
+          p.name as product_name,
+          p.sku as product_sku,
+          p.price as product_price,
           pi.quantity,
           pi.unit_cost,
           pi.subtotal,
-          COALESCE(pi.expiry_date, '') as expiry_date,
-          COALESCE(pi.hsn_code, '') as hsn_code,
-          COALESCE(pi.tax_percentage, '0') as tax_percentage,
-          COALESCE(pi.discount_amount, '0') as discount_amount,
-          COALESCE(pi.discount_percent, '0') as discount_percent,
-          COALESCE(pi.net_cost, '0') as net_cost,
-          COALESCE(pi.selling_price, '0') as selling_price,
-          COALESCE(pi.mrp, '0') as mrp,
-          COALESCE(pi.batch_number, '') as batch_number,
-          COALESCE(pi.location, '') as location,
-          COALESCE(pi.unit, 'PCS') as unit,
-          COALESCE(pi.roi_percent, '0') as roi_percent,
-          COALESCE(pi.gross_profit_percent, '0') as gross_profit_percent,
-          COALESCE(pi.net_amount, '0') as net_amount,
-          COALESCE(pi.cash_percent, '0') as cash_percent,
-          COALESCE(pi.cash_amount, '0') as cash_amount,
-          COALESCE(pi.received_qty, pi.quantity) as received_qty,
-          COALESCE(pi.free_qty, 0) as free_qty,
-          CURRENT_TIMESTAMP as created_at,
-          p.name as product_name,
-          p.sku as product_sku,
-          p.description as product_description
+          pi.tax_percentage,
+          pi.discount_percent,
+          pi.discount_amount,
+          pi.net_cost,
+          pi.selling_price,
+          pi.mrp,
+          pi.batch_number,
+          pi.expiry_date,
+          pi.hsn_code,
+          pi.received_qty,
+          pi.free_qty,
+          pi.location,
+          pi.unit
         FROM purchase_items pi
         LEFT JOIN products p ON pi.product_id = p.id
         WHERE pi.purchase_id = ?
-      `;
+        ORDER BY pi.id
+      `, [id]);
 
-      const items = sqlite.prepare(itemsQuery).all(id);
-      console.log('Found purchase items:', items);
-
-      // Map items to the expected format
-      const mappedItems = items.map(item => ({
-        id: item.id,
-        productId: item.product_id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        receivedQty: item.quantity,
-        received_qty: item.quantity,
-        unitCost: item.unit_cost,
-        unit_cost: item.unit_cost,
-        cost: item.unit_cost,
-        subtotal: item.subtotal,
-        expiryDate: item.expiry_date,
-        expiry_date: item.expiry_date,
-        hsnCode: item.hsn_code,
-        hsn_code: item.hsn_code,
-        taxPercentage: item.tax_percentage,
-        tax_percentage: item.tax_percentage,
-        taxPercent: item.tax_percentage,
-        tax_percent: item.tax_percentage,
-        discountAmount: item.discount_amount,
-        discount_amount: item.discount_amount,
-        discountPercent: item.discount_percent,
-        discount_percent: item.discount_percent,
-        netCost: item.net_cost,
-        net_cost: item.net_cost,
-        sellingPrice: item.selling_price,
-        selling_price: item.selling_price,
-        mrp: item.mrp,
-        productName: item.product_name,
-        product_name: item.product_name,
-        code: item.product_sku,
-        sku: item.product_sku,
-        description: item.product_description,
-        freeQty: 0,
-        free_qty: 0,
-        batchNumber: '',
-        batch_number: '',
-        location: '',
-        unit: 'PCS',
-        roiPercent: 0,
-        roi_percent: 0,
-        grossProfitPercent: 0,
-        gross_profit_percent: 0,
-        netAmount: item.subtotal,
-        net_amount: item.subtotal,
-        cashPercent: 0,
-        cash_percent: 0,
-        cashAmount: 0,
-        cash_amount: 0
-      }));
-
-      // Structure the response with both camelCase and snake_case for compatibility
-      const result = {
-        id: purchase.id,
-        supplierId: purchase.supplier_id,
-        supplier_id: purchase.supplier_id,
-        userId: purchase.user_id,
-        user_id: purchase.user_id,
-        orderNumber: purchase.order_number,
-        order_number: purchase.order_number,
-        poNo: purchase.po_no,
-        po_no: purchase.po_no,
-        poDate: purchase.po_date,
-        po_date: purchase.po_date,
-        orderDate: purchase.order_date,
-        order_date: purchase.order_date,
-        dueDate: purchase.due_date,
-        due_date: purchase.due_date,
-        expectedDate: purchase.due_date,
-        expected_date: purchase.due_date,
-        invoiceNo: purchase.invoice_no,
-        invoice_no: purchase.invoice_no,
-        invoiceDate: purchase.invoice_date,
-        invoice_date: purchase.invoice_date,
-        invoiceAmount: purchase.invoice_amount,
-        invoice_amount: purchase.invoice_amount,
-        paymentMethod: purchase.payment_method,
-        payment_method: purchase.payment_method,
-        paymentType: purchase.payment_type,
-        payment_type: purchase.payment_type,
-        remarks: purchase.remarks,
-        status: purchase.status,
-        draft: purchase.draft,
-        total: purchase.total,
-        totalAmount: purchase.total,
-        total_amount: purchase.total,
-        receivedDate: purchase.received_date,
-        received_date: purchase.received_date,
-        createdAt: purchase.created_at,
-        created_at: purchase.created_at,
-        supplier: {
-          id: purchase.supplier_id,
-          name: purchase.supplier_name,
-          email: purchase.supplier_email,
-          phone: purchase.supplier_phone,
-          address: purchase.supplier_address
-        },
-        user: {
-          id: purchase.user_id,
-          name: purchase.user_name
-        },        items: mappedItems
+      return {
+        ...purchase,
+        items: items.map((item: any) => ({
+          ...item,
+          product: {
+            id: item.product_id,
+            name: item.product_name,
+            sku: item.product_sku,
+            price: item.product_price
+          },
+          productName: item.product_name,
+          code: item.product_sku,
+          cost: item.unit_cost,
+          receivedQty: item.received_qty || item.quantity,
+          unitCost: item.unit_cost,
+          taxPercentage: item.tax_percentage,
+          discountPercent: item.discount_percent
+        }))
       };
-
-      console.log('Returning structured purchase with', mappedItems.length, 'items');
-      return result;
     } catch (error) {
       console.error('Error fetching purchase by ID:', error);
       throw error;
@@ -1074,7 +944,7 @@ export const storage = {
       if (items && items.length > 0) {
         console.log('Updating purchase items for purchase ID:', id);
         console.log('Items to update:', items);
-        
+
         // Delete existing items
         const deleteItemsStmt = sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?');
         deleteItemsStmt.run(id);
@@ -1097,7 +967,7 @@ export const storage = {
           const quantity = Number(item.quantity || item.receivedQty || 0);
           const unitCost = Number(item.cost || item.unitCost || 0);
           const subtotal = receivedQty * unitCost;
-          
+
           console.log('Inserting/updating item:', { productId, quantity, receivedQty, unitCost, subtotal });
 
           insertPurchaseItem.run(
@@ -1129,7 +999,7 @@ export const storage = {
             Number(item.cashAmount || 0).toString() // cash_amount
           );
         }
-        
+
         console.log(`Successfully updated ${items.length} items for purchase ${id}`);
       }
 
@@ -1354,5 +1224,17 @@ export const storage = {
       console.error('Error calculating product true cost:', error);
       return { baseCost: "0", allocatedFreight: "0", trueCost: "0" };
     }
-  }
+  },
+
+    async query(sql: string, params: any[] = []) {
+    try {
+      const { sqlite } = await import('@db');
+      const stmt = sqlite.prepare(sql);
+      const result = stmt.all(...params);
+      return result;
+    } catch (error: any) {
+      console.error(`Error executing SQL: ${sql}`, error);
+      throw new Error(`Database error: ${error.message}`);
+    }
+  },
 };
