@@ -901,7 +901,7 @@ export default function PrintLabels() {
                   labelSize === 'large' ? 'h-28 text-sm' :
                   labelSize === 'xlarge' ? 'h-32 text-base' :
                   'h-24 text-xs'
-                }`}></div>
+                }`}>
                   <div className="font-semibold">{manualLabel.productName || 'Product Name'}</div>
                   {manualLabel.sku && <div className="text-gray-500">SKU: {manualLabel.sku}</div>}
                   <div className="flex justify-between text-xs mt-1">
