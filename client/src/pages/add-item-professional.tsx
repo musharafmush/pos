@@ -1377,9 +1377,9 @@ export default function AddItemProfessional() {
                             <FormItem>
                               <FormLabel>Item Preparations Status</FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value} defaultValue="Create">
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Create" />
+                                    <SelectValue placeholder="Select status" />
                                   </SelectTrigger>
                                   <SelectContent className="max-h-80 overflow-y-auto">
                                     <SelectItem value="Create">Create</SelectItem>
