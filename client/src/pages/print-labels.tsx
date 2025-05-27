@@ -56,7 +56,7 @@ export default function PrintLabels() {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [isManualLabelDialogOpen, setIsManualLabelDialogOpen] = useState(false);
   const [copies, setCopies] = useState(1);
-  
+
   // Manual label creation state
   const [manualLabel, setManualLabel] = useState({
     productName: "",
@@ -151,7 +151,15 @@ export default function PrintLabels() {
         background: white;
         page-break-inside: avoid;
       ">
-        <div style="font-weight: bold; font-size: ${labelSize === 'small' ? '14px' : '16px'}; margin-bottom: 8px;">
+        <div style="font-weight: bold; 
+        font-size: ${
+          labelSize === 'mini' ? '12px' :
+          labelSize === 'small' ? '14px' :
+          labelSize === 'medium' ? '18px' :
+          labelSize === 'large' ? '20px' :
+          labelSize === 'xlarge' ? '22px' :
+          '16px'
+        }; margin-bottom: 8px;">
           ${manualLabel.productName}
         </div>
         ${manualLabel.sku ? 
@@ -166,12 +174,20 @@ export default function PrintLabels() {
         }
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
           ${includePrice && manualLabel.price ? 
-            `<div style="font-size: ${labelSize === 'small' ? '14px' : '16px'}; font-weight: bold; color: #2563eb;">
+            `<div style="
+            font-size: ${
+          labelSize === 'mini' ? '12px' :
+          labelSize === 'small' ? '14px' :
+          labelSize === 'medium' ? '18px' :
+          labelSize === 'large' ? '20px' :
+          labelSize === 'xlarge' ? '22px' :
+          '16px'
+        }; font-weight: bold; color: #2563eb;">
               Price: ₹${Number(manualLabel.price).toFixed(2)}
             </div>` : ''
           }
           ${includeMrp && manualLabel.mrp ? 
-            `<div style="font-size: ${labelSize === 'small' ? '12px' : '14px'}; color: #666;">
+            `<div style="font-size: 12px; color: #666;">
               MRP: ₹${Number(manualLabel.mrp).toFixed(2)}
             </div>` : ''
           }
@@ -246,7 +262,15 @@ export default function PrintLabels() {
           background: white;
           page-break-inside: avoid;
         ">
-          <div style="font-weight: bold; font-size: ${labelSize === 'small' ? '14px' : '16px'}; margin-bottom: 8px;">
+          <div style="font-weight: bold; 
+          font-size: ${
+          labelSize === 'mini' ? '12px' :
+          labelSize === 'small' ? '14px' :
+          labelSize === 'medium' ? '18px' :
+          labelSize === 'large' ? '20px' :
+          labelSize === 'xlarge' ? '22px' :
+          '16px'
+        }; margin-bottom: 8px;">
             ${product.name}
           </div>
           <div style="font-size: 12px; color: #666; margin-bottom: 4px;">
@@ -259,12 +283,20 @@ export default function PrintLabels() {
           }
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             ${includePrice ? 
-              `<div style="font-size: ${labelSize === 'small' ? '14px' : '16px'}; font-weight: bold; color: #2563eb;">
+              `<div style="
+              font-size: ${
+          labelSize === 'mini' ? '12px' :
+          labelSize === 'small' ? '14px' :
+          labelSize === 'medium' ? '18px' :
+          labelSize === 'large' ? '20px' :
+          labelSize === 'xlarge' ? '22px' :
+          '16px'
+        }; font-weight: bold; color: #2563eb;">
                 Price: ₹${Number(product.price).toFixed(2)}
               </div>` : ''
             }
             ${includeMrp && product.mrp ? 
-              `<div style="font-size: ${labelSize === 'small' ? '12px' : '14px'}; color: #666;">
+              `<div style="font-size: 12px; color: #666;">
                 MRP: ₹${Number(product.mrp).toFixed(2)}
               </div>` : ''
             }
@@ -385,7 +417,7 @@ export default function PrintLabels() {
               {/* Include Options */}
               <div className="space-y-4">
                 <h4 className="text-sm font-medium">Include on Label</h4>
-                
+
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="include-barcode"
@@ -564,7 +596,7 @@ export default function PrintLabels() {
               Review your print settings before printing
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div>
@@ -634,7 +666,7 @@ export default function PrintLabels() {
               Create a custom label with your own product information
             </DialogDescription>
           </DialogHeader>
-          
+
           {/* Label Size Selection - Prominent */}
           <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex items-center justify-between mb-3">
@@ -681,7 +713,7 @@ export default function PrintLabels() {
                 </SelectItem>
               </SelectContent>
             </Select>
-            
+
             {/* Label Elements Checkboxes */}
             <div className="mt-3 flex flex-wrap gap-4">
               <div className="flex items-center space-x-2">
@@ -726,7 +758,7 @@ export default function PrintLabels() {
               </div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-4">
               <div>
@@ -738,7 +770,7 @@ export default function PrintLabels() {
                   placeholder="Enter product name"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="manual-sku">SKU/Item Code</Label>
                 <Input
@@ -748,7 +780,7 @@ export default function PrintLabels() {
                   placeholder="Enter SKU"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="manual-price">Price (₹)</Label>
                 <Input
@@ -760,7 +792,7 @@ export default function PrintLabels() {
                   placeholder="0.00"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="manual-mrp">MRP (₹)</Label>
                 <Input
@@ -773,7 +805,7 @@ export default function PrintLabels() {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="manual-expiry">Expiry Date</Label>
@@ -784,7 +816,7 @@ export default function PrintLabels() {
                   placeholder="DD/MM/YYYY or Best Before Date"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="manual-description">Description</Label>
                 <Input
@@ -794,7 +826,7 @@ export default function PrintLabels() {
                   placeholder="Product description"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="manual-barcode">Barcode</Label>
                 <Input
@@ -804,7 +836,7 @@ export default function PrintLabels() {
                   placeholder="Enter barcode or leave empty for auto-generate"
                 />
               </div>
-              
+
               {/* Live Preview */}
               <div className="pt-2">
                 <Label className="text-sm font-medium mb-2 block">Live Preview</Label>
