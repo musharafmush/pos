@@ -148,6 +148,16 @@ export default function AddItemProfessional() {
     },
   }) as { data: Supplier[] };
 
+  // Fetch recent products for bulk item selection
+  const { data: recentProducts = [] } = useQuery({
+    queryKey: ["/api/products/recent"],
+    queryFn: async () => {
+      const response = await fetch("/api/products?limit=50&sortBy=createdAt&order=desc");
+      if (!response.ok) throw new Error("Failed to fetch recent products");
+      return response.json();
+    },
+  });
+
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
@@ -1505,21 +1515,116 @@ export default function AddItemProfessional() {
                                     <SelectTrigger className="border-red-300 focus:border-red-500">
                                       <SelectValue placeholder="Select bulk item to repackage" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="100G">100G</SelectItem>
-                                      <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK</SelectItem>
-                                      <SelectItem value="ARUVADAM KURUVAI RICE BULK">ARUVADAM KURUVAI RICE BULK</SelectItem>
-                                      <SelectItem value="AVARE BULK">AVARE BULK</SelectItem>
-                                      <SelectItem value="AVUL NICE BULK">AVUL NICE BULK</SelectItem>
-                                      <SelectItem value="AVUL ODD BULK">AVUL ODD BULK</SelectItem>
-                                      <SelectItem value="rice-25kg">Rice - 25kg Bag</SelectItem>
-                                      <SelectItem value="wheat-50kg">Wheat - 50kg Bag</SelectItem>
-                                      <SelectItem value="dal-25kg">Dal - 25kg Bag</SelectItem>
-                                      <SelectItem value="sugar-50kg">Sugar - 50kg Bag</SelectItem>
-                                      <SelectItem value="oil-15ltr">Oil - 15 Ltr Container</SelectItem>
-                                      <SelectItem value="flour-25kg">Flour - 25kg Bag</SelectItem>
-                                      <SelectItem value="spices-10kg">Spices - 10kg Container</SelectItem>
-                                      <SelectItem value="dry-fruits-5kg">Dry Fruits - 5kg Box</SelectItem>
+                                    <SelectContent className="max-h-80 overflow-y-auto">
+                                      {/* Recent Products from Database */}
+                                      {Array.isArray(recentProducts) && recentProducts.length > 0 ? (
+                                        recentProducts
+                                          .filter((product: any) => 
+                                            product.name.toLowerCase().includes('bulk') || 
+                                            product.name.toLowerCase().includes('bag') ||
+                                            product.name.toLowerCase().includes('kg') ||
+                                            product.name.toLowerCase().includes('ltr') ||
+                                            product.name.toLowerCase().includes('container')
+                                          )
+                                          .map((product: any) => (
+                                            <SelectItem key={product.id} value={product.name}>
+                                              <div className="flex flex-col">
+                                                <span className="font-medium">{product.name}</span>
+                                                <span className="text-xs text-gray-500">
+                                                  SKU: {product.sku} • Stock: {product.stockQuantity}
+                                                </span>
+                                              </div>
+                                            </SelectItem>
+                                          ))
+                                      ) : (
+                                        <>
+                                          {/* Fallback Static Options */}
+                                          <SelectItem value="100G">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">100G</span>
+                                              <span className="text-xs text-gray-500">Small quantity bulk item</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="AJINOMOTO BULK">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">AJINOMOTO BULK</span>
+                                              <span className="text-xs text-gray-500">Seasoning bulk pack</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="ARUVADAM KURUVAI RICE BULK">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">ARUVADAM KURUVAI RICE BULK</span>
+                                              <span className="text-xs text-gray-500">Premium rice variety</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="AVARE BULK">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">AVARE BULK</span>
+                                              <span className="text-xs text-gray-500">Avare beans bulk</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="AVUL NICE BULK">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">AVUL NICE BULK</span>
+                                              <span className="text-xs text-gray-500">Quality bulk item</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="AVUL ODD BULK">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">AVUL ODD BULK</span>
+                                              <span className="text-xs text-gray-500">Mixed bulk item</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="Rice - 25kg Bag">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">Rice - 25kg Bag</span>
+                                              <span className="text-xs text-gray-500">Standard rice bulk pack</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="Wheat - 50kg Bag">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">Wheat - 50kg Bag</span>
+                                              <span className="text-xs text-gray-500">Wheat bulk pack</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="Dal - 25kg Bag">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">Dal - 25kg Bag</span>
+                                              <span className="text-xs text-gray-500">Lentils bulk pack</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="Sugar - 50kg Bag">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">Sugar - 50kg Bag</span>
+                                              <span className="text-xs text-gray-500">Sugar bulk pack</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="Oil - 15 Ltr Container">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">Oil - 15 Ltr Container</span>
+                                              <span className="text-xs text-gray-500">Cooking oil bulk</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="Flour - 25kg Bag">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">Flour - 25kg Bag</span>
+                                              <span className="text-xs text-gray-500">Wheat flour bulk</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="Spices - 10kg Container">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">Spices - 10kg Container</span>
+                                              <span className="text-xs text-gray-500">Mixed spices bulk</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="Dry Fruits - 5kg Box">
+                                            <div className="flex flex-col">
+                                              <span className="font-medium">Dry Fruits - 5kg Box</span>
+                                              <span className="text-xs text-gray-500">Premium dry fruits</span>
+                                            </div>
+                                          </SelectItem>
+                                        </>
+                                      )}
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
