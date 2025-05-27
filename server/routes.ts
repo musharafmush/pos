@@ -494,21 +494,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Product not found' });
       }
       
-      // Check for references if not forcing
-      if (!force) {
-        const references = await storage.checkProductReferences(id);
-        if (references.hasReferences) {
-          return res.status(400).json({ 
-            message: 'Cannot delete product. This product is referenced in purchases, sales, or other records.',
-            references: {
-              saleItems: references.saleItems,
-              purchaseItems: references.purchaseItems
-            },
-            canForceDelete: true
-          });
-        }
-      }
-      
       // Attempt deletion
       try {
         const deleted = await storage.deleteProduct(id, force);
@@ -523,12 +508,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : 'Product deleted successfully' 
         });
       } catch (deleteError: any) {
-        if (deleteError.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+        console.error('Delete error:', deleteError);
+        
+        if (deleteError.message === 'CONSTRAINT_ERROR' || deleteError.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+          const references = await storage.checkProductReferences(id);
           return res.status(400).json({ 
-            message: 'Cannot delete product. This product is referenced in purchases, sales, or other records. Use force=true to delete with all related records.',
+            message: 'Cannot delete product. This product is referenced in purchases, sales, or other records.',
+            references: {
+              saleItems: references.saleItems,
+              purchaseItems: references.purchaseItems
+            },
             canForceDelete: true
           });
         }
+        
         throw deleteError;
       }
     } catch (error) {

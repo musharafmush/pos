@@ -159,16 +159,13 @@ export default function AddItemDashboard() {
       
       if (!response.ok) {
         const errorData = await response.json();
-        if (response.status === 400 && errorData.canForceDelete) {
-          // Product has references, but can be force deleted
-          throw new Error(JSON.stringify({
-            message: errorData.message,
-            canForceDelete: true,
-            references: errorData.references,
-            productId
-          }));
-        }
-        throw new Error(errorData.message || 'Failed to delete product');
+        throw new Error(JSON.stringify({
+          message: errorData.message,
+          canForceDelete: errorData.canForceDelete || false,
+          references: errorData.references || { saleItems: 0, purchaseItems: 0 },
+          productId,
+          status: response.status
+        }));
       }
       return response.json();
     },
@@ -182,21 +179,21 @@ export default function AddItemDashboard() {
     onError: (error: Error) => {
       try {
         const errorData = JSON.parse(error.message);
-        if (errorData.canForceDelete) {
-          // Show confirmation dialog for force delete
-          if (confirm(
-            `${errorData.message}\n\n` +
+        
+        if (errorData.status === 400 && errorData.canForceDelete) {
+          const confirmMessage = `${errorData.message}\n\n` +
             `This product is referenced in:\n` +
-            `• ${errorData.references.saleItems} sale records\n` +
-            `• ${errorData.references.purchaseItems} purchase records\n\n` +
-            `Do you want to delete the product and ALL related records? This action cannot be undone.`
-          )) {
+            `• ${errorData.references.saleItems || 0} sale records\n` +
+            `• ${errorData.references.purchaseItems || 0} purchase records\n\n` +
+            `Do you want to delete the product and ALL related records? This action cannot be undone.`;
+            
+          if (window.confirm(confirmMessage)) {
             deleteProductMutation.mutate({ productId: errorData.productId, force: true });
           }
           return;
         }
       } catch (e) {
-        // Not a JSON error, handle normally
+        // Handle as regular error
       }
       
       toast({

@@ -268,22 +268,46 @@ export const storage = {
   },
 
   async deleteProduct(id: number, force: boolean = false): Promise<boolean> {
-    if (force) {
-      try {
-        // Delete related records first
-        await db.delete(saleItems).where(eq(saleItems.productId, id));
-        await db.delete(purchaseItems).where(eq(purchaseItems.productId, id));
+    try {
+      // Use SQLite directly for better compatibility
+      const { sqlite } = await import('@db');
+
+      if (force) {
+        // Delete related records first using raw SQL
+        const deleteSaleItemsStmt = sqlite.prepare('DELETE FROM sale_items WHERE product_id = ?');
+        deleteSaleItemsStmt.run(id);
+        
+        const deletePurchaseItemsStmt = sqlite.prepare('DELETE FROM purchase_items WHERE product_id = ?');
+        deletePurchaseItemsStmt.run(id);
         
         // Then delete the product
-        const result = await db.delete(products).where(eq(products.id, id)).returning({ id: products.id });
-        return result.length > 0;
-      } catch (error) {
-        console.error('Error force deleting product:', error);
+        const deleteProductStmt = sqlite.prepare('DELETE FROM products WHERE id = ?');
+        const result = deleteProductStmt.run(id);
+        
+        return result.changes > 0;
+      } else {
+        // Check for references first
+        const saleItemsCheck = sqlite.prepare('SELECT COUNT(*) as count FROM sale_items WHERE product_id = ?');
+        const purchaseItemsCheck = sqlite.prepare('SELECT COUNT(*) as count FROM purchase_items WHERE product_id = ?');
+        
+        const saleCount = saleItemsCheck.get(id)?.count || 0;
+        const purchaseCount = purchaseItemsCheck.get(id)?.count || 0;
+        
+        if (saleCount > 0 || purchaseCount > 0) {
+          throw new Error('CONSTRAINT_ERROR');
+        }
+        
+        const deleteProductStmt = sqlite.prepare('DELETE FROM products WHERE id = ?');
+        const result = deleteProductStmt.run(id);
+        
+        return result.changes > 0;
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      if (error.message === 'CONSTRAINT_ERROR') {
         throw error;
       }
-    } else {
-      const result = await db.delete(products).where(eq(products.id, id)).returning({ id: products.id });
-      return result.length > 0;
+      throw new Error('Failed to delete product');
     }
   },
 
