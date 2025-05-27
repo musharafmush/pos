@@ -1584,56 +1584,39 @@ export default function AddItemProfessional() {
                         />
                       </div>
 
-                      {/* Conditional Bulk Item Name Field */}
-                      {(form.watch("itemPreparationsStatus") === "Repackage" || 
-                        form.watch("itemPreparationsStatus") === "Assembly" ||
-                        form.watch("itemPreparationsStatus") === "Kit" ||
-                        form.watch("itemPreparationsStatus") === "Combo Pack") && (
+                      {/* Conditional Bulk Item Name Field - Only for Repackage */}
+                      {form.watch("itemPreparationsStatus") === "Repackage" && (
                         <FormField
                           control={form.control}
                           name="bulkItemName"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-red-600">
-                                {form.watch("itemPreparationsStatus") === "Repackage" ? "Bulk Item Name *" : "Component Items *"}
-                              </FormLabel>
+                              <FormLabel className="text-red-600">Bulk Item Name *</FormLabel>
                               <FormControl>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                   <SelectTrigger className="border-red-300 focus:border-red-500">
-                                    <SelectValue placeholder={
-                                      form.watch("itemPreparationsStatus") === "Repackage" 
-                                        ? "Select bulk item to repackage" 
-                                        : "Select component items"
-                                    } />
+                                    <SelectValue placeholder="Select bulk item to repackage" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {form.watch("itemPreparationsStatus") === "Repackage" ? (
-                                      <>
-                                        <SelectItem value="rice-25kg">Rice - 25kg Bag</SelectItem>
-                                        <SelectItem value="wheat-50kg">Wheat - 50kg Bag</SelectItem>
-                                        <SelectItem value="dal-25kg">Dal - 25kg Bag</SelectItem>
-                                        <SelectItem value="sugar-50kg">Sugar - 50kg Bag</SelectItem>
-                                        <SelectItem value="oil-15ltr">Oil - 15 Ltr Container</SelectItem>
-                                        <SelectItem value="flour-25kg">Flour - 25kg Bag</SelectItem>
-                                        <SelectItem value="spices-10kg">Spices - 10kg Container</SelectItem>
-                                        <SelectItem value="dry-fruits-5kg">Dry Fruits - 5kg Box</SelectItem>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <SelectItem value="combo-breakfast">Breakfast Combo (Bread + Butter + Jam)</SelectItem>
-                                        <SelectItem value="spice-kit">Spice Kit (Turmeric + Chili + Coriander)</SelectItem>
-                                        <SelectItem value="meal-kit">Meal Kit (Rice + Dal + Vegetables)</SelectItem>
-                                        <SelectItem value="snack-pack">Snack Pack (Chips + Drink + Cookies)</SelectItem>
-                                        <SelectItem value="gift-hamper">Gift Hamper (Multiple items)</SelectItem>
-                                      </>
-                                    )}
+                                    <SelectItem value="100G">100G</SelectItem>
+                                    <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK</SelectItem>
+                                    <SelectItem value="ARUVADAM KURUVAI RICE BULK">ARUVADAM KURUVAI RICE BULK</SelectItem>
+                                    <SelectItem value="AVARE BULK">AVARE BULK</SelectItem>
+                                    <SelectItem value="AVUL NICE BULK">AVUL NICE BULK</SelectItem>
+                                    <SelectItem value="AVUL ODD BULK">AVUL ODD BULK</SelectItem>
+                                    <SelectItem value="rice-25kg">Rice - 25kg Bag</SelectItem>
+                                    <SelectItem value="wheat-50kg">Wheat - 50kg Bag</SelectItem>
+                                    <SelectItem value="dal-25kg">Dal - 25kg Bag</SelectItem>
+                                    <SelectItem value="sugar-50kg">Sugar - 50kg Bag</SelectItem>
+                                    <SelectItem value="oil-15ltr">Oil - 15 Ltr Container</SelectItem>
+                                    <SelectItem value="flour-25kg">Flour - 25kg Bag</SelectItem>
+                                    <SelectItem value="spices-10kg">Spices - 10kg Container</SelectItem>
+                                    <SelectItem value="dry-fruits-5kg">Dry Fruits - 5kg Box</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </FormControl>
                               <div className="text-xs text-red-500 mt-1">
-                                {form.watch("itemPreparationsStatus") === "Repackage" 
-                                  ? "Bulk Item Name is required for repackaging" 
-                                  : "Component items selection is required"}
+                                Bulk Item Name is required for repackaging
                               </div>
                               <FormMessage />
                             </FormItem>
@@ -1659,14 +1642,12 @@ export default function AddItemProfessional() {
                                   "This item is sold without barcodes or fixed quantities (e.g., fresh vegetables). Weight information is required."}
                                 {form.watch("itemPreparationsStatus") === "Weight to Piece" && 
                                   "This item converts weight-based inventory to pieces for easier sale. Both weight and grinding charge are required."}
-                                {(form.watch("itemPreparationsStatus") === "Assembly" || 
-                                  form.watch("itemPreparationsStatus") === "Kit" || 
-                                  form.watch("itemPreparationsStatus") === "Combo Pack") && 
-                                  "This item is assembled from multiple other products. Select the component items that make up this product."}
                                 {form.watch("itemPreparationsStatus") === "Standard Preparation" && 
                                   "This item is processed in a specific, consistent way according to standard operating procedures."}
                                 {form.watch("itemPreparationsStatus") === "Customer Prepared" && 
                                   "This item is prepared based on specific customer instructions and requirements."}
+                                {form.watch("itemPreparationsStatus") === "Create" && 
+                                  "This item will be created or manufactured as needed."}
                                 {(form.watch("itemPreparationsStatus") === "Ingredients" || 
                                   form.watch("itemPreparationsStatus") === "Packing Material") && 
                                   "This is a non-sellable item used for preparation or packaging of other products."}
