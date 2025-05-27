@@ -547,15 +547,19 @@ export default function PrintLabels() {
               {/* Preview */}
               <div className="pt-4 border-t">
                 <h4 className="text-sm font-medium mb-3">Label Preview</h4>
-                <div className={`border-2 border-dashed border-gray-300 p-2 rounded-lg text-center ${
-                  labelSize === 'mini' ? 'h-20' :
-                  labelSize === 'small' ? 'h-24' :
-                  labelSize === 'medium' ? 'h-28' :
-                  labelSize === 'large' ? 'h-32' :
-                  labelSize === 'xlarge' ? 'h-36' :
-                  labelSize === 'custom' ? `${customLabelSize.height}px` :
-                  'h-28'
-                }`}>
+                <div 
+                  className="border-2 border-dashed border-gray-300 p-2 rounded-lg text-center"
+                  style={{
+                    height: labelSize === 'mini' ? '80px' :
+                            labelSize === 'small' ? '96px' :
+                            labelSize === 'medium' ? '112px' :
+                            labelSize === 'large' ? '128px' :
+                            labelSize === 'xlarge' ? '144px' :
+                            labelSize === 'custom' ? `${Math.max(60, parseInt(customLabelSize.height) / 2)}px` :
+                            '112px',
+                    width: labelSize === 'custom' ? `${Math.max(100, parseInt(customLabelSize.width) / 2)}px` : 'auto'
+                  }}
+                >
                   <div className="text-xs font-semibold">Sample Product</div>
                   <div className="text-xs text-gray-500">SKU: SP001</div>
                   <div className="flex justify-between text-xs mt-1">
@@ -955,15 +959,24 @@ export default function PrintLabels() {
               {/* Live Preview */}
               <div className="pt-2">
                 <Label className="text-sm font-medium mb-2 block">Live Preview</Label>
-                <div className={`border-2 border-dashed border-gray-300 p-2 rounded-lg text-center bg-white ${
-                  labelSize === 'mini' ? 'h-16 text-xs' :
-                  labelSize === 'small' ? 'h-20 text-xs' :
-                  labelSize === 'medium' ? 'h-24 text-sm' :
-                  labelSize === 'large' ? 'h-28 text-sm' :
-                  labelSize === 'xlarge' ? 'h-32 text-base' :
-                  labelSize === 'custom' ? `${customLabelSize.height}px` :
-                  'h-24 text-xs'
-                }`}>
+                <div 
+                  className="border-2 border-dashed border-gray-300 p-2 rounded-lg text-center bg-white"
+                  style={{
+                    height: labelSize === 'mini' ? '64px' :
+                            labelSize === 'small' ? '80px' :
+                            labelSize === 'medium' ? '96px' :
+                            labelSize === 'large' ? '112px' :
+                            labelSize === 'xlarge' ? '128px' :
+                            labelSize === 'custom' ? `${Math.max(60, parseInt(customLabelSize.height) / 2)}px` :
+                            '96px',
+                    width: labelSize === 'custom' ? `${Math.max(100, parseInt(customLabelSize.width) / 2)}px` : 'auto',
+                    fontSize: labelSize === 'mini' || labelSize === 'small' ? '12px' :
+                             labelSize === 'medium' || labelSize === 'large' ? '14px' :
+                             labelSize === 'xlarge' ? '16px' :
+                             labelSize === 'custom' ? `${Math.max(10, Math.min(16, parseInt(customLabelSize.width) / 20))}px` :
+                             '12px'
+                  }}
+                >
                   <div className="font-semibold">{manualLabel.productName || 'Product Name'}</div>
                   {manualLabel.sku && <div className="text-gray-500">SKU: {manualLabel.sku}</div>}
                   <div className="flex justify-between text-xs mt-1">
