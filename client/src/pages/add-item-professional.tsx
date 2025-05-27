@@ -74,6 +74,10 @@ const productFormSchema = z.object({
   packingType: z.string().default("Bulk"),
   unitsPerPack: z.string().default("1"),
   batchExpiryDetails: z.string().default("Not Required"),
+  itemPreparationsStatus: z.string().default("Trade As Is"),
+  grindingCharge: z.string().optional(),
+  weightInGms: z.string().optional(),
+  bulkItemName: z.string().optional(),
   
   // Item Properties
   decimalPoint: z.string().default("0"),
@@ -168,6 +172,10 @@ export default function AddItemProfessional() {
       eanCodeRequired: false,
       weightsPerUnit: "1",
       batchExpiryDetails: "Not Required",
+      itemPreparationsStatus: "Trade As Is",
+      grindingCharge: "",
+      weightInGms: "",
+      bulkItemName: "",
       decimalPoint: "0",
       imageAlignment: "",
       productType: "NA",
@@ -1328,7 +1336,7 @@ export default function AddItemProfessional() {
                           name="weightsPerUnit"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Weights Per Unit</FormLabel>
+                              <FormLabel>Weight Per Unit</FormLabel>
                               <FormControl>
                                 <Input {...field} placeholder="1" type="number" step="0.001" />
                               </FormControl>
@@ -1345,7 +1353,7 @@ export default function AddItemProfessional() {
                               <FormControl>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Expiry Only" />
+                                    <SelectValue placeholder="Not Required" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="Not Required">Not Required</SelectItem>
@@ -1360,9 +1368,122 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="itemPreparationsStatus"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Item Preparations Status</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Trade As Is" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Trade As Is">Trade As Is</SelectItem>
+                                    <SelectItem value="Bulk">Bulk</SelectItem>
+                                    <SelectItem value="Repackage">Repackage</SelectItem>
+                                    <SelectItem value="Standard Preparation">Standard Preparation</SelectItem>
+                                    <SelectItem value="Customer Prepared">Customer Prepared</SelectItem>
+                                    <SelectItem value="Parent">Parent</SelectItem>
+                                    <SelectItem value="Child">Child</SelectItem>
+                                    <SelectItem value="Assembly">Assembly</SelectItem>
+                                    <SelectItem value="Kit">Kit</SelectItem>
+                                    <SelectItem value="Ingredients">Ingredients</SelectItem>
+                                    <SelectItem value="Packing Material">Packing Material</SelectItem>
+                                    <SelectItem value="Combo Pack">Combo Pack</SelectItem>
+                                    <SelectItem value="Open Item">Open Item</SelectItem>
+                                    <SelectItem value="Weight to Piece">Weight to Piece</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="grindingCharge"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Grinding Charge *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                              </FormControl>
+                              <div className="text-xs text-red-500 mt-1">Grinding Charge is required</div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="weightInGms"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Weight(Gms) *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Weight(gms) is required" type="number" step="0.001" />
+                              </FormControl>
+                              <div className="text-xs text-red-500 mt-1">Weight(gms) is required</div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="imageAlignment"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Image Alignment</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select alignment" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="left">Left</SelectItem>
+                                    <SelectItem value="center">Center</SelectItem>
+                                    <SelectItem value="right">Right</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="bulkItemName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Bulk Item Name *</FormLabel>
+                            <FormControl>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Bulk Item Name is required" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="bulk1">Bulk Item 1</SelectItem>
+                                  <SelectItem value="bulk2">Bulk Item 2</SelectItem>
+                                  <SelectItem value="bulk3">Bulk Item 3</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <div className="text-xs text-red-500 mt-1">Bulk Item Name is required</div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       
                       <div className="bg-orange-50 p-4 rounded-lg">
-                        <h3 className="font-medium mb-3">Packaging Information</h3>
+                        <h3 className="font-medium mb-3">Additional Packaging Information</h3>
                         <div className="grid grid-cols-3 gap-4">
                           <FormField
                             control={form.control}
