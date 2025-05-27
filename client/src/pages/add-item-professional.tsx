@@ -760,7 +760,8 @@ export default function AddItemProfessional() {
                                 </Select>
                               </FormControl>
                               <FormMessage />
-                            </FormItem                          )}
+                            </FormItem>
+                          )}
                         />
                       </div>
 
