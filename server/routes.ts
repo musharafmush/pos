@@ -471,9 +471,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check product references before deletion
+  app.get('/api/products/:id/references', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const references = await storage.checkProductReferences(id);
+      res.json(references);
+    } catch (error) {
+      console.error('Error checking product references:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.delete('/api/products/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const force = req.query.force === 'true';
       
       // Check if product exists first
       const product = await storage.getProductById(id);
@@ -481,19 +494,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Product not found' });
       }
       
-      // Check for foreign key references before deletion
+      // Check for references if not forcing
+      if (!force) {
+        const references = await storage.checkProductReferences(id);
+        if (references.hasReferences) {
+          return res.status(400).json({ 
+            message: 'Cannot delete product. This product is referenced in purchases, sales, or other records.',
+            references: {
+              saleItems: references.saleItems,
+              purchaseItems: references.purchaseItems
+            },
+            canForceDelete: true
+          });
+        }
+      }
+      
+      // Attempt deletion
       try {
-        const deleted = await storage.deleteProduct(id);
+        const deleted = await storage.deleteProduct(id, force);
         
         if (!deleted) {
           return res.status(404).json({ message: 'Product not found' });
         }
         
-        res.json({ message: 'Product deleted successfully' });
+        res.json({ 
+          message: force 
+            ? 'Product and all related records deleted successfully' 
+            : 'Product deleted successfully' 
+        });
       } catch (deleteError: any) {
         if (deleteError.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
           return res.status(400).json({ 
-            message: 'Cannot delete product. This product is referenced in purchases, sales, or other records. Please remove all related records first.' 
+            message: 'Cannot delete product. This product is referenced in purchases, sales, or other records. Use force=true to delete with all related records.',
+            canForceDelete: true
           });
         }
         throw deleteError;

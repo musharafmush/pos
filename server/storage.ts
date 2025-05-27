@@ -231,9 +231,60 @@ export const storage = {
     }) || null;
   },
 
-  async deleteProduct(id: number): Promise<boolean> {
-    const result = await db.delete(products).where(eq(products.id, id)).returning({ id: products.id });
-    return result.length > 0;
+  async checkProductReferences(id: number): Promise<{
+    hasReferences: boolean;
+    saleItems: number;
+    purchaseItems: number;
+  }> {
+    try {
+      // Check sale items
+      const saleItemsCount = await db.select({
+        count: sql`COUNT(*)`
+      })
+      .from(saleItems)
+      .where(eq(saleItems.productId, id))
+      .execute();
+
+      // Check purchase items
+      const purchaseItemsCount = await db.select({
+        count: sql`COUNT(*)`
+      })
+      .from(purchaseItems)
+      .where(eq(purchaseItems.productId, id))
+      .execute();
+
+      const saleCount = Number(saleItemsCount[0]?.count || 0);
+      const purchaseCount = Number(purchaseItemsCount[0]?.count || 0);
+      
+      return {
+        hasReferences: saleCount > 0 || purchaseCount > 0,
+        saleItems: saleCount,
+        purchaseItems: purchaseCount
+      };
+    } catch (error) {
+      console.error('Error checking product references:', error);
+      return { hasReferences: false, saleItems: 0, purchaseItems: 0 };
+    }
+  },
+
+  async deleteProduct(id: number, force: boolean = false): Promise<boolean> {
+    if (force) {
+      try {
+        // Delete related records first
+        await db.delete(saleItems).where(eq(saleItems.productId, id));
+        await db.delete(purchaseItems).where(eq(purchaseItems.productId, id));
+        
+        // Then delete the product
+        const result = await db.delete(products).where(eq(products.id, id)).returning({ id: products.id });
+        return result.length > 0;
+      } catch (error) {
+        console.error('Error force deleting product:', error);
+        throw error;
+      }
+    } else {
+      const result = await db.delete(products).where(eq(products.id, id)).returning({ id: products.id });
+      return result.length > 0;
+    }
   },
 
   async listProducts(): Promise<Product[]> {
@@ -598,16 +649,6 @@ export const storage = {
   },
 
   async getRecentSales(limit: number = 5): Promise<Sale[]> {
-    const query = `
-          SELECT s.*, si.product_id, si.quantity, si.unit_price, si.price, si.total,
-                 p.name as product_name
-          FROM sales s
-          LEFT JOIN sale_items si ON s.id = si.sale_id
-          LEFT JOIN products p ON si.product_id = p.id
-          WHERE s.id IS NOT NULL
-          ORDER BY s.created_at DESC
-          LIMIT ?
-        `;
     return await db.query.sales.findMany({
       with: {
         customer: true,

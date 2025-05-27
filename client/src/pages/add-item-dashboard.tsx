@@ -153,22 +153,52 @@ export default function AddItemDashboard() {
 
   // Delete product mutation
   const deleteProductMutation = useMutation({
-    mutationFn: async (productId: number) => {
-      const response = await apiRequest("DELETE", `/api/products/${productId}`);
+    mutationFn: async ({ productId, force = false }: { productId: number; force?: boolean }) => {
+      const url = force ? `/api/products/${productId}?force=true` : `/api/products/${productId}`;
+      const response = await apiRequest("DELETE", url);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        if (response.status === 400 && errorData.canForceDelete) {
+          // Product has references, but can be force deleted
+          throw new Error(JSON.stringify({
+            message: errorData.message,
+            canForceDelete: true,
+            references: errorData.references,
+            productId
+          }));
+        }
         throw new Error(errorData.message || 'Failed to delete product');
       }
-      return response;
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Success",
-        description: "Product deleted successfully",
+        description: data.message || "Product deleted successfully",
       });
     },
     onError: (error: Error) => {
+      try {
+        const errorData = JSON.parse(error.message);
+        if (errorData.canForceDelete) {
+          // Show confirmation dialog for force delete
+          if (confirm(
+            `${errorData.message}\n\n` +
+            `This product is referenced in:\n` +
+            `• ${errorData.references.saleItems} sale records\n` +
+            `• ${errorData.references.purchaseItems} purchase records\n\n` +
+            `Do you want to delete the product and ALL related records? This action cannot be undone.`
+          )) {
+            deleteProductMutation.mutate({ productId: errorData.productId, force: true });
+          }
+          return;
+        }
+      } catch (e) {
+        // Not a JSON error, handle normally
+      }
+      
       toast({
         title: "Error",
         description: error.message || "Failed to delete product",
@@ -266,7 +296,7 @@ export default function AddItemDashboard() {
   };
 
   const handleDeleteProduct = async (productId: number) => {
-    deleteProductMutation.mutate(productId);
+    deleteProductMutation.mutate({ productId });
   };
 
   const handleUpdateProduct = async () => {
