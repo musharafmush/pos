@@ -1381,7 +1381,7 @@ export default function AddItemProfessional() {
                                   <SelectTrigger>
                                     <SelectValue placeholder="Trade As Is" />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="max-h-80 overflow-y-auto">
                                     <SelectItem value="Trade As Is">Trade As Is</SelectItem>
                                     <SelectItem value="Bulk">Bulk</SelectItem>
                                     <SelectItem value="Repackage">Repackage</SelectItem>
@@ -1408,9 +1408,15 @@ export default function AddItemProfessional() {
                           name="grindingCharge"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Grinding Charge *</FormLabel>
+                              <FormLabel className="text-red-600">Grinding Charge *</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                <Input 
+                                  {...field} 
+                                  placeholder="0.00" 
+                                  type="number" 
+                                  step="0.01"
+                                  className="border-red-300 focus:border-red-500"
+                                />
                               </FormControl>
                               <div className="text-xs text-red-500 mt-1">Grinding Charge is required</div>
                               <FormMessage />
@@ -1425,9 +1431,15 @@ export default function AddItemProfessional() {
                           name="weightInGms"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Weight(Gms) *</FormLabel>
+                              <FormLabel className="text-red-600">Weight in (Gms) *</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="Weight(gms) is required" type="number" step="0.001" />
+                                <Input 
+                                  {...field} 
+                                  placeholder="Weight(gms) is required" 
+                                  type="number" 
+                                  step="0.001"
+                                  className="border-red-300 focus:border-red-500" 
+                                />
                               </FormControl>
                               <div className="text-xs text-red-500 mt-1">Weight(gms) is required</div>
                               <FormMessage />
@@ -1463,16 +1475,21 @@ export default function AddItemProfessional() {
                         name="bulkItemName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Bulk Item Name *</FormLabel>
+                            <FormLabel className="text-red-600">Bulk Item Name *</FormLabel>
                             <FormControl>
                               <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger>
+                                <SelectTrigger className="border-red-300 focus:border-red-500">
                                   <SelectValue placeholder="Bulk Item Name is required" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="bulk1">Bulk Item 1</SelectItem>
-                                  <SelectItem value="bulk2">Bulk Item 2</SelectItem>
-                                  <SelectItem value="bulk3">Bulk Item 3</SelectItem>
+                                  <SelectItem value="rice-25kg">Rice - 25kg Bag</SelectItem>
+                                  <SelectItem value="wheat-50kg">Wheat - 50kg Bag</SelectItem>
+                                  <SelectItem value="dal-25kg">Dal - 25kg Bag</SelectItem>
+                                  <SelectItem value="sugar-50kg">Sugar - 50kg Bag</SelectItem>
+                                  <SelectItem value="oil-15ltr">Oil - 15 Ltr Container</SelectItem>
+                                  <SelectItem value="flour-25kg">Flour - 25kg Bag</SelectItem>
+                                  <SelectItem value="spices-10kg">Spices - 10kg Container</SelectItem>
+                                  <SelectItem value="dry-fruits-5kg">Dry Fruits - 5kg Box</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
