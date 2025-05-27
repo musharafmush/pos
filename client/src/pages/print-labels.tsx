@@ -35,7 +35,8 @@ import {
   SettingsIcon,
   CheckIcon,
   Package2Icon,
-  BarChart3Icon
+  BarChart3Icon,
+  Plus
 } from "lucide-react";
 import { Product } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -49,9 +50,23 @@ export default function PrintLabels() {
   const [labelSize, setLabelSize] = useState("standard");
   const [includeBarcode, setIncludeBarcode] = useState(true);
   const [includePrice, setIncludePrice] = useState(true);
+  const [includeMrp, setIncludeMrp] = useState(false);
   const [includeDescription, setIncludeDescription] = useState(false);
+  const [includeExpiryDate, setIncludeExpiryDate] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isManualLabelDialogOpen, setIsManualLabelDialogOpen] = useState(false);
   const [copies, setCopies] = useState(1);
+  
+  // Manual label creation state
+  const [manualLabel, setManualLabel] = useState({
+    productName: "",
+    sku: "",
+    price: "",
+    mrp: "",
+    expiryDate: "",
+    description: "",
+    barcode: ""
+  });
 
   // Fetch products
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -108,6 +123,109 @@ export default function PrintLabels() {
     setIsPrintDialogOpen(true);
   };
 
+  // Create manual label
+  const createManualLabel = () => {
+    setIsManualLabelDialogOpen(true);
+  };
+
+  // Execute manual label print
+  const executeManualPrint = () => {
+    if (!manualLabel.productName) {
+      toast({
+        title: "Product name required",
+        description: "Please enter a product name for the label",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const manualLabelContent = Array(copies).fill(null).map((_, index) => `
+      <div class="label ${labelSize}" style="
+        border: 2px solid #333;
+        padding: 12px;
+        margin: 8px;
+        width: ${labelSize === 'small' ? '200px' : labelSize === 'large' ? '300px' : '250px'};
+        height: ${labelSize === 'small' ? '120px' : labelSize === 'large' ? '180px' : '150px'};
+        display: inline-block;
+        font-family: Arial, sans-serif;
+        background: white;
+        page-break-inside: avoid;
+      ">
+        <div style="font-weight: bold; font-size: ${labelSize === 'small' ? '14px' : '16px'}; margin-bottom: 8px;">
+          ${manualLabel.productName}
+        </div>
+        ${manualLabel.sku ? 
+          `<div style="font-size: 12px; color: #666; margin-bottom: 4px;">
+            SKU: ${manualLabel.sku}
+          </div>` : ''
+        }
+        ${includeDescription && manualLabel.description ? 
+          `<div style="font-size: 10px; color: #888; margin-bottom: 4px;">
+            ${manualLabel.description.substring(0, 50)}...
+          </div>` : ''
+        }
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          ${includePrice && manualLabel.price ? 
+            `<div style="font-size: ${labelSize === 'small' ? '14px' : '16px'}; font-weight: bold; color: #2563eb;">
+              Price: ₹${Number(manualLabel.price).toFixed(2)}
+            </div>` : ''
+          }
+          ${includeMrp && manualLabel.mrp ? 
+            `<div style="font-size: ${labelSize === 'small' ? '12px' : '14px'}; color: #666;">
+              MRP: ₹${Number(manualLabel.mrp).toFixed(2)}
+            </div>` : ''
+          }
+        </div>
+        ${includeExpiryDate && manualLabel.expiryDate ? 
+          `<div style="font-size: 10px; color: #d97706; margin-bottom: 4px;">
+            Exp: ${manualLabel.expiryDate}
+          </div>` : ''
+        }
+        ${includeBarcode && manualLabel.barcode ? 
+          `<div style="text-align: center; margin-top: 8px;">
+            <div style="font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 2px; border: 1px solid #ccc; padding: 4px; background: #f9f9f9;">
+              ${manualLabel.barcode}
+            </div>
+          </div>` : ''
+        }
+      </div>
+    `).join('');
+
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Manual Label</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 20px;
+                font-family: Arial, sans-serif;
+              }
+              @media print {
+                body { margin: 0; padding: 10px; }
+                .label { margin: 4px !important; }
+              }
+            </style>
+          </head>
+          <body>
+            ${manualLabelContent}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    setIsManualLabelDialogOpen(false);
+    toast({
+      title: "Manual label sent to printer",
+      description: `${copies} label(s) prepared for printing`,
+    });
+  };
+
   // Execute print
   const executePrint = () => {
     const selectedProductsData = products.filter((p: Product) => 
@@ -135,13 +253,25 @@ export default function PrintLabels() {
             SKU: ${product.sku}
           </div>
           ${includeDescription && product.description ? 
-            `<div style="font-size: 10px; color: #888; margin-bottom: 8px;">
+            `<div style="font-size: 10px; color: #888; margin-bottom: 4px;">
               ${product.description.substring(0, 50)}...
             </div>` : ''
           }
-          ${includePrice ? 
-            `<div style="font-size: ${labelSize === 'small' ? '16px' : '18px'}; font-weight: bold; color: #2563eb; margin-bottom: 8px;">
-              ₹${Number(product.price).toFixed(2)}
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            ${includePrice ? 
+              `<div style="font-size: ${labelSize === 'small' ? '14px' : '16px'}; font-weight: bold; color: #2563eb;">
+                Price: ₹${Number(product.price).toFixed(2)}
+              </div>` : ''
+            }
+            ${includeMrp && product.mrp ? 
+              `<div style="font-size: ${labelSize === 'small' ? '12px' : '14px'}; color: #666;">
+                MRP: ₹${Number(product.mrp).toFixed(2)}
+              </div>` : ''
+            }
+          </div>
+          ${includeExpiryDate ? 
+            `<div style="font-size: 10px; color: #d97706; margin-bottom: 4px;">
+              Exp: Best Before Date
             </div>` : ''
           }
           ${includeBarcode ? 
@@ -206,6 +336,14 @@ export default function PrintLabels() {
           </div>
           <div className="flex gap-2">
             <Button 
+              onClick={createManualLabel}
+              variant="outline"
+              className="border-green-600 text-green-600 hover:bg-green-50"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Manual Label
+            </Button>
+            <Button 
               onClick={handlePrint}
               disabled={selectedProducts.length === 0}
               className="bg-blue-600 hover:bg-blue-700"
@@ -268,11 +406,29 @@ export default function PrintLabels() {
 
                 <div className="flex items-center space-x-2">
                   <Checkbox 
+                    id="include-mrp"
+                    checked={includeMrp}
+                    onCheckedChange={setIncludeMrp}
+                  />
+                  <Label htmlFor="include-mrp" className="text-sm">MRP</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
                     id="include-description"
                     checked={includeDescription}
                     onCheckedChange={setIncludeDescription}
                   />
                   <Label htmlFor="include-description" className="text-sm">Description</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="include-expiry"
+                    checked={includeExpiryDate}
+                    onCheckedChange={setIncludeExpiryDate}
+                  />
+                  <Label htmlFor="include-expiry" className="text-sm">Expiry Date</Label>
                 </div>
               </div>
 
@@ -293,12 +449,16 @@ export default function PrintLabels() {
               {/* Preview */}
               <div className="pt-4 border-t">
                 <h4 className="text-sm font-medium mb-3">Label Preview</h4>
-                <div className={`border-2 border-dashed border-gray-300 p-3 rounded-lg text-center ${
-                  labelSize === 'small' ? 'h-24' : labelSize === 'large' ? 'h-32' : 'h-28'
+                <div className={`border-2 border-dashed border-gray-300 p-2 rounded-lg text-center ${
+                  labelSize === 'small' ? 'h-28' : labelSize === 'large' ? 'h-36' : 'h-32'
                 }`}>
                   <div className="text-xs font-semibold">Sample Product</div>
                   <div className="text-xs text-gray-500">SKU: SP001</div>
-                  {includePrice && <div className="text-sm font-bold text-blue-600">₹99.99</div>}
+                  <div className="flex justify-between text-xs mt-1">
+                    {includePrice && <span className="font-bold text-blue-600">₹99.99</span>}
+                    {includeMrp && <span className="text-gray-600">MRP: ₹120</span>}
+                  </div>
+                  {includeExpiryDate && <div className="text-xs text-orange-600 mt-1">Exp: 12/2025</div>}
                   {includeBarcode && (
                     <div className="text-xs font-mono mt-1 bg-gray-100 px-1 rounded">
                       ||||||||||||
@@ -348,6 +508,7 @@ export default function PrintLabels() {
                       <TableHead>SKU</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Price</TableHead>
+                      <TableHead>MRP</TableHead>
                       <TableHead>Stock</TableHead>
                       <TableHead>Barcode</TableHead>
                     </TableRow>
@@ -374,6 +535,7 @@ export default function PrintLabels() {
                           {categories.find((cat: any) => cat.id === product.categoryId)?.name || 'N/A'}
                         </TableCell>
                         <TableCell className="font-semibold">₹{Number(product.price).toFixed(2)}</TableCell>
+                        <TableCell className="text-gray-600">₹{Number(product.mrp || product.price).toFixed(2)}</TableCell>
                         <TableCell>{product.stockQuantity}</TableCell>
                         <TableCell>
                           <div className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
@@ -455,6 +617,123 @@ export default function PrintLabels() {
             <Button onClick={executePrint} className="bg-blue-600 hover:bg-blue-700">
               <PrinterIcon className="h-4 w-4 mr-2" />
               Print Labels
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Label Creation Dialog */}
+      <Dialog open={isManualLabelDialogOpen} onOpenChange={setIsManualLabelDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-green-600" />
+              Create Manual Label
+            </DialogTitle>
+            <DialogDescription>
+              Create a custom label with your own product information
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="manual-name">Product Name *</Label>
+                <Input
+                  id="manual-name"
+                  value={manualLabel.productName}
+                  onChange={(e) => setManualLabel({...manualLabel, productName: e.target.value})}
+                  placeholder="Enter product name"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="manual-sku">SKU/Item Code</Label>
+                <Input
+                  id="manual-sku"
+                  value={manualLabel.sku}
+                  onChange={(e) => setManualLabel({...manualLabel, sku: e.target.value})}
+                  placeholder="Enter SKU"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="manual-price">Price</Label>
+                <Input
+                  id="manual-price"
+                  type="number"
+                  step="0.01"
+                  value={manualLabel.price}
+                  onChange={(e) => setManualLabel({...manualLabel, price: e.target.value})}
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="manual-mrp">MRP</Label>
+                <Input
+                  id="manual-mrp"
+                  type="number"
+                  step="0.01"
+                  value={manualLabel.mrp}
+                  onChange={(e) => setManualLabel({...manualLabel, mrp: e.target.value})}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="manual-expiry">Expiry Date</Label>
+                <Input
+                  id="manual-expiry"
+                  value={manualLabel.expiryDate}
+                  onChange={(e) => setManualLabel({...manualLabel, expiryDate: e.target.value})}
+                  placeholder="DD/MM/YYYY or Best Before Date"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="manual-description">Description</Label>
+                <Input
+                  id="manual-description"
+                  value={manualLabel.description}
+                  onChange={(e) => setManualLabel({...manualLabel, description: e.target.value})}
+                  placeholder="Product description"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="manual-barcode">Barcode</Label>
+                <Input
+                  id="manual-barcode"
+                  value={manualLabel.barcode}
+                  onChange={(e) => setManualLabel({...manualLabel, barcode: e.target.value})}
+                  placeholder="Enter barcode"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="manual-copies">Number of Copies</Label>
+                <Input
+                  id="manual-copies"
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={copies}
+                  onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManualLabelDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={executeManualPrint} className="bg-green-600 hover:bg-green-700">
+              <PrinterIcon className="h-4 w-4 mr-2" />
+              Print Manual Label
             </Button>
           </DialogFooter>
         </DialogContent>
