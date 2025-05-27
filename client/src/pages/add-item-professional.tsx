@@ -40,7 +40,7 @@ const productFormSchema = z.object({
   supplierName: z.string().optional(),
   alias: z.string().optional(),
   aboutProduct: z.string().optional(),
-  
+
   // Category Information
   itemProductType: z.string().default("Standard"),
   department: z.string().optional(),
@@ -48,7 +48,7 @@ const productFormSchema = z.object({
   subCategory: z.string().optional(),
   brand: z.string().optional(),
   buyer: z.string().optional(),
-  
+
   // Tax Information
   hsnCode: z.string().optional(),
   gstCode: z.string().optional(),
@@ -57,17 +57,17 @@ const productFormSchema = z.object({
   purchaseAbatement: z.string().optional(),
   configItemWithCommodity: z.boolean().default(false),
   seniorExemptApplicable: z.boolean().default(false),
-  
+
   // GST Breakdown
   cgstRate: z.string().optional(),
   sgstRate: z.string().optional(),
   igstRate: z.string().optional(),
   cessRate: z.string().optional(),
   taxCalculationMethod: z.string().optional(),
-  
+
   // EAN Code/Barcode
   eanCodeRequired: z.boolean().default(false),
-  
+
   // Weight & Packing (Enhanced for Bulk Items)
   weightsPerUnit: z.string().default("1"),
   bulkWeight: z.string().optional(),
@@ -79,35 +79,35 @@ const productFormSchema = z.object({
   grindingCharge: z.string().optional(),
   weightInGms: z.string().optional(),
   bulkItemName: z.string().optional(),
-  
+
   // Item Properties
   decimalPoint: z.string().default("0"),
   imageAlignment: z.string().optional(),
   productType: z.string().default("NA"),
-  
+
   // Pricing
   sellBy: z.string().default("None"),
   itemPerUnit: z.string().default("1"),
   maintainSellingMrpBy: z.string().default("Multiple Selling Price & Multiple MRP"),
   batchSelection: z.string().default("Not Applicable"),
   isWeighable: z.boolean().default(false),
-  
+
   // Reorder Configurations
   skuType: z.string().default("Put Away"),
   indentType: z.string().default("Manual"),
-  
+
   // Purchase Order
   gateKeeperMargin: z.string().optional(),
-  
+
   // Approval Configurations
   allowItemFree: z.boolean().default(false),
-  
+
   // Mobile App Configurations
   dailyAuditProcess: z.boolean().default(false),
-  
+
   // Other Information
   itemIngredients: z.string().optional(),
-  
+
   // Basic fields
   price: z.string().min(1, "Price is required"),
   mrp: z.string().min(1, "MRP is required"),
@@ -281,7 +281,7 @@ export default function AddItemProfessional() {
                   <TabsTrigger value="outlet-specific" className="text-xs">Outlet Specific</TabsTrigger>
                 </TabsList>
               </Tabs>
-              
+
               <div className="space-y-1">
                 {sidebarSections.map((section) => {
                   if (section.id === "packing") {
@@ -293,7 +293,7 @@ export default function AddItemProfessional() {
                       />
                     );
                   }
-                  
+
                   return (
                     <button
                       key={section.id}
@@ -320,7 +320,7 @@ export default function AddItemProfessional() {
           <div className="flex-1 p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit((data) => createProductMutation.mutate(data))} className="space-y-6">
-                
+
                 {/* Item Information Section */}
                 {currentSection === "item-information" && (
                   <Card>
@@ -358,7 +358,7 @@ export default function AddItemProfessional() {
                         />
                         <div></div>
                       </div>
-                      
+
                       <FormField
                         control={form.control}
                         name="itemName"
@@ -372,7 +372,7 @@ export default function AddItemProfessional() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
@@ -423,7 +423,7 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
@@ -488,10 +488,10 @@ export default function AddItemProfessional() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="border-t pt-4">
                         <h3 className="text-blue-600 font-medium mb-4">Category</h3>
-                        
+
                         <div className="grid grid-cols-2 gap-6">
                           <FormField
                             control={form.control}
@@ -540,7 +540,7 @@ export default function AddItemProfessional() {
                             )}
                           />
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-6 mt-4">
                           <FormField
                             control={form.control}
@@ -585,7 +585,7 @@ export default function AddItemProfessional() {
                             )}
                           />
                         </div>
-                        
+
                         <FormField
                           control={form.control}
                           name="buyer"
@@ -637,7 +637,7 @@ export default function AddItemProfessional() {
                                     onChange={(e) => {
                                       const hsnValue = e.target.value;
                                       field.onChange(hsnValue);
-                                      
+
                                       // Auto-suggest GST code based on HSN
                                       let suggestedGst = "";
                                       if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
@@ -651,10 +651,10 @@ export default function AddItemProfessional() {
                                       } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032") || hsnValue.startsWith("87111")) {
                                         suggestedGst = "GST 28%";
                                       }
-                                      
+
                                       if (suggestedGst && hsnValue.length >= 4) {
                                         form.setValue("gstCode", suggestedGst);
-                                        
+
                                         // Auto-calculate GST breakdown for intra-state transactions
                                         const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
                                         if (gstRate > 0) {
@@ -684,42 +684,42 @@ export default function AddItemProfessional() {
                                     <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
                                     <SelectItem value="19059090">19059090 - Biscuits (18%)</SelectItem>
                                     <SelectItem value="21069099">21069099 - Spices & Condiments (5%)</SelectItem>
-                                    
+
                                     {/* Textiles & Clothing - 5% & 12% GST */}
                                     <SelectItem value="62019000">62019000 - Men's Garments (12%)</SelectItem>
                                     <SelectItem value="62029000">62029000 - Women's Garments (12%)</SelectItem>
                                     <SelectItem value="63010000">63010000 - Bed Sheets (5%)</SelectItem>
                                     <SelectItem value="64029100">64029100 - Footwear (18%)</SelectItem>
-                                    
+
                                     {/* Electronics - 12% & 18% GST */}
                                     <SelectItem value="85171200">85171200 - Mobile Phones (12%)</SelectItem>
                                     <SelectItem value="84713000">84713000 - Laptops (18%)</SelectItem>
                                     <SelectItem value="85285200">85285200 - LED TV (18%)</SelectItem>
                                     <SelectItem value="85287100">85287100 - Set Top Box (18%)</SelectItem>
                                     <SelectItem value="85044090">85044090 - Mobile Charger (18%)</SelectItem>
-                                    
+
                                     {/* Personal Care - 18% GST */}
                                     <SelectItem value="33061000">33061000 - Toothpaste (18%)</SelectItem>
                                     <SelectItem value="34012000">34012000 - Soap (18%)</SelectItem>
                                     <SelectItem value="33051000">33051000 - Shampoo (18%)</SelectItem>
                                     <SelectItem value="96031000">96031000 - Toothbrush (18%)</SelectItem>
-                                    
+
                                     {/* Beverages & Luxury - 28% GST */}
                                     <SelectItem value="22021000">22021000 - Soft Drinks (28%)</SelectItem>
                                     <SelectItem value="24021000">24021000 - Cigarettes (28%)</SelectItem>
                                     <SelectItem value="22030000">22030000 - Beer (28%)</SelectItem>
                                     <SelectItem value="22084000">22084000 - Wine (28%)</SelectItem>
-                                    
+
                                     {/* Automobiles - 28% GST */}
                                     <SelectItem value="87032390">87032390 - Passenger Cars (28%)</SelectItem>
                                     <SelectItem value="87111000">87111000 - Motorcycles (28%)</SelectItem>
                                     <SelectItem value="87120000">87120000 - Bicycles (12%)</SelectItem>
-                                    
+
                                     {/* Medicines & Healthcare - 5% & 12% GST */}
                                     <SelectItem value="30049099">30049099 - Medicines (5%)</SelectItem>
                                     <SelectItem value="90183900">90183900 - Medical Equipment (12%)</SelectItem>
                                     <SelectItem value="30059090">30059090 - Health Supplements (18%)</SelectItem>
-                                    
+
                                     {/* Books & Stationery - 5% & 12% GST */}
                                     <SelectItem value="49019900">49019900 - Books (5%)</SelectItem>
                                     <SelectItem value="48201000">48201000 - Notebooks (12%)</SelectItem>
@@ -760,11 +760,10 @@ export default function AddItemProfessional() {
                                 </Select>
                               </FormControl>
                               <FormMessage />
-                            </FormItem>
-                          )}
+                            </FormItem                          )}
                         />
                       </div>
-                      
+
                       {/* GST Breakdown Section */}
                       <div className="border-t pt-6">
                         <h4 className="text-sm font-semibold text-gray-900 mb-4">GST Breakdown & Compliance</h4>
@@ -809,7 +808,7 @@ export default function AddItemProfessional() {
                             )}
                           />
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-6 mt-4">
                           <FormField
                             control={form.control}
@@ -847,7 +846,7 @@ export default function AddItemProfessional() {
                           />
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
@@ -884,7 +883,7 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
-                      
+
                       <FormField
                         control={form.control}
                         name="gstUom"
@@ -907,7 +906,7 @@ export default function AddItemProfessional() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="flex items-center justify-between">
                         <FormField
                           control={form.control}
@@ -923,7 +922,7 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <FormField
                           control={form.control}
@@ -990,7 +989,7 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
-                      
+
                       <FormField
                         control={form.control}
                         name="maintainSellingMrpBy"
@@ -1012,7 +1011,7 @@ export default function AddItemProfessional() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
@@ -1052,12 +1051,12 @@ export default function AddItemProfessional() {
                           />
                         </div>
                       </div>
-                      
+
                       <Separator />
-                      
+
                       <div className="bg-green-50 p-4 rounded-lg">
                         <h3 className="text-lg font-semibold mb-4 text-green-800">Price & Weight Information</h3>
-                        
+
                         <div className="grid grid-cols-3 gap-6">
                           <FormField
                             control={form.control}
@@ -1099,14 +1098,14 @@ export default function AddItemProfessional() {
                             )}
                           />
                         </div>
-                        
+
                         {/* Enhanced Weight & Packing for Bulk Items */}
                         <div className="bg-blue-50 p-4 rounded-lg mt-6">
                           <h4 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
                             <PackageIcon className="w-4 h-4" />
                             Weight & Packing (Bulk Items)
                           </h4>
-                          
+
                           <div className="grid grid-cols-3 gap-4">
                             <FormField
                               control={form.control}
@@ -1160,7 +1159,7 @@ export default function AddItemProfessional() {
                               )}
                             />
                           </div>
-                          
+
                           <div className="grid grid-cols-2 gap-4 mt-4">
                             <FormField
                               control={form.control}
@@ -1229,7 +1228,7 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
-                      
+
                       {/* Manual Barcode Entry */}
                       <FormField
                         control={form.control}
@@ -1284,7 +1283,7 @@ export default function AddItemProfessional() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Barcode Configuration</h3>
                         <p className="text-sm text-gray-600 mb-4">
@@ -1336,15 +1335,10 @@ export default function AddItemProfessional() {
                 {/* Packing Section */}
                 {currentSection === "packing" && (
                   <Card>
-                    <CardHeader className="bg-blue-50 border-b">
-                      <CardTitle className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <BoxIcon className="w-4 h-4 text-blue-600" />
-                        </div>
-                        Packing
-                      </CardTitle>
+                    <CardHeader>
+                      <CardTitle>Packing</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6 p-6">
+                    <CardContent className="space-y-6">
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
@@ -1396,7 +1390,7 @@ export default function AddItemProfessional() {
                                   onValueChange={(value) => {
                                     field.onChange(value);
                                     form.setValue("itemPreparationsStatus", value);
-                                    
+
                                     // Clear conditional fields when status changes
                                     if (value !== "Bulk" && value !== "Repackage" && value !== "Open Item" && value !== "Weight to Piece") {
                                       form.setValue("grindingCharge", "");
@@ -1411,7 +1405,7 @@ export default function AddItemProfessional() {
                                   value={field.value || "Trade As Is"}
                                 >
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Trade As Is" />
+                                    <SelectValue placeholder="Repackage" />
                                   </SelectTrigger>
                                   <SelectContent className="max-h-80 overflow-y-auto">
                                     <SelectItem value="Trade As Is">
@@ -1496,48 +1490,59 @@ export default function AddItemProfessional() {
                             </FormItem>
                           )}
                         />
-                        
-                        {/* Conditional Grinding Charge Field */}
-                        {(form.watch("itemPreparationsStatus") === "Bulk" || 
-                          form.watch("itemPreparationsStatus") === "Repackage" ||
-                          form.watch("itemPreparationsStatus") === "Open Item" ||
-                          form.watch("itemPreparationsStatus") === "Weight to Piece") && (
+
+                        {/* Conditional Bulk Item Name Field - Only for Repackage */}
+                        {form.watch("itemPreparationsStatus") === "Repackage" && (
                           <FormField
                             control={form.control}
-                            name="grindingCharge"
+                            name="bulkItemName"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-red-600">Grinding Charge *</FormLabel>
+                                <FormLabel className="text-red-600">Bulk Item Name *</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    placeholder="0.00" 
-                                    type="number" 
-                                    step="0.01"
-                                    className="border-red-300 focus:border-red-500"
-                                  />
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger className="border-red-300 focus:border-red-500">
+                                      <SelectValue placeholder="Select bulk item to repackage" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="100G">100G</SelectItem>
+                                      <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK</SelectItem>
+                                      <SelectItem value="ARUVADAM KURUVAI RICE BULK">ARUVADAM KURUVAI RICE BULK</SelectItem>
+                                      <SelectItem value="AVARE BULK">AVARE BULK</SelectItem>
+                                      <SelectItem value="AVUL NICE BULK">AVUL NICE BULK</SelectItem>
+                                      <SelectItem value="AVUL ODD BULK">AVUL ODD BULK</SelectItem>
+                                      <SelectItem value="rice-25kg">Rice - 25kg Bag</SelectItem>
+                                      <SelectItem value="wheat-50kg">Wheat - 50kg Bag</SelectItem>
+                                      <SelectItem value="dal-25kg">Dal - 25kg Bag</SelectItem>
+                                      <SelectItem value="sugar-50kg">Sugar - 50kg Bag</SelectItem>
+                                      <SelectItem value="oil-15ltr">Oil - 15 Ltr Container</SelectItem>
+                                      <SelectItem value="flour-25kg">Flour - 25kg Bag</SelectItem>
+                                      <SelectItem value="spices-10kg">Spices - 10kg Container</SelectItem>
+                                      <SelectItem value="dry-fruits-5kg">Dry Fruits - 5kg Box</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </FormControl>
-                                <div className="text-xs text-red-500 mt-1">Grinding Charge is required for {form.watch("itemPreparationsStatus")}</div>
+                                <div className="text-xs text-red-500 mt-1">
+                                  Bulk Item Name is required
+                                </div>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
                         )}
-                        
-                        {/* Show empty div when grinding charge is not needed to maintain grid layout */}
-                        {!(form.watch("itemPreparationsStatus") === "Bulk" || 
-                          form.watch("itemPreparationsStatus") === "Repackage" ||
-                          form.watch("itemPreparationsStatus") === "Open Item" ||
-                          form.watch("itemPreparationsStatus") === "Weight to Piece") && (
+
+                        {/* Show empty div when bulk item name is not needed to maintain grid layout */}
+                        {!(form.watch("itemPreparationsStatus") === "Repackage") && (
                           <div></div>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-6">
-                        {/* Conditional Weight in Gms Field */}
-                        {(form.watch("itemPreparationsStatus") === "Open Item" || 
-                          form.watch("itemPreparationsStatus") === "Weight to Piece" ||
-                          form.watch("itemPreparationsStatus") === "Bulk") && (
+                      {/* Conditional Weight in Gms Field - Show in new row */}
+                      {(form.watch("itemPreparationsStatus") === "Open Item" || 
+                        form.watch("itemPreparationsStatus") === "Weight to Piece" ||
+                        form.watch("itemPreparationsStatus") === "Bulk" ||
+                        form.watch("itemPreparationsStatus") === "Repackage") && (
+                        <div className="grid grid-cols-2 gap-6">
                           <FormField
                             control={form.control}
                             name="weightInGms"
@@ -1553,167 +1558,14 @@ export default function AddItemProfessional() {
                                     className="border-red-300 focus:border-red-500" 
                                   />
                                 </FormControl>
-                                <div className="text-xs text-red-500 mt-1">Weight(gms) is required for {form.watch("itemPreparationsStatus")}</div>
+                                <div className="text-xs text-red-500 mt-1">Weight(gms) is required</div>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                        )}
-                        
-                        <FormField
-                          control={form.control}
-                          name="imageAlignment"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Image Alignment</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select alignment" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="left">Left</SelectItem>
-                                    <SelectItem value="center">Center</SelectItem>
-                                    <SelectItem value="right">Right</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      {/* Conditional Bulk Item Name Field - Only for Repackage */}
-                      {form.watch("itemPreparationsStatus") === "Repackage" && (
-                        <FormField
-                          control={form.control}
-                          name="bulkItemName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-red-600">Bulk Item Name *</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger className="border-red-300 focus:border-red-500">
-                                    <SelectValue placeholder="Select bulk item to repackage" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="100G">100G</SelectItem>
-                                    <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK</SelectItem>
-                                    <SelectItem value="ARUVADAM KURUVAI RICE BULK">ARUVADAM KURUVAI RICE BULK</SelectItem>
-                                    <SelectItem value="AVARE BULK">AVARE BULK</SelectItem>
-                                    <SelectItem value="AVUL NICE BULK">AVUL NICE BULK</SelectItem>
-                                    <SelectItem value="AVUL ODD BULK">AVUL ODD BULK</SelectItem>
-                                    <SelectItem value="rice-25kg">Rice - 25kg Bag</SelectItem>
-                                    <SelectItem value="wheat-50kg">Wheat - 50kg Bag</SelectItem>
-                                    <SelectItem value="dal-25kg">Dal - 25kg Bag</SelectItem>
-                                    <SelectItem value="sugar-50kg">Sugar - 50kg Bag</SelectItem>
-                                    <SelectItem value="oil-15ltr">Oil - 15 Ltr Container</SelectItem>
-                                    <SelectItem value="flour-25kg">Flour - 25kg Bag</SelectItem>
-                                    <SelectItem value="spices-10kg">Spices - 10kg Container</SelectItem>
-                                    <SelectItem value="dry-fruits-5kg">Dry Fruits - 5kg Box</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <div className="text-xs text-red-500 mt-1">
-                                Bulk Item Name is required for repackaging
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-                      
-                      {/* Status-specific Information Badge */}
-                      {form.watch("itemPreparationsStatus") && form.watch("itemPreparationsStatus") !== "Trade As Is" && (
-                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-                          <div className="flex items-start">
-                            <InfoIcon className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
-                            <div>
-                              <h4 className="font-medium text-blue-900">
-                                {form.watch("itemPreparationsStatus")} Requirements
-                              </h4>
-                              <p className="text-sm text-blue-700 mt-1">
-                                {form.watch("itemPreparationsStatus") === "Bulk" && 
-                                  "This item is stored and sold in bulk quantities. Weight and grinding charge fields are required."}
-                                {form.watch("itemPreparationsStatus") === "Repackage" && 
-                                  "This item is bought in bulk and repackaged into smaller units. Select the bulk item source and specify repackaging details."}
-                                {form.watch("itemPreparationsStatus") === "Open Item" && 
-                                  "This item is sold without barcodes or fixed quantities (e.g., fresh vegetables). Weight information is required."}
-                                {form.watch("itemPreparationsStatus") === "Weight to Piece" && 
-                                  "This item converts weight-based inventory to pieces for easier sale. Both weight and grinding charge are required."}
-                                {form.watch("itemPreparationsStatus") === "Standard Preparation" && 
-                                  "This item is processed in a specific, consistent way according to standard operating procedures."}
-                                {form.watch("itemPreparationsStatus") === "Customer Prepared" && 
-                                  "This item is prepared based on specific customer instructions and requirements."}
-                                {form.watch("itemPreparationsStatus") === "Create" && 
-                                  "This item will be created or manufactured as needed."}
-                                {(form.watch("itemPreparationsStatus") === "Ingredients" || 
-                                  form.watch("itemPreparationsStatus") === "Packing Material") && 
-                                  "This is a non-sellable item used for preparation or packaging of other products."}
-                              </p>
-                            </div>
-                          </div>
+                          <div></div>
                         </div>
                       )}
-                      
-                      <div className="bg-orange-50 p-4 rounded-lg">
-                        <h3 className="font-medium mb-3">Additional Packaging Information</h3>
-                        <div className="grid grid-cols-3 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="packageType"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium">Package Type</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="box">Box</SelectItem>
-                                      <SelectItem value="bottle">Bottle</SelectItem>
-                                      <SelectItem value="packet">Packet</SelectItem>
-                                      <SelectItem value="bag">Bag</SelectItem>
-                                      <SelectItem value="jar">Jar</SelectItem>
-                                      <SelectItem value="can">Can</SelectItem>
-                                      <SelectItem value="pouch">Pouch</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="unitsPerPackage"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium">Units per Package</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="1" type="number" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="packageWeight"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium">Package Weight</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0.000 kg" type="number" step="0.001" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -1775,7 +1627,7 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
-                      
+
                       <FormField
                         control={form.control}
                         name="productType"
@@ -1800,7 +1652,7 @@ export default function AddItemProfessional() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="bg-purple-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Additional Properties</h3>
                         <div className="space-y-3">
@@ -1882,7 +1734,7 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
-                      
+
                       <div className="bg-green-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Reorder Parameters</h3>
                         <div className="grid grid-cols-3 gap-4">
@@ -1927,7 +1779,7 @@ export default function AddItemProfessional() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Purchase Settings</h3>
                         <div className="grid grid-cols-2 gap-4">
@@ -1976,12 +1828,12 @@ export default function AddItemProfessional() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Additional Notes</h3>
                         <Textarea placeholder="Any additional notes or special instructions for this product..." rows={3} />
                       </div>
-                      
+
                       <div className="bg-yellow-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Compliance Information</h3>
                         <div className="space-y-3">
@@ -1998,6 +1850,64 @@ export default function AddItemProfessional() {
                             <Switch />
                           </div>
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Approval Configurations Section */}
+                {currentSection === "approval-configurations" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <CheckIcon className="w-5 h-5" />
+                        Approval Configurations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="flex items-center space-x-3">
+                        <FormField
+                          control={form.control}
+                          name="allowItemFree"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center space-x-3">
+                              <FormControl>
+                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                              <FormLabel>Allow Item Free</FormLabel>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Mobile App Config Section */}
+                {currentSection === "mobile-app-config" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <SettingsIcon className="w-5 h-5" />
+                        Mobile App Config
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="flex items-center space-x-3">
+                        <FormField
+                          control={form.control}
+                          name="dailyAuditProcess"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center space-x-3">
+                              <FormControl>
+                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                              <FormLabel>Daily Audit Process</FormLabel>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </CardContent>
                   </Card>
