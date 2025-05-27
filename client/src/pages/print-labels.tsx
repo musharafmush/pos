@@ -56,6 +56,7 @@ export default function PrintLabels() {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [isManualLabelDialogOpen, setIsManualLabelDialogOpen] = useState(false);
   const [copies, setCopies] = useState(1);
+  const [customLabelSize, setCustomLabelSize] = useState({ width: "250", height: "150" });
 
   // Manual label creation state
   const [manualLabel, setManualLabel] = useState({
@@ -150,6 +151,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '280px' :
           labelSize === 'large' ? '300px' :
           labelSize === 'xlarge' ? '350px' :
+          labelSize === 'custom' ? `${customLabelSize.width}px` :
           '250px'
         };
         height: ${
@@ -158,6 +160,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '160px' :
           labelSize === 'large' ? '180px' :
           labelSize === 'xlarge' ? '200px' :
+          labelSize === 'custom' ? `${customLabelSize.height}px` :
           '150px'
         };
         display: inline-block;
@@ -172,7 +175,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
-          labelSize.startsWith('custom') ? '24px' :
+          labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; margin-bottom: 8px;">
           ${manualLabel.productName}
@@ -196,7 +199,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
-          labelSize.startsWith('custom') ? '24px' :
+          labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; font-weight: bold; color: #2563eb;">
               Price: ₹${Number(manualLabel.price).toFixed(2)}
@@ -277,7 +280,7 @@ export default function PrintLabels() {
             labelSize === 'medium' ? '280px' :
             labelSize === 'large' ? '300px' :
             labelSize === 'xlarge' ? '350px' :
-            labelSize.startsWith('custom') ? `${labelSize.split('-')[1]?.split('x')[0] || '250'}px` :
+            labelSize === 'custom' ? `${customLabelSize.width}px` :
             '250px'
           };
           height: ${
@@ -286,7 +289,7 @@ export default function PrintLabels() {
             labelSize === 'medium' ? '160px' :
             labelSize === 'large' ? '180px' :
             labelSize === 'xlarge' ? '200px' :
-            labelSize.startsWith('custom') ? `${labelSize.split('x')[1] || '150'}px` :
+            labelSize === 'custom' ? `${customLabelSize.height}px` :
             '150px'
           };
           display: inline-block;
@@ -301,7 +304,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
-          labelSize.startsWith('custom') ? '24px' :
+          labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; margin-bottom: 8px;">
             ${product.name}
@@ -323,7 +326,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
-          labelSize.startsWith('custom') ? '24px' :
+          labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; font-weight: bold; color: #2563eb;">
                 Price: ₹${Number(product.price).toFixed(2)}
@@ -447,9 +450,35 @@ export default function PrintLabels() {
                     <SelectItem value="medium">Medium (2.8" x 1.6")</SelectItem>
                     <SelectItem value="large">Large (3" x 1.8")</SelectItem>
                     <SelectItem value="xlarge">Extra Large (3.5" x 2")</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Custom Label Size Input */}
+              {labelSize === "custom" && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Custom Size (px)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Width"
+                      value={customLabelSize.width}
+                      onChange={(e) =>
+                        setCustomLabelSize({ ...customLabelSize, width: e.target.value })
+                      }
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Height"
+                      value={customLabelSize.height}
+                      onChange={(e) =>
+                        setCustomLabelSize({ ...customLabelSize, height: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Include Options */}
               <div className="space-y-4">
@@ -524,6 +553,7 @@ export default function PrintLabels() {
                   labelSize === 'medium' ? 'h-28' :
                   labelSize === 'large' ? 'h-32' :
                   labelSize === 'xlarge' ? 'h-36' :
+                  labelSize === 'custom' ? `${customLabelSize.height}px` :
                   'h-28'
                 }`}>
                   <div className="text-xs font-semibold">Sample Product</div>
@@ -771,8 +801,34 @@ export default function PrintLabels() {
                     <span className="text-xs text-gray-500 ml-4">(3.5" x 2")</span>
                   </div>
                 </SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
+              {/* Custom Label Size Input */}
+              {labelSize === "custom" && (
+                <div className="space-y-2 mt-2">
+                  <Label className="text-sm font-medium">Custom Size (px)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Width"
+                      value={customLabelSize.width}
+                      onChange={(e) =>
+                        set```python
+CustomLabelSize({ ...customLabelSize, width: e.target.value })
+                      }
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Height"
+                      value={customLabelSize.height}
+                      onChange={(e) =>
+                        setCustomLabelSize({ ...customLabelSize, height: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
 
             {/* Label Elements Checkboxes */}
             <div className="mt-3 flex flex-wrap gap-4">
@@ -906,6 +962,7 @@ export default function PrintLabels() {
                   labelSize === 'medium' ? 'h-24 text-sm' :
                   labelSize === 'large' ? 'h-28 text-sm' :
                   labelSize === 'xlarge' ? 'h-32 text-base' :
+                  labelSize === 'custom' ? `${customLabelSize.height}px` :
                   'h-24 text-xs'
                 }`}>
                   <div className="font-semibold">{manualLabel.productName || 'Product Name'}</div>
