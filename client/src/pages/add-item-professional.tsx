@@ -173,7 +173,7 @@ export default function AddItemProfessional() {
       eanCodeRequired: false,
       weightsPerUnit: "1",
       batchExpiryDetails: "Not Required",
-      itemPreparationsStatus: "Create",
+      itemPreparationsStatus: "Trade As Is",
       grindingCharge: "",
       weightInGms: "",
       bulkItemName: "",
@@ -1336,13 +1336,15 @@ export default function AddItemProfessional() {
                 {/* Packing Section */}
                 {currentSection === "packing" && (
                   <Card>
-                    <CardHeader>
+                    <CardHeader className="bg-blue-50 border-b">
                       <CardTitle className="flex items-center gap-2">
-                        <BoxIcon className="w-5 h-5" />
+                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <BoxIcon className="w-4 h-4 text-blue-600" />
+                        </div>
                         Packing
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-6 p-6">
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
@@ -1390,13 +1392,19 @@ export default function AddItemProfessional() {
                             <FormItem>
                               <FormLabel>Item Preparations Status</FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value} defaultValue="Create">
+                                <Select 
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    form.setValue("itemPreparationsStatus", value);
+                                  }} 
+                                  value={field.value || "Trade As Is"}
+                                >
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select status" />
+                                    <SelectValue placeholder="Trade As Is" />
                                   </SelectTrigger>
                                   <SelectContent className="max-h-80 overflow-y-auto">
-                                    <SelectItem value="Create">Create</SelectItem>
                                     <SelectItem value="Trade As Is">Trade As Is</SelectItem>
+                                    <SelectItem value="Create">Create</SelectItem>
                                     <SelectItem value="Bulk">Bulk</SelectItem>
                                     <SelectItem value="Repackage">Repackage</SelectItem>
                                     <SelectItem value="Standard Preparation">Standard Preparation</SelectItem>

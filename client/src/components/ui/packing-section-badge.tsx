@@ -16,22 +16,21 @@ export function PackingSectionBadge({
   className 
 }: PackingSectionBadgeProps) {
   return (
-    <SectionBadge
-      variant={active ? "active" : "inactive"}
-      icon={<BoxIcon className="w-4 h-4" />}
-      active={active}
+    <button
       onClick={onClick}
       className={cn(
-        "cursor-pointer w-full justify-start font-normal",
-        active && "bg-blue-50 text-blue-700 border-l-4 border-blue-700 font-medium",
-        !active && "text-gray-600 hover:bg-gray-50",
+        "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
+        active 
+          ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700 font-medium" 
+          : "text-gray-600 hover:bg-gray-50",
         className
       )}
     >
+      <BoxIcon className="w-4 h-4" />
       Packing
       {active && (
         <div className="w-2 h-2 bg-blue-600 rounded-full ml-auto"></div>
       )}
-    </SectionBadge>
+    </button>
   )
 }
