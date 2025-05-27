@@ -624,7 +624,7 @@ export default function PrintLabels() {
 
       {/* Manual Label Creation Dialog */}
       <Dialog open={isManualLabelDialogOpen} onOpenChange={setIsManualLabelDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-green-600" />
@@ -634,6 +634,98 @@ export default function PrintLabels() {
               Create a custom label with your own product information
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Label Size Selection - Prominent */}
+          <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                Label Size & Format
+              </Label>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="manual-copies-top" className="text-sm">Copies:</Label>
+                  <Input
+                    id="manual-copies-top"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={copies}
+                    onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
+                    className="w-16 h-8"
+                  />
+                </div>
+              </div>
+            </div>
+            <Select value={labelSize} onValueChange={setLabelSize}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select label size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small">
+                  <div className="flex items-center justify-between w-full">
+                    <span>Small Label</span>
+                    <span className="text-xs text-gray-500 ml-4">(2" x 1.2")</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="standard">
+                  <div className="flex items-center justify-between w-full">
+                    <span>Standard Label</span>
+                    <span className="text-xs text-gray-500 ml-4">(2.5" x 1.5")</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="large">
+                  <div className="flex items-center justify-between w-full">
+                    <span>Large Label</span>
+                    <span className="text-xs text-gray-500 ml-4">(3" x 1.8")</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Label Elements Checkboxes */}
+            <div className="mt-3 flex flex-wrap gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="manual-include-barcode"
+                  checked={includeBarcode}
+                  onCheckedChange={setIncludeBarcode}
+                />
+                <Label htmlFor="manual-include-barcode" className="text-sm">Barcode</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="manual-include-price"
+                  checked={includePrice}
+                  onCheckedChange={setIncludePrice}
+                />
+                <Label htmlFor="manual-include-price" className="text-sm">Price</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="manual-include-mrp"
+                  checked={includeMrp}
+                  onCheckedChange={setIncludeMrp}
+                />
+                <Label htmlFor="manual-include-mrp" className="text-sm">MRP</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="manual-include-description"
+                  checked={includeDescription}
+                  onCheckedChange={setIncludeDescription}
+                />
+                <Label htmlFor="manual-include-description" className="text-sm">Description</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="manual-include-expiry"
+                  checked={includeExpiryDate}
+                  onCheckedChange={setIncludeExpiryDate}
+                />
+                <Label htmlFor="manual-include-expiry" className="text-sm">Expiry Date</Label>
+              </div>
+            </div>
+          </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-4">
@@ -658,7 +750,7 @@ export default function PrintLabels() {
               </div>
               
               <div>
-                <Label htmlFor="manual-price">Price</Label>
+                <Label htmlFor="manual-price">Price (₹)</Label>
                 <Input
                   id="manual-price"
                   type="number"
@@ -670,7 +762,7 @@ export default function PrintLabels() {
               </div>
               
               <div>
-                <Label htmlFor="manual-mrp">MRP</Label>
+                <Label htmlFor="manual-mrp">MRP (₹)</Label>
                 <Input
                   id="manual-mrp"
                   type="number"
@@ -709,20 +801,25 @@ export default function PrintLabels() {
                   id="manual-barcode"
                   value={manualLabel.barcode}
                   onChange={(e) => setManualLabel({...manualLabel, barcode: e.target.value})}
-                  placeholder="Enter barcode"
+                  placeholder="Enter barcode or leave empty for auto-generate"
                 />
               </div>
               
-              <div>
-                <Label htmlFor="manual-copies">Number of Copies</Label>
-                <Input
-                  id="manual-copies"
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={copies}
-                  onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
-                />
+              {/* Live Preview */}
+              <div className="pt-2">
+                <Label className="text-sm font-medium mb-2 block">Live Preview</Label>
+                <div className={`border-2 border-dashed border-gray-300 p-2 rounded-lg text-center bg-white ${
+                  labelSize === 'small' ? 'h-24 text-xs' : labelSize === 'large' ? 'h-36 text-sm' : 'h-30 text-xs'
+                }`}>
+                  <div className="font-semibold">{manualLabel.productName || 'Product Name'}</div>
+                  {manualLabel.sku && <div className="text-gray-500">SKU: {manualLabel.sku}</div>}
+                  <div className="flex justify-between text-xs mt-1">
+                    {includePrice && manualLabel.price && <span className="font-bold text-blue-600">₹{manualLabel.price}</span>}
+                    {includeMrp && manualLabel.mrp && <span className="text-gray-600">MRP: ₹{manualLabel.mrp}</span>}
+                  </div>
+                  {includeExpiryDate && manualLabel.expiryDate && <div className="text-orange-600 text-xs">Exp: {manualLabel.expiryDate}</div>}
+                  {includeBarcode && <div className="text-xs font-mono mt-1 bg-gray-100 px-1">||||||||||||</div>}
+                </div>
               </div>
             </div>
           </div>
