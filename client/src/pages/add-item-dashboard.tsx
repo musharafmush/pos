@@ -154,9 +154,7 @@ export default function AddItemDashboard() {
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: number) => {
-      const response = await apiRequest(`/api/products/${productId}`, {
-        method: "DELETE",
-      });
+      const response = await apiRequest("DELETE", `/api/products/${productId}`);
       return response;
     },
     onSuccess: () => {
