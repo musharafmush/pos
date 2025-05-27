@@ -1396,6 +1396,17 @@ export default function AddItemProfessional() {
                                   onValueChange={(value) => {
                                     field.onChange(value);
                                     form.setValue("itemPreparationsStatus", value);
+                                    
+                                    // Clear conditional fields when status changes
+                                    if (value !== "Bulk" && value !== "Repackage" && value !== "Open Item" && value !== "Weight to Piece") {
+                                      form.setValue("grindingCharge", "");
+                                    }
+                                    if (value !== "Repackage" && value !== "Assembly" && value !== "Kit" && value !== "Combo Pack") {
+                                      form.setValue("bulkItemName", "");
+                                    }
+                                    if (value !== "Open Item" && value !== "Weight to Piece" && value !== "Bulk") {
+                                      form.setValue("weightInGms", "");
+                                    }
                                   }} 
                                   value={field.value || "Trade As Is"}
                                 >
@@ -1403,21 +1414,81 @@ export default function AddItemProfessional() {
                                     <SelectValue placeholder="Trade As Is" />
                                   </SelectTrigger>
                                   <SelectContent className="max-h-80 overflow-y-auto">
-                                    <SelectItem value="Trade As Is">Trade As Is</SelectItem>
+                                    <SelectItem value="Trade As Is">
+                                      <div className="flex flex-col">
+                                        <span>Trade As Is</span>
+                                        <span className="text-xs text-gray-500">Sold exactly as received, no modification</span>
+                                      </div>
+                                    </SelectItem>
                                     <SelectItem value="Create">Create</SelectItem>
-                                    <SelectItem value="Bulk">Bulk</SelectItem>
-                                    <SelectItem value="Repackage">Repackage</SelectItem>
-                                    <SelectItem value="Standard Preparation">Standard Preparation</SelectItem>
-                                    <SelectItem value="Customer Prepared">Customer Prepared</SelectItem>
+                                    <SelectItem value="Bulk">
+                                      <div className="flex flex-col">
+                                        <span>Bulk</span>
+                                        <span className="text-xs text-gray-500">Stored and sold in bulk quantities</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Repackage">
+                                      <div className="flex flex-col">
+                                        <span>Repackage</span>
+                                        <span className="text-xs text-gray-500">Bought in bulk, repackaged into smaller units</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Standard Preparation">
+                                      <div className="flex flex-col">
+                                        <span>Standard Preparation</span>
+                                        <span className="text-xs text-gray-500">Processed in a specific, consistent way</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Customer Prepared">
+                                      <div className="flex flex-col">
+                                        <span>Customer Prepared</span>
+                                        <span className="text-xs text-gray-500">Prepped based on customer instructions</span>
+                                      </div>
+                                    </SelectItem>
                                     <SelectItem value="Parent">Parent</SelectItem>
                                     <SelectItem value="Child">Child</SelectItem>
-                                    <SelectItem value="Assembly">Assembly</SelectItem>
-                                    <SelectItem value="Kit">Kit</SelectItem>
-                                    <SelectItem value="Ingredients">Ingredients</SelectItem>
-                                    <SelectItem value="Packing Material">Packing Material</SelectItem>
-                                    <SelectItem value="Combo Pack">Combo Pack</SelectItem>
-                                    <SelectItem value="Open Item">Open Item</SelectItem>
-                                    <SelectItem value="Weight to Piece">Weight to Piece</SelectItem>
+                                    <SelectItem value="Assembly">
+                                      <div className="flex flex-col">
+                                        <span>Assembly</span>
+                                        <span className="text-xs text-gray-500">Assembled from multiple products</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Kit">
+                                      <div className="flex flex-col">
+                                        <span>Kit</span>
+                                        <span className="text-xs text-gray-500">Grouped items or meal kits</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Ingredients">
+                                      <div className="flex flex-col">
+                                        <span>Ingredients</span>
+                                        <span className="text-xs text-gray-500">Non-sellable items for preparation</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Packing Material">
+                                      <div className="flex flex-col">
+                                        <span>Packing Material</span>
+                                        <span className="text-xs text-gray-500">Items used for packaging</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Combo Pack">
+                                      <div className="flex flex-col">
+                                        <span>Combo Pack</span>
+                                        <span className="text-xs text-gray-500">Multiple items sold together</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Open Item">
+                                      <div className="flex flex-col">
+                                        <span>Open Item</span>
+                                        <span className="text-xs text-gray-500">Sold without barcodes or fixed quantities</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Weight to Piece">
+                                      <div className="flex flex-col">
+                                        <span>Weight to Piece</span>
+                                        <span className="text-xs text-gray-500">Converts weight-based to pieces</span>
+                                      </div>
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -1425,49 +1496,70 @@ export default function AddItemProfessional() {
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="grindingCharge"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-red-600">Grinding Charge *</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  {...field} 
-                                  placeholder="0.00" 
-                                  type="number" 
-                                  step="0.01"
-                                  className="border-red-300 focus:border-red-500"
-                                />
-                              </FormControl>
-                              <div className="text-xs text-red-500 mt-1">Grinding Charge is required</div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        
+                        {/* Conditional Grinding Charge Field */}
+                        {(form.watch("itemPreparationsStatus") === "Bulk" || 
+                          form.watch("itemPreparationsStatus") === "Repackage" ||
+                          form.watch("itemPreparationsStatus") === "Open Item" ||
+                          form.watch("itemPreparationsStatus") === "Weight to Piece") && (
+                          <FormField
+                            control={form.control}
+                            name="grindingCharge"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-red-600">Grinding Charge *</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="0.00" 
+                                    type="number" 
+                                    step="0.01"
+                                    className="border-red-300 focus:border-red-500"
+                                  />
+                                </FormControl>
+                                <div className="text-xs text-red-500 mt-1">Grinding Charge is required for {form.watch("itemPreparationsStatus")}</div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                        
+                        {/* Show empty div when grinding charge is not needed to maintain grid layout */}
+                        {!(form.watch("itemPreparationsStatus") === "Bulk" || 
+                          form.watch("itemPreparationsStatus") === "Repackage" ||
+                          form.watch("itemPreparationsStatus") === "Open Item" ||
+                          form.watch("itemPreparationsStatus") === "Weight to Piece") && (
+                          <div></div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="weightInGms"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-red-600">Weight in (Gms) *</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  {...field} 
-                                  placeholder="Weight(gms) is required" 
-                                  type="number" 
-                                  step="0.001"
-                                  className="border-red-300 focus:border-red-500" 
-                                />
-                              </FormControl>
-                              <div className="text-xs text-red-500 mt-1">Weight(gms) is required</div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        {/* Conditional Weight in Gms Field */}
+                        {(form.watch("itemPreparationsStatus") === "Open Item" || 
+                          form.watch("itemPreparationsStatus") === "Weight to Piece" ||
+                          form.watch("itemPreparationsStatus") === "Bulk") && (
+                          <FormField
+                            control={form.control}
+                            name="weightInGms"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-red-600">Weight in (Gms) *</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="Weight(gms) is required" 
+                                    type="number" 
+                                    step="0.001"
+                                    className="border-red-300 focus:border-red-500" 
+                                  />
+                                </FormControl>
+                                <div className="text-xs text-red-500 mt-1">Weight(gms) is required for {form.watch("itemPreparationsStatus")}</div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                        
                         <FormField
                           control={form.control}
                           name="imageAlignment"
@@ -1492,34 +1584,97 @@ export default function AddItemProfessional() {
                         />
                       </div>
 
-                      <FormField
-                        control={form.control}
-                        name="bulkItemName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-red-600">Bulk Item Name *</FormLabel>
-                            <FormControl>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger className="border-red-300 focus:border-red-500">
-                                  <SelectValue placeholder="Bulk Item Name is required" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="rice-25kg">Rice - 25kg Bag</SelectItem>
-                                  <SelectItem value="wheat-50kg">Wheat - 50kg Bag</SelectItem>
-                                  <SelectItem value="dal-25kg">Dal - 25kg Bag</SelectItem>
-                                  <SelectItem value="sugar-50kg">Sugar - 50kg Bag</SelectItem>
-                                  <SelectItem value="oil-15ltr">Oil - 15 Ltr Container</SelectItem>
-                                  <SelectItem value="flour-25kg">Flour - 25kg Bag</SelectItem>
-                                  <SelectItem value="spices-10kg">Spices - 10kg Container</SelectItem>
-                                  <SelectItem value="dry-fruits-5kg">Dry Fruits - 5kg Box</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <div className="text-xs text-red-500 mt-1">Bulk Item Name is required</div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {/* Conditional Bulk Item Name Field */}
+                      {(form.watch("itemPreparationsStatus") === "Repackage" || 
+                        form.watch("itemPreparationsStatus") === "Assembly" ||
+                        form.watch("itemPreparationsStatus") === "Kit" ||
+                        form.watch("itemPreparationsStatus") === "Combo Pack") && (
+                        <FormField
+                          control={form.control}
+                          name="bulkItemName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-red-600">
+                                {form.watch("itemPreparationsStatus") === "Repackage" ? "Bulk Item Name *" : "Component Items *"}
+                              </FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger className="border-red-300 focus:border-red-500">
+                                    <SelectValue placeholder={
+                                      form.watch("itemPreparationsStatus") === "Repackage" 
+                                        ? "Select bulk item to repackage" 
+                                        : "Select component items"
+                                    } />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {form.watch("itemPreparationsStatus") === "Repackage" ? (
+                                      <>
+                                        <SelectItem value="rice-25kg">Rice - 25kg Bag</SelectItem>
+                                        <SelectItem value="wheat-50kg">Wheat - 50kg Bag</SelectItem>
+                                        <SelectItem value="dal-25kg">Dal - 25kg Bag</SelectItem>
+                                        <SelectItem value="sugar-50kg">Sugar - 50kg Bag</SelectItem>
+                                        <SelectItem value="oil-15ltr">Oil - 15 Ltr Container</SelectItem>
+                                        <SelectItem value="flour-25kg">Flour - 25kg Bag</SelectItem>
+                                        <SelectItem value="spices-10kg">Spices - 10kg Container</SelectItem>
+                                        <SelectItem value="dry-fruits-5kg">Dry Fruits - 5kg Box</SelectItem>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <SelectItem value="combo-breakfast">Breakfast Combo (Bread + Butter + Jam)</SelectItem>
+                                        <SelectItem value="spice-kit">Spice Kit (Turmeric + Chili + Coriander)</SelectItem>
+                                        <SelectItem value="meal-kit">Meal Kit (Rice + Dal + Vegetables)</SelectItem>
+                                        <SelectItem value="snack-pack">Snack Pack (Chips + Drink + Cookies)</SelectItem>
+                                        <SelectItem value="gift-hamper">Gift Hamper (Multiple items)</SelectItem>
+                                      </>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <div className="text-xs text-red-500 mt-1">
+                                {form.watch("itemPreparationsStatus") === "Repackage" 
+                                  ? "Bulk Item Name is required for repackaging" 
+                                  : "Component items selection is required"}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                      
+                      {/* Status-specific Information Badge */}
+                      {form.watch("itemPreparationsStatus") && form.watch("itemPreparationsStatus") !== "Trade As Is" && (
+                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                          <div className="flex items-start">
+                            <InfoIcon className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-medium text-blue-900">
+                                {form.watch("itemPreparationsStatus")} Requirements
+                              </h4>
+                              <p className="text-sm text-blue-700 mt-1">
+                                {form.watch("itemPreparationsStatus") === "Bulk" && 
+                                  "This item is stored and sold in bulk quantities. Weight and grinding charge fields are required."}
+                                {form.watch("itemPreparationsStatus") === "Repackage" && 
+                                  "This item is bought in bulk and repackaged into smaller units. Select the bulk item source and specify repackaging details."}
+                                {form.watch("itemPreparationsStatus") === "Open Item" && 
+                                  "This item is sold without barcodes or fixed quantities (e.g., fresh vegetables). Weight information is required."}
+                                {form.watch("itemPreparationsStatus") === "Weight to Piece" && 
+                                  "This item converts weight-based inventory to pieces for easier sale. Both weight and grinding charge are required."}
+                                {(form.watch("itemPreparationsStatus") === "Assembly" || 
+                                  form.watch("itemPreparationsStatus") === "Kit" || 
+                                  form.watch("itemPreparationsStatus") === "Combo Pack") && 
+                                  "This item is assembled from multiple other products. Select the component items that make up this product."}
+                                {form.watch("itemPreparationsStatus") === "Standard Preparation" && 
+                                  "This item is processed in a specific, consistent way according to standard operating procedures."}
+                                {form.watch("itemPreparationsStatus") === "Customer Prepared" && 
+                                  "This item is prepared based on specific customer instructions and requirements."}
+                                {(form.watch("itemPreparationsStatus") === "Ingredients" || 
+                                  form.watch("itemPreparationsStatus") === "Packing Material") && 
+                                  "This is a non-sellable item used for preparation or packaging of other products."}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="bg-orange-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Additional Packaging Information</h3>
