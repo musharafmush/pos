@@ -172,6 +172,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
+          labelSize.startsWith('custom') ? '24px' :
           '16px'
         }; margin-bottom: 8px;">
           ${manualLabel.productName}
@@ -195,6 +196,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
+          labelSize.startsWith('custom') ? '24px' :
           '16px'
         }; font-weight: bold; color: #2563eb;">
               Price: ₹${Number(manualLabel.price).toFixed(2)}
@@ -297,6 +299,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
+          labelSize.startsWith('custom') ? '24px' :
           '16px'
         }; margin-bottom: 8px;">
             ${product.name}
@@ -318,6 +321,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
+          labelSize.startsWith('custom') ? '24px' :
           '16px'
         }; font-weight: bold; color: #2563eb;">
                 Price: ₹${Number(product.price).toFixed(2)}
