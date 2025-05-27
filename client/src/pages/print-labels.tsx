@@ -144,8 +144,22 @@ export default function PrintLabels() {
         border: 2px solid #333;
         padding: 12px;
         margin: 8px;
-        width: ${labelSize === 'small' ? '200px' : labelSize === 'large' ? '300px' : '250px'};
-        height: ${labelSize === 'small' ? '120px' : labelSize === 'large' ? '180px' : '150px'};
+        width: ${
+          labelSize === 'mini' ? '150px' :
+          labelSize === 'small' ? '200px' :
+          labelSize === 'medium' ? '280px' :
+          labelSize === 'large' ? '300px' :
+          labelSize === 'xlarge' ? '350px' :
+          '250px'
+        };
+        height: ${
+          labelSize === 'mini' ? '100px' :
+          labelSize === 'small' ? '120px' :
+          labelSize === 'medium' ? '160px' :
+          labelSize === 'large' ? '180px' :
+          labelSize === 'xlarge' ? '200px' :
+          '150px'
+        };
         display: inline-block;
         font-family: Arial, sans-serif;
         background: white;
@@ -255,8 +269,22 @@ export default function PrintLabels() {
           border: 2px solid #333;
           padding: 12px;
           margin: 8px;
-          width: ${labelSize === 'small' ? '200px' : labelSize === 'large' ? '300px' : '250px'};
-          height: ${labelSize === 'small' ? '120px' : labelSize === 'large' ? '180px' : '150px'};
+          width: ${
+            labelSize === 'mini' ? '150px' :
+            labelSize === 'small' ? '200px' :
+            labelSize === 'medium' ? '280px' :
+            labelSize === 'large' ? '300px' :
+            labelSize === 'xlarge' ? '350px' :
+            '250px'
+          };
+          height: ${
+            labelSize === 'mini' ? '100px' :
+            labelSize === 'small' ? '120px' :
+            labelSize === 'medium' ? '160px' :
+            labelSize === 'large' ? '180px' :
+            labelSize === 'xlarge' ? '200px' :
+            '150px'
+          };
           display: inline-block;
           font-family: Arial, sans-serif;
           background: white;
@@ -407,9 +435,12 @@ export default function PrintLabels() {
                     <SelectValue placeholder="Select size" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="mini">Mini (1.5" x 1")</SelectItem>
                     <SelectItem value="small">Small (2" x 1.2")</SelectItem>
                     <SelectItem value="standard">Standard (2.5" x 1.5")</SelectItem>
+                    <SelectItem value="medium">Medium (2.8" x 1.6")</SelectItem>
                     <SelectItem value="large">Large (3" x 1.8")</SelectItem>
+                    <SelectItem value="xlarge">Extra Large (3.5" x 2")</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -482,7 +513,12 @@ export default function PrintLabels() {
               <div className="pt-4 border-t">
                 <h4 className="text-sm font-medium mb-3">Label Preview</h4>
                 <div className={`border-2 border-dashed border-gray-300 p-2 rounded-lg text-center ${
-                  labelSize === 'small' ? 'h-28' : labelSize === 'large' ? 'h-36' : 'h-32'
+                  labelSize === 'mini' ? 'h-20' :
+                  labelSize === 'small' ? 'h-24' :
+                  labelSize === 'medium' ? 'h-28' :
+                  labelSize === 'large' ? 'h-32' :
+                  labelSize === 'xlarge' ? 'h-36' :
+                  'h-28'
                 }`}>
                   <div className="text-xs font-semibold">Sample Product</div>
                   <div className="text-xs text-gray-500">SKU: SP001</div>
@@ -693,6 +729,12 @@ export default function PrintLabels() {
                 <SelectValue placeholder="Select label size" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="mini">
+                  <div className="flex items-center justify-between w-full">
+                    <span>Mini Label</span>
+                    <span className="text-xs text-gray-500 ml-4">(1.5" x 1")</span>
+                  </div>
+                </SelectItem>
                 <SelectItem value="small">
                   <div className="flex items-center justify-between w-full">
                     <span>Small Label</span>
@@ -705,10 +747,22 @@ export default function PrintLabels() {
                     <span className="text-xs text-gray-500 ml-4">(2.5" x 1.5")</span>
                   </div>
                 </SelectItem>
+                <SelectItem value="medium">
+                  <div className="flex items-center justify-between w-full">
+                    <span>Medium Label</span>
+                    <span className="text-xs text-gray-500 ml-4">(2.8" x 1.6")</span>
+                  </div>
+                </SelectItem>
                 <SelectItem value="large">
                   <div className="flex items-center justify-between w-full">
                     <span>Large Label</span>
                     <span className="text-xs text-gray-500 ml-4">(3" x 1.8")</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="xlarge">
+                  <div className="flex items-center justify-between w-full">
+                    <span>Extra Large Label</span>
+                    <span className="text-xs text-gray-500 ml-4">(3.5" x 2")</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -841,8 +895,13 @@ export default function PrintLabels() {
               <div className="pt-2">
                 <Label className="text-sm font-medium mb-2 block">Live Preview</Label>
                 <div className={`border-2 border-dashed border-gray-300 p-2 rounded-lg text-center bg-white ${
-                  labelSize === 'small' ? 'h-24 text-xs' : labelSize === 'large' ? 'h-36 text-sm' : 'h-30 text-xs'
-                }`}>
+                  labelSize === 'mini' ? 'h-16 text-xs' :
+                  labelSize === 'small' ? 'h-20 text-xs' :
+                  labelSize === 'medium' ? 'h-24 text-sm' :
+                  labelSize === 'large' ? 'h-28 text-sm' :
+                  labelSize === 'xlarge' ? 'h-32 text-base' :
+                  'h-24 text-xs'
+                }`}></div>
                   <div className="font-semibold">{manualLabel.productName || 'Product Name'}</div>
                   {manualLabel.sku && <div className="text-gray-500">SKU: {manualLabel.sku}</div>}
                   <div className="flex justify-between text-xs mt-1">
