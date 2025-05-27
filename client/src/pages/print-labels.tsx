@@ -277,6 +277,7 @@ export default function PrintLabels() {
             labelSize === 'medium' ? '280px' :
             labelSize === 'large' ? '300px' :
             labelSize === 'xlarge' ? '350px' :
+            labelSize.startsWith('custom') ? `${labelSize.split('-')[1]?.split('x')[0] || '250'}px` :
             '250px'
           };
           height: ${
@@ -285,6 +286,7 @@ export default function PrintLabels() {
             labelSize === 'medium' ? '160px' :
             labelSize === 'large' ? '180px' :
             labelSize === 'xlarge' ? '200px' :
+            labelSize.startsWith('custom') ? `${labelSize.split('x')[1] || '150'}px` :
             '150px'
           };
           display: inline-block;
