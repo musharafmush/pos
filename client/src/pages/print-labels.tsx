@@ -814,8 +814,7 @@ export default function PrintLabels() {
                       placeholder="Width"
                       value={customLabelSize.width}
                       onChange={(e) =>
-                        set```python
-CustomLabelSize({ ...customLabelSize, width: e.target.value })
+                        setCustomLabelSize({ ...customLabelSize, width: e.target.value })
                       }
                     />
                     <Input
