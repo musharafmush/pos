@@ -155,6 +155,10 @@ export default function AddItemDashboard() {
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: number) => {
       const response = await apiRequest("DELETE", `/api/products/${productId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete product');
+      }
       return response;
     },
     onSuccess: () => {
@@ -164,10 +168,10 @@ export default function AddItemDashboard() {
         description: "Product deleted successfully",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to delete product",
+        description: error.message || "Failed to delete product",
         variant: "destructive",
       });
     },

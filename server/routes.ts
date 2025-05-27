@@ -474,13 +474,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/products/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteProduct(id);
       
-      if (!deleted) {
+      // Check if product exists first
+      const product = await storage.getProductById(id);
+      if (!product) {
         return res.status(404).json({ message: 'Product not found' });
       }
       
-      res.json({ message: 'Product deleted successfully' });
+      // Check for foreign key references before deletion
+      try {
+        const deleted = await storage.deleteProduct(id);
+        
+        if (!deleted) {
+          return res.status(404).json({ message: 'Product not found' });
+        }
+        
+        res.json({ message: 'Product deleted successfully' });
+      } catch (deleteError: any) {
+        if (deleteError.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+          return res.status(400).json({ 
+            message: 'Cannot delete product. This product is referenced in purchases, sales, or other records. Please remove all related records first.' 
+          });
+        }
+        throw deleteError;
+      }
     } catch (error) {
       console.error('Error deleting product:', error);
       res.status(500).json({ message: 'Internal server error' });
