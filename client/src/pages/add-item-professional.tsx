@@ -172,7 +172,7 @@ export default function AddItemProfessional() {
       eanCodeRequired: false,
       weightsPerUnit: "1",
       batchExpiryDetails: "Not Required",
-      itemPreparationsStatus: "Trade As Is",
+      itemPreparationsStatus: "Create",
       grindingCharge: "",
       weightInGms: "",
       bulkItemName: "",
@@ -1379,9 +1379,10 @@ export default function AddItemProfessional() {
                               <FormControl>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Trade As Is" />
+                                    <SelectValue placeholder="Create" />
                                   </SelectTrigger>
                                   <SelectContent className="max-h-80 overflow-y-auto">
+                                    <SelectItem value="Create">Create</SelectItem>
                                     <SelectItem value="Trade As Is">Trade As Is</SelectItem>
                                     <SelectItem value="Bulk">Bulk</SelectItem>
                                     <SelectItem value="Repackage">Repackage</SelectItem>
