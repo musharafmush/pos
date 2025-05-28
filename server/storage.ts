@@ -132,7 +132,7 @@ export const storage = {
       console.error('Error fetching product by ID:', error);
       throw error;
     }
-  },
+  }
 
   async getProductBySku(sku: string): Promise<Product | null> {
     try {
@@ -147,7 +147,7 @@ export const storage = {
       console.error('Error fetching product by SKU:', error);
       throw error;
     }
-  },
+  }
 
   async getProductByBarcode(barcode: string): Promise<Product | null> {
     return await db.query.products.findFirst({

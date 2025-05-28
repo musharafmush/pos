@@ -206,7 +206,7 @@ export default function AddItemProfessional() {
       cost: "",
       weight: "",
       weightUnit: "kg",
-      categoryId: 1,
+      categoryId: categories[0]?.id || 1,
       stockQuantity: "0",
       active: true,
     },
@@ -215,39 +215,20 @@ export default function AddItemProfessional() {
   // Create product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      console.log("Creating product with data:", data);
-      
-      // Validate required fields
-      if (!data.itemName || !data.itemCode || !data.price || !data.mrp) {
-        throw new Error("Please fill in all required fields");
-      }
-
-      const productData = {
+      const res = await apiRequest("POST", "/api/products", {
         name: data.itemName,
         sku: data.itemCode,
-        description: data.aboutProduct || "",
-        price: parseFloat(data.price) || 0,
-        mrp: parseFloat(data.mrp) || 0,
+        description: data.aboutProduct,
+        price: parseFloat(data.price),
+        mrp: parseFloat(data.mrp),
         cost: data.cost ? parseFloat(data.cost) : 0,
         weight: data.weight ? parseFloat(data.weight) : null,
-        weightUnit: data.weightUnit || "kg",
-        stockQuantity: parseInt(data.stockQuantity) || 0,
-        categoryId: data.categoryId || 1,
-        barcode: data.barcode || "",
-        active: data.active !== false,
-        // GST and tax information
-        hsnCode: data.hsnCode || "",
-        gstCode: data.gstCode || "",
-        cgstRate: data.cgstRate ? parseFloat(data.cgstRate) : null,
-        sgstRate: data.sgstRate ? parseFloat(data.sgstRate) : null,
-        igstRate: data.igstRate ? parseFloat(data.igstRate) : null,
-        cessRate: data.cessRate ? parseFloat(data.cessRate) : null,
-        taxCalculationMethod: data.taxCalculationMethod || ""
-      };
-
-      console.log("Sending product data:", productData);
-
-      const res = await apiRequest("POST", "/api/products", productData);
+        weightUnit: data.weightUnit,
+        stockQuantity: parseInt(data.stockQuantity),
+        categoryId: data.categoryId,
+        barcode: "", // Can be added later
+        active: data.active,
+      });
       return await res.json();
     },
     onSuccess: () => {
@@ -273,7 +254,7 @@ export default function AddItemProfessional() {
     { id: "tax-information", label: "Tax Information", icon: <DollarSignIcon className="w-4 h-4" /> },
     { id: "ean-code-barcode", label: "EAN Code/Barcode", icon: <BarChart3Icon className="w-4 h-4" /> },
     { id: "packing", label: "Packing", icon: <BoxIcon className="w-4 h-4" /> },
-    
+    { id: "item-properties", label: "Item Properties", icon: <SettingsIcon className="w-4 h-4" /> },
     { id: "pricing", label: "Pricing", icon: <DollarSignIcon className="w-4 h-4" /> },
     { id: "reorder-configurations", label: "Reorder Configurations", icon: <PackageIcon className="w-4 h-4" /> },
     { id: "purchase-order", label: "Purchase Order", icon: <ShoppingCartIcon className="w-4 h-4" /> },
@@ -978,114 +959,10 @@ export default function AddItemProfessional() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <DollarSignIcon className="w-5 h-5" />
-                        Pricing Configuration
+                        Pricing
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      {/* Core Pricing Information */}
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <h3 className="font-medium mb-4 text-green-800">Core Pricing (Required)</h3>
-                        <div className="grid grid-cols-3 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="price"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Selling Price * (₹)</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="mrp"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>MRP * (₹)</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="cost"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Cost Price (₹)</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Basic Product Information */}
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="font-medium mb-4 text-gray-800">Basic Product Information</h3>
-                        <div className="grid grid-cols-3 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="stockQuantity"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Stock Quantity *</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0" type="number" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="categoryId"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Category *</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {categories.map((category: any) => (
-                                        <SelectItem key={category.id} value={category.id.toString()}>
-                                          {category.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="weight"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Weight (Optional)</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0.00" type="number" step="0.001" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Pricing Configuration */}
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
@@ -1185,7 +1062,7 @@ export default function AddItemProfessional() {
                           />
                         </div>
                       </div>
-                    </CardContent>
+                      </CardContent>
                   </Card>
                 )}
 
@@ -1651,7 +1528,174 @@ export default function AddItemProfessional() {
                         </Card>
                       )}
 
-                      
+                      {/* Item Properties Section */}
+                      {currentSection === "item-properties" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <SettingsIcon className="w-5 h-5" />
+                              Item Properties
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                              <FormField
+                                control={form.control}
+                                name="decimalPoint"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Decimal Point</FormLabel>
+                                    <FormControl>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="0">0 (No decimals)</SelectItem>
+                                          <SelectItem value="1">1 decimal place</SelectItem>
+                                          <SelectItem value="2">2 decimal places</SelectItem>
+                                          <SelectItem value="3">3 decimal places</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="imageAlignment"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Image Alignment</FormLabel>
+                                    <FormControl>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select alignment" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="left">Left</SelectItem>
+                                          <SelectItem value="center">Center</SelectItem>
+                                          <SelectItem value="right">Right</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <FormField
+                              control={form.control}
+                              name="productType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Product Type *</FormLabel>
+                                  <FormControl>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="NA">N/A</SelectItem>
+                                        <SelectItem value="FMCG">FMCG</SelectItem>
+                                        <SelectItem value="Electronics">Electronics</SelectItem>
+                                        <SelectItem value="Clothing">Clothing</SelectItem>
+                                        <SelectItem value="Food">Food & Beverages</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Pricing Information</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                  control={form.control}
+                                  name="price"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Selling Price *</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="mrp"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>MRP *</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name="cost"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Cost Price</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="stockQuantity"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Stock Quantity *</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0" type="number" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="bg-purple-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Additional Properties</h3>
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Perishable Item</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Temperature Controlled</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Fragile Item</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Track Serial Numbers</span>
+                                  <Switch />
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
 
                       {/* Reorder Configurations Section */}
                       {currentSection === "reorder-configurations" && (
