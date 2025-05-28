@@ -602,17 +602,25 @@ export const storage = {
       // Insert purchase items using raw SQL
       const insertItem = sqlite.prepare(`
         INSERT INTO purchase_items (
-          purchase_id, product_id, quantity, unit_cost, subtotal, created_at
-        ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          purchase_id, product_id, quantity, unit_cost, cost, total, amount, subtotal, 
+          received_qty, free_qty, net_cost, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `);
       
       for (const item of items) {
+        const subtotal = item.quantity * item.unitCost;
         insertItem.run(
           purchaseId,
           item.productId,
           item.quantity,
           item.unitCost.toString(),
-          (item.quantity * item.unitCost).toString()
+          item.unitCost.toString(), // cost
+          subtotal.toString(), // total
+          subtotal.toString(), // amount
+          subtotal.toString(), // subtotal
+          item.quantity, // received_qty
+          0, // free_qty
+          item.unitCost.toString() // net_cost
         );
       }
       
