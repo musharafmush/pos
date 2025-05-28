@@ -654,10 +654,10 @@ export const storage = {
           );
 
           // Update product stock with received quantity
-          const receivedQty = item.receivedQty || 0;
-          if (receivedQty > 0 && item.productId) {
-            updateStock.run(receivedQty, item.productId);
-            console.log(`📦 Updated stock for product ${item.productId}: +${receivedQty}`);
+          const stockQty = item.receivedQty || 0;
+          if (stockQty > 0 && item.productId) {
+            updateStock.run(stockQty, item.productId);
+            console.log(`📦 Updated stock for product ${item.productId}: +${stockQty}`);
           }
         }
       }
