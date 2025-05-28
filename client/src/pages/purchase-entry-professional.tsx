@@ -484,6 +484,7 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`${itemPath}.productId`, modalData.productId);
       form.setValue(`${itemPath}.code`, modalData.code);
       form.setValue(`${itemPath}.description`, modalData.description);
+      form.setValue(`${itemPath}.quantity`, modalData.receivedQty); // Also update quantity
       form.setValue(`${itemPath}.receivedQty`, modalData.receivedQty);
       form.setValue(`${itemPath}.freeQty`, modalData.freeQty);
       form.setValue(`${itemPath}.unitCost`, modalData.unitCost);
@@ -498,8 +499,21 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`${itemPath}.location`, modalData.location);
       form.setValue(`${itemPath}.unit`, modalData.unit);
       
-      // Trigger form validation
+      // Recalculate net amount based on modal data
+      const subtotal = modalData.receivedQty * modalData.unitCost;
+      const taxableAmount = subtotal - modalData.discountAmount;
+      const tax = (taxableAmount * modalData.taxPercentage) / 100;
+      const calculatedNetAmount = taxableAmount + tax;
+      
+      form.setValue(`${itemPath}.netAmount`, calculatedNetAmount);
+      
+      // Trigger form validation and force re-render
       form.trigger(`items.${editingItemIndex}`);
+      
+      // Force update of the watched items to recalculate totals
+      setTimeout(() => {
+        form.trigger('items');
+      }, 100);
     }
   };
 
@@ -1843,6 +1857,19 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.receivedQty`, value);
+                      form.setValue(`items.${editingItemIndex}.quantity`, value);
+                      
+                      // Recalculate net amount in real-time
+                      const cost = modalData.unitCost;
+                      const discount = modalData.discountAmount;
+                      const taxPercent = modalData.taxPercentage;
+                      const subtotal = value * cost;
+                      const taxableAmount = subtotal - discount;
+                      const tax = (taxableAmount * taxPercent) / 100;
+                      const netAmount = taxableAmount + tax;
+                      
+                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                      form.trigger(`items.${editingItemIndex}`);
                     }
                   }}
                   placeholder="0"
@@ -1862,6 +1889,7 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.freeQty`, value);
+                      form.trigger(`items.${editingItemIndex}`);
                     }
                   }}
                   placeholder="0"
@@ -1882,6 +1910,18 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.unitCost`, value);
+                      
+                      // Recalculate net amount in real-time
+                      const qty = modalData.receivedQty;
+                      const discount = modalData.discountAmount;
+                      const taxPercent = modalData.taxPercentage;
+                      const subtotal = qty * value;
+                      const taxableAmount = subtotal - discount;
+                      const tax = (taxableAmount * taxPercent) / 100;
+                      const netAmount = taxableAmount + tax;
+                      
+                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                      form.trigger(`items.${editingItemIndex}`);
                     }
                   }}
                   placeholder="0"
@@ -1919,6 +1959,18 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
+                      
+                      // Recalculate net amount in real-time
+                      const qty = modalData.receivedQty;
+                      const cost = modalData.unitCost;
+                      const discount = modalData.discountAmount;
+                      const subtotal = qty * cost;
+                      const taxableAmount = subtotal - discount;
+                      const tax = (taxableAmount * value) / 100;
+                      const netAmount = taxableAmount + tax;
+                      
+                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                      form.trigger(`items.${editingItemIndex}`);
                     }
                   }}
                   placeholder="18"
@@ -1939,6 +1991,18 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.discountAmount`, value);
+                      
+                      // Recalculate net amount in real-time
+                      const qty = modalData.receivedQty;
+                      const cost = modalData.unitCost;
+                      const taxPercent = modalData.taxPercentage;
+                      const subtotal = qty * cost;
+                      const taxableAmount = subtotal - value;
+                      const tax = (taxableAmount * taxPercent) / 100;
+                      const netAmount = taxableAmount + tax;
+                      
+                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                      form.trigger(`items.${editingItemIndex}`);
                     }
                   }}
                   placeholder="0"
