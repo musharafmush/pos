@@ -1383,7 +1383,7 @@ export default function AddItemProfessional() {
                                     <PackageIcon className="w-5 h-5" />
                                     Repackaging Configuration
                                   </h4>
-
+                                  
                                   <div className="grid grid-cols-2 gap-6">
                                     <FormField
                                       control={form.control}
@@ -1620,9 +1620,10 @@ export default function AddItemProfessional() {
                                       </Select>
                                     </FormControl>
                                     <FormMessage />
-                                    </FormItem>
+                                  </FormItem>
                                 )}
                               />
+                              
                               <FormField
                                 control={form.control}
                                 name="imageAlignment"
