@@ -674,14 +674,21 @@ export default function PurchaseEntryProfessional() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const totalReceivedItems = form.getValues("items").reduce((total, item) => {
+        return total + (item.receivedQty || 0);
+      }, 0);
+
       toast({
-        title: isEditMode ? "Purchase order updated" : "Purchase order created",
+        title: isEditMode ? "Purchase order updated! 📦" : "Purchase order created! 📦",
         description: isEditMode
-          ? "The purchase order has been successfully updated."
-          : "The purchase order has been successfully created.",
+          ? `Purchase order updated successfully. Stock levels have been adjusted.`
+          : `Purchase order created successfully. ${totalReceivedItems} items added to inventory.`,
       });
+      
+      // Invalidate both purchases and products queries to refresh stock data
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
 
       if (!isEditMode) {
         // Reset form only for new purchases

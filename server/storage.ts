@@ -226,11 +226,11 @@ export const storage = {
         })
         .where(eq(products.id, id))
         .returning();
-      
+
       if (!updatedProduct) {
         throw new Error('Product not found');
       }
-      
+
       return updatedProduct;
     } catch (error) {
       console.error('Error updating product:', error);
@@ -455,7 +455,7 @@ export const storage = {
     try {
       // Calculate total
       const total = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-      
+
       const [newSale] = await db.insert(sales).values({
         userId,
         customerId: saleData.customerId || null,
@@ -507,7 +507,7 @@ export const storage = {
   async listSales(startDate?: Date, endDate?: Date, limit?: number, offset?: number, userId?: number, customerId?: number): Promise<Sale[]> {
     try {
       const conditions = [];
-      
+
       if (startDate) {
         conditions.push(gte(sales.createdAt, startDate));
       }
@@ -567,19 +567,19 @@ export const storage = {
   async createPurchase(
     userId: number,
     supplierId: number,
-    items: Array<{ productId: number; quantity: number; unitCost: number }>,
+    items: Array<{ productId: number; quantity: number; unitCost: number, receivedQty?: number }>,
     purchaseData: any
   ): Promise<Purchase> {
     try {
       // Import SQLite database directly for raw SQL operations
       const { sqlite } = await import('@db');
-      
+
       // Calculate total
       const total = items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
-      
+
       // Generate unique order number
       const orderNumber = `PO-${Date.now()}`;
-      
+
       // Insert purchase using raw SQL to avoid timestamp issues
       const insertPurchase = sqlite.prepare(`
         INSERT INTO purchases (
@@ -587,7 +587,7 @@ export const storage = {
           order_date, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
-      
+
       const result = insertPurchase.run(
         orderNumber,
         orderNumber,
@@ -596,41 +596,72 @@ export const storage = {
         total.toString(),
         purchaseData.status || 'pending'
       );
-      
+
       const purchaseId = result.lastInsertRowid;
-      
-      // Insert purchase items using raw SQL
-      const insertItem = sqlite.prepare(`
-        INSERT INTO purchase_items (
-          purchase_id, product_id, quantity, unit_cost, cost, total, amount, subtotal, 
-          received_qty, free_qty, net_cost, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `);
-      
-      for (const item of items) {
-        const subtotal = item.quantity * item.unitCost;
-        insertItem.run(
-          purchaseId,
-          item.productId,
-          item.quantity,
-          item.unitCost.toString(),
-          item.unitCost.toString(), // cost
-          subtotal.toString(), // total
-          subtotal.toString(), // amount
-          subtotal.toString(), // subtotal
-          item.quantity, // received_qty
-          0, // free_qty
-          item.unitCost.toString() // net_cost
-        );
+
+      // Insert purchase items and update stock
+      if (items && items.length > 0) {
+        const insertItem = sqlite.prepare(`
+          INSERT INTO purchase_items (
+            purchase_id, product_id, quantity, received_qty, free_qty, unit_cost, cost,
+            selling_price, mrp, hsn_code, tax_percentage, discount_amount, discount_percent,
+            expiry_date, batch_number, net_cost, roi_percent, gross_profit_percent,
+            net_amount, cash_percent, cash_amount, location, unit, subtotal
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        // Prepare statement to update product stock
+        const updateStock = sqlite.prepare(`
+          UPDATE products 
+          SET stockQuantity = stockQuantity + ? 
+          WHERE id = ?
+        `);
+
+        for (const item of items) {
+          // Insert purchase item
+          insertItem.run(
+            purchaseId,
+            item.productId,
+            item.quantity || 0,
+            item.receivedQty || 0,
+            item.freeQty || 0,
+            item.unitCost || 0,
+            item.cost || item.unitCost || 0,
+            item.sellingPrice || 0,
+            item.mrp || 0,
+            item.hsnCode || "",
+            item.taxPercentage || 0,
+            item.discountAmount || 0,
+            item.discountPercent || 0,
+            item.expiryDate || "",
+            item.batchNumber || "",
+            item.netCost || 0,
+            item.roiPercent || 0,
+            item.grossProfitPercent || 0,
+            item.netAmount || 0,
+            item.cashPercent || 0,
+            item.cashAmount || 0,
+            item.location || "",
+            item.unit || "PCS",
+            (item.receivedQty || 0) * (item.unitCost || 0)
+          );
+
+          // Update product stock with received quantity
+          const receivedQty = item.receivedQty || 0;
+          if (receivedQty > 0 && item.productId) {
+            updateStock.run(receivedQty, item.productId);
+            console.log(`📦 Updated stock for product ${item.productId}: +${receivedQty}`);
+          }
+        }
       }
-      
+
       // Fetch and return the created purchase
       const getPurchase = sqlite.prepare(`
         SELECT * FROM purchases WHERE id = ?
       `);
-      
+
       const newPurchase = getPurchase.get(purchaseId);
-      
+
       return {
         ...newPurchase,
         createdAt: new Date(newPurchase.created_at || newPurchase.createdAt),
@@ -642,24 +673,190 @@ export const storage = {
     }
   },
 
-  async getPurchaseById(id: number): Promise<Purchase | null> {
+  async getPurchaseById(id: number): Promise<any> {
     try {
-      return await db.query.purchases.findFirst({
-        where: eq(purchases.id, id),
-        with: {
-          items: {
-            with: {
-              product: true
-            }
-          },
-          supplier: true,
-          user: true
-        }
-      });
+      const { sqlite } = await import('@db');
+      const purchase = sqlite.prepare(`
+        SELECT * FROM purchases WHERE id = ?
+      `).get(id);
+
+      if (!purchase) {
+        return null;
+      }
+
+      // Get purchase items with product details - using correct table name
+      const items = sqlite.prepare(`
+        SELECT 
+          pi.*,
+          p.name as product_name,
+          p.sku as product_sku
+        FROM purchase_items pi
+        LEFT JOIN products p ON pi.product_id = p.id
+        WHERE pi.purchase_id = ?
+        ORDER BY pi.id
+      `).all(id);
+
+      return {
+        ...purchase,
+        items
+      };
     } catch (error) {
       console.error('Error fetching purchase by ID:', error);
       throw error;
     }
+  },
+
+  async updatePurchase(id: number, data: any): Promise<any> {
+    const { sqlite } = await import('@db');
+    return new Promise((resolve, reject) => {
+      const transaction = sqlite.transaction(() => {
+        try {
+          // Get existing items to calculate stock differences
+          const existingItems = sqlite.prepare(`
+            SELECT product_id, received_qty FROM purchase_items WHERE purchase_id = ?
+          `).all(id);
+
+          // Create a map of existing received quantities
+          const existingReceivedMap = new Map();
+          existingItems.forEach((item: any) => {
+            existingReceivedMap.set(item.product_id, item.received_qty || 0);
+          });
+
+          // Update purchase record
+          const updatePurchase = sqlite.prepare(`
+            UPDATE purchases SET
+              supplier_id = ?,
+              purchase_number = ?,
+              order_number = ?,
+              order_date = ?,
+              expected_date = ?,
+              due_date = ?,
+              total = ?,
+              status = ?,
+              payment_method = ?,
+              payment_type = ?,
+              freight_amount = ?,
+              surcharge_amount = ?,
+              packing_charge = ?,
+              other_charge = ?,
+              manual_discount_amount = ?,
+              invoice_no = ?,
+              invoice_date = ?,
+              invoice_amount = ?,
+              lr_number = ?,
+              remarks = ?
+            WHERE id = ?
+          `);
+
+          updatePurchase.run(
+            data.supplierId,
+            data.orderNumber,
+            data.orderNumber, // using orderNumber for both fields
+            data.orderDate,
+            data.expectedDate || data.orderDate,
+            data.expectedDate || data.orderDate,
+            data.items?.reduce((total: number, item: any) => total + ((item.receivedQty || 0) * (item.unitCost || 0)), 0) || 0,
+            data.status || 'Pending',
+            data.paymentMethod || 'Credit',
+            data.paymentMethod || 'Credit',
+            data.freightAmount || 0,
+            data.surchargeAmount || 0,
+            data.packingCharges || 0,
+            data.otherCharges || 0,
+            data.additionalDiscount || 0,
+            data.invoiceNumber || '',
+            data.invoiceDate || '',
+            data.invoiceAmount || 0,
+            data.lrNumber || '',
+            data.remarks || '',
+            id
+          );
+
+          // Delete existing items
+          sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?').run(id);
+
+          // Prepare statement to update product stock
+          const updateStock = sqlite.prepare(`
+            UPDATE products 
+            SET stockQuantity = stockQuantity + ? 
+            WHERE id = ?
+          `);
+
+          // Insert updated items and adjust stock
+          if (data.items && data.items.length > 0) {
+            const insertItem = sqlite.prepare(`
+              INSERT INTO purchase_items (
+                purchase_id, product_id, quantity, received_qty, free_qty, unit_cost, cost,
+                selling_price, mrp, hsn_code, tax_percentage, discount_amount, discount_percent,
+                expiry_date, batch_number, net_cost, roi_percent, gross_profit_percent,
+                net_amount, cash_percent, cash_amount, location, unit, subtotal
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+
+            for (const item of data.items) {
+              // Insert updated item
+              insertItem.run(
+                id,
+                item.productId,
+                item.quantity || 0,
+                item.receivedQty || 0,
+                item.freeQty || 0,
+                item.unitCost || 0,
+                item.cost || item.unitCost || 0,
+                item.sellingPrice || 0,
+                item.mrp || 0,
+                item.hsnCode || "",
+                item.taxPercentage || 0,
+                item.discountAmount || 0,
+                item.discountPercent || 0,
+                item.expiryDate || "",
+                item.batchNumber || "",
+                item.netCost || 0,
+                item.roiPercent || 0,
+                item.grossProfitPercent || 0,
+                item.netAmount || 0,
+                item.cashPercent || 0,
+                item.cashAmount || 0,
+                item.location || "",
+                item.unit || "PCS",
+                (item.receivedQty || 0) * (item.unitCost || 0)
+              );
+
+              // Calculate stock difference and update
+              const newReceivedQty = item.receivedQty || 0;
+              const oldReceivedQty = existingReceivedMap.get(item.productId) || 0;
+              const stockDifference = newReceivedQty - oldReceivedQty;
+
+              if (stockDifference !== 0 && item.productId) {
+                updateStock.run(stockDifference, item.productId);
+                console.log(`📦 Stock adjustment for product ${item.productId}: ${stockDifference > 0 ? '+' : ''}${stockDifference}`);
+              }
+            }
+          }
+
+          // Reverse stock for any items that were completely removed
+          existingItems.forEach((existingItem: any) => {
+            const stillExists = data.items?.some((newItem: any) => newItem.productId === existingItem.product_id);
+            if (!stillExists && existingItem.received_qty > 0) {
+              updateStock.run(-existingItem.received_qty, existingItem.product_id);
+              console.log(`📦 Reversed stock for removed product ${existingItem.product_id}: -${existingItem.received_qty}`);
+            }
+          });
+
+          return { id, ...data };
+        } catch (error) {
+          console.error('Error in update transaction:', error);
+          throw error;
+        }
+      });
+
+      try {
+        const result = transaction();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+    });
   },
 
   // Dashboard related operations
@@ -667,14 +864,14 @@ export const storage = {
     try {
       // Get total products
       const totalProducts = await db.query.products.findMany();
-      
+
       // Get total sales for today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todaySales = await db.query.sales.findMany({
         where: gte(sales.createdAt, today)
       });
-      
+
       // Get low stock products
       const lowStockProducts = await db.query.products.findMany({
         where: sql`${products.stockQuantity} <= ${products.alertThreshold}`,
@@ -704,31 +901,31 @@ export const storage = {
     try {
       const salesData = [];
       const today = new Date();
-      
+
       for (let i = days - 1; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
         date.setHours(0, 0, 0, 0);
-        
+
         const nextDate = new Date(date);
         nextDate.setDate(date.getDate() + 1);
-        
+
         const daySales = await db.query.sales.findMany({
           where: and(
             gte(sales.createdAt, date),
             lt(sales.createdAt, nextDate)
           )
         });
-        
+
         const revenue = daySales.reduce((sum, sale) => sum + parseFloat(sale.total || '0'), 0);
-        
+
         salesData.push({
           date: date.toISOString().split('T')[0],
           sales: daySales.length,
           revenue
         });
       }
-      
+
       return salesData;
     } catch (error) {
       console.error('Error fetching daily sales data:', error);
