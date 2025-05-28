@@ -756,14 +756,14 @@ export default function AddItemProfessional() {
                               <FormControl>
                                 <Select onValueChange={field.onChange} value={field.value || ""}>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="GST 5% - Essential goods (Food grains, medicines)" />
+                                    <SelectValue placeholder="Select GST rate" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="GST 0%">GST 0% - Nil Rate (Basic necessities)</SelectItem>
                                     <SelectItem value="GST 5%">GST 5% - Essential goods (Food grains, medicines)</SelectItem>
                                     <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
                                     <SelectItem value="GST 18%">GST 18% - Standard rate (Most goods & services)</SelectItem>
-                                    <SelectItem valueue="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
+                                    <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
                                     <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
                                     <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
                                   </SelectContent>
@@ -1271,81 +1271,21 @@ export default function AddItemProfessional() {
                                           <SelectValue placeholder="Repackage" />
                                         </SelectTrigger>
                                         <SelectContent className="max-h-80 overflow-y-auto">
-                                          <SelectItem value="Trade As Is">
-                                            <div className="flex flex-col">
-                                              <span>Trade As Is</span>
-                                              <span className="text-xs text-gray-500">Sold exactly as received, no modification</span>
-                                            </div>
-                                          </SelectItem>
+                                          <SelectItem value="Trade As Is">Trade As Is - Sold exactly as received, no modification</SelectItem>
                                           <SelectItem value="Create">Create</SelectItem>
-                                          <SelectItem value="Bulk">
-                                            <div className="flex flex-col">
-                                              <span>Bulk</span>
-                                              <span className="text-xs text-gray-500">Stored and sold in bulk quantities</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="Repackage">
-                                            <div className="flex flex-col">
-                                              <span>Repackage</span>
-                                              <span className="text-xs text-gray-500">Bought in bulk, repackaged into smaller units</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="Standard Preparation">
-                                            <div className="flex flex-col">
-                                              <span>Standard Preparation</span>
-                                              <span className="text-xs text-gray-500">Processed in a specific, consistent way</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="Customer Prepared">
-                                            <div className="flex flex-col">
-                                              <span>Customer Prepared</span>
-                                              <span className="text-xs text-gray-500">Prepped based on customer instructions</span>
-                                            </div>
-                                          </SelectItem>
+                                          <SelectItem value="Bulk">Bulk - Stored and sold in bulk quantities</SelectItem>
+                                          <SelectItem value="Repackage">Repackage - Bought in bulk, repackaged into smaller units</SelectItem>
+                                          <SelectItem value="Standard Preparation">Standard Preparation - Processed in a specific, consistent way</SelectItem>
+                                          <SelectItem value="Customer Prepared">Customer Prepared - Prepped based on customer instructions</SelectItem>
                                           <SelectItem value="Parent">Parent</SelectItem>
                                           <SelectItem value="Child">Child</SelectItem>
-                                          <SelectItem value="Assembly">
-                                            <div className="flex flex-col">
-                                              <span>Assembly</span>
-                                              <span className="text-xs text-gray-500">Assembled from multiple products</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="Kit">
-                                            <div className="flex flex-col">
-                                              <span>Kit</span>
-                                              <span className="text-xs text-gray-500">Grouped items or meal kits</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="Ingredients">
-                                            <div className="flex flex-col">
-                                              <span>Ingredients</span>
-                                              <span className="text-xs text-gray-500">Non-sellable items for preparation</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="Packing Material">
-                                            <div className="flex flex-col">
-                                              <span>Packing Material</span>
-                                              <span className="text-xs text-gray-500">Items used for packaging</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="Combo Pack">
-                                            <div className="flex flex-col">
-                                              <span>Combo Pack</span>
-                                              <span className="text-xs text-gray-500">Multiple items sold together</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="Open Item">
-                                            <div className="flex flex-col">
-                                              <span>Open Item</span>
-                                              <span className="text-xs text-gray-500">Sold without barcodes or fixed quantities</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="Weight to Piece">
-                                            <div className="flex flex-col">
-                                              <span>Weight to Piece</span>
-                                              <span className="text-xs text-gray-500">Converts weight-based to pieces</span>
-                                            </div>
-                                          </SelectItem>
+                                          <SelectItem value="Assembly">Assembly - Assembled from multiple products</SelectItem>
+                                          <SelectItem value="Kit">Kit - Grouped items or meal kits</SelectItem>
+                                          <SelectItem value="Ingredients">Ingredients - Non-sellable items for preparation</SelectItem>
+                                          <SelectItem value="Packing Material">Packing Material - Items used for packaging</SelectItem>
+                                          <SelectItem value="Combo Pack">Combo Pack - Multiple items sold together</SelectItem>
+                                          <SelectItem value="Open Item">Open Item - Sold without barcodes or fixed quantities</SelectItem>
+                                          <SelectItem value="Weight to Piece">Weight to Piece - Converts weight-based to pieces</SelectItem>
                                         </SelectContent>
                                       </Select>
                                     </FormControl>
@@ -1380,101 +1320,26 @@ export default function AddItemProfessional() {
                                                 )
                                                 .map((product: any) => (
                                                   <SelectItem key={product.id} value={product.name}>
-                                                    <div className="flex flex-col">
-                                                      <span className="font-medium">{product.name}</span>
-                                                      <span className="text-xs text-gray-500">
-                                                        SKU: {product.sku} • Stock: {product.stockQuantity}
-                                                      </span>
-                                                    </div>
+                                                    {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity}
                                                   </SelectItem>
                                                 ))
                                             ) : (
                                               <>
                                                 {/* Fallback Static Options */}
-                                                <SelectItem value="100G">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">100G</span>
-                                                    <span className="text-xs text-gray-500">Small quantity bulk item</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="AJINOMOTO BULK">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">AJINOMOTO BULK</span>
-                                                    <span className="text-xs text-gray-500">Seasoning bulk pack</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="ARUVADAM KURUVAI RICE BULK">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">ARUVADAM KURUVAI RICE BULK</span>
-                                                    <span className="text-xs text-gray-500">Premium rice variety</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="AVARE BULK">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">AVARE BULK</span>
-                                                    <span className="text-xs text-gray-500">Avare beans bulk</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="AVUL NICE BULK">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">AVUL NICE BULK</span>
-                                                    <span className="text-xs text-gray-500">Quality bulk item</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="AVUL ODD BULK">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">AVUL ODD BULK</span>
-                                                    <span className="text-xs text-gray-500">Mixed bulk item</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="Rice - 25kg Bag">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">Rice - 25kg Bag</span>
-                                                    <span className="text-xs text-gray-500">Standard rice bulk pack</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="Wheat - 50kg Bag">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">Wheat - 50kg Bag</span>
-                                                    <span className="text-xs text-gray-500">Wheat bulk pack</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="Dal - 25kg Bag">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">Dal - 25kg Bag</span>
-                                                    <span className="text-xs text-gray-500">Lentils bulk pack</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="Sugar - 50kg Bag">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">Sugar - 50kg Bag</span>
-                                                    <span className="text-xs text-gray-500">Sugar bulk pack</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="Oil - 15 Ltr Container">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">Oil - 15 Ltr Container</span>
-                                                    <span className="text-xs text-gray-500">Cooking oil bulk</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="Flour - 25kg Bag">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">Flour - 25kg Bag</span>
-                                                    <span className="text-xs text-gray-500">Wheat flour bulk</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="Spices - 10kg Container">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">Spices - 10kg Container</span>
-                                                    <span className="text-xs text-gray-500">Mixed spices bulk</span>
-                                                  </div>
-                                                </SelectItem>
-                                                <SelectItem value="Dry Fruits - 5kg Box">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">Dry Fruits - 5kg Box</span>
-                                                    <span className="text-xs text-gray-500">Premium dry fruits</span>
-                                                  </div>
-                                                </SelectItem>
+                                                <SelectItem value="100G">100G - Small quantity bulk item</SelectItem>
+                                                <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK - Seasoning bulk pack</SelectItem>
+                                                <SelectItem value="ARUVADAM KURUVAI RICE BULK">ARUVADAM KURUVAI RICE BULK - Premium rice variety</SelectItem>
+                                                <SelectItem value="AVARE BULK">AVARE BULK - Avare beans bulk</SelectItem>
+                                                <SelectItem value="AVUL NICE BULK">AVUL NICE BULK - Quality bulk item</SelectItem>
+                                                <SelectItem value="AVUL ODD BULK">AVUL ODD BULK - Mixed bulk item</SelectItem>
+                                                <SelectItem value="Rice - 25kg Bag">Rice - 25kg Bag - Standard rice bulk pack</SelectItem>
+                                                <SelectItem value="Wheat - 50kg Bag">Wheat - 50kg Bag - Wheat bulk pack</SelectItem>
+                                                <SelectItem value="Dal - 25kg Bag">Dal - 25kg Bag - Lentils bulk pack</SelectItem>
+                                                <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag - Sugar bulk pack</SelectItem>
+                                                <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container - Cooking oil bulk</SelectItem>
+                                                <SelectItem value="Flour - 25kg Bag">Flour - 25kg Bag - Wheat flour bulk</SelectItem>
+                                                <SelectItem value="Spices - 10kg Container">Spices - 10kg Container - Mixed spices bulk</SelectItem>
+                                                <SelectItem value="Dry Fruits - 5kg Box">Dry Fruits - 5kg Box - Premium dry fruits</SelectItem>
                                               </>
                                             )}
                                           </SelectContent>
