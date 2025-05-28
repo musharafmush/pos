@@ -8,9 +8,14 @@ if (!root) {
   console.error("Root element not found");
   document.body.innerHTML = '<div>Loading...</div>';
 } else {
-  createRoot(root).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+  try {
+    createRoot(root).render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  } catch (error) {
+    console.error("Error rendering app:", error);
+    document.body.innerHTML = '<div>Error loading application</div>';
+  }
 }

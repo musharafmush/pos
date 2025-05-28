@@ -978,10 +978,57 @@ export default function AddItemProfessional() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <DollarSignIcon className="w-5 h-5" />
-                        Pricing
+                        Pricing Configuration
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                      {/* Core Pricing Information */}
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <h3 className="font-medium mb-4 text-green-800">Core Pricing (Required)</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="price"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Selling Price * (₹)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="mrp"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>MRP * (₹)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="cost"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Cost Price (₹)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Pricing Configuration */}
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
@@ -1081,7 +1128,7 @@ export default function AddItemProfessional() {
                           />
                         </div>
                       </div>
-                      </CardContent>
+                    </CardContent>
                   </Card>
                 )}
 
@@ -1631,50 +1678,8 @@ export default function AddItemProfessional() {
                             />
 
                             <div className="bg-blue-50 p-4 rounded-lg">
-                              <h3 className="font-medium mb-3">Pricing Information</h3>
+                              <h3 className="font-medium mb-3">Inventory Information</h3>
                               <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                  control={form.control}
-                                  name="price"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Selling Price *</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="mrp"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>MRP *</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-4 mt-4">
-                                <FormField
-                                  control={form.control}
-                                  name="cost"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Cost Price</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
                                 <FormField
                                   control={form.control}
                                   name="stockQuantity"
@@ -1683,6 +1688,30 @@ export default function AddItemProfessional() {
                                       <FormLabel>Stock Quantity *</FormLabel>
                                       <FormControl>
                                         <Input {...field} placeholder="0" type="number" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="categoryId"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Category *</FormLabel>
+                                      <FormControl>
+                                        <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select category" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {categories.map((category: any) => (
+                                              <SelectItem key={category.id} value={category.id.toString()}>
+                                                {category.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
@@ -1706,21 +1735,20 @@ export default function AddItemProfessional() {
                                 />
                                 <FormField
                                   control={form.control}
-                                  name="categoryId"
+                                  name="weightUnit"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Category *</FormLabel>
+                                      <FormLabel>Weight Unit</FormLabel>
                                       <FormControl>
-                                        <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                           <SelectTrigger>
-                                            <SelectValue placeholder="Select category" />
+                                            <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            {categories.map((category: any) => (
-                                              <SelectItem key={category.id} value={category.id.toString()}>
-                                                {category.name}
-                                              </SelectItem>
-                                            ))}
+                                            <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                                            <SelectItem value="g">Grams (g)</SelectItem>
+                                            <SelectItem value="ltr">Liters (ltr)</SelectItem>
+                                            <SelectItem value="ml">Milliliters (ml)</SelectItem>
                                           </SelectContent>
                                         </Select>
                                       </FormControl>
