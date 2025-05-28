@@ -217,4 +217,68 @@ export const storage = {
     }
   },
 
-  async updateProduct(id: number, data: Partial<InsertProduct>): Promise<Product> {
+  async updateProduct(id: number, data: Partial<any>): Promise<Product> {
+    try {
+      const [updatedProduct] = await db.update(products)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(products.id, id))
+        .returning();
+      
+      if (!updatedProduct) {
+        throw new Error('Product not found');
+      }
+      
+      return updatedProduct;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
+  },
+
+  async deleteProduct(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(products).where(eq(products.id, id)).returning({ id: products.id });
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
+  },
+
+  async listProducts(limit?: number, offset?: number): Promise<Product[]> {
+    try {
+      return await db.query.products.findMany({
+        limit: limit || 50,
+        offset: offset || 0,
+        orderBy: desc(products.createdAt),
+        with: {
+          category: true
+        }
+      });
+    } catch (error) {
+      console.error('Error listing products:', error);
+      throw error;
+    }
+  },
+
+  async searchProducts(query: string): Promise<Product[]> {
+    try {
+      return await db.query.products.findMany({
+        where: or(
+          like(products.name, `%${query}%`),
+          like(products.sku, `%${query}%`),
+          like(products.barcode, `%${query}%`)
+        ),
+        with: {
+          category: true
+        }
+      });
+    } catch (error) {
+      console.error('Error searching products:', error);
+      throw error;
+    }
+  }
+};
