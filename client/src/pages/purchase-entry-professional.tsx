@@ -17,7 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Save, Printer, ArrowLeft, Trash2, Package } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2 } from "lucide-react";
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
@@ -109,6 +110,28 @@ export default function PurchaseEntryProfessional() {
     totalTax: 0,
     freightCharges: 0,
     grandTotal: 0
+  });
+
+  // Modal state for Add Item
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [modalData, setModalData] = useState({
+    productId: 0,
+    code: "",
+    description: "",
+    receivedQty: 0,
+    freeQty: 0,
+    unitCost: 0,
+    hsnCode: "",
+    taxPercentage: 18,
+    discountAmount: 0,
+    expiryDate: "",
+    batchNumber: "",
+    sellingPrice: 0,
+    mrp: 0,
+    netAmount: 0,
+    location: "",
+    unit: "PCS",
   });
 
   // Get current date for defaults
@@ -453,41 +476,153 @@ export default function PurchaseEntryProfessional() {
     }
   };
 
+  // Modal synchronization functions
+  const syncModalToTable = () => {
+    if (editingItemIndex !== null) {
+      // Update the form data with modal data
+      const itemPath = `items.${editingItemIndex}` as const;
+      form.setValue(`${itemPath}.productId`, modalData.productId);
+      form.setValue(`${itemPath}.code`, modalData.code);
+      form.setValue(`${itemPath}.description`, modalData.description);
+      form.setValue(`${itemPath}.receivedQty`, modalData.receivedQty);
+      form.setValue(`${itemPath}.freeQty`, modalData.freeQty);
+      form.setValue(`${itemPath}.unitCost`, modalData.unitCost);
+      form.setValue(`${itemPath}.hsnCode`, modalData.hsnCode);
+      form.setValue(`${itemPath}.taxPercentage`, modalData.taxPercentage);
+      form.setValue(`${itemPath}.discountAmount`, modalData.discountAmount);
+      form.setValue(`${itemPath}.expiryDate`, modalData.expiryDate);
+      form.setValue(`${itemPath}.batchNumber`, modalData.batchNumber);
+      form.setValue(`${itemPath}.sellingPrice`, modalData.sellingPrice);
+      form.setValue(`${itemPath}.mrp`, modalData.mrp);
+      form.setValue(`${itemPath}.netAmount`, modalData.netAmount);
+      form.setValue(`${itemPath}.location`, modalData.location);
+      form.setValue(`${itemPath}.unit`, modalData.unit);
+      
+      // Trigger form validation
+      form.trigger(`items.${editingItemIndex}`);
+    }
+  };
+
+  const syncTableToModal = (index: number) => {
+    if (editingItemIndex === index) {
+      const item = form.getValues(`items.${index}`);
+      setModalData({
+        productId: item.productId || 0,
+        code: item.code || "",
+        description: item.description || "",
+        receivedQty: item.receivedQty || 0,
+        freeQty: item.freeQty || 0,
+        unitCost: item.unitCost || 0,
+        hsnCode: item.hsnCode || "",
+        taxPercentage: item.taxPercentage || 18,
+        discountAmount: item.discountAmount || 0,
+        expiryDate: item.expiryDate || "",
+        batchNumber: item.batchNumber || "",
+        sellingPrice: item.sellingPrice || 0,
+        mrp: item.mrp || 0,
+        netAmount: item.netAmount || 0,
+        location: item.location || "",
+        unit: item.unit || "PCS",
+      });
+    }
+  };
+
+  const openAddItemModal = (index?: number) => {
+    if (index !== undefined) {
+      // Edit existing item
+      setEditingItemIndex(index);
+      const item = form.getValues(`items.${index}`);
+      setModalData({
+        productId: item.productId || 0,
+        code: item.code || "",
+        description: item.description || "",
+        receivedQty: item.receivedQty || 0,
+        freeQty: item.freeQty || 0,
+        unitCost: item.unitCost || 0,
+        hsnCode: item.hsnCode || "",
+        taxPercentage: item.taxPercentage || 18,
+        discountAmount: item.discountAmount || 0,
+        expiryDate: item.expiryDate || "",
+        batchNumber: item.batchNumber || "",
+        sellingPrice: item.sellingPrice || 0,
+        mrp: item.mrp || 0,
+        netAmount: item.netAmount || 0,
+        location: item.location || "",
+        unit: item.unit || "PCS",
+      });
+    } else {
+      // Add new item
+      setEditingItemIndex(null);
+      const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
+      setModalData({
+        productId: 0,
+        code: "",
+        description: "",
+        receivedQty: 1,
+        freeQty: 0,
+        unitCost: 0,
+        hsnCode: "",
+        taxPercentage: 18,
+        discountAmount: 0,
+        expiryDate: "",
+        batchNumber: newBatchNumber,
+        sellingPrice: 0,
+        mrp: 0,
+        netAmount: 0,
+        location: "",
+        unit: "PCS",
+      });
+    }
+    setIsAddItemModalOpen(true);
+  };
+
+  const saveModalItem = () => {
+    if (editingItemIndex !== null) {
+      // Update existing item
+      syncModalToTable();
+      toast({
+        title: "Item Updated! ✨",
+        description: "Line item updated successfully with new data.",
+      });
+    } else {
+      // Add new item
+      append({
+        productId: modalData.productId,
+        code: modalData.code,
+        description: modalData.description,
+        quantity: modalData.receivedQty,
+        receivedQty: modalData.receivedQty,
+        freeQty: modalData.freeQty,
+        unitCost: modalData.unitCost,
+        sellingPrice: modalData.sellingPrice,
+        mrp: modalData.mrp,
+        hsnCode: modalData.hsnCode,
+        taxPercentage: modalData.taxPercentage,
+        discountAmount: modalData.discountAmount,
+        discountPercent: 0,
+        expiryDate: modalData.expiryDate,
+        batchNumber: modalData.batchNumber,
+        netCost: 0,
+        roiPercent: 0,
+        grossProfitPercent: 0,
+        netAmount: modalData.netAmount,
+        cashPercent: 0,
+        cashAmount: 0,
+        location: modalData.location,
+        unit: modalData.unit,
+      });
+      toast({
+        title: "New Item Added! ✨",
+        description: `Line item ${fields.length + 1} added successfully.`,
+      });
+    }
+    setIsAddItemModalOpen(false);
+    setEditingItemIndex(null);
+  };
+
   // Enhanced dynamic add item function
   const addItem = () => {
-    // Generate unique batch number for new items
-    const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
-
-    append({
-      productId: 0,
-      code: "",
-      description: "",
-      quantity: 1,
-      receivedQty: 0,
-      freeQty: 0,
-      unitCost: 0,
-      sellingPrice: 0,
-      mrp: 0,
-      hsnCode: "",
-      taxPercentage: 18,
-      discountAmount: 0,
-      discountPercent: 0,
-      expiryDate: "",
-      batchNumber: newBatchNumber,
-      netCost: 0,
-      roiPercent: 0,
-      grossProfitPercent: 0,
-      netAmount: 0,
-      cashPercent: 0,
-      cashAmount: 0,
-      location: "",
-      unit: "PCS",
-    });
-
-    toast({
-      title: "New Item Added! ✨",
-      description: `Line item ${fields.length + 1} added successfully. Ready for product selection.`,
-    });
+    openAddItemModal();
   };
 
   // Enhanced remove item function with better validation
@@ -1090,10 +1225,12 @@ export default function PurchaseEntryProfessional() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>Line Items</CardTitle>
-                    <Button onClick={addItem} size="sm" variant="outline">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Item
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button onClick={addItem} size="sm" variant="outline">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Item
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1159,6 +1296,10 @@ export default function PurchaseEntryProfessional() {
                                     {...form.register(`items.${index}.code`)}
                                     className="w-full text-xs"
                                     placeholder="Code"
+                                    onChange={(e) => {
+                                      form.setValue(`items.${index}.code`, e.target.value);
+                                      syncTableToModal(index);
+                                    }}
                                   />
                                 </TableCell>
 
@@ -1195,6 +1336,10 @@ export default function PurchaseEntryProfessional() {
                                     {...form.register(`items.${index}.description`)}
                                     className="w-full text-xs"
                                     placeholder="Description"
+                                    onChange={(e) => {
+                                      form.setValue(`items.${index}.description`, e.target.value);
+                                      syncTableToModal(index);
+                                    }}
                                   />
                                 </TableCell>
 
@@ -1450,7 +1595,17 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
 
                                 <TableCell className="px-2 py-3">
-                                  <div className="flex items-center justify-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => openAddItemModal(index)}
+                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 h-8 w-8 rounded-full"
+                                      title="Edit item"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
                                     {fields.length > 1 ? (
                                       <Button
                                         type="button"
@@ -1591,6 +1746,270 @@ export default function PurchaseEntryProfessional() {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Add Item Modal */}
+        <Dialog open={isAddItemModalOpen} onOpenChange={setIsAddItemModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingItemIndex !== null ? 'Edit Item' : 'Add New Item'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-product">Product Name *</Label>
+                <Select 
+                  onValueChange={(value) => {
+                    const productId = parseInt(value);
+                    const product = products.find(p => p.id === productId);
+                    if (product) {
+                      const newModalData = {
+                        ...modalData,
+                        productId,
+                        code: product.sku || "",
+                        description: product.description || product.name,
+                        unitCost: parseFloat(product.price) || 0,
+                        mrp: parseFloat(product.price) * 1.2 || 0,
+                        sellingPrice: parseFloat(product.price) || 0,
+                        hsnCode: product.hsnCode || "",
+                      };
+                      setModalData(newModalData);
+                      if (editingItemIndex !== null) {
+                        syncModalToTable();
+                      }
+                    }
+                  }}
+                  value={modalData.productId?.toString() || ""}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id.toString()}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{product.name}</span>
+                          <span className="text-xs text-gray-500">{product.sku}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-code">Code</Label>
+                <Input
+                  id="modal-code"
+                  value={modalData.code}
+                  onChange={(e) => {
+                    const newModalData = { ...modalData, code: e.target.value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.code`, e.target.value);
+                    }
+                  }}
+                  placeholder="Product code"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-description">Description</Label>
+                <Input
+                  id="modal-description"
+                  value={modalData.description}
+                  onChange={(e) => {
+                    const newModalData = { ...modalData, description: e.target.value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.description`, e.target.value);
+                    }
+                  }}
+                  placeholder="Product description"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-receivedQty">Received Qty *</Label>
+                <Input
+                  id="modal-receivedQty"
+                  type="number"
+                  min="0"
+                  value={modalData.receivedQty}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, receivedQty: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.receivedQty`, value);
+                    }
+                  }}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-freeQty">Free Qty</Label>
+                <Input
+                  id="modal-freeQty"
+                  type="number"
+                  min="0"
+                  value={modalData.freeQty}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, freeQty: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.freeQty`, value);
+                    }
+                  }}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-cost">Cost *</Label>
+                <Input
+                  id="modal-cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={modalData.unitCost}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, unitCost: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.unitCost`, value);
+                    }
+                  }}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-hsnCode">HSN Code</Label>
+                <Input
+                  id="modal-hsnCode"
+                  value={modalData.hsnCode}
+                  onChange={(e) => {
+                    const newModalData = { ...modalData, hsnCode: e.target.value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.hsnCode`, e.target.value);
+                    }
+                  }}
+                  placeholder="HSN Code"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-taxPercentage">Tax %</Label>
+                <Input
+                  id="modal-taxPercentage"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={modalData.taxPercentage}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, taxPercentage: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
+                    }
+                  }}
+                  placeholder="18"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-discountAmount">Discount Amount</Label>
+                <Input
+                  id="modal-discountAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={modalData.discountAmount}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, discountAmount: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.discountAmount`, value);
+                    }
+                  }}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-expiryDate">Exp. Date</Label>
+                <Input
+                  id="modal-expiryDate"
+                  type="date"
+                  value={modalData.expiryDate}
+                  onChange={(e) => {
+                    const newModalData = { ...modalData, expiryDate: e.target.value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.expiryDate`, e.target.value);
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-batchNumber">Batch Number</Label>
+                <Input
+                  id="modal-batchNumber"
+                  value={modalData.batchNumber}
+                  onChange={(e) => {
+                    const newModalData = { ...modalData, batchNumber: e.target.value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.batchNumber`, e.target.value);
+                    }
+                  }}
+                  placeholder="Batch number"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-location">Location</Label>
+                <Input
+                  id="modal-location"
+                  value={modalData.location}
+                  onChange={(e) => {
+                    const newModalData = { ...modalData, location: e.target.value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.location`, e.target.value);
+                    }
+                  }}
+                  placeholder="Storage location"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsAddItemModalOpen(false);
+                  setEditingItemIndex(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={saveModalItem}>
+                {editingItemIndex !== null ? 'Update Item' : 'Add Item'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
