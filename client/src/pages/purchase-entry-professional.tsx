@@ -1267,6 +1267,7 @@ export default function PurchaseEntryProfessional() {
                             <TableHead className="w-32 font-bold border-r px-2 py-3">Code</TableHead>
                             <TableHead className="min-w-[200px] font-bold border-r px-2 py-3">Product Name</TableHead>
                             <TableHead className="min-w-[150px] font-bold border-r px-2 py-3">Description</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Previous Stock</TableHead>
                             <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Received Qty</TableHead>
                             <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Free Qty</TableHead>
                             <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Cost</TableHead>
@@ -1390,6 +1391,22 @@ export default function PurchaseEntryProfessional() {
                                       syncTableToModal(index);
                                     }}
                                   />
+                                </TableCell>
+
+                                <TableCell className="border-r px-2 py-3">
+                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                                    {selectedProduct ? (
+                                      <span className={`font-medium ${
+                                        (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
+                                          ? 'text-red-600' 
+                                          : 'text-green-600'
+                                      }`}>
+                                        {selectedProduct.stockQuantity || 0}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </div>
                                 </TableCell>
 
                                 <TableCell className="border-r px-2 py-3">
