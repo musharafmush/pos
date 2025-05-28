@@ -622,7 +622,7 @@ export const storage = {
           const receivedQty = item.receivedQty || quantity;
           const unitCost = item.unitCost || 0;
           const total = receivedQty * unitCost;
-          
+
           // Insert purchase item
           insertItem.run(
             purchaseId,

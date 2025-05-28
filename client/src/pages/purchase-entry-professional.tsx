@@ -257,7 +257,7 @@ export default function PurchaseEntryProfessional() {
   useEffect(() => {
     if (existingPurchase && isEditMode) {
       console.log('Loading existing purchase data:', existingPurchase);
-      
+
       // Format dates properly - handle different possible date field names
       const orderDate = existingPurchase.poDate || existingPurchase.orderDate || existingPurchase.order_date
         ? (existingPurchase.poDate || existingPurchase.orderDate || existingPurchase.order_date).split('T')[0]
@@ -271,7 +271,7 @@ export default function PurchaseEntryProfessional() {
         ? existingPurchase.items.map((item: any) => {
             // Find the product details to get name and sku
             const product = products.find(p => p.id === (item.productId || item.product_id));
-            
+
             return {
               productId: item.productId || item.product_id || 0,
               code: item.code || product?.sku || "",
@@ -498,18 +498,18 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`${itemPath}.netAmount`, modalData.netAmount);
       form.setValue(`${itemPath}.location`, modalData.location);
       form.setValue(`${itemPath}.unit`, modalData.unit);
-      
+
       // Recalculate net amount based on modal data
       const subtotal = modalData.receivedQty * modalData.unitCost;
       const taxableAmount = subtotal - modalData.discountAmount;
       const tax = (taxableAmount * modalData.taxPercentage) / 100;
       const calculatedNetAmount = taxableAmount + tax;
-      
+
       form.setValue(`${itemPath}.netAmount`, calculatedNetAmount);
-      
+
       // Trigger form validation and force re-render
       form.trigger(`items.${editingItemIndex}`);
-      
+
       // Force update of the watched items to recalculate totals
       setTimeout(() => {
         form.trigger('items');
@@ -662,9 +662,9 @@ export default function PurchaseEntryProfessional() {
       let response;
       const url = isEditMode ? `/api/purchases/${editId}` : "/api/purchases";
       const method = isEditMode ? "PUT" : "POST";
-      
+
       console.log(`${method} ${url} with data:`, data);
-      
+
       response = await apiRequest(method, url, data);
 
       if (!response.ok) {
@@ -685,7 +685,7 @@ export default function PurchaseEntryProfessional() {
           ? `Purchase order updated successfully. Stock levels have been adjusted.`
           : `Purchase order created successfully. ${totalReceivedItems} items added to inventory.`,
       });
-      
+
       // Invalidate both purchases and products queries to refresh stock data
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -799,9 +799,9 @@ export default function PurchaseEntryProfessional() {
 
       // Calculate total purchase value
       const totalValue = validItems.reduce((total, item) => {
-        const qty = Number(item.receivedQty) || Number(item.quantity) || 0;
+        const receivedQty = Number(item.receivedQty) || Number(item.quantity) || 0;
         const cost = Number(item.unitCost) || 0;
-        return total + (qty * cost);
+        return total + (receivedQty * cost);
       }, 0);
 
       // Create purchase data with proper structure for backend compatibility
@@ -833,7 +833,7 @@ export default function PurchaseEntryProfessional() {
         items: validItems.map(item => {
           // Use receivedQty if available, otherwise fall back to quantity, default to 1 for new items
           const quantity = Number(item.receivedQty) || Number(item.quantity) || (isEditMode ? 0 : 1);
-          
+
           return {
             productId: Number(item.productId),
             quantity: quantity,
@@ -1373,19 +1373,19 @@ export default function PurchaseEntryProfessional() {
                                       onChange: (e) => {
                                         const value = parseFloat(e.target.value) || 0;
                                         form.setValue(`items.${index}.receivedQty`, value);
-                                        
+
                                         // Recalculate net amount when quantity changes
                                         const unitCost = form.getValues(`items.${index}.unitCost`) || 0;
                                         const discount = form.getValues(`items.${index}.discountAmount`) || 0;
                                         const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
-                                        
+
                                         const subtotal = value * unitCost;
                                         const taxableAmount = subtotal - discount;
                                         const tax = (taxableAmount * taxPercentage) / 100;
                                         const netAmount = taxableAmount + tax;
-                                        
+
                                         form.setValue(`items.${index}.netAmount`, netAmount);
-                                        
+
                                         // Trigger form validation
                                         setTimeout(() => form.trigger(`items.${index}`), 50);
                                       }
@@ -1429,7 +1429,7 @@ export default function PurchaseEntryProfessional() {
                                           const netAmount = taxableAmount + tax;
 
                                           form.setValue(`items.${index}.netAmount`, netAmount);
-                                          
+
                                           // Trigger form validation
                                           setTimeout(() => form.trigger(`items.${index}`), 50);
                                         }
@@ -1603,7 +1603,7 @@ export default function PurchaseEntryProfessional() {
                                   <Select onValueChange={(value) => form.setValue(`items.${index}.unit`, value)} defaultValue="PCS">
                                     <SelectTrigger className="w-full text-xs">
                                       <SelectValue placeholder="Unit" />
-                                    </SelectTrigger>
+                                    </SelectTrigger>```text
                                     <SelectContent>
                                       <SelectItem value="PCS">PCS</SelectItem>
                                       <SelectItem value="KG">KG</SelectItem>
@@ -1776,7 +1776,7 @@ export default function PurchaseEntryProfessional() {
                 {editingItemIndex !== null ? 'Edit Item' : 'Add New Item'}
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="modal-product">Product Name *</Label>
@@ -1865,7 +1865,7 @@ export default function PurchaseEntryProfessional() {
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.receivedQty`, value);
                       form.setValue(`items.${editingItemIndex}.quantity`, value);
-                      
+
                       // Recalculate net amount in real-time
                       const cost = modalData.unitCost;
                       const discount = modalData.discountAmount;
@@ -1874,7 +1874,7 @@ export default function PurchaseEntryProfessional() {
                       const taxableAmount = subtotal - discount;
                       const tax = (taxableAmount * taxPercent) / 100;
                       const netAmount = taxableAmount + tax;
-                      
+
                       form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
                       form.trigger(`items.${editingItemIndex}`);
                     }
@@ -1917,7 +1917,7 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.unitCost`, value);
-                      
+
                       // Recalculate net amount in real-time
                       const qty = modalData.receivedQty;
                       const discount = modalData.discountAmount;
@@ -1926,7 +1926,7 @@ export default function PurchaseEntryProfessional() {
                       const taxableAmount = subtotal - discount;
                       const tax = (taxableAmount * taxPercent) / 100;
                       const netAmount = taxableAmount + tax;
-                      
+
                       form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
                       form.trigger(`items.${editingItemIndex}`);
                     }
@@ -1966,7 +1966,7 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
-                      
+
                       // Recalculate net amount in real-time
                       const qty = modalData.receivedQty;
                       const cost = modalData.unitCost;
@@ -1975,7 +1975,7 @@ export default function PurchaseEntryProfessional() {
                       const taxableAmount = subtotal - discount;
                       const tax = (taxableAmount * value) / 100;
                       const netAmount = taxableAmount + tax;
-                      
+
                       form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
                       form.trigger(`items.${editingItemIndex}`);
                     }
@@ -1998,7 +1998,7 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.discountAmount`, value);
-                      
+
                       // Recalculate net amount in real-time
                       const qty = modalData.receivedQty;
                       const cost = modalData.unitCost;
@@ -2007,7 +2007,7 @@ export default function PurchaseEntryProfessional() {
                       const taxableAmount = subtotal - value;
                       const tax = (taxableAmount * taxPercent) / 100;
                       const netAmount = taxableAmount + tax;
-                      
+
                       form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
                       form.trigger(`items.${editingItemIndex}`);
                     }
