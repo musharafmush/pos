@@ -685,7 +685,6 @@ export default function AddItemProfessional() {
                                       <SelectValue placeholder="Or select from common HSN codes" />
                                     </SelectTrigger>
                                   <SelectContent className="max-h-80 overflow-y-auto">
-                                    {/* Food & Beverages - 0% & 5% GST */}
                                     <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
                                     <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
                                     <SelectItem value="17019900">17019900 - Sugar (5%)</SelectItem>
@@ -694,43 +693,29 @@ export default function AddItemProfessional() {
                                     <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
                                     <SelectItem value="19059090">19059090 - Biscuits (18%)</SelectItem>
                                     <SelectItem value="21069099">21069099 - Spices & Condiments (5%)</SelectItem>
-
-                                    {/* Textiles & Clothing - 5% & 12% GST */}
                                     <SelectItem value="62019000">62019000 - Men's Garments (12%)</SelectItem>
                                     <SelectItem value="62029000">62029000 - Women's Garments (12%)</SelectItem>
                                     <SelectItem value="63010000">63010000 - Bed Sheets (5%)</SelectItem>
                                     <SelectItem value="64029100">64029100 - Footwear (18%)</SelectItem>
-
-                                    {/* Electronics - 12% & 18% GST */}
                                     <SelectItem value="85171200">85171200 - Mobile Phones (12%)</SelectItem>
                                     <SelectItem value="84713000">84713000 - Laptops (18%)</SelectItem>
                                     <SelectItem value="85285200">85285200 - LED TV (18%)</SelectItem>
                                     <SelectItem value="85287100">85287100 - Set Top Box (18%)</SelectItem>
                                     <SelectItem value="85044090">85044090 - Mobile Charger (18%)</SelectItem>
-
-                                    {/* Personal Care - 18% GST */}
                                     <SelectItem value="33061000">33061000 - Toothpaste (18%)</SelectItem>
                                     <SelectItem value="34012000">34012000 - Soap (18%)</SelectItem>
                                     <SelectItem value="33051000">33051000 - Shampoo (18%)</SelectItem>
                                     <SelectItem value="96031000">96031000 - Toothbrush (18%)</SelectItem>
-
-                                    {/* Beverages & Luxury - 28% GST */}
                                     <SelectItem value="22021000">22021000 - Soft Drinks (28%)</SelectItem>
                                     <SelectItem value="24021000">24021000 - Cigarettes (28%)</SelectItem>
                                     <SelectItem value="22030000">22030000 - Beer (28%)</SelectItem>
                                     <SelectItem value="22084000">22084000 - Wine (28%)</SelectItem>
-
-                                    {/* Automobiles - 28% GST */}
                                     <SelectItem value="87032390">87032390 - Passenger Cars (28%)</SelectItem>
                                     <SelectItem value="87111000">87111000 - Motorcycles (28%)</SelectItem>
                                     <SelectItem value="87120000">87120000 - Bicycles (12%)</SelectItem>
-
-                                    {/* Medicines & Healthcare - 5% & 12% GST */}
                                     <SelectItem value="30049099">30049099 - Medicines (5%)</SelectItem>
                                     <SelectItem value="90183900">90183900 - Medical Equipment (12%)</SelectItem>
                                     <SelectItem value="30059090">30059090 - Health Supplements (18%)</SelectItem>
-
-                                    {/* Books & Stationery - 5% & 12% GST */}
                                     <SelectItem value="49019900">49019900 - Books (5%)</SelectItem>
                                     <SelectItem value="48201000">48201000 - Notebooks (12%)</SelectItem>
                                     <SelectItem value="96085000">96085000 - Pens (18%)</SelectItem>
@@ -747,25 +732,20 @@ export default function AddItemProfessional() {
                           name="gstCode"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="flex items-center gap-2">
-                                GST Code *
-                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                                  Auto-updated from HSN
-                                </span>
-                              </FormLabel>
+                              <FormLabel>GST Code * (Auto-updated from HSN)</FormLabel>
                               <FormControl>
                                 <Select onValueChange={field.onChange} value={field.value || ""}>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select GST rate" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="GST 0%">GST 0% - Nil Rate (Basic necessities)</SelectItem>
-                                    <SelectItem value="GST 5%">GST 5% - Essential goods (Food grains, medicines)</SelectItem>
-                                    <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
-                                    <SelectItem value="GST 18%">GST 18% - Standard rate (Most goods & services)</SelectItem>
-                                    <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
-                                    <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
-                                    <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
+                                    <SelectItem value="GST 0%">GST 0% - Nil Rate</SelectItem>
+                                    <SelectItem value="GST 5%">GST 5% - Essential goods</SelectItem>
+                                    <SelectItem value="GST 12%">GST 12% - Standard rate</SelectItem>
+                                    <SelectItem value="GST 18%">GST 18% - Standard rate</SelectItem>
+                                    <SelectItem value="GST 28%">GST 28% - Luxury goods</SelectItem>
+                                    <SelectItem value="EXEMPT">EXEMPT</SelectItem>
+                                    <SelectItem value="ZERO RATED">ZERO RATED</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -1268,24 +1248,24 @@ export default function AddItemProfessional() {
                                         value={field.value || "Trade As Is"}
                                       >
                                         <SelectTrigger>
-                                          <SelectValue placeholder="Repackage" />
+                                          <SelectValue placeholder="Select preparation status" />
                                         </SelectTrigger>
                                         <SelectContent className="max-h-80 overflow-y-auto">
-                                          <SelectItem value="Trade As Is">Trade As Is - Sold exactly as received, no modification</SelectItem>
+                                          <SelectItem value="Trade As Is">Trade As Is</SelectItem>
                                           <SelectItem value="Create">Create</SelectItem>
-                                          <SelectItem value="Bulk">Bulk - Stored and sold in bulk quantities</SelectItem>
-                                          <SelectItem value="Repackage">Repackage - Bought in bulk, repackaged into smaller units</SelectItem>
-                                          <SelectItem value="Standard Preparation">Standard Preparation - Processed in a specific, consistent way</SelectItem>
-                                          <SelectItem value="Customer Prepared">Customer Prepared - Prepped based on customer instructions</SelectItem>
+                                          <SelectItem value="Bulk">Bulk</SelectItem>
+                                          <SelectItem value="Repackage">Repackage</SelectItem>
+                                          <SelectItem value="Standard Preparation">Standard Preparation</SelectItem>
+                                          <SelectItem value="Customer Prepared">Customer Prepared</SelectItem>
                                           <SelectItem value="Parent">Parent</SelectItem>
                                           <SelectItem value="Child">Child</SelectItem>
-                                          <SelectItem value="Assembly">Assembly - Assembled from multiple products</SelectItem>
-                                          <SelectItem value="Kit">Kit - Grouped items or meal kits</SelectItem>
-                                          <SelectItem value="Ingredients">Ingredients - Non-sellable items for preparation</SelectItem>
-                                          <SelectItem value="Packing Material">Packing Material - Items used for packaging</SelectItem>
-                                          <SelectItem value="Combo Pack">Combo Pack - Multiple items sold together</SelectItem>
-                                          <SelectItem value="Open Item">Open Item - Sold without barcodes or fixed quantities</SelectItem>
-                                          <SelectItem value="Weight to Piece">Weight to Piece - Converts weight-based to pieces</SelectItem>
+                                          <SelectItem value="Assembly">Assembly</SelectItem>
+                                          <SelectItem value="Kit">Kit</SelectItem>
+                                          <SelectItem value="Ingredients">Ingredients</SelectItem>
+                                          <SelectItem value="Packing Material">Packing Material</SelectItem>
+                                          <SelectItem value="Combo Pack">Combo Pack</SelectItem>
+                                          <SelectItem value="Open Item">Open Item</SelectItem>
+                                          <SelectItem value="Weight to Piece">Weight to Piece</SelectItem>
                                         </SelectContent>
                                       </Select>
                                     </FormControl>
@@ -1305,10 +1285,9 @@ export default function AddItemProfessional() {
                                       <FormControl>
                                         <Select onValueChange={field.onChange} value={field.value}>
                                           <SelectTrigger className="border-red-300 focus:border-red-500">
-                                            <SelectValue placeholder="Select bulk item to repackage" />
+                                            <SelectValue placeholder="Select bulk item" />
                                           </SelectTrigger>
                                           <SelectContent className="max-h-80 overflow-y-auto">
-                                            {/* Recent Products from Database */}
                                             {Array.isArray(recentProducts) && recentProducts.length > 0 ? (
                                               recentProducts
                                                 .filter((product: any) => 
@@ -1320,26 +1299,25 @@ export default function AddItemProfessional() {
                                                 )
                                                 .map((product: any) => (
                                                   <SelectItem key={product.id} value={product.name}>
-                                                    {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity}
+                                                    {product.name}
                                                   </SelectItem>
                                                 ))
                                             ) : (
                                               <>
-                                                {/* Fallback Static Options */}
-                                                <SelectItem value="100G">100G - Small quantity bulk item</SelectItem>
-                                                <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK - Seasoning bulk pack</SelectItem>
-                                                <SelectItem value="ARUVADAM KURUVAI RICE BULK">ARUVADAM KURUVAI RICE BULK - Premium rice variety</SelectItem>
-                                                <SelectItem value="AVARE BULK">AVARE BULK - Avare beans bulk</SelectItem>
-                                                <SelectItem value="AVUL NICE BULK">AVUL NICE BULK - Quality bulk item</SelectItem>
-                                                <SelectItem value="AVUL ODD BULK">AVUL ODD BULK - Mixed bulk item</SelectItem>
-                                                <SelectItem value="Rice - 25kg Bag">Rice - 25kg Bag - Standard rice bulk pack</SelectItem>
-                                                <SelectItem value="Wheat - 50kg Bag">Wheat - 50kg Bag - Wheat bulk pack</SelectItem>
-                                                <SelectItem value="Dal - 25kg Bag">Dal - 25kg Bag - Lentils bulk pack</SelectItem>
-                                                <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag - Sugar bulk pack</SelectItem>
-                                                <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container - Cooking oil bulk</SelectItem>
-                                                <SelectItem value="Flour - 25kg Bag">Flour - 25kg Bag - Wheat flour bulk</SelectItem>
-                                                <SelectItem value="Spices - 10kg Container">Spices - 10kg Container - Mixed spices bulk</SelectItem>
-                                                <SelectItem value="Dry Fruits - 5kg Box">Dry Fruits - 5kg Box - Premium dry fruits</SelectItem>
+                                                <SelectItem value="100G">100G</SelectItem>
+                                                <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK</SelectItem>
+                                                <SelectItem value="ARUVADAM KURUVAI RICE BULK">ARUVADAM KURUVAI RICE BULK</SelectItem>
+                                                <SelectItem value="AVARE BULK">AVARE BULK</SelectItem>
+                                                <SelectItem value="AVUL NICE BULK">AVUL NICE BULK</SelectItem>
+                                                <SelectItem value="AVUL ODD BULK">AVUL ODD BULK</SelectItem>
+                                                <SelectItem value="Rice - 25kg Bag">Rice - 25kg Bag</SelectItem>
+                                                <SelectItem value="Wheat - 50kg Bag">Wheat - 50kg Bag</SelectItem>
+                                                <SelectItem value="Dal - 25kg Bag">Dal - 25kg Bag</SelectItem>
+                                                <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag</SelectItem>
+                                                <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container</SelectItem>
+                                                <SelectItem value="Flour - 25kg Bag">Flour - 25kg Bag</SelectItem>
+                                                <SelectItem value="Spices - 10kg Container">Spices - 10kg Container</SelectItem>
+                                                <SelectItem value="Dry Fruits - 5kg Box">Dry Fruits - 5kg Box</SelectItem>
                                               </>
                                             )}
                                           </SelectContent>
