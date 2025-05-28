@@ -132,7 +132,7 @@ export const storage = {
       console.error('Error fetching product by ID:', error);
       throw error;
     }
-  }
+  },
 
   async getProductBySku(sku: string): Promise<Product | null> {
     try {
