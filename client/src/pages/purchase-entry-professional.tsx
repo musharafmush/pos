@@ -1325,31 +1325,56 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
 
                                 <TableCell className="border-r px-2 py-3">
-                                  <Select 
-                                    onValueChange={(value) => handleProductSelection(index, parseInt(value))}
-                                    value={form.watch(`items.${index}.productId`)?.toString() || ""}
-                                  >
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Select Product">
-                                        {selectedProduct ? (
-                                          <div className="flex flex-col text-left">
-                                            <span className="font-medium text-sm">{selectedProduct.name}</span>
-                                            <span className="text-xs text-gray-500">{selectedProduct.sku}</span>
-                                          </div>
-                                        ) : "Select Product"}
-                                      </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {products.map((product) => (
-                                        <SelectItem key={product.id} value={product.id.toString()}>
-                                          <div className="flex flex-col">
-                                            <span className="font-medium">{product.name}</span>
-                                            <span className="text-xs text-gray-500">{product.sku}</span>
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                  <div className="space-y-1">
+                                    <Select 
+                                      onValueChange={(value) => handleProductSelection(index, parseInt(value))}
+                                      value={form.watch(`items.${index}.productId`)?.toString() || ""}
+                                    >
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select Product">
+                                          {selectedProduct ? (
+                                            <div className="flex flex-col text-left">
+                                              <span className="font-medium text-sm">{selectedProduct.name}</span>
+                                              <span className="text-xs text-gray-500">{selectedProduct.sku}</span>
+                                            </div>
+                                          ) : "Select Product"}
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {products.map((product) => (
+                                          <SelectItem key={product.id} value={product.id.toString()}>
+                                            <div className="flex flex-col">
+                                              <div className="flex items-center justify-between w-full">
+                                                <span className="font-medium">{product.name}</span>
+                                                <span className={`text-xs px-2 py-1 rounded-full ml-2 ${
+                                                  (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
+                                                    ? 'bg-red-100 text-red-700' 
+                                                    : 'bg-green-100 text-green-700'
+                                                }`}>
+                                                  {product.stockQuantity || 0}
+                                                </span>
+                                              </div>
+                                              <span className="text-xs text-gray-500">{product.sku}</span>
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    
+                                    {/* Stock indicator below product selection */}
+                                    {selectedProduct && (
+                                      <div className="text-xs text-center">
+                                        <span className="text-gray-600">Stock: </span>
+                                        <span className={`font-medium ${
+                                          (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
+                                            ? 'text-red-600' 
+                                            : 'text-green-600'
+                                        }`}>
+                                          {selectedProduct.stockQuantity || 0} units
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </TableCell>
 
                                 <TableCell className="border-r px-2 py-3">
@@ -1810,7 +1835,16 @@ export default function PurchaseEntryProfessional() {
                     {products.map((product) => (
                       <SelectItem key={product.id} value={product.id.toString()}>
                         <div className="flex flex-col">
-                          <span className="font-medium">{product.name}</span>
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-medium">{product.name}</span>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
+                                ? 'bg-red-100 text-red-700' 
+                                : 'bg-green-100 text-green-700'
+                            }`}>
+                              Stock: {product.stockQuantity || 0}
+                            </span>
+                          </div>
                           <span className="text-xs text-gray-500">{product.sku}</span>
                         </div>
                       </SelectItem>
@@ -1818,6 +1852,29 @@ export default function PurchaseEntryProfessional() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Current Stock Display */}
+              {modalData.productId > 0 && (
+                <div className="space-y-2">
+                  <Label>Current Stock</Label>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                    <span className="font-medium text-gray-700">Available Quantity:</span>
+                    <span className={`font-bold text-lg px-3 py-1 rounded ${
+                      (() => {
+                        const product = products.find(p => p.id === modalData.productId);
+                        const stock = product?.stockQuantity || 0;
+                        const threshold = product?.alertThreshold || 5;
+                        return stock <= threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
+                      })()
+                    }`}>
+                      {(() => {
+                        const product = products.find(p => p.id === modalData.productId);
+                        return product?.stockQuantity || 0;
+                      })()} units
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="modal-code">Code</Label>
