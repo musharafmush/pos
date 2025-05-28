@@ -1383,7 +1383,7 @@ export default function AddItemProfessional() {
                                     <PackageIcon className="w-5 h-5" />
                                     Repackaging Configuration
                                   </h4>
-                                  
+
                                   <div className="grid grid-cols-2 gap-6">
                                     <FormField
                                       control={form.control}
@@ -1623,7 +1623,7 @@ export default function AddItemProfessional() {
                                   </FormItem>
                                 )}
                               />
-                              
+
                               <FormField
                                 control={form.control}
                                 name="imageAlignment"
@@ -1631,7 +1631,10 @@ export default function AddItemProfessional() {
                                   <FormItem>
                                     <FormLabel>Image Alignment</FormLabel>
                                     <FormControl>
-                                      <Select onValueChange={field.onChange} value={field.value}>
+                                      <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                      >
                                         <SelectTrigger>
                                           <SelectValue placeholder="Select alignment" />
                                         </SelectTrigger>
@@ -1732,6 +1735,49 @@ export default function AddItemProfessional() {
                                   )}
                                 />
                               </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <FormField
+                                control={form.control}
+                                name="weight"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Weight</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="Weight of item" type="number" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="weightUnit"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Weight Unit</FormLabel>
+                                    <FormControl>
+                                      <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select unit" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="kg">kg</SelectItem>
+                                          <SelectItem value="g">g</SelectItem>
+                                          <SelectItem value="lb">lb</SelectItem>
+                                          <SelectItem value="oz">oz</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
                             </div>
 
                             <div className="bg-purple-50 p-4 rounded-lg">
