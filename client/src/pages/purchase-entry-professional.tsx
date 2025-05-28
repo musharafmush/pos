@@ -808,7 +808,7 @@ export default function PurchaseEntryProfessional() {
       const purchaseData = {
         // Core purchase details
         supplierId: Number(data.supplierId),
-        orderNumber: data.orderNumber,
+        orderNumber: data        .orderNumber,
         orderDate: data.orderDate,
         expectedDate: data.expectedDate || data.orderDate,
         dueDate: data.expectedDate || data.orderDate,
@@ -2042,8 +2042,8 @@ export default function PurchaseEntryProfessional() {
                       const cost = modalData.unitCost;
                       const discount = modalData.discountAmount;
                       const subtotal = qty * cost;
-                      const taxableAmount = subtotal - discount;
-                      const tax = (taxableAmount * value) / 100;
+                      const taxableAmount = subtotal - value;
+                      const tax = (taxableAmount * taxPercent) / 100;
                       const netAmount = taxableAmount + tax;
 
                       form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
