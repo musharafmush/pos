@@ -571,28 +571,62 @@ export const storage = {
     purchaseData: any
   ): Promise<Purchase> {
     try {
+      // Import SQLite database directly for raw SQL operations
+      const { sqlite } = await import('@db');
+      
       // Calculate total
       const total = items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
       
-      const [newPurchase] = await db.insert(purchases).values({
-        userId,
+      // Generate unique order number
+      const orderNumber = `PO-${Date.now()}`;
+      
+      // Insert purchase using raw SQL to avoid timestamp issues
+      const insertPurchase = sqlite.prepare(`
+        INSERT INTO purchases (
+          order_number, supplier_id, user_id, total, status, 
+          order_date, created_at
+        ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `);
+      
+      const result = insertPurchase.run(
+        orderNumber,
         supplierId,
-        total: total.toString(),
-        status: purchaseData.status || 'pending'
-      }).returning();
-
-      // Insert purchase items
+        userId,
+        total.toString(),
+        purchaseData.status || 'pending'
+      );
+      
+      const purchaseId = result.lastInsertRowid;
+      
+      // Insert purchase items using raw SQL
+      const insertItem = sqlite.prepare(`
+        INSERT INTO purchase_items (
+          purchase_id, product_id, quantity, unit_cost, subtotal, created_at
+        ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+      
       for (const item of items) {
-        await db.insert(purchaseItems).values({
-          purchaseId: newPurchase.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          unitCost: item.unitCost.toString(),
-          subtotal: (item.quantity * item.unitCost).toString()
-        });
+        insertItem.run(
+          purchaseId,
+          item.productId,
+          item.quantity,
+          item.unitCost.toString(),
+          (item.quantity * item.unitCost).toString()
+        );
       }
-
-      return newPurchase;
+      
+      // Fetch and return the created purchase
+      const getPurchase = sqlite.prepare(`
+        SELECT * FROM purchases WHERE id = ?
+      `);
+      
+      const newPurchase = getPurchase.get(purchaseId);
+      
+      return {
+        ...newPurchase,
+        createdAt: new Date(newPurchase.created_at || newPurchase.createdAt),
+        orderDate: new Date(newPurchase.order_date || newPurchase.orderDate)
+      };
     } catch (error) {
       console.error('Error creating purchase:', error);
       throw error;
