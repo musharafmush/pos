@@ -606,8 +606,8 @@ export const storage = {
             purchase_id, product_id, quantity, received_qty, free_qty, unit_cost, cost,
             selling_price, mrp, hsn_code, tax_percentage, discount_amount, discount_percent,
             expiry_date, batch_number, net_cost, roi_percent, gross_profit_percent,
-            net_amount, cash_percent, cash_amount, location, unit, subtotal
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            net_amount, cash_percent, cash_amount, location, unit, subtotal, total, amount
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         // Prepare statement to update product stock
@@ -618,15 +618,20 @@ export const storage = {
         `);
 
         for (const item of items) {
+          const quantity = item.quantity || 0;
+          const receivedQty = item.receivedQty || quantity;
+          const unitCost = item.unitCost || 0;
+          const total = receivedQty * unitCost;
+          
           // Insert purchase item
           insertItem.run(
             purchaseId,
             item.productId,
-            item.quantity || 0,
-            item.receivedQty || 0,
+            quantity,
+            receivedQty,
             item.freeQty || 0,
-            item.unitCost || 0,
-            item.cost || item.unitCost || 0,
+            unitCost,
+            item.cost || unitCost,
             item.sellingPrice || 0,
             item.mrp || 0,
             item.hsnCode || "",
@@ -635,15 +640,17 @@ export const storage = {
             item.discountPercent || 0,
             item.expiryDate || "",
             item.batchNumber || "",
-            item.netCost || 0,
+            item.netCost || unitCost,
             item.roiPercent || 0,
             item.grossProfitPercent || 0,
-            item.netAmount || 0,
+            item.netAmount || total,
             item.cashPercent || 0,
             item.cashAmount || 0,
             item.location || "",
             item.unit || "PCS",
-            (item.receivedQty || 0) * (item.unitCost || 0)
+            total,
+            total,
+            total
           );
 
           // Update product stock with received quantity
