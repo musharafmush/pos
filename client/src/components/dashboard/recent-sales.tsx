@@ -8,15 +8,29 @@ interface RecentSalesProps {
 }
 
 export function RecentSales({ className }: RecentSalesProps) {
-  const { data: recentSales, isLoading } = useQuery({
+  const { data: recentSales, isLoading, error } = useQuery({
     queryKey: ['/api/sales/recent'],
     queryFn: async () => {
-      const response = await fetch('/api/sales/recent');
-      if (!response.ok) {
-        throw new Error('Failed to fetch recent sales');
+      try {
+        const response = await fetch('/api/sales/recent');
+        if (!response.ok) {
+          if (response.status === 500) {
+            // Return empty array for server errors to prevent refresh
+            return [];
+          }
+          throw new Error('Failed to fetch recent sales');
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (err) {
+        console.warn('Recent sales fetch error:', err);
+        return [];
       }
-      return response.json();
-    }
+    },
+    retry: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   return (

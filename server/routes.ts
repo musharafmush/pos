@@ -587,10 +587,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string || '5');
       const sales = await storage.getRecentSales(limit);
-      res.json(sales);
+      res.json(sales || []);
     } catch (error) {
       console.error('Error fetching recent sales:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      // Return empty array instead of error to prevent client-side refresh
+      res.json([]);
     }
   });
 
