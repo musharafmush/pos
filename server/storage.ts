@@ -613,7 +613,7 @@ export const storage = {
         // Prepare statement to update product stock
         const updateStock = sqlite.prepare(`
           UPDATE products 
-          SET stockQuantity = stockQuantity + ? 
+          SET stock_quantity = stock_quantity + ? 
           WHERE id = ?
         `);
 
@@ -778,7 +778,7 @@ export const storage = {
           // Prepare statement to update product stock
           const updateStock = sqlite.prepare(`
             UPDATE products 
-            SET stockQuantity = stockQuantity + ? 
+            SET stock_quantity = stock_quantity + ? 
             WHERE id = ?
           `);
 
