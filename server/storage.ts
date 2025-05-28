@@ -210,10 +210,10 @@ export const storage = {
       createdAt: new Date(newProduct.created_at),
       updatedAt: new Date(newProduct.updated_at)
     };
-    } catch (error) {
-      console.error("Error creating product:", error);
-      throw error;
-    }
+  } catch (error) {
+    console.error("Error creating product:", error);
+    throw error;
   }
+},
 
   async updateProduct(id: number, data: Partial<InsertProduct>): Promise<Product> {
