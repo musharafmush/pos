@@ -398,15 +398,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ensure required fields have default values if missing
       const requestData = {
         ...req.body,
-        mrp: req.body.mrp || req.body.price || 0,
+        mrp: req.body.mrp || req.body.price || '0',
+        cost: req.body.cost || '0',
+        price: req.body.price || '0',
         weight: req.body.weight || null,
         weightUnit: req.body.weightUnit || 'kg',
-        stockQuantity: req.body.stockQuantity || 0,
-        alertThreshold: req.body.alertThreshold || 5,
-        active: req.body.active !== false
+        stockQuantity: parseInt(req.body.stockQuantity) || 0,
+        alertThreshold: parseInt(req.body.alertThreshold) || 5,
+        active: req.body.active !== false,
+        barcode: req.body.barcode || '',
+        description: req.body.description || ''
       };
       
       console.log('Processed product data:', requestData);
+      
+      // Validate required fields
+      if (!requestData.name || !requestData.sku || !requestData.categoryId) {
+        return res.status(400).json({ 
+          message: 'Missing required fields: name, sku, and categoryId are required' 
+        });
+      }
+      
       const productData = schema.productInsertSchema.parse(requestData);
       console.log('Validated product data:', productData);
       
@@ -423,10 +435,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           expected: err.expected
         }));
         console.error('Detailed validation errors:', detailedErrors);
-        return res.status(400).json({ errors: error.errors, details: detailedErrors });
+        return res.status(400).json({ 
+          message: 'Validation failed',
+          errors: error.errors, 
+          details: detailedErrors 
+        });
       }
       console.error('Error creating product:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ 
+        message: 'Internal server error',
+        error: error.message 
+      });
     }
   });
 
