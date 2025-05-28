@@ -79,6 +79,9 @@ const productFormSchema = z.object({
   grindingCharge: z.string().optional(),
   weightInGms: z.string().optional(),
   bulkItemName: z.string().optional(),
+  repackageUnits: z.string().optional(),
+  repackageType: z.string().optional(),
+  packagingMaterial: z.string().optional(),
 
   // Item Properties
   decimalPoint: z.string().default("0"),
@@ -187,6 +190,9 @@ export default function AddItemProfessional() {
       grindingCharge: "",
       weightInGms: "",
       bulkItemName: "",
+      repackageUnits: "",
+      repackageType: "",
+      packagingMaterial: "",
       decimalPoint: "0",
       imageAlignment: "",
       productType: "NA",
@@ -1268,7 +1274,13 @@ export default function AddItemProfessional() {
                                         value={field.value || "Trade As Is"}
                                       >
                                         <SelectTrigger>
-                                          <SelectValue placeholder="Repackage" />
+                                          <SelectValue>
+                                            {field.value ? 
+                                              field.value === "Trade As Is" ? "Trade As Is - Sold exactly as received" :
+                                              field.value === "Repackage" ? "Repackage - Bought in bulk, repackaged into smaller units" :
+                                              field.value : "Select preparation status"
+                                            }
+                                          </SelectValue>
                                         </SelectTrigger>
                                         <SelectContent className="max-h-80 overflow-y-auto">
                                           <SelectItem value="Trade As Is">Trade As Is - Sold exactly as received, no modification</SelectItem>
@@ -1305,7 +1317,9 @@ export default function AddItemProfessional() {
                                       <FormControl>
                                         <Select onValueChange={field.onChange} value={field.value}>
                                           <SelectTrigger className="border-red-300 focus:border-red-500">
-                                            <SelectValue placeholder="Select bulk item to repackage" />
+                                            <SelectValue>
+                                              {field.value || "Select bulk item to repackage"}
+                                            </SelectValue>
                                           </SelectTrigger>
                                           <SelectContent className="max-h-80 overflow-y-auto">
                                             {/* Recent Products from Database */}
@@ -1360,11 +1374,193 @@ export default function AddItemProfessional() {
                               )}
                             </div>
 
-                            {/* Conditional Weight in Gms Field - Show in new row */}
+                            {/* Enhanced Repackaging Configuration */}
+                            {form.watch("itemPreparationsStatus") === "Repackage" && (
+                              <div className="space-y-6">
+                                <Separator />
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                  <h4 className="font-semibold mb-4 text-blue-800 flex items-center gap-2">
+                                    <PackageIcon className="w-5 h-5" />
+                                    Repackaging Configuration
+                                  </h4>
+                                  
+                                  <div className="grid grid-cols-2 gap-6">
+                                    <FormField
+                                      control={form.control}
+                                      name="weightInGms"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-red-600">Target Package Weight (grams) *</FormLabel>
+                                          <FormControl>
+                                            <Input 
+                                              {...field} 
+                                              placeholder="e.g., 500 (for 500g packages)" 
+                                              type="number" 
+                                              step="0.001"
+                                              className="border-red-300 focus:border-red-500" 
+                                            />
+                                          </FormControl>
+                                          <div className="text-xs text-red-500 mt-1">Weight for each repackaged unit</div>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+
+                                    <FormField
+                                      control={form.control}
+                                      name="repackageUnits"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Number of Units to Create</FormLabel>
+                                          <FormControl>
+                                            <Input 
+                                              {...field} 
+                                              placeholder="e.g., 20 (create 20 units)" 
+                                              type="number" 
+                                              min="1"
+                                              className="border-blue-300 focus:border-blue-500" 
+                                            />
+                                          </FormControl>
+                                          <div className="text-xs text-gray-500 mt-1">How many repackaged units to create</div>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-6 mt-4">
+                                    <FormField
+                                      control={form.control}
+                                      name="repackageType"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Repackaging Type</FormLabel>
+                                          <FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                              <SelectTrigger>
+                                                <SelectValue>
+                                                  {field.value || "Select repackaging type"}
+                                                </SelectValue>
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="weight-division">Weight Division (1kg → 500g packs)</SelectItem>
+                                                <SelectItem value="portion-control">Portion Control</SelectItem>
+                                                <SelectItem value="consumer-size">Consumer Size Packaging</SelectItem>
+                                                <SelectItem value="sample-size">Sample/Trial Size</SelectItem>
+                                                <SelectItem value="bulk-to-retail">Bulk to Retail</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+
+                                    <FormField
+                                      control={form.control}
+                                      name="packagingMaterial"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Packaging Material</FormLabel>
+                                          <FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                              <SelectTrigger>
+                                                <SelectValue>
+                                                  {field.value || "Select packaging material"}
+                                                </SelectValue>
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="plastic-pouch">Plastic Pouch</SelectItem>
+                                                <SelectItem value="paper-bag">Paper Bag</SelectItem>
+                                                <SelectItem value="glass-jar">Glass Jar</SelectItem>
+                                                <SelectItem value="tin-container">Tin Container</SelectItem>
+                                                <SelectItem value="cardboard-box">Cardboard Box</SelectItem>
+                                                <SelectItem value="vacuum-sealed">Vacuum Sealed</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+
+                                  {/* Repackaging Preview */}
+                                  {form.watch("weightInGms") && form.watch("repackageUnits") && (
+                                    <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
+                                      <h5 className="font-medium text-green-800 mb-2">Repackaging Preview</h5>
+                                      <div className="text-sm text-green-700">
+                                        <p>• Each unit: {form.watch("weightInGms")}g</p>
+                                        <p>• Total units: {form.watch("repackageUnits") || 0}</p>
+                                        <p>• Total weight needed: {(parseFloat(form.watch("weightInGms") || "0") * parseInt(form.watch("repackageUnits") || "0")) / 1000}kg</p>
+                                        <p>• Bulk item: {form.watch("bulkItemName") || "Not selected"}</p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Quick Unit Conversion Buttons */}
+                                  <div className="mt-4">
+                                    <label className="text-sm font-medium text-gray-700 mb-2 block">Quick Unit Templates:</label>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          form.setValue("weightInGms", "250");
+                                          form.setValue("repackageUnits", "4");
+                                        }}
+                                        className="text-xs"
+                                      >
+                                        1kg → 4×250g
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          form.setValue("weightInGms", "500");
+                                          form.setValue("repackageUnits", "2");
+                                        }}
+                                        className="text-xs"
+                                      >
+                                        1kg → 2×500g
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          form.setValue("weightInGms", "100");
+                                          form.setValue("repackageUnits", "10");
+                                        }}
+                                        className="text-xs"
+                                      >
+                                        1kg → 10×100g
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          form.setValue("weightInGms", "50");
+                                          form.setValue("repackageUnits", "20");
+                                        }}
+                                        className="text-xs"
+                                      >
+                                        1kg → 20×50g
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Conditional Weight in Gms Field for other statuses */}
                             {(form.watch("itemPreparationsStatus") === "Open Item" || 
                               form.watch("itemPreparationsStatus") === "Weight to Piece" ||
-                              form.watch("itemPreparationsStatus") === "Bulk" ||
-                              form.watch("itemPreparationsStatus") === "Repackage") && (
+                              form.watch("itemPreparationsStatus") === "Bulk") && 
+                              form.watch("itemPreparationsStatus") !== "Repackage" && (
                               <div className="grid grid-cols-2 gap-6">
                                 <FormField
                                   control={form.control}
