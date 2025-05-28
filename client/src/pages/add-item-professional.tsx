@@ -1107,47 +1107,49 @@ export default function AddItemProfessional() {
                             <FormLabel>Manual Barcode Entry</FormLabel>
                             <FormControl>
                               <Input 
-                                {...field} 
+                                value={field.value || ""}
+                                onChange={field.onChange}
                                 placeholder="Enter barcode manually (e.g., 1234567890123)" 
                                 className="font-mono"
                               />
                             </FormControl>
-                            <div className="flex gap-2 mt-2">
-                              <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => {
-                                  const randomEAN = '2' + Math.random().toString().slice(2, 14);
-                                  field.onChange(randomEAN);
-                                }}
-                              >
-                                Generate EAN-13
-                              </Button>
-                              <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => {
-                                  const randomUPC = Math.random().toString().slice(2, 14);
-                                  field.onChange(randomUPC);
-                                }}
-                              >
-                                Generate UPC
-                              </Button>
-                              <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => field.onChange("")}
-                              >
-                                Clear
-                              </Button>
-                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+                      
+                      <div className="flex gap-2 mt-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const randomEAN = '2' + Math.random().toString().slice(2, 14);
+                            form.setValue("barcode", randomEAN);
+                          }}
+                        >
+                          Generate EAN-13
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const randomUPC = Math.random().toString().slice(2, 14);
+                            form.setValue("barcode", randomUPC);
+                          }}
+                        >
+                          Generate UPC
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => form.setValue("barcode", "")}
+                        >
+                          Clear
+                        </Button>
+                      </div>
 
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Barcode Configuration</h3>
@@ -1162,10 +1164,7 @@ export default function AddItemProfessional() {
                               <FormItem>
                                 <FormLabel className="text-sm font-medium">Barcode Type</FormLabel>
                                 <FormControl>
-                                  <Select 
-                                    value={field.value || ""}
-                                    onValueChange={field.onChange}
-                                  >
+                                  <Select onValueChange={field.onChange} value={field.value || ""}>
                                     <SelectTrigger>
                                       <SelectValue placeholder="Select barcode type" />
                                     </SelectTrigger>
@@ -1630,10 +1629,7 @@ export default function AddItemProfessional() {
                                   <FormItem>
                                     <FormLabel>Image Alignment</FormLabel>
                                     <FormControl>
-                                      <Select
-                                        value={field.value}
-                                        onValueChange={field.onChange}
-                                      >
+                                      <Select onValueChange={field.onChange} value={field.value || ""}>
                                         <SelectTrigger>
                                           <SelectValue placeholder="Select alignment" />
                                         </SelectTrigger>
