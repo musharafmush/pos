@@ -372,7 +372,7 @@ export default function AddItemProfessional() {
                             </FormItem>
                           )}
                         />
-                        <div></div>
+                        <div />
                       </div>
 
                       <FormField
@@ -1106,44 +1106,46 @@ export default function AddItemProfessional() {
                           <FormItem>
                             <FormLabel>Manual Barcode Entry</FormLabel>
                             <FormControl>
-                              <Input 
-                                {...field} 
-                                placeholder="Enter barcode manually (e.g., 1234567890123)" 
-                                className="font-mono"
-                              />
+                              <div className="space-y-2">
+                                <Input 
+                                  {...field} 
+                                  placeholder="Enter barcode manually (e.g., 1234567890123)" 
+                                  className="font-mono"
+                                />
+                                <div className="flex gap-2">
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      const randomEAN = '2' + Math.random().toString().slice(2, 14);
+                                      field.onChange(randomEAN);
+                                    }}
+                                  >
+                                    Generate EAN-13
+                                  </Button>
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      const randomUPC = Math.random().toString().slice(2, 14);
+                                      field.onChange(randomUPC);
+                                    }}
+                                  >
+                                    Generate UPC
+                                  </Button>
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => field.onChange("")}
+                                  >
+                                    Clear
+                                  </Button>
+                                </div>
+                              </div>
                             </FormControl>
-                            <div className="flex gap-2 mt-2">
-                              <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => {
-                                  const randomEAN = '2' + Math.random().toString().slice(2, 14);
-                                  field.onChange(randomEAN);
-                                }}
-                              >
-                                Generate EAN-13
-                              </Button>
-                              <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => {
-                                  const randomUPC = Math.random().toString().slice(2, 14);
-                                  field.onChange(randomUPC);
-                                }}
-                              >
-                                Generate UPC
-                              </Button>
-                              <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => field.onChange("")}
-                              >
-                                Clear
-                              </Button>
-                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1369,7 +1371,7 @@ export default function AddItemProfessional() {
 
                               {/* Show empty div when bulk item name is not needed to maintain grid layout */}
                               {!(form.watch("itemPreparationsStatus") === "Repackage") && (
-                                <div></div>
+                                <div />
                               )}
                             </div>
 
@@ -1581,7 +1583,7 @@ export default function AddItemProfessional() {
                                     </FormItem>
                                   )}
                                 />
-                                <div></div>
+                                <div />
                               </div>
                             )}
                           </CardContent>
