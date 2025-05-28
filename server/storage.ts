@@ -613,15 +613,18 @@ export const storage = {
         // Prepare statement to update product stock
         const updateStock = sqlite.prepare(`
           UPDATE products 
-          SET stock_quantity = stock_quantity + ? 
+          SET stock_quantity = COALESCE(stock_quantity, 0) + ? 
           WHERE id = ?
         `);
 
         for (const item of items) {
-          const quantity = item.quantity || 0;
-          const receivedQty = item.receivedQty || quantity;
-          const unitCost = item.unitCost || 0;
+          // Get the received quantity - this is what should be added to stock
+          const receivedQty = Number(item.receivedQty) || 0;
+          const quantity = Number(item.quantity) || receivedQty; // Use receivedQty as fallback for quantity
+          const unitCost = Number(item.unitCost) || 0;
           const total = receivedQty * unitCost;
+
+          console.log(`Processing item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Unit Cost: ${unitCost}`);
 
           // Insert purchase item
           insertItem.run(
@@ -629,23 +632,23 @@ export const storage = {
             item.productId,
             quantity,
             receivedQty,
-            item.freeQty || 0,
+            Number(item.freeQty) || 0,
             unitCost,
-            item.cost || unitCost,
-            item.sellingPrice || 0,
-            item.mrp || 0,
+            Number(item.cost) || unitCost,
+            Number(item.sellingPrice) || 0,
+            Number(item.mrp) || 0,
             item.hsnCode || "",
-            item.taxPercentage || 0,
-            item.discountAmount || 0,
-            item.discountPercent || 0,
+            Number(item.taxPercentage) || 0,
+            Number(item.discountAmount) || 0,
+            Number(item.discountPercent) || 0,
             item.expiryDate || "",
             item.batchNumber || "",
-            item.netCost || unitCost,
-            item.roiPercent || 0,
-            item.grossProfitPercent || 0,
-            item.netAmount || total,
-            item.cashPercent || 0,
-            item.cashAmount || 0,
+            Number(item.netCost) || unitCost,
+            Number(item.roiPercent) || 0,
+            Number(item.grossProfitPercent) || 0,
+            Number(item.netAmount) || total,
+            Number(item.cashPercent) || 0,
+            Number(item.cashAmount) || 0,
             item.location || "",
             item.unit || "PCS",
             total,
@@ -654,10 +657,20 @@ export const storage = {
           );
 
           // Update product stock with received quantity
-          const stockQty = item.receivedQty || 0;
-          if (stockQty > 0 && item.productId) {
-            updateStock.run(stockQty, item.productId);
-            console.log(`📦 Updated stock for product ${item.productId}: +${stockQty}`);
+          if (receivedQty > 0 && item.productId) {
+            try {
+              const result = updateStock.run(receivedQty, item.productId);
+              console.log(`📦 Stock update result for product ${item.productId}: Added ${receivedQty} units (Changes: ${result.changes})`);
+              
+              // Verify the stock update
+              const checkStock = sqlite.prepare('SELECT stock_quantity FROM products WHERE id = ?');
+              const currentStock = checkStock.get(item.productId);
+              console.log(`📊 Current stock for product ${item.productId}: ${currentStock?.stock_quantity}`);
+            } catch (error) {
+              console.error(`❌ Error updating stock for product ${item.productId}:`, error);
+            }
+          } else {
+            console.log(`⚠️ Skipping stock update for product ${item.productId}: receivedQty = ${receivedQty}`);
           }
         }
       }

@@ -831,13 +831,16 @@ export default function PurchaseEntryProfessional() {
 
         // Items array in expected format
         items: validItems.map(item => {
-          // Use receivedQty if available, otherwise fall back to quantity, default to 1 for new items
-          const quantity = Number(item.receivedQty) || Number(item.quantity) || (isEditMode ? 0 : 1);
+          // Prioritize receivedQty for stock updates
+          const receivedQty = Number(item.receivedQty) || 0;
+          const quantity = Number(item.quantity) || receivedQty || (isEditMode ? 0 : 1);
+
+          console.log(`Mapping item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Quantity: ${quantity}`);
 
           return {
             productId: Number(item.productId),
             quantity: quantity,
-            receivedQty: quantity,
+            receivedQty: receivedQty, // This is crucial for stock updates
             freeQty: Number(item.freeQty) || 0,
             unitCost: Number(item.unitCost) || 0,
             cost: Number(item.unitCost) || 0,
