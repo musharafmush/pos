@@ -619,10 +619,8 @@ export const storage = {
 
         for (const item of items) {
           // Get the received quantity - this is what should be added to stock
-          const receivedQty = Number(item.receivedQty) || 0;
-          const quantity = Number(item.quantity) || receivedQty; // Use receivedQty as fallback for quantity
-          const unitCost = Number(item.unitCost) || 0;
-          const total = receivedQty * unitCost;
+          const receivedQty = Number(item.receivedQty) || Number(item.quantity) || 0;
+          const quantity = Number(item.quantity) || receivedQty || 1;
 
           console.log(`Processing item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Unit Cost: ${unitCost}`);
 
@@ -661,7 +659,7 @@ export const storage = {
             try {
               const result = updateStock.run(receivedQty, item.productId);
               console.log(`📦 Stock update result for product ${item.productId}: Added ${receivedQty} units (Changes: ${result.changes})`);
-              
+
               // Verify the stock update
               const checkStock = sqlite.prepare('SELECT stock_quantity FROM products WHERE id = ?');
               const currentStock = checkStock.get(item.productId);

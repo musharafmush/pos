@@ -838,28 +838,28 @@ export default function PurchaseEntryProfessional() {
           console.log(`Mapping item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Quantity: ${quantity}`);
 
           return {
-            productId: Number(item.productId),
-            quantity: quantity,
-            receivedQty: receivedQty, // This is crucial for stock updates
-            freeQty: Number(item.freeQty) || 0,
-            unitCost: Number(item.unitCost) || 0,
-            cost: Number(item.unitCost) || 0,
-            hsnCode: item.hsnCode || "",
-            taxPercentage: Number(item.taxPercentage) || 0,
-            discountAmount: Number(item.discountAmount) || 0,
-            discountPercent: Number(item.discountPercent) || 0,
-            expiryDate: item.expiryDate || "",
-            batchNumber: item.batchNumber || "",
-            sellingPrice: Number(item.sellingPrice) || 0,
-            mrp: Number(item.mrp) || 0,
-            netAmount: Number(item.netAmount) || 0,
-            location: item.location || "",
-            unit: item.unit || "PCS",
-            roiPercent: Number(item.roiPercent) || 0,
-            grossProfitPercent: Number(item.grossProfitPercent) || 0,
-            cashPercent: Number(item.cashPercent) || 0,
-            cashAmount: Number(item.cashAmount) || 0
-          };
+          productId: Number(item.productId),
+          quantity: receivedQty > 0 ? receivedQty : quantity, // Use receivedQty as primary quantity
+          receivedQty: receivedQty, // This is crucial for stock updates
+          freeQty: Number(item.freeQty) || 0,
+          unitCost: Number(item.unitCost) || 0,
+          cost: Number(item.unitCost) || 0,
+          hsnCode: item.hsnCode || "",
+          taxPercentage: Number(item.taxPercentage) || 0,
+          discountAmount: Number(item.discountAmount) || 0,
+          discountPercent: Number(item.discountPercent) || 0,
+          expiryDate: item.expiryDate || "",
+          batchNumber: item.batchNumber || "",
+          sellingPrice: Number(item.sellingPrice) || 0,
+          mrp: Number(item.mrp) || 0,
+          netAmount: Number(item.netAmount) || 0,
+          location: item.location || "",
+          unit: item.unit || "PCS",
+          roiPercent: Number(item.roiPercent) || 0,
+          grossProfitPercent: Number(item.grossProfitPercent) || 0,
+          cashPercent: Number(item.cashPercent) || 0,
+          cashAmount: Number(item.cashAmount) || 0
+        };
         })
       };
 
@@ -1364,7 +1364,7 @@ export default function PurchaseEntryProfessional() {
                                         ))}
                                       </SelectContent>
                                     </Select>
-                                    
+
                                     {/* Stock indicator below product selection */}
                                     {selectedProduct && (
                                       <div className="text-xs text-center">
@@ -1648,7 +1648,7 @@ export default function PurchaseEntryProfessional() {
                                   <Select onValueChange={(value) => form.setValue(`items.${index}.unit`, value)} defaultValue="PCS">
                                     <SelectTrigger className="w-full text-xs">
                                       <SelectValue placeholder="Unit" />
-                                    </SelectTrigger>```text
+                                    </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="PCS">PCS</SelectItem>
                                       <SelectItem value="KG">KG</SelectItem>
