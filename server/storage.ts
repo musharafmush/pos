@@ -120,18 +120,34 @@ export const storage = {
 
   // Product related operations
   async getProductById(id: number): Promise<Product | null> {
-    return await db.query.products.findFirst({
-      where: eq(products.id, id),
-      with: { category: true }
-    });
-  },
+    try {
+      const product = await db.query.products.findFirst({
+        where: eq(products.id, id),
+        with: {
+          category: true
+        }
+      });
+      return product || null;
+    } catch (error) {
+      console.error('Error fetching product by ID:', error);
+      throw error;
+    }
+  }
 
   async getProductBySku(sku: string): Promise<Product | null> {
-    return await db.query.products.findFirst({
-      where: eq(products.sku, sku),
-      with: { category: true }
-    });
-  },
+    try {
+      const product = await db.query.products.findFirst({
+        where: eq(products.sku, sku),
+        with: {
+          category: true
+        }
+      });
+      return product || null;
+    } catch (error) {
+      console.error('Error fetching product by SKU:', error);
+      throw error;
+    }
+  }
 
   async getProductByBarcode(barcode: string): Promise<Product | null> {
     return await db.query.products.findFirst({
@@ -255,7 +271,7 @@ export const storage = {
 
       const saleCount = Number(saleItemsCount[0]?.count || 0);
       const purchaseCount = Number(purchaseItemsCount[0]?.count || 0);
-      
+
       return {
         hasReferences: saleCount > 0 || purchaseCount > 0,
         saleItems: saleCount,
@@ -276,30 +292,30 @@ export const storage = {
         // Delete related records first using raw SQL
         const deleteSaleItemsStmt = sqlite.prepare('DELETE FROM sale_items WHERE product_id = ?');
         deleteSaleItemsStmt.run(id);
-        
+
         const deletePurchaseItemsStmt = sqlite.prepare('DELETE FROM purchase_items WHERE product_id = ?');
         deletePurchaseItemsStmt.run(id);
-        
+
         // Then delete the product
         const deleteProductStmt = sqlite.prepare('DELETE FROM products WHERE id = ?');
         const result = deleteProductStmt.run(id);
-        
+
         return result.changes > 0;
       } else {
         // Check for references first
         const saleItemsCheck = sqlite.prepare('SELECT COUNT(*) as count FROM sale_items WHERE product_id = ?');
         const purchaseItemsCheck = sqlite.prepare('SELECT COUNT(*) as count FROM purchase_items WHERE product_id = ?');
-        
+
         const saleCount = saleItemsCheck.get(id)?.count || 0;
         const purchaseCount = purchaseItemsCheck.get(id)?.count || 0;
-        
+
         if (saleCount > 0 || purchaseCount > 0) {
           throw new Error('CONSTRAINT_ERROR');
         }
-        
+
         const deleteProductStmt = sqlite.prepare('DELETE FROM products WHERE id = ?');
         const result = deleteProductStmt.run(id);
-        
+
         return result.changes > 0;
       }
     } catch (error) {

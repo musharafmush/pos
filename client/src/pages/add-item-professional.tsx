@@ -763,7 +763,7 @@ export default function AddItemProfessional() {
                                     <SelectItem value="GST 5%">GST 5% - Essential goods (Food grains, medicines)</SelectItem>
                                     <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
                                     <SelectItem value="GST 18%">GST 18% - Standard rate (Most goods & services)</SelectItem>
-                                    <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
+                                    <SelectItem valueue="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
                                     <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
                                     <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
                                   </SelectContent>
@@ -1610,6 +1610,67 @@ export default function AddItemProfessional() {
                                 </FormItem>
                               )}
                             />
+
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Pricing Information</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                  control={form.control}
+                                  name="price"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Selling Price *</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="mrp"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>MRP *</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name="cost"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Cost Price</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="stockQuantity"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Stock Quantity *</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0" type="number" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
 
                             <div className="bg-purple-50 p-4 rounded-lg">
                               <h3 className="font-medium mb-3">Additional Properties</h3>

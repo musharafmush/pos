@@ -398,24 +398,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ensure required fields have default values if missing
       const requestData = {
         ...req.body,
+        name: req.body.name || req.body.itemName || '',
+        sku: req.body.sku || req.body.itemCode || '',
+        description: req.body.description || req.body.aboutProduct || '',
         mrp: req.body.mrp || req.body.price || '0',
         cost: req.body.cost || '0',
         price: req.body.price || '0',
-        weight: req.body.weight || null,
+        weight: req.body.weight || req.body.weightInGms || null,
         weightUnit: req.body.weightUnit || 'kg',
         stockQuantity: parseInt(req.body.stockQuantity) || 0,
         alertThreshold: parseInt(req.body.alertThreshold) || 5,
+        categoryId: parseInt(req.body.categoryId) || 1,
         active: req.body.active !== false,
-        barcode: req.body.barcode || '',
-        description: req.body.description || ''
+        barcode: req.body.barcode || req.body.eanCode || '',
+        
+        // GST and tax information
+        hsnCode: req.body.hsnCode || '',
+        gstCode: req.body.gstCode || '',
+        cgstRate: req.body.cgstRate || '0',
+        sgstRate: req.body.sgstRate || '0',
+        igstRate: req.body.igstRate || '0',
+        cessRate: req.body.cessRate || '0',
+        taxCalculationMethod: req.body.taxCalculationMethod || 'exclusive'
       };
       
       console.log('Processed product data:', requestData);
       
       // Validate required fields
-      if (!requestData.name || !requestData.sku || !requestData.categoryId) {
+      if (!requestData.name) {
         return res.status(400).json({ 
-          message: 'Missing required fields: name, sku, and categoryId are required' 
+          message: 'Product name is required' 
+        });
+      }
+      
+      if (!requestData.sku) {
+        return res.status(400).json({ 
+          message: 'Product SKU/Item Code is required' 
+        });
+      }
+      
+      if (!requestData.price || requestData.price === '0') {
+        return res.status(400).json({ 
+          message: 'Product price is required and must be greater than 0' 
+        });
+      }
+      
+      if (!requestData.categoryId) {
+        return res.status(400).json({ 
+          message: 'Category is required' 
+        });
+      }
+      
+      // Check if SKU already exists
+      const existingProduct = await storage.getProductBySku(requestData.sku);
+      if (existingProduct) {
+        return res.status(400).json({ 
+          message: 'A product with this SKU/Item Code already exists' 
         });
       }
       
@@ -423,8 +461,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Validated product data:', productData);
       
       const product = await storage.createProduct(productData);
-      console.log('Created product:', product);
-      res.status(201).json(product);
+      console.log('Created product successfully:', product.id);
+      
+      res.status(201).json({
+        ...product,
+        message: 'Product created successfully'
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error('Validation errors:', JSON.stringify(error.errors, null, 2));
@@ -443,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error('Error creating product:', error);
       res.status(500).json({ 
-        message: 'Internal server error',
+        message: 'Failed to create product',
         error: error.message 
       });
     }
