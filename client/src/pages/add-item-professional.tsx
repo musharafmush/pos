@@ -206,7 +206,7 @@ export default function AddItemProfessional() {
       cost: "",
       weight: "",
       weightUnit: "kg",
-      categoryId: categories[0]?.id || 1,
+      categoryId: 1,
       stockQuantity: "0",
       active: true,
     },
@@ -215,20 +215,39 @@ export default function AddItemProfessional() {
   // Create product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      const res = await apiRequest("POST", "/api/products", {
+      console.log("Creating product with data:", data);
+      
+      // Validate required fields
+      if (!data.itemName || !data.itemCode || !data.price || !data.mrp) {
+        throw new Error("Please fill in all required fields");
+      }
+
+      const productData = {
         name: data.itemName,
         sku: data.itemCode,
-        description: data.aboutProduct,
-        price: parseFloat(data.price),
-        mrp: parseFloat(data.mrp),
+        description: data.aboutProduct || "",
+        price: parseFloat(data.price) || 0,
+        mrp: parseFloat(data.mrp) || 0,
         cost: data.cost ? parseFloat(data.cost) : 0,
         weight: data.weight ? parseFloat(data.weight) : null,
-        weightUnit: data.weightUnit,
-        stockQuantity: parseInt(data.stockQuantity),
-        categoryId: data.categoryId,
-        barcode: "", // Can be added later
-        active: data.active,
-      });
+        weightUnit: data.weightUnit || "kg",
+        stockQuantity: parseInt(data.stockQuantity) || 0,
+        categoryId: data.categoryId || 1,
+        barcode: data.barcode || "",
+        active: data.active !== false,
+        // GST and tax information
+        hsnCode: data.hsnCode || "",
+        gstCode: data.gstCode || "",
+        cgstRate: data.cgstRate ? parseFloat(data.cgstRate) : null,
+        sgstRate: data.sgstRate ? parseFloat(data.sgstRate) : null,
+        igstRate: data.igstRate ? parseFloat(data.igstRate) : null,
+        cessRate: data.cessRate ? parseFloat(data.cessRate) : null,
+        taxCalculationMethod: data.taxCalculationMethod || ""
+      };
+
+      console.log("Sending product data:", productData);
+
+      const res = await apiRequest("POST", "/api/products", productData);
       return await res.json();
     },
     onSuccess: () => {
@@ -1664,6 +1683,46 @@ export default function AddItemProfessional() {
                                       <FormLabel>Stock Quantity *</FormLabel>
                                       <FormControl>
                                         <Input {...field} placeholder="0" type="number" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name="weight"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Weight</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.001" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="categoryId"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Category *</FormLabel>
+                                      <FormControl>
+                                        <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select category" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {categories.map((category: any) => (
+                                              <SelectItem key={category.id} value={category.id.toString()}>
+                                                {category.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
