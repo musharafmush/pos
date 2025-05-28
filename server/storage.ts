@@ -621,6 +621,7 @@ export const storage = {
           // Get the received quantity - this is what should be added to stock
           const receivedQty = Number(item.receivedQty) || Number(item.quantity) || 0;
           const quantity = Number(item.quantity) || receivedQty || 1;
+          const unitCost = Number(item.unitCost) || 0;
 
           console.log(`Processing item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Unit Cost: ${unitCost}`);
 
