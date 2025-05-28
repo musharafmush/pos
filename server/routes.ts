@@ -1690,6 +1690,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Database management routes
+  app.post('/api/admin/init-database', isAdmin, async (req, res) => {
+    try {
+      const { initializeDatabase } = await import('../db/sqlite-migrate');
+      await initializeDatabase();
+      res.json({ message: 'Database initialized successfully' });
+    } catch (error) {
+      console.error('Database initialization error:', error);
+      res.status(500).json({ message: 'Failed to initialize database' });
+    }
+  });
+
+  app.post('/api/admin/backup-data', isAdmin, async (req, res) => {
+    try {
+      const { backupData } = await import('../backup-data');
+      const backup = await backupData();
+      res.json({ 
+        message: 'Data backed up successfully', 
+        backup: backup 
+      });
+    } catch (error) {
+      console.error('Backup error:', error);
+      res.status(500).json({ message: 'Failed to backup data' });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
 

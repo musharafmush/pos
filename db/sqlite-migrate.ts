@@ -1,69 +1,47 @@
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import { db, sqlite } from './index.js';
-import * as schema from '@shared/schema';
 
-console.log('🔧 Setting up SQLite database for desktop POS...');
+import Database from 'better-sqlite3';
+import path from 'path';
+import bcrypt from 'bcryptjs';
 
-// Create tables manually for SQLite
-try {
+const dbPath = path.join(process.cwd(), 'pos-data.db');
+
+export async function initializeDatabase() {
+  const db = new Database(dbPath);
+  
+  // Enable foreign keys
+  db.pragma('foreign_keys = ON');
+  
+  console.log('🔄 Creating database tables...');
+  
+  // Create tables in the correct order (dependencies first)
+  
   // Users table
-  sqlite.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
-      role TEXT DEFAULT 'cashier' CHECK (role IN ('admin', 'cashier', 'manager')),
+      role TEXT NOT NULL DEFAULT 'cashier',
       image TEXT,
-      active BOOLEAN DEFAULT true,
+      active INTEGER NOT NULL DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+    )
   `);
-
+  
   // Categories table
-  sqlite.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+    )
   `);
-
-  // Products table
-  sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS products (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      description TEXT NOT NULL,
-      price DECIMAL(10,2) NOT NULL,
-      cost DECIMAL(10,2) DEFAULT 0,
-      stock INTEGER DEFAULT 0,
-      min_stock INTEGER DEFAULT 5,
-      sku TEXT UNIQUE,
-      barcode TEXT UNIQUE,
-      category_id INTEGER REFERENCES categories(id),
-      image TEXT,
-      active BOOLEAN DEFAULT true,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  // Customers table
-  sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS customers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT UNIQUE,
-      phone TEXT,
-      address TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
+  
   // Suppliers table
-  sqlite.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS suppliers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -71,80 +49,235 @@ try {
       phone TEXT,
       address TEXT,
       contact_person TEXT,
+      status TEXT DEFAULT 'active',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+    )
   `);
-
+  
+  // Customers table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS customers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT,
+      phone TEXT,
+      address TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
+  // Products table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      sku TEXT UNIQUE NOT NULL,
+      price TEXT NOT NULL,
+      mrp TEXT NOT NULL,
+      cost TEXT NOT NULL DEFAULT '0',
+      weight TEXT,
+      weight_unit TEXT DEFAULT 'kg',
+      category_id INTEGER NOT NULL,
+      stock_quantity INTEGER NOT NULL DEFAULT 0,
+      alert_threshold INTEGER NOT NULL DEFAULT 5,
+      barcode TEXT,
+      image TEXT,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (category_id) REFERENCES categories(id)
+    )
+  `);
+  
   // Sales table
-  sqlite.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS sales (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       order_number TEXT UNIQUE NOT NULL,
-      customer_id INTEGER REFERENCES customers(id),
-      user_id INTEGER REFERENCES users(id),
-      total DECIMAL(10,2) NOT NULL,
-      payment_method TEXT DEFAULT 'cash',
-      notes TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+      customer_id INTEGER,
+      user_id INTEGER NOT NULL,
+      total TEXT NOT NULL,
+      tax TEXT NOT NULL DEFAULT '0',
+      discount TEXT NOT NULL DEFAULT '0',
+      payment_method TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'completed',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
   `);
-
+  
   // Sale items table
-  sqlite.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS sale_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sale_id INTEGER NOT NULL REFERENCES sales(id),
-      product_id INTEGER NOT NULL REFERENCES products(id),
+      sale_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
       quantity INTEGER NOT NULL,
-      price DECIMAL(10,2) NOT NULL,
-      total DECIMAL(10,2) NOT NULL
-    );
+      unit_price TEXT NOT NULL,
+      price TEXT NOT NULL,
+      total TEXT NOT NULL,
+      subtotal TEXT NOT NULL,
+      cost TEXT,
+      margin TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id)
+    )
   `);
-
+  
   // Purchases table
-  sqlite.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS purchases (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      supplier_id INTEGER REFERENCES suppliers(id),
-      user_id INTEGER REFERENCES users(id),
-      purchase_number TEXT UNIQUE NOT NULL,
-      order_date DATE NOT NULL,
-      expected_date DATE,
-      received_date DATE,
-      total DECIMAL(10,2) NOT NULL,
-      freight_charges DECIMAL(10,2) DEFAULT 0,
-      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'received', 'cancelled')),
+      supplier_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      purchase_number TEXT,
+      order_number TEXT,
+      po_no TEXT,
+      order_date DATETIME,
+      po_date DATETIME,
+      expected_date DATETIME,
+      due_date DATETIME,
+      received_date DATETIME,
+      total TEXT NOT NULL,
+      sub_total TEXT,
+      freight_cost TEXT DEFAULT '0',
+      freight TEXT DEFAULT '0',
+      other_charges TEXT DEFAULT '0',
+      discount_amount TEXT DEFAULT '0',
+      status TEXT NOT NULL DEFAULT 'pending',
       notes TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+      remarks TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
   `);
-
+  
   // Purchase items table
-  sqlite.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS purchase_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      purchase_id INTEGER NOT NULL REFERENCES purchases(id),
-      product_id INTEGER NOT NULL REFERENCES products(id),
+      purchase_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
       quantity INTEGER NOT NULL,
-      cost DECIMAL(10,2) NOT NULL,
-      total DECIMAL(10,2) NOT NULL
-    );
+      unit_cost TEXT NOT NULL,
+      cost TEXT NOT NULL,
+      total TEXT NOT NULL,
+      amount TEXT NOT NULL,
+      subtotal TEXT NOT NULL,
+      received_qty INTEGER,
+      free_qty INTEGER DEFAULT 0,
+      expiry_date TEXT,
+      hsn_code TEXT,
+      tax_percentage TEXT DEFAULT '0',
+      discount_amount TEXT DEFAULT '0',
+      discount_percent TEXT DEFAULT '0',
+      net_cost TEXT,
+      selling_price TEXT DEFAULT '0',
+      mrp TEXT DEFAULT '0',
+      batch_number TEXT,
+      location TEXT,
+      unit TEXT DEFAULT 'PCS',
+      roi_percent TEXT DEFAULT '0',
+      gross_profit_percent TEXT DEFAULT '0',
+      net_amount TEXT,
+      cash_percent TEXT DEFAULT '0',
+      cash_amount TEXT DEFAULT '0',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id)
+    )
   `);
-
-  // Settings table
-  sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS settings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      key TEXT UNIQUE NOT NULL,
-      value TEXT NOT NULL,
-      description TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  console.log('✅ SQLite database setup complete!');
-  console.log('🎯 Your desktop POS system is ready for offline use!');
   
-} catch (error) {
-  console.error('❌ Error setting up database:', error);
+  console.log('✅ All tables created successfully');
+  
+  // Create default admin user if it doesn't exist
+  const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
+  
+  if (!existingAdmin) {
+    console.log('🔄 Creating default admin user...');
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    
+    db.prepare(`
+      INSERT INTO users (username, password, name, email, role, active)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run('admin', hashedPassword, 'Administrator', 'admin@pos.local', 'admin', 1);
+    
+    console.log('✅ Default admin user created (username: admin, password: admin123)');
+  }
+  
+  // Create default category if none exist
+  const categoryCount = db.prepare('SELECT COUNT(*) as count FROM categories').get();
+  
+  if (categoryCount.count === 0) {
+    console.log('🔄 Creating default categories...');
+    
+    const categories = [
+      { name: 'General', description: 'General products' },
+      { name: 'Electronics', description: 'Electronic items and gadgets' },
+      { name: 'Clothing', description: 'Apparel and fashion items' },
+      { name: 'Food & Beverages', description: 'Food products and drinks' },
+      { name: 'Home & Garden', description: 'Home improvement and gardening items' }
+    ];
+    
+    const insertCategory = db.prepare('INSERT INTO categories (name, description) VALUES (?, ?)');
+    
+    for (const category of categories) {
+      insertCategory.run(category.name, category.description);
+    }
+    
+    console.log('✅ Default categories created');
+  }
+  
+  // Create default supplier if none exist
+  const supplierCount = db.prepare('SELECT COUNT(*) as count FROM suppliers').get();
+  
+  if (supplierCount.count === 0) {
+    console.log('🔄 Creating default suppliers...');
+    
+    const suppliers = [
+      {
+        name: 'General Supplier',
+        email: 'supplier@example.com',
+        phone: '+1234567890',
+        address: '123 Business St, City, State',
+        contact_person: 'John Doe'
+      },
+      {
+        name: 'Fresh Foods Supply',
+        email: 'fresh@foods.com',
+        phone: '+1234567891',
+        address: '456 Market Ave, City, State',
+        contact_person: 'Jane Smith'
+      }
+    ];
+    
+    const insertSupplier = db.prepare(`
+      INSERT INTO suppliers (name, email, phone, address, contact_person)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    
+    for (const supplier of suppliers) {
+      insertSupplier.run(
+        supplier.name,
+        supplier.email,
+        supplier.phone,
+        supplier.address,
+        supplier.contact_person
+      );
+    }
+    
+    console.log('✅ Default suppliers created');
+  }
+  
+  db.close();
+  console.log('🎉 Database initialization completed successfully!');
+}
+
+// Run initialization if this file is executed directly
+if (require.main === module) {
+  initializeDatabase().catch(console.error);
 }
