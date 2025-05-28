@@ -273,7 +273,7 @@ export default function AddItemProfessional() {
     { id: "tax-information", label: "Tax Information", icon: <DollarSignIcon className="w-4 h-4" /> },
     { id: "ean-code-barcode", label: "EAN Code/Barcode", icon: <BarChart3Icon className="w-4 h-4" /> },
     { id: "packing", label: "Packing", icon: <BoxIcon className="w-4 h-4" /> },
-    { id: "item-properties", label: "Item Properties", icon: <SettingsIcon className="w-4 h-4" /> },
+    
     { id: "pricing", label: "Pricing", icon: <DollarSignIcon className="w-4 h-4" /> },
     { id: "reorder-configurations", label: "Reorder Configurations", icon: <PackageIcon className="w-4 h-4" /> },
     { id: "purchase-order", label: "Purchase Order", icon: <ShoppingCartIcon className="w-4 h-4" /> },
@@ -1028,6 +1028,63 @@ export default function AddItemProfessional() {
                         </div>
                       </div>
 
+                      {/* Basic Product Information */}
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h3 className="font-medium mb-4 text-gray-800">Basic Product Information</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="stockQuantity"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Stock Quantity *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0" type="number" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="categoryId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Category *</FormLabel>
+                                <FormControl>
+                                  <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {categories.map((category: any) => (
+                                        <SelectItem key={category.id} value={category.id.toString()}>
+                                          {category.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="weight"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Weight (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0.00" type="number" step="0.001" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
                       {/* Pricing Configuration */}
                       <div className="grid grid-cols-2 gap-6">
                         <FormField
@@ -1594,195 +1651,7 @@ export default function AddItemProfessional() {
                         </Card>
                       )}
 
-                      {/* Item Properties Section */}
-                      {currentSection === "item-properties" && (
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                              <SettingsIcon className="w-5 h-5" />
-                              Item Properties
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
-                              <FormField
-                                control={form.control}
-                                name="decimalPoint"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Decimal Point</FormLabel>
-                                    <FormControl>
-                                      <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="0">0 (No decimals)</SelectItem>
-                                          <SelectItem value="1">1 decimal place</SelectItem>
-                                          <SelectItem value="2">2 decimal places</SelectItem>
-                                          <SelectItem value="3">3 decimal places</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="imageAlignment"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Image Alignment</FormLabel>
-                                    <FormControl>
-                                      <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select alignment" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="left">Left</SelectItem>
-                                          <SelectItem value="center">Center</SelectItem>
-                                          <SelectItem value="right">Right</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-
-                            <FormField
-                              control={form.control}
-                              name="productType"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Product Type *</FormLabel>
-                                  <FormControl>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                      <SelectTrigger>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="NA">N/A</SelectItem>
-                                        <SelectItem value="FMCG">FMCG</SelectItem>
-                                        <SelectItem value="Electronics">Electronics</SelectItem>
-                                        <SelectItem value="Clothing">Clothing</SelectItem>
-                                        <SelectItem value="Food">Food & Beverages</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <div className="bg-blue-50 p-4 rounded-lg">
-                              <h3 className="font-medium mb-3">Inventory Information</h3>
-                              <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                  control={form.control}
-                                  name="stockQuantity"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Stock Quantity *</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="0" type="number" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="categoryId"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Category *</FormLabel>
-                                      <FormControl>
-                                        <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select category" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {categories.map((category: any) => (
-                                              <SelectItem key={category.id} value={category.id.toString()}>
-                                                {category.name}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-4 mt-4">
-                                <FormField
-                                  control={form.control}
-                                  name="weight"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Weight</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="0.00" type="number" step="0.001" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="weightUnit"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Weight Unit</FormLabel>
-                                      <FormControl>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                          <SelectTrigger>
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                                            <SelectItem value="g">Grams (g)</SelectItem>
-                                            <SelectItem value="ltr">Liters (ltr)</SelectItem>
-                                            <SelectItem value="ml">Milliliters (ml)</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="bg-purple-50 p-4 rounded-lg">
-                              <h3 className="font-medium mb-3">Additional Properties</h3>
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Perishable Item</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Temperature Controlled</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Fragile Item</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Track Serial Numbers</span>
-                                  <Switch />
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
+                      
 
                       {/* Reorder Configurations Section */}
                       {currentSection === "reorder-configurations" && (
