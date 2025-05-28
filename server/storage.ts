@@ -172,48 +172,49 @@ export const storage = {
     image?: string;
     active?: boolean;
   }): Promise<Product> {
-    // Import SQLite database directly
-    const { sqlite } = await import('@db');
+    try {
+      // Import SQLite database directly
+      const { sqlite } = await import('@db');
 
-    const insertProduct = sqlite.prepare(`
-      INSERT INTO products (
-        name, description, sku, price, mrp, cost, weight, weight_unit, category_id, 
-        stock_quantity, alert_threshold, barcode, image, active,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `);
+      const insertProduct = sqlite.prepare(`
+        INSERT INTO products (
+          name, description, sku, price, mrp, cost, weight, weight_unit, category_id, 
+          stock_quantity, alert_threshold, barcode, image, active,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `);
 
-    const result = insertProduct.run(
-      product.name,
-      product.description || null,
-      product.sku,
-      product.price.toString(),
-      product.mrp?.toString() || product.price.toString(),
-      product.cost?.toString() || '0',
-      product.weight?.toString() || null,
-      product.weightUnit || 'kg',
-      product.categoryId,
-      product.stockQuantity || 0,
-      product.alertThreshold || 5,
-      product.barcode || null,
-      product.image || null,
-      product.active !== false ? 1 : 0
-    );
+      const result = insertProduct.run(
+        product.name,
+        product.description || null,
+        product.sku,
+        product.price.toString(),
+        product.mrp?.toString() || product.price.toString(),
+        product.cost?.toString() || '0',
+        product.weight?.toString() || null,
+        product.weightUnit || 'kg',
+        product.categoryId,
+        product.stockQuantity || 0,
+        product.alertThreshold || 5,
+        product.barcode || null,
+        product.image || null,
+        product.active !== false ? 1 : 0
+      );
 
-    // Fetch the created product
-    const getProduct = sqlite.prepare('SELECT * FROM products WHERE id = ?');
-    const newProduct = getProduct.get(result.lastInsertRowid);
+      // Fetch the created product
+      const getProduct = sqlite.prepare('SELECT * FROM products WHERE id = ?');
+      const newProduct = getProduct.get(result.lastInsertRowid);
 
-    return {
-      ...newProduct,
-      active: Boolean(newProduct.active),
-      createdAt: new Date(newProduct.created_at),
-      updatedAt: new Date(newProduct.updated_at)
-    };
-  } catch (error) {
-    console.error("Error creating product:", error);
-    throw error;
-  }
-},
+      return {
+        ...newProduct,
+        active: Boolean(newProduct.active),
+        createdAt: new Date(newProduct.created_at),
+        updatedAt: new Date(newProduct.updated_at)
+      };
+    } catch (error) {
+      console.error("Error creating product:", error);
+      throw error;
+    }
+  },
 
   async updateProduct(id: number, data: Partial<InsertProduct>): Promise<Product> {
