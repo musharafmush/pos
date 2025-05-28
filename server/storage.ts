@@ -583,12 +583,13 @@ export const storage = {
       // Insert purchase using raw SQL to avoid timestamp issues
       const insertPurchase = sqlite.prepare(`
         INSERT INTO purchases (
-          order_number, supplier_id, user_id, total, status, 
+          purchase_number, order_number, supplier_id, user_id, total, status, 
           order_date, created_at
-        ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
       
       const result = insertPurchase.run(
+        orderNumber,
         orderNumber,
         supplierId,
         userId,
