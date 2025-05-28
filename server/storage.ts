@@ -280,5 +280,426 @@ export const storage = {
       console.error('Error searching products:', error);
       throw error;
     }
+  },
+
+  async getLowStockProducts(limit: number = 10): Promise<Product[]> {
+    try {
+      return await db.query.products.findMany({
+        where: sql`${products.stockQuantity} <= ${products.alertThreshold}`,
+        with: { category: true },
+        orderBy: products.stockQuantity,
+        limit
+      });
+    } catch (error) {
+      console.error('Error fetching low stock products:', error);
+      throw error;
+    }
+  },
+
+  // Supplier related operations
+  async getSupplierById(id: number): Promise<Supplier | null> {
+    try {
+      return await db.query.suppliers.findFirst({
+        where: eq(suppliers.id, id)
+      });
+    } catch (error) {
+      console.error('Error fetching supplier by ID:', error);
+      throw error;
+    }
+  },
+
+  async createSupplier(supplier: {
+    name: string;
+    contactPerson?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    registrationNumber?: string;
+    taxId?: string;
+    website?: string;
+  }): Promise<Supplier> {
+    try {
+      const [newSupplier] = await db.insert(suppliers).values({
+        ...supplier,
+        status: 'active'
+      }).returning();
+      return newSupplier;
+    } catch (error) {
+      console.error('Error creating supplier:', error);
+      throw error;
+    }
+  },
+
+  async updateSupplier(id: number, supplier: Partial<Supplier>): Promise<Supplier | null> {
+    try {
+      const [updatedSupplier] = await db.update(suppliers)
+        .set(supplier)
+        .where(eq(suppliers.id, id))
+        .returning();
+      return updatedSupplier || null;
+    } catch (error) {
+      console.error('Error updating supplier:', error);
+      throw error;
+    }
+  },
+
+  async deleteSupplier(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(suppliers).where(eq(suppliers.id, id)).returning({ id: suppliers.id });
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      throw error;
+    }
+  },
+
+  async listSuppliers(): Promise<Supplier[]> {
+    try {
+      return await db.query.suppliers.findMany({
+        orderBy: suppliers.name
+      });
+    } catch (error) {
+      console.error('Error listing suppliers:', error);
+      throw error;
+    }
+  },
+
+  // Customer related operations
+  async getCustomerById(id: number): Promise<Customer | null> {
+    try {
+      return await db.query.customers.findFirst({
+        where: eq(customers.id, id)
+      });
+    } catch (error) {
+      console.error('Error fetching customer by ID:', error);
+      throw error;
+    }
+  },
+
+  async createCustomer(customer: {
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  }): Promise<Customer> {
+    try {
+      const [newCustomer] = await db.insert(customers).values(customer).returning();
+      return newCustomer;
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      throw error;
+    }
+  },
+
+  async updateCustomer(id: number, customer: Partial<Customer>): Promise<Customer | null> {
+    try {
+      const [updatedCustomer] = await db.update(customers)
+        .set(customer)
+        .where(eq(customers.id, id))
+        .returning();
+      return updatedCustomer || null;
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      throw error;
+    }
+  },
+
+  async deleteCustomer(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(customers).where(eq(customers.id, id)).returning({ id: customers.id });
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      throw error;
+    }
+  },
+
+  async listCustomers(): Promise<Customer[]> {
+    try {
+      return await db.query.customers.findMany({
+        orderBy: customers.name
+      });
+    } catch (error) {
+      console.error('Error listing customers:', error);
+      throw error;
+    }
+  },
+
+  async searchCustomers(query: string): Promise<Customer[]> {
+    try {
+      return await db.query.customers.findMany({
+        where: or(
+          like(customers.name, `%${query}%`),
+          like(customers.email, `%${query}%`),
+          like(customers.phone, `%${query}%`)
+        )
+      });
+    } catch (error) {
+      console.error('Error searching customers:', error);
+      throw error;
+    }
+  },
+
+  // Sales related operations
+  async createSale(
+    userId: number,
+    items: Array<{ productId: number; quantity: number; unitPrice: number }>,
+    saleData: {
+      customerId?: number;
+      tax?: number;
+      discount?: number;
+      paymentMethod?: string;
+      status?: string;
+    }
+  ): Promise<Sale> {
+    try {
+      // Calculate total
+      const total = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      
+      const [newSale] = await db.insert(sales).values({
+        userId,
+        customerId: saleData.customerId || null,
+        total: total.toString(),
+        tax: saleData.tax?.toString() || '0',
+        discount: saleData.discount?.toString() || '0',
+        paymentMethod: saleData.paymentMethod || 'cash',
+        status: saleData.status || 'completed'
+      }).returning();
+
+      // Insert sale items
+      for (const item of items) {
+        await db.insert(saleItems).values({
+          saleId: newSale.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice.toString(),
+          subtotal: (item.quantity * item.unitPrice).toString()
+        });
+      }
+
+      return newSale;
+    } catch (error) {
+      console.error('Error creating sale:', error);
+      throw error;
+    }
+  },
+
+  async getSaleById(id: number): Promise<Sale | null> {
+    try {
+      return await db.query.sales.findFirst({
+        where: eq(sales.id, id),
+        with: {
+          items: {
+            with: {
+              product: true
+            }
+          },
+          customer: true,
+          user: true
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching sale by ID:', error);
+      throw error;
+    }
+  },
+
+  async listSales(startDate?: Date, endDate?: Date, limit?: number, offset?: number, userId?: number, customerId?: number): Promise<Sale[]> {
+    try {
+      const conditions = [];
+      
+      if (startDate) {
+        conditions.push(gte(sales.createdAt, startDate));
+      }
+      if (endDate) {
+        conditions.push(lte(sales.createdAt, endDate));
+      }
+      if (userId) {
+        conditions.push(eq(sales.userId, userId));
+      }
+      if (customerId) {
+        conditions.push(eq(sales.customerId, customerId));
+      }
+
+      return await db.query.sales.findMany({
+        where: conditions.length > 0 ? and(...conditions) : undefined,
+        with: {
+          items: {
+            with: {
+              product: true
+            }
+          },
+          customer: true,
+          user: true
+        },
+        orderBy: desc(sales.createdAt),
+        limit: limit || 20,
+        offset: offset || 0
+      });
+    } catch (error) {
+      console.error('Error listing sales:', error);
+      throw error;
+    }
+  },
+
+  async getRecentSales(limit: number = 5): Promise<Sale[]> {
+    try {
+      return await db.query.sales.findMany({
+        with: {
+          items: {
+            with: {
+              product: true
+            }
+          },
+          customer: true,
+          user: true
+        },
+        orderBy: desc(sales.createdAt),
+        limit
+      });
+    } catch (error) {
+      console.error('Error fetching recent sales:', error);
+      return [];
+    }
+  },
+
+  // Purchase related operations
+  async createPurchase(
+    userId: number,
+    supplierId: number,
+    items: Array<{ productId: number; quantity: number; unitCost: number }>,
+    purchaseData: any
+  ): Promise<Purchase> {
+    try {
+      // Calculate total
+      const total = items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
+      
+      const [newPurchase] = await db.insert(purchases).values({
+        userId,
+        supplierId,
+        total: total.toString(),
+        status: purchaseData.status || 'pending'
+      }).returning();
+
+      // Insert purchase items
+      for (const item of items) {
+        await db.insert(purchaseItems).values({
+          purchaseId: newPurchase.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitCost: item.unitCost.toString(),
+          subtotal: (item.quantity * item.unitCost).toString()
+        });
+      }
+
+      return newPurchase;
+    } catch (error) {
+      console.error('Error creating purchase:', error);
+      throw error;
+    }
+  },
+
+  async getPurchaseById(id: number): Promise<Purchase | null> {
+    try {
+      return await db.query.purchases.findFirst({
+        where: eq(purchases.id, id),
+        with: {
+          items: {
+            with: {
+              product: true
+            }
+          },
+          supplier: true,
+          user: true
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching purchase by ID:', error);
+      throw error;
+    }
+  },
+
+  // Dashboard related operations
+  async getDashboardStats(): Promise<any> {
+    try {
+      // Get total products
+      const totalProducts = await db.query.products.findMany();
+      
+      // Get total sales for today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todaySales = await db.query.sales.findMany({
+        where: gte(sales.createdAt, today)
+      });
+      
+      // Get low stock products
+      const lowStockProducts = await db.query.products.findMany({
+        where: sql`${products.stockQuantity} <= ${products.alertThreshold}`,
+        limit: 10
+      });
+
+      const todayRevenue = todaySales.reduce((sum, sale) => sum + parseFloat(sale.total || '0'), 0);
+
+      return {
+        totalProducts: totalProducts.length,
+        todaysSales: todaySales.length,
+        todaysRevenue: todayRevenue,
+        lowStockItems: lowStockProducts.length
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      return {
+        totalProducts: 0,
+        todaysSales: 0,
+        todaysRevenue: 0,
+        lowStockItems: 0
+      };
+    }
+  },
+
+  async getDailySalesData(days: number = 7): Promise<any[]> {
+    try {
+      const salesData = [];
+      const today = new Date();
+      
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+        
+        const nextDate = new Date(date);
+        nextDate.setDate(date.getDate() + 1);
+        
+        const daySales = await db.query.sales.findMany({
+          where: and(
+            gte(sales.createdAt, date),
+            lt(sales.createdAt, nextDate)
+          )
+        });
+        
+        const revenue = daySales.reduce((sum, sale) => sum + parseFloat(sale.total || '0'), 0);
+        
+        salesData.push({
+          date: date.toISOString().split('T')[0],
+          sales: daySales.length,
+          revenue
+        });
+      }
+      
+      return salesData;
+    } catch (error) {
+      console.error('Error fetching daily sales data:', error);
+      return [];
+    }
+  },
+
+  async getTopSellingProducts(limit: number = 5, startDate?: Date, endDate?: Date): Promise<any[]> {
+    try {
+      // This would need a more complex query in a real implementation
+      return [];
+    } catch (error) {
+      console.error('Error fetching top selling products:', error);
+      return [];
+    }
   }
 };
