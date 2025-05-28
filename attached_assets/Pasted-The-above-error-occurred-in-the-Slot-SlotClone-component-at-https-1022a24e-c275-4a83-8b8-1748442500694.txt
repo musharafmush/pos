@@ -1,0 +1,77 @@
+The above error occurred in the <Slot.SlotClone> component:
+
+    at https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=d4829022:79:13
+    at https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=d4829022:56:13
+    at https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/form.tsx:129:9
+    at div
+    at https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/form.tsx:71:6
+    at Controller (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=d4829022:298:35)
+    at FormField (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/form.tsx:32:6)
+    at div
+    at div
+    at _c9 (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/card.tsx:20:11)
+    at form
+    at FormProvider (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=d4829022:102:11)
+    at div
+    at div
+    at div
+    at main
+    at div
+    at div
+    at DashboardLayout (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/layout/dashboard-layout.tsx:22:35)
+    at AddItemProfessional (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/pages/add-item-professional.tsx:127:21)
+    at Route (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d4829022:280:16)
+    at ProtectedRoute (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/auth/protected-route.tsx:22:3)
+    at Switch (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d4829022:336:17)
+    at Router
+    at AuthProvider (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at QueryClientProvider (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=d4829022:2879:3)
+    at ThemeProvider (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/theme-provider.tsx:25:3)
+    at App
+    at ErrorBoundary (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/main.tsx?v=tTJkKpYj2V8xQxGL4KpXb:10:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+
+at https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=d4829022:79:13
+at https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=d4829022:56:13
+at https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/form.tsx:129:9
+at div
+at https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/form.tsx:71:6
+at Controller (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=d4829022:298:35)
+at FormField (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/form.tsx:32:6)
+at div
+at div
+at _c9 (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/card.tsx:114:12)
+at div
+at _c (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/card.tsx:20:11)
+at form
+at FormProvider (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=d4829022:102:11)
+at div
+at div
+at div
+at main
+at div
+at div
+at DashboardLayout (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/layout/dashboard-layout.tsx:22:35)
+at AddItemProfessional (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/pages/add-item-professional.tsx:127:21)
+at Route (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d4829022:280:16)
+at ProtectedRoute (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/auth/protected-route.tsx:22:3)
+at Switch (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d4829022:336:17)
+at Router
+at AuthProvider (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/hooks/use-auth.tsx:26:32)
+at QueryClientProvider (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=d4829022:2879:3)
+at ThemeProvider (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/components/ui/theme-provider.tsx:25:3)
+at App
+at ErrorBoundary (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/src/main.tsx?v=tTJkKpYj2V8xQxGL4KpXb:10:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+at t.value (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://1022a24e-c275-4a83-8b88-64007b35b1c4-00-26becse6iqlqq.pike.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Error caught by boundary: 
+Error {}
+ 
+Object {componentStack: "↵    at…"}
