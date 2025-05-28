@@ -767,7 +767,8 @@ export default function AddItemProfessional() {
                                   <SelectContent>
                                     <SelectItem value="GST 0%">GST 0% - Nil Rate (Basic necessities)</SelectItem>
                                     <SelectItem value="GST 5%">GST 5% - Essential goods (Food grains, medicines)</SelectItem>
-                                    <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
+                                    <SelectItem value="GST 12%">GST```python
+ 12% - Standard rate (Textiles, electronics)</SelectItem>
                                     <SelectItem value="GST 18%">GST 18% - Standard rate (Most goods & services)</SelectItem>
                                     <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
                                     <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
@@ -1117,7 +1118,7 @@ export default function AddItemProfessional() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="flex gap-2 mt-2">
                         <Button 
                           type="button" 
@@ -1168,17 +1169,18 @@ export default function AddItemProfessional() {
                                     <SelectTrigger>
                                       <SelectValue placeholder="Select barcode type" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="ean13">EAN-13 (European)</SelectItem>
-                                      <SelectItem value="ean8">EAN-8 (Short)</SelectItem>
-                                      <SelectItem value="upc">UPC (Universal)</SelectItem>
-                                      <SelectItem value="code128">Code 128</SelectItem>
-                                      <SelectItem value="code39">Code 39</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="ean13">EAN-13 (European)</SelectItem>
+                                    <SelectItem value="ean8">EAN-8 (Short)</SelectItem>
+                                    <SelectItem value="upc">UPC (Universal)</SelectItem>
+                                    <SelectItem value="code128">Code 128</SelectItem>
+                                    <SelectItem value="code39">Code 39</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
                             )}
                           />
                           <div className="space-y-2">
@@ -1385,20 +1387,24 @@ export default function AddItemProfessional() {
                                   <div className="grid grid-cols-2 gap-6">
                                     <FormField
                                       control={form.control}
-                                      name="weightInGms"
+                                      name="bulkItemName"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel className="text-red-600">Target Package Weight (grams) *</FormLabel>
-                                          <FormControl>
-                                            <Input 
-                                              {...field} 
-                                              placeholder="e.g., 500 (for 500g packages)" 
-                                              type="number" 
-                                              step="0.001"
-                                              className="border-red-300 focus:border-red-500" 
-                                            />
-                                          </FormControl>
-                                          <div className="text-xs text-red-500 mt-1">Weight for each repackaged unit</div>
+                                          <FormLabel>Select Bulk Item</FormLabel>
+                                          <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Choose bulk item" />
+                                              </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                              <SelectItem value="rice-25kg">Rice - 25kg Bag</SelectItem>
+                                              <SelectItem value="wheat-50kg">Wheat - 50kg Bag</SelectItem>
+                                              <SelectItem value="sugar-25kg">Sugar - 25kg Bag</SelectItem>
+                                              <SelectItem value="dal-25kg">Dal - 25kg Bag</SelectItem>
+                                              <SelectItem value="oil-15l">Oil - 15L Container</SelectItem>
+                                            </SelectContent>
+                                          </Select>
                                           <FormMessage />
                                         </FormItem>
                                       )}
@@ -1406,20 +1412,17 @@ export default function AddItemProfessional() {
 
                                     <FormField
                                       control={form.control}
-                                      name="repackageUnits"
+                                      name="weightInGms"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>Number of Units to Create</FormLabel>
+                                          <FormLabel>Weight per Unit (grams)</FormLabel>
                                           <FormControl>
-                                            <Input 
-                                              {...field} 
-                                              placeholder="e.g., 20 (create 20 units)" 
-                                              type="number" 
-                                              min="1"
-                                              className="border-blue-300 focus:border-blue-500" 
+                                            <Input
+                                              type="number"
+                                              placeholder="e.g., 1000"
+                                              {...field}
                                             />
                                           </FormControl>
-                                          <div className="text-xs text-gray-500 mt-1">How many repackaged units to create</div>
                                           <FormMessage />
                                         </FormItem>
                                       )}
@@ -1429,25 +1432,16 @@ export default function AddItemProfessional() {
                                   <div className="grid grid-cols-2 gap-6 mt-4">
                                     <FormField
                                       control={form.control}
-                                      name="repackageType"
+                                      name="repackageUnits"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>Repackaging Type</FormLabel>
+                                          <FormLabel>Number of Units</FormLabel>
                                           <FormControl>
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                              <SelectTrigger>
-                                                <SelectValue>
-                                                  {field.value || "Select repackaging type"}
-                                                </SelectValue>
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                <SelectItem value="weight-division">Weight Division (1kg → 500g packs)</SelectItem>
-                                                <SelectItem value="portion-control">Portion Control</SelectItem>
-                                                <SelectItem value="consumer-size">Consumer Size Packaging</SelectItem>
-                                                <SelectItem value="sample-size">Sample/Trial Size</SelectItem>
-                                                <SelectItem value="bulk-to-retail">Bulk to Retail</SelectItem>
-                                              </SelectContent>
-                                            </Select>
+                                            <Input
+                                              type="number"
+                                              placeholder="e.g., 25"
+                                              {...field}
+                                            />
                                           </FormControl>
                                           <FormMessage />
                                         </FormItem>
@@ -1456,27 +1450,23 @@ export default function AddItemProfessional() {
 
                                     <FormField
                                       control={form.control}
-                                      name="packagingMaterial"
+                                      name="packagingType"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>Packaging Material</FormLabel>
-                                          <FormControl>
-                                            <Select onValueChange={field.onChange} value={field.value}>
+                                          <FormLabel>Packaging Type</FormLabel>
+                                          <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
                                               <SelectTrigger>
-                                                <SelectValue>
-                                                  {field.value || "Select packaging material"}
-                                                </SelectValue>
+                                                <SelectValue placeholder="Select packaging" />
                                               </SelectTrigger>
-                                              <SelectContent>
-                                                <SelectItem value="plastic-pouch">Plastic Pouch</SelectItem>
-                                                <SelectItem value="paper-bag">Paper Bag</SelectItem>
-                                                <SelectItem value="glass-jar">Glass Jar</SelectItem>
-                                                <SelectItem value="tin-container">Tin Container</SelectItem>
-                                                <SelectItem value="cardboard-box">Cardboard Box</SelectItem>
-                                                <SelectItem value="vacuum-sealed">Vacuum Sealed</SelectItem>
-                                              </SelectContent>
-                                            </Select>
-                                          </FormControl>
+                                            </FormControl>
+                                            <SelectContent>
+                                              <SelectItem value="plastic-bag">Plastic Bag</SelectItem>
+                                              <SelectItem value="paper-bag">Paper Bag</SelectItem>
+                                              <SelectItem value="container">Container</SelectItem>
+                                              <SelectItem value="pouch">Pouch</SelectItem>
+                                            </SelectContent>
+                                          </Select>
                                           <FormMessage />
                                         </FormItem>
                                       )}
@@ -1495,61 +1485,6 @@ export default function AddItemProfessional() {
                                       </div>
                                     </div>
                                   )}
-
-                                  {/* Quick Unit Conversion Buttons */}
-                                  <div className="mt-4">
-                                    <label className="text-sm font-medium text-gray-700 mb-2 block">Quick Unit Templates:</label>
-                                    <div className="flex flex-wrap gap-2">
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          form.setValue("weightInGms", "250");
-                                          form.setValue("repackageUnits", "4");
-                                        }}
-                                        className="text-xs"
-                                      >
-                                        1kg → 4×250g
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          form.setValue("weightInGms", "500");
-                                          form.setValue("repackageUnits", "2");
-                                        }}
-                                        className="text-xs"
-                                      >
-                                        1kg → 2×500g
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          form.setValue("weightInGms", "100");
-                                          form.setValue("repackageUnits", "10");
-                                        }}
-                                        className="text-xs"
-                                      >
-                                        1kg → 10×100g
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          form.setValue("weightInGms", "50");
-                                          form.setValue("repackageUnits", "20");
-                                        }}
-                                        className="text-xs"
-                                      >
-                                        1kg → 20×50g
-                                      </Button>
-                                    </div>
-                                  </div>
                                 </div>
                               </div>
                             )}
@@ -1628,18 +1563,18 @@ export default function AddItemProfessional() {
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Image Alignment</FormLabel>
-                                    <FormControl>
-                                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                      <FormControl>
                                         <SelectTrigger>
                                           <SelectValue placeholder="Select alignment" />
                                         </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="left">Left</SelectItem>
-                                          <SelectItem value="center">Center</SelectItem>
-                                          <SelectItem value="right">Right</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormControl>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="left">Left</SelectItem>
+                                        <SelectItem value="center">Center</SelectItem>
+                                        <SelectItem value="right">Right</SelectItem>
+                                      </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                   </FormItem>
                                 )}
@@ -1709,7 +1644,7 @@ export default function AddItemProfessional() {
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Cost Price</FormLabel>
-                                      <FormControl>
+<FormControl>
                                         <Input {...field} placeholder="0.00" type="number" step="0.01" />
                                       </FormControl>
                                       <FormMessage />
