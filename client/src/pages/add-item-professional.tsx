@@ -1107,49 +1107,47 @@ export default function AddItemProfessional() {
                             <FormLabel>Manual Barcode Entry</FormLabel>
                             <FormControl>
                               <Input 
-                                value={field.value || ""}
-                                onChange={field.onChange}
+                                {...field} 
                                 placeholder="Enter barcode manually (e.g., 1234567890123)" 
                                 className="font-mono"
                               />
                             </FormControl>
+                            <div className="flex gap-2 mt-2">
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  const randomEAN = '2' + Math.random().toString().slice(2, 14);
+                                  field.onChange(randomEAN);
+                                }}
+                              >
+                                Generate EAN-13
+                              </Button>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  const randomUPC = Math.random().toString().slice(2, 14);
+                                  field.onChange(randomUPC);
+                                }}
+                              >
+                                Generate UPC
+                              </Button>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => field.onChange("")}
+                              >
+                                Clear
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
-                      <div className="flex gap-2 mt-2">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            const randomEAN = '2' + Math.random().toString().slice(2, 14);
-                            form.setValue("barcode", randomEAN);
-                          }}
-                        >
-                          Generate EAN-13
-                        </Button>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            const randomUPC = Math.random().toString().slice(2, 14);
-                            form.setValue("barcode", randomUPC);
-                          }}
-                        >
-                          Generate UPC
-                        </Button>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => form.setValue("barcode", "")}
-                        >
-                          Clear
-                        </Button>
-                      </div>
 
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h3 className="font-medium mb-3">Barcode Configuration</h3>
@@ -1164,16 +1162,19 @@ export default function AddItemProfessional() {
                               <FormItem>
                                 <FormLabel className="text-sm font-medium">Barcode Type</FormLabel>
                                 <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                                  <Select 
+                                    value={field.value || ""}
+                                    onValueChange={field.onChange}
+                                  >
                                     <SelectTrigger>
                                       <SelectValue placeholder="Select barcode type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="EAN-13">EAN-13 (European Article Number)</SelectItem>
-                                      <SelectItem value="UPC-A">UPC-A (Universal Product Code)</SelectItem>
-                                      <SelectItem value="CODE128">Code 128</SelectItem>
-                                      <SelectItem value="CODE39">Code 39</SelectItem>
-                                      <SelectItem value="QR">QR Code</SelectItem>
+                                      <SelectItem value="ean13">EAN-13 (European)</SelectItem>
+                                      <SelectItem value="ean8">EAN-8 (Short)</SelectItem>
+                                      <SelectItem value="upc">UPC (Universal)</SelectItem>
+                                      <SelectItem value="code128">Code 128</SelectItem>
+                                      <SelectItem value="code39">Code 39</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
@@ -1181,694 +1182,885 @@ export default function AddItemProfessional() {
                               </FormItem>
                             )}
                           />
-                          <FormField
-                            control={form.control}
-                            name="printBarcodeOnLabel"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium">Print on Label</FormLabel>
-                                <FormControl>
-                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Barcode Preview</label>
+                            <div className="border border-gray-300 rounded-md p-3 bg-white min-h-[40px] flex items-center">
+                              {form.watch("barcode") ? (
+                                <div className="font-mono text-sm">
+                                  {form.watch("barcode")}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 text-sm">No barcode entered</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 )}
 
-                {/* Packing Section */}
-                {currentSection === "packing" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <BoxIcon className="w-5 h-5" />
-                        Packing
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="grid grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="weightsPerUnit"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Weights Per Unit *</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="1" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="bulkWeight"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Bulk Weight</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="Enter bulk weight" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      {/* Packing Section */}
+                      {currentSection === "packing" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Packing</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                              <FormField
+                                control={form.control}
+                                name="weightsPerUnit"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Weight Per Unit</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="1" type="number" step="0.001" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="batchExpiryDetails"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Batch/Expiry Date Details</FormLabel>
+                                    <FormControl>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Not Required" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Not Required">Not Required</SelectItem>
+                                          <SelectItem value="Batch Only">Batch Only</SelectItem>
+                                          <SelectItem value="Expiry Only">Expiry Only</SelectItem>
+                                          <SelectItem value="Both Required">Both Required</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
 
-                      <div className="grid grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="bulkWeightUnit"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Bulk Weight Unit</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="kg">KG</SelectItem>
-                                    <SelectItem value="grams">Grams</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="packingType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Packing Type</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Bulk">Bulk</SelectItem>
-                                    <SelectItem value="Box">Box</SelectItem>
-                                    <SelectItem value="Carton">Carton</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                            <div className="grid grid-cols-2 gap-6">
+                              <FormField
+                                control={form.control}
+                                name="itemPreparationsStatus"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Item Preparations Status</FormLabel>
+                                    <FormControl>
+                                      <Select 
+                                        onValueChange={(value) => {
+                                          field.onChange(value);
+                                          form.setValue("itemPreparationsStatus", value);
 
-                      <FormField
-                        control={form.control}
-                        name="unitsPerPack"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Units Per Pack *</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="1" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                                          // Clear conditional fields when status changes
+                                          if (value !== "Bulk" && value !== "Repackage" && value !== "Open Item" && value !== "Weight to Piece") {
+                                            form.setValue("grindingCharge", "");
+                                          }
+                                          if (value !== "Repackage" && value !== "Assembly" && value !== "Kit" && value !== "Combo Pack") {
+                                            form.setValue("bulkItemName", "");
+                                          }
+                                          if (value !== "Open Item" && value !== "Weight to Piece" && value !== "Bulk") {
+                                            form.setValue("weightInGms", "");
+                                          }
+                                        }} 
+                                        value={field.value || "Trade As Is"}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue>
+                                            {field.value ? 
+                                              field.value === "Trade As Is" ? "Trade As Is - Sold exactly as received" :
+                                              field.value === "Repackage" ? "Repackage - Bought in bulk, repackaged into smaller units" :
+                                              field.value : "Select preparation status"
+                                            }
+                                          </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-80 overflow-y-auto">
+                                          <SelectItem value="Trade As Is">Trade As Is - Sold exactly as received, no modification</SelectItem>
+                                          <SelectItem value="Create">Create</SelectItem>
+                                          <SelectItem value="Bulk">Bulk - Stored and sold in bulk quantities</SelectItem>
+                                          <SelectItem value="Repackage">Repackage - Bought in bulk, repackaged into smaller units</SelectItem>
+                                          <SelectItem value="Standard Preparation">Standard Preparation - Processed in a specific, consistent way</SelectItem>
+                                          <SelectItem value="Customer Prepared">Customer Prepared - Prepped based on customer instructions</SelectItem>
+                                          <SelectItem value="Parent">Parent</SelectItem>
+                                          <SelectItem value="Child">Child</SelectItem>
+                                          <SelectItem value="Assembly">Assembly - Assembled from multiple products</SelectItem>
+                                          <SelectItem value="Kit">Kit - Grouped items or meal kits</SelectItem>
+                                          <SelectItem value="Ingredients">Ingredients - Non-sellable items for preparation</SelectItem>
+                                          <SelectItem value="Packing Material">Packing Material - Items used for packaging</SelectItem>
+                                          <SelectItem value="Combo Pack">Combo Pack - Multiple items sold together</SelectItem>
+                                          <SelectItem value="Open Item">Open Item - Sold without barcodes or fixed quantities</SelectItem>
+                                          <SelectItem value="Weight to Piece">Weight to Piece - Converts weight-based to pieces</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
-                      <FormField
-                        control={form.control}
-                        name="batchExpiryDetails"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Batch Expiry Details</FormLabel>
-                            <FormControl>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Not Required">Not Required</SelectItem>
-                                  <SelectItem value="Required">Required</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              {/* Conditional Bulk Item Name Field - Only for Repackage */}
+                              {form.watch("itemPreparationsStatus") === "Repackage" && (
+                                <FormField
+                                  control={form.control}
+                                  name="bulkItemName"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-red-600">Bulk Item Name *</FormLabel>
+                                      <FormControl>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                          <SelectTrigger className="border-red-300 focus:border-red-500">
+                                            <SelectValue>
+                                              {field.value || "Select bulk item to repackage"}
+                                            </SelectValue>
+                                          </SelectTrigger>
+                                          <SelectContent className="max-h-80 overflow-y-auto">
+                                            {/* Recent Products from Database */}
+                                            {Array.isArray(recentProducts) && recentProducts.length > 0 ? (
+                                              recentProducts
+                                                .filter((product: any) => 
+                                                  product.name.toLowerCase().includes('bulk') || 
+                                                  product.name.toLowerCase().includes('bag') ||
+                                                  product.name.toLowerCase().includes('kg') ||
+                                                  product.name.toLowerCase().includes('ltr') ||
+                                                  product.name.toLowerCase().includes('container')
+                                                )
+                                                .map((product: any) => (
+                                                  <SelectItem key={product.id} value={product.name}>
+                                                    {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity}
+                                                  </SelectItem>
+                                                ))
+                                            ) : (
+                                              <>
+                                                {/* Fallback Static Options */}
+                                                <SelectItem value="100G">100G - Small quantity bulk item</SelectItem>
+                                                <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK - Seasoning bulk pack</SelectItem>
+                                                <SelectItem value="ARUVADAM KURUVAI RICE BULK">ARUVADAM KURUVAI RICE BULK - Premium rice variety</SelectItem>
+                                                <SelectItem value="AVARE BULK">AVARE BULK - Avare beans bulk</SelectItem>
+                                                <SelectItem value="AVUL NICE BULK">AVUL NICE BULK - Quality bulk item</SelectItem>
+                                                <SelectItem value="AVUL ODD BULK">AVUL ODD BULK - Mixed bulk item</SelectItem>
+                                                <SelectItem value="Rice - 25kg Bag">Rice - 25kg Bag - Standard rice bulk pack</SelectItem>
+                                                <SelectItem value="Wheat - 50kg Bag">Wheat - 50kg Bag - Wheat bulk pack</SelectItem>
+                                                <SelectItem value="Dal - 25kg Bag">Dal - 25kg Bag - Lentils bulk pack</SelectItem>
+                                                <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag - Sugar bulk pack</SelectItem>
+                                                <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container - Cooking oil bulk</SelectItem>
+                                                <SelectItem value="Flour - 25kg Bag">Flour - 25kg Bag - Wheat flour bulk</SelectItem>
+                                                <SelectItem value="Spices - 10kg Container">Spices - 10kg Container - Mixed spices bulk</SelectItem>
+                                                <SelectItem value="Dry Fruits - 5kg Box">Dry Fruits - 5kg Box - Premium dry fruits</SelectItem>
+                                              </>
+                                            )}
+                                          </SelectContent>
+                                        </Select>
+                                        <div className="text-xs text-red-500 mt-1">
+                                          Bulk Item Name is required
+                                        </div>
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              )}
 
-                      <FormField
-                        control={form.control}
-                        name="itemPreparationsStatus"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Item Preparations Status</FormLabel>
-                            <FormControl>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Trade As Is">Trade As Is</SelectItem>
-                                  <SelectItem value="Repack">Repack</SelectItem>
-                                  <SelectItem value="Grind">Grind</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              {/* Show empty div when bulk item name is not needed to maintain grid layout */}
+                              {!(form.watch("itemPreparationsStatus") === "Repackage") && (
+                                <div></div>
+                              )}
+                            </div>
 
-                      <div className="grid grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="grindingCharge"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Grinding Charge</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="Enter grinding charge" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="weightInGms"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Weight In Gms</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="Enter weight in grams" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                            {/* Enhanced Repackaging Configuration */}
+                            {form.watch("itemPreparationsStatus") === "Repackage" && (
+                              <div className="space-y-6">
+                                <Separator />
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                  <h4 className="font-semibold mb-4 text-blue-800 flex items-center gap-2">
+                                    <PackageIcon className="w-5 h-5" />
+                                    Repackaging Configuration
+                                  </h4>
 
-                      <div className="grid grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="bulkItemName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Bulk Item Name</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select bulk item" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {recentProducts.map((product: any) => (
-                                      <SelectItem key={product.id} value={product.name}>
-                                        {product.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="repackageUnits"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Repackage Units</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="Enter repackage units" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                                  <div className="grid grid-cols-2 gap-6">
+                                    <FormField
+                                      control={form.control}
+                                      name="weightInGms"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-red-600">Target Package Weight (grams) *</FormLabel>
+                                          <FormControl>
+                                            <Input 
+                                              {...field} 
+                                              placeholder="e.g., 500 (for 500g packages)" 
+                                              type="number" 
+                                              step="0.001"
+                                              className="border-red-300 focus:border-red-500" 
+                                            />
+                                          </FormControl>
+                                          <div className="text-xs text-red-500 mt-1">Weight for each repackaged unit</div>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
 
-                      <div className="grid grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="repackageType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Repackage Type</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Box">Box</SelectItem>
-                                    <SelectItem value="Carton">Carton</SelectItem>
-                                    <SelectItem value="Bag">Bag</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="packagingMaterial"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Packaging Material</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Plastic">Plastic</SelectItem>
-                                    <SelectItem value="Paper">Paper</SelectItem>
-                                    <SelectItem value="Cardboard">Cardboard</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                                    <FormField
+                                      control={form.control}
+                                      name="repackageUnits"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Number of Units to Create</FormLabel>
+                                          <FormControl>
+                                            <Input 
+                                              {...field} 
+                                              placeholder="e.g., 20 (create 20 units)" 
+                                              type="number" 
+                                              min="1"
+                                              className="border-blue-300 focus:border-blue-500" 
+                                            />
+                                          </FormControl>
+                                          <div className="text-xs text-gray-500 mt-1">How many repackaged units to create</div>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
 
-                {/* Item Properties Section */}
-                {currentSection === "item-properties" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <SettingsIcon className="w-5 h-5" />
-                        Item Properties
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="grid grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="decimalPoint"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Decimal Point</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="0">0</SelectItem>
-                                    <SelectItem value="1">1</SelectItem>
-                                    <SelectItem value="2">2</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="imageAlignment"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Image Alignment</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Left">Left</SelectItem>
-                                    <SelectItem value="Right">Right</SelectItem>
-                                    <SelectItem value="Center">Center</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                                  <div className="grid grid-cols-2 gap-6 mt-4">
+                                    <FormField
+                                      control={form.control}
+                                      name="repackageType"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Repackaging Type</FormLabel>
+                                          <FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                              <SelectTrigger>
+                                                <SelectValue>
+                                                  {field.value || "Select repackaging type"}
+                                                </SelectValue>
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="weight-division">Weight Division (1kg → 500g packs)</SelectItem>
+                                                <SelectItem value="portion-control">Portion Control</SelectItem>
+                                                <SelectItem value="consumer-size">Consumer Size Packaging</SelectItem>
+                                                <SelectItem value="sample-size">Sample/Trial Size</SelectItem>
+                                                <SelectItem value="bulk-to-retail">Bulk to Retail</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
 
-                      <FormField
-                        control={form.control}
-                        name="productType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Product Type</FormLabel>
-                            <FormControl>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="NA">NA</SelectItem>
-                                  <SelectItem value="Grocery">Grocery</SelectItem>
-                                  <SelectItem value="Electronics">Electronics</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
+                                    <FormField
+                                      control={form.control}
+                                      name="packagingMaterial"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Packaging Material</FormLabel>
+                                          <FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                              <SelectTrigger>
+                                                <SelectValue>
+                                                  {field.value || "Select packaging material"}
+                                                </SelectValue>
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="plastic-pouch">Plastic Pouch</SelectItem>
+                                                <SelectItem value="paper-bag">Paper Bag</SelectItem>
+                                                <SelectItem value="glass-jar">Glass Jar</SelectItem>
+                                                <SelectItem value="tin-container">Tin Container</SelectItem>
+                                                <SelectItem value="cardboard-box">Cardboard Box</SelectItem>
+                                                <SelectItem value="vacuum-sealed">Vacuum Sealed</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
 
-                {/* Reorder Configurations Section */}
-                {currentSection === "reorder-configurations" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <PackageIcon className="w-5 h-5" />
-                        Reorder Configurations
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="grid grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="skuType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>SKU Type</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Put Away">Put Away</SelectItem>
-                                    <SelectItem value="Cross Dock">Cross Dock</SelectItem>
-                                    <SelectItem value="Direct Ship">Direct Ship</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="indentType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Indent Type</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Manual">Manual</SelectItem>
-                                    <SelectItem value="Automatic">Automatic</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                                  {/* Repackaging Preview */}
+                                  {form.watch("weightInGms") && form.watch("repackageUnits") && (
+                                    <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
+                                      <h5 className="font-medium text-green-800 mb-2">Repackaging Preview</h5>
+                                      <div className="text-sm text-green-700">
+                                        <p>• Each unit: {form.watch("weightInGms")}g</p>
+                                        <p>• Total units: {form.watch("repackageUnits") || 0}</p>
+                                        <p>• Total weight needed: {(parseFloat(form.watch("weightInGms") || "0") * parseInt(form.watch("repackageUnits") || "0")) / 1000}kg</p>
+                                        <p>• Bulk item: {form.watch("bulkItemName") || "Not selected"}</p>
+                                      </div>
+                                    </div>
+                                  )}
 
-                {/* Purchase Order Section */}
-                {currentSection === "purchase-order" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <ShoppingCartIcon className="w-5 h-5" />
-                        Purchase Order
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <FormField
-                        control={form.control}
-                        name="gateKeeperMargin"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Gate Keeper Margin</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Enter margin" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
+                                  {/* Quick Unit Conversion Buttons */}
+                                  <div className="mt-4">
+                                    <label className="text-sm font-medium text-gray-700 mb-2 block">Quick Unit Templates:</label>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          form.setValue("weightInGms", "250");
+                                          form.setValue("repackageUnits", "4");
+                                        }}
+                                        className="text-xs"
+                                      >
+                                        1kg → 4×250g
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          form.setValue("weightInGms", "500");
+                                          form.setValue("repackageUnits", "2");
+                                        }}
+                                        className="text-xs"
+                                      >
+                                        1kg → 2×500g
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          form.setValue("weightInGms", "100");
+                                          form.setValue("repackageUnits", "10");
+                                        }}
+                                        className="text-xs"
+                                      >
+                                        1kg → 10×100g
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          form.setValue("weightInGms", "50");
+                                          form.setValue("repackageUnits", "20");
+                                        }}
+                                        className="text-xs"
+                                      >
+                                        1kg → 20×50g
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
-                {/* Approval Configurations Section */}
-                {currentSection === "approval-configurations" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <CheckIcon className="w-5 h-5" />
-                        Approval Configurations
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="flex items-center space-x-3">
-                        <FormField
-                          control={form.control}
-                          name="allowItemFree"
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-3">
-                              <FormControl>
-                                <Switch checked={field.value} onCheckedChange={field.onChange} />
-                              </FormControl>
-                              <FormLabel>Allow Item Free</FormLabel>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Mobile App Configurations Section */}
-                {currentSection === "mobile-app-config" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <SettingsIcon className="w-5 h-5" />
-                        Mobile App Configurations
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="flex items-center space-x-3">
-                        <FormField
-                          control={form.control}
-                          name="dailyAuditProcess"
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-3">
-                              <FormControl>
-                                <Switch checked={field.value} onCheckedChange={field.onChange} />
-                              </FormControl>
-                              <FormLabel>Daily Audit Process</FormLabel>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Other Information Section */}
-                {currentSection === "other-information" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <InfoIcon className="w-5 h-5" />
-                        Other Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <FormField
-                        control={form.control}
-                        name="itemIngredients"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Item Ingredients</FormLabel>
-                            <FormControl>
-                              <Textarea {...field} placeholder="Enter item ingredients" rows={3} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Basic Fields - Always Visible */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Basic Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="price"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Price *</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Price" type="number" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="mrp"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>MRP *</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="MRP" type="number" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="cost"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Cost</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Cost" type="number" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="weight"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Weight</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Weight" type="number" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="weightUnit"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Weight Unit</FormLabel>
-                            <FormControl>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="kg">KG</SelectItem>
-                                  <SelectItem value="grams">Grams</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="categoryId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Category ID</FormLabel>
-                            <FormControl>
-                              <Select onValueChange={field.onChange} value={field.value.toString()}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {categories.map((category: any) => (
-                                    <SelectItem key={category.id} value={category.id.toString()}>
-                                      {category.name}
-                                                                   </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="stockQuantity"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Stock Quantity *</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Stock Quantity" type="number" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                            {/* Conditional Weight in Gms Field for other statuses */}
+                            {(form.watch("itemPreparationsStatus") === "Open Item" || 
+                              form.watch("itemPreparationsStatus") === "Weight to Piece" ||
+                              form.watch("itemPreparationsStatus") === "Bulk") && 
+                              form.watch("itemPreparationsStatus") !== "Repackage" && (
+                              <div className="grid grid-cols-2 gap-6">
+                                <FormField
+                                  control={form.control}
+                                  name="weightInGms"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-red-600">Weight in (Gms) *</FormLabel>
+                                      <FormControl>
+                                        <Input 
+                                          {...field} 
+                                          placeholder="Weight(gms) is required" 
+                                          type="number" 
+                                          step="0.001"
+                                          className="border-red-300 focus:border-red-500" 
+                                        />
+                                      </FormControl>
+                                      <div className="text-xs text-red-500 mt-1">Weight(gms) is required</div>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <div></div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
                       )}
-                    />
 
-                    <div className="flex items-center space-x-3">
-                      <FormField
-                        control={form.control}
-                        name="active"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center space-x-3">
-                            <FormControl>
-                              <Switch checked={field.value} onCheckedChange={field.onChange} />
-                            </FormControl>
-                            <FormLabel>Active</FormLabel>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                      {/* Item Properties Section */}
+                      {currentSection === "item-properties" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <SettingsIcon className="w-5 h-5" />
+                              Item Properties
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                              <FormField
+                                control={form.control}
+                                name="decimalPoint"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Decimal Point</FormLabel>
+                                    <FormControl>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="0">0 (No decimals)</SelectItem>
+                                          <SelectItem value="1">1 decimal place</SelectItem>
+                                          <SelectItem value="2">2 decimal places</SelectItem>
+                                          <SelectItem value="3">3 decimal places</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
-                <Button type="submit">
-                  {createProductMutation.isLoading ? "Creating..." : "Create Product"}
-                </Button>
-              </form>
-            </Form>
-          </div>
-        </div>
-      </div>
-    </DashboardLayout>
-  );
-}
+                              <FormField
+                                control={form.control}
+                                name="imageAlignment"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Image Alignment</FormLabel>
+                                    <FormControl>
+                                      <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select alignment" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="left">Left</SelectItem>
+                                          <SelectItem value="center">Center</SelectItem>
+                                          <SelectItem value="right">Right</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <FormField
+                              control={form.control}
+                              name="productType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Product Type *</FormLabel>
+                                  <FormControl>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="NA">N/A</SelectItem>
+                                        <SelectItem value="FMCG">FMCG</SelectItem>
+                                        <SelectItem value="Electronics">Electronics</SelectItem>
+                                        <SelectItem value="Clothing">Clothing</SelectItem>
+                                        <SelectItem value="Food">Food & Beverages</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Pricing Information</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                  control={form.control}
+                                  name="price"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Selling Price *</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="mrp"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>MRP *</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name="cost"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Cost Price</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="stockQuantity"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Stock Quantity *</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="0" type="number" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <FormField
+                                control={form.control}
+                                name="weight"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Weight</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="Weight of item" type="number" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="weightUnit"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Weight Unit</FormLabel>
+                                    <FormControl>
+                                      <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select unit" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="kg">kg</SelectItem>
+                                          <SelectItem value="g">g</SelectItem>
+                                          <SelectItem value="lb">lb</SelectItem>
+                                          <SelectItem value="oz">oz</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <div className="bg-purple-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Additional Properties</h3>
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Perishable Item</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Temperature Controlled</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Fragile Item</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Track Serial Numbers</span>
+                                  <Switch />
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Reorder Configurations Section */}
+                      {currentSection === "reorder-configurations" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <PackageIcon className="w-5 h-5" />
+                              Reorder Configurations
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                              <FormField
+                                control={form.control}
+                                name="skuType"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>SKU Type</FormLabel>
+                                    <FormControl>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Put Away">Put Away</SelectItem>
+                                          <SelectItem value="Fast Moving">Fast Moving</SelectItem>
+                                          <SelectItem value="Slow Moving">Slow Moving</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="indentType"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Indent Type</FormLabel>
+                                    <FormControl>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Manual">Manual</SelectItem>
+                                          <SelectItem value="Automatic">Automatic</SelectItem>
+                                          <SelectItem value="Semi-Automatic">Semi-Automatic</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <div className="bg-green-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Reorder Parameters</h3>
+                              <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                  <label className="text-sm font-medium">Minimum Stock Level</label>
+                                  <Input placeholder="10" type="number" />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">Reorder Point</label>
+                                  <Input placeholder="20" type="number" />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">Economic Order Quantity</label>
+                                  <Input placeholder="100" type="number" />
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Purchase Order Section */}
+                      {currentSection === "purchase-order" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <ShoppingCartIcon className="w-5 h-5" />
+                              Purchase Order
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <FormField
+                              control={form.control}
+                              name="gateKeeperMargin"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Gate Keeper Margin %</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="0" type="number" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Purchase Settings</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-sm font-medium">Default Supplier</label>
+                                  <Select>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select supplier" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="supplier1">Supplier 1</SelectItem>
+                                      <SelectItem value="supplier2">Supplier 2</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">Lead Time (Days)</label>
+                                  <Input placeholder="7" type="number" />
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Other Information Section */}
+                      {currentSection === "other-information" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <InfoIcon className="w-5 h-5" />
+                              Other Information
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <FormField
+                              control={form.control}
+                              name="itemIngredients"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Item Ingredients</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} placeholder="Enter item ingredients if applicable" rows={4} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Additional Notes</h3>
+                              <Textarea placeholder="Any additional notes or special instructions for this product..." rows={3} />
+                            </div>
+
+                            <div className="bg-yellow-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Compliance Information</h3>
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">FDA Approved</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">BIS Certified</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Organic Certified</span>
+                                  <Switch />
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Approval Configurations Section */}
+                      {currentSection === "approval-configurations" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <CheckIcon className="w-5 h-5" />
+                              Approval Configurations
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <div className="flex items-center space-x-3">
+                              <FormField
+                                control={form.control}
+                                name="allowItemFree"
+                                render={({ field }) => (
+                                  <FormItem className="flex items-center space-x-3">
+                                    <FormControl>
+                                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormLabel>Allow Item Free</FormLabel>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Mobile App Config Section */}
+                      {currentSection === "mobile-app-config" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <SettingsIcon className="w-5 h-5" />
+                              Mobile App Config
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <div className="flex items-center space-x-3">
+                              <FormField
+                                control={form.control}
+                                name="dailyAuditProcess"
+                                render={({ field }) => (
+                                  <FormItem className="flex items-center space-x-3">
+                                    <FormControl>
+                                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormLabel>Daily Audit Process</FormLabel>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end gap-4 pt-6 border-t">
+                        <Button 
+                          type="button" 
+                          variant="outline"
+                          onClick={() => form.reset()}
+                        >
+                          Reset
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          disabled={createProductMutation.isPending} 
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          {createProductMutation.isPending ? "Adding..." : "Add"}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </div>
+              </div>
+            </div>
+          </DashboardLayout>
+        );
+      }
