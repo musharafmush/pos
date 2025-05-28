@@ -1335,14 +1335,7 @@ export default function PurchaseEntryProfessional() {
                                       value={form.watch(`items.${index}.productId`)?.toString() || ""}
                                     >
                                       <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select Product">
-                                          {selectedProduct ? (
-                                            <div className="flex flex-col text-left">
-                                              <span className="font-medium text-sm">{selectedProduct.name}</span>
-                                              <span className="text-xs text-gray-500">{selectedProduct.sku}</span>
-                                            </div>
-                                          ) : "Select Product"}
-                                        </SelectValue>
+                                        <SelectValue placeholder="Select Product" />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {products.map((product) => (
