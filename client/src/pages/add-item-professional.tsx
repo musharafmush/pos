@@ -438,34 +438,19 @@ export default function AddItemProfessional() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="alias"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Alias</FormLabel>
-                              <FormControl>
-                                <Textarea {...field} placeholder="Enter alias" rows={3} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="aboutProduct"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>About Product</FormLabel>
-                              <FormControl>
-                                <Textarea {...field} placeholder="Enter product description" rows={3} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name="alias"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Alias</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Enter alias" rows={3} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </CardContent>
                   </Card>
                 )}
