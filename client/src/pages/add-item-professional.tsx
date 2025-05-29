@@ -262,7 +262,6 @@ export default function AddItemProfessional() {
     { id: "pricing", label: "Pricing", icon: <DollarSignIcon className="w-4 h-4" /> },
     { id: "reorder-configurations", label: "Reorder Configurations", icon: <PackageIcon className="w-4 h-4" /> },
     { id: "purchase-order", label: "Purchase Order", icon: <ShoppingCartIcon className="w-4 h-4" /> },
-    { id: "approval-configurations", label: "Approval Configurations", icon: <CheckIcon className="w-4 h-4" /> },
     { id: "mobile-app-config", label: "Mobile App Config", icon: <SettingsIcon className="w-4 h-4" /> },
     { id: "other-information", label: "Other Information", icon: <InfoIcon className="w-4 h-4" /> },
   ];
@@ -1923,35 +1922,6 @@ export default function AddItemProfessional() {
                                   <Switch />
                                 </div>
                               </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {/* Approval Configurations Section */}
-                      {currentSection === "approval-configurations" && (
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                              <CheckIcon className="w-5 h-5" />
-                              Approval Configurations
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-6">
-                            <div className="flex items-center space-x-3">
-                              <FormField
-                                control={form.control}
-                                name="allowItemFree"
-                                render={({ field }) => (
-                                  <FormItem className="flex items-center space-x-3">
-                                    <FormControl>
-                                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                    </FormControl>
-                                    <FormLabel>Allow Item Free</FormLabel>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
                             </div>
                           </CardContent>
                         </Card>
