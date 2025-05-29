@@ -85,7 +85,6 @@ const productFormSchema = z.object({
 
   // Item Properties
   decimalPoint: z.string().default("0"),
-  imageAlignment: z.string().optional(),
   productType: z.string().default("NA"),
 
   // Pricing
@@ -194,7 +193,6 @@ export default function AddItemProfessional() {
       repackageType: "",
       packagingMaterial: "",
       decimalPoint: "0",
-      imageAlignment: "",
       productType: "NA",
       sellBy: "None",
       itemPerUnit: "1",
@@ -1625,31 +1623,7 @@ export default function AddItemProfessional() {
                                 )}
                               />
 
-                              <FormField
-                                control={form.control}
-                                name="imageAlignment"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Image Alignment</FormLabel>
-                                    <FormControl>
-                                      <Select
-                                        value={field.value}
-                                        onValueChange={field.onChange}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select alignment" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="left">Left</SelectItem>
-                                          <SelectItem value="center">Center</SelectItem>
-                                          <SelectItem value="right">Right</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
+                              <div />
                             </div>
 
                             <FormField
