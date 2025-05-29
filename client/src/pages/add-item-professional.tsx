@@ -1077,7 +1077,8 @@ export default function AddItemProfessional() {
                           />
                         </div>
                       </CardContent>
-                  </Card>
+                    </Card>
+                  </div>
                 )}
 
                 {/* EAN Code/Barcode Section */}
