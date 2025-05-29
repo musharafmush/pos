@@ -765,7 +765,6 @@ export default function AddItemProfessional() {
                               <FormLabel className="flex items-center gap-2">
                                 GST Code *
                                 <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                               ```tool_code
                                   Auto-updated from HSN
                                 </span>
                               </FormLabel>
