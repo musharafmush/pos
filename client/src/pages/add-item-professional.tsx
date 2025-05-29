@@ -27,7 +27,7 @@ import {
   CheckIcon,
   XIcon
 } from "lucide-react";
-import { PackingSectionBadge } from "@/components/ui/packing-section-badge";
+
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Category, Supplier } from "@shared/schema";
@@ -321,11 +321,19 @@ export default function AddItemProfessional() {
                 {sidebarSections.map((section) => {
                   if (section.id === "packing") {
                     return (
-                      <PackingSectionBadge
+                      <button
                         key={section.id}
-                        active={currentSection === section.id}
                         onClick={() => setCurrentSection(section.id)}
-                      />
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
+                          currentSection === section.id 
+                            ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700" 
+                            : "text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        {section.icon}
+                        {section.label}
+                        <div className="w-2 h-2 bg-orange-500 rounded-full ml-auto"></div>
+                      </button>
                     );
                   }
 
@@ -337,7 +345,7 @@ export default function AddItemProfessional() {
                         currentSection === section.id 
                           ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700" 
                           : "text-gray-600 hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       {section.icon}
                       {section.label}
