@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -196,6 +196,7 @@ export default function AddItemProfessional() {
       configItemWithCommodity: false,
       seniorExemptApplicable: false,
       eanCodeRequired: false,
+      barcode: "",
       weightsPerUnit: "1",
       batchExpiryDetails: "Not Required",
       itemPreparationsStatus: "Trade As Is",
@@ -530,29 +531,39 @@ export default function AddItemProfessional() {
                             )}
                           />
                           <FormField
-                            control={form.control}
-                            name="mainCategory"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>MAIN CATEGORY</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select main category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {categories.map((category: any) => (
-                                        <SelectItem key={category.id} value={category.id.toString()}>
-                                          {category.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                                control={form.control}
+                                name="mainCategory"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>MAIN CATEGORY</FormLabel>
+                                    <FormControl>
+                                      <Select 
+                                        onValueChange={(value) => {
+                                          field.onChange(value);
+                                          // Also update the categoryId for the backend
+                                          const categoryId = parseInt(value);
+                                          if (!isNaN(categoryId)) {
+                                            form.setValue("categoryId", categoryId);
+                                          }
+                                        }} 
+                                        value={field.value}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select main category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {categories.map((category: any) => (
+                                            <SelectItem key={category.id} value={category.id.toString()}>
+                                              {category.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
                         </div>
 
                         <div className="grid grid-cols-2 gap-6 mt-4">
@@ -754,6 +765,7 @@ export default function AddItemProfessional() {
                               <FormLabel className="flex items-center gap-2">
                                 GST Code *
                                 <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                               ```tool_code
                                   Auto-updated from HSN
                                 </span>
                               </FormLabel>
@@ -1065,7 +1077,6 @@ export default function AddItemProfessional() {
                             )}
                           />
                         </div>
-                      </div>
                       </CardContent>
                   </Card>
                 )}

@@ -38,7 +38,9 @@ export default function Dashboard() {
         throw new Error('Failed to fetch dashboard stats');
       }
       return response.json();
-    }
+    },
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // 30 seconds
   });
 
   return (
