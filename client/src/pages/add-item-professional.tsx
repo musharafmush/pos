@@ -1204,7 +1204,10 @@ export default function AddItemProfessional() {
                       {currentSection === "packing" && (
                         <Card>
                           <CardHeader>
-                            <CardTitle>Packing</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                              <BoxIcon className="w-5 h-5" />
+                              Weight & Packing Configuration
+                            </CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
@@ -1246,7 +1249,7 @@ export default function AddItemProfessional() {
                               />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-6">
                               <FormField
                                 control={form.control}
                                 name="itemPreparationsStatus"
@@ -1257,7 +1260,6 @@ export default function AddItemProfessional() {
                                       <Select 
                                         onValueChange={(value) => {
                                           field.onChange(value);
-                                          form.setValue("itemPreparationsStatus", value);
 
                                           // Clear conditional fields when status changes
                                           if (value !== "Bulk" && value !== "Repackage" && value !== "Open Item" && value !== "Weight to Piece") {
@@ -1273,30 +1275,24 @@ export default function AddItemProfessional() {
                                         value={field.value || "Trade As Is"}
                                       >
                                         <SelectTrigger>
-                                          <SelectValue>
-                                            {field.value ? 
-                                              field.value === "Trade As Is" ? "Trade As Is - Sold exactly as received" :
-                                              field.value === "Repackage" ? "Repackage - Bought in bulk, repackaged into smaller units" :
-                                              field.value : "Select preparation status"
-                                            }
-                                          </SelectValue>
+                                          <SelectValue placeholder="Select preparation status" />
                                         </SelectTrigger>
                                         <SelectContent className="max-h-80 overflow-y-auto">
-                                          <SelectItem value="Trade As Is">Trade As Is - Sold exactly as received, no modification</SelectItem>
+                                          <SelectItem value="Trade As Is">Trade As Is - Sold exactly as received</SelectItem>
                                           <SelectItem value="Create">Create</SelectItem>
                                           <SelectItem value="Bulk">Bulk - Stored and sold in bulk quantities</SelectItem>
                                           <SelectItem value="Repackage">Repackage - Bought in bulk, repackaged into smaller units</SelectItem>
-                                          <SelectItem value="Standard Preparation">Standard Preparation - Processed in a specific, consistent way</SelectItem>
-                                          <SelectItem value="Customer Prepared">Customer Prepared - Prepped based on customer instructions</SelectItem>
+                                          <SelectItem value="Standard Preparation">Standard Preparation</SelectItem>
+                                          <SelectItem value="Customer Prepared">Customer Prepared</SelectItem>
                                           <SelectItem value="Parent">Parent</SelectItem>
                                           <SelectItem value="Child">Child</SelectItem>
-                                          <SelectItem value="Assembly">Assembly - Assembled from multiple products</SelectItem>
-                                          <SelectItem value="Kit">Kit - Grouped items or meal kits</SelectItem>
-                                          <SelectItem value="Ingredients">Ingredients - Non-sellable items for preparation</SelectItem>
-                                          <SelectItem value="Packing Material">Packing Material - Items used for packaging</SelectItem>
-                                          <SelectItem value="Combo Pack">Combo Pack - Multiple items sold together</SelectItem>
-                                          <SelectItem value="Open Item">Open Item - Sold without barcodes or fixed quantities</SelectItem>
-                                          <SelectItem value="Weight to Piece">Weight to Piece - Converts weight-based to pieces</SelectItem>
+                                          <SelectItem value="Assembly">Assembly</SelectItem>
+                                          <SelectItem value="Kit">Kit</SelectItem>
+                                          <SelectItem value="Ingredients">Ingredients</SelectItem>
+                                          <SelectItem value="Packing Material">Packing Material</SelectItem>
+                                          <SelectItem value="Combo Pack">Combo Pack</SelectItem>
+                                          <SelectItem value="Open Item">Open Item</SelectItem>
+                                          <SelectItem value="Weight to Piece">Weight to Piece</SelectItem>
                                         </SelectContent>
                                       </Select>
                                     </FormControl>
@@ -1314,62 +1310,45 @@ export default function AddItemProfessional() {
                                     <FormItem>
                                       <FormLabel className="text-red-600">Bulk Item Name *</FormLabel>
                                       <FormControl>
-                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value || ""}>
                                           <SelectTrigger className="border-red-300 focus:border-red-500">
-                                            <SelectValue>
-                                              {field.value || "Select bulk item to repackage"}
-                                            </SelectValue>
+                                            <SelectValue placeholder="Select bulk item to repackage" />
                                           </SelectTrigger>
                                           <SelectContent className="max-h-80 overflow-y-auto">
-                                            {/* Recent Products from Database */}
                                             {Array.isArray(recentProducts) && recentProducts.length > 0 ? (
                                               recentProducts
                                                 .filter((product: any) => 
-                                                  product.name.toLowerCase().includes('bulk') || 
-                                                  product.name.toLowerCase().includes('bag') ||
-                                                  product.name.toLowerCase().includes('kg') ||
-                                                  product.name.toLowerCase().includes('ltr') ||
-                                                  product.name.toLowerCase().includes('container')
+                                                  product.name && (
+                                                    product.name.toLowerCase().includes('bulk') || 
+                                                    product.name.toLowerCase().includes('bag') ||
+                                                    product.name.toLowerCase().includes('kg') ||
+                                                    product.name.toLowerCase().includes('ltr') ||
+                                                    product.name.toLowerCase().includes('container')
+                                                  )
                                                 )
                                                 .map((product: any) => (
-                                                  <SelectItem key={product.id} value={product.name}>
+                                                  <SelectItem key={`product-${product.id}`} value={product.name}>
                                                     {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity}
                                                   </SelectItem>
                                                 ))
-                                            ) : (
-                                              <>
-                                                {/* Fallback Static Options */}
-                                                <SelectItem value="100G">100G - Small quantity bulk item</SelectItem>
-                                                <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK - Seasoning bulk pack</SelectItem>
-                                                <SelectItem value="ARUVADAM KURUVAI RICE BULK">ARUVADAM KURUVAI RICE BULK - Premium rice variety</SelectItem>
-                                                <SelectItem value="AVARE BULK">AVARE BULK - Avare beans bulk</SelectItem>
-                                                <SelectItem value="AVUL NICE BULK">AVUL NICE BULK - Quality bulk item</SelectItem>
-                                                <SelectItem value="AVUL ODD BULK">AVUL ODD BULK - Mixed bulk item</SelectItem>
-                                                <SelectItem value="Rice - 25kg Bag">Rice - 25kg Bag - Standard rice bulk pack</SelectItem>
-                                                <SelectItem value="Wheat - 50kg Bag">Wheat - 50kg Bag - Wheat bulk pack</SelectItem>
-                                                <SelectItem value="Dal - 25kg Bag">Dal - 25kg Bag - Lentils bulk pack</SelectItem>
-                                                <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag - Sugar bulk pack</SelectItem>
-                                                <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container - Cooking oil bulk</SelectItem>
-                                                <SelectItem value="Flour - 25kg Bag">Flour - 25kg Bag - Wheat flour bulk</SelectItem>
-                                                <SelectItem value="Spices - 10kg Container">Spices - 10kg Container - Mixed spices bulk</SelectItem>
-                                                <SelectItem value="Dry Fruits - 5kg Box">Dry Fruits - 5kg Box - Premium dry fruits</SelectItem>
-                                              </>
-                                            )}
+                                            ) : null}
+                                            <SelectItem value="100G">100G - Small quantity bulk item</SelectItem>
+                                            <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK - Seasoning bulk pack</SelectItem>
+                                            <SelectItem value="Rice - 25kg Bag">Rice - 25kg Bag - Standard rice bulk pack</SelectItem>
+                                            <SelectItem value="Wheat - 50kg Bag">Wheat - 50kg Bag - Wheat bulk pack</SelectItem>
+                                            <SelectItem value="Dal - 25kg Bag">Dal - 25kg Bag - Lentils bulk pack</SelectItem>
+                                            <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag - Sugar bulk pack</SelectItem>
+                                            <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container - Cooking oil bulk</SelectItem>
                                           </SelectContent>
                                         </Select>
-                                        <div className="text-xs text-red-500 mt-1">
-                                          Bulk Item Name is required
-                                        </div>
                                       </FormControl>
+                                      <div className="text-xs text-red-500 mt-1">
+                                        Bulk Item Name is required for repackaging
+                                      </div>
                                       <FormMessage />
                                     </FormItem>
                                   )}
                                 />
-                              )}
-
-                              {/* Show empty div when bulk item name is not needed to maintain grid layout */}
-                              {!(form.watch("itemPreparationsStatus") === "Repackage") && (
-                                <div />
                               )}
                             </div>
 
