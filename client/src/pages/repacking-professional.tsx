@@ -76,10 +76,25 @@ export default function RepackingProfessional() {
     },
   });
 
-  // Show all products with stock > 0 for repacking (more flexible approach)
+  // Show bulk products with stock > 0 for repacking
+  // Priority: Products with BULK in name, then products with weight > 1kg, then all others
   const bulkProducts = products.filter((product: Product) => 
-    product.stockQuantity > 0 && product.active
-  );
+    product.stockQuantity > 0 && product.active && !product.sku.includes("REPACK")
+  ).sort((a, b) => {
+    // Priority sorting for bulk items
+    const aIsBulk = a.name.toLowerCase().includes('bulk') || 
+                   a.name.toLowerCase().includes('bag') ||
+                   a.name.toLowerCase().includes('container') ||
+                   (parseFloat(a.weight || "0") >= 1 && a.weightUnit === 'kg');
+    const bIsBulk = b.name.toLowerCase().includes('bulk') || 
+                   b.name.toLowerCase().includes('bag') ||
+                   b.name.toLowerCase().includes('container') ||
+                   (parseFloat(b.weight || "0") >= 1 && b.weightUnit === 'kg');
+    
+    if (aIsBulk && !bIsBulk) return -1;
+    if (!aIsBulk && bIsBulk) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   const form = useForm<RepackingFormValues>({
     resolver: zodResolver(repackingFormSchema),
@@ -117,11 +132,16 @@ export default function RepackingProfessional() {
     mutationFn: async (data: RepackingFormValues) => {
       // Generate unique SKU for repacked item
       const timestamp = Date.now();
-      const repackedSku = `${selectedProduct?.sku}-REPACK-${timestamp}`;
+      const repackedSku = `${selectedProduct?.sku}-REPACK-${data.unitWeight}G-${timestamp}`;
+      
+      // Create a more descriptive name for the repacked product
+      const repackedName = selectedProduct?.name.includes('BULK') 
+        ? selectedProduct.name.replace('BULK', `${data.unitWeight}g`) 
+        : `${selectedProduct?.name} (${data.unitWeight}g Pack)`;
       
       const repackedProduct = {
-        name: `${selectedProduct?.name} (Repacked ${data.unitWeight}g)`,
-        description: `Repacked from ${selectedProduct?.name}`,
+        name: repackedName,
+        description: `Repacked from bulk item: ${selectedProduct?.name}. Original weight: ${selectedProduct?.weight}${selectedProduct?.weightUnit}`,
         sku: repackedSku,
         price: data.sellingPrice.toString(),
         mrp: data.mrp.toString(),
@@ -346,18 +366,28 @@ export default function RepackingProfessional() {
                                     (product.description && product.description.toLowerCase().includes(search))
                                   );
                                 })
-                                .map((product: Product) => (
-                                <SelectItem key={product.id} value={product.id.toString()}>
-                                  <div className="flex flex-col">
-                                    <div className="font-medium">
-                                      {product.sku} - {product.name}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                      Weight: {product.weight}{product.weightUnit} | Stock: {product.stockQuantity} | Price: ₹{product.price}
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                              ))}
+                                .map((product: Product) => {
+                                  const isBulkItem = product.name.toLowerCase().includes('bulk') || 
+                                                   product.name.toLowerCase().includes('bag') ||
+                                                   product.name.toLowerCase().includes('container') ||
+                                                   (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg');
+                                  
+                                  return (
+                                    <SelectItem key={product.id} value={product.id.toString()}>
+                                      <div className="flex flex-col">
+                                        <div className="font-medium flex items-center gap-2">
+                                          {product.sku} - {product.name}
+                                          {isBulkItem && (
+                                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">BULK</span>
+                                          )}
+                                        </div>
+                                        <div className="text-sm text-gray-500">
+                                          Weight: {product.weight || 'N/A'}{product.weightUnit} | Stock: {product.stockQuantity} | Cost: ₹{product.cost} | Price: ₹{product.price}
+                                        </div>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
                               {bulkProducts.filter((product: Product) => {
                                 // If no search term, show all products
                                 if (!searchTerm.trim()) {

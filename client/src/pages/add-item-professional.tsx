@@ -1303,52 +1303,54 @@ export default function AddItemProfessional() {
 
                               {/* Conditional Bulk Item Name Field - Only for Repackage */}
                               {form.watch("itemPreparationsStatus") === "Repackage" && (
-                                <FormField
-                                  control={form.control}
-                                  name="bulkItemName"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel className="text-red-600">Bulk Item Name *</FormLabel>
-                                      <FormControl>
-                                        <Select onValueChange={field.onChange} value={field.value || ""}>
-                                          <SelectTrigger className="border-red-300 focus:border-red-500">
-                                            <SelectValue placeholder="Select bulk item to repackage" />
-                                          </SelectTrigger>
-                                          <SelectContent className="max-h-80 overflow-y-auto">
-                                            {Array.isArray(recentProducts) && recentProducts.length > 0 ? (
-                                              recentProducts
-                                                .filter((product: any) => 
-                                                  product.name && (
-                                                    product.name.toLowerCase().includes('bulk') || 
-                                                    product.name.toLowerCase().includes('bag') ||
-                                                    product.name.toLowerCase().includes('kg') ||
-                                                    product.name.toLowerCase().includes('ltr') ||
-                                                    product.name.toLowerCase().includes('container')
+                                <div>
+                                  <FormField
+                                    control={form.control}
+                                    name="bulkItemName"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-red-600">Bulk Item Name *</FormLabel>
+                                        <FormControl>
+                                          <Select onValueChange={field.onChange} value={field.value || ""}>
+                                            <SelectTrigger className="border-red-300 focus:border-red-500">
+                                              <SelectValue placeholder="Select bulk item to repackage" />
+                                            </SelectTrigger>
+                                            <SelectContent className="max-h-80 overflow-y-auto">
+                                              {Array.isArray(recentProducts) && recentProducts.length > 0 ? (
+                                                recentProducts
+                                                  .filter((product: any) => 
+                                                    product.name && (
+                                                      product.name.toLowerCase().includes('bulk') || 
+                                                      product.name.toLowerCase().includes('bag') ||
+                                                      product.name.toLowerCase().includes('kg') ||
+                                                      product.name.toLowerCase().includes('ltr') ||
+                                                      product.name.toLowerCase().includes('container')
+                                                    )
                                                   )
-                                                )
-                                                .map((product: any) => (
-                                                  <SelectItem key={`product-${product.id}`} value={product.name}>
-                                                    {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity}
-                                                  </SelectItem>
-                                                ))
-                                            ) : null}
-                                            <SelectItem value="100G">100G - Small quantity bulk item</SelectItem>
-                                            <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK - Seasoning bulk pack</SelectItem>
-                                            <SelectItem value="Rice - 25kg Bag">Rice - 25kg Bag - Standard rice bulk pack</SelectItem>
-                                            <SelectItem value="Wheat - 50kg Bag">Wheat - 50kg Bag - Wheat bulk pack</SelectItem>
-                                            <SelectItem value="Dal - 25kg Bag">Dal - 25kg Bag - Lentils bulk pack</SelectItem>
-                                            <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag - Sugar bulk pack</SelectItem>
-                                            <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container - Cooking oil bulk</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-                                      <div className="text-xs text-red-500 mt-1">
-                                        Bulk Item Name is required for repackaging
-                                      </div>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+                                                  .map((product: any) => (
+                                                    <SelectItem key={`product-${product.id}`} value={product.name}>
+                                                      {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity}
+                                                    </SelectItem>
+                                                  ))
+                                              ) : null}
+                                              <SelectItem value="100G">100G - Small quantity bulk item</SelectItem>
+                                              <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK - Seasoning bulk pack</SelectItem>
+                                              <SelectItem value="Rice - 25kg Bag">Rice - 25kg Bag - Standard rice bulk pack</SelectItem>
+                                              <SelectItem value="Wheat - 50kg Bag">Wheat - 50kg Bag - Wheat bulk pack</SelectItem>
+                                              <SelectItem value="Dal - 25kg Bag">Dal - 25kg Bag - Lentils bulk pack</SelectItem>
+                                              <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag - Sugar bulk pack</SelectItem>
+                                              <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container - Cooking oil bulk</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </FormControl>
+                                        <div className="text-xs text-red-500 mt-1">
+                                          Bulk Item Name is required for repackaging
+                                        </div>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
                               )}
                             </div>
 
@@ -1539,28 +1541,30 @@ export default function AddItemProfessional() {
                               form.watch("itemPreparationsStatus") === "Weight to Piece" ||
                               form.watch("itemPreparationsStatus") === "Bulk") && 
                               form.watch("itemPreparationsStatus") !== "Repackage" && (
-                              <div className="grid grid-cols-2 gap-6">
-                                <FormField
-                                  control={form.control}
-                                  name="weightInGms"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel className="text-red-600">Weight in (Gms) *</FormLabel>
-                                      <FormControl>
-                                        <Input 
-                                          {...field} 
-                                          placeholder="Weight(gms) is required" 
-                                          type="number" 
-                                          step="0.001"
-                                          className="border-red-300 focus:border-red-500" 
-                                        />
-                                      </FormControl>
-                                      <div className="text-xs text-red-500 mt-1">Weight(gms) is required</div>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <div />
+                              <div>
+                                <div className="grid grid-cols-2 gap-6">
+                                  <FormField
+                                    control={form.control}
+                                    name="weightInGms"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-red-600">Weight in (Gms) *</FormLabel>
+                                        <FormControl>
+                                          <Input 
+                                            {...field} 
+                                            placeholder="Weight(gms) is required" 
+                                            type="number" 
+                                            step="0.001"
+                                            className="border-red-300 focus:border-red-500" 
+                                          />
+                                        </FormControl>
+                                        <div className="text-xs text-red-500 mt-1">Weight(gms) is required</div>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <div />
+                                </div>
                               </div>
                             )}
                           </CardContent>
