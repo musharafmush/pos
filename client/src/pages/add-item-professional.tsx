@@ -105,7 +105,7 @@ const productFormSchema = z.object({
   allowItemFree: z.boolean().default(false),
 
   // Mobile App Configurations
-  dailyAuditProcess: z.boolean().default(false),
+  // Configuration fields can be added here as needed
 
   // Other Information
   itemIngredients: z.string().optional(),
@@ -203,7 +203,6 @@ export default function AddItemProfessional() {
       indentType: "Manual",
       gateKeeperMargin: "",
       allowItemFree: false,
-      dailyAuditProcess: false,
       itemIngredients: "",
       price: "",
       mrp: "",
@@ -1937,20 +1936,25 @@ export default function AddItemProfessional() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-6">
-                            <div className="flex items-center space-x-3">
-                              <FormField
-                                control={form.control}
-                                name="dailyAuditProcess"
-                                render={({ field }) => (
-                                  <FormItem className="flex items-center space-x-3">
-                                    <FormControl>
-                                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                    </FormControl>
-                                    <FormLabel>Daily Audit Process</FormLabel>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Mobile App Settings</h3>
+                              <p className="text-sm text-gray-600 mb-4">
+                                Configure mobile application specific settings for this product.
+                              </p>
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Show on Mobile Dashboard</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Enable Mobile Notifications</span>
+                                  <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Quick Add to Cart</span>
+                                  <Switch />
+                                </div>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
