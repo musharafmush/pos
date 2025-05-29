@@ -105,7 +105,20 @@ const productFormSchema = z.object({
   allowItemFree: z.boolean().default(false),
 
   // Mobile App Configurations
-  // Configuration fields can be added here as needed
+  showOnMobileDashboard: z.boolean().default(false),
+  enableMobileNotifications: z.boolean().default(false),
+  quickAddToCart: z.boolean().default(false),
+
+  // Additional Properties
+  perishableItem: z.boolean().default(false),
+  temperatureControlled: z.boolean().default(false),
+  fragileItem: z.boolean().default(false),
+  trackSerialNumbers: z.boolean().default(false),
+
+  // Compliance Information
+  fdaApproved: z.boolean().default(false),
+  bisCertified: z.boolean().default(false),
+  organicCertified: z.boolean().default(false),
 
   // Other Information
   itemIngredients: z.string().optional(),
@@ -203,6 +216,16 @@ export default function AddItemProfessional() {
       indentType: "Manual",
       gateKeeperMargin: "",
       allowItemFree: false,
+      showOnMobileDashboard: false,
+      enableMobileNotifications: false,
+      quickAddToCart: false,
+      perishableItem: false,
+      temperatureControlled: false,
+      fragileItem: false,
+      trackSerialNumbers: false,
+      fdaApproved: false,
+      bisCertified: false,
+      organicCertified: false,
       itemIngredients: "",
       price: "",
       mrp: "",
@@ -1727,22 +1750,70 @@ export default function AddItemProfessional() {
                             <div className="bg-purple-50 p-4 rounded-lg">
                               <h3 className="font-medium mb-3">Additional Properties</h3>
                               <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Perishable Item</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Temperature Controlled</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Fragile Item</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Track Serial Numbers</span>
-                                  <Switch />
-                                </div>
+                                <FormField
+                                  control={form.control}
+                                  name="perishableItem"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">Perishable Item</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="temperatureControlled"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">Temperature Controlled</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="fragileItem"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">Fragile Item</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="trackSerialNumbers"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">Track Serial Numbers</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                               </div>
                             </div>
                           </CardContent>
@@ -1908,18 +1979,54 @@ export default function AddItemProfessional() {
                             <div className="bg-yellow-50 p-4 rounded-lg">
                               <h3 className="font-medium mb-3">Compliance Information</h3>
                               <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">FDA Approved</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">BIS Certified</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Organic Certified</span>
-                                  <Switch />
-                                </div>
+                                <FormField
+                                  control={form.control}
+                                  name="fdaApproved"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">FDA Approved</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="bisCertified"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">BIS Certified</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="organicCertified"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">Organic Certified</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                               </div>
                             </div>
                           </CardContent>
@@ -1942,18 +2049,54 @@ export default function AddItemProfessional() {
                                 Configure mobile application specific settings for this product.
                               </p>
                               <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Show on Mobile Dashboard</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Enable Mobile Notifications</span>
-                                  <Switch />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Quick Add to Cart</span>
-                                  <Switch />
-                                </div>
+                                <FormField
+                                  control={form.control}
+                                  name="showOnMobileDashboard"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">Show on Mobile Dashboard</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="enableMobileNotifications"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">Enable Mobile Notifications</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="quickAddToCart"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between">
+                                      <FormLabel className="text-sm">Quick Add to Cart</FormLabel>
+                                      <FormControl>
+                                        <Switch 
+                                          checked={field.value || false} 
+                                          onCheckedChange={field.onChange} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                               </div>
                             </div>
                           </CardContent>
