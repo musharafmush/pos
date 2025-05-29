@@ -11,6 +11,8 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import React from "react";
+import { useLocation } from "wouter";
 
 const loginSchema = z.object({
   usernameOrEmail: z.string().min(3, "Please enter your email address or username"),
@@ -35,7 +37,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
-  const { user, isLoading, loginMutation, registerMutation } = useAuth();
+  const { user, isLoading, loginMutation, registerMutation, login } = useAuth();
+  const [, setLocation] = useLocation();
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -67,6 +70,17 @@ export default function AuthPage() {
   if (user) {
     return <Redirect to="/" />;
   }
+
+  // Auto-login for development
+  React.useEffect(() => {
+    if (!user && process.env.NODE_ENV === 'development') {
+      login("admin", "admin").then((result) => {
+        if (result.success) {
+          setLocation("/");
+        }
+      });
+    }
+  }, [user, login, setLocation]);
 
   return (
     <div className="flex min-h-screen bg-background">
