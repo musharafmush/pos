@@ -1,7 +1,4 @@
-` tags. I will pay close attention to preserving indentation, structure, and functionality while avoiding the forbidden phrases.
 
-```
-<replit_final_file>
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
