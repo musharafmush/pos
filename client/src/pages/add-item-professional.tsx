@@ -437,20 +437,6 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
-
-                      <FormField
-                        control={form.control}
-                        name="alias"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Alias</FormLabel>
-                            <FormControl>
-                              <Textarea {...field} placeholder="Enter alias" rows={3} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                     </CardContent>
                   </Card>
                 )}
