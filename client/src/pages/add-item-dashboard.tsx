@@ -86,45 +86,45 @@ export default function AddItemDashboard() {
     supplierName: "",
     alias: "",
     aboutProduct: "",
-    
+
     // Category Information
     categoryId: "",
-    
+
     // Tax Information
     taxRate: "",
     hsnCode: "",
-    
+
     // EAN Code/Barcode
     barcode: "",
-    
+
     // Packing
     packingType: "",
     packingSize: "",
-    
+
     // Item Properties
     weight: "",
     weightUnit: "kg",
     dimensions: "",
     color: "",
     size: "",
-    
+
     // Pricing
     price: "",
     mrp: "",
     cost: "",
     discountPercent: "",
-    
+
     // Reorder Configurations
     stockQuantity: "",
     alertThreshold: "",
     reorderLevel: "",
     maxStockLevel: "",
-    
+
     // Purchase Order
     preferredSupplier: "",
     leadTime: "",
     minimumOrderQty: "",
-    
+
     // Status
     active: true
   });
@@ -156,7 +156,7 @@ export default function AddItemDashboard() {
     mutationFn: async ({ productId, force = false }: { productId: number; force?: boolean }) => {
       const url = force ? `/api/products/${productId}?force=true` : `/api/products/${productId}`;
       const response = await apiRequest("DELETE", url);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(JSON.stringify({
@@ -179,14 +179,14 @@ export default function AddItemDashboard() {
     onError: (error: Error) => {
       try {
         const errorData = JSON.parse(error.message);
-        
+
         if (errorData.status === 400 && errorData.canForceDelete) {
           const confirmMessage = `${errorData.message}\n\n` +
             `This product is referenced in:\n` +
             `• ${errorData.references.saleItems || 0} sale records\n` +
             `• ${errorData.references.purchaseItems || 0} purchase records\n\n` +
             `Do you want to delete the product and ALL related records? This action cannot be undone.`;
-            
+
           if (window.confirm(confirmMessage)) {
             deleteProductMutation.mutate({ productId: errorData.productId, force: true });
           }
@@ -195,7 +195,7 @@ export default function AddItemDashboard() {
       } catch (e) {
         // Handle as regular error
       }
-      
+
       toast({
         title: "Error",
         description: error.message || "Failed to delete product",
@@ -247,45 +247,45 @@ export default function AddItemDashboard() {
       supplierName: "Select supplier", 
       alias: product.name.split(' ')[0] || "",
       aboutProduct: product.description || "",
-      
+
       // Category Information
       categoryId: product.categoryId.toString(),
-      
+
       // Tax Information
       taxRate: "18",
       hsnCode: "",
-      
+
       // EAN Code/Barcode
       barcode: product.barcode || "",
-      
+
       // Packing
       packingType: "Box",
       packingSize: "1",
-      
+
       // Item Properties
       weight: product.weight || "1",
       weightUnit: product.weightUnit || "kg",
       dimensions: "",
       color: "",
       size: "",
-      
+
       // Pricing - Convert string prices to display properly
       price: typeof product.price === 'string' ? product.price : product.price.toString(),
       mrp: product.mrp ? (typeof product.mrp === 'string' ? product.mrp : product.mrp.toString()) : (typeof product.price === 'string' ? product.price : product.price.toString()),
       cost: product.cost ? (typeof product.cost === 'string' ? product.cost : product.cost.toString()) : "0",
       discountPercent: "0",
-      
+
       // Reorder Configurations
       stockQuantity: product.stockQuantity.toString(),
       alertThreshold: product.alertThreshold?.toString() || "5",
       reorderLevel: "10",
       maxStockLevel: "100",
-      
+
       // Purchase Order
       preferredSupplier: "Primary Supplier",
       leadTime: "7",
       minimumOrderQty: "1",
-      
+
       // Status
       active: product.active,
     });
@@ -708,14 +708,14 @@ export default function AddItemDashboard() {
                     </TableBody>
                   </Table>
                 )}
-                
+
                 {/* Pagination Controls */}
                 {filteredProducts.length > 0 && (
                   <div className="flex items-center justify-between px-2 py-4">
                     <div className="text-sm text-gray-700">
                       Showing {startIndex + 1} to {Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length} products
                     </div>
-                    
+
                     {totalPages > 1 && (
                       <Pagination>
                         <PaginationContent>
@@ -725,7 +725,7 @@ export default function AddItemDashboard() {
                               className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
-                          
+
                           {/* Page Numbers */}
                           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                             let pageNumber;
@@ -738,7 +738,7 @@ export default function AddItemDashboard() {
                             } else {
                               pageNumber = currentPage - 2 + i;
                             }
-                            
+
                             return (
                               <PaginationItem key={pageNumber}>
                                 <PaginationLink
@@ -751,7 +751,7 @@ export default function AddItemDashboard() {
                               </PaginationItem>
                             );
                           })}
-                          
+
                           <PaginationItem>
                             <PaginationNext 
                               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
@@ -942,25 +942,26 @@ export default function AddItemDashboard() {
                     Edit product information including details, pricing, and inventory
                   </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="space-y-2">
                   <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">General Information</div>
                   <div 
                     onClick={() => scrollToSection('item-info')}
                     className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                       activeSection === 'item-info' 
-                        ? 'bg-blue-100 text-blue-700' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
                     <PackageIcon className="w-4 h-4" />
                     Item Information
+                    <div className="w-2 h-2 bg-blue-600 rounded-full ml-auto"></div>
                   </div>
                   <div 
                     onClick={() => scrollToSection('category-info')}
                     className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                       activeSection === 'category-info' 
-                        ? 'bg-blue-100 text-blue-700' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -971,7 +972,7 @@ export default function AddItemDashboard() {
                     onClick={() => scrollToSection('tax-info')}
                     className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                       activeSection === 'tax-info' 
-                        ? 'bg-blue-100 text-blue-700' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -982,7 +983,7 @@ export default function AddItemDashboard() {
                     onClick={() => scrollToSection('barcode-info')}
                     className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                       activeSection === 'barcode-info' 
-                        ? 'bg-blue-100 text-blue-700' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -993,18 +994,19 @@ export default function AddItemDashboard() {
                     onClick={() => scrollToSection('packing-info')}
                     className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                       activeSection === 'packing-info' 
-                        ? 'bg-blue-100 text-blue-700' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
                     <PackageIcon className="w-4 h-4" />
                     Packing
+                    <div className="w-2 h-2 bg-orange-500 rounded-full ml-auto"></div>
                   </div>
                   <div 
                     onClick={() => scrollToSection('properties-info')}
                     className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                       activeSection === 'properties-info' 
-                        ? 'bg-blue-100 text-blue-700' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -1015,7 +1017,7 @@ export default function AddItemDashboard() {
                     onClick={() => scrollToSection('pricing-info')}
                     className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                       activeSection === 'pricing-info' 
-                        ? 'bg-blue-100 text-blue-700' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -1026,7 +1028,7 @@ export default function AddItemDashboard() {
                     onClick={() => scrollToSection('reorder-info')}
                     className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                       activeSection === 'reorder-info' 
-                        ? 'bg-blue-100 text-blue-700' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -1037,7 +1039,7 @@ export default function AddItemDashboard() {
                     onClick={() => scrollToSection('purchase-info')}
                     className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                       activeSection === 'purchase-info' 
-                        ? 'bg-blue-100 text-blue-700' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -1079,7 +1081,7 @@ export default function AddItemDashboard() {
                           <Input
                             value={editForm.itemCode}
                             onChange={(e) => setEditForm({ ...editForm, itemCode: e.target.value })}
-                            placeholder="RICE001"
+                            placeholder="ITM007797868"
                             className="bg-gray-50"
                           />
                         </div>
@@ -1088,7 +1090,7 @@ export default function AddItemDashboard() {
                           <Input
                             value={editForm.name}
                             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                            placeholder="Rice (1kg)"
+                            placeholder="salte 250"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1102,6 +1104,8 @@ export default function AddItemDashboard() {
                             <option value="ABC Manufacturing">ABC Manufacturing</option>
                             <option value="XYZ Industries">XYZ Industries</option>
                             <option value="Local Supplier">Local Supplier</option>
+                            <option value="Premium Foods Ltd">Premium Foods Ltd</option>
+                            <option value="Quality Products Inc">Quality Products Inc</option>
                           </select>
                         </div>
                         <div className="space-y-2">
@@ -1115,6 +1119,8 @@ export default function AddItemDashboard() {
                             <option value="Primary Supplier">Primary Supplier</option>
                             <option value="Backup Supplier">Backup Supplier</option>
                             <option value="Local Distributor">Local Distributor</option>
+                            <option value="Fresh Foods Supply">Fresh Foods Supply</option>
+                            <option value="Wholesale Partners">Wholesale Partners</option>
                           </select>
                         </div>
                         <div className="space-y-2">
@@ -1122,7 +1128,7 @@ export default function AddItemDashboard() {
                           <Input
                             value={editForm.alias}
                             onChange={(e) => setEditForm({ ...editForm, alias: e.target.value })}
-                            placeholder="Enter alias"
+                            placeholder="salte"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1132,7 +1138,7 @@ export default function AddItemDashboard() {
                             onChange={(e) => setEditForm({ ...editForm, categoryId: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            <option value="">Select Category</option>
+                            <option value="">Electronics</option>
                             {categories?.map((category: any) => (
                               <option key={category.id} value={category.id.toString()}>
                                 {category.name}
@@ -1159,30 +1165,73 @@ export default function AddItemDashboard() {
                       <div className="grid grid-cols-3 gap-6">
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">Cost Price</label>
-                          <Input
-                            type="number"
-                            value={editForm.cost}
-                            onChange={(e) => setEditForm({ ...editForm, cost: e.target.value })}
-                            placeholder="₹0.00"
-                          />
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                            <Input
+                              type="number"
+                              value={editForm.cost}
+                              onChange={(e) => setEditForm({ ...editForm, cost: e.target.value })}
+                              placeholder="0.00"
+                              className="pl-8"
+                            />
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">Selling Price</label>
-                          <Input
-                            type="number"
-                            value={editForm.price}
-                            onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
-                            placeholder="₹0.00"
-                          />
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                            <Input
+                              type="number"
+                              value={editForm.price}
+                              onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                              placeholder="0.00"
+                              className="pl-8"
+                            />
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">MRP</label>
-                          <Input
-                            type="number"
-                            value={editForm.mrp}
-                            onChange={(e) => setEditForm({ ...editForm, mrp: e.target.value })}
-                            placeholder="₹0.00"
-                          />
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                            <Input
+                              type="number"
+                              value={editForm.mrp}
+                              onChange={(e) => setEditForm({ ...editForm, mrp: e.target.value })}
+                              placeholder="0.00"
+                              className="pl-8"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Pricing Analysis */}
+                      <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                        <h4 className="font-medium text-green-900 mb-2">Pricing Analysis</h4>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-green-700">Profit Margin:</span>
+                            <span className="font-medium ml-2">
+                              {editForm.price && editForm.cost ? 
+                                `${(((parseFloat(editForm.price) - parseFloat(editForm.cost)) / parseFloat(editForm.price)) * 100).toFixed(1)}%` 
+                                : '0%'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-green-700">MRP Discount:</span>
+                            <span className="font-medium ml-2">
+                              {editForm.mrp && editForm.price ? 
+                                `${(((parseFloat(editForm.mrp) - parseFloat(editForm.price)) / parseFloat(editForm.mrp)) * 100).toFixed(1)}%` 
+                                : '0%'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-green-700">Markup:</span>
+                            <span className="font-medium ml-2">
+                              {editForm.price && editForm.cost ? 
+                                `${(((parseFloat(editForm.price) - parseFloat(editForm.cost)) / parseFloat(editForm.cost)) * 100).toFixed(1)}%` 
+                                : '0%'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1210,6 +1259,29 @@ export default function AddItemDashboard() {
                           />
                         </div>
                       </div>
+
+                      {/* Stock Value Display */}
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                        <h4 className="font-medium text-blue-900 mb-2">Stock Value</h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-blue-700">At Cost Price:</span>
+                            <span className="font-medium ml-2">
+                              ₹{editForm.stockQuantity && editForm.cost ? 
+                                (parseFloat(editForm.stockQuantity) * parseFloat(editForm.cost)).toFixed(2) 
+                                : '0.00'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-blue-700">At Selling Price:</span>
+                            <span className="font-medium ml-2">
+                              ₹{editForm.stockQuantity && editForm.price ? 
+                                (parseFloat(editForm.stockQuantity) * parseFloat(editForm.price)).toFixed(2) 
+                                : '0.00'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Product Properties */}
@@ -1230,7 +1302,8 @@ export default function AddItemDashboard() {
                             type="number"
                             value={editForm.weight}
                             onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
-                            placeholder="0"
+                            placeholder="250"
+                            step="0.001"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1240,12 +1313,28 @@ export default function AddItemDashboard() {
                             onChange={(e) => setEditForm({ ...editForm, weightUnit: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            <option value="kg">Kilograms (kg)</option>
                             <option value="g">Grams (g)</option>
+                            <option value="kg">Kilograms (kg)</option>
                             <option value="piece">Piece</option>
                             <option value="liter">Liter (L)</option>
                             <option value="ml">Milliliter (ml)</option>
                           </select>
+                        </div>
+                      </div>
+
+                      {/* Additional Properties */}
+                      <div className="mt-6 grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Dimensions (L×W×H)</label>
+                          <Input
+                            placeholder="e.g., 10×5×15 cm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Color</label>
+                          <Input
+                            placeholder="Enter color"
+                          />
                         </div>
                       </div>
                     </div>
@@ -1271,7 +1360,30 @@ export default function AddItemDashboard() {
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">Sub Category</label>
-                          <Input placeholder="Enter sub category" />
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select sub category</option>
+                            <option value="Spices">Spices</option>
+                            <option value="Condiments">Condiments</option>
+                            <option value="Seasonings">Seasonings</option>
+                            <option value="Table Salt">Table Salt</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6 mt-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Brand</label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select brand</option>
+                            <option value="Tata Salt">Tata Salt</option>
+                            <option value="Captain Cook">Captain Cook</option>
+                            <option value="Saffola">Saffola</option>
+                            <option value="Aashirvaad">Aashirvaad</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Tags</label>
+                          <Input placeholder="e.g., organic, premium, imported" />
                         </div>
                       </div>
                     </div>
@@ -1287,11 +1399,11 @@ export default function AddItemDashboard() {
                             onChange={(e) => setEditForm({ ...editForm, taxRate: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            <option value="0">0%</option>
-                            <option value="5">5%</option>
-                            <option value="12">12%</option>
-                            <option value="18">18%</option>
-                            <option value="28">28%</option>
+                            <option value="0">0% - Nil Rate</option>
+                            <option value="5">5% - Essential goods</option>
+                            <option value="12">12% - Standard rate</option>
+                            <option value="18">18% - Standard rate</option>
+                            <option value="28">28% - Luxury goods</option>
                           </select>
                         </div>
                         <div className="space-y-2">
@@ -1299,15 +1411,58 @@ export default function AddItemDashboard() {
                           <Input
                             value={editForm.hsnCode}
                             onChange={(e) => setEditForm({ ...editForm, hsnCode: e.target.value })}
-                            placeholder="Enter HSN code"
+                            placeholder="e.g., 25010010"
                           />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">Tax Type</label>
                           <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="inclusive">Inclusive</option>
-                            <option value="exclusive">Exclusive</option>
+                            <option value="inclusive">Tax Inclusive</option>
+                            <option value="exclusive">Tax Exclusive</option>
                           </select>
+                        </div>
+                      </div>
+
+                      {/* GST Breakdown */}
+                      <div className="mt-6">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">GST Breakdown</h4>
+                        <div className="grid grid-cols-4 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-600">CGST (%)</label>
+                            <Input
+                              type="number"
+                              placeholder="9.00"
+                              step="0.01"
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-600">SGST (%)</label>
+                            <Input
+                              type="number"
+                              placeholder="9.00"
+                              step="0.01"
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-600">IGST (%)</label>
+                            <Input
+                              type="number"
+                              placeholder="18.00"
+                              step="0.01"
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-600">Cess (%)</label>
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              step="0.01"
+                              className="text-sm"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1322,6 +1477,7 @@ export default function AddItemDashboard() {
                             value={editForm.barcode}
                             onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
                             placeholder="Enter barcode or EAN"
+                            className="font-mono"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1331,14 +1487,52 @@ export default function AddItemDashboard() {
                             <option value="EAN8">EAN-8</option>
                             <option value="UPC">UPC</option>
                             <option value="CODE128">Code 128</option>
+                            <option value="CODE39">Code 39</option>
                           </select>
+                        </div>
+                      </div>
+
+                      {/* Barcode Generation Tools */}
+                      <div className="mt-4 p-4 bg-purple-50 rounded-lg">
+                        <h4 className="font-medium text-purple-900 mb-3">Barcode Tools</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const randomEAN = '2' + Math.random().toString().slice(2, 14);
+                              setEditForm({ ...editForm, barcode: randomEAN });
+                            }}
+                          >
+                            Generate EAN-13
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const randomUPC = Math.random().toString().slice(2, 14);
+                              setEditForm({ ...editForm, barcode: randomUPC });
+                            }}
+                          >
+                            Generate UPC
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditForm({ ...editForm, barcode: "" })}
+                          >
+                            Clear
+                          </Button>
                         </div>
                       </div>
                     </div>
 
                     {/* Packing */}
                     <div id="packing-info" className="bg-white rounded-lg border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Packing</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Packing Information</h3>
                       <div className="grid grid-cols-3 gap-6">
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">Packing Type</label>
@@ -1347,11 +1541,13 @@ export default function AddItemDashboard() {
                             onChange={(e) => setEditForm({ ...editForm, packingType: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
+                            <option value="Packet">Packet</option>
                             <option value="Box">Box</option>
                             <option value="Bag">Bag</option>
                             <option value="Bottle">Bottle</option>
-                            <option value="Packet">Packet</option>
                             <option value="Can">Can</option>
+                            <option value="Jar">Jar</option>
+                            <option value="Pouch">Pouch</option>
                           </select>
                         </div>
                         <div className="space-y-2">
@@ -1359,12 +1555,31 @@ export default function AddItemDashboard() {
                           <Input
                             value={editForm.packingSize}
                             onChange={(e) => setEditForm({ ...editForm, packingSize: e.target.value })}
-                            placeholder="1"
+                            placeholder="250g"
                           />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">Units per Pack</label>
-                          <Input type="number" placeholder="1" />
+                          <Input type="number" placeholder="1" defaultValue="1" />
+                        </div>
+                      </div>
+
+                      {/* Packing Details */}
+                      <div className="mt-6 grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Packing Material</label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select material</option>
+                            <option value="Plastic">Plastic</option>
+                            <option value="Paper">Paper</option>
+                            <option value="Glass">Glass</option>
+                            <option value="Metal">Metal</option>
+                            <option value="Cardboard">Cardboard</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Shelf Life</label>
+                          <Input placeholder="e.g., 24 months" />
                         </div>
                       </div>
                     </div>
@@ -1392,10 +1607,17 @@ export default function AddItemDashboard() {
                               placeholder="100"
                             />
                           </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Economic Order Quantity</label>
+                            <Input
+                              type="number"
+                              placeholder="50"
+                            />
+                          </div>
                         </div>
                         <div className="bg-blue-50 p-4 rounded-lg">
                           <h4 className="font-medium text-blue-900 mb-2">Stock Status</h4>
-                          <div className="text-sm space-y-1">
+                          <div className="text-sm space-y-2">
                             <div className="flex justify-between">
                               <span className="text-blue-700">Current Stock:</span>
                               <span className="font-medium">{editForm.stockQuantity || '0'} units</span>
@@ -1408,6 +1630,14 @@ export default function AddItemDashboard() {
                                   ? 'Low Stock' : 'In Stock'}
                               </span>
                             </div>
+                            <div className="flex justify-between">
+                              <span className="text-blue-700">Days to Reorder:</span>
+                              <span className="font-medium">
+                                {Number(editForm.stockQuantity || 0) > Number(editForm.reorderLevel || 0) 
+                                  ? Math.ceil(Number(editForm.stockQuantity || 0) / 2) + ' days' 
+                                  : 'Now'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1415,7 +1645,7 @@ export default function AddItemDashboard() {
 
                     {/* Purchase Order */}
                     <div id="purchase-info" className="bg-white rounded-lg border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Purchase Order</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Purchase Order Information</h3>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-6">
                           <div className="space-y-2">
@@ -1429,6 +1659,7 @@ export default function AddItemDashboard() {
                               <option value="Primary Supplier">Primary Supplier</option>
                               <option value="Backup Supplier">Backup Supplier</option>
                               <option value="Local Distributor">Local Distributor</option>
+                              <option value="Fresh Foods Supply">Fresh Foods Supply</option>
                             </select>
                           </div>
                           <div className="space-y-2">
@@ -1452,10 +1683,24 @@ export default function AddItemDashboard() {
                         </div>
                         <div className="bg-yellow-50 p-4 rounded-lg">
                           <h4 className="font-medium text-yellow-900 mb-2">Purchase Recommendation</h4>
-                          <div className="text-sm text-yellow-800">
-                            {Number(editForm.stockQuantity || 0) <= Number(editForm.reorderLevel || 0) 
-                              ? `Reorder needed! Suggested quantity: ${Number(editForm.maxStockLevel || 0) - Number(editForm.stockQuantity || 0)} units`
-                              : 'Stock levels are adequate'}
+                          <div className="text-sm text-yellow-800 space-y-2">
+                            <div>
+                              {Number(editForm.stockQuantity || 0) <= Number(editForm.reorderLevel || 0) 
+                                ? `⚠️ Reorder needed! Suggested quantity: ${Number(editForm.maxStockLevel || 0) - Number(editForm.stockQuantity || 0)} units`
+                                : '✅ Stock levels are adequate'}
+                            </div>
+                            <div className="mt-3 pt-2 border-t border-yellow-200">
+                              <span className="text-yellow-700">Last Purchase Price:</span>
+                              <span className="font-medium ml-2">₹{editForm.cost || '0.00'}</span>
+                            </div>
+                            <div>
+                              <span className="text-yellow-700">Estimated Order Value:</span>
+                              <span className="font-medium ml-2">
+                                ₹{editForm.cost && editForm.minimumOrderQty ? 
+                                  (parseFloat(editForm.cost) * parseInt(editForm.minimumOrderQty)).toFixed(2) 
+                                  : '0.00'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1463,18 +1708,43 @@ export default function AddItemDashboard() {
 
                     {/* Status */}
                     <div className="bg-white rounded-lg border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Item Status</h3>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          id="activeStatus"
-                          checked={editForm.active}
-                          onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <label htmlFor="activeStatus" className="text-sm font-medium text-gray-700">
-                          Item is active and available for sale
-                        </label>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Item Status & Settings</h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="activeStatus"
+                            checked={editForm.active}
+                            onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <label htmlFor="activeStatus" className="text-sm font-medium text-gray-700">
+                            Item is active and available for sale
+                          </label>
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="trackInventory"
+                            defaultChecked
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <label htmlFor="trackInventory" className="text-sm font-medium text-gray-700">
+                            Track inventory for this item
+                          </label>
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="allowBackorder"
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <label htmlFor="allowBackorder" className="text-sm font-medium text-gray-700">
+                            Allow selling when out of stock
+                          </label>
+                        </div>
                       </div>
                     </div>
                   </div>
