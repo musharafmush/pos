@@ -1551,7 +1551,8 @@ export default function AddItemDashboard() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="0">0% - Nil Rate</option>
-                            <option value="5">5% - Essential goods</optionThis code update enhances the product management dashboard by improving data fetching, filtering, adding new tabs, and displaying detailed product statistics.                            <option value="12">12% - Standard rate</option>
+                            <option value="5">5% - Essential goods</option>
+                            <option value="12">12% - Standard rate</option>
                             <option value="18">18% - Standard rate</option>
                             <option value="28">28% - Luxury goods</option>
                           </select>
