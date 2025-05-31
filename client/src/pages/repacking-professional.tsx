@@ -33,7 +33,7 @@ import {
   PrinterIcon,
   HelpCircleIcon,
   Settings2Icon,
-  CloseIcon
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
@@ -711,7 +711,7 @@ export default function RepackingProfessional() {
                       F10 Print
                     </Button>
                     <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <CloseIcon className="w-3 h-3 mr-1" />
+                      <X className="w-3 h-3 mr-1" />
                       F12 Close
                     </Button>
                   </div>
