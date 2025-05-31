@@ -262,8 +262,17 @@ export default function AddItemProfessional() {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       form.reset();
       toast({
-        title: "Success",
-        description: "Product created successfully",
+        title: "Success", 
+        description: "Product created successfully. Check the Add Item Dashboard to view all products.",
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setLocation("/add-item-dashboard")}
+          >
+            View Dashboard
+          </Button>
+        ),
       });
     },
     onError: (error: Error) => {

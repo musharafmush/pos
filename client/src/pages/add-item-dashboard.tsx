@@ -42,33 +42,30 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { 
-  PlusIcon,
-  PackageIcon,
-  TrendingUpIcon,
-  AlertTriangleIcon,
-  BarChart3Icon,
-  SearchIcon,
-  FilterIcon,
-  DownloadIcon,
+  PackageIcon, 
+  PlusIcon, 
+  SearchIcon, 
+  EditIcon, 
+  TrashIcon, 
+  EyeIcon, 
+  DownloadIcon, 
   RefreshCcwIcon,
-  EyeIcon,
-  EditIcon,
-  TrashIcon,
-  DollarSignIcon,
-  WeightIcon,
-  TagIcon,
-  CalendarIcon,
-  XIcon,
-  WarehouseIcon,
-  QrCodeIcon,
+  CheckCircleIcon,
+  AlertTriangleIcon,
+  ShoppingCartIcon,
+  CurrencyIcon,
+  FilterIcon,
+  ArrowUpDownIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  BoxIcon
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Product } from "@shared/schema";
 import { Link } from "wouter";
+import { ProductsTable } from "@/components/products-table";
 
 export default function AddItemDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -141,9 +138,25 @@ export default function AddItemDashboard() {
   };
   const queryClient = useQueryClient();
 
-  // Fetch products
-  const { data: products = [], isLoading } = useQuery({
+  // Fetch products with better error handling
+  const { data: products = [], isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ["/api/products"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/products");
+        if (!response.ok) {
+          throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log("Fetched products:", data); // Debug log
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        throw error;
+      }
+    },
+    staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: true,
   });
 
   // Fetch categories for the edit form
@@ -337,11 +350,37 @@ export default function AddItemDashboard() {
     return sum + (parseFloat(p.price.toString()) * p.stockQuantity);
   }, 0);
 
-  // Filter products based on search
-  const filteredProducts = products.filter((product: Product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Enhanced product filtering to include bulk and repackaged items
+  const filteredProducts = products.filter((product: Product) => {
+    const matchesSearch = !searchTerm || 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    switch (activeTab) {
+      case "active":
+        return matchesSearch && product.active;
+      case "inactive":
+        return matchesSearch && !product.active;
+      case "low-stock":
+        return matchesSearch && product.stockQuantity <= (product.alertThreshold || 5);
+      case "bulk":
+        return matchesSearch && (
+          product.name.toLowerCase().includes('bulk') ||
+          product.name.toLowerCase().includes('bag') ||
+          product.name.toLowerCase().includes('container') ||
+          (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg')
+        );
+      case "repackaged":
+        return matchesSearch && (
+          product.sku.includes('REPACK') ||
+          product.name.toLowerCase().includes('pack') ||
+          product.description?.toLowerCase().includes('repacked')
+        );
+      default:
+        return matchesSearch;
+    }
+  });
 
   // Pagination logic
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -387,80 +426,95 @@ export default function AddItemDashboard() {
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Enhanced Summary Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Products</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalProducts}</p>
+                  <p className="text-xs font-medium text-gray-600">Total Products</p>
+                  <p className="text-2xl font-bold text-gray-900">{products.length}</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <PackageIcon className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  {activeProducts} Active
-                </Badge>
+                <PackageIcon className="w-6 h-6 text-blue-500" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Inventory Value</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalInventoryValue)}</p>
+                  <p className="text-xs font-medium text-gray-600">Active Items</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {products.filter((p: Product) => p.active).length}
+                  </p>
                 </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <DollarSignIcon className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  Total Stock Value
-                </Badge>
+                <CheckCircleIcon className="w-6 h-6 text-green-500" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Low Stock Alert</p>
-                  <p className="text-2xl font-bold text-red-600">{lowStockProducts}</p>
+                  <p className="text-xs font-medium text-gray-600">Low Stock</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {products.filter((p: Product) => p.stockQuantity <= (p.alertThreshold || 5)).length}
+                  </p>
                 </div>
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangleIcon className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <Badge variant="destructive" className="bg-red-100 text-red-800">
-                  Needs Attention
-                </Badge>
+                <AlertTriangleIcon className="w-6 h-6 text-red-500" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Growth Rate</p>
-                  <p className="text-2xl font-bold text-green-600">+12.5%</p>
+                  <p className="text-xs font-medium text-gray-600">Bulk Items</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {products.filter((p: Product) => 
+                      p.name.toLowerCase().includes('bulk') ||
+                      p.name.toLowerCase().includes('bag') ||
+                      (parseFloat(p.weight || "0") >= 1 && p.weightUnit === 'kg')
+                    ).length}
+                  </p>
                 </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <TrendingUpIcon className="w-6 h-6 text-green-600" />
-                </div>
+                <BoxIcon className="w-6 h-6 text-blue-500" />
               </div>
-              <div className="mt-4">
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  This Month
-                </Badge>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600">Repackaged</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {products.filter((p: Product) => 
+                      p.sku.includes('REPACK') ||
+                      p.description?.toLowerCase().includes('repacked')
+                    ).length}
+                  </p>
+                </div>
+                <ShoppingCartIcon className="w-6 h-6 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600">Total Value</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    ₹{products.reduce((sum: number, p: Product) => 
+                      sum + (parseFloat(p.price) * p.stockQuantity), 0
+                    ).toLocaleString()}
+                  </p>
+                </div>
+                <CurrencyIcon className="w-6 h-6 text-orange-500" />
               </div>
             </CardContent>
           </Card>
@@ -468,11 +522,13 @@ export default function AddItemDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="recent">Recent Items</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
+            <TabsTrigger value="active">Active Items</TabsTrigger>
+            <TabsTrigger value="inactive">Inactive Items</TabsTrigger>
+            <TabsTrigger value="low-stock">Low Stock</TabsTrigger>
+            <TabsTrigger value="bulk">Bulk Items</TabsTrigger>
+            <TabsTrigger value="repackaged">Repackaged</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -814,7 +870,8 @@ export default function AddItemDashboard() {
               <Card className="border-dashed border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer">
                 <CardContent className="p-6 text-center">
                   <PackageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="font-medium mb-2">Electronics Template</h3>
+                  <h3 className="font-medium mb-2```python
+">Electronics Template</h3>
                   <p className="text-sm text-gray-600 mb-4">Pre-configured for electronic products with GST and warranty</p>
                   <Button variant="outline" size="sm">Use Template</Button>
                 </CardContent>
@@ -838,6 +895,74 @@ export default function AddItemDashboard() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Low Stock Tab */}
+          <TabsContent value="active" className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <PackageIcon className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-blue-800">Active Items</h3>
+              </div>
+              <p className="text-blue-700 text-sm">
+                Items that are currently active and available for sale.
+              </p>
+            </div>
+            <ProductsTable products={filteredProducts} />
+          </TabsContent>
+          
+          {/* Active Items Tab */}
+          <TabsContent value="inactive" className="space-y-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <PackageIcon className="w-5 h-5 text-gray-600" />
+                <h3 className="font-semibold text-gray-800">Inactive Items</h3>
+              </div>
+              <p className="text-gray-700 text-sm">
+                Items that are currently inactive and not available for sale.
+              </p>
+            </div>
+            <ProductsTable products={filteredProducts} />
+          </TabsContent>
+          
+          {/* Inactive Items Tab */}
+          <TabsContent value="low-stock" className="space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangleIcon className="w-5 h-5 text-yellow-600" />
+                <h3 className="font-semibold text-yellow-800">Low Stock Alert</h3>
+              </div>
+              <p className="text-yellow-700 text-sm">
+                Items below their alert threshold. Consider restocking these products.
+              </p>
+            </div>
+            <ProductsTable products={filteredProducts} />
+          </TabsContent>
+
+          <TabsContent value="bulk" className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <PackageIcon className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-blue-800">Bulk Items</h3>
+              </div>
+              <p className="text-blue-700 text-sm">
+                Large quantity items available for repackaging into smaller consumer units.
+              </p>
+            </div>
+            <ProductsTable products={filteredProducts} />
+          </TabsContent>
+
+          <TabsContent value="repackaged" className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <ShoppingCartIcon className="w-5 h-5 text-green-600" />
+                <h3 className="font-semibold text-green-800">Repackaged Items</h3>
+              </div>
+              <p className="text-green-700 text-sm">
+                Items that have been repackaged from bulk quantities into consumer-friendly sizes.
+              </p>
+            </div>
+            <ProductsTable products={filteredProducts} />
           </TabsContent>
         </Tabs>
 
@@ -946,7 +1071,7 @@ export default function AddItemDashboard() {
 
                   <div className="space-y-1">
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">General Information</div>
-                    
+
                     <div 
                       onClick={() => scrollToSection('item-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
@@ -959,7 +1084,7 @@ export default function AddItemDashboard() {
                       Item Information
                       <div className="w-2 h-2 bg-blue-600 rounded-full ml-auto"></div>
                     </div>
-                    
+
                     <div 
                       onClick={() => scrollToSection('category-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
@@ -971,7 +1096,7 @@ export default function AddItemDashboard() {
                       <TagIcon className="w-4 h-4" />
                       Category Information
                     </div>
-                    
+
                     <div 
                       onClick={() => scrollToSection('tax-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
@@ -983,7 +1108,7 @@ export default function AddItemDashboard() {
                       <DollarSignIcon className="w-4 h-4" />
                       Tax Information
                     </div>
-                    
+
                     <div 
                       onClick={() => scrollToSection('barcode-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
@@ -995,7 +1120,7 @@ export default function AddItemDashboard() {
                       <QrCodeIcon className="w-4 h-4" />
                       EAN Code/Barcode
                     </div>
-                    
+
                     <div 
                       onClick={() => scrollToSection('packing-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
@@ -1008,7 +1133,7 @@ export default function AddItemDashboard() {
                       Packing
                       <div className="w-2 h-2 bg-orange-500 rounded-full ml-auto"></div>
                     </div>
-                    
+
                     <div 
                       onClick={() => scrollToSection('properties-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
@@ -1020,7 +1145,7 @@ export default function AddItemDashboard() {
                       <WeightIcon className="w-4 h-4" />
                       Item Properties
                     </div>
-                    
+
                     <div 
                       onClick={() => scrollToSection('pricing-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
@@ -1032,7 +1157,7 @@ export default function AddItemDashboard() {
                       <DollarSignIcon className="w-4 h-4" />
                       Pricing
                     </div>
-                    
+
                     <div 
                       onClick={() => scrollToSection('reorder-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
@@ -1044,7 +1169,7 @@ export default function AddItemDashboard() {
                       <WarehouseIcon className="w-4 h-4" />
                       Reorder Configurations
                     </div>
-                    
+
                     <div 
                       onClick={() => scrollToSection('purchase-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
@@ -1089,7 +1214,7 @@ export default function AddItemDashboard() {
                       <div className="border-b pb-4 mb-6">
                         <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
                       </div>
-                      
+
                       <div className="space-y-6">
                         <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
@@ -1426,8 +1551,7 @@ export default function AddItemDashboard() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="0">0% - Nil Rate</option>
-                            <option value="5">5% - Essential goods</option>
-                            <option value="12">12% - Standard rate</option>
+                            <option value="5">5% - Essential goods</optionThis code update enhances the product management dashboard by improving data fetching, filtering, adding new tabs, and displaying detailed product statistics.                            <option value="12">12% - Standard rate</option>
                             <option value="18">18% - Standard rate</option>
                             <option value="28">28% - Luxury goods</option>
                           </select>
