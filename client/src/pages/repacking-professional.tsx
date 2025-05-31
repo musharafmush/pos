@@ -23,12 +23,10 @@ import { Separator } from "@/components/ui/separator";
 import { 
   PackageIcon,
   SaveIcon,
-  XIcon,
-  PlusIcon,
-  TrashIcon,
-  Calculator,
-  BarChart3Icon,
-  SearchIcon
+  PrinterIcon,
+  HelpCircleIcon,
+  Settings2Icon,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
@@ -61,10 +59,10 @@ export default function RepackingProfessional() {
   const [, setLocation] = useLocation();
   const [repackEntries, setRepackEntries] = useState<RepackEntry[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
 
-  // Generate today's date in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0];
+  // Generate today's date in DD/MM/YYYY format
+  const today = new Date();
+  const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
 
   // Fetch products for bulk selection
   const { data: products = [] } = useQuery({
@@ -77,11 +75,9 @@ export default function RepackingProfessional() {
   });
 
   // Show bulk products with stock > 0 for repacking
-  // Priority: Products with BULK in name, then products with weight > 1kg, then all others
   const bulkProducts = products.filter((product: Product) => 
     product.stockQuantity > 0 && product.active && !product.sku.includes("REPACK")
   ).sort((a, b) => {
-    // Priority sorting for bulk items
     const aIsBulk = a.name.toLowerCase().includes('bulk') || 
                    a.name.toLowerCase().includes('bag') ||
                    a.name.toLowerCase().includes('container') ||
@@ -90,7 +86,7 @@ export default function RepackingProfessional() {
                    b.name.toLowerCase().includes('bag') ||
                    b.name.toLowerCase().includes('container') ||
                    (parseFloat(b.weight || "0") >= 1 && b.weightUnit === 'kg');
-    
+
     if (aIsBulk && !bIsBulk) return -1;
     if (!aIsBulk && bIsBulk) return 1;
     return a.name.localeCompare(b.name);
@@ -99,12 +95,12 @@ export default function RepackingProfessional() {
   const form = useForm<RepackingFormValues>({
     resolver: zodResolver(repackingFormSchema),
     defaultValues: {
-      issueDate: today,
+      issueDate: formattedDate,
       issueNo: "",
       repackNo: "",
       bulkProductId: 0,
-      repackQuantity: 1,
-      unitWeight: 1000,
+      repackQuantity: 8,
+      unitWeight: 250,
       costPrice: 0,
       sellingPrice: 0,
       mrp: 0,
@@ -130,15 +126,13 @@ export default function RepackingProfessional() {
 
   const repackingMutation = useMutation({
     mutationFn: async (data: RepackingFormValues) => {
-      // Generate unique SKU for repacked item
       const timestamp = Date.now();
       const repackedSku = `${selectedProduct?.sku}-REPACK-${data.unitWeight}G-${timestamp}`;
-      
-      // Create a more descriptive name for the repacked product
+
       const repackedName = selectedProduct?.name.includes('BULK') 
         ? selectedProduct.name.replace('BULK', `${data.unitWeight}g`) 
         : `${selectedProduct?.name} (${data.unitWeight}g Pack)`;
-      
+
       const repackedProduct = {
         name: repackedName,
         description: `Repacked from bulk item: ${selectedProduct?.name}. Original weight: ${selectedProduct?.weight}${selectedProduct?.weightUnit}`,
@@ -156,25 +150,21 @@ export default function RepackingProfessional() {
       };
 
       const response = await apiRequest("POST", "/api/products", repackedProduct);
-      
-      // Update bulk product stock
+
       if (selectedProduct) {
         const productWeight = parseFloat(selectedProduct.weight) || 0;
         const productWeightUnit = selectedProduct.weightUnit || 'g';
-        
-        // Convert everything to grams for calculation
+
         let productWeightInGrams = productWeight;
         if (productWeightUnit === 'kg') {
           productWeightInGrams = productWeight * 1000;
         }
-        
-        // Calculate how much bulk stock is used per repacked unit
+
         const totalRepackedWeight = data.unitWeight * data.repackQuantity;
         const bulkUnitsUsed = totalRepackedWeight / productWeightInGrams;
-        
-        // More conservative stock calculation - only reduce by fraction actually used
+
         const newBulkStock = Math.max(0, selectedProduct.stockQuantity - Math.ceil(bulkUnitsUsed));
-        
+
         await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
           stockQuantity: Math.floor(newBulkStock),
         });
@@ -214,453 +204,299 @@ export default function RepackingProfessional() {
     repackingMutation.mutate(data);
   };
 
-  const addRepackEntry = () => {
-    const newEntry: RepackEntry = {
-      id: Date.now().toString(),
-      name: `Entry ${repackEntries.length + 1}`,
-      percentage: 0,
-      amount: 0,
-    };
-    setRepackEntries([...repackEntries, newEntry]);
-  };
-
-  const removeRepackEntry = (id: string) => {
-    setRepackEntries(repackEntries.filter(entry => entry.id !== id));
-  };
-
-  const updateRepackEntry = (id: string, field: keyof RepackEntry, value: string | number) => {
-    setRepackEntries(repackEntries.map(entry => 
-      entry.id === id ? { ...entry, [field]: value } : entry
-    ));
-  };
-
   const currentStock = selectedProduct?.stockQuantity || 0;
   const packedQuantity = repackQuantity;
   const availableForPack = Math.max(0, currentStock - packedQuantity);
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-100">
-        {/* Header */}
-        <div className="bg-blue-600 text-white">
-          <div className="flex items-center justify-between px-6 py-3">
-            <h1 className="text-xl font-semibold">Repack Entry</h1>
-            <Button variant="ghost" size="sm" className="text-white hover:bg-blue-700" onClick={() => setLocation("/")}>
-              <XIcon className="w-4 h-4 mr-2" />
-              Close
-            </Button>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header - Desktop Style */}
+        <div className="bg-blue-600 text-white px-4 py-2">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-semibold">Repack Entry</h1>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <span>User: AYYAPPAN (System Admin)</span>
+                <span>Ver: 6.5.9.2 SP-65</span>
+                <span>Customer Id: 15983394</span>
+              </div>
+            </div>
           </div>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-6">
-            {/* Issue Date and Numbers */}
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <FormField
-                  control={form.control}
-                  name="issueDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Issue Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} className="bg-white" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div>
-                <FormField
-                  control={form.control}
-                  name="issueNo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Issue No</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Auto-generated" className="bg-white" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div>
-                <FormField
-                  control={form.control}
-                  name="repackNo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Repack No</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Auto-generated" className="bg-white" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="p-4">
+            {/* Top Controls */}
+            <div className="bg-white border border-gray-300 p-3 mb-4">
+              <div className="grid grid-cols-6 gap-4 items-end">
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="issueDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Issue Date</FormLabel>
+                        <FormControl>
+                          <Input {...field} className="h-8 bg-white border-gray-400" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="issueNo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Issue No</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="" className="h-8 bg-white border-gray-400" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="repackNo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Repack No</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="" className="h-8 bg-white border-gray-400" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="col-span-3">
+                  <FormField
+                    control={form.control}
+                    name="bulkProductId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Select Bulk Product</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))}>
+                          <FormControl>
+                            <SelectTrigger className="h-8 bg-white border-gray-400">
+                              <SelectValue placeholder="Choose a bulk product to repack" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-60 overflow-y-auto">
+                            {bulkProducts.map((product: Product) => (
+                              <SelectItem key={product.id} value={product.id.toString()}>
+                                <div className="flex flex-col">
+                                  <div className="font-medium">
+                                    {product.sku} - {product.name}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    Stock: {product.stockQuantity} | Cost: ₹{product.cost} | Weight: {product.weight}{product.weightUnit}
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Side - Product Selection and Details */}
-              <div className="space-y-4">
-                {/* Product Selection Table Header */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* Left Side - Main Table */}
+              <div className="col-span-2 bg-white border border-gray-300">
+                {/* Table Header */}
                 <div className="bg-blue-500 text-white">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-blue-400">
-                        <TableHead className="text-white font-semibold">Code</TableHead>
-                        <TableHead className="text-white font-semibold">Item Name</TableHead>
-                        <TableHead className="text-white font-semibold">Qty</TableHead>
-                        <TableHead className="text-white font-semibold">Cost</TableHead>
-                        <TableHead className="text-white font-semibold">Selling</TableHead>
-                        <TableHead className="text-white font-semibold">MRP</TableHead>
+                      <TableRow className="border-blue-400 hover:bg-blue-500">
+                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400">Code</TableHead>
+                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400">Item Name</TableHead>
+                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400">Qty</TableHead>
+                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400">Cost</TableHead>
+                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400">Selling</TableHead>
+                        <TableHead className="text-white font-semibold text-center py-2">MRP</TableHead>
                       </TableRow>
                     </TableHeader>
                   </Table>
                 </div>
 
-                {/* Product Selection with Search */}
-                <Card>
-                  <CardContent className="p-4">
-                    <FormField
-                      control={form.control}
-                      name="bulkProductId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Select Bulk Product</FormLabel>
-                          
-                          {/* Search Input */}
-                          <div className="mb-2">
-                            <div className="relative">
-                              <Input
-                                placeholder="Search bulk products by name, SKU, or description..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 bg-white"
-                              />
-                              <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                            </div>
-                          </div>
-                          
-                          <Select onValueChange={(value) => field.onChange(parseInt(value))}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a bulk product to repack" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="max-h-60 overflow-y-auto">
-                              {bulkProducts
-                                .filter((product: Product) => {
-                                  // If no search term, show all products
-                                  if (!searchTerm.trim()) {
-                                    return true;
-                                  }
-                                  
-                                  const search = searchTerm.toLowerCase();
-                                  return (
-                                    product.name.toLowerCase().includes(search) ||
-                                    product.sku.toLowerCase().includes(search) ||
-                                    (product.description && product.description.toLowerCase().includes(search))
-                                  );
-                                })
-                                .map((product: Product) => {
-                                  const isBulkItem = product.name.toLowerCase().includes('bulk') || 
-                                                   product.name.toLowerCase().includes('bag') ||
-                                                   product.name.toLowerCase().includes('container') ||
-                                                   (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg');
-                                  
-                                  return (
-                                    <SelectItem key={product.id} value={product.id.toString()}>
-                                      <div className="flex flex-col">
-                                        <div className="font-medium flex items-center gap-2">
-                                          {product.sku} - {product.name}
-                                          {isBulkItem && (
-                                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">BULK</span>
-                                          )}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                          Weight: {product.weight || 'N/A'}{product.weightUnit} | Stock: {product.stockQuantity} | Cost: ₹{product.cost} | Price: ₹{product.price}
-                                        </div>
-                                      </div>
-                                    </SelectItem>
-                                  );
-                                })}
-                              {bulkProducts.filter((product: Product) => {
-                                // If no search term, show all products
-                                if (!searchTerm.trim()) {
-                                  return true;
-                                }
-                                
-                                const search = searchTerm.toLowerCase();
-                                return (
-                                  product.name.toLowerCase().includes(search) ||
-                                  product.sku.toLowerCase().includes(search) ||
-                                  (product.description && product.description.toLowerCase().includes(search))
-                                );
-                              }).length === 0 && searchTerm.trim() && (
-                                <div className="p-2 text-center text-gray-500">
-                                  No products found matching "{searchTerm}"
-                                </div>
+                {/* Table Content */}
+                <div className="min-h-96 bg-white">
+                  {selectedProduct && (
+                    <Table>
+                      <TableBody>
+                        <TableRow className="border-b border-gray-200">
+                          <TableCell className="font-mono text-center py-3 border-r border-gray-200">
+                            {selectedProduct.sku}
+                          </TableCell>
+                          <TableCell className="text-center py-3 border-r border-gray-200">
+                            {selectedProduct.name.replace('BULK', `${unitWeight}G`)}
+                          </TableCell>
+                          <TableCell className="text-center py-3 border-r border-gray-200">
+                            <FormField
+                              control={form.control}
+                              name="repackQuantity"
+                              render={({ field }) => (
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                  className="w-16 h-8 text-center border-gray-400"
+                                />
                               )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {selectedProduct && (
-                      <div className="mt-4 bg-blue-50 border border-blue-200 rounded p-4">
-                        <Table>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell className="font-medium">{selectedProduct.sku}</TableCell>
-                              <TableCell>{selectedProduct.name}</TableCell>
-                              <TableCell>
-                                <FormField
-                                  control={form.control}
-                                  name="repackQuantity"
-                                  render={({ field }) => (
-                                    <Input
-                                      type="number"
-                                      {...field}
-                                      onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                                      className="w-20"
-                                    />
-                                  )}
-                                />
-                              </TableCell>
-                              <TableCell>{formatCurrency(parseFloat(selectedProduct.cost))}</TableCell>
-                              <TableCell>{formatCurrency(parseFloat(selectedProduct.price))}</TableCell>
-                              <TableCell>{formatCurrency(parseFloat(selectedProduct.mrp))}</TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Repacking Configuration */}
-                {selectedProduct && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Repacking Configuration</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="unitWeight"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Unit Weight (grams)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="costPrice"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Cost Price per Unit</FormLabel>
-                              <FormControl>
+                            />
+                          </TableCell>
+                          <TableCell className="text-center py-3 border-r border-gray-200">
+                            <FormField
+                              control={form.control}
+                              name="costPrice"
+                              render={({ field }) => (
                                 <Input
                                   type="number"
                                   step="0.01"
                                   {...field}
                                   onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                  className="w-20 h-8 text-center border-gray-400"
                                 />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="sellingPrice"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Selling Price per Unit</FormLabel>
-                              <FormControl>
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center py-3 border-r border-gray-200">
+                            <FormField
+                              control={form.control}
+                              name="sellingPrice"
+                              render={({ field }) => (
                                 <Input
                                   type="number"
                                   step="0.01"
                                   {...field}
                                   onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                  className="w-20 h-8 text-center border-gray-400"
                                 />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="mrp"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>MRP per Unit</FormLabel>
-                              <FormControl>
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center py-3">
+                            <FormField
+                              control={form.control}
+                              name="mrp"
+                              render={({ field }) => (
                                 <Input
                                   type="number"
                                   step="0.01"
                                   {...field}
                                   onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                  className="w-20 h-8 text-center border-gray-400"
                                 />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                              )}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
               </div>
 
               {/* Right Side - Bulk Item Details */}
-              {selectedProduct && (
-                <div className="bg-white border border-gray-200 rounded-lg">
-                  <div className="bg-gray-100 border-b px-4 py-2">
-                    <h3 className="font-semibold text-lg">Bulk Item Details</h3>
-                  </div>
-                  
+              <div className="bg-white border border-gray-300">
+                <div className="bg-blue-500 text-white text-center py-2 font-semibold">
+                  Bulk Item Details
+                </div>
+
+                {selectedProduct && (
                   <div className="p-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Bulk Code</label>
-                        <div className="text-lg font-mono bg-gray-50 p-2 rounded border">
-                          {selectedProduct.sku}
-                        </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-sm">Bulk Code</span>
+                        <span className="font-mono bg-gray-100 px-2 py-1 rounded text-sm">{selectedProduct.sku}</span>
                       </div>
+
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Bulk Item</label>
-                        <div className="text-lg bg-gray-50 p-2 rounded border">
+                        <span className="font-medium text-sm block mb-1">Bulk Item</span>
+                        <div className="bg-gray-100 p-2 rounded text-sm">
                           {selectedProduct.name}
                         </div>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Weight</label>
-                        <div className="text-lg font-mono bg-gray-50 p-2 rounded border text-center">
-                          {selectedProduct.weight}{selectedProduct.weightUnit}
-                        </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-sm">Weight</span>
+                        <span className="bg-gray-100 px-2 py-1 rounded text-sm">
+                          <FormField
+                            control={form.control}
+                            name="unitWeight"
+                            render={({ field }) => (
+                              <Input
+                                type="number"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                className="w-20 h-6 text-center border-gray-400 text-xs"
+                              />
+                            )}
+                          />
+                        </span>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Cost</label>
+
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-sm">Cost</span>
                         <div className="flex items-center gap-2">
-                          <div className="text-lg font-mono bg-gray-50 p-2 rounded border flex-1 text-center">
+                          <span className="bg-gray-100 px-2 py-1 rounded text-sm">
                             {formatCurrency(parseFloat(selectedProduct.cost))}
-                          </div>
-                          <Badge variant="outline" className="text-xs bg-gray-100">Latest sel</Badge>
-                          <div className="text-sm bg-yellow-200 px-2 py-1 rounded font-medium">
+                          </span>
+                          <Badge variant="outline" className="text-xs">Latest sel</Badge>
+                          <span className="bg-yellow-200 px-2 py-1 rounded text-sm">
                             {formatCurrency(parseFloat(selectedProduct.cost))}
-                          </div>
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Current Stock</label>
-                        <div className="text-lg font-mono bg-blue-100 p-3 rounded border text-center">
+                    {/* Stock Information */}
+                    <div className="grid grid-cols-3 gap-2 pt-4 border-t">
+                      <div className="text-center">
+                        <div className="text-xs font-medium mb-1">Current Stock</div>
+                        <div className="bg-blue-100 px-2 py-2 rounded font-mono text-sm">
                           {currentStock.toFixed(2)}
                         </div>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Packed</label>
-                        <div className="text-lg font-mono bg-orange-100 p-3 rounded border text-center">
+                      <div className="text-center">
+                        <div className="text-xs font-medium mb-1">Packed</div>
+                        <div className="bg-orange-100 px-2 py-2 rounded font-mono text-sm">
                           {packedQuantity.toFixed(2)}
                         </div>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Avail for pack</label>
-                        <div className="text-lg font-mono bg-green-100 p-3 rounded border text-center">
+                      <div className="text-center">
+                        <div className="text-xs font-medium mb-1">Avail for pack</div>
+                        <div className="bg-green-100 px-2 py-2 rounded font-mono text-sm">
                           {availableForPack.toFixed(2)}
                         </div>
                       </div>
                     </div>
 
-                    {/* Additional Entries Table */}
-                    <div className="mt-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">Additional Entries</h4>
-                        <Button type="button" size="sm" onClick={addRepackEntry}>
-                          <PlusIcon className="w-4 h-4 mr-1" />
-                          Add Entry
-                        </Button>
-                      </div>
-                      
+                    {/* Additional Table */}
+                    <div className="pt-4 border-t">
                       <Table>
                         <TableHeader className="bg-blue-500">
                           <TableRow>
-                            <TableHead className="text-white font-semibold">Name</TableHead>
-                            <TableHead className="text-white font-semibold">Perc %</TableHead>
-                            <TableHead className="text-white font-semibold">Amount</TableHead>
-                            <TableHead className="text-white font-semibold w-12"></TableHead>
+                            <TableHead className="text-white font-semibold text-xs text-center py-1">Name</TableHead>
+                            <TableHead className="text-white font-semibold text-xs text-center py-1">Perc %</TableHead>
+                            <TableHead className="text-white font-semibold text-xs text-center py-1">Amount</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {repackEntries.map((entry) => (
-                            <TableRow key={entry.id}>
-                              <TableCell>
-                                <Input
-                                  value={entry.name}
-                                  onChange={(e) => updateRepackEntry(entry.id, 'name', e.target.value)}
-                                  className="h-8"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  value={entry.percentage}
-                                  onChange={(e) => updateRepackEntry(entry.id, 'percentage', parseFloat(e.target.value) || 0)}
-                                  className="h-8 w-20"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={entry.amount}
-                                  onChange={(e) => updateRepackEntry(entry.id, 'amount', parseFloat(e.target.value) || 0)}
-                                  className="h-8 w-24"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeRepackEntry(entry.id)}
-                                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
-                                >
-                                  <TrashIcon className="w-4 h-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
                           {repackEntries.length === 0 && (
                             <TableRow>
-                              <TableCell colSpan={4} className="text-center text-gray-500 py-4">
+                              <TableCell colSpan={3} className="text-center text-gray-400 py-8 text-sm">
                                 No additional entries
                               </TableCell>
                             </TableRow>
@@ -669,23 +505,67 @@ export default function RepackingProfessional() {
                       </Table>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-4 pt-6 border-t">
-              <Button type="button" variant="outline" onClick={() => setLocation("/")}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={repackingMutation.isPending || !selectedProduct}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <SaveIcon className="w-4 h-4 mr-2" />
-                {repackingMutation.isPending ? "Repacking..." : "Save Repack Entry"}
-              </Button>
+            {/* Function Keys Bar */}
+            <div className="fixed bottom-0 left-0 right-0 bg-gray-200 border-t border-gray-400 px-4 py-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    <HelpCircleIcon className="w-3 h-3 mr-1" />
+                    F1 Help
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    F2 ItemCode
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    F3 ItemName
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    F4 AliasName
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    F5 Pur.Prc
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    <SaveIcon className="w-3 h-3 mr-1" />
+                    F6 Save
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    F7 Clear
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    F8 Key Settings
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    F9 Edit
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    <PrinterIcon className="w-3 h-3 mr-1" />
+                    F10 Print
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
+                    <X className="w-3 h-3 mr-1" />
+                    F12 Close
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <Button type="button" variant="outline" onClick={() => setLocation("/")}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={repackingMutation.isPending || !selectedProduct}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <SaveIcon className="w-4 h-4 mr-2" />
+                    {repackingMutation.isPending ? "Repacking..." : "Save Repack"}
+                  </Button>
+                </div>
+              </div>
             </div>
           </form>
         </Form>
