@@ -1,108 +1,112 @@
-")
-print('import { Switch, Route } from "wouter";')
-print('import { queryClient } from "./lib/queryClient";')
-print('import { QueryClientProvider } from "@tanstack/react-query";')
-print('import { Toaster } from "@/components/ui/toaster";')
-print('import NotFound from "@/pages/not-found";')
-print('import { ThemeProvider } from "@/components/ui/theme-provider";')
-print('import Dashboard from "@/pages/dashboard";')
-print('import POS from "@/pages/pos";')
-print('import POSGofrugal from "@/pages/pos-gofrugal";')
-print('import POSEnhanced from "@/pages/pos-enhanced";')
-print('import Products from "@/pages/products";')
-print('import ProductsEnhanced from "@/pages/products-enhanced";')
-print('import ProductManager from "@/pages/product-manager";')
-print('import AddItemProfessional from "@/pages/add-item-professional";')
-print('import AddItemDashboard from "@/pages/add-item-dashboard";')
-print('import RepackingProfessional from "@/pages/repacking-professional";')
-print('import RepackingDashboardProfessional from "@/pages/repacking-dashboard-professional";')
-print('import RepackingMainDashboard from "./pages/repacking-main-dashboard";')
-print('')
-print('import Units from "@/pages/units";')
-print('')
-print('import Inventory from "@/pages/inventory";')
-print('import Purchases from "@/pages/purchases";')
-print('import PurchaseDashboard from "@/pages/purchase-dashboard";')
-print('import PurchaseEntry from "@/pages/purchase-entry";')
-print('import PurchaseEntryProfessional from "@/pages/purchase-entry-professional";')
-print('import Reports from "@/pages/reports";')
-print('import Users from "@/pages/users";')
-print('import Settings from "@/pages/settings";')
-print('import Suppliers from "@/pages/suppliers";')
-print('import Customers from "@/pages/customers";')
-print('import AddProduct from "@/pages/add-product";')
-print('import PrintLabels from "@/pages/print-labels";')
-print('import InventoryForecasting from "@/pages/inventory-forecasting";')
-print('import Repacking from "@/pages/repacking";')
-print('import RepackingDashboard from "@/pages/repacking-dashboard";')
-print('import CurrencySettings from "@/pages/currency-settings";')
-print('import BusinessSettings from "@/pages/business-settings";')
-print('import AuthPage from "@/pages/auth-page";')
-print('import { ProtectedRoute } from "@/components/auth/protected-route";')
-print('import { AuthProvider } from "@/hooks/use-auth";')
-print('import RepackingSystem from "@/pages/repacking-system";')
-print('import RepackingManagement from "@/pages/repacking-management";')
-print('import RepackingAnalytics from "@/pages/repacking-analytics";')
-print('')
-print('function Router() {')
-print('  return (')
-print('    <Switch>')
-print('      <ProtectedRoute path="/" component={Dashboard} />')
-print('      <ProtectedRoute path="/pos" component={POS} />')
-print('      <ProtectedRoute path="/pos-gofrugal" component={POSGofrugal} />')
-print('      <ProtectedRoute path="/pos-enhanced" component={POSEnhanced} />')
-print('      <ProtectedRoute path="/products" component={Products} />')
-print('      <ProtectedRoute path="/products-enhanced" component={ProductsEnhanced} />')
-print('      <ProtectedRoute path="/product-manager" component={ProductManager} />')
-print('      <ProtectedRoute path="/add-item-professional" component={AddItemProfessional} />')
-print('      <ProtectedRoute path="/add-item-dashboard" component={AddItemDashboard} />')
-print('      <ProtectedRoute path="/repacking-professional" component={RepackingProfessional} />')
-print('      <ProtectedRoute path="/repacking-dashboard-professional" component={RepackingDashboardProfessional} />')
-print('      <ProtectedRoute path="/units" component={Units} />')
-print('')
-print('      <ProtectedRoute path="/products/add" component={AddProduct} />')
-print('      <ProtectedRoute path="/add-product" component={AddProduct} />')
-print('      <ProtectedRoute path="/products/repacking" component={Repacking} />')
-print('      <ProtectedRoute path="/products/repacking-dashboard" component={RepackingDashboard} />')
-print('      <ProtectedRoute path="/products/repacking-professional" component={RepackingProfessional} />')
-print('      <ProtectedRoute path="/products/repacking-main-dashboard" component={RepackingMainDashboard} />')
-print('      <ProtectedRoute path="/products/repacking-dashboard-professional" component={RepackingDashboardProfessional} />')
-print('      <ProtectedRoute path="/repacking" component={RepackingMainDashboard} />')
-print('      <ProtectedRoute path="/repacking/main" component={RepackingMainDashboard} />')
-print('      <ProtectedRoute path="/repacking/repacking-professional" component={RepackingProfessional} />')
-print('      <ProtectedRoute path="/repacking/repacking-dashboard-professional" component={RepackingDashboardProfessional} />')
-print('      <ProtectedRoute path="/print-labels" component={PrintLabels} />')
-print('      <ProtectedRoute path="/inventory" component={Inventory} />')
-print('      <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />')
-print('      <ProtectedRoute path="/purchases" component={Purchases} />')
-print('      <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />')
-print('      <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />')
-print('      <ProtectedRoute path="/purchase-entry-professional" component={PurchaseEntryProfessional} />')
-print('      <ProtectedRoute path="/reports" component={Reports} />')
-print('      <ProtectedRoute path="/users" component={Users} adminOnly />')
-print('      <ProtectedRoute path="/settings" component={Settings} />')
-print('      <ProtectedRoute path="/suppliers" component={Suppliers} />')
-print('      <ProtectedRoute path="/customers" component={Customers} />')
-print('      <ProtectedRoute path="/settings/currency" component={CurrencySettings} />')
-print('      <ProtectedRoute path="/settings/business" component={BusinessSettings} />')
-print('      <Route path="/auth" component={AuthPage} />')
-print('      <Route component={NotFound} />')
-print('    </Switch>')
-print('  );')
-print('}')
-print('')
-print('function App() {')
-print('  return (')
-print('    <ThemeProvider defaultTheme="light" storageKey="pos-theme">')
-print('      <QueryClientProvider client={queryClient}>')
-print('        <AuthProvider>')
-print('          <Router />')
-print('          <Toaster />')
-print('        </AuthProvider>')
-print('      </QueryClientProvider>')
-print('    </ThemeProvider>')
-print('  );')
-print('}')
-print('')
-print('export default App;')
-print("
+
+import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import NotFound from "@/pages/not-found";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import Dashboard from "@/pages/dashboard";
+import POS from "@/pages/pos";
+import POSGofrugal from "@/pages/pos-gofrugal";
+import POSEnhanced from "@/pages/pos-enhanced";
+import Products from "@/pages/products";
+import ProductsEnhanced from "@/pages/products-enhanced";
+import ProductManager from "@/pages/product-manager";
+import AddItemProfessional from "@/pages/add-item-professional";
+import AddItemDashboard from "@/pages/add-item-dashboard";
+import RepackingProfessional from "@/pages/repacking-professional";
+import RepackingDashboardProfessional from "@/pages/repacking-dashboard-professional";
+import RepackingMainDashboard from "./pages/repacking-main-dashboard";
+import RepackingSystem from "@/pages/repacking-system";
+import RepackingSystemComplete from "@/pages/repacking-system-complete";
+import RepackingManagement from "@/pages/repacking-management";
+import RepackingAnalytics from "@/pages/repacking-analytics";
+
+import Units from "@/pages/units";
+
+import Inventory from "@/pages/inventory";
+import Purchases from "@/pages/purchases";
+import PurchaseDashboard from "@/pages/purchase-dashboard";
+import PurchaseEntry from "@/pages/purchase-entry";
+import PurchaseEntryProfessional from "@/pages/purchase-entry-professional";
+import Reports from "@/pages/reports";
+import Users from "@/pages/users";
+import Settings from "@/pages/settings";
+import Suppliers from "@/pages/suppliers";
+import Customers from "@/pages/customers";
+import AddProduct from "@/pages/add-product";
+import PrintLabels from "@/pages/print-labels";
+import InventoryForecasting from "@/pages/inventory-forecasting";
+import Repacking from "@/pages/repacking";
+import RepackingDashboard from "@/pages/repacking-dashboard";
+import CurrencySettings from "@/pages/currency-settings";
+import BusinessSettings from "@/pages/business-settings";
+import AuthPage from "@/pages/auth-page";
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { AuthProvider } from "@/hooks/use-auth";
+
+function Router() {
+  return (
+    <Switch>
+      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/pos" component={POS} />
+      <ProtectedRoute path="/pos-gofrugal" component={POSGofrugal} />
+      <ProtectedRoute path="/pos-enhanced" component={POSEnhanced} />
+      <ProtectedRoute path="/products" component={Products} />
+      <ProtectedRoute path="/products-enhanced" component={ProductsEnhanced} />
+      <ProtectedRoute path="/product-manager" component={ProductManager} />
+      <ProtectedRoute path="/add-item-professional" component={AddItemProfessional} />
+      <ProtectedRoute path="/add-item-dashboard" component={AddItemDashboard} />
+      <ProtectedRoute path="/repacking-professional" component={RepackingProfessional} />
+      <ProtectedRoute path="/repacking-dashboard-professional" component={RepackingDashboardProfessional} />
+      <ProtectedRoute path="/units" component={Units} />
+
+      <ProtectedRoute path="/products/add" component={AddProduct} />
+      <ProtectedRoute path="/add-product" component={AddProduct} />
+      <ProtectedRoute path="/products/repacking" component={Repacking} />
+      <ProtectedRoute path="/products/repacking-dashboard" component={RepackingDashboard} />
+      <ProtectedRoute path="/products/repacking-professional" component={RepackingProfessional} />
+      <ProtectedRoute path="/products/repacking-main-dashboard" component={RepackingMainDashboard} />
+      <ProtectedRoute path="/products/repacking-dashboard-professional" component={RepackingDashboardProfessional} />
+      <ProtectedRoute path="/repacking" component={RepackingMainDashboard} />
+      <ProtectedRoute path="/repacking/main" component={RepackingMainDashboard} />
+      <ProtectedRoute path="/repacking/repacking-professional" component={RepackingProfessional} />
+      <ProtectedRoute path="/repacking/repacking-dashboard-professional" component={RepackingDashboardProfessional} />
+      <ProtectedRoute path="/repacking/system" component={RepackingSystem} />
+      <ProtectedRoute path="/repacking/complete" component={RepackingSystemComplete} />
+      <ProtectedRoute path="/repacking/management" component={RepackingManagement} />
+      <ProtectedRoute path="/repacking/analytics" component={RepackingAnalytics} />
+      <ProtectedRoute path="/print-labels" component={PrintLabels} />
+      <ProtectedRoute path="/inventory" component={Inventory} />
+      <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
+      <ProtectedRoute path="/purchases" component={Purchases} />
+      <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
+      <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
+      <ProtectedRoute path="/purchase-entry-professional" component={PurchaseEntryProfessional} />
+      <ProtectedRoute path="/reports" component={Reports} />
+      <ProtectedRoute path="/users" component={Users} adminOnly />
+      <ProtectedRoute path="/settings" component={Settings} />
+      <ProtectedRoute path="/suppliers" component={Suppliers} />
+      <ProtectedRoute path="/customers" component={Customers} />
+      <ProtectedRoute path="/settings/currency" component={CurrencySettings} />
+      <ProtectedRoute path="/settings/business" component={BusinessSettings} />
+      <Route path="/auth" component={AuthPage} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="pos-theme">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router />
+          <Toaster />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;
