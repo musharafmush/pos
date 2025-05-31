@@ -164,12 +164,48 @@ export default function POSEnhanced() {
 
     const searchTerm = barcode.trim();
 
-    // First try exact matches
+    // First try exact matches in actual products
     let product = allProducts?.find(p => 
       p.sku === searchTerm || 
       p.id.toString() === searchTerm ||
+      p.barcode === searchTerm ||
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // If not found in actual products, check mock product list
+    if (!product) {
+      const mockProduct = mockProductList.find(p => 
+        p.code === searchTerm || 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      if (mockProduct) {
+        // Create a product object from mock data
+        product = {
+          id: parseInt(mockProduct.code) || Math.floor(Math.random() * 10000),
+          name: mockProduct.name,
+          sku: mockProduct.code,
+          price: mockProduct.selfRate.toString(),
+          cost: mockProduct.selfRate.toString(),
+          stockQuantity: mockProduct.stock,
+          description: mockProduct.name,
+          barcode: mockProduct.code,
+          brand: "",
+          manufacturer: "",
+          categoryId: 1,
+          mrp: mockProduct.mrp.toString(),
+          unit: "PCS",
+          hsnCode: "",
+          taxRate: "18",
+          active: true,
+          trackInventory: true,
+          allowNegativeStock: false,
+          alertThreshold: 10,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+    }
 
     if (product) {
       setSelectedProduct(product);
@@ -876,14 +912,60 @@ export default function POSEnhanced() {
                       key={product.sno}
                       className="cursor-pointer hover:bg-blue-50"
                       onClick={() => {
-                        // Find matching product in actual products list
-                        const actualProduct = allProducts.find(p => p.name.toLowerCase().includes(product.name.toLowerCase()));
-                        if (actualProduct) {
-                          setSelectedProduct(actualProduct);
-                          setRateInput(actualProduct.price);
-                          setQuantityInput(1);
+                        // Find matching product in actual products list or create a mock product
+                        let actualProduct = allProducts?.find(p => 
+                          p.name.toLowerCase().includes(product.name.toLowerCase()) ||
+                          p.sku === product.code
+                        );
+                        
+                        if (!actualProduct) {
+                          // Create a mock product from the list data
+                          actualProduct = {
+                            id: parseInt(product.code) || Math.floor(Math.random() * 10000),
+                            name: product.name,
+                            sku: product.code,
+                            price: product.selfRate.toString(),
+                            cost: product.selfRate.toString(),
+                            stockQuantity: product.stock,
+                            description: product.name,
+                            barcode: product.code,
+                            brand: "",
+                            manufacturer: "",
+                            categoryId: 1,
+                            mrp: product.mrp.toString(),
+                            unit: "PCS",
+                            hsnCode: "",
+                            taxRate: "18",
+                            active: true,
+                            trackInventory: true,
+                            allowNegativeStock: false,
+                            alertThreshold: 10,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                          };
                         }
+                        
+                        // Add directly to cart instead of just selecting
+                        const existingItem = cart.find(item => item.id === actualProduct.id);
+                        if (existingItem) {
+                          updateQuantity(actualProduct.id, existingItem.quantity + 1);
+                        } else {
+                          const newItem: CartItem = {
+                            ...actualProduct,
+                            quantity: 1,
+                            total: parseFloat(actualProduct.price),
+                            mrp: parseFloat(actualProduct.mrp || actualProduct.price),
+                            stock: actualProduct.stockQuantity
+                          };
+                          setCart(prev => [...prev, newItem]);
+                        }
+                        
                         setShowProductList(false);
+                        
+                        toast({
+                          title: "✅ Product Added to Cart!",
+                          description: `${actualProduct.name} x 1 - ₹${actualProduct.price}`
+                        });
                       }}
                     >
                       <TableCell>{product.sno}</TableCell>
