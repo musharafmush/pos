@@ -99,8 +99,18 @@ export default function POSEnhanced() {
     },
   });
 
-  // Mock products data for demo (replace with actual API when available)
-  const products = [
+  // Fetch products from API
+  const { data: products, isLoading: productsLoading } = useQuery({
+    queryKey: ["/api/products"],
+    queryFn: async () => {
+      const response = await fetch("/api/products");
+      if (!response.ok) throw new Error("Failed to fetch products");
+      return response.json();
+    },
+  });
+
+  // Mock fallback data for demo
+  const mockProducts = [
     { id: 1, name: "Smartphone", price: "15000", stockQuantity: 50, sku: "PHONE001", active: true },
     { id: 2, name: "Rice (1kg)", price: "80", stockQuantity: 200, sku: "RICE001", active: true },
     { id: 3, name: "T-Shirt", price: "500", stockQuantity: 30, sku: "TSHIRT001", active: true },
@@ -108,7 +118,8 @@ export default function POSEnhanced() {
     { id: 5, name: "Notebook", price: "150", stockQuantity: 100, sku: "BOOK001", active: true },
   ];
 
-  const filteredProducts = products?.filter(product =>
+  const allProducts = products || mockProducts;
+  const filteredProducts = allProducts?.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
@@ -164,22 +175,101 @@ export default function POSEnhanced() {
     }
   };
 
-  // Barcode scanning functionality
+  // Enhanced barcode scanning functionality
   const handleBarcodeInput = (barcode: string) => {
-    const product = products?.find(p => p.sku === barcode || p.name.toLowerCase().includes(barcode.toLowerCase()));
+    const product = allProducts?.find(p => 
+      p.sku === barcode || 
+      p.sku?.toLowerCase() === barcode.toLowerCase() ||
+      p.name.toLowerCase().includes(barcode.toLowerCase()) ||
+      p.id.toString() === barcode
+    );
+    
     if (product) {
       addToCart(product);
       setBarcodeInput("");
       toast({
-        title: "Product Added",
-        description: `${product.name} added to cart`
+        title: "Product Added Successfully! ✅",
+        description: `${product.name} (${formatCurrency(parseFloat(product.price))}) added to cart`
       });
     } else {
       toast({
-        title: "Product Not Found",
-        description: "No product found with this barcode",
+        title: "Product Not Found ❌",
+        description: "No product found with this barcode/SKU. Please check and try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  // Create new customer function
+  const createNewCustomer = async (customerData: { name: string; phone: string; email?: string }) => {
+    try {
+      const response = await fetch("/api/customers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(customerData),
+      });
+
+      if (!response.ok) throw new Error("Failed to create customer");
+      
+      const newCustomer = await response.json();
+      
+      // Refresh customers list
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      
+      toast({
+        title: "Customer Created Successfully! 🎉",
+        description: `${newCustomer.name} has been added to your customer list`
+      });
+      
+      return newCustomer;
+    } catch (error) {
+      toast({
+        title: "Failed to Create Customer",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  // Quick product creation function
+  const createQuickProduct = async (productData: { name: string; price: string; sku?: string }) => {
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...productData,
+          stockQuantity: 1,
+          active: true,
+          sku: productData.sku || `QP-${Date.now()}`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to create product");
+      
+      const newProduct = await response.json();
+      
+      // Refresh products list
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      
+      toast({
+        title: "Product Created Successfully! 🎉",
+        description: `${newProduct.name} has been added to your inventory`
+      });
+      
+      return newProduct;
+    } catch (error) {
+      toast({
+        title: "Failed to Create Product",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+      return null;
     }
   };
 
@@ -505,25 +595,60 @@ export default function POSEnhanced() {
 
           {/* Products Grid */}
           <div className="p-4 h-[calc(100vh-200px)] overflow-y-auto">
-            <div className="grid grid-cols-2 gap-3">
-              {filteredProducts.map((product) => (
-                <Card
-                  key={product.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-blue-500"
-                  onClick={() => addToCart(product)}
-                >
-                  <CardContent className="p-3">
-                    <div className="font-medium text-sm">{product.name}</div>
-                    <div className="text-lg font-bold text-green-600">
-                      {formatCurrency(parseFloat(product.price))}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Stock: {product.stockQuantity} | SKU: {product.sku}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {productsLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="text-sm text-gray-500 mt-2">Loading products...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {filteredProducts.length === 0 ? (
+                  <div className="col-span-2 text-center py-8">
+                    <p className="text-gray-500 mb-4">No products found</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const productName = prompt("Enter product name:");
+                        const productPrice = prompt("Enter product price:");
+                        if (productName && productPrice) {
+                          createQuickProduct({ name: productName, price: productPrice });
+                        }
+                      }}
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Create Quick Product
+                    </Button>
+                  </div>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <Card
+                      key={product.id}
+                      className="cursor-pointer hover:shadow-md transition-all duration-200 border-l-4 border-l-blue-500 hover:border-l-green-500"
+                      onClick={() => addToCart(product)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="font-medium text-sm line-clamp-2">{product.name}</div>
+                        <div className="text-lg font-bold text-green-600 mt-1">
+                          {formatCurrency(parseFloat(product.price))}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                          <span>Stock: {product.stockQuantity}</span>
+                          <span>SKU: {product.sku}</span>
+                        </div>
+                        {product.stockQuantity <= 5 && (
+                          <div className="text-xs text-red-500 font-medium mt-1">
+                            ⚠️ Low Stock
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -793,37 +918,66 @@ export default function POSEnhanced() {
 
         {/* Customer Search Dialog */}
         <Dialog open={showCustomerSearch} onOpenChange={setShowCustomerSearch}>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Select Customer</DialogTitle>
             </DialogHeader>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="space-y-3">
               <Button
                 variant="outline"
-                className="w-full justify-start"
+                className="w-full justify-start h-auto p-3"
                 onClick={() => {
                   setSelectedCustomer(null);
                   setShowCustomerSearch(false);
                 }}
               >
+                <UserIcon className="h-4 w-4 mr-2" />
                 Walk-in Customer
               </Button>
-              {customers?.map((customer: Customer) => (
+              
+              <div className="max-h-48 overflow-y-auto space-y-2">
+                {customers?.map((customer: Customer) => (
+                  <Button
+                    key={customer.id}
+                    variant="outline"
+                    className="w-full justify-start h-auto p-3"
+                    onClick={() => {
+                      setSelectedCustomer(customer);
+                      setShowCustomerSearch(false);
+                    }}
+                  >
+                    <div className="text-left">
+                      <div className="font-medium">{customer.name}</div>
+                      <div className="text-sm text-gray-500">{customer.phone}</div>
+                      {customer.email && (
+                        <div className="text-xs text-gray-400">{customer.email}</div>
+                      )}
+                    </div>
+                  </Button>
+                ))}
+              </div>
+              
+              <div className="border-t pt-3">
                 <Button
-                  key={customer.id}
-                  variant="outline"
-                  className="w-full justify-start"
+                  variant="default"
+                  className="w-full"
                   onClick={() => {
-                    setSelectedCustomer(customer);
-                    setShowCustomerSearch(false);
+                    const customerName = prompt("Enter customer name:");
+                    const customerPhone = prompt("Enter customer phone:");
+                    if (customerName && customerPhone) {
+                      createNewCustomer({ name: customerName, phone: customerPhone }).then((newCustomer) => {
+                        if (newCustomer) {
+                          setSelectedCustomer(newCustomer);
+                          setShowCustomerSearch(false);
+                        }
+                      });
+                    }
                   }}
                 >
-                  <div className="text-left">
-                    <div className="font-medium">{customer.name}</div>
-                    <div className="text-sm text-gray-500">{customer.phone}</div>
-                  </div>
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Create New Customer
                 </Button>
-              ))}
+              </div>
             </div>
           </DialogContent>
         </Dialog>
