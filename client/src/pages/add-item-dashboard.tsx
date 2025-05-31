@@ -927,147 +927,138 @@ export default function AddItemDashboard() {
           </DialogContent>
         </Dialog>
 
-        {/* Professional Edit Item Dialog - Matching Reference Design */}
+        {/* Comprehensive Edit Product Dialog - Professional Layout */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0" aria-describedby="edit-product-description">
             <div className="flex h-[90vh]">
-              {/* Sidebar Navigation - Exact match to reference */}
-              <div className="w-64 bg-gray-50 border-r border-gray-200 overflow-y-auto">
-                <div className="p-4">
-                  <DialogHeader className="mb-6">
-                    <DialogTitle className="flex items-center gap-2 text-lg">
-                      <EditIcon className="w-5 h-5" />
-                      Edit Item
-                    </DialogTitle>
-                    <DialogDescription id="edit-product-description" className="sr-only">
-                      Edit product information including details, pricing, and inventory
-                    </DialogDescription>
-                  </DialogHeader>
+              {/* Sidebar Navigation */}
+              <div className="w-64 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto">
+                <DialogHeader className="mb-6">
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <EditIcon className="w-5 h-5" />
+                    Edit Item
+                  </DialogTitle>
+                  <DialogDescription id="edit-product-description" className="sr-only">
+                    Edit product information including details, pricing, and inventory
+                  </DialogDescription>
+                </DialogHeader>
 
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">General Information</div>
-                    
-                    <div 
-                      onClick={() => scrollToSection('item-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'item-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <PackageIcon className="w-4 h-4" />
-                      Item Information
-                      <div className="w-2 h-2 bg-blue-600 rounded-full ml-auto"></div>
-                    </div>
-                    
-                    <div 
-                      onClick={() => scrollToSection('category-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'category-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <TagIcon className="w-4 h-4" />
-                      Category Information
-                    </div>
-                    
-                    <div 
-                      onClick={() => scrollToSection('tax-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'tax-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <DollarSignIcon className="w-4 h-4" />
-                      Tax Information
-                    </div>
-                    
-                    <div 
-                      onClick={() => scrollToSection('barcode-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'barcode-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <QrCodeIcon className="w-4 h-4" />
-                      EAN Code/Barcode
-                    </div>
-                    
-                    <div 
-                      onClick={() => scrollToSection('packing-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'packing-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <PackageIcon className="w-4 h-4" />
-                      Packing
-                      <div className="w-2 h-2 bg-orange-500 rounded-full ml-auto"></div>
-                    </div>
-                    
-                    <div 
-                      onClick={() => scrollToSection('properties-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'properties-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <WeightIcon className="w-4 h-4" />
-                      Item Properties
-                    </div>
-                    
-                    <div 
-                      onClick={() => scrollToSection('pricing-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'pricing-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <DollarSignIcon className="w-4 h-4" />
-                      Pricing
-                    </div>
-                    
-                    <div 
-                      onClick={() => scrollToSection('reorder-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'reorder-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <WarehouseIcon className="w-4 h-4" />
-                      Reorder Configurations
-                    </div>
-                    
-                    <div 
-                      onClick={() => scrollToSection('purchase-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'purchase-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <RefreshCcwIcon className="w-4 h-4" />
-                      Purchase Order
-                    </div>
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">General Information</div>
+                  <div 
+                    onClick={() => scrollToSection('item-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'item-info' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <PackageIcon className="w-4 h-4" />
+                    Item Information
+                    <div className="w-2 h-2 bg-blue-600 rounded-full ml-auto"></div>
+                  </div>
+                  <div 
+                    onClick={() => scrollToSection('category-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'category-info' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <TagIcon className="w-4 h-4" />
+                    Category Information
+                  </div>
+                  <div 
+                    onClick={() => scrollToSection('tax-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'tax-info' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <DollarSignIcon className="w-4 h-4" />
+                    Tax Information
+                  </div>
+                  <div 
+                    onClick={() => scrollToSection('barcode-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'barcode-info' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <QrCodeIcon className="w-4 h-4" />
+                    EAN Code/Barcode
+                  </div>
+                  <div 
+                    onClick={() => scrollToSection('packing-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'packing-info' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <PackageIcon className="w-4 h-4" />
+                    Packing
+                    <div className="w-2 h-2 bg-orange-500 rounded-full ml-auto"></div>
+                  </div>
+                  <div 
+                    onClick={() => scrollToSection('properties-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'properties-info' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <WeightIcon className="w-4 h-4" />
+                    Item Properties
+                  </div>
+                  <div 
+                    onClick={() => scrollToSection('pricing-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'pricing-info' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <DollarSignIcon className="w-4 h-4" />
+                    Pricing
+                  </div>
+                  <div 
+                    onClick={() => scrollToSection('reorder-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'reorder-info' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <WarehouseIcon className="w-4 h-4" />
+                    Reorder Configurations
+                  </div>
+                  <div 
+                    onClick={() => scrollToSection('purchase-info')}
+                    className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                      activeSection === 'purchase-info' 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <RefreshCcwIcon className="w-4 h-4" />
+                    Purchase Order
                   </div>
                 </div>
               </div>
 
-              {/* Main Content Area */}
-              <div className="flex-1 bg-white overflow-y-auto">
-                {/* Header Section */}
-                <div className="bg-white border-b p-6">
-                  <div className="flex items-center justify-between">
+              {/* Main Content */}
+              <div className="flex-1 overflow-y-auto bg-white">
+                <div className="p-6 min-h-full">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-6">
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">Item Information</h2>
-                      <p className="text-sm text-gray-500 mt-1">Update complete product information</p>
+                      <DialogDescription className="text-sm text-gray-500 mt-1">
+                        Update complete product information
+                      </DialogDescription>
                     </div>
                     <Button
                       variant="outline"
@@ -1079,106 +1070,89 @@ export default function AddItemDashboard() {
                       Close
                     </Button>
                   </div>
-                </div>
 
-                {/* Form Content */}
-                <div className="p-6">
-                  <div className="space-y-8">
-                    {/* Basic Information Section */}
-                    <div id="item-info" className="bg-white">
-                      <div className="border-b pb-4 mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
-                      </div>
-                      
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Item Code *</label>
-                            <Input
-                              value={editForm.itemCode}
-                              onChange={(e) => setEditForm({ ...editForm, itemCode: e.target.value })}
-                              placeholder="ITM007797868"
-                              className="bg-gray-50 text-gray-900 font-medium"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Item Name *</label>
-                            <Input
-                              value={editForm.name}
-                              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                              placeholder="salte 250"
-                              className="text-gray-900"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Manufacturer Name *</label>
-                            <select
-                              value={editForm.manufacturerName}
-                              onChange={(e) => setEditForm({ ...editForm, manufacturerName: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            >
-                              <option value="">Select manufacturer</option>
-                              <option value="ABC Manufacturing">ABC Manufacturing</option>
-                              <option value="XYZ Industries">XYZ Industries</option>
-                              <option value="Local Supplier">Local Supplier</option>
-                              <option value="Premium Foods Ltd">Premium Foods Ltd</option>
-                              <option value="Quality Products Inc">Quality Products Inc</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Supplier Name *</label>
-                            <select
-                              value={editForm.supplierName}
-                              onChange={(e) => setEditForm({ ...editForm, supplierName: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            >
-                              <option value="">Select supplier</option>
-                              <option value="Primary Supplier">Primary Supplier</option>
-                              <option value="Backup Supplier">Backup Supplier</option>
-                              <option value="Local Distributor">Local Distributor</option>
-                              <option value="Fresh Foods Supply">Fresh Foods Supply</option>
-                              <option value="Wholesale Partners">Wholesale Partners</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Alias</label>
-                            <Input
-                              value={editForm.alias}
-                              onChange={(e) => setEditForm({ ...editForm, alias: e.target.value })}
-                              placeholder="salte"
-                              className="text-gray-900"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Category</label>
-                            <select
-                              value={editForm.categoryId}
-                              onChange={(e) => setEditForm({ ...editForm, categoryId: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            >
-                              <option value="">Electronics</option>
-                              {categories?.map((category: any) => (
-                                <option key={category.id} value={category.id.toString()}>
-                                  {category.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
+                  {/* Form Content - Item Information Section */}
+                  <div className="space-y-6">
+                    <div id="item-info" className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+                      <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Item Code *</label>
+                          <Input
+                            value={editForm.itemCode}
+                            onChange={(e) => setEditForm({ ...editForm, itemCode: e.target.value })}
+                            placeholder="ITM007797868"
+                            className="bg-gray-50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Item Name *</label>
+                          <Input
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            placeholder="salte 250"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Manufacturer Name *</label>
+                          <select
+                            value={editForm.manufacturerName}
+                            onChange={(e) => setEditForm({ ...editForm, manufacturerName: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select manufacturer</option>
+                            <option value="ABC Manufacturing">ABC Manufacturing</option>
+                            <option value="XYZ Industries">XYZ Industries</option>
+                            <option value="Local Supplier">Local Supplier</option>
+                            <option value="Premium Foods Ltd">Premium Foods Ltd</option>
+                            <option value="Quality Products Inc">Quality Products Inc</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Supplier Name *</label>
+                          <select
+                            value={editForm.supplierName}
+                            onChange={(e) => setEditForm({ ...editForm, supplierName: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select supplier</option>
+                            <option value="Primary Supplier">Primary Supplier</option>
+                            <option value="Backup Supplier">Backup Supplier</option>
+                            <option value="Local Distributor">Local Distributor</option>
+                            <option value="Fresh Foods Supply">Fresh Foods Supply</option>
+                            <option value="Wholesale Partners">Wholesale Partners</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Alias</label>
+                          <Input
+                            value={editForm.alias}
+                            onChange={(e) => setEditForm({ ...editForm, alias: e.target.value })}
+                            placeholder="salte"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Category</label>
+                          <select
+                            value={editForm.categoryId}
+                            onChange={(e) => setEditForm({ ...editForm, categoryId: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Electronics</option>
+                            {categories?.map((category: any) => (
+                              <option key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-2 space-y-2">
                           <label className="text-sm font-medium text-gray-700">About Product</label>
                           <textarea
                             value={editForm.aboutProduct}
                             onChange={(e) => setEditForm({ ...editForm, aboutProduct: e.target.value })}
                             placeholder="Enter product description"
-                            rows={4}
+                            rows={3}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                           />
                         </div>

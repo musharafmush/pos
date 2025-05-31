@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { 
   PackageIcon,
   SaveIcon,
@@ -28,12 +27,8 @@ import {
   PlusIcon,
   TrashIcon,
   Calculator,
-  SearchIcon,
-  EditIcon,
-  PrinterIcon,
-  HelpCircleIcon,
-  Settings2Icon,
-  X
+  BarChart3Icon,
+  SearchIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
@@ -45,30 +40,14 @@ const repackingFormSchema = z.object({
   issueNo: z.string().optional(),
   repackNo: z.string().optional(),
   bulkProductId: z.number().min(1, "Please select a bulk product"),
+  repackQuantity: z.number().min(1, "Repack quantity must be at least 1"),
+  unitWeight: z.number().min(0.01, "Unit weight must be greater than 0"),
+  costPrice: z.number().min(0, "Cost price must be non-negative"),
+  sellingPrice: z.number().min(0, "Selling price must be non-negative"),
+  mrp: z.number().min(0, "MRP must be non-negative"),
 });
 
 type RepackingFormValues = z.infer<typeof repackingFormSchema>;
-
-interface RepackItem {
-  id: string;
-  code: string;
-  itemName: string;
-  qty: number;
-  cost: number;
-  selling: number;
-  mrp: number;
-}
-
-interface BulkItemDetails {
-  bulkCode: string;
-  bulkItem: string;
-  weight: number;
-  cost: number;
-  latestSel: number;
-  currentStock: number;
-  packed: number;
-  availForPack: number;
-}
 
 interface RepackEntry {
   id: string;
@@ -80,14 +59,12 @@ interface RepackEntry {
 export default function RepackingProfessional() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [repackItems, setRepackItems] = useState<RepackItem[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [bulkDetails, setBulkDetails] = useState<BulkItemDetails | null>(null);
   const [repackEntries, setRepackEntries] = useState<RepackEntry[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Generate today's date in DD/MM/YYYY format
-  const today = new Date().toLocaleDateString('en-GB');
+  // Generate today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
 
   // Fetch products for bulk selection
   const { data: products = [] } = useQuery({
@@ -99,17 +76,21 @@ export default function RepackingProfessional() {
     },
   });
 
-  // Filter bulk products
+  // Show bulk products with stock > 0 for repacking
+  // Priority: Products with BULK in name, then products with weight > 1kg, then all others
   const bulkProducts = products.filter((product: Product) => 
     product.stockQuantity > 0 && product.active && !product.sku.includes("REPACK")
   ).sort((a, b) => {
+    // Priority sorting for bulk items
     const aIsBulk = a.name.toLowerCase().includes('bulk') || 
                    a.name.toLowerCase().includes('bag') ||
+                   a.name.toLowerCase().includes('container') ||
                    (parseFloat(a.weight || "0") >= 1 && a.weightUnit === 'kg');
     const bIsBulk = b.name.toLowerCase().includes('bulk') || 
                    b.name.toLowerCase().includes('bag') ||
+                   b.name.toLowerCase().includes('container') ||
                    (parseFloat(b.weight || "0") >= 1 && b.weightUnit === 'kg');
-
+    
     if (aIsBulk && !bIsBulk) return -1;
     if (!aIsBulk && bIsBulk) return 1;
     return a.name.localeCompare(b.name);
@@ -122,143 +103,93 @@ export default function RepackingProfessional() {
       issueNo: "",
       repackNo: "",
       bulkProductId: 0,
+      repackQuantity: 1,
+      unitWeight: 1000,
+      costPrice: 0,
+      sellingPrice: 0,
+      mrp: 0,
     },
   });
 
+  // Watch for bulk product changes
   const bulkProductId = form.watch("bulkProductId");
+  const repackQuantity = form.watch("repackQuantity");
+  const unitWeight = form.watch("unitWeight");
 
   useEffect(() => {
     if (bulkProductId && products.length > 0) {
       const product = products.find((p: Product) => p.id === bulkProductId);
       if (product) {
         setSelectedProduct(product);
-
-        // Set bulk item details
-        const weightInGrams = product.weightUnit === 'kg' 
-          ? parseFloat(product.weight || "0") * 1000 
-          : parseFloat(product.weight || "0");
-
-        setBulkDetails({
-          bulkCode: product.sku,
-          bulkItem: product.name,
-          weight: weightInGrams,
-          cost: parseFloat(product.cost) || 0,
-          latestSel: parseFloat(product.price) || 0,
-          currentStock: product.stockQuantity,
-          packed: 0, // This would come from repack history
-          availForPack: product.stockQuantity,
-        });
-
-        // Add a sample repack item
-        if (repackItems.length === 0) {
-          const newItem: RepackItem = {
-            id: "1",
-            code: `${product.sku}-REPACK`,
-            itemName: `250G ${product.name.replace('BULK', '').trim()}`,
-            qty: 8,
-            cost: 26.78,
-            selling: 32.50,
-            mrp: 32.50,
-          };
-          setRepackItems([newItem]);
-        }
+        form.setValue("costPrice", parseFloat(product.cost) || 0);
+        form.setValue("sellingPrice", parseFloat(product.price) || 0);
+        form.setValue("mrp", parseFloat(product.mrp) || 0);
       }
     }
-  }, [bulkProductId, products]);
+  }, [bulkProductId, products, form]);
 
-  const addRepackItem = () => {
-    const newItem: RepackItem = {
-      id: Date.now().toString(),
-      code: `${selectedProduct?.sku || 'ITEM'}-${repackItems.length + 1}`,
-      itemName: `New Repack Item ${repackItems.length + 1}`,
-      qty: 1,
-      cost: 0,
-      selling: 0,
-      mrp: 0,
-    };
-    setRepackItems([...repackItems, newItem]);
-  };
-
-  const updateRepackItem = (id: string, field: keyof RepackItem, value: string | number) => {
-    setRepackItems(items => items.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const removeRepackItem = (id: string) => {
-    setRepackItems(items => items.filter(item => item.id !== id));
-  };
-
-  const addRepackEntry = () => {
-    const newEntry: RepackEntry = {
-      id: Date.now().toString(),
-      name: `Entry ${repackEntries.length + 1}`,
-      percentage: 0,
-      amount: 0,
-    };
-    setRepackEntries([...repackEntries, newEntry]);
-  };
-
-  const updateRepackEntry = (id: string, field: keyof RepackEntry, value: string | number) => {
-    setRepackEntries(entries => entries.map(entry => 
-      entry.id === id ? { ...entry, [field]: value } : entry
-    ));
-  };
-
-  const removeRepackEntry = (id: string) => {
-    setRepackEntries(entries => entries.filter(entry => entry.id !== id));
-  };
-
-  // Repackaging mutation
   const repackingMutation = useMutation({
     mutationFn: async (data: RepackingFormValues) => {
-      // Process repack items and create new products
-      const repackPromises = repackItems.map(async (item) => {
-        const repackedProduct = {
-          name: item.itemName,
-          description: `Repacked from bulk item: ${selectedProduct?.name}`,
-          sku: item.code,
-          price: item.selling.toString(),
-          mrp: item.mrp.toString(),
-          cost: item.cost.toString(),
-          weight: "250", // Default to 250g
-          weightUnit: "g",
-          categoryId: selectedProduct?.categoryId || 1,
-          stockQuantity: item.qty,
-          alertThreshold: Math.max(5, Math.floor(item.qty * 0.1)),
-          barcode: "",
-          active: true,
-        };
+      // Generate unique SKU for repacked item
+      const timestamp = Date.now();
+      const repackedSku = `${selectedProduct?.sku}-REPACK-${data.unitWeight}G-${timestamp}`;
+      
+      // Create a more descriptive name for the repacked product
+      const repackedName = selectedProduct?.name.includes('BULK') 
+        ? selectedProduct.name.replace('BULK', `${data.unitWeight}g`) 
+        : `${selectedProduct?.name} (${data.unitWeight}g Pack)`;
+      
+      const repackedProduct = {
+        name: repackedName,
+        description: `Repacked from bulk item: ${selectedProduct?.name}. Original weight: ${selectedProduct?.weight}${selectedProduct?.weightUnit}`,
+        sku: repackedSku,
+        price: data.sellingPrice.toString(),
+        mrp: data.mrp.toString(),
+        cost: data.costPrice.toString(),
+        weight: data.unitWeight.toString(),
+        weightUnit: "g",
+        categoryId: selectedProduct?.categoryId || 1,
+        stockQuantity: data.repackQuantity,
+        alertThreshold: 5,
+        barcode: "",
+        active: true,
+      };
 
-        return apiRequest("POST", "/api/products", repackedProduct);
-      });
-
-      await Promise.all(repackPromises);
-
-      // Update bulk product stock if needed
-      if (selectedProduct && bulkDetails) {
-        const totalUsed = repackItems.reduce((sum, item) => sum + item.qty, 0);
-        const newStock = Math.max(0, selectedProduct.stockQuantity - Math.ceil(totalUsed / 4)); // Assuming 4 units per bulk
-
+      const response = await apiRequest("POST", "/api/products", repackedProduct);
+      
+      // Update bulk product stock
+      if (selectedProduct) {
+        const productWeight = parseFloat(selectedProduct.weight) || 0;
+        const productWeightUnit = selectedProduct.weightUnit || 'g';
+        
+        // Convert everything to grams for calculation
+        let productWeightInGrams = productWeight;
+        if (productWeightUnit === 'kg') {
+          productWeightInGrams = productWeight * 1000;
+        }
+        
+        // Calculate how much bulk stock is used per repacked unit
+        const totalRepackedWeight = data.unitWeight * data.repackQuantity;
+        const bulkUnitsUsed = totalRepackedWeight / productWeightInGrams;
+        
+        // More conservative stock calculation - only reduce by fraction actually used
+        const newBulkStock = Math.max(0, selectedProduct.stockQuantity - Math.ceil(bulkUnitsUsed));
+        
         await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
-          stockQuantity: newStock,
+          stockQuantity: Math.floor(newBulkStock),
         });
       }
 
-      return { success: true };
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Success",
-        description: "Repack entry saved successfully",
+        description: "Product repacked successfully",
       });
-
-      // Reset form
       form.reset();
-      setRepackItems([]);
       setSelectedProduct(null);
-      setBulkDetails(null);
       setRepackEntries([]);
     },
     onError: (error: Error) => {
@@ -280,238 +211,200 @@ export default function RepackingProfessional() {
       return;
     }
 
-    if (repackItems.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one repack item",
-        variant: "destructive",
-      });
-      return;
-    }
-
     repackingMutation.mutate(data);
   };
+
+  const addRepackEntry = () => {
+    const newEntry: RepackEntry = {
+      id: Date.now().toString(),
+      name: `Entry ${repackEntries.length + 1}`,
+      percentage: 0,
+      amount: 0,
+    };
+    setRepackEntries([...repackEntries, newEntry]);
+  };
+
+  const removeRepackEntry = (id: string) => {
+    setRepackEntries(repackEntries.filter(entry => entry.id !== id));
+  };
+
+  const updateRepackEntry = (id: string, field: keyof RepackEntry, value: string | number) => {
+    setRepackEntries(repackEntries.map(entry => 
+      entry.id === id ? { ...entry, [field]: value } : entry
+    ));
+  };
+
+  const currentStock = selectedProduct?.stockQuantity || 0;
+  const packedQuantity = repackQuantity;
+  const availableForPack = Math.max(0, currentStock - packedQuantity);
 
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-100">
-        {/* Header with classic styling */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
+        {/* Header */}
+        <div className="bg-blue-600 text-white">
           <div className="flex items-center justify-between px-6 py-3">
-            <div className="flex items-center gap-3">
-              <PackageIcon className="w-6 h-6" />
-              <h1 className="text-xl font-bold">Repack Entry</h1>
-            </div>
-            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" onClick={() => setLocation("/")}>
-              <XIcon className="w-4 h-4 mr-1" />
+            <h1 className="text-xl font-semibold">Repack Entry</h1>
+            <Button variant="ghost" size="sm" className="text-white hover:bg-blue-700" onClick={() => setLocation("/")}>
+              <XIcon className="w-4 h-4 mr-2" />
               Close
             </Button>
           </div>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="p-4 space-y-4">
-            {/* Header Fields Row */}
-            <Card className="shadow-sm border border-gray-300">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-6 gap-4 items-end">
-                  <div className="col-span-2">
-                    <FormField
-                      control={form.control}
-                      name="issueDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-semibold">Issue Date</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="h-8 text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value={today}>{today}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="col-span-2">
-                    <FormField
-                      control={form.control}
-                      name="issueNo"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-semibold">Issue No</FormLabel>
-                          <FormControl>
-                            <Input {...field} className="h-8 text-sm" placeholder="Auto-generated" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="col-span-2">
-                    <FormField
-                      control={form.control}
-                      name="repackNo"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-semibold">Repack No</FormLabel>
-                          <FormControl>
-                            <Input {...field} className="h-8 text-sm" placeholder="Auto-generated" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-12 gap-4">
-              {/* Main Table Section */}
-              <div className="col-span-8">
-                <Card className="shadow-sm border border-gray-300">
-                  <CardContent className="p-0">
-                    {/* Table Header */}
-                    <div className="bg-blue-600 text-white">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-b border-blue-500">
-                            <TableHead className="text-white font-semibold text-center py-2 px-3 w-16">Code</TableHead>
-                            <TableHead className="text-white font-semibold text-center py-2 px-3">Item Name</TableHead>
-                            <TableHead className="text-white font-semibold text-center py-2 px-3 w-16">Qty</TableHead>
-                            <TableHead className="text-white font-semibold text-center py-2 px-3 w-20">Cost</TableHead>
-                            <TableHead className="text-white font-semibold text-center py-2 px-3 w-20">Selling</TableHead>
-                            <TableHead className="text-white font-semibold text-center py-2 px-3 w-20">MRP</TableHead>
-                            <TableHead className="text-white font-semibold text-center py-2 px-3 w-16">Action</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                      </Table>
-                    </div>
-
-                    {/* Table Body */}
-                    <div className="bg-white max-h-64 overflow-y-auto">
-                      <Table>
-                        <TableBody>
-                          {repackItems.map((item) => (
-                            <TableRow key={item.id} className="border-b hover:bg-gray-50">
-                              <TableCell className="py-2 px-3 text-center">
-                                <Input
-                                  value={item.code}
-                                  onChange={(e) => updateRepackItem(item.id, 'code', e.target.value)}
-                                  className="h-7 text-xs text-center border-gray-300"
-                                />
-                              </TableCell>
-                              <TableCell className="py-2 px-3">
-                                <Input
-                                  value={item.itemName}
-                                  onChange={(e) => updateRepackItem(item.id, 'itemName', e.target.value)}
-                                  className="h-7 text-xs border-gray-300"
-                                />
-                              </TableCell>
-                              <TableCell className="py-2 px-3 text-center">
-                                <Input
-                                  type="number"
-                                  value={item.qty}
-                                  onChange={(e) => updateRepackItem(item.id, 'qty', parseInt(e.target.value) || 0)}
-                                  className="h-7 text-xs text-center border-gray-300"
-                                />
-                              </TableCell>
-                              <TableCell className="py-2 px-3 text-right">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={item.cost}
-                                  onChange={(e) => updateRepackItem(item.id, 'cost', parseFloat(e.target.value) || 0)}
-                                  className="h-7 text-xs text-right border-gray-300"
-                                />
-                              </TableCell>
-                              <TableCell className="py-2 px-3 text-right">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={item.selling}
-                                  onChange={(e) => updateRepackItem(item.id, 'selling', parseFloat(e.target.value) || 0)}
-                                  className="h-7 text-xs text-right border-gray-300"
-                                />
-                              </TableCell>
-                              <TableCell className="py-2 px-3 text-right">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={item.mrp}
-                                  onChange={(e) => updateRepackItem(item.id, 'mrp', parseFloat(e.target.value) || 0)}
-                                  className="h-7 text-xs text-right border-gray-300"
-                                />
-                              </TableCell>
-                              <TableCell className="py-2 px-3 text-center">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeRepackItem(item.id)}
-                                  className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
-                                >
-                                  <TrashIcon className="w-3 h-3" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Add Item Button */}
-                    <div className="p-2 border-t bg-gray-50">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addRepackItem}
-                        className="h-8 text-xs"
-                      >
-                        <PlusIcon className="w-3 h-3 mr-1" />
-                        Add Item
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-6">
+            {/* Issue Date and Numbers */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <FormField
+                  control={form.control}
+                  name="issueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Issue Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} className="bg-white" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
+              <div>
+                <FormField
+                  control={form.control}
+                  name="issueNo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Issue No</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Auto-generated" className="bg-white" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div>
+                <FormField
+                  control={form.control}
+                  name="repackNo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Repack No</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Auto-generated" className="bg-white" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
-              {/* Bulk Item Details Panel */}
-              <div className="col-span-4">
-                <Card className="shadow-sm border border-gray-300 h-full">
-                  <CardHeader className="bg-blue-600 text-white py-2">
-                    <CardTitle className="text-sm font-semibold">Bulk Item Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-3">
-                    {/* Bulk Product Selection */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Side - Product Selection and Details */}
+              <div className="space-y-4">
+                {/* Product Selection Table Header */}
+                <div className="bg-blue-500 text-white">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-blue-400">
+                        <TableHead className="text-white font-semibold">Code</TableHead>
+                        <TableHead className="text-white font-semibold">Item Name</TableHead>
+                        <TableHead className="text-white font-semibold">Qty</TableHead>
+                        <TableHead className="text-white font-semibold">Cost</TableHead>
+                        <TableHead className="text-white font-semibold">Selling</TableHead>
+                        <TableHead className="text-white font-semibold">MRP</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                  </Table>
+                </div>
+
+                {/* Product Selection with Search */}
+                <Card>
+                  <CardContent className="p-4">
                     <FormField
                       control={form.control}
                       name="bulkProductId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs font-semibold">Select Bulk Product</FormLabel>
+                          <FormLabel>Select Bulk Product</FormLabel>
+                          
+                          {/* Search Input */}
+                          <div className="mb-2">
+                            <div className="relative">
+                              <Input
+                                placeholder="Search bulk products by name, SKU, or description..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 bg-white"
+                              />
+                              <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            </div>
+                          </div>
+                          
                           <Select onValueChange={(value) => field.onChange(parseInt(value))}>
                             <FormControl>
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Choose bulk item..." />
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a bulk product to repack" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
-                              {bulkProducts.map((product: Product) => (
-                                <SelectItem key={product.id} value={product.id.toString()}>
-                                  <div className="text-xs">
-                                    {product.sku} - {product.name}
-                                  </div>
-                                </SelectItem>
-                              ))}
+                            <SelectContent className="max-h-60 overflow-y-auto">
+                              {bulkProducts
+                                .filter((product: Product) => {
+                                  // If no search term, show all products
+                                  if (!searchTerm.trim()) {
+                                    return true;
+                                  }
+                                  
+                                  const search = searchTerm.toLowerCase();
+                                  return (
+                                    product.name.toLowerCase().includes(search) ||
+                                    product.sku.toLowerCase().includes(search) ||
+                                    (product.description && product.description.toLowerCase().includes(search))
+                                  );
+                                })
+                                .map((product: Product) => {
+                                  const isBulkItem = product.name.toLowerCase().includes('bulk') || 
+                                                   product.name.toLowerCase().includes('bag') ||
+                                                   product.name.toLowerCase().includes('container') ||
+                                                   (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg');
+                                  
+                                  return (
+                                    <SelectItem key={product.id} value={product.id.toString()}>
+                                      <div className="flex flex-col">
+                                        <div className="font-medium flex items-center gap-2">
+                                          {product.sku} - {product.name}
+                                          {isBulkItem && (
+                                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">BULK</span>
+                                          )}
+                                        </div>
+                                        <div className="text-sm text-gray-500">
+                                          Weight: {product.weight || 'N/A'}{product.weightUnit} | Stock: {product.stockQuantity} | Cost: ₹{product.cost} | Price: ₹{product.price}
+                                        </div>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              {bulkProducts.filter((product: Product) => {
+                                // If no search term, show all products
+                                if (!searchTerm.trim()) {
+                                  return true;
+                                }
+                                
+                                const search = searchTerm.toLowerCase();
+                                return (
+                                  product.name.toLowerCase().includes(search) ||
+                                  product.sku.toLowerCase().includes(search) ||
+                                  (product.description && product.description.toLowerCase().includes(search))
+                                );
+                              }).length === 0 && searchTerm.trim() && (
+                                <div className="p-2 text-center text-gray-500">
+                                  No products found matching "{searchTerm}"
+                                </div>
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -519,205 +412,281 @@ export default function RepackingProfessional() {
                       )}
                     />
 
-                    {bulkDetails && (
-                      <div className="space-y-2">
-                        <Separator />
-
-                        {/* Bulk Code */}
-                        <div className="grid grid-cols-3 gap-2 items-center">
-                          <span className="text-xs font-semibold">Bulk Code</span>
-                          <Input 
-                            value={bulkDetails.bulkCode} 
-                            readOnly 
-                            className="col-span-2 h-7 text-xs bg-gray-50" 
-                          />
-                        </div>
-
-                        {/* Bulk Item */}
-                        <div className="grid grid-cols-3 gap-2 items-center">
-                          <span className="text-xs font-semibold">Bulk Item</span>
-                          <Input 
-                            value={bulkDetails.bulkItem} 
-                            readOnly 
-                            className="col-span-2 h-7 text-xs bg-gray-50" 
-                          />
-                        </div>
-
-                        {/* Weight */}
-                        <div className="grid grid-cols-3 gap-2 items-center">
-                          <span className="text-xs font-semibold">Weight</span>
-                          <Input 
-                            value={bulkDetails.weight} 
-                            readOnly 
-                            className="col-span-2 h-7 text-xs bg-gray-50 text-right" 
-                          />
-                        </div>
-
-                        {/* Cost */}
-                        <div className="grid grid-cols-5 gap-1 items-center">
-                          <span className="text-xs font-semibold">Cost</span>
-                          <Input 
-                            value={bulkDetails.cost.toFixed(2)} 
-                            readOnly 
-                            className="col-span-2 h-7 text-xs bg-gray-50 text-right" 
-                          />
-                          <span className="text-xs text-gray-600">Latest sel</span>
-                          <Input 
-                            value={bulkDetails.latestSel.toFixed(2)} 
-                            readOnly 
-                            className="h-7 text-xs bg-gray-50 text-right" 
-                          />
-                        </div>
-
-                        {/* Stock Information */}
-                        <div className="grid grid-cols-5 gap-1 items-center">
-                          <span className="text-xs font-semibold">Current Stock</span>
-                          <Input 
-                            value={bulkDetails.currentStock.toFixed(2)} 
-                            readOnly 
-                            className="h-7 text-xs bg-gray-50 text-right" 
-                          />
-                          <span className="text-xs text-center">Packed</span>
-                          <Input 
-                            value={bulkDetails.packed.toFixed(2)} 
-                            readOnly 
-                            className="h-7 text-xs bg-gray-50 text-right" 
-                          />
-                          <div className="text-center">
-                            <div className="text-xs text-gray-600">Avail for pack</div>
-                            <Input 
-                              value={bulkDetails.availForPack.toFixed(2)} 
-                              readOnly 
-                              className="h-7 text-xs bg-gray-50 text-right mt-1" 
-                            />
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Additional Entries Section */}
-                        <div className="bg-blue-600 text-white text-center py-1">
-                          <div className="grid grid-cols-3 gap-1 text-xs font-semibold">
-                            <span>Name</span>
-                            <span>Perc %</span>
-                            <span>Amount</span>
-                          </div>
-                        </div>
-
-                        <div className="max-h-32 overflow-y-auto">
-                          {repackEntries.map((entry) => (
-                            <div key={entry.id} className="grid grid-cols-4 gap-1 items-center py-1">
-                              <Input
-                                value={entry.name}
-                                onChange={(e) => updateRepackEntry(entry.id, 'name', e.target.value)}
-                                className="h-6 text-xs"
-                                placeholder="Name"
-                              />
-                              <Input
-                                type="number"
-                                value={entry.percentage}
-                                onChange={(e) => updateRepackEntry(entry.id, 'percentage', parseFloat(e.target.value) || 0)}
-                                className="h-6 text-xs text-right"
-                                placeholder="%"
-                              />
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={entry.amount}
-                                onChange={(e) => updateRepackEntry(entry.id, 'amount', parseFloat(e.target.value) || 0)}
-                                className="h-6 text-xs text-right"
-                                placeholder="Amount"
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeRepackEntry(entry.id)}
-                                className="h-5 w-5 p-0 text-red-600 hover:bg-red-50"
-                              >
-                                <XIcon className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addRepackEntry}
-                          className="w-full h-6 text-xs"
-                        >
-                          <PlusIcon className="w-3 h-3 mr-1" />
-                          Add Entry
-                        </Button>
+                    {selectedProduct && (
+                      <div className="mt-4 bg-blue-50 border border-blue-200 rounded p-4">
+                        <Table>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell className="font-medium">{selectedProduct.sku}</TableCell>
+                              <TableCell>{selectedProduct.name}</TableCell>
+                              <TableCell>
+                                <FormField
+                                  control={form.control}
+                                  name="repackQuantity"
+                                  render={({ field }) => (
+                                    <Input
+                                      type="number"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                      className="w-20"
+                                    />
+                                  )}
+                                />
+                              </TableCell>
+                              <TableCell>{formatCurrency(parseFloat(selectedProduct.cost))}</TableCell>
+                              <TableCell>{formatCurrency(parseFloat(selectedProduct.price))}</TableCell>
+                              <TableCell>{formatCurrency(parseFloat(selectedProduct.mrp))}</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
                       </div>
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Repacking Configuration */}
+                {selectedProduct && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Repacking Configuration</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="unitWeight"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Unit Weight (grams)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="costPrice"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Cost Price per Unit</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="sellingPrice"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Selling Price per Unit</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="mrp"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>MRP per Unit</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-            </div>
 
-            {/* Function Buttons Bar */}
-            <Card className="shadow-sm border border-gray-300">
-              <CardContent className="p-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <HelpCircleIcon className="w-3 h-3 mr-1" />
-                      F1 Help
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <SearchIcon className="w-3 h-3 mr-1" />
-                      F2 ItemCode
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <EditIcon className="w-3 h-3 mr-1" />
-                      F3 ItemName
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <Calculator className="w-3 h-3 mr-1" />
-                      F4 AliasName
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <PackageIcon className="w-3 h-3 mr-1" />
-                      F5 Pur Rst
-                    </Button>
+              {/* Right Side - Bulk Item Details */}
+              {selectedProduct && (
+                <div className="bg-white border border-gray-200 rounded-lg">
+                  <div className="bg-gray-100 border-b px-4 py-2">
+                    <h3 className="font-semibold text-lg">Bulk Item Details</h3>
                   </div>
+                  
+                  <div className="p-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Bulk Code</label>
+                        <div className="text-lg font-mono bg-gray-50 p-2 rounded border">
+                          {selectedProduct.sku}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Bulk Item</label>
+                        <div className="text-lg bg-gray-50 p-2 rounded border">
+                          {selectedProduct.name}
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      type="submit" 
-                      disabled={repackingMutation.isPending || !selectedProduct}
-                      className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
-                    >
-                      <SaveIcon className="w-3 h-3 mr-1" />
-                      {repackingMutation.isPending ? "Saving..." : "F6 Save"}
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <XIcon className="w-3 h-3 mr-1" />
-                      F7 Clear
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <Settings2Icon className="w-3 h-3 mr-1" />
-                      F8 KeySettings
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <EditIcon className="w-3 h-3 mr-1" />
-                      F9 Edit
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <PrinterIcon className="w-3 h-3 mr-1" />
-                      F10 Print
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                      <X className="w-3 h-3 mr-1" />
-                      F12 Close
-                    </Button>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Weight</label>
+                        <div className="text-lg font-mono bg-gray-50 p-2 rounded border text-center">
+                          {selectedProduct.weight}{selectedProduct.weightUnit}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Cost</label>
+                        <div className="flex items-center gap-2">
+                          <div className="text-lg font-mono bg-gray-50 p-2 rounded border flex-1 text-center">
+                            {formatCurrency(parseFloat(selectedProduct.cost))}
+                          </div>
+                          <Badge variant="outline" className="text-xs bg-gray-100">Latest sel</Badge>
+                          <div className="text-sm bg-yellow-200 px-2 py-1 rounded font-medium">
+                            {formatCurrency(parseFloat(selectedProduct.cost))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Current Stock</label>
+                        <div className="text-lg font-mono bg-blue-100 p-3 rounded border text-center">
+                          {currentStock.toFixed(2)}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Packed</label>
+                        <div className="text-lg font-mono bg-orange-100 p-3 rounded border text-center">
+                          {packedQuantity.toFixed(2)}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Avail for pack</label>
+                        <div className="text-lg font-mono bg-green-100 p-3 rounded border text-center">
+                          {availableForPack.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Entries Table */}
+                    <div className="mt-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium">Additional Entries</h4>
+                        <Button type="button" size="sm" onClick={addRepackEntry}>
+                          <PlusIcon className="w-4 h-4 mr-1" />
+                          Add Entry
+                        </Button>
+                      </div>
+                      
+                      <Table>
+                        <TableHeader className="bg-blue-500">
+                          <TableRow>
+                            <TableHead className="text-white font-semibold">Name</TableHead>
+                            <TableHead className="text-white font-semibold">Perc %</TableHead>
+                            <TableHead className="text-white font-semibold">Amount</TableHead>
+                            <TableHead className="text-white font-semibold w-12"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {repackEntries.map((entry) => (
+                            <TableRow key={entry.id}>
+                              <TableCell>
+                                <Input
+                                  value={entry.name}
+                                  onChange={(e) => updateRepackEntry(entry.id, 'name', e.target.value)}
+                                  className="h-8"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={entry.percentage}
+                                  onChange={(e) => updateRepackEntry(entry.id, 'percentage', parseFloat(e.target.value) || 0)}
+                                  className="h-8 w-20"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={entry.amount}
+                                  onChange={(e) => updateRepackEntry(entry.id, 'amount', parseFloat(e.target.value) || 0)}
+                                  className="h-8 w-24"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeRepackEntry(entry.id)}
+                                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                                >
+                                  <TrashIcon className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {repackEntries.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center text-gray-500 py-4">
+                                No additional entries
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4 pt-6 border-t">
+              <Button type="button" variant="outline" onClick={() => setLocation("/")}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={repackingMutation.isPending || !selectedProduct}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <SaveIcon className="w-4 h-4 mr-2" />
+                {repackingMutation.isPending ? "Repacking..." : "Save Repack Entry"}
+              </Button>
+            </div>
           </form>
         </Form>
       </div>

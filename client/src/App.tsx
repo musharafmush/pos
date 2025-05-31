@@ -14,7 +14,6 @@ import ProductManager from "@/pages/product-manager";
 import AddItemProfessional from "@/pages/add-item-professional";
 import AddItemDashboard from "@/pages/add-item-dashboard";
 import RepackingProfessional from "@/pages/repacking-professional";
-import RepackingProfessionalParallel from "./pages/repacking-professional-parallel";
 import RepackingDashboardProfessional from "@/pages/repacking-dashboard-professional";
 import RepackingMainDashboard from "./pages/repacking-main-dashboard";
 
@@ -61,8 +60,7 @@ function Router() {
       <ProtectedRoute path="/add-product" component={AddProduct} />
       <ProtectedRoute path="/products/repacking" component={Repacking} />
       <ProtectedRoute path="/products/repacking-dashboard" component={RepackingDashboard} />
-      <Route path="/products/repacking-professional" component={RepackingProfessional} />
-      <Route path="/products/repacking-professional-parallel" component={RepackingProfessionalParallel} />
+      <ProtectedRoute path="/products/repacking-professional" component={RepackingProfessional} />
       <ProtectedRoute path="/products/repacking-dashboard-professional" component={RepackingDashboardProfessional} />
       <ProtectedRoute path="/repacking" component={RepackingMainDashboard} />
       <ProtectedRoute path="/repacking/main" component={RepackingMainDashboard} />
