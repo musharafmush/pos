@@ -44,7 +44,10 @@ import {
   Package2Icon,
   ClockIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  X,
+  RefreshCwIcon,
+  SaveIcon
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -150,9 +153,9 @@ export default function POSEnhanced() {
 
   const allProducts = products || [];
 
-  // Enhanced barcode scanning with product lookup
-  const handleBarcodeInput = (barcode: string) => {
-    if (!barcode.trim()) {
+  // Enhanced barcode scanning with parallel processing and better error handling
+  const handleBarcodeInput = async (barcode: string) => {
+    if (!barcodeInput.trim()) {
       toast({
         title: "Empty Input ⚠️",
         description: "Please enter a barcode, SKU, or product code",
@@ -161,44 +164,75 @@ export default function POSEnhanced() {
       return;
     }
 
-    const searchTerm = barcode.trim();
+    const searchTerm = barcode.trim().toLowerCase();
+    setIsProcessing(true);
 
-    // First try exact matches
-    let product = allProducts?.find(p => 
-      p.sku === searchTerm || 
-      p.id.toString() === searchTerm ||
-      p.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    try {
+      // Parallel search across multiple product fields
+      const searchPromises = [
+        // Exact SKU match
+        allProducts?.find(p => p.sku?.toLowerCase() === searchTerm),
+        // Exact ID match
+        allProducts?.find(p => p.id.toString() === searchTerm),
+        // Name contains search
+        allProducts?.find(p => p.name.toLowerCase().includes(searchTerm)),
+        // Description contains search
+        allProducts?.find(p => p.description?.toLowerCase().includes(searchTerm))
+      ];
 
-    if (product) {
-      setSelectedProduct(product);
-      setRateInput(product.price);
-      setQuantityInput(1);
-      setBarcodeInput("");
+      const results = await Promise.all(searchPromises);
+      const product = results.find(p => p !== undefined);
 
+      if (product) {
+        setSelectedProduct(product);
+        setRateInput(product.price);
+        setQuantityInput(1);
+        setBarcodeInput("");
+
+        toast({
+          title: "🎯 Product Found!",
+          description: (
+            <div className="space-y-1">
+              <div className="font-medium">{product.name}</div>
+              <div className="text-sm">Code: {product.sku} • Stock: {product.stockQuantity}</div>
+              <div className="text-sm">Rate: {formatCurrency(parseFloat(product.price))}</div>
+            </div>
+          )
+        });
+
+        // Auto-focus quantity input with improved targeting
+        setTimeout(() => {
+          const qtyElement = document.querySelector('input[placeholder="Qty"]') as HTMLInputElement;
+          if (qtyElement) {
+            qtyElement.focus();
+            qtyElement.select();
+          }
+        }, 150);
+
+      } else {
+        // Show suggestions for partial matches
+        const suggestions = allProducts?.filter(p => 
+          p.name.toLowerCase().includes(searchTerm) ||
+          p.sku?.toLowerCase().includes(searchTerm)
+        ).slice(0, 5);
+
+        toast({
+          title: "❌ Product Not Found",
+          description: suggestions?.length > 0 
+            ? `No exact match. Found ${suggestions.length} similar products. Use F2 to browse.`
+            : `No product found for: ${searchTerm}`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Search error:', error);
       toast({
-        title: "🎯 Product Found!",
-        description: (
-          <div className="space-y-1">
-            <div className="font-medium">{product.name}</div>
-            <div className="text-sm">Code: {product.sku} • Stock: {product.stockQuantity}</div>
-            <div className="text-sm">Rate: {formatCurrency(parseFloat(product.price))}</div>
-          </div>
-        )
-      });
-
-      // Auto-focus quantity input
-      setTimeout(() => {
-        const qtyElement = document.querySelector('input[placeholder="Qty"]') as HTMLInputElement;
-        qtyElement?.focus();
-      }, 100);
-
-    } else {
-      toast({
-        title: "❌ Product Not Found",
-        description: `No product found for: ${searchTerm}`,
+        title: "Search Error",
+        description: "Error occurred while searching. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -473,19 +507,20 @@ export default function POSEnhanced() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex">
+        <div className="flex-1 flex flex-col lg:flex-row">
           {/* Left Panel - Barcode Scanner & Product Entry */}
-          <div className="w-1/2 bg-white border-r flex flex-col">
+          <div className="w-full lg:w-1/2 bg-white border-r flex flex-col">
             {/* Barcode Scanner Section */}
-            <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-cyan-50">
+            <div className="p-3 lg:p-4 border-b bg-gradient-to-r from-blue-50 to-cyan-50">
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <ScanIcon className="h-5 w-5 text-blue-600" />
                   <Label className="font-medium text-blue-900">Barcode Scanner</Label>
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className={`w-2 h-2 rounded-full ${isProcessing ? 'bg-yellow-500 animate-spin' : 'bg-green-500 animate-pulse'}`}></div>
+                  {isProcessing && <span className="text-xs text-blue-600">Processing...</span>}
                 </div>
 
-                <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                   <div className="flex-1 relative">
                     <BarcodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
@@ -494,75 +529,123 @@ export default function POSEnhanced() {
                       value={barcodeInput}
                       onChange={(e) => setBarcodeInput(e.target.value)}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && !isProcessing) {
                           handleBarcodeInput(barcodeInput);
                         }
                       }}
                       className="pl-10 font-mono border-blue-200 focus:border-blue-500"
                       autoComplete="off"
+                      disabled={isProcessing}
                     />
                   </div>
-                  <Button
-                    variant="default"
-                    onClick={() => handleBarcodeInput(barcodeInput)}
-                    disabled={!barcodeInput}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <SearchIcon className="h-4 w-4 mr-1" />
-                    Find
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowProductList(true)}
-                    className="border-blue-200"
-                  >
-                    <Package2Icon className="h-4 w-4 mr-1" />
-                    Products
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="default"
+                      onClick={() => handleBarcodeInput(barcodeInput)}
+                      disabled={!barcodeInput || isProcessing}
+                      className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+                    >
+                      {isProcessing ? (
+                        <RefreshCwIcon className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <SearchIcon className="h-4 w-4 mr-1" />
+                      )}
+                      Find
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowProductList(true)}
+                      className="border-blue-200 flex-1 sm:flex-none"
+                    >
+                      <Package2Icon className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Products</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Product Entry Section */}
             {selectedProduct && (
-              <div className="p-4 border-b bg-yellow-50">
+              <div className="p-3 lg:p-4 border-b bg-gradient-to-r from-green-50 to-emerald-50">
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                    <Label className="font-medium text-green-900">Product Selected</Label>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                      <Label className="font-medium text-green-900">Product Selected</Label>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedProduct(null);
+                        setBarcodeInput("");
+                        setQuantityInput(1);
+                        setRateInput("");
+                        barcodeInputRef.current?.focus();
+                      }}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
 
-                  <div className="bg-white p-3 rounded border">
-                    <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="bg-white p-3 rounded border shadow-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 text-sm">
                       <div>
                         <Label className="text-xs text-gray-600">Code</Label>
-                        <div className="font-mono font-bold">{selectedProduct.sku}</div>
+                        <div className="font-mono font-bold text-blue-600">{selectedProduct.sku}</div>
                       </div>
-                      <div>
+                      <div className="sm:col-span-2">
                         <Label className="text-xs text-gray-600">Description</Label>
-                        <div className="font-medium">{selectedProduct.name}</div>
+                        <div className="font-medium" title={selectedProduct.name}>{selectedProduct.name}</div>
                       </div>
-                      <div>
-                        <Label className="text-xs text-gray-600">Stock</Label>
-                        <div className="font-bold text-blue-600">{selectedProduct.stockQuantity}</div>
+                      <div className="sm:col-span-1">
+                        <Label className="text-xs text-gray-600">Available Stock</Label>
+                        <div className={`font-bold ${selectedProduct.stockQuantity > 10 ? 'text-green-600' : selectedProduct.stockQuantity > 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          {selectedProduct.stockQuantity} units
+                        </div>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label className="text-xs text-gray-600">MRP</Label>
+                        <div className="font-bold text-purple-600">{formatCurrency(parseFloat(selectedProduct.price))}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <Label className="text-xs text-gray-600">Qty</Label>
-                      <Input
-                        type="number"
-                        value={quantityInput}
-                        onChange={(e) => setQuantityInput(parseInt(e.target.value) || 1)}
-                        className="h-8 text-center font-bold"
-                        min="1"
-                        placeholder="Qty"
-                      />
+                      <Label className="text-xs text-gray-600">Quantity</Label>
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setQuantityInput(Math.max(1, quantityInput - 1))}
+                        >
+                          <MinusIcon className="h-3 w-3" />
+                        </Button>
+                        <Input
+                          type="number"
+                          value={quantityInput}
+                          onChange={(e) => setQuantityInput(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="h-8 text-center font-bold flex-1"
+                          min="1"
+                          max={selectedProduct.stockQuantity}
+                          placeholder="Qty"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setQuantityInput(Math.min(selectedProduct.stockQuantity, quantityInput + 1))}
+                        >
+                          <PlusIcon className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-600">Rate</Label>
+                      <Label className="text-xs text-gray-600">Unit Rate</Label>
                       <Input
                         type="number"
                         value={rateInput}
@@ -570,20 +653,47 @@ export default function POSEnhanced() {
                         className="h-8 text-right font-bold"
                         placeholder="Rate"
                         step="0.01"
+                        min="0"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-600">Amount</Label>
-                      <div className="h-8 px-3 border rounded bg-gray-50 flex items-center justify-end font-bold text-green-600">
+                      <Label className="text-xs text-gray-600">Line Total</Label>
+                      <div className="h-8 px-3 border rounded bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-end font-bold text-green-700 text-lg">
                         {formatCurrency((parseFloat(rateInput) || parseFloat(selectedProduct.price)) * quantityInput)}
                       </div>
                     </div>
                   </div>
 
-                  <Button onClick={addToCart} className="w-full bg-green-600 hover:bg-green-700">
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Add to Cart (Enter)
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button 
+                      onClick={addToCart} 
+                      className="flex-1 bg-green-600 hover:bg-green-700 shadow-md"
+                      disabled={quantityInput > selectedProduct.stockQuantity}
+                    >
+                      <SaveIcon className="h-4 w-4 mr-1" />
+                      Add to Cart (Enter)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        addToCart();
+                        // Continue scanning mode
+                        setTimeout(() => {
+                          barcodeInputRef.current?.focus();
+                        }, 200);
+                      }}
+                      className="px-3"
+                      disabled={quantityInput > selectedProduct.stockQuantity}
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {quantityInput > selectedProduct.stockQuantity && (
+                    <div className="text-xs text-red-600 bg-red-50 p-2 rounded border">
+                      ⚠️ Quantity exceeds available stock ({selectedProduct.stockQuantity} units)
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -608,11 +718,28 @@ export default function POSEnhanced() {
           </div>
 
           {/* Right Panel - Cart & Billing */}
-          <div className="w-1/2 bg-white flex flex-col">
+          <div className="w-full lg:w-1/2 bg-white flex flex-col">
             {/* Cart Header */}
-            <div className="p-3 border-b bg-blue-600 text-white">
-              <div className="grid grid-cols-7 gap-2 text-xs font-medium">
-                <div>Sno</div>
+            <div className="p-2 lg:p-3 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold flex items-center">
+                  <ShoppingCartIcon className="h-4 w-4 mr-2" />
+                  Cart ({cart.length} items)
+                </h3>
+                {cart.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSale}
+                    className="text-white hover:bg-blue-500 h-6 px-2"
+                  >
+                    <TrashIcon className="h-3 w-3 mr-1" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+              <div className="hidden sm:grid grid-cols-7 gap-1 lg:gap-2 text-xs font-medium">
+                <div>No</div>
                 <div>Code</div>
                 <div>Description</div>
                 <div className="text-center">Qty</div>
