@@ -163,15 +163,28 @@ export default function AddItemProfessional() {
     },
   }) as { data: Supplier[] };
 
-  // Fetch recent products for bulk item selection
-  const { data: recentProducts = [] } = useQuery({
-    queryKey: ["/api/products/recent"],
+  // Fetch all products for bulk item selection
+  const { data: allProducts = [] } = useQuery({
+    queryKey: ["/api/products/all"],
     queryFn: async () => {
-      const response = await fetch("/api/products?limit=50&sortBy=createdAt&order=desc");
-      if (!response.ok) throw new Error("Failed to fetch recent products");
+      const response = await fetch("/api/products");
+      if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
   });
+
+  // Filter bulk items from all products
+  const bulkItems = allProducts.filter((product: any) => 
+    product.name && (
+      product.name.toLowerCase().includes('bulk') ||
+      product.name.toLowerCase().includes('bag') ||
+      product.name.toLowerCase().includes('container') ||
+      product.name.toLowerCase().includes('kg') ||
+      product.name.toLowerCase().includes('ltr') ||
+      (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg') ||
+      product.stockQuantity > 10
+    )
+  );
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -1337,7 +1350,7 @@ export default function AddItemProfessional() {
                                               onValueChange={(value) => {
                                                 field.onChange(value);
                                                 // Auto-populate bulk item details when selected
-                                                const selectedProduct = recentProducts?.find((p: any) => p.name === value);
+                                                const selectedProduct = bulkItems?.find((p: any) => p.name === value) || allProducts?.find((p: any) => p.name === value);
                                                 if (selectedProduct) {
                                                   form.setValue("cost", selectedProduct.price?.toString() || "0");
                                                   form.setValue("mrp", selectedProduct.mrp?.toString() || "0");
@@ -1349,6 +1362,14 @@ export default function AddItemProfessional() {
                                                 <SelectValue placeholder="Select bulk item to repackage" />
                                               </SelectTrigger>
                                               <SelectContent className="max-h-80 overflow-y-auto">
+                                                {/* Show message if no bulk items found */}
+                                                {bulkItems.length === 0 && (
+                                                  <div className="p-4 text-center text-gray-500">
+                                                    <p className="text-sm">No bulk items found in inventory.</p>
+                                                    <p className="text-xs mt-1">Add bulk items first to enable repackaging.</p>
+                                                  </div>
+                                                )}
+
                                                 {/* Sample bulk items as shown in the reference image */}
                                                 <SelectItem value="Rice 1kg (500g Pack)">
                                                   Rice 1kg (500g Pack) - SKU: ITM670689059-REPACK-500G-174867443241†
@@ -1367,24 +1388,12 @@ export default function AddItemProfessional() {
                                                 <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag - Sugar bulk pack</SelectItem>
                                                 <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container - Cooking oil bulk</SelectItem>
                                                 
-                                                {/* Dynamic products from database */}
-                                                {Array.isArray(recentProducts) && recentProducts.length > 0 ? (
-                                                  recentProducts
-                                                    .filter((product: any) => 
-                                                      product.name && (
-                                                        product.name.toLowerCase().includes('bulk') || 
-                                                        product.name.toLowerCase().includes('bag') ||
-                                                        product.name.toLowerCase().includes('kg') ||
-                                                        product.name.toLowerCase().includes('ltr') ||
-                                                        product.name.toLowerCase().includes('container')
-                                                      )
-                                                    )
-                                                    .map((product: any) => (
-                                                      <SelectItem key={`product-${product.id}`} value={product.name}>
-                                                        {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity}
-                                                      </SelectItem>
-                                                    ))
-                                                ) : null}
+                                                {/* Dynamic bulk items from database */}
+                                                {bulkItems.map((product: any) => (
+                                                  <SelectItem key={`bulk-${product.id}`} value={product.name}>
+                                                    {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity} • Weight: {product.weight}{product.weightUnit}
+                                                  </SelectItem>
+                                                ))}
                                               </SelectContent>
                                             </Select>
                                           </FormControl>

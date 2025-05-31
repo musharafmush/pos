@@ -376,7 +376,12 @@ export default function AddItemDashboard() {
           product.name.toLowerCase().includes('bulk') ||
           product.name.toLowerCase().includes('bag') ||
           product.name.toLowerCase().includes('container') ||
-          (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg')
+          product.name.toLowerCase().includes('kg') ||
+          product.name.toLowerCase().includes('ltr') ||
+          product.name.toLowerCase().includes('wholesale') ||
+          product.name.toLowerCase().includes('sack') ||
+          (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg') ||
+          product.stockQuantity > 10
         );
       case "repackaged":
         return matchesSearch && (
@@ -484,7 +489,13 @@ export default function AddItemDashboard() {
                     {products.filter((p: Product) => 
                       p.name.toLowerCase().includes('bulk') ||
                       p.name.toLowerCase().includes('bag') ||
-                      (parseFloat(p.weight || "0") >= 1 && p.weightUnit === 'kg')
+                      p.name.toLowerCase().includes('container') ||
+                      p.name.toLowerCase().includes('kg') ||
+                      p.name.toLowerCase().includes('ltr') ||
+                      p.name.toLowerCase().includes('wholesale') ||
+                      p.name.toLowerCase().includes('sack') ||
+                      (parseFloat(p.weight || "0") >= 1 && p.weightUnit === 'kg') ||
+                      p.stockQuantity > 10
                     ).length}
                   </p>
                 </div>
