@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -390,21 +391,21 @@ export default function POSEnhanced() {
 
   return (
     <DashboardLayout>
-      <div className="h-full flex flex-col bg-gradient-to-br from-blue-50 to-cyan-50">
+      <div className="h-full flex flex-col bg-gray-100">
         {/* Header Section */}
-        <div className="bg-white border-b shadow-sm p-4">
+        <div className="bg-white border-b shadow-sm p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <BarcodeIcon className="h-6 w-6 text-blue-600" />
-                <h1 className="text-xl font-bold text-gray-900">Barcode POS System</h1>
+                <h1 className="text-lg font-bold text-gray-900">Professional POS System</h1>
               </div>
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                Professional Edition
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                Version 6.5.9.2 SP-65
               </Badge>
             </div>
 
-            <div className="flex items-center space-x-4 text-sm">
+            <div className="flex items-center space-x-6 text-sm">
               <div className="text-center">
                 <div className="text-xs text-gray-500">Bill No</div>
                 <div className="font-mono font-bold text-blue-600">{billNumber}</div>
@@ -415,25 +416,25 @@ export default function POSEnhanced() {
               </div>
               <div className="text-center">
                 <div className="text-xs text-gray-500">Net Amount</div>
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(grandTotal)}</div>
+                <div className="text-xl font-bold text-green-600">{formatCurrency(grandTotal)}</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Customer Info Section */}
-        <div className="bg-white border-b p-3">
-          <div className="grid grid-cols-6 gap-4 text-sm">
+        <div className="bg-white border-b p-2">
+          <div className="grid grid-cols-6 gap-3 text-sm">
             <div>
               <Label className="text-xs text-gray-600">Sales Man</Label>
-              <Input value={salesMan} onChange={(e) => setSalesMan(e.target.value)} className="h-8" />
+              <Input value={salesMan} onChange={(e) => setSalesMan(e.target.value)} className="h-7 text-xs" />
             </div>
             <div>
               <Label className="text-xs text-gray-600">Customer Name</Label>
               <Input 
                 value={customerDetails.name} 
                 onChange={(e) => setCustomerDetails({...customerDetails, name: e.target.value})}
-                className="h-8" 
+                className="h-7 text-xs" 
                 placeholder="Walk-in Customer"
               />
             </div>
@@ -442,7 +443,7 @@ export default function POSEnhanced() {
               <Input 
                 value={customerDetails.doorNo} 
                 onChange={(e) => setCustomerDetails({...customerDetails, doorNo: e.target.value})}
-                className="h-8" 
+                className="h-7 text-xs" 
               />
             </div>
             <div>
@@ -450,7 +451,7 @@ export default function POSEnhanced() {
               <Input 
                 value={customerDetails.street} 
                 onChange={(e) => setCustomerDetails({...customerDetails, street: e.target.value})}
-                className="h-8" 
+                className="h-7 text-xs" 
               />
             </div>
             <div>
@@ -458,7 +459,7 @@ export default function POSEnhanced() {
               <Input 
                 value={customerDetails.address} 
                 onChange={(e) => setCustomerDetails({...customerDetails, address: e.target.value})}
-                className="h-8" 
+                className="h-7 text-xs" 
               />
             </div>
             <div>
@@ -466,28 +467,109 @@ export default function POSEnhanced() {
               <Input 
                 value={customerDetails.place} 
                 onChange={(e) => setCustomerDetails({...customerDetails, place: e.target.value})}
-                className="h-8" 
+                className="h-7 text-xs" 
               />
             </div>
+          </div>
+          
+          {/* Additional checkboxes row */}
+          <div className="grid grid-cols-6 gap-3 mt-2 text-xs">
+            <div className="flex items-center space-x-2">
+              <input type="checkbox" id="holdBills" className="h-3 w-3" />
+              <label htmlFor="holdBills" className="text-gray-600">Hold Bills</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input type="checkbox" id="doorDelivery" className="h-3 w-3" />
+              <label htmlFor="doorDelivery" className="text-gray-600">Door Delivery</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input type="checkbox" id="print" className="h-3 w-3" />
+              <label htmlFor="print" className="text-gray-600">Print</label>
+            </div>
+            <div></div>
+            <div></div>
+            <div></div>
           </div>
         </div>
 
         {/* Main Content */}
         <div className="flex-1 flex">
-          {/* Left Panel - Barcode Scanner & Product Entry */}
-          <div className="w-1/2 bg-white border-r flex flex-col">
+          {/* Left Panel - Cart & Product Entry */}
+          <div className="flex-1 bg-white border-r flex flex-col">
+            {/* Cart Header */}
+            <div className="p-2 border-b bg-blue-600 text-white">
+              <div className="grid grid-cols-8 gap-2 text-xs font-medium">
+                <div className="text-center">Sno</div>
+                <div>Code</div>
+                <div>Description</div>
+                <div className="text-center">Qty</div>
+                <div className="text-right">Rate</div>
+                <div className="text-right">Amount</div>
+                <div className="text-center">Stock</div>
+                <div className="text-right">M.R.P</div>
+              </div>
+            </div>
+
+            {/* Cart Items */}
+            <div className="flex-1 overflow-y-auto">
+              {cart.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="text-center">
+                    <ShoppingCartIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                    <div>Cart is empty</div>
+                    <div className="text-xs">Scan a product to start billing</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-0">
+                  {cart.map((item, index) => (
+                    <div key={item.id} className="grid grid-cols-8 gap-2 text-xs border-b py-1 px-2 hover:bg-gray-50">
+                      <div className="text-center font-bold text-blue-600 flex items-center justify-center">{index + 1}</div>
+                      <div className="font-mono text-gray-600 flex items-center">{item.sku}</div>
+                      <div className="font-medium truncate flex items-center" title={item.name}>{item.name}</div>
+                      <div className="text-center flex items-center justify-center">
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 p-0"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          >
+                            <MinusIcon className="h-3 w-3" />
+                          </Button>
+                          <span className="font-bold text-blue-600 min-w-[20px] text-center">{item.quantity}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 p-0"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          >
+                            <PlusIcon className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-right font-mono flex items-center justify-end">{formatCurrency(parseFloat(item.price))}</div>
+                      <div className="text-right font-bold text-green-600 flex items-center justify-end">{formatCurrency(item.total)}</div>
+                      <div className="text-center text-blue-600 flex items-center justify-center">{item.stock || item.stockQuantity}</div>
+                      <div className="text-right text-gray-600 flex items-center justify-end">{formatCurrency(item.mrp || parseFloat(item.price))}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Barcode Scanner Section */}
-            <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-cyan-50">
-              <div className="space-y-3">
+            <div className="p-3 border-t bg-gradient-to-r from-blue-50 to-cyan-50">
+              <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <ScanIcon className="h-5 w-5 text-blue-600" />
-                  <Label className="font-medium text-blue-900">Barcode Scanner</Label>
+                  <ScanIcon className="h-4 w-4 text-blue-600" />
+                  <Label className="font-medium text-blue-900 text-sm">Barcode Scanner</Label>
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
 
                 <div className="flex space-x-2">
                   <div className="flex-1 relative">
-                    <BarcodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <BarcodeIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
                     <Input
                       ref={barcodeInputRef}
                       placeholder="Scan barcode or enter product code..."
@@ -498,42 +580,42 @@ export default function POSEnhanced() {
                           handleBarcodeInput(barcodeInput);
                         }
                       }}
-                      className="pl-10 font-mono border-blue-200 focus:border-blue-500"
+                      className="pl-8 font-mono border-blue-200 focus:border-blue-500 h-8 text-sm"
                       autoComplete="off"
                     />
                   </div>
                   <Button
                     variant="default"
+                    size="sm"
                     onClick={() => handleBarcodeInput(barcodeInput)}
                     disabled={!barcodeInput}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 h-8"
                   >
-                    <SearchIcon className="h-4 w-4 mr-1" />
+                    <SearchIcon className="h-3 w-3 mr-1" />
                     Find
                   </Button>
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => setShowProductList(true)}
-                    className="border-blue-200"
+                    className="border-blue-200 h-8"
                   >
-                    <Package2Icon className="h-4 w-4 mr-1" />
+                    <Package2Icon className="h-3 w-3 mr-1" />
                     Products
                   </Button>
                 </div>
               </div>
-            </div>
 
-            {/* Product Entry Section */}
-            {selectedProduct && (
-              <div className="p-4 border-b bg-yellow-50">
-                <div className="space-y-3">
+              {/* Product Entry Section */}
+              {selectedProduct && (
+                <div className="mt-3 space-y-2">
                   <div className="flex items-center space-x-2">
-                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                    <Label className="font-medium text-green-900">Product Selected</Label>
+                    <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                    <Label className="font-medium text-green-900 text-sm">Product Selected</Label>
                   </div>
 
-                  <div className="bg-white p-3 rounded border">
-                    <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="bg-white p-2 rounded border">
+                    <div className="grid grid-cols-3 gap-2 text-xs">
                       <div>
                         <Label className="text-xs text-gray-600">Code</Label>
                         <div className="font-mono font-bold">{selectedProduct.sku}</div>
@@ -549,14 +631,14 @@ export default function POSEnhanced() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     <div>
                       <Label className="text-xs text-gray-600">Qty</Label>
                       <Input
                         type="number"
                         value={quantityInput}
                         onChange={(e) => setQuantityInput(parseInt(e.target.value) || 1)}
-                        className="h-8 text-center font-bold"
+                        className="h-7 text-center font-bold text-xs"
                         min="1"
                         placeholder="Qty"
                       />
@@ -567,149 +649,188 @@ export default function POSEnhanced() {
                         type="number"
                         value={rateInput}
                         onChange={(e) => setRateInput(e.target.value)}
-                        className="h-8 text-right font-bold"
+                        className="h-7 text-right font-bold text-xs"
                         placeholder="Rate"
                         step="0.01"
                       />
                     </div>
                     <div>
                       <Label className="text-xs text-gray-600">Amount</Label>
-                      <div className="h-8 px-3 border rounded bg-gray-50 flex items-center justify-end font-bold text-green-600">
+                      <div className="h-7 px-2 border rounded bg-gray-50 flex items-center justify-end font-bold text-green-600 text-xs">
                         {formatCurrency((parseFloat(rateInput) || parseFloat(selectedProduct.price)) * quantityInput)}
                       </div>
                     </div>
                   </div>
 
-                  <Button onClick={addToCart} className="w-full bg-green-600 hover:bg-green-700">
-                    <PlusIcon className="h-4 w-4 mr-1" />
+                  <Button onClick={addToCart} size="sm" className="w-full bg-green-600 hover:bg-green-700 h-7 text-xs">
+                    <PlusIcon className="h-3 w-3 mr-1" />
                     Add to Cart (Enter)
                   </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Function Keys */}
-            <div className="mt-auto p-4 border-t bg-gray-50">
-              <div className="grid grid-cols-6 gap-2 text-xs">
-                <Button variant="outline" size="sm" className="h-8">F1<br/>ItemCode</Button>
-                <Button variant="outline" size="sm" className="h-8" onClick={() => setShowProductList(true)}>F2<br/>SaleHits</Button>
-                <Button variant="outline" size="sm" className="h-8">F3<br/>QuickCost</Button>
-                <Button variant="outline" size="sm" className="h-8">F4<br/>CashDisc</Button>
-                <Button variant="outline" size="sm" className="h-8">F5<br/>Details</Button>
-                <Button variant="outline" size="sm" className="h-8">F6<br/>Bills</Button>
-                <Button variant="outline" size="sm" className="h-8">F7<br/>CloseScreen</Button>
-                <Button variant="outline" size="sm" className="h-8">F8<br/>SettleBill</Button>
-                <Button variant="outline" size="sm" className="h-8">F9<br/>CashBoard</Button>
-                <Button variant="outline" size="sm" className="h-8" onClick={() => setShowPaymentDialog(true)}>F10<br/>SelectKey</Button>
-                <Button variant="outline" size="sm" className="h-8">F11<br/>SelectKey</Button>
-                <Button variant="outline" size="sm" className="h-8">F12<br/>Close</Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Panel - Cart & Billing */}
-          <div className="w-1/2 bg-white flex flex-col">
-            {/* Cart Header */}
-            <div className="p-3 border-b bg-blue-600 text-white">
-              <div className="grid grid-cols-7 gap-2 text-xs font-medium">
-                <div>Sno</div>
-                <div>Code</div>
-                <div>Description</div>
-                <div className="text-center">Qty</div>
-                <div className="text-right">Rate</div>
-                <div className="text-right">Amount</div>
-                <div className="text-center">Stock</div>
-              </div>
-            </div>
-
-            {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto">
-              {cart.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  <div className="text-center">
-                    <ShoppingCartIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <div>Cart is empty</div>
-                    <div className="text-xs">Scan a product to start billing</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-1 p-2">
-                  {cart.map((item, index) => (
-                    <div key={item.id} className="grid grid-cols-7 gap-2 text-xs border-b pb-1 hover:bg-gray-50">
-                      <div className="text-center font-bold text-blue-600">{index + 1}</div>
-                      <div className="font-mono text-gray-600">{item.sku}</div>
-                      <div className="font-medium truncate" title={item.name}>{item.name}</div>
-                      <div className="text-center">
-                        <div className="flex items-center justify-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          >
-                            <MinusIcon className="h-3 w-3" />
-                          </Button>
-                          <span className="font-bold text-blue-600">{item.quantity}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          >
-                            <PlusIcon className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="text-right font-mono">{formatCurrency(parseFloat(item.price))}</div>
-                      <div className="text-right font-bold text-green-600">{formatCurrency(item.total)}</div>
-                      <div className="text-center text-blue-600">{item.stock || item.stockQuantity}</div>
-                    </div>
-                  ))}
                 </div>
               )}
             </div>
 
-            {/* Billing Summary */}
-            <div className="border-t bg-gray-50 p-4">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Gross Amount:</span>
-                  <span className="font-mono">{formatCurrency(subtotal)}</span>
-                </div>
+            {/* Function Keys */}
+            <div className="p-2 border-t bg-gray-50">
+              <div className="grid grid-cols-6 gap-1 text-xs">
+                <Button variant="outline" size="sm" className="h-7 text-xs">F1<br/>ItemCode</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowProductList(true)}>F2<br/>SaleHits</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F3<br/>QuickCost</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F4<br/>CashDisc</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F5<br/>Details</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F6<br/>Bills</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F7<br/>CloseScr</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F8<br/>SettleBill</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F9<br/>CashBrd</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowPaymentDialog(true)}>F10<br/>SelectKey</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F11<br/>SelectKey</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F12<br/>Close</Button>
+              </div>
+            </div>
+          </div>
 
-                {/* Quick denomination buttons */}
-                <div className="flex space-x-2 text-xs">
-                  <Button variant="outline" size="sm" className="flex-1">Rs.50<br/>Ctrl + 1</Button>
-                  <Button variant="outline" size="sm" className="flex-1">Rs.100<br/>Ctrl + 2</Button>
-                  <Button variant="outline" size="sm" className="flex-1">Rs.500<br/>Ctrl + 3</Button>
-                  <Button variant="outline" size="sm" className="flex-1">Rs.1000<br/>Ctrl + 4</Button>
-                  <Button variant="outline" size="sm" className="flex-1">Rs.2000<br/>Ctrl + 5</Button>
-                </div>
+          {/* Right Panel - Billing Details */}
+          <div className="w-80 bg-blue-600 text-white flex flex-col">
+            {/* Bill Header */}
+            <div className="p-3 border-b border-blue-500">
+              <div className="text-center">
+                <div className="text-lg font-bold">Bill Details</div>
+                <div className="text-sm opacity-90">#{billNumber}</div>
+              </div>
+            </div>
 
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <span className="text-lg font-bold">Net Amount:</span>
-                  <span className="text-2xl font-bold text-green-600">{formatCurrency(grandTotal)}</span>
-                </div>
+            {/* Bill Amounts */}
+            <div className="p-3 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Bill No</span>
+                <span className="font-mono">{billNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Bill Date</span>
+                <span>{billDate}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tax Amt (Incl)</span>
+                <span className="font-mono">{formatCurrency(taxAmount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Surcharge (Incl)</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Gross Amt</span>
+                <span className="font-mono">{formatCurrency(subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Item Discount</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Item Scheme amt</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Cash Disc %</span>
+                <span className="font-mono">{discount}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Cash Discount</span>
+                <span className="font-mono">{formatCurrency(totalDiscount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Bill Scheme %</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Bill Scheme amt</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Coupon Discount</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tax Amt</span>
+                <span className="font-mono">{formatCurrency(taxAmount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Surcharge</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Service Charge %</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Service Charge</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Freight Amt</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Packing charge</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Other charge</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Extra charges</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>RoundOff Amt</span>
+                <span className="font-mono">0.35</span>
+              </div>
+              <div className="flex justify-between border-t border-blue-500 pt-2 text-lg font-bold">
+                <span>R.O.I.Amt</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Album Charge</span>
+                <span className="font-mono">0.00</span>
+              </div>
+            </div>
 
-                <div className="flex space-x-2 mt-3">
-                  <Button
-                    variant="outline"
-                    onClick={clearSale}
-                    disabled={cart.length === 0}
-                    className="flex-1"
-                  >
-                    <XCircleIcon className="h-4 w-4 mr-1" />
-                    Clear
-                  </Button>
-                  <Button
-                    onClick={() => setShowPaymentDialog(true)}
-                    disabled={cart.length === 0}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
-                  >
-                    <CreditCardIcon className="h-4 w-4 mr-1" />
-                    Payment (F10)
-                  </Button>
-                </div>
+            {/* Net Amount Display */}
+            <div className="mt-auto p-3 border-t border-blue-500">
+              <div className="text-center">
+                <div className="text-sm opacity-90">Net Amount</div>
+                <div className="text-3xl font-bold">{formatCurrency(grandTotal)}</div>
+              </div>
+
+              {/* Quick denomination buttons */}
+              <div className="grid grid-cols-5 gap-1 mt-3 text-xs">
+                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.50<br/>Ctrl+1</Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.100<br/>Ctrl+2</Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.500<br/>Ctrl+3</Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.1000<br/>Ctrl+4</Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.2000<br/>Ctrl+5</Button>
+              </div>
+
+              <div className="flex space-x-2 mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearSale}
+                  disabled={cart.length === 0}
+                  className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                  <XCircleIcon className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+                <Button
+                  onClick={() => setShowPaymentDialog(true)}
+                  disabled={cart.length === 0}
+                  size="sm"
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  <CreditCardIcon className="h-3 w-3 mr-1" />
+                  Payment
+                </Button>
               </div>
             </div>
           </div>
@@ -717,7 +838,7 @@ export default function POSEnhanced() {
 
         {/* Status Bar */}
         <div className="bg-blue-800 text-white text-xs p-2 flex justify-between items-center">
-          <div>Press Delete and enter the date &nbsp;&nbsp;&nbsp; Server: DESKTOP-GABT93AI &nbsp;&nbsp;&nbsp; User: AVYAPPAN (System Admin) &nbsp;&nbsp;&nbsp; Ver: 6.5.9.2 SP-65</div>
+          <div>Press Delete and enter the date &nbsp;&nbsp;&nbsp; Server: DESKTOP-POS01 &nbsp;&nbsp;&nbsp; User: ADMIN (System Admin) &nbsp;&nbsp;&nbsp; Ver: 6.5.9.2 SP-65</div>
           <div className="flex items-center space-x-4">
             <span>Customer Id: 159639Z</span>
             <span>NUM</span>
@@ -731,7 +852,7 @@ export default function POSEnhanced() {
             <DialogHeader>
               <DialogTitle>Products List</DialogTitle>
               <DialogDescription>
-                Select a product to add to cart. Records: 1/8420
+                Select a product to add to cart. Records: 1/{mockProductList.length}
               </DialogDescription>
             </DialogHeader>
 
