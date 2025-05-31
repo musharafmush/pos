@@ -14,7 +14,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Clean Restart Preview"
+runButton = "Fresh Start"
 
 [[workflows.workflow]]
 name = "Project"
@@ -96,6 +96,39 @@ args = "fuser -k 3000/tcp 2>/dev/null || true"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "sleep 3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Fresh Start"
+author = 43114682
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"tsx\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"vite\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"node\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "fuser -k 5000/tcp 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "fuser -k 3000/tcp 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 5"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
