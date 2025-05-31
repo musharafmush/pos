@@ -255,10 +255,15 @@ export default function AddItemProfessional() {
   // Create product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      const res = await apiRequest("POST", "/api/products", {
-        name: data.itemName,
-        sku: data.itemCode,
-        description: data.aboutProduct,
+      // Validate required fields
+      if (!data.itemName || !data.itemCode || !data.price || !data.stockQuantity) {
+        throw new Error("Please fill in all required fields");
+      }
+
+      const productData = {
+        name: data.itemName.trim(),
+        sku: data.itemCode.trim(),
+        description: data.aboutProduct?.trim() || "",
         price: parseFloat(data.price),
         mrp: parseFloat(data.mrp),
         cost: data.cost ? parseFloat(data.cost) : 0,
@@ -266,17 +271,92 @@ export default function AddItemProfessional() {
         weightUnit: data.weightUnit,
         stockQuantity: parseInt(data.stockQuantity),
         categoryId: data.categoryId,
-        barcode: "", // Can be added later
+        barcode: data.barcode?.trim() || "",
         active: data.active,
-      });
+        alertThreshold: 5,
+        unit: "PCS",
+        hsnCode: data.hsnCode?.trim() || "",
+        taxRate: data.gstCode?.match(/\d+/)?.[0] || "18",
+        trackInventory: true,
+        allowNegativeStock: false,
+      };
+
+      const res = await apiRequest("POST", "/api/products", productData);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to create product");
+      }
+      
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      form.reset();
+      form.reset({
+        itemCode: generateItemCode(),
+        itemName: "",
+        manufacturerName: "",
+        supplierName: "",
+        alias: "",
+        aboutProduct: "",
+        itemProductType: "Standard",
+        department: "",
+        mainCategory: "",
+        subCategory: "",
+        brand: "",
+        buyer: "",
+        hsnCode: "",
+        gstCode: "GST 12%",
+        purchaseGstCalculatedOn: "MRP",
+        gstUom: "PIECES",
+        purchaseAbatement: "",
+        configItemWithCommodity: false,
+        seniorExemptApplicable: false,
+        eanCodeRequired: false,
+        weightsPerUnit: "1",
+        batchExpiryDetails: "Not Required",
+        itemPreparationsStatus: "Trade As Is",
+        grindingCharge: "",
+        weightInGms: "",
+        bulkItemName: "",
+        repackageUnits: "",
+        repackageType: "",
+        packagingMaterial: "",
+        decimalPoint: "0",
+        productType: "NA",
+        sellBy: "None",
+        itemPerUnit: "1",
+        maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
+        batchSelection: "Not Applicable",
+        isWeighable: false,
+        skuType: "Put Away",
+        indentType: "Manual",
+        gateKeeperMargin: "",
+        allowItemFree: false,
+        showOnMobileDashboard: false,
+        enableMobileNotifications: false,
+        quickAddToCart: false,
+        perishableItem: false,
+        temperatureControlled: false,
+        fragileItem: false,
+        trackSerialNumbers: false,
+        fdaApproved: false,
+        bisCertified: false,
+        organicCertified: false,
+        itemIngredients: "",
+        price: "",
+        mrp: "",
+        cost: "",
+        weight: "",
+        weightUnit: "kg",
+        categoryId: categories[0]?.id || 1,
+        stockQuantity: "0",
+        active: true,
+      });
+      
       toast({
-        title: "Success", 
-        description: "Product created successfully. Check the Add Item Dashboard to view all products.",
+        title: "Success! 🎉", 
+        description: `Product "${data.name}" created successfully with SKU: ${data.sku}`,
         action: (
           <Button 
             variant="outline" 
@@ -289,9 +369,10 @@ export default function AddItemProfessional() {
       });
     },
     onError: (error: Error) => {
+      console.error("Product creation error:", error);
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Error Creating Product",
+        description: error.message || "Please check all required fields and try again",
         variant: "destructive",
       });
     },
@@ -385,7 +466,31 @@ export default function AddItemProfessional() {
           {/* Main Content */}
           <div className="flex-1 p-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit((data) => createProductMutation.mutate(data))} className="space-y-6">
+              <form onSubmit={form.handleSubmit((data) => {
+                console.log("Form submission data:", data);
+                
+                // Additional validation for repackaging
+                if (data.itemPreparationsStatus === "Repackage") {
+                  if (!data.bulkItemName) {
+                    toast({
+                      title: "Validation Error",
+                      description: "Please select a bulk item for repackaging",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  if (!data.weightInGms) {
+                    toast({
+                      title: "Validation Error", 
+                      description: "Please specify the weight for repackaged units",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                }
+                
+                createProductMutation.mutate(data);
+              })} className="space-y-6">
 
                 {/* Item Information Section */}
                 {currentSection === "item-information" && (

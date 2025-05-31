@@ -146,7 +146,7 @@ export default function AddItemDashboard() {
   const queryClient = useQueryClient();
 
   // Fetch products with better error handling
-  const { data: products = [], isLoading: productsLoading, refetch: refetchProducts } = useQuery({
+  const { data: products = [], isLoading: productsLoading, refetch: refetchProducts, error: productsError } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
       try {
@@ -164,6 +164,8 @@ export default function AddItemDashboard() {
     },
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: true,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Fetch categories for the edit form

@@ -50,7 +50,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { useFormatCurrency } from "@/lib/currency";
+import { formatCurrency } from "@/lib/currency";
 import type { Product, Customer } from "@shared/schema";
 
 interface CartItem extends Product {
@@ -116,7 +116,7 @@ export default function POSEnhanced() {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const formatCurrency = useFormatCurrency();
+  
 
   // Fetch products
   const { data: products, isLoading: productsLoading } = useQuery({
