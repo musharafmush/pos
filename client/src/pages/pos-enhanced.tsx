@@ -119,10 +119,32 @@ export default function POSEnhanced() {
   ];
 
   const allProducts = products || mockProducts;
-  const filteredProducts = allProducts?.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  
+  // Enhanced product filtering with smart search
+  const filteredProducts = allProducts?.filter(product => {
+    if (!searchTerm) return true;
+    
+    const term = searchTerm.toLowerCase();
+    const productName = product.name.toLowerCase();
+    const productSku = product.sku?.toLowerCase() || '';
+    
+    // Special filters
+    if (term === 'low stock') {
+      return product.stockQuantity <= 5;
+    }
+    if (term === 'popular') {
+      // Mock popular items (you can replace with actual sales data)
+      return ['smartphone', 'rice', 't-shirt'].some(popular => 
+        productName.includes(popular)
+      );
+    }
+    
+    // Regular search: name, SKU, or partial matches
+    return productName.includes(term) ||
+           productSku.includes(term) ||
+           productName.split(' ').some(word => word.startsWith(term)) ||
+           product.id.toString() === term;
+  }) || [];
 
   // Enhanced calculation functions
   const calculateItemDiscount = (price: number, discount: number, type: 'percentage' | 'fixed') => {
@@ -175,28 +197,88 @@ export default function POSEnhanced() {
     }
   };
 
-  // Enhanced barcode scanning functionality
+  // Enhanced barcode scanning with smart search and user feedback
   const handleBarcodeInput = (barcode: string) => {
-    const product = allProducts?.find(p => 
-      p.sku === barcode || 
-      p.sku?.toLowerCase() === barcode.toLowerCase() ||
-      p.name.toLowerCase().includes(barcode.toLowerCase()) ||
-      p.id.toString() === barcode
+    if (!barcode.trim()) {
+      toast({
+        title: "Empty Input ⚠️",
+        description: "Please enter a barcode, SKU, or product name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const searchTerm = barcode.trim();
+    
+    // First try exact matches
+    let product = allProducts?.find(p => 
+      p.sku === searchTerm || 
+      p.id.toString() === searchTerm
     );
+    
+    // Then try case-insensitive matches
+    if (!product) {
+      product = allProducts?.find(p => 
+        p.sku?.toLowerCase() === searchTerm.toLowerCase() ||
+        p.name.toLowerCase() === searchTerm.toLowerCase()
+      );
+    }
+    
+    // Finally try partial matches
+    if (!product) {
+      product = allProducts?.find(p => 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
     
     if (product) {
       addToCart(product);
       setBarcodeInput("");
+      
+      // Enhanced success feedback
       toast({
-        title: "Product Added Successfully! ✅",
-        description: `${product.name} (${formatCurrency(parseFloat(product.price))}) added to cart`
+        title: "🎉 Product Added Successfully!",
+        description: (
+          <div className="space-y-1">
+            <div className="font-medium">{product.name}</div>
+            <div className="text-sm">{formatCurrency(parseFloat(product.price))} • Stock: {product.stockQuantity}</div>
+          </div>
+        )
       });
+      
+      // Auto-focus back to barcode input for continuous scanning
+      setTimeout(() => {
+        const barcodeElement = document.querySelector('input[placeholder*="Scan barcode"]') as HTMLInputElement;
+        barcodeElement?.focus();
+      }, 100);
+      
     } else {
+      // Enhanced error feedback with suggestions
+      const suggestions = allProducts?.filter(p => 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase().substring(0, 3))
+      ).slice(0, 3);
+      
       toast({
-        title: "Product Not Found ❌",
-        description: "No product found with this barcode/SKU. Please check and try again.",
+        title: "❌ Product Not Found",
+        description: (
+          <div className="space-y-2">
+            <div>No product found for: <span className="font-mono bg-gray-100 px-1 rounded">{searchTerm}</span></div>
+            {suggestions && suggestions.length > 0 && (
+              <div className="text-xs">
+                <div className="font-medium">Similar items:</div>
+                {suggestions.map(s => (
+                  <div key={s.id} className="text-gray-600">• {s.name}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        ),
         variant: "destructive"
       });
+      
+      // Keep the failed input for correction
+      // setBarcodeInput(""); // Don't clear on failure
     }
   };
 
@@ -453,9 +535,17 @@ export default function POSEnhanced() {
     }
   };
 
-  // Keyboard shortcuts
+  // Enhanced keyboard shortcuts and search functionality
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Focus search on '/' key (like GitHub)
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        document.getElementById('search-input')?.focus();
+        return;
+      }
+
+      // Ctrl/Cmd shortcuts
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
           case 'h':
@@ -474,13 +564,26 @@ export default function POSEnhanced() {
             e.preventDefault();
             document.getElementById('search-input')?.focus();
             break;
+          case 'k':
+            e.preventDefault();
+            document.getElementById('search-input')?.focus();
+            break;
+        }
+      }
+
+      // ESC to clear search
+      if (e.key === 'Escape') {
+        if (searchTerm) {
+          setSearchTerm("");
+        } else if (barcodeInput) {
+          setBarcodeInput("");
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [cart.length]);
+  }, [cart.length, searchTerm, barcodeInput]);
 
   return (
     <DashboardLayout>
@@ -493,54 +596,107 @@ export default function POSEnhanced() {
               Enhanced Desktop POS
             </h2>
             
-            {/* Search and Quick Actions */}
-            <div className="flex gap-2 mb-3">
-              <div className="relative flex-1">
+            {/* Enhanced Search Interface */}
+            <div className="space-y-3 mb-3">
+              {/* Main Search Bar with Auto-complete */}
+              <div className="relative">
                 <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   id="search-input"
-                  placeholder="Search products or scan barcode..."
+                  placeholder="🔍 Search by name, SKU, or barcode... (Press / to focus)"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 pr-4 h-11 text-base border-2 border-blue-200 focus:border-blue-500 transition-colors"
                 />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                    onClick={() => setSearchTerm("")}
+                  >
+                    ×
+                  </Button>
+                )}
               </div>
-              <Button
-                variant={quickSaleMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setQuickSaleMode(!quickSaleMode)}
-              >
-                Quick Sale
-              </Button>
-            </div>
 
-            {/* Barcode Scanner */}
-            <div className="flex gap-2 mb-3">
-              <div className="relative flex-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 7V5a2 2 0 0 1 2-2h2m0 0h8m-8 0V3m8 0v0m0 0h2a2 2 0 0 1 2 2v2m0 0v8m0-8h0m0 8v2a2 2 0 0 1-2 2h-2m0 0H8m8 0v0M8 21h0m0 0H6a2 2 0 0 1-2-2v-2"/>
-                  <path d="M7 12h2m2 0h2m2 0h2"/>
-                </svg>
-                <Input
-                  placeholder="Scan barcode or type SKU..."
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleBarcodeInput(barcodeInput);
-                    }
-                  }}
-                  className="pl-10"
-                />
+              {/* Quick Search Filters */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={quickSaleMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setQuickSaleMode(!quickSaleMode)}
+                  className="h-8"
+                >
+                  ⚡ Quick Sale
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchTerm("low stock")}
+                  className="h-8 text-xs"
+                >
+                  📉 Low Stock
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchTerm("popular")}
+                  className="h-8 text-xs"
+                >
+                  🔥 Popular
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchTerm("")}
+                  className="h-8 text-xs"
+                >
+                  🗂️ All Items
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleBarcodeInput(barcodeInput)}
-                disabled={!barcodeInput}
-              >
-                Add Item
-              </Button>
+
+              {/* Advanced Barcode Scanner */}
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 p-3 rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-green-800">Barcode Scanner Ready</span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-600 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 7V5a2 2 0 0 1 2-2h2m0 0h8m-8 0V3m8 0v0m0 0h2a2 2 0 0 1 2 2v2m0 0v8m0-8h0m0 8v2a2 2 0 0 1-2 2h-2m0 0H8m8 0v0M8 21h0m0 0H6a2 2 0 0 1-2-2v-2"/>
+                      <path d="M7 12h2m2 0h2m2 0h2"/>
+                    </svg>
+                    <Input
+                      placeholder="📷 Scan barcode or type SKU/product code..."
+                      value={barcodeInput}
+                      onChange={(e) => setBarcodeInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleBarcodeInput(barcodeInput);
+                        }
+                      }}
+                      className="pl-11 pr-4 border-green-200 focus:border-green-500 bg-white"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleBarcodeInput(barcodeInput)}
+                    disabled={!barcodeInput}
+                    className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                  >
+                    🛒 Add Item
+                  </Button>
+                </div>
+                {barcodeInput && (
+                  <div className="mt-2 text-xs text-green-700">
+                    Ready to scan: <span className="font-mono bg-green-100 px-2 py-1 rounded">{barcodeInput}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Inventory Alerts */}
@@ -593,8 +749,22 @@ export default function POSEnhanced() {
             </div>
           </div>
 
+          {/* Search Results Info */}
+          {searchTerm && (
+            <div className="px-4 py-2 bg-blue-50 border-b">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-blue-800">
+                  {filteredProducts.length} result{filteredProducts.length !== 1 ? 's' : ''} for "{searchTerm}"
+                </span>
+                <span className="text-blue-600 text-xs">
+                  Press ESC to clear
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Products Grid */}
-          <div className="p-4 h-[calc(100vh-200px)] overflow-y-auto">
+          <div className="p-4 h-[calc(100vh-240px)] overflow-y-auto">
             {productsLoading ? (
               <div className="flex items-center justify-center h-32">
                 <div className="text-center">
@@ -606,21 +776,61 @@ export default function POSEnhanced() {
               <div className="grid grid-cols-2 gap-3">
                 {filteredProducts.length === 0 ? (
                   <div className="col-span-2 text-center py-8">
-                    <p className="text-gray-500 mb-4">No products found</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const productName = prompt("Enter product name:");
-                        const productPrice = prompt("Enter product price:");
-                        if (productName && productPrice) {
-                          createQuickProduct({ name: productName, price: productPrice });
-                        }
-                      }}
-                    >
-                      <PlusIcon className="h-4 w-4 mr-1" />
-                      Create Quick Product
-                    </Button>
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">
+                      {searchTerm ? `No products found for "${searchTerm}"` : "No products found"}
+                    </h3>
+                    
+                    {searchTerm ? (
+                      <div className="space-y-3">
+                        <p className="text-gray-500 text-sm">Try:</p>
+                        <div className="flex gap-2 justify-center flex-wrap">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSearchTerm("")}
+                          >
+                            🗂️ Show All Products
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSearchTerm(searchTerm.slice(0, -1))}
+                            disabled={searchTerm.length <= 1}
+                          >
+                            ⬅️ Remove Last Character
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-gray-500 text-sm">Get started by creating your first product</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const productName = prompt("Enter product name:");
+                            const productPrice = prompt("Enter product price:");
+                            if (productName && productPrice) {
+                              createQuickProduct({ name: productName, price: productPrice });
+                            }
+                          }}
+                        >
+                          <PlusIcon className="h-4 w-4 mr-1" />
+                          Create Quick Product
+                        </Button>
+                      </div>
+                    )}
+                    
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg text-xs text-gray-600 max-w-md mx-auto">
+                      <div className="font-medium mb-2">💡 Search Tips:</div>
+                      <ul className="text-left space-y-1">
+                        <li>• Press <kbd className="bg-white px-1 rounded">/</kbd> to quick-focus search</li>
+                        <li>• Use barcode scanner for instant adding</li>
+                        <li>• Try "low stock" or "popular" filters</li>
+                        <li>• Search by name, SKU, or product ID</li>
+                      </ul>
+                    </div>
                   </div>
                 ) : (
                   filteredProducts.map((product) => (
