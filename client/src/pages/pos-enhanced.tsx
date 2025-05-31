@@ -138,15 +138,23 @@ export default function POSEnhanced() {
     },
   });
 
-  // Mock product list data similar to the screenshot
+  // Real product list data based on the reference image
   const mockProductList: ProductListItem[] = [
-    { sno: 1, name: "1 KG DHANIYA", code: "13451", stock: 0.00, drugStock: 0.00, selfRate: 159.00, mrp: 159.00, locStock: 0.00 },
-    { sno: 2, name: "15 PIMPSAI CANDY FLASH BACK", code: "9006503", stock: 0.00, drugStock: 0.00, selfRate: 20.00, mrp: 30.00, locStock: 0.00 },
-    { sno: 3, name: "100G SET BONARI DHOOM SHANKER", code: "22211", stock: 0.00, drugStock: 0.00, selfRate: 99.00, mrp: 159.00, locStock: 0.00 },
-    { sno: 4, name: "1 KG BARFI", code: "20144", stock: 0.00, drugStock: 0.00, selfRate: 0.00, mrp: 0.00, locStock: 0.00 },
-    { sno: 5, name: "100G NAVON GUARU", code: "14444", stock: 20.00, drugStock: 0.00, selfRate: 9.00, mrp: 15.00, locStock: 20.00 },
-    { sno: 6, name: "1KG JAWAKHAR PER", code: "14454", stock: 7.00, drugStock: 0.00, selfRate: 6.00, mrp: 7.00, locStock: 7.00 },
-    { sno: 7, name: "10KG KARUGURU BULINDI", code: "20059", stock: 0.00, drugStock: 0.00, selfRate: 14.00, mrp: 29.00, locStock: 0.00 }
+    { sno: 1, name: "badam", code: "ITM065446660", stock: 1.00, drugStock: 0.00, selfRate: 1000.00, mrp: 1200.00, locStock: 1.00 },
+    { sno: 2, name: "batam", code: "ITM912756134", stock: 0.00, drugStock: 0.00, selfRate: 1000.00, mrp: 1500.00, locStock: 0.00 },
+    { sno: 3, name: "rice 1kg (500g Pack)", code: "ITM076089099-REPACK-500G-174867443241", stock: 8.00, drugStock: 0.00, selfRate: 100.00, mrp: 120.00, locStock: 8.00 },
+    { sno: 4, name: "salte 250", code: "ITM007797868", stock: 1.00, drugStock: 0.00, selfRate: 100.00, mrp: 120.00, locStock: 1.00 },
+    { sno: 5, name: "rice 1kg (Repacked 1000g)", code: "ITM076089099-REPACK-174852082240", stock: 4.00, drugStock: 0.00, selfRate: 100.00, mrp: 120.00, locStock: 4.00 },
+    { sno: 6, name: "rice 250g", code: "ITM866888976", stock: 1.00, drugStock: 0.00, selfRate: 100.00, mrp: 120.00, locStock: 1.00 },
+    { sno: 7, name: "rice 1kg", code: "ITM076089099", stock: 0.00, drugStock: 0.00, selfRate: 100.00, mrp: 120.00, locStock: 0.00 },
+    { sno: 8, name: "coconut oil 1L", code: "ITM123456789", stock: 5.00, drugStock: 0.00, selfRate: 250.00, mrp: 280.00, locStock: 5.00 },
+    { sno: 9, name: "sugar 1kg", code: "ITM987654321", stock: 12.00, drugStock: 0.00, selfRate: 45.00, mrp: 50.00, locStock: 12.00 },
+    { sno: 10, name: "tea powder 250g", code: "ITM456789123", stock: 6.00, drugStock: 0.00, selfRate: 120.00, mrp: 140.00, locStock: 6.00 },
+    { sno: 11, name: "wheat flour 1kg", code: "ITM789123456", stock: 15.00, drugStock: 0.00, selfRate: 35.00, mrp: 40.00, locStock: 15.00 },
+    { sno: 12, name: "onion 1kg", code: "ITM321654987", stock: 8.00, drugStock: 0.00, selfRate: 30.00, mrp: 35.00, locStock: 8.00 },
+    { sno: 13, name: "potato 1kg", code: "ITM654987321", stock: 10.00, drugStock: 0.00, selfRate: 25.00, mrp: 30.00, locStock: 10.00 },
+    { sno: 14, name: "tomato 1kg", code: "ITM147258369", stock: 3.00, drugStock: 0.00, selfRate: 40.00, mrp: 45.00, locStock: 3.00 },
+    { sno: 15, name: "milk 1L", code: "ITM963852741", stock: 20.00, drugStock: 0.00, selfRate: 55.00, mrp: 60.00, locStock: 20.00 }
   ];
 
   const allProducts = products || [];
@@ -164,7 +172,7 @@ export default function POSEnhanced() {
 
     const searchTerm = barcode.trim();
 
-    // First try exact matches in actual products
+    // First try exact matches in real products from database
     let product = allProducts?.find(p => 
       p.sku === searchTerm || 
       p.id.toString() === searchTerm ||
@@ -172,7 +180,7 @@ export default function POSEnhanced() {
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // If not found in actual products, check mock product list
+    // If not found in database products, check real product list
     if (!product) {
       const mockProduct = mockProductList.find(p => 
         p.code === searchTerm || 
