@@ -1,4 +1,3 @@
-
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -17,10 +16,6 @@ import AddItemDashboard from "@/pages/add-item-dashboard";
 import RepackingProfessional from "@/pages/repacking-professional";
 import RepackingDashboardProfessional from "@/pages/repacking-dashboard-professional";
 import RepackingMainDashboard from "./pages/repacking-main-dashboard";
-import RepackingSystem from "@/pages/repacking-system";
-import RepackingSystemComplete from "@/pages/repacking-system-complete";
-import RepackingManagement from "@/pages/repacking-management";
-import RepackingAnalytics from "@/pages/repacking-analytics";
 
 import Units from "@/pages/units";
 
@@ -66,16 +61,11 @@ function Router() {
       <ProtectedRoute path="/products/repacking" component={Repacking} />
       <ProtectedRoute path="/products/repacking-dashboard" component={RepackingDashboard} />
       <ProtectedRoute path="/products/repacking-professional" component={RepackingProfessional} />
-      <ProtectedRoute path="/products/repacking-main-dashboard" component={RepackingMainDashboard} />
       <ProtectedRoute path="/products/repacking-dashboard-professional" component={RepackingDashboardProfessional} />
       <ProtectedRoute path="/repacking" component={RepackingMainDashboard} />
       <ProtectedRoute path="/repacking/main" component={RepackingMainDashboard} />
       <ProtectedRoute path="/repacking/repacking-professional" component={RepackingProfessional} />
       <ProtectedRoute path="/repacking/repacking-dashboard-professional" component={RepackingDashboardProfessional} />
-      <ProtectedRoute path="/repacking/system" component={RepackingSystem} />
-      <ProtectedRoute path="/repacking/complete" component={RepackingSystemComplete} />
-      <ProtectedRoute path="/repacking/management" component={RepackingManagement} />
-      <ProtectedRoute path="/repacking/analytics" component={RepackingAnalytics} />
       <ProtectedRoute path="/print-labels" component={PrintLabels} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
