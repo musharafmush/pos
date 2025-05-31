@@ -58,7 +58,14 @@ import {
   ArrowUpDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  BoxIcon
+  BoxIcon,
+  TagIcon,
+  BarChart3Icon,
+  WeightIcon,
+  DollarSignIcon,
+  WarehouseIcon,
+  QrCodeIcon,
+  XIcon
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
