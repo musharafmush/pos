@@ -676,7 +676,7 @@ export default function AddItemDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
+                {productsLoading ? (
                   <div className="text-center py-8">Loading products...</div>
                 ) : (
                   <Table>
@@ -875,7 +875,8 @@ export default function AddItemDashboard() {
           <TabsContent value="templates" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card className="border-dashed border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer">
-                <CardContent className="p-6 text-center">
+                <CardContent className="The code is modified to replace the undefined `isLoading` with the correct `productsLoading` variable.
+p-6 text-center">
                   <PackageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="font-medium mb-2```python
 ">Electronics Template</h3>
@@ -917,7 +918,7 @@ export default function AddItemDashboard() {
             </div>
             <ProductsTable products={filteredProducts} />
           </TabsContent>
-          
+
           {/* Active Items Tab */}
           <TabsContent value="inactive" className="space-y-4">
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -931,7 +932,7 @@ export default function AddItemDashboard() {
             </div>
             <ProductsTable products={filteredProducts} />
           </TabsContent>
-          
+
           {/* Inactive Items Tab */}
           <TabsContent value="low-stock" className="space-y-4">
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
