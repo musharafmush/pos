@@ -45,7 +45,15 @@ import {
   Package2Icon,
   ClockIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  HomeIcon,
+  SettingsIcon,
+  HelpCircleIcon,
+  MenuIcon,
+  RefreshCwIcon,
+  SaveIcon,
+  EyeIcon,
+  StarIcon
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -103,6 +111,9 @@ export default function POSEnhanced() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantityInput, setQuantityInput] = useState(1);
   const [rateInput, setRateInput] = useState("");
+  const [activeTab, setActiveTab] = useState<'scan' | 'search' | 'browse'>('scan');
+  const [viewMode, setViewMode] = useState<'simple' | 'detailed'>('simple');
+
   // Dynamic bill number generation
   const generateBillNumber = () => {
     const today = new Date();
@@ -116,9 +127,9 @@ export default function POSEnhanced() {
   const [billNumber, setBillNumber] = useState(generateBillNumber());
   const [billDate, setBillDate] = useState(new Date().toLocaleDateString('en-GB'));
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [salesMan, setSalesMan] = useState("Sales Man");
+  const [salesMan, setSalesMan] = useState("Sales Person");
   const [customerDetails, setCustomerDetails] = useState({
-    name: "",
+    name: "Walk-in Customer",
     doorNo: "",
     street: "",
     address: "",
@@ -153,42 +164,25 @@ export default function POSEnhanced() {
   // Dynamic product list data generator
   const generateDynamicProductList = (): ProductListItem[] => {
     const baseProducts = [
-      { name: "badam", baseCode: "ITM065446660", baseRate: 1000, category: "nuts" },
-      { name: "batam", baseCode: "ITM912756134", baseRate: 1000, category: "nuts" },
-      { name: "rice 1kg", baseCode: "ITM076089099", baseRate: 100, category: "grains" },
-      { name: "salte 250", baseCode: "ITM007797868", baseRate: 100, category: "spices" },
-      { name: "coconut oil 1L", baseCode: "ITM123456789", baseRate: 250, category: "oils" },
-      { name: "sugar 1kg", baseCode: "ITM987654321", baseRate: 45, category: "sweeteners" },
-      { name: "tea powder 250g", baseCode: "ITM456789123", baseRate: 120, category: "beverages" },
-      { name: "wheat flour 1kg", baseCode: "ITM789123456", baseRate: 35, category: "flour" },
-      { name: "onion 1kg", baseCode: "ITM321654987", baseRate: 30, category: "vegetables" },
-      { name: "potato 1kg", baseCode: "ITM654987321", baseRate: 25, category: "vegetables" },
-      { name: "tomato 1kg", baseCode: "ITM147258369", baseRate: 40, category: "vegetables" },
-      { name: "milk 1L", baseCode: "ITM963852741", baseRate: 55, category: "dairy" },
-      { name: "bread 400g", baseCode: "ITM111222333", baseRate: 35, category: "bakery" },
-      { name: "eggs 12pcs", baseCode: "ITM444555666", baseRate: 80, category: "dairy" },
-      { name: "chicken 1kg", baseCode: "ITM777888999", baseRate: 200, category: "meat" },
-      { name: "fish 500g", baseCode: "ITM000111222", baseRate: 150, category: "seafood" },
-      { name: "curd 500ml", baseCode: "ITM333444555", baseRate: 40, category: "dairy" },
-      { name: "butter 100g", baseCode: "ITM666777888", baseRate: 60, category: "dairy" },
-      { name: "cheese 200g", baseCode: "ITM999000111", baseRate: 120, category: "dairy" },
-      { name: "biscuits 200g", baseCode: "ITM222333444", baseRate: 25, category: "snacks" }
+      { name: "Badam Almonds 250g", baseCode: "ALM001", baseRate: 450, category: "nuts" },
+      { name: "Cashew Nuts 250g", baseCode: "CSH001", baseRate: 380, category: "nuts" },
+      { name: "Premium Rice 1kg", baseCode: "RIC001", baseRate: 85, category: "grains" },
+      { name: "Iodized Salt 1kg", baseCode: "SLT001", baseRate: 25, category: "spices" },
+      { name: "Coconut Oil 1L", baseCode: "OIL001", baseRate: 220, category: "oils" },
+      { name: "White Sugar 1kg", baseCode: "SGR001", baseRate: 48, category: "sweeteners" },
+      { name: "Tea Powder 250g", baseCode: "TEA001", baseRate: 145, category: "beverages" },
+      { name: "Wheat Flour 1kg", baseCode: "FLR001", baseRate: 42, category: "flour" },
+      { name: "Fresh Onions 1kg", baseCode: "VEG001", baseRate: 35, category: "vegetables" },
+      { name: "Potatoes 1kg", baseCode: "VEG002", baseRate: 28, category: "vegetables" }
     ];
 
     return baseProducts.map((product, index) => {
       const currentTime = Date.now();
-      const dayOffset = Math.floor(currentTime / (1000 * 60 * 60 * 24));
-      
-      // Create dynamic variations based on time and index
-      const stockVariation = Math.sin((currentTime / 10000) + index) * 5 + 10;
+      const stockVariation = Math.sin((currentTime / 10000) + index) * 5 + 15;
       const priceVariation = Math.cos((currentTime / 20000) + index) * 0.1 + 1;
       
-      // Generate dynamic repack variants
-      const variants = [];
-      
-      // Original product
-      variants.push({
-        sno: index * 3 + 1,
+      return {
+        sno: index + 1,
         name: product.name,
         code: product.baseCode,
         stock: Math.max(0, Math.floor(stockVariation)),
@@ -196,38 +190,8 @@ export default function POSEnhanced() {
         selfRate: Math.round(product.baseRate * priceVariation * 100) / 100,
         mrp: Math.round(product.baseRate * priceVariation * 1.2 * 100) / 100,
         locStock: Math.max(0, Math.floor(stockVariation))
-      });
-
-      // Repack variant 1 (if applicable)
-      if (product.category !== "dairy" && product.category !== "meat") {
-        const repackStock = Math.max(0, Math.floor(stockVariation * 0.7));
-        variants.push({
-          sno: index * 3 + 2,
-          name: `${product.name} (Repack 500g)`,
-          code: `${product.baseCode}-REPACK-500G-${currentTime.toString().slice(-12)}`,
-          stock: repackStock,
-          drugStock: 0.00,
-          selfRate: Math.round(product.baseRate * priceVariation * 0.6 * 100) / 100,
-          mrp: Math.round(product.baseRate * priceVariation * 0.72 * 100) / 100,
-          locStock: repackStock
-        });
-      }
-
-      // Bulk variant
-      const bulkStock = Math.max(0, Math.floor(stockVariation * 0.3));
-      variants.push({
-        sno: index * 3 + 3,
-        name: `${product.name} (Bulk 5kg)`,
-        code: `${product.baseCode}-BULK-5KG`,
-        stock: bulkStock,
-        drugStock: 0.00,
-        selfRate: Math.round(product.baseRate * priceVariation * 4.5 * 100) / 100,
-        mrp: Math.round(product.baseRate * priceVariation * 5.4 * 100) / 100,
-        locStock: bulkStock
-      });
-
-      return variants;
-    }).flat().slice(0, 50); // Limit to 50 items for performance
+      };
+    });
   };
 
   // Live data that updates every 30 seconds
@@ -241,18 +205,12 @@ export default function POSEnhanced() {
       setLastUpdateTime(new Date());
     };
 
-    // Initial load
     updateDynamicData();
-
-    // Update every 30 seconds for live data simulation
     const interval = setInterval(updateDynamicData, 30000);
-
     return () => clearInterval(interval);
   }, []);
 
-  // Merge dynamic data with real products for comprehensive search
   const mockProductList = dynamicProductList;
-
   const allProducts = products || [];
 
   // Enhanced barcode scanning with product lookup
@@ -276,7 +234,7 @@ export default function POSEnhanced() {
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // If not found in database products, check real product list
+    // If not found in database products, check mock product list
     if (!product) {
       const mockProduct = mockProductList.find(p => 
         p.code === searchTerm || 
@@ -284,7 +242,6 @@ export default function POSEnhanced() {
       );
       
       if (mockProduct) {
-        // Create a product object from mock data
         product = {
           id: parseInt(mockProduct.code) || Math.floor(Math.random() * 10000),
           name: mockProduct.name,
@@ -435,6 +392,13 @@ export default function POSEnhanced() {
     setBarcodeInput("");
     setQuantityInput(1);
     setRateInput("");
+    setCustomerDetails({
+      name: "Walk-in Customer",
+      doorNo: "",
+      street: "",
+      address: "",
+      place: ""
+    });
   };
 
   // Process sale
@@ -467,7 +431,6 @@ export default function POSEnhanced() {
         notes
       };
 
-      // For demo purposes, simulate successful sale
       const mockOrderNumber = billNumber;
 
       // Prepare receipt data
@@ -525,7 +488,7 @@ export default function POSEnhanced() {
 
     // Generate new bill number every minute (for demo)
     const billInterval = setInterval(() => {
-      if (cart.length === 0) { // Only update if cart is empty
+      if (cart.length === 0) {
         setBillNumber(generateBillNumber());
         setBillDate(new Date().toLocaleDateString('en-GB'));
       }
@@ -569,22 +532,12 @@ export default function POSEnhanced() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // F1-F12 shortcuts like in the original software
       if (e.key === 'F1') {
         e.preventDefault();
         barcodeInputRef.current?.focus();
       } else if (e.key === 'F2') {
         e.preventDefault();
         setShowProductList(true);
-      } else if (e.key === 'F3') {
-        e.preventDefault();
-        // Quick cost function
-      } else if (e.key === 'F4') {
-        e.preventDefault();
-        // Cash/Disc function
-      } else if (e.key === 'F5') {
-        e.preventDefault();
-        // Details function
       } else if (e.key === 'F10') {
         e.preventDefault();
         if (cart.length > 0) setShowPaymentDialog(true);
@@ -600,130 +553,293 @@ export default function POSEnhanced() {
 
   return (
     <DashboardLayout>
-      <div className="h-full flex flex-col bg-gray-100">
-        {/* Header Section */}
-        <div className="bg-white border-b shadow-sm p-3">
+      <div className="h-full flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        {/* Modern Header Section */}
+        <div className="bg-white border-b shadow-sm p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <BarcodeIcon className="h-6 w-6 text-blue-600" />
-                <h1 className="text-lg font-bold text-gray-900">Professional POS System</h1>
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-600 rounded-lg">
+                  <ShoppingCartIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">Awesome Shop POS</h1>
+                  <p className="text-sm text-gray-600">Smart Point of Sale System</p>
+                </div>
               </div>
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                Version 6.5.9.2 SP-65
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
+                Live System
               </Badge>
             </div>
 
-            <div className="flex items-center space-x-6 text-sm">
+            <div className="flex items-center space-x-6">
               <div className="text-center">
-                <div className="text-xs text-gray-500">Bill No</div>
-                <div className="font-mono font-bold text-blue-600">{billNumber}</div>
+                <div className="text-xs text-gray-500 font-medium">Bill Number</div>
+                <div className="font-mono font-bold text-blue-600 text-lg">{billNumber}</div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-gray-500">Bill Date</div>
-                <div className="font-bold">{billDate}</div>
+                <div className="text-xs text-gray-500 font-medium">Date & Time</div>
+                <div className="font-bold text-gray-800">{billDate} • {currentTime.toLocaleTimeString()}</div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-gray-500">Time</div>
-                <div className="font-mono font-bold text-purple-600">{currentTime.toLocaleTimeString()}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-gray-500">Net Amount</div>
-                <div className="text-xl font-bold text-green-600">{formatCurrency(grandTotal)}</div>
-              </div>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-green-600">Live Data</span>
+                <div className="text-xs text-gray-500 font-medium">Total Amount</div>
+                <div className="text-2xl font-bold text-green-600">{formatCurrency(grandTotal)}</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Customer Info Section */}
-        <div className="bg-white border-b p-2">
-          <div className="grid grid-cols-6 gap-3 text-sm">
+        {/* Quick Customer Info - Simplified */}
+        <div className="bg-white border-b px-4 py-3">
+          <div className="grid grid-cols-4 gap-4">
             <div>
-              <Label className="text-xs text-gray-600">Sales Man</Label>
-              <Input value={salesMan} onChange={(e) => setSalesMan(e.target.value)} className="h-7 text-xs" />
+              <Label className="text-sm font-medium text-gray-700">Sales Person</Label>
+              <Input 
+                value={salesMan} 
+                onChange={(e) => setSalesMan(e.target.value)} 
+                className="h-9 mt-1"
+                placeholder="Enter sales person name"
+              />
             </div>
             <div>
-              <Label className="text-xs text-gray-600">Customer Name</Label>
+              <Label className="text-sm font-medium text-gray-700">Customer Name</Label>
               <Input 
                 value={customerDetails.name} 
                 onChange={(e) => setCustomerDetails({...customerDetails, name: e.target.value})}
-                className="h-7 text-xs" 
+                className="h-9 mt-1" 
                 placeholder="Walk-in Customer"
               />
             </div>
             <div>
-              <Label className="text-xs text-gray-600">Door No</Label>
-              <Input 
-                value={customerDetails.doorNo} 
-                onChange={(e) => setCustomerDetails({...customerDetails, doorNo: e.target.value})}
-                className="h-7 text-xs" 
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-gray-600">Street</Label>
-              <Input 
-                value={customerDetails.street} 
-                onChange={(e) => setCustomerDetails({...customerDetails, street: e.target.value})}
-                className="h-7 text-xs" 
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-gray-600">Address</Label>
+              <Label className="text-sm font-medium text-gray-700">Mobile/Address</Label>
               <Input 
                 value={customerDetails.address} 
                 onChange={(e) => setCustomerDetails({...customerDetails, address: e.target.value})}
-                className="h-7 text-xs" 
+                className="h-9 mt-1" 
+                placeholder="Customer contact or address"
               />
             </div>
-            <div>
-              <Label className="text-xs text-gray-600">Place</Label>
-              <Input 
-                value={customerDetails.place} 
-                onChange={(e) => setCustomerDetails({...customerDetails, place: e.target.value})}
-                className="h-7 text-xs" 
-              />
+            <div className="flex items-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const randomCustomer = generateRandomCustomer();
+                  setCustomerDetails(randomCustomer);
+                  toast({
+                    title: "🎲 Random Customer",
+                    description: `Generated: ${randomCustomer.name}`,
+                  });
+                }}
+                className="h-9 w-full"
+              >
+                <UserIcon className="h-4 w-4 mr-2" />
+                Random Customer
+              </Button>
             </div>
-          </div>
-          
-          {/* Additional checkboxes row */}
-          <div className="grid grid-cols-6 gap-3 mt-2 text-xs">
-            <div className="flex items-center space-x-2">
-              <input type="checkbox" id="holdBills" className="h-3 w-3" />
-              <label htmlFor="holdBills" className="text-gray-600">Hold Bills</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input type="checkbox" id="doorDelivery" className="h-3 w-3" />
-              <label htmlFor="doorDelivery" className="text-gray-600">Door Delivery</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input type="checkbox" id="print" className="h-3 w-3" />
-              <label htmlFor="print" className="text-gray-600">Print</label>
-            </div>
-            <div></div>
-            <div></div>
-            <div></div>
           </div>
         </div>
 
         {/* Main Content */}
         <div className="flex-1 flex">
-          {/* Left Panel - Cart & Product Entry */}
+          {/* Left Panel - Product Entry & Cart */}
           <div className="flex-1 bg-white border-r flex flex-col">
+            {/* Product Entry Tabs */}
+            <div className="border-b bg-gray-50">
+              <div className="flex items-center justify-between p-3">
+                <div className="flex space-x-1">
+                  <Button
+                    variant={activeTab === 'scan' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveTab('scan')}
+                    className="rounded-full"
+                  >
+                    <ScanIcon className="h-4 w-4 mr-2" />
+                    Scan Product
+                  </Button>
+                  <Button
+                    variant={activeTab === 'search' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveTab('search')}
+                    className="rounded-full"
+                  >
+                    <SearchIcon className="h-4 w-4 mr-2" />
+                    Search
+                  </Button>
+                  <Button
+                    variant={activeTab === 'browse' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveTab('browse')}
+                    className="rounded-full"
+                  >
+                    <Package2Icon className="h-4 w-4 mr-2" />
+                    Browse
+                  </Button>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewMode(viewMode === 'simple' ? 'detailed' : 'simple')}
+                  >
+                    <EyeIcon className="h-4 w-4 mr-1" />
+                    {viewMode === 'simple' ? 'Detailed' : 'Simple'} View
+                  </Button>
+                </div>
+              </div>
+
+              {/* Product Entry Content */}
+              <div className="p-4 bg-white border-b">
+                {activeTab === 'scan' && (
+                  <div className="space-y-3">
+                    <div className="flex space-x-3">
+                      <div className="flex-1 relative">
+                        <BarcodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                        <Input
+                          ref={barcodeInputRef}
+                          placeholder="Scan barcode or enter product code..."
+                          value={barcodeInput}
+                          onChange={(e) => setBarcodeInput(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleBarcodeInput(barcodeInput);
+                            }
+                          }}
+                          className="pl-10 h-12 text-lg font-mono border-2 border-blue-200 focus:border-blue-500"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <Button
+                        variant="default"
+                        onClick={() => handleBarcodeInput(barcodeInput)}
+                        disabled={!barcodeInput}
+                        className="h-12 px-6 bg-blue-600 hover:bg-blue-700"
+                      >
+                        <SearchIcon className="h-5 w-5 mr-2" />
+                        Find Product
+                      </Button>
+                    </div>
+
+                    {/* Selected Product Display */}
+                    {selectedProduct && (
+                      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                          <div className="flex-1">
+                            <h3 className="font-bold text-lg text-green-900">{selectedProduct.name}</h3>
+                            <p className="text-green-700">Code: {selectedProduct.sku} • Stock: {selectedProduct.stockQuantity}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <Label className="text-sm font-medium text-green-800">Quantity</Label>
+                            <Input
+                              type="number"
+                              value={quantityInput}
+                              onChange={(e) => setQuantityInput(parseInt(e.target.value) || 1)}
+                              className="h-10 text-center font-bold border-green-300 focus:border-green-500"
+                              min="1"
+                              placeholder="Qty"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-green-800">Rate</Label>
+                            <Input
+                              type="number"
+                              value={rateInput}
+                              onChange={(e) => setRateInput(e.target.value)}
+                              className="h-10 text-right font-bold border-green-300 focus:border-green-500"
+                              placeholder="Rate"
+                              step="0.01"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-green-800">Amount</Label>
+                            <div className="h-10 px-3 border rounded border-green-300 bg-green-100 flex items-center justify-end font-bold text-green-800">
+                              {formatCurrency((parseFloat(rateInput) || parseFloat(selectedProduct.price)) * quantityInput)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <Button onClick={addToCart} className="w-full mt-3 h-12 bg-green-600 hover:bg-green-700 text-lg">
+                          <PlusIcon className="h-5 w-5 mr-2" />
+                          Add to Cart (Press Enter)
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'search' && (
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Search products by name..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-12 text-lg"
+                    />
+                    {searchTerm && allProducts && (
+                      <div className="max-h-48 overflow-y-auto border rounded-lg">
+                        {allProducts
+                          .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                          .slice(0, 10)
+                          .map(product => (
+                            <div
+                              key={product.id}
+                              className="p-3 border-b hover:bg-blue-50 cursor-pointer flex justify-between items-center"
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setRateInput(product.price);
+                                setQuantityInput(1);
+                                setActiveTab('scan');
+                              }}
+                            >
+                              <div>
+                                <div className="font-medium">{product.name}</div>
+                                <div className="text-sm text-gray-600">{product.sku} • Stock: {product.stockQuantity}</div>
+                              </div>
+                              <div className="font-bold text-blue-600">{formatCurrency(parseFloat(product.price))}</div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'browse' && (
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => setShowProductList(true)}
+                      className="w-full h-12 text-lg"
+                      variant="outline"
+                    >
+                      <Package2Icon className="h-5 w-5 mr-2" />
+                      Browse All Products ({mockProductList.length} items)
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Cart Header */}
-            <div className="p-2 border-b bg-blue-600 text-white">
-              <div className="grid grid-cols-8 gap-2 text-xs font-medium">
-                <div className="text-center">Sno</div>
-                <div>Code</div>
-                <div>Description</div>
-                <div className="text-center">Qty</div>
-                <div className="text-right">Rate</div>
-                <div className="text-right">Amount</div>
-                <div className="text-center">Stock</div>
-                <div className="text-right">M.R.P</div>
+            <div className="p-3 bg-blue-600 text-white">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold flex items-center">
+                  <ShoppingCartIcon className="h-5 w-5 mr-2" />
+                  Shopping Cart ({cart.length} items)
+                </h2>
+                {cart.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSale}
+                    className="text-white hover:bg-blue-700"
+                  >
+                    <TrashIcon className="h-4 w-4 mr-1" />
+                    Clear All
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -732,390 +848,262 @@ export default function POSEnhanced() {
               {cart.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div className="text-center">
-                    <ShoppingCartIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <div>Cart is empty</div>
-                    <div className="text-xs">Scan a product to start billing</div>
+                    <ShoppingCartIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <div className="text-xl font-medium mb-2">Cart is empty</div>
+                    <div className="text-sm">Scan a product or use the search to start billing</div>
+                    <div className="mt-4 text-xs text-gray-400">
+                      Press F1 to focus scanner • F2 to browse products • F10 to checkout
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-0">
+                <div className="space-y-1 p-2">
                   {cart.map((item, index) => (
-                    <div key={item.id} className="grid grid-cols-8 gap-2 text-xs border-b py-1 px-2 hover:bg-gray-50">
-                      <div className="text-center font-bold text-blue-600 flex items-center justify-center">{index + 1}</div>
-                      <div className="font-mono text-gray-600 flex items-center">{item.sku}</div>
-                      <div className="font-medium truncate flex items-center" title={item.name}>{item.name}</div>
-                      <div className="text-center flex items-center justify-center">
-                        <div className="flex items-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          >
-                            <MinusIcon className="h-3 w-3" />
-                          </Button>
-                          <span className="font-bold text-blue-600 min-w-[20px] text-center">{item.quantity}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          >
-                            <PlusIcon className="h-3 w-3" />
-                          </Button>
+                    <div key={item.id} className="bg-white border rounded-lg p-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full">
+                              #{index + 1}
+                            </span>
+                            <div>
+                              <h4 className="font-bold text-gray-900">{item.name}</h4>
+                              <p className="text-sm text-gray-600">{item.sku} • Stock: {item.stock || item.stockQuantity}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <XCircleIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-4 gap-2 items-center">
+                        <div className="text-center">
+                          <Label className="text-xs text-gray-600">Quantity</Label>
+                          <div className="flex items-center justify-center space-x-1 mt-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            >
+                              <MinusIcon className="h-3 w-3" />
+                            </Button>
+                            <span className="font-bold text-blue-600 min-w-[30px] text-center">{item.quantity}</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            >
+                              <PlusIcon className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <Label className="text-xs text-gray-600">Rate</Label>
+                          <div className="font-mono text-sm font-medium mt-1">{formatCurrency(parseFloat(item.price))}</div>
+                        </div>
+                        <div className="text-center">
+                          <Label className="text-xs text-gray-600">M.R.P</Label>
+                          <div className="text-xs text-gray-500 mt-1">{formatCurrency(item.mrp || parseFloat(item.price))}</div>
+                        </div>
+                        <div className="text-right">
+                          <Label className="text-xs text-gray-600">Amount</Label>
+                          <div className="font-bold text-green-600 text-lg mt-1">{formatCurrency(item.total)}</div>
                         </div>
                       </div>
-                      <div className="text-right font-mono flex items-center justify-end">{formatCurrency(parseFloat(item.price))}</div>
-                      <div className="text-right font-bold text-green-600 flex items-center justify-end">{formatCurrency(item.total)}</div>
-                      <div className="text-center text-blue-600 flex items-center justify-center">{item.stock || item.stockQuantity}</div>
-                      <div className="text-right text-gray-600 flex items-center justify-end">{formatCurrency(item.mrp || parseFloat(item.price))}</div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Barcode Scanner Section */}
-            <div className="p-3 border-t bg-gradient-to-r from-blue-50 to-cyan-50">
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <ScanIcon className="h-4 w-4 text-blue-600" />
-                  <Label className="font-medium text-blue-900 text-sm">Barcode Scanner</Label>
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
-
-                <div className="flex space-x-2">
-                  <div className="flex-1 relative">
-                    <BarcodeIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
-                    <Input
-                      ref={barcodeInputRef}
-                      placeholder="Scan barcode or enter product code..."
-                      value={barcodeInput}
-                      onChange={(e) => setBarcodeInput(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleBarcodeInput(barcodeInput);
-                        }
-                      }}
-                      className="pl-8 font-mono border-blue-200 focus:border-blue-500 h-8 text-sm"
-                      autoComplete="off"
-                    />
-                  </div>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleBarcodeInput(barcodeInput)}
-                    disabled={!barcodeInput}
-                    className="bg-blue-600 hover:bg-blue-700 h-8"
-                  >
-                    <SearchIcon className="h-3 w-3 mr-1" />
-                    Find
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowProductList(true)}
-                    className="border-blue-200 h-8"
-                  >
-                    <Package2Icon className="h-3 w-3 mr-1" />
-                    Products
-                  </Button>
-                </div>
-              </div>
-
-              {/* Product Entry Section */}
-              {selectedProduct && (
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircleIcon className="h-4 w-4 text-green-600" />
-                    <Label className="font-medium text-green-900 text-sm">Product Selected</Label>
-                  </div>
-
-                  <div className="bg-white p-2 rounded border">
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div>
-                        <Label className="text-xs text-gray-600">Code</Label>
-                        <div className="font-mono font-bold">{selectedProduct.sku}</div>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-600">Description</Label>
-                        <div className="font-medium">{selectedProduct.name}</div>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-600">Stock</Label>
-                        <div className="font-bold text-blue-600">{selectedProduct.stockQuantity}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <Label className="text-xs text-gray-600">Qty</Label>
-                      <Input
-                        type="number"
-                        value={quantityInput}
-                        onChange={(e) => setQuantityInput(parseInt(e.target.value) || 1)}
-                        className="h-7 text-center font-bold text-xs"
-                        min="1"
-                        placeholder="Qty"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-600">Rate</Label>
-                      <Input
-                        type="number"
-                        value={rateInput}
-                        onChange={(e) => setRateInput(e.target.value)}
-                        className="h-7 text-right font-bold text-xs"
-                        placeholder="Rate"
-                        step="0.01"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-600">Amount</Label>
-                      <div className="h-7 px-2 border rounded bg-gray-50 flex items-center justify-end font-bold text-green-600 text-xs">
-                        {formatCurrency((parseFloat(rateInput) || parseFloat(selectedProduct.price)) * quantityInput)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button onClick={addToCart} size="sm" className="w-full bg-green-600 hover:bg-green-700 h-7 text-xs">
-                    <PlusIcon className="h-3 w-3 mr-1" />
-                    Add to Cart (Enter)
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Function Keys */}
-            <div className="p-2 border-t bg-gray-50">
-              <div className="grid grid-cols-6 gap-1 text-xs">
-                <Button variant="outline" size="sm" className="h-7 text-xs">F1<br/>ItemCode</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowProductList(true)}>F2<br/>SaleHits</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">F3<br/>QuickCost</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">F4<br/>CashDisc</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">F5<br/>Details</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">F6<br/>Bills</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">F7<br/>CloseScr</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">F8<br/>SettleBill</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">F9<br/>CashBrd</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowPaymentDialog(true)}>F10<br/>SelectKey</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">F11<br/>SelectKey</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">F12<br/>Close</Button>
+            {/* Quick Actions */}
+            <div className="p-3 border-t bg-gray-50">
+              <div className="grid grid-cols-3 gap-2">
+                <Button variant="outline" size="sm" className="flex-1">
+                  <SaveIcon className="h-4 w-4 mr-1" />
+                  Hold Sale
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1">
+                  <RefreshCwIcon className="h-4 w-4 mr-1" />
+                  Recall
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1">
+                  <HelpCircleIcon className="h-4 w-4 mr-1" />
+                  Help (F1)
+                </Button>
               </div>
             </div>
           </div>
 
-          {/* Right Panel - Billing Details */}
-          <div className="w-80 bg-blue-600 text-white flex flex-col">
-            {/* Bill Header */}
-            <div className="p-3 border-b border-blue-500">
+          {/* Right Panel - Billing Summary */}
+          <div className="w-80 bg-gradient-to-br from-blue-600 to-purple-600 text-white flex flex-col">
+            {/* Bill Summary Header */}
+            <div className="p-4 border-b border-blue-500">
               <div className="text-center">
-                <div className="text-lg font-bold">Bill Details</div>
+                <div className="text-xl font-bold">Bill Summary</div>
                 <div className="text-sm opacity-90">#{billNumber}</div>
               </div>
             </div>
 
-            {/* Bill Amounts */}
-            <div className="p-3 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Bill No</span>
-                <span className="font-mono">{billNumber}</span>
+            {/* Bill Details */}
+            <div className="flex-1 p-4 space-y-3 text-sm overflow-y-auto">
+              <div className="bg-white/10 backdrop-blur rounded-lg p-3">
+                <h3 className="font-bold mb-2">Basic Details</h3>
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span>Items Count</span>
+                    <span className="font-mono">{cart.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Quantity</span>
+                    <span className="font-mono">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Gross Amount</span>
+                    <span className="font-mono">{formatCurrency(subtotal)}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>Bill Date</span>
-                <span>{billDate}</span>
+
+              <div className="bg-white/10 backdrop-blur rounded-lg p-3">
+                <h3 className="font-bold mb-2">Discounts & Charges</h3>
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span>Cash Discount ({discount}%)</span>
+                    <span className="font-mono">{formatCurrency(totalDiscount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Taxable Amount</span>
+                    <span className="font-mono">{formatCurrency(taxableAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>GST ({taxRate}%)</span>
+                    <span className="font-mono">{formatCurrency(taxAmount)}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>Tax Amt (Incl)</span>
-                <span className="font-mono">{formatCurrency(taxAmount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Surcharge (Incl)</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Gross Amt</span>
-                <span className="font-mono">{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Item Discount</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Item Scheme amt</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Cash Disc %</span>
-                <span className="font-mono">{discount}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Cash Discount</span>
-                <span className="font-mono">{formatCurrency(totalDiscount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Bill Scheme %</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Bill Scheme amt</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Coupon Discount</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax Amt</span>
-                <span className="font-mono">{formatCurrency(taxAmount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Surcharge</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Service Charge %</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Service Charge</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Freight Amt</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Packing charge</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Other charge</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Extra charges</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>RoundOff Amt</span>
-                <span className="font-mono">0.35</span>
-              </div>
-              <div className="flex justify-between border-t border-blue-500 pt-2 text-lg font-bold">
-                <span>R.O.I.Amt</span>
-                <span className="font-mono">0.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Album Charge</span>
-                <span className="font-mono">0.00</span>
+
+              <div className="bg-white/10 backdrop-blur rounded-lg p-3">
+                <h3 className="font-bold mb-2">Additional Charges</h3>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span>Packing Charge</span>
+                    <span className="font-mono">0.00</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivery Charge</span>
+                    <span className="font-mono">0.00</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Round Off</span>
+                    <span className="font-mono">0.00</span>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Net Amount Display */}
-            <div className="mt-auto p-3 border-t border-blue-500">
-              <div className="text-center">
+            <div className="p-4 border-t border-blue-500">
+              <div className="text-center mb-4">
                 <div className="text-sm opacity-90">Net Amount</div>
-                <div className="text-3xl font-bold">{formatCurrency(grandTotal)}</div>
+                <div className="text-4xl font-bold">{formatCurrency(grandTotal)}</div>
               </div>
 
-              {/* Quick denomination buttons */}
-              <div className="grid grid-cols-5 gap-1 mt-3 text-xs">
-                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.50<br/>Ctrl+1</Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.100<br/>Ctrl+2</Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.500<br/>Ctrl+3</Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.1000<br/>Ctrl+4</Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs text-blue-600 border-blue-200">Rs.2000<br/>Ctrl+5</Button>
-              </div>
-
-              <div className="flex space-x-2 mt-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearSale}
-                  disabled={cart.length === 0}
-                  className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                >
-                  <XCircleIcon className="h-3 w-3 mr-1" />
-                  Clear
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const randomCustomer = generateRandomCustomer();
-                    setCustomerDetails(randomCustomer);
-                    toast({
-                      title: "🎲 Random Customer Generated",
-                      description: `Customer: ${randomCustomer.name}`,
-                    });
-                  }}
-                  className="flex-1 text-purple-600 border-purple-200 hover:bg-purple-50"
-                >
-                  <UserIcon className="h-3 w-3 mr-1" />
-                  Random
-                </Button>
+              {/* Quick Actions */}
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearSale}
+                    disabled={cart.length === 0}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <XCircleIcon className="h-4 w-4 mr-1" />
+                    Clear
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const randomCustomer = generateRandomCustomer();
+                      setCustomerDetails(randomCustomer);
+                      toast({
+                        title: "🎲 Random Customer",
+                        description: `Generated: ${randomCustomer.name}`,
+                      });
+                    }}
+                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                  >
+                    <StarIcon className="h-4 w-4 mr-1" />
+                    Random
+                  </Button>
+                </div>
+                
                 <Button
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
-                  size="sm"
-                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  className="w-full h-12 bg-green-600 hover:bg-green-700 text-lg font-bold"
                 >
-                  <CreditCardIcon className="h-3 w-3 mr-1" />
-                  Payment
+                  <CreditCardIcon className="h-5 w-5 mr-2" />
+                  Complete Payment (F10)
                 </Button>
+                
+                {/* Print Last Receipt if no cart */}
+                {cart.length === 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const sampleReceiptData = {
+                        billNumber,
+                        billDate,
+                        customerDetails,
+                        salesMan,
+                        items: [],
+                        subtotal: 0,
+                        discount: 0,
+                        discountType: 'percentage' as const,
+                        taxRate: 18,
+                        taxAmount: 0,
+                        grandTotal: 0,
+                        amountPaid: 0,
+                        changeDue: 0,
+                        paymentMethod: "cash",
+                        notes: "Sample receipt for testing"
+                      };
+                      printReceipt(sampleReceiptData);
+                    }}
+                    className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <PrinterIcon className="h-4 w-4 mr-2" />
+                    Print Test Receipt
+                  </Button>
+                )}
               </div>
-              
-              {/* Print Last Bill Button */}
-              {cart.length === 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // Create a sample receipt for demo
-                    const sampleReceiptData = {
-                      billNumber,
-                      billDate,
-                      customerDetails,
-                      salesMan,
-                      items: [],
-                      subtotal: 0,
-                      discount: 0,
-                      discountType: 'percentage' as const,
-                      taxRate: 18,
-                      taxAmount: 0,
-                      grandTotal: 0,
-                      amountPaid: 0,
-                      changeDue: 0,
-                      paymentMethod: "cash",
-                      notes: "Sample receipt for testing"
-                    };
-                    printReceipt(sampleReceiptData);
-                  }}
-                  className="w-full mt-2 text-blue-600 border-blue-200 hover:bg-blue-50"
-                >
-                  <PrinterIcon className="h-3 w-3 mr-1" />
-                  Print Last Bill
-                </Button>
-              )}
             </div>
           </div>
         </div>
 
-        {/* Dynamic Status Bar */}
-        <div className="bg-blue-800 text-white text-xs p-2 flex justify-between items-center">
+        {/* Status Bar */}
+        <div className="bg-gray-800 text-white text-xs p-2 flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <span>Press Delete and enter the date</span>
-            <span>Server: DESKTOP-POS01</span>
-            <span>User: ADMIN (System Admin)</span>
-            <span>Ver: 6.5.9.2 SP-65</span>
-            <span className="text-green-300">● Connected</span>
+            <span className="text-green-400">● Online</span>
+            <span>User: Admin</span>
+            <span>Terminal: POS-01</span>
             <span>Last Update: {lastUpdateTime.toLocaleTimeString()}</span>
           </div>
           <div className="flex items-center space-x-4">
-            <span>Customer Id: {Math.floor(Math.random() * 900000) + 100000}Z</span>
-            <span>Items: {mockProductList.length}</span>
-            <span>NUM</span>
+            <span>Products: {mockProductList.length}</span>
+            <span>F1: Scan • F2: Browse • F10: Pay</span>
             <span className="font-mono">{currentTime.toLocaleTimeString()}</span>
           </div>
         </div>
@@ -1124,104 +1112,91 @@ export default function POSEnhanced() {
         <Dialog open={showProductList} onOpenChange={setShowProductList}>
           <DialogContent className="max-w-6xl max-h-[80vh]">
             <DialogHeader>
-              <DialogTitle>Dynamic Products List - Live Data</DialogTitle>
+              <DialogTitle>Product Catalog - Live Inventory</DialogTitle>
               <DialogDescription>
-                Select a product to add to cart. Records: {mockProductList.length} | Last Updated: {lastUpdateTime.toLocaleTimeString()}
-                <div className="flex items-center mt-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
-                  <span className="text-xs text-green-600">Auto-updating stock and prices</span>
-                </div>
+                Click any product to add to cart. {mockProductList.length} products available. Last updated: {lastUpdateTime.toLocaleTimeString()}
               </DialogDescription>
             </DialogHeader>
 
             <div className="overflow-y-auto max-h-96">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-blue-600 text-white">
-                    <TableHead className="text-white">Sno</TableHead>
-                    <TableHead className="text-white">Name</TableHead>
-                    <TableHead className="text-white">Code</TableHead>
-                    <TableHead className="text-white">Stock</TableHead>
-                    <TableHead className="text-white">Drug Stock</TableHead>
-                    <TableHead className="text-white">Self Rate</TableHead>
-                    <TableHead className="text-white">M.R.P</TableHead>
-                    <TableHead className="text-white">Loc Stock</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockProductList.map((product) => (
-                    <TableRow
-                      key={product.sno}
-                      className="cursor-pointer hover:bg-blue-50"
-                      onClick={() => {
-                        // Find matching product in actual products list or create a mock product
-                        let actualProduct = allProducts?.find(p => 
-                          p.name.toLowerCase().includes(product.name.toLowerCase()) ||
-                          p.sku === product.code
-                        );
-                        
-                        if (!actualProduct) {
-                          // Create a mock product from the list data
-                          actualProduct = {
-                            id: parseInt(product.code) || Math.floor(Math.random() * 10000),
-                            name: product.name,
-                            sku: product.code,
-                            price: product.selfRate.toString(),
-                            cost: product.selfRate.toString(),
-                            stockQuantity: product.stock,
-                            description: product.name,
-                            barcode: product.code,
-                            brand: "",
-                            manufacturer: "",
-                            categoryId: 1,
-                            mrp: product.mrp.toString(),
-                            unit: "PCS",
-                            hsnCode: "",
-                            taxRate: "18",
-                            active: true,
-                            trackInventory: true,
-                            allowNegativeStock: false,
-                            alertThreshold: 10,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                          };
-                        }
-                        
-                        // Add directly to cart instead of just selecting
-                        const existingItem = cart.find(item => item.id === actualProduct.id);
-                        if (existingItem) {
-                          updateQuantity(actualProduct.id, existingItem.quantity + 1);
-                        } else {
-                          const newItem: CartItem = {
-                            ...actualProduct,
-                            quantity: 1,
-                            total: parseFloat(actualProduct.price),
-                            mrp: parseFloat(actualProduct.mrp || actualProduct.price),
-                            stock: actualProduct.stockQuantity
-                          };
-                          setCart(prev => [...prev, newItem]);
-                        }
-                        
-                        setShowProductList(false);
-                        
-                        toast({
-                          title: "✅ Product Added to Cart!",
-                          description: `${actualProduct.name} x 1 - ₹${actualProduct.price}`
-                        });
-                      }}
-                    >
-                      <TableCell>{product.sno}</TableCell>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell className="font-mono">{product.code}</TableCell>
-                      <TableCell className="text-right">{product.stock.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{product.drugStock.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{product.selfRate.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{product.mrp.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{product.locStock.toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {mockProductList.map((product) => (
+                  <div
+                    key={product.sno}
+                    className="border rounded-lg p-4 hover:shadow-md cursor-pointer transition-all hover:border-blue-300 bg-white"
+                    onClick={() => {
+                      let actualProduct = allProducts?.find(p => 
+                        p.name.toLowerCase().includes(product.name.toLowerCase()) ||
+                        p.sku === product.code
+                      );
+                      
+                      if (!actualProduct) {
+                        actualProduct = {
+                          id: parseInt(product.code) || Math.floor(Math.random() * 10000),
+                          name: product.name,
+                          sku: product.code,
+                          price: product.selfRate.toString(),
+                          cost: product.selfRate.toString(),
+                          stockQuantity: product.stock,
+                          description: product.name,
+                          barcode: product.code,
+                          brand: "",
+                          manufacturer: "",
+                          categoryId: 1,
+                          mrp: product.mrp.toString(),
+                          unit: "PCS",
+                          hsnCode: "",
+                          taxRate: "18",
+                          active: true,
+                          trackInventory: true,
+                          allowNegativeStock: false,
+                          alertThreshold: 10,
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString()
+                        };
+                      }
+                      
+                      const existingItem = cart.find(item => item.id === actualProduct.id);
+                      if (existingItem) {
+                        updateQuantity(actualProduct.id, existingItem.quantity + 1);
+                      } else {
+                        const newItem: CartItem = {
+                          ...actualProduct,
+                          quantity: 1,
+                          total: parseFloat(actualProduct.price),
+                          mrp: parseFloat(actualProduct.mrp || actualProduct.price),
+                          stock: actualProduct.stockQuantity
+                        };
+                        setCart(prev => [...prev, newItem]);
+                      }
+                      
+                      setShowProductList(false);
+                      
+                      toast({
+                        title: "✅ Added to Cart!",
+                        description: `${actualProduct.name} x 1 - ${formatCurrency(parseFloat(actualProduct.price))}`
+                      });
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-gray-900">{product.name}</h4>
+                      <Badge variant={product.stock > 10 ? "default" : "destructive"} className="text-xs">
+                        {product.stock}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Code: {product.code}</p>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-lg font-bold text-green-600">{formatCurrency(product.selfRate)}</div>
+                        <div className="text-xs text-gray-500">MRP: {formatCurrency(product.mrp)}</div>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        <PlusIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -1230,18 +1205,18 @@ export default function POSEnhanced() {
         <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Process Payment</DialogTitle>
+              <DialogTitle>Complete Payment</DialogTitle>
               <DialogDescription>
-                Complete the sale transaction for Bill #{billNumber}
+                Finalize the transaction for Bill #{billNumber}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
-              <div className="bg-blue-50 p-3 rounded">
-                <div className="text-2xl font-bold text-center">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="text-3xl font-bold text-center text-blue-800">
                   {formatCurrency(grandTotal)}
                 </div>
-                <div className="text-center text-sm text-gray-600">Total Amount</div>
+                <div className="text-center text-sm text-gray-600">Total Amount Due</div>
               </div>
 
               <div>
@@ -1251,10 +1226,10 @@ export default function POSEnhanced() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                    <SelectItem value="credit">Credit</SelectItem>
+                    <SelectItem value="cash">💵 Cash</SelectItem>
+                    <SelectItem value="card">💳 Card</SelectItem>
+                    <SelectItem value="upi">📱 UPI</SelectItem>
+                    <SelectItem value="credit">🏷️ Credit</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1265,15 +1240,15 @@ export default function POSEnhanced() {
                   type="number"
                   value={amountPaid}
                   onChange={(e) => setAmountPaid(e.target.value)}
-                  placeholder="Enter amount received"
+                  placeholder="Enter received amount"
                   className="text-right font-mono text-lg"
                 />
               </div>
 
               {changeDue > 0 && (
-                <div className="bg-green-50 p-3 rounded">
+                <div className="bg-green-50 p-3 rounded-lg">
                   <div className="text-lg font-bold text-green-800 text-center">
-                    Change: {formatCurrency(changeDue)}
+                    Change Due: {formatCurrency(changeDue)}
                   </div>
                 </div>
               )}
@@ -1283,7 +1258,7 @@ export default function POSEnhanced() {
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add any notes..."
+                  placeholder="Add any notes for this sale..."
                   className="h-16"
                 />
               </div>
@@ -1297,7 +1272,6 @@ export default function POSEnhanced() {
                 Cancel
               </Button>
               
-              {/* Print Preview Button */}
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1324,7 +1298,7 @@ export default function POSEnhanced() {
                 className="text-blue-600 border-blue-200 hover:bg-blue-50"
               >
                 <PrinterIcon className="h-4 w-4 mr-2" />
-                Print Preview
+                Preview Receipt
               </Button>
               
               <Button
