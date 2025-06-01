@@ -173,7 +173,7 @@ export default function POSEnhanced() {
   const queryClient = useQueryClient();
   
 
-  // Fetch products with real-time updates
+  // Fetch products
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
@@ -181,10 +181,9 @@ export default function POSEnhanced() {
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
-    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
-  // Fetch customers with real-time updates
+  // Fetch customers
   const { data: customers, refetch: refetchCustomers } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
@@ -192,7 +191,6 @@ export default function POSEnhanced() {
       if (!response.ok) throw new Error("Failed to fetch customers");
       return response.json();
     },
-    refetchInterval: 10000, // Auto-refresh every 10 seconds
   });
 
   // Real-time customer database
@@ -238,60 +236,50 @@ export default function POSEnhanced() {
     }
   ]);
 
-  // Enhanced dynamic product list generator with trending products
+  // Static product list generator with trending products
   const generateDynamicProductList = (): ProductListItem[] => {
     const baseProducts = [
-      { name: "Badam Almonds Premium 250g", baseCode: "ALM001", baseRate: 450, category: "Dry Fruits", trending: true },
-      { name: "Cashew Nuts W240 250g", baseCode: "CSH001", baseRate: 380, category: "Dry Fruits", trending: false },
-      { name: "Organic Basmati Rice 1kg", baseCode: "RIC001", baseRate: 85, category: "Grains", trending: true },
-      { name: "Himalayan Pink Salt 1kg", baseCode: "SLT001", baseRate: 25, category: "Spices", trending: false },
-      { name: "Cold Pressed Coconut Oil 1L", baseCode: "OIL001", baseRate: 220, category: "Oils", trending: true },
-      { name: "Organic Jaggery 1kg", baseCode: "SGR001", baseRate: 48, category: "Sweeteners", trending: false },
-      { name: "Assam Tea Powder 250g", baseCode: "TEA001", baseRate: 145, category: "Beverages", trending: true },
-      { name: "Whole Wheat Flour 1kg", baseCode: "FLR001", baseRate: 42, category: "Flour", trending: false },
-      { name: "Farm Fresh Onions 1kg", baseCode: "VEG001", baseRate: 35, category: "Vegetables", trending: true },
-      { name: "Organic Potatoes 1kg", baseCode: "VEG002", baseRate: 28, category: "Vegetables", trending: false },
-      { name: "Turmeric Powder 100g", baseCode: "SPC001", baseRate: 65, category: "Spices", trending: true },
-      { name: "Garam Masala 50g", baseCode: "SPC002", baseRate: 85, category: "Spices", trending: false },
-      { name: "Organic Honey 500g", baseCode: "HON001", baseRate: 320, category: "Natural", trending: true },
-      { name: "Ghee Pure 500ml", baseCode: "GHE001", baseRate: 450, category: "Dairy", trending: true },
-      { name: "Green Cardamom 50g", baseCode: "CAR001", baseRate: 180, category: "Spices", trending: false }
+      { name: "Badam Almonds Premium 250g", baseCode: "ALM001", baseRate: 450, category: "Dry Fruits", trending: true, stock: 25 },
+      { name: "Cashew Nuts W240 250g", baseCode: "CSH001", baseRate: 380, category: "Dry Fruits", trending: false, stock: 30 },
+      { name: "Organic Basmati Rice 1kg", baseCode: "RIC001", baseRate: 85, category: "Grains", trending: true, stock: 50 },
+      { name: "Himalayan Pink Salt 1kg", baseCode: "SLT001", baseRate: 25, category: "Spices", trending: false, stock: 40 },
+      { name: "Cold Pressed Coconut Oil 1L", baseCode: "OIL001", baseRate: 220, category: "Oils", trending: true, stock: 20 },
+      { name: "Organic Jaggery 1kg", baseCode: "SGR001", baseRate: 48, category: "Sweeteners", trending: false, stock: 35 },
+      { name: "Assam Tea Powder 250g", baseCode: "TEA001", baseRate: 145, category: "Beverages", trending: true, stock: 28 },
+      { name: "Whole Wheat Flour 1kg", baseCode: "FLR001", baseRate: 42, category: "Flour", trending: false, stock: 60 },
+      { name: "Farm Fresh Onions 1kg", baseCode: "VEG001", baseRate: 35, category: "Vegetables", trending: true, stock: 45 },
+      { name: "Organic Potatoes 1kg", baseCode: "VEG002", baseRate: 28, category: "Vegetables", trending: false, stock: 55 },
+      { name: "Turmeric Powder 100g", baseCode: "SPC001", baseRate: 65, category: "Spices", trending: true, stock: 22 },
+      { name: "Garam Masala 50g", baseCode: "SPC002", baseRate: 85, category: "Spices", trending: false, stock: 18 },
+      { name: "Organic Honey 500g", baseCode: "HON001", baseRate: 320, category: "Natural", trending: true, stock: 15 },
+      { name: "Ghee Pure 500ml", baseCode: "GHE001", baseRate: 450, category: "Dairy", trending: true, stock: 12 },
+      { name: "Green Cardamom 50g", baseCode: "CAR001", baseRate: 180, category: "Spices", trending: false, stock: 8 }
     ];
 
     return baseProducts.map((product, index) => {
-      const currentTime = Date.now();
-      const stockVariation = Math.sin((currentTime / 8000) + index) * 8 + 20;
-      const priceVariation = Math.cos((currentTime / 15000) + index) * 0.08 + 1;
-      
       return {
         sno: index + 1,
         name: product.name,
         code: product.baseCode,
-        stock: Math.max(1, Math.floor(stockVariation)),
+        stock: product.stock,
         drugStock: 0.00,
-        selfRate: Math.round(product.baseRate * priceVariation * 100) / 100,
-        mrp: Math.round(product.baseRate * priceVariation * 1.15 * 100) / 100,
-        locStock: Math.max(1, Math.floor(stockVariation)),
+        selfRate: product.baseRate,
+        mrp: Math.round(product.baseRate * 1.15 * 100) / 100,
+        locStock: product.stock,
         category: product.category,
         trending: product.trending
       };
     });
   };
 
-  // Live data that updates every 15 seconds
+  // Static product list data
   const [dynamicProductList, setDynamicProductList] = useState<ProductListItem[]>([]);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
 
-  // Update dynamic data with faster refresh
+  // Initialize static data once
   useEffect(() => {
-    const updateDynamicData = () => {
-      setDynamicProductList(generateDynamicProductList());
-      setLastUpdateTime(new Date());
-    };
-
-    updateDynamicData();
-    const interval = setInterval(updateDynamicData, 15000); // Update every 15 seconds
-    return () => clearInterval(interval);
+    setDynamicProductList(generateDynamicProductList());
+    setLastUpdateTime(new Date());
   }, []);
 
   const mockProductList = dynamicProductList;
@@ -672,7 +660,7 @@ export default function POSEnhanced() {
     }
   };
 
-  // Auto-focus and real-time updates
+  // Auto-focus and time updates
   useEffect(() => {
     barcodeInputRef.current?.focus();
 
@@ -681,19 +669,10 @@ export default function POSEnhanced() {
       setCurrentTime(new Date());
     }, 1000);
 
-    // Generate new bill number for new sales
-    const billInterval = setInterval(() => {
-      if (cart.length === 0) {
-        setBillNumber(generateBillNumber());
-        setBillDate(new Date().toLocaleDateString('en-GB'));
-      }
-    }, 30000);
-
     return () => {
       clearInterval(timeInterval);
-      clearInterval(billInterval);
     };
-  }, [cart.length]);
+  }, []);
 
   // Enhanced keyboard shortcuts
   useEffect(() => {
@@ -726,9 +705,7 @@ export default function POSEnhanced() {
           break;
         case 'F5':
           e.preventDefault();
-          refetchProducts();
-          refetchCustomers();
-          toast({ title: "🔄 Data Refreshed", description: "Products and customers updated" });
+          toast({ title: "ℹ️ Manual Refresh", description: "Use browser refresh to update data" });
           break;
         case 'F9':
           e.preventDefault();
@@ -796,12 +773,12 @@ export default function POSEnhanced() {
               </div>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
-                  Live System
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  System Ready
                 </Badge>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
                   <TrendingUpIcon className="w-3 h-3 mr-1" />
-                  Real-time Data
+                  Product Catalog
                 </Badge>
               </div>
             </div>
@@ -1482,16 +1459,15 @@ export default function POSEnhanced() {
           </div>
         </div>
 
-        {/* Enhanced Status Bar */}
+        {/* Status Bar */}
         <div className="bg-gray-900 text-white text-xs p-2 flex justify-between items-center">
           <div className="flex items-center space-x-6">
             <span className="text-green-400 flex items-center">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2"></div>
-              System Online
+              <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+              System Ready
             </span>
             <span>👤 User: Admin</span>
             <span>🖥️ Terminal: POS-PRO-01</span>
-            <span>🕒 Last Update: {lastUpdateTime.toLocaleTimeString()}</span>
             <span>📦 Products: {mockProductList.length}</span>
           </div>
           <div className="flex items-center space-x-6">
