@@ -52,6 +52,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/currency";
 import type { Product, Customer } from "@shared/schema";
+import { printReceipt } from "@/components/pos/print-receipt";
 
 interface CartItem extends Product {
   quantity: number;
@@ -374,9 +375,31 @@ export default function POSEnhanced() {
       // For demo purposes, simulate successful sale
       const mockOrderNumber = billNumber;
 
+      // Prepare receipt data
+      const receiptData = {
+        billNumber,
+        billDate,
+        customerDetails,
+        salesMan,
+        items: cart,
+        subtotal,
+        discount,
+        discountType,
+        taxRate,
+        taxAmount,
+        grandTotal,
+        amountPaid: parseFloat(amountPaid) || 0,
+        changeDue,
+        paymentMethod,
+        notes
+      };
+
+      // Print receipt
+      printReceipt(receiptData);
+
       toast({
         title: "Sale Completed Successfully! 🎉",
-        description: `Bill #${mockOrderNumber} processed for ${formatCurrency(grandTotal)}`
+        description: `Bill #${mockOrderNumber} processed for ${formatCurrency(grandTotal)}. Receipt sent to printer.`
       });
 
       // Clear the sale
@@ -876,6 +899,39 @@ export default function POSEnhanced() {
                   Payment
                 </Button>
               </div>
+              
+              {/* Print Last Bill Button */}
+              {cart.length === 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Create a sample receipt for demo
+                    const sampleReceiptData = {
+                      billNumber,
+                      billDate,
+                      customerDetails,
+                      salesMan,
+                      items: [],
+                      subtotal: 0,
+                      discount: 0,
+                      discountType: 'percentage' as const,
+                      taxRate: 18,
+                      taxAmount: 0,
+                      grandTotal: 0,
+                      amountPaid: 0,
+                      changeDue: 0,
+                      paymentMethod: "cash",
+                      notes: "Sample receipt for testing"
+                    };
+                    printReceipt(sampleReceiptData);
+                  }}
+                  className="w-full mt-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                  <PrinterIcon className="h-3 w-3 mr-1" />
+                  Print Last Bill
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -1062,6 +1118,37 @@ export default function POSEnhanced() {
               >
                 Cancel
               </Button>
+              
+              {/* Print Preview Button */}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const receiptData = {
+                    billNumber,
+                    billDate,
+                    customerDetails,
+                    salesMan,
+                    items: cart,
+                    subtotal,
+                    discount,
+                    discountType,
+                    taxRate,
+                    taxAmount,
+                    grandTotal,
+                    amountPaid: parseFloat(amountPaid) || 0,
+                    changeDue,
+                    paymentMethod,
+                    notes
+                  };
+                  printReceipt(receiptData);
+                }}
+                disabled={cart.length === 0}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                <PrinterIcon className="h-4 w-4 mr-2" />
+                Print Preview
+              </Button>
+              
               <Button
                 onClick={processSale}
                 disabled={isProcessing}
@@ -1075,7 +1162,7 @@ export default function POSEnhanced() {
                 ) : (
                   <>
                     <CheckCircleIcon className="h-4 w-4 mr-2" />
-                    Complete Sale
+                    Complete & Print
                   </>
                 )}
               </Button>
