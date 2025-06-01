@@ -52,7 +52,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/currency";
 import type { Product, Customer } from "@shared/schema";
-import { PrintReceipt, printReceipt } from "@/components/pos/print-receipt";
 
 interface CartItem extends Product {
   quantity: number;
@@ -106,8 +105,6 @@ export default function POSEnhanced() {
   const [billNumber, setBillNumber] = useState(`13254`);
   const [billDate, setBillDate] = useState(new Date().toLocaleDateString('en-GB'));
   const [salesMan, setSalesMan] = useState("Sales Man");
-  const [showPrintPreview, setShowPrintPreview] = useState(false);
-  const [lastSaleData, setLastSaleData] = useState<any>(null);
   const [customerDetails, setCustomerDetails] = useState({
     name: "",
     doorNo: "",
@@ -377,31 +374,13 @@ export default function POSEnhanced() {
       // For demo purposes, simulate successful sale
       const mockOrderNumber = billNumber;
 
-      // Store sale data for printing
-      const saleData = {
-        cart,
-        customer: customerDetails,
-        billNumber,
-        billDate,
-        salesMan,
-        subtotal,
-        totalDiscount,
-        taxAmount,
-        grandTotal,
-        paymentMethod,
-        amountPaid: parseFloat(amountPaid) || 0,
-        changeDue,
-        notes
-      };
-      setLastSaleData(saleData);
-
       toast({
         title: "Sale Completed Successfully! 🎉",
         description: `Bill #${mockOrderNumber} processed for ${formatCurrency(grandTotal)}`
       });
 
-      // Show print options
-      setShowPrintPreview(true);
+      // Clear the sale
+      clearSale();
       setShowPaymentDialog(false);
 
     } catch (error) {
@@ -748,7 +727,7 @@ export default function POSEnhanced() {
                 <Button variant="outline" size="sm" className="h-7 text-xs">F8<br/>SettleBill</Button>
                 <Button variant="outline" size="sm" className="h-7 text-xs">F9<br/>CashBrd</Button>
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowPaymentDialog(true)}>F10<br/>SelectKey</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => lastSaleData && setShowPrintPreview(true)}>F11<br/>Print</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">F11<br/>SelectKey</Button>
                 <Button variant="outline" size="sm" className="h-7 text-xs">F12<br/>Close</Button>
               </div>
             </div>
@@ -1100,63 +1079,6 @@ export default function POSEnhanced() {
                   </>
                 )}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Print Receipt Dialog */}
-        <Dialog open={showPrintPreview} onOpenChange={setShowPrintPreview}>
-          <DialogContent className="max-w-4xl max-h-[90vh]">
-            <DialogHeader>
-              <DialogTitle>Print Receipt - Bill #{lastSaleData?.billNumber}</DialogTitle>
-              <DialogDescription>
-                Preview and print your receipt
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="overflow-y-auto max-h-[70vh]">
-              {lastSaleData && (
-                <PrintReceipt {...lastSaleData} />
-              )}
-            </div>
-
-            <DialogFooter className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowPrintPreview(false);
-                  clearSale();
-                }}
-              >
-                Skip & Close
-              </Button>
-              <div className="space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (lastSaleData) {
-                      printReceipt(lastSaleData);
-                    }
-                  }}
-                  className="bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  <PrinterIcon className="h-4 w-4 mr-2" />
-                  Print Receipt
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (lastSaleData) {
-                      printReceipt(lastSaleData);
-                    }
-                    setShowPrintPreview(false);
-                    clearSale();
-                  }}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <PrinterIcon className="h-4 w-4 mr-2" />
-                  Print & Close
-                </Button>
-              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
