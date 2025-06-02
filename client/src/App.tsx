@@ -24,7 +24,11 @@ import Purchases from "@/pages/purchases";
 import PurchaseDashboard from "@/pages/purchase-dashboard";
 import PurchaseEntry from "@/pages/purchase-entry";
 import PurchaseEntryProfessional from "@/pages/purchase-entry-professional";
-import Reports from "@/pages/reports";
+import Reports from "./pages/reports";
+import SalesDashboard from "./pages/sales-dashboard";
+import POS from "./pages/pos";
+import POSEnhanced from "./pages/pos-enhanced";
+import POSGofrugal from "./pages/pos-gofrugal";
 import Users from "@/pages/users";
 import Settings from "@/pages/settings";
 import Suppliers from "@/pages/suppliers";
@@ -74,6 +78,7 @@ function Router() {
       <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
       <ProtectedRoute path="/purchase-entry-professional" component={PurchaseEntryProfessional} />
       <ProtectedRoute path="/reports" component={Reports} />
+      <ProtectedRoute path="/sales-dashboard" component={SalesDashboard} />
       <ProtectedRoute path="/users" component={Users} adminOnly />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/suppliers" component={Suppliers} />
