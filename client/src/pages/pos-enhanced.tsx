@@ -623,8 +623,17 @@ export default function POSEnhanced() {
         notes
       };
 
-      // Print receipt
-      printReceipt(receiptData);
+      // Print receipt with error handling
+      try {
+        await printReceipt(receiptData);
+      } catch (printError) {
+        console.error("Print error:", printError);
+        toast({
+          title: "⚠️ Print Warning",
+          description: "Sale completed but receipt printing failed",
+          variant: "default"
+        });
+      }
 
       toast({
         title: "🎉 Sale Completed Successfully!",

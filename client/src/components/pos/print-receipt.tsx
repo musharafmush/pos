@@ -251,13 +251,16 @@ export const PrintReceipt: React.FC<PrintReceiptProps> = ({ data }) => {
 };
 
 // Print function
-export const printReceipt = (data: PrintReceiptData) => {
-  const printWindow = window.open('', '_blank', 'width=300,height=600');
-  
-  if (!printWindow) {
-    alert('Please allow popups to print the receipt');
-    return;
-  }
+export const printReceipt = async (data: PrintReceiptData): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const printWindow = window.open('', '_blank', 'width=300,height=600');
+      
+      if (!printWindow) {
+        console.warn('Popup blocked - cannot print receipt');
+        resolve(); // Don't reject, just resolve without printing
+        return;
+      }
 
   const receiptHtml = `
     <!DOCTYPE html>
@@ -519,7 +522,18 @@ export const printReceipt = (data: PrintReceiptData) => {
   `;
 
   printWindow.document.write(receiptHtml);
-  printWindow.document.close();
+      printWindow.document.close();
+      
+      // Resolve after a short delay
+      setTimeout(() => {
+        resolve();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Print receipt error:', error);
+      reject(error);
+    }
+  });
 };
 interface ReceiptData {
   billNumber: string;
