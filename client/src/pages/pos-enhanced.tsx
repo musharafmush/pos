@@ -114,6 +114,8 @@ export default function POSEnhanced() {
   const [searchTerm, setSearchTerm] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
@@ -173,24 +175,45 @@ export default function POSEnhanced() {
   const queryClient = useQueryClient();
   
 
-  // Fetch products
-  const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
+  // Fetch products with error handling
+  const { data: products, isLoading: productsLoading, refetch: refetchProducts, error: productsError } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
-      const response = await fetch("/api/products");
-      if (!response.ok) throw new Error("Failed to fetch products");
-      return response.json();
+      try {
+        const response = await fetch("/api/products");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        setError("Failed to load products. Using offline data.");
+        return []; // Return empty array as fallback
+      }
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
-  // Fetch customers
-  const { data: customers, refetch: refetchCustomers } = useQuery({
+  // Fetch customers with error handling
+  const { data: customers, refetch: refetchCustomers, error: customersError } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
-      const response = await fetch("/api/customers");
-      if (!response.ok) throw new Error("Failed to fetch customers");
-      return response.json();
+      try {
+        const response = await fetch("/api/customers");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch customers:", error);
+        return []; // Return empty array as fallback
+      }
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Real-time customer database
@@ -758,9 +781,31 @@ export default function POSEnhanced() {
   return (
     <DashboardLayout>
       <div className="h-full flex flex-col bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <XCircleIcon className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-400 hover:text-red-600"
+                >
+                  <XCircleIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Enhanced Header */}
         <div className="bg-white border-b shadow-lg p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between"></div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
                 <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
