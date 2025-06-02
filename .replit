@@ -14,7 +14,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Restart Application"
+runButton = "Start Application Fixed"
 
 [[workflows.workflow]]
 name = "Project"
@@ -48,7 +48,7 @@ task = "shell.exec"
 args = "npm run dev"
 
 [[workflows.workflow]]
-name = "Fix and Start Application"
+name = "Start Application Fixed"
 author = 43114682
 mode = "sequential"
 
@@ -58,24 +58,7 @@ args = "fuser -k 5000/tcp 2>/dev/null || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "sleep 2"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-
-[[workflows.workflow]]
-name = "Restart Application"
-author = 43114682
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -f \"npm run dev\" || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "sleep 3"
+args = "npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

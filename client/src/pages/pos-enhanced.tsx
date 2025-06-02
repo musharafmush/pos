@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -65,7 +64,6 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatCurrency } from "@/lib/currency";
 import type { Product, Customer } from "@shared/schema";
 import { printReceipt } from "@/components/pos/print-receipt";
 
@@ -114,8 +112,6 @@ export default function POSEnhanced() {
   const [searchTerm, setSearchTerm] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
@@ -173,47 +169,36 @@ export default function POSEnhanced() {
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
 
-  // Fetch products with error handling
-  const { data: products, isLoading: productsLoading, refetch: refetchProducts, error: productsError } = useQuery({
+  // Currency formatting function
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+
+  // Fetch products
+  const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
-      try {
-        const response = await fetch("/api/products");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error("Failed to fetch products:", error);
-        setError("Failed to load products. Using offline data.");
-        return []; // Return empty array as fallback
-      }
+      const response = await fetch("/api/products");
+      if (!response.ok) throw new Error("Failed to fetch products");
+      return response.json();
     },
-    retry: 3,
-    retryDelay: 1000,
   });
 
-  // Fetch customers with error handling
-  const { data: customers, refetch: refetchCustomers, error: customersError } = useQuery({
+  // Fetch customers
+  const { data: customers, refetch: refetchCustomers } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
-      try {
-        const response = await fetch("/api/customers");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error("Failed to fetch customers:", error);
-        return []; // Return empty array as fallback
-      }
+      const response = await fetch("/api/customers");
+      if (!response.ok) throw new Error("Failed to fetch customers");
+      return response.json();
     },
-    retry: 3,
-    retryDelay: 1000,
   });
 
   // Real-time customer database
@@ -336,7 +321,7 @@ export default function POSEnhanced() {
         p.code.toLowerCase() === searchTerm || 
         p.name.toLowerCase().includes(searchTerm)
       );
-      
+
       if (mockProduct) {
         product = {
           id: parseInt(mockProduct.code) || Math.floor(Math.random() * 10000),
@@ -400,7 +385,7 @@ export default function POSEnhanced() {
   // Smart customer search
   const handleCustomerSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return [];
-    
+
     const term = searchTerm.toLowerCase();
     return customerDatabase.filter(customer =>
       customer.name.toLowerCase().includes(term) ||
@@ -490,7 +475,7 @@ export default function POSEnhanced() {
         stock: selectedProduct.stockQuantity
       };
       setCart(prev => [...prev, newItem]);
-      
+
       toast({
         title: "✅ Item Added to Cart",
         description: (
@@ -540,7 +525,7 @@ export default function POSEnhanced() {
   const removeFromCart = (productId: number) => {
     const item = cart.find(item => item.id === productId);
     setCart(prev => prev.filter(item => item.id !== productId));
-    
+
     if (item) {
       toast({
         title: "🗑️ Item Removed",
@@ -570,7 +555,7 @@ export default function POSEnhanced() {
         phone: "",
         email: ""
       });
-      
+
       toast({
         title: "🧹 Sale Cleared",
         description: "Cart has been cleared and reset for new sale",
@@ -638,8 +623,17 @@ export default function POSEnhanced() {
         notes
       };
 
-      // Print receipt
-      printReceipt(receiptData);
+      // Print receipt with error handling
+      try {
+        await printReceipt(receiptData);
+      } catch (printError) {
+        console.error("Print error:", printError);
+        toast({
+          title: "⚠️ Print Warning",
+          description: "Sale completed but receipt printing failed",
+          variant: "default"
+        });
+      }
 
       toast({
         title: "🎉 Sale Completed Successfully!",
@@ -781,31 +775,9 @@ export default function POSEnhanced() {
   return (
     <DashboardLayout>
       <div className="h-full flex flex-col bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <XCircleIcon className="h-5 w-5 text-red-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-              <div className="ml-auto pl-3">
-                <button
-                  onClick={() => setError(null)}
-                  className="text-red-400 hover:text-red-600"
-                >
-                  <XCircleIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Enhanced Header */}
         <div className="bg-white border-b shadow-lg p-4">
-          <div className="flex items-center justify-between"></div>
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
                 <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
@@ -959,51 +931,55 @@ export default function POSEnhanced() {
         <div className="flex-1 flex">
           {/* Left Panel - Enhanced Product Entry */}
           <div className="flex-1 bg-white border-r flex flex-col">
-            {/* Enhanced Product Entry Navigation */}
-            <div className="bg-white border-b">
-              <div className="flex items-center justify-between p-4">
-                <div className="flex space-x-2">
+            {/* Enhanced Product Entry Tabs */}
+            <div className="border-b bg-gradient-to-r from-gray-50 to-blue-50">
+              <div className="flex items-center justify-between p-3">
+                <div className="flex space-x-1">
                   <Button
-                    variant={activeTab === 'scan' ? 'default' : 'outline'}
-                    size="sm"
+                    variant={activeTab === 'scan' ? 'default' : 'ghost'}
+                    size="lg"
                     onClick={() => setActiveTab('scan')}
-                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                    className={`rounded-full px-6 py-3 font-bold text-lg ${
+                      activeTab === 'scan' 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-2 border-blue-300' 
+                        : 'hover:bg-blue-50 hover:text-blue-700 border border-gray-300'
+                    }`}
                   >
-                    <BarcodeIcon className="h-4 w-4 mr-2" />
+                    <ScanIcon className="h-5 w-5 mr-2" />
                     Scan (F1)
                   </Button>
                   <Button
-                    variant={activeTab === 'search' ? 'default' : 'outline'}
+                    variant={activeTab === 'search' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setActiveTab('search')}
-                    className="px-4 py-2 rounded-lg"
+                    className="rounded-full"
                   >
                     <SearchIcon className="h-4 w-4 mr-2" />
                     Search
                   </Button>
                   <Button
-                    variant={activeTab === 'browse' ? 'default' : 'outline'}
+                    variant={activeTab === 'browse' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setActiveTab('browse')}
-                    className="px-4 py-2 rounded-lg"
+                    className="rounded-full"
                   >
                     <Package2Icon className="h-4 w-4 mr-2" />
                     Browse (F2)
                   </Button>
                   <Button
-                    variant={activeTab === 'trending' ? 'default' : 'outline'}
+                    variant={activeTab === 'trending' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setActiveTab('trending')}
-                    className="px-4 py-2 rounded-lg"
+                    className="rounded-full"
                   >
                     <TrendingUpIcon className="h-4 w-4 mr-2" />
                     Trending (F3)
                   </Button>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="text-xs text-gray-500">
+                <div className="flex space-x-2">
+                  <Badge variant="outline" className="text-xs">
                     Last Update: {lastUpdateTime.toLocaleTimeString()}
-                  </div>
+                  </Badge>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1011,101 +987,96 @@ export default function POSEnhanced() {
                       refetchProducts();
                       toast({ title: "🔄 Refreshed", description: "Product data updated" });
                     }}
-                    className="px-3 py-1 text-xs"
                   >
-                    <RefreshCwIcon className="h-3 w-3 mr-1" />
+                    <RefreshCwIcon className="h-4 w-4 mr-1" />
                     Refresh (F5)
                   </Button>
                 </div>
               </div>
 
               {/* Enhanced Product Entry Content */}
-              <div className="p-6 bg-white">
+              <div className="p-4 bg-white border-b">
                 {activeTab === 'scan' && (
-                  <div className="space-y-6">
-                    {/* Main Scan Interface */}
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-1 relative">
-                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-2 text-gray-400">
-                          <BarcodeIcon className="h-5 w-5" />
-                          <SearchIcon className="h-4 w-4" />
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-xl border-3 border-gray-300 shadow-lg p-4">
+                      <div className="flex space-x-3 items-center">
+                        <div className="flex-1 relative">
+                          <BarcodeIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6" />
+                          <Input
+                            ref={barcodeInputRef}
+                            placeholder="Scan barcode or enter product code... (Press F1 to focus)"
+                            value={barcodeInput}
+                            onChange={(e) => setBarcodeInput(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleBarcodeInput(barcodeInput);
+                              }
+                            }}
+                            className="pl-14 h-16 text-xl font-mono border-2 border-gray-200 focus:border-blue-500 bg-gray-50 focus:bg-white rounded-xl"
+                            autoComplete="off"
+                          />
                         </div>
-                        <Input
-                          ref={barcodeInputRef}
-                          placeholder="Scan barcode or enter product code... (Press F1 to focus)"
-                          value={barcodeInput}
-                          onChange={(e) => setBarcodeInput(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              handleBarcodeInput(barcodeInput);
-                            }
-                          }}
-                          className="pl-16 pr-4 h-16 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-0 shadow-sm"
-                          autoComplete="off"
-                        />
+                        <Button
+                          variant="default"
+                          onClick={() => handleBarcodeInput(barcodeInput)}
+                          disabled={!barcodeInput}
+                          className="h-16 px-8 bg-blue-600 hover:bg-blue-700 shadow-xl text-white font-bold text-lg rounded-xl"
+                        >
+                          <ZapIcon className="h-6 w-6 mr-2" />
+                          Find Product
+                        </Button>
                       </div>
-                      <Button
-                        variant="default"
-                        onClick={() => handleBarcodeInput(barcodeInput)}
-                        disabled={!barcodeInput}
-                        className="h-16 px-8 bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm"
-                      >
-                        <ZapIcon className="h-5 w-5 mr-2" />
-                        Find Product
-                      </Button>
                     </div>
 
                     {/* Enhanced Selected Product Display */}
                     {selectedProduct && (
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 shadow-sm">
-                        <div className="flex items-center space-x-4 mb-6">
-                          <div className="p-2 bg-green-100 rounded-full">
-                            <CheckCircleIcon className="h-6 w-6 text-green-600" />
-                          </div>
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 shadow-lg">
+                        <div className="flex items-center space-x-4 mb-4">
+                          <CheckCircleIcon className="h-8 w-8 text-green-600" />
                           <div className="flex-1">
-                            <h3 className="font-bold text-lg text-gray-900">{selectedProduct.name}</h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              SKU: {selectedProduct.sku} • Stock: {selectedProduct.stockQuantity} units
+                            <h3 className="font-bold text-xl text-green-900">{selectedProduct.name}</h3>
+                            <p className="text-green-700 font-medium">
+                              SKU: {selectedProduct.sku} • Available Stock: {selectedProduct.stockQuantity}
                             </p>
                           </div>
-                          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-400">
                             Ready to Add
                           </Badge>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4 mb-6">
+                        <div className="grid grid-cols-3 gap-4">
                           <div>
-                            <Label className="text-sm font-medium text-gray-700 mb-2 block">Quantity</Label>
+                            <Label className="text-sm font-bold text-green-800">Quantity</Label>
                             <Input
                               type="number"
                               value={quantityInput}
                               onChange={(e) => setQuantityInput(parseInt(e.target.value) || 1)}
-                              className="h-12 text-center text-lg font-semibold border-gray-300 focus:border-green-500 rounded-xl"
+                              className="h-12 text-center text-xl font-bold border-green-400 focus:border-green-600"
                               min="1"
                               placeholder="Qty"
                             />
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-gray-700 mb-2 block">Rate (₹)</Label>
+                            <Label className="text-sm font-bold text-green-800">Rate (₹)</Label>
                             <Input
                               type="number"
                               value={rateInput}
                               onChange={(e) => setRateInput(e.target.value)}
-                              className="h-12 text-right text-lg font-semibold border-gray-300 focus:border-green-500 rounded-xl"
+                              className="h-12 text-right text-xl font-bold border-green-400 focus:border-green-600"
                               placeholder="Rate"
                               step="0.01"
                             />
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-gray-700 mb-2 block">Total Amount</Label>
-                            <div className="h-12 px-4 border border-gray-300 bg-gray-50 rounded-xl flex items-center justify-end text-lg font-bold text-green-600">
+                            <Label className="text-sm font-bold text-green-800">Total Amount</Label>
+                            <div className="h-12 px-4 border-2 rounded border-green-400 bg-green-100 flex items-center justify-end text-xl font-bold text-green-800">
                               {formatCurrency((parseFloat(rateInput) || parseFloat(selectedProduct.price)) * quantityInput)}
                             </div>
                           </div>
                         </div>
 
-                        <Button onClick={addToCart} className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-sm">
-                          <PlusIcon className="h-5 w-5 mr-2" />
+                        <Button onClick={addToCart} className="w-full mt-4 h-14 bg-green-600 hover:bg-green-700 text-xl font-bold shadow-lg">
+                          <PlusIcon className="h-6 w-6 mr-2" />
                           Add to Cart (Press Enter)
                         </Button>
                       </div>
@@ -1207,7 +1178,7 @@ export default function POSEnhanced() {
                               createdAt: new Date().toISOString(),
                               updatedAt: new Date().toISOString()
                             };
-                            
+
                             setSelectedProduct(actualProduct);
                             setRateInput(actualProduct.price);
                             setQuantityInput(1);
@@ -1240,10 +1211,10 @@ export default function POSEnhanced() {
             </div>
 
             {/* Enhanced Cart Section */}
-            <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+            <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold flex items-center">
-                  <ShoppingCartIcon className="h-6 w-6 mr-3" />
+                  <ShoppingCartIcon className="h-6 w-6 mr-2" />
                   Shopping Cart ({cart.length} items • {totalItems} qty)
                 </h2>
                 {cart.length > 0 && (
@@ -1251,7 +1222,7 @@ export default function POSEnhanced() {
                     variant="ghost"
                     size="sm"
                     onClick={clearSale}
-                    className="text-white hover:bg-blue-700 border border-white/30 rounded-lg"
+                    className="text-white hover:bg-blue-700 border border-white/30"
                   >
                     <TrashIcon className="h-4 w-4 mr-1" />
                     Clear All (F11)
@@ -1465,7 +1436,7 @@ export default function POSEnhanced() {
                     Customer (F12)
                   </Button>
                 </div>
-                
+
                 <Button
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
@@ -1474,7 +1445,7 @@ export default function POSEnhanced() {
                   <CreditCard className="h-6 w-6 mr-3" />
                   💳 Complete Payment (F10)
                 </Button>
-                
+
                 {/* Enhanced Print Last Receipt */}
                 {cart.length === 0 && (
                   <Button
@@ -1570,7 +1541,7 @@ export default function POSEnhanced() {
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                       };
-                      
+
                       const existingItem = cart.find(item => item.id === actualProduct.id);
                       if (existingItem) {
                         updateQuantity(actualProduct.id, existingItem.quantity + 1);
@@ -1584,9 +1555,9 @@ export default function POSEnhanced() {
                         };
                         setCart(prev => [...prev, newItem]);
                       }
-                      
+
                       setShowProductList(false);
-                      
+
                       toast({
                         title: "✅ Added to Cart!",
                         description: `${actualProduct.name} x 1 - ${formatCurrency(parseFloat(actualProduct.price))}`
@@ -1701,7 +1672,7 @@ export default function POSEnhanced() {
               >
                 Cancel
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1730,7 +1701,7 @@ export default function POSEnhanced() {
                 <PrinterIcon className="h-4 w-4 mr-2" />
                 Preview Receipt
               </Button>
-              
+
               <Button
                 onClick={processSale}
                 disabled={isProcessing}
@@ -1833,6 +1804,7 @@ export default function POSEnhanced() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+                    
       </div>
     </DashboardLayout>
   );

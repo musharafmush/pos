@@ -251,13 +251,16 @@ export const PrintReceipt: React.FC<PrintReceiptProps> = ({ data }) => {
 };
 
 // Print function
-export const printReceipt = (data: PrintReceiptData) => {
-  const printWindow = window.open('', '_blank', 'width=300,height=600');
-  
-  if (!printWindow) {
-    alert('Please allow popups to print the receipt');
-    return;
-  }
+export const printReceipt = async (data: PrintReceiptData): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const printWindow = window.open('', '_blank', 'width=300,height=600');
+      
+      if (!printWindow) {
+        console.warn('Popup blocked - cannot print receipt');
+        resolve(); // Don't reject, just resolve without printing
+        return;
+      }
 
   const receiptHtml = `
     <!DOCTYPE html>
@@ -519,5 +522,174 @@ export const printReceipt = (data: PrintReceiptData) => {
   `;
 
   printWindow.document.write(receiptHtml);
-  printWindow.document.close();
+      printWindow.document.close();
+      
+      // Resolve after a short delay
+      setTimeout(() => {
+        resolve();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Print receipt error:', error);
+      reject(error);
+    }
+  });
 };
+interface ReceiptData {
+  billNumber: string;
+  billDate: string;
+  customerDetails: {
+    name: string;
+    phone: string;
+    address: string;
+    email?: string;
+  };
+  salesMan: string;
+  items: Array<{
+    id: number;
+    name: string;
+    quantity: number;
+    price: string;
+    total: number;
+  }>;
+  subtotal: number;
+  discount: number;
+  discountType: 'percentage' | 'fixed';
+  taxRate: number;
+  taxAmount: number;
+  grandTotal: number;
+  amountPaid: number;
+  changeDue: number;
+  paymentMethod: string;
+  notes?: string;
+}
+
+export function printReceipt(data: ReceiptData) {
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  const receiptContent = `
+    <div style="font-family: monospace; width: 300px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px;">
+        <h2>🛍️ AWESOME SHOP</h2>
+        <p>Professional Point of Sale</p>
+        <p>Bill #${data.billNumber}</p>
+        <p>${data.billDate}</p>
+      </div>
+      
+      <div style="margin: 15px 0;">
+        <strong>Customer:</strong> ${data.customerDetails.name}<br>
+        <strong>Phone:</strong> ${data.customerDetails.phone}<br>
+        <strong>Sales Person:</strong> ${data.salesMan}
+      </div>
+      
+      <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 0;">
+        <table style="width: 100%; font-size: 12px;">
+          <tr style="border-bottom: 1px solid #000;">
+            <th style="text-align: left;">Item</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Rate</th>
+            <th style="text-align: right;">Amount</th>
+          </tr>
+          ${data.items.map(item => `
+            <tr>
+              <td style="padding: 5px 0;">${item.name}</td>
+              <td style="text-align: center;">${item.quantity}</td>
+              <td style="text-align: right;">${formatCurrency(parseFloat(item.price))}</td>
+              <td style="text-align: right;">${formatCurrency(item.total)}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </div>
+      
+      <div style="margin: 15px 0;">
+        <div style="display: flex; justify-content: space-between;">
+          <span>Subtotal:</span>
+          <span>${formatCurrency(data.subtotal)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Discount (${data.discountType === 'percentage' ? data.discount + '%' : formatCurrency(data.discount)}):</span>
+          <span>-${formatCurrency(data.subtotal - (data.grandTotal - data.taxAmount))}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Tax (${data.taxRate}%):</span>
+          <span>${formatCurrency(data.taxAmount)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #000; padding-top: 5px;">
+          <span>Total:</span>
+          <span>${formatCurrency(data.grandTotal)}</span>
+        </div>
+      </div>
+      
+      <div style="margin: 15px 0;">
+        <div style="display: flex; justify-content: space-between;">
+          <span>Payment Method:</span>
+          <span>${data.paymentMethod.toUpperCase()}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Amount Paid:</span>
+          <span>${formatCurrency(data.amountPaid)}</span>
+        </div>
+        ${data.changeDue > 0 ? `
+        <div style="display: flex; justify-content: space-between;">
+          <span>Change Due:</span>
+          <span>${formatCurrency(data.changeDue)}</span>
+        </div>
+        ` : ''}
+      </div>
+      
+      ${data.notes ? `
+      <div style="margin: 15px 0; border-top: 1px solid #000; padding-top: 10px;">
+        <strong>Notes:</strong> ${data.notes}
+      </div>
+      ` : ''}
+      
+      <div style="text-align: center; margin-top: 20px; border-top: 1px solid #000; padding-top: 10px;">
+        <p>Thank you for shopping with us!</p>
+        <p>Visit again!</p>
+      </div>
+    </div>
+  `;
+
+  // Create a new window for printing
+  const printWindow = window.open('', '_blank', 'width=400,height=600');
+  if (printWindow) {
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Receipt - ${data.billNumber}</title>
+          <style>
+            body { margin: 0; padding: 0; }
+            @media print {
+              body { -webkit-print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          ${receiptContent}
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() {
+                window.close();
+              }, 1000);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  } else {
+    // Fallback: Show receipt in current window
+    const newTab = window.open('', '_blank');
+    if (newTab) {
+      newTab.document.write(receiptContent);
+    }
+  }
+}
