@@ -922,7 +922,11 @@ export default function POSEnhanced() {
                     variant={activeTab === 'scan' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setActiveTab('scan')}
-                    className="rounded-full"
+                    className={`rounded-full font-semibold ${
+                      activeTab === 'scan' 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg border-2 border-blue-400' 
+                        : 'hover:bg-blue-50 hover:text-blue-700'
+                    }`}
                   >
                     <ScanIcon className="h-4 w-4 mr-2" />
                     Scan (F1)
@@ -998,10 +1002,69 @@ export default function POSEnhanced() {
                         variant="default"
                         onClick={() => handleBarcodeInput(barcodeInput)}
                         disabled={!barcodeInput}
-                        className="h-14 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg"
+                        className="h-14 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg text-white font-semibold"
                       >
                         <ZapIcon className="h-5 w-5 mr-2" />
                         Find Product
+                      </Button>
+                    </div>
+
+                    {/* Enhanced Scan All Products Button */}
+                    <div className="mt-6">
+                      <Button
+                        onClick={() => {
+                          // Auto-add all available products from the mock product list to cart
+                          const allProductsToAdd = mockProductList.slice(0, 10); // Add first 10 products
+                          let addedCount = 0;
+                          
+                          allProductsToAdd.forEach(product => {
+                            const actualProduct = {
+                              id: parseInt(product.code) || Math.floor(Math.random() * 10000),
+                              name: product.name,
+                              sku: product.code,
+                              price: product.selfRate.toString(),
+                              cost: product.selfRate.toString(),
+                              stockQuantity: product.stock,
+                              description: product.name,
+                              barcode: product.code,
+                              brand: "",
+                              manufacturer: "",
+                              categoryId: 1,
+                              mrp: product.mrp.toString(),
+                              unit: "PCS",
+                              hsnCode: "",
+                              taxRate: "18",
+                              active: true,
+                              trackInventory: true,
+                              allowNegativeStock: false,
+                              alertThreshold: 10,
+                              createdAt: new Date().toISOString(),
+                              updatedAt: new Date().toISOString()
+                            };
+
+                            const existingItem = cart.find(item => item.id === actualProduct.id);
+                            if (!existingItem) {
+                              const newItem: CartItem = {
+                                ...actualProduct,
+                                quantity: 1,
+                                total: parseFloat(actualProduct.price),
+                                mrp: parseFloat(actualProduct.mrp || actualProduct.price),
+                                stock: actualProduct.stockQuantity
+                              };
+                              setCart(prev => [...prev, newItem]);
+                              addedCount++;
+                            }
+                          });
+
+                          toast({
+                            title: "🛒 Bulk Products Added!",
+                            description: `Added ${addedCount} products to cart automatically`,
+                          });
+                        }}
+                        className="w-full h-16 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white text-xl font-bold shadow-xl border-2 border-emerald-400"
+                      >
+                        <Package2Icon className="h-6 w-6 mr-3" />
+                        📦 Scan All Products (Quick Add)
                       </Button>
                     </div>
 
