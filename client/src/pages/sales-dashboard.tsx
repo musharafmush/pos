@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -107,7 +106,7 @@ export default function SalesDashboard() {
   const productCategoryData = topProducts?.reduce((acc: any[], product: any) => {
     const category = product.product.category?.name || "Uncategorized";
     const existingCategory = acc.find((item) => item.name === category);
-    
+
     if (existingCategory) {
       existingCategory.value += product.soldQuantity;
       existingCategory.revenue += parseFloat(product.revenue || 0);
@@ -118,7 +117,7 @@ export default function SalesDashboard() {
         revenue: parseFloat(product.revenue || 0)
       });
     }
-    
+
     return acc;
   }, []) || [];
 
@@ -200,7 +199,7 @@ export default function SalesDashboard() {
             <TabsTrigger value="products">Product Performance</TabsTrigger>
             <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
           </TabsList>
-          
+
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <div className="flex justify-between items-center">
@@ -219,7 +218,7 @@ export default function SalesDashboard() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Sales Trend Chart */}
               <Card>
@@ -412,7 +411,8 @@ export default function SalesDashboard() {
                             </span>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>

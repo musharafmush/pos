@@ -1751,6 +1751,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reports API endpoints
+  app.get('/api/reports/top-selling-products', async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string || '30');
+      const limit = parseInt(req.query.limit as string || '10');
+      
+      // Calculate start date
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      
+      const topProducts = await storage.getTopSellingProducts(limit, startDate, new Date());
+      res.json(topProducts);
+    } catch (error) {
+      console.error('Error fetching top selling products report:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/reports/sales-summary', async (req, res) => {
+    try {
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      
+      const salesData = await storage.listSales(1000, 0, startDate, endDate);
+      
+      // Calculate summary metrics
+      const totalSales = salesData.reduce((sum: number, sale: any) => sum + parseFloat(sale.total || 0), 0);
+      const totalTransactions = salesData.length;
+      const averageOrderValue = totalTransactions > 0 ? totalSales / totalTransactions : 0;
+      
+      res.json({
+        totalSales,
+        totalTransactions,
+        averageOrderValue,
+        salesData: salesData.slice(0, 20) // Limit to recent 20 for performance
+      });
+    } catch (error) {
+      console.error('Error fetching sales summary:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Database management routes
   app.post('/api/admin/init-database', isAdmin, async (req, res) => {
     try {
