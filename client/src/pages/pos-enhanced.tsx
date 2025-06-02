@@ -686,6 +686,131 @@ export default function POSEnhanced() {
         return;
       }
 
+      // Handle Ctrl/Alt combinations
+      if (e.ctrlKey || e.altKey) {
+        switch (e.key.toLowerCase()) {
+          case 'd':
+            if (e.ctrlKey) {
+              e.preventDefault();
+              // Quick discount toggle
+              setDiscount(discount === 0 ? 10 : 0);
+              toast({ title: "💰 Discount", description: `Discount ${discount === 0 ? 'applied (10%)' : 'removed'}` });
+            }
+            break;
+          case 'p':
+            if (e.ctrlKey && cart.length > 0) {
+              e.preventDefault();
+              // Quick print last receipt
+              const receiptData = {
+                billNumber,
+                billDate,
+                customerDetails,
+                salesMan,
+                items: cart,
+                subtotal,
+                discount,
+                discountType,
+                taxRate,
+                taxAmount,
+                grandTotal,
+                amountPaid: parseFloat(amountPaid) || 0,
+                changeDue,
+                paymentMethod,
+                notes
+              };
+              printReceipt(receiptData);
+              toast({ title: "🖨️ Receipt", description: "Receipt printed/previewed" });
+            }
+            break;
+          case 'h':
+            if (e.altKey) {
+              e.preventDefault();
+              // Hold current sale
+              if (cart.length > 0) {
+                const holdSale: HoldSale = {
+                  id: Date.now().toString(),
+                  cart: [...cart],
+                  customer: selectedCustomer,
+                  timestamp: new Date(),
+                  subtotal
+                };
+                setHoldSales(prev => [holdSale, ...prev]);
+                clearSale();
+                toast({ title: "⏸️ Sale Held", description: "Current sale has been held" });
+              }
+            }
+            break;
+          case 'r':
+            if (e.altKey) {
+              e.preventDefault();
+              // Recall held sales
+              setShowHoldSales(true);
+              toast({ title: "📋 Recall", description: "Showing held sales" });
+            }
+            break;
+          case 'c':
+            if (e.altKey) {
+              e.preventDefault();
+              // Quick cash payment
+              if (cart.length > 0) {
+                setPaymentMethod("cash");
+                setAmountPaid(grandTotal.toString());
+                setShowPaymentDialog(true);
+                toast({ title: "💵 Cash Payment", description: "Quick cash payment setup" });
+              }
+            }
+            break;
+          case 'u':
+            if (e.altKey) {
+              e.preventDefault();
+              // Quick UPI payment
+              if (cart.length > 0) {
+                setPaymentMethod("upi");
+                setAmountPaid(grandTotal.toString());
+                setShowPaymentDialog(true);
+                toast({ title: "📱 UPI Payment", description: "Quick UPI payment setup" });
+              }
+            }
+            break;
+          case 'q':
+            if (e.ctrlKey) {
+              e.preventDefault();
+              // Quick quantity update for last item
+              if (cart.length > 0) {
+                const lastItem = cart[cart.length - 1];
+                updateQuantity(lastItem.id, lastItem.quantity + 1);
+                toast({ title: "➕ Quantity", description: `${lastItem.name} quantity increased` });
+              }
+            }
+            break;
+          case 'w':
+            if (e.ctrlKey) {
+              e.preventDefault();
+              // Quick quantity decrease for last item
+              if (cart.length > 0) {
+                const lastItem = cart[cart.length - 1];
+                if (lastItem.quantity > 1) {
+                  updateQuantity(lastItem.id, lastItem.quantity - 1);
+                  toast({ title: "➖ Quantity", description: `${lastItem.name} quantity decreased` });
+                }
+              }
+            }
+            break;
+          case 'delete':
+          case 'backspace':
+            if (e.altKey && cart.length > 0) {
+              e.preventDefault();
+              // Remove last item from cart
+              const lastItem = cart[cart.length - 1];
+              removeFromCart(lastItem.id);
+              toast({ title: "🗑️ Removed", description: `${lastItem.name} removed from cart` });
+            }
+            break;
+        }
+        return;
+      }
+
+      // Function keys and other shortcuts
       switch (e.key) {
         case 'F1':
           e.preventDefault();
@@ -705,7 +830,26 @@ export default function POSEnhanced() {
           break;
         case 'F5':
           e.preventDefault();
-          toast({ title: "ℹ️ Manual Refresh", description: "Use browser refresh to update data" });
+          refetchProducts();
+          toast({ title: "🔄 Refreshed", description: "Product data updated" });
+          break;
+        case 'F6':
+          e.preventDefault();
+          // Quick search tab
+          setActiveTab('search');
+          toast({ title: "🔍 Search Mode", description: "Search products by name" });
+          break;
+        case 'F7':
+          e.preventDefault();
+          // Quick browse tab
+          setActiveTab('browse');
+          toast({ title: "📦 Browse Mode", description: "Browse all products" });
+          break;
+        case 'F8':
+          e.preventDefault();
+          // Toggle view mode
+          setViewMode(viewMode === 'simple' ? 'detailed' : 'simple');
+          toast({ title: "👁️ View Mode", description: `Switched to ${viewMode === 'simple' ? 'detailed' : 'simple'} view` });
           break;
         case 'F9':
           e.preventDefault();
@@ -732,14 +876,45 @@ export default function POSEnhanced() {
         case 'Escape':
           setSelectedProduct(null);
           setBarcodeInput("");
+          setShowPaymentDialog(false);
+          setShowProductList(false);
+          setShowKeyboardShortcuts(false);
+          setShowNewCustomerDialog(false);
           barcodeInputRef.current?.focus();
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          if (cart.length > 0 && !selectedProduct) {
+            const lastItem = cart[cart.length - 1];
+            updateQuantity(lastItem.id, lastItem.quantity + 1);
+            toast({ title: "➕ Quick Add", description: `${lastItem.name} +1` });
+          }
+          break;
+        case '-':
+          e.preventDefault();
+          if (cart.length > 0 && !selectedProduct) {
+            const lastItem = cart[cart.length - 1];
+            if (lastItem.quantity > 1) {
+              updateQuantity(lastItem.id, lastItem.quantity - 1);
+              toast({ title: "➖ Quick Remove", description: `${lastItem.name} -1` });
+            }
+          }
+          break;
+        case 'Delete':
+          e.preventDefault();
+          if (cart.length > 0 && !selectedProduct) {
+            const lastItem = cart[cart.length - 1];
+            removeFromCart(lastItem.id);
+            toast({ title: "🗑️ Quick Delete", description: `${lastItem.name} removed` });
+          }
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [cart.length, selectedProduct]);
+  }, [cart.length, selectedProduct, discount, grandTotal, amountPaid, paymentMethod, viewMode]);
 
   const keyboardShortcuts = [
     { key: "F1", action: "Focus Barcode Scanner" },
@@ -747,12 +922,27 @@ export default function POSEnhanced() {
     { key: "F3", action: "Trending Products" },
     { key: "F4", action: "Customer Search" },
     { key: "F5", action: "Refresh Data" },
+    { key: "F6", action: "Search Mode" },
+    { key: "F7", action: "Browse Mode" },
+    { key: "F8", action: "Toggle View Mode" },
     { key: "F9", action: "Show Shortcuts" },
     { key: "F10", action: "Process Payment" },
     { key: "F11", action: "Clear Sale" },
     { key: "F12", action: "New Customer" },
     { key: "Enter", action: "Add to Cart" },
-    { key: "Esc", action: "Cancel/Reset" }
+    { key: "Esc", action: "Cancel/Close Dialogs" },
+    { key: "+/=", action: "Increase Last Item Qty" },
+    { key: "-", action: "Decrease Last Item Qty" },
+    { key: "Del", action: "Remove Last Item" },
+    { key: "Ctrl+D", action: "Toggle Discount" },
+    { key: "Ctrl+P", action: "Print Receipt" },
+    { key: "Ctrl+Q", action: "Quick Qty +" },
+    { key: "Ctrl+W", action: "Quick Qty -" },
+    { key: "Alt+H", action: "Hold Sale" },
+    { key: "Alt+R", action: "Recall Sales" },
+    { key: "Alt+C", action: "Quick Cash Payment" },
+    { key: "Alt+U", action: "Quick UPI Payment" },
+    { key: "Alt+Del", action: "Remove Last Item" }
   ];
 
   return (
@@ -1293,19 +1483,59 @@ export default function POSEnhanced() {
             {/* Enhanced Quick Actions */}
             <div className="p-4 border-t bg-gradient-to-r from-gray-50 to-blue-50">
               <div className="grid grid-cols-4 gap-2">
-                <Button variant="outline" size="sm" className="flex-1 border-blue-300 hover:bg-blue-50">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-blue-300 hover:bg-blue-50"
+                  onClick={() => {
+                    if (cart.length > 0) {
+                      const holdSale: HoldSale = {
+                        id: Date.now().toString(),
+                        cart: [...cart],
+                        customer: selectedCustomer,
+                        timestamp: new Date(),
+                        subtotal
+                      };
+                      setHoldSales(prev => [holdSale, ...prev]);
+                      clearSale();
+                      toast({ title: "⏸️ Sale Held", description: "Current sale has been held" });
+                    }
+                  }}
+                  title="Alt+H"
+                >
                   <SaveIcon className="h-4 w-4 mr-1" />
-                  Hold Sale
+                  Hold (Alt+H)
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 border-green-300 hover:bg-green-50">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-green-300 hover:bg-green-50"
+                  onClick={() => setShowHoldSales(true)}
+                  title="Alt+R"
+                >
                   <RefreshCwIcon className="h-4 w-4 mr-1" />
-                  Recall
+                  Recall (Alt+R)
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 border-purple-300 hover:bg-purple-50">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-purple-300 hover:bg-purple-50"
+                  onClick={() => {
+                    setDiscount(discount === 0 ? 10 : 0);
+                    toast({ title: "💰 Discount", description: `Discount ${discount === 0 ? 'applied (10%)' : 'removed'}` });
+                  }}
+                  title="Ctrl+D"
+                >
                   <PercentIcon className="h-4 w-4 mr-1" />
-                  Discount
+                  Discount (Ctrl+D)
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 border-orange-300 hover:bg-orange-50">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-orange-300 hover:bg-orange-50"
+                  onClick={() => setShowKeyboardShortcuts(true)}
+                  title="F9"
+                >
                   <HelpCircleIcon className="h-4 w-4 mr-1" />
                   Help (F9)
                 </Button>
@@ -1718,6 +1948,97 @@ export default function POSEnhanced() {
                   </Badge>
                 </div>
               ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Enhanced Hold Sales Dialog */}
+        <Dialog open={showHoldSales} onOpenChange={setShowHoldSales}>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">⏸️ Held Sales</DialogTitle>
+              <DialogDescription>
+                Recall previously held sales. Press Alt+R to access quickly.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-96">
+              {holdSales.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <PauseIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                  <div className="text-xl font-medium mb-2">No held sales</div>
+                  <div className="text-sm">Use Alt+H to hold current sale</div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {holdSales.map((sale) => (
+                    <div
+                      key={sale.id}
+                      className="border-2 rounded-lg p-4 hover:shadow-lg cursor-pointer transition-all hover:border-blue-400 bg-gradient-to-r from-white to-blue-50"
+                      onClick={() => {
+                        setCart(sale.cart);
+                        setSelectedCustomer(sale.customer);
+                        setHoldSales(prev => prev.filter(s => s.id !== sale.id));
+                        setShowHoldSales(false);
+                        toast({
+                          title: "📋 Sale Recalled",
+                          description: `Sale from ${sale.timestamp.toLocaleTimeString()} restored`
+                        });
+                      }}
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <div className="font-bold text-lg">Sale #{sale.id}</div>
+                          <div className="text-sm text-gray-600">
+                            {sale.timestamp.toLocaleDateString()} • {sale.timestamp.toLocaleTimeString()}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Customer: {sale.customer?.name || "Walk-in Customer"}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-green-600">{formatCurrency(sale.subtotal)}</div>
+                          <div className="text-sm text-gray-600">{sale.cart.length} items</div>
+                        </div>
+                      </div>
+                      <div className="border-t pt-2">
+                        <div className="text-xs text-gray-500 space-y-1">
+                          {sale.cart.slice(0, 3).map((item, index) => (
+                            <div key={index} className="flex justify-between">
+                              <span>{item.name}</span>
+                              <span>{item.quantity} × {formatCurrency(parseFloat(item.price))}</span>
+                            </div>
+                          ))}
+                          {sale.cart.length > 3 && (
+                            <div className="text-center">... and {sale.cart.length - 3} more items</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-3 flex justify-between items-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHoldSales(prev => prev.filter(s => s.id !== sale.id));
+                            toast({
+                              title: "🗑️ Sale Deleted",
+                              description: "Held sale has been removed"
+                            });
+                          }}
+                          className="text-red-600 border-red-300 hover:bg-red-50"
+                        >
+                          <TrashIcon className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                          <PlayIcon className="h-4 w-4 mr-1" />
+                          Recall Sale
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
