@@ -164,28 +164,43 @@ if (typeof window !== 'undefined' && 'WebSocket' in window) {
     return ws;
   };
   
-  // Additional connection monitoring using fetch
+  // Additional connection monitoring using fetch with better error handling
   let viteHealthCheck = setInterval(() => {
     fetch('/__vite_ping')
-      .then(() => {
-        if (connectionLost) {
-          console.log('🎯 Vite server responded, connection restored');
-          connectionLost = false;
-          reconnectAttempts = 0;
+      .then(response => {
+        if (response.ok) {
+          if (connectionLost) {
+            console.log('🎯 Vite server responded, connection restored');
+            connectionLost = false;
+            reconnectAttempts = 0;
+          }
+        } else {
+          throw new Error(`Health check failed: ${response.status}`);
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        console.log('⚠️ Vite health check failed:', error.message);
         if (!connectionLost) {
-          console.log('⚠️ Vite health check failed');
           connectionLost = true;
         }
+        
+        // If health check fails repeatedly, try to reload
+        if (reconnectAttempts >= maxReconnectAttempts) {
+          console.log('🔄 Multiple health check failures, reloading in 3 seconds...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
+        }
       });
-  }, 10000);
+  }, 8000); // Check every 8 seconds instead of 10
   
   // Clear health check after app initialization
   setTimeout(() => {
-    clearInterval(viteHealthCheck);
-  }, 60000);
+    if (viteHealthCheck) {
+      clearInterval(viteHealthCheck);
+      viteHealthCheck = null;
+    }
+  }, 45000); // Reduced from 60 seconds
 }
 
 // Initialize React app safely

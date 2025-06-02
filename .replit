@@ -14,7 +14,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Ultimate Fix Start"
+runButton = "Nuclear Restart"
 
 [[workflows.workflow]]
 name = "Project"
@@ -470,6 +470,59 @@ args = "cd /home/runner/workspace"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "rm -rf node_modules/.vite 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Nuclear Restart"
+author = 43114682
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"npm\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"node\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"vite\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"tsx\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 5"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "ss -tulpn | grep :5000 | awk '{print $7}' | cut -d',' -f2 | cut -d'=' -f2 | xargs -r kill -9 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "ss -tulpn | grep :5173 | awk '{print $7}' | cut -d',' -f2 | cut -d'=' -f2 | xargs -r kill -9 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf node_modules/.vite client/node_modules/.vite server/node_modules/.vite 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf .vite 2>/dev/null || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
