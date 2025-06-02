@@ -64,7 +64,6 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatCurrency } from "@/lib/currency";
 import type { Product, Customer } from "@shared/schema";
 import { printReceipt } from "@/components/pos/print-receipt";
 
@@ -170,6 +169,16 @@ export default function POSEnhanced() {
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Currency formatting function
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
 
 
   // Fetch products
@@ -884,8 +893,7 @@ export default function POSEnhanced() {
                       phone: customer.phone || "",
                       address: customer.address || "",
                       email: customer.email || "",
-                      ```text
-doorNo: "",
+                      doorNo: "",
                       street: "",
                       place: ""
                     });
@@ -1787,61 +1795,7 @@ doorNo: "",
             </DialogFooter>
           </DialogContent>
         </Dialog>
-                    <Button
-                        onClick={() => {
-                          // Auto-add all available products from the mock product list to cart
-                          const allProductsToAdd = mockProductList.slice(0, 10); // Add first 10 products
-                          let addedCount = 0;
-
-                          allProductsToAdd.forEach(product => {
-                            const actualProduct = {
-                              id: parseInt(product.code) || Math.floor(Math.random() * 10000),
-                              name: product.name,
-                              sku: product.code,
-                              price: product.selfRate.toString(),
-                              cost: product.selfRate.toString(),
-                              stockQuantity: product.stock,
-                              description: product.name,
-                              barcode: product.code,
-                              brand: "",
-                              manufacturer: "",
-                              categoryId: 1,
-                              mrp: product.mrp.toString(),
-                              unit: "PCS",
-                              hsnCode: "",
-                              taxRate: "18",
-                              active: true,
-                              trackInventory: true,
-                              allowNegativeStock: false,
-                              alertThreshold: 10,
-                              createdAt: new Date().toISOString(),
-                              updatedAt: new Date().toISOString()
-                            };
-
-                            const existingItem = cart.find(item => item.id === actualProduct.id);
-                            if (!existingItem) {
-                              const newItem: CartItem = {
-                                ...actualProduct,
-                                quantity: 1,
-                                total: parseFloat(actualProduct.price),
-                                mrp: parseFloat(actualProduct.mrp || actualProduct.price),
-                                stock: actualProduct.stockQuantity
-                              };
-                              setCart(prev => [...prev, newItem]);
-                              addedCount++;
-                            }
-                          });
-
-                          toast({
-                            title: "🛒 Bulk Products Added!",
-                            description: `Added ${addedCount} products to cart automatically`,
-                          });
-                        }}
-                        className="w-full h-16 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white text-xl font-bold shadow-xl border-2 border-emerald-400 rounded-xl"
-                      >
-                        <Package2Icon className="h-6 w-6 mr-3" />
-                        📦 Scan All Products (Quick Add)
-                      </Button>
+                    
       </div>
     </DashboardLayout>
   );
