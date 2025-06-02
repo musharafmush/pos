@@ -45,6 +45,30 @@ app.use((req, res, next) => {
 
     const server = await registerRoutes(app);
 
+    // Add global error handlers to prevent server crashes
+    process.on('uncaughtException', (error) => {
+      console.error('❌ Uncaught Exception:', error);
+      console.error('Stack:', error.stack);
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    });
+
+    // Add general error handler middleware
+    app.use((err: any, req: any, res: any, next: any) => {
+      console.error('❌ Express Error:', err);
+      
+      if (res.headersSent) {
+        return next(err);
+      }
+      
+      res.status(500).json({ 
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+      });
+    });
+
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
     // doesn't interfere with the other routes
@@ -61,8 +85,15 @@ app.use((req, res, next) => {
     server.listen(port, "0.0.0.0", () => {
       log(`serving on port ${port}`);
     });
+
+    // Handle server errors
+    server.on('error', (error) => {
+      console.error('❌ Server error:', error);
+    });
+
   } catch (error) {
     console.error('❌ Failed to start server:', error);
+    console.error('Stack:', error.stack);
     process.exit(1);
   }
 })();

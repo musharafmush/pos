@@ -412,6 +412,12 @@ export default function SalesDashboard() {
                           </TableCell>
                         </TableRow>
                         ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            No data available
+                          </TableCell>
+                        </TableRow>
                       )}
                     </TableBody>
                   </Table>
