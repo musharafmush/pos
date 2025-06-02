@@ -100,35 +100,63 @@ window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault(); // Prevent the default browser behavior
 });
 
-try {
-  const root = document.getElementById("root");
-  if (!root) {
-    console.error("Root element not found");
-    document.body.innerHTML = '<div style="padding: 20px; text-align: center;">Loading...</div>';
-    throw new Error("Root element not found");
-  }
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const root = document.getElementById("root");
+    if (!root) {
+      console.error("Root element not found");
+      document.body.innerHTML = '<div style="padding: 20px; text-align: center; color: #333; background: #f5f5f5; min-height: 100vh; display: flex; align-items: center; justify-content: center;">Loading POS System...</div>';
+      return;
+    }
 
-  const reactRoot = createRoot(root);
-  reactRoot.render(
-    <React.StrictMode>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </React.StrictMode>
-  );
-} catch (error) {
-  console.error('Failed to render app:', error);
-  const fallbackContent = `
-    <div style="padding: 20px; text-align: center; color: #fff; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-      <h1 style="color: #ff6b6b;">Failed to start application</h1>
-      <p>Please check the console for more details and refresh the page.</p>
-      <button onclick="window.location.reload()" style="padding: 10px 20px; margin-top: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-        Refresh Page
-      </button>
-      <pre style="margin-top: 20px; padding: 10px; background: #2a2a2a; border-radius: 4px; max-width: 600px; overflow: auto; font-size: 12px;">
-        ${error.toString()}
-      </pre>
-    </div>
-  `;
-  document.body.innerHTML = fallbackContent;
+    const reactRoot = createRoot(root);
+    reactRoot.render(
+      <React.StrictMode>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </React.StrictMode>
+    );
+  } catch (error) {
+    console.error('Failed to render app:', error);
+    const fallbackContent = `
+      <div style="padding: 20px; text-align: center; color: #fff; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <h1 style="color: #ff6b6b;">POS System Error</h1>
+        <p>Application failed to start. Please refresh to try again.</p>
+        <button onclick="window.location.reload()" style="padding: 10px 20px; margin-top: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+          Refresh Application
+        </button>
+        <pre style="margin-top: 20px; padding: 10px; background: #2a2a2a; border-radius: 4px; max-width: 600px; overflow: auto; font-size: 12px;">
+          ${error.toString()}
+        </pre>
+      </div>
+    `;
+    document.body.innerHTML = fallbackContent;
+  }
+});
+
+// Fallback if DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+  // DOM is still loading, event listener will handle it
+} else {
+  // DOM is already ready
+  try {
+    const root = document.getElementById("root");
+    if (!root) {
+      console.error("Root element not found");
+      return;
+    }
+
+    const reactRoot = createRoot(root);
+    reactRoot.render(
+      <React.StrictMode>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </React.StrictMode>
+    );
+  } catch (error) {
+    console.error('Failed to render app:', error);
+  }
 }
