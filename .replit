@@ -14,7 +14,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Nuclear Restart"
+runButton = "Force Clean Start"
 
 [[workflows.workflow]]
 name = "Project"
@@ -523,6 +523,83 @@ args = "rm -rf node_modules/.vite client/node_modules/.vite server/node_modules/
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "rm -rf .vite 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Force Clean Start"
+author = 43114682
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "#!/bin/bash"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔄 Starting Force Clean Process...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"npm\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"node\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"vite\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"tsx\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 5"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "for port in 5000 5173; do"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  for pid in $(ss -tulpn | grep \":$port \" | awk '{print $7}' | cut -d',' -f2 | cut -d'=' -f2 2>/dev/null); do"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    kill -9 \"$pid\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  done"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "done"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf node_modules/.vite client/node_modules/.vite server/node_modules/.vite 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf .vite dist 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Cleanup complete, starting application...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

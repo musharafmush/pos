@@ -106,28 +106,36 @@ window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault(); // Prevent the default browser behavior
 });
 
-// Add comprehensive Vite connection monitoring and recovery
+// Enhanced Vite connection monitoring with aggressive recovery
 if (typeof window !== 'undefined' && 'WebSocket' in window) {
   let reconnectAttempts = 0;
   let connectionLost = false;
-  const maxReconnectAttempts = 3;
+  let connectionFailures = 0;
+  const maxReconnectAttempts = 5; // Increased from 3
+  const maxConnectionFailures = 8; // New threshold
   
-  // Monitor for Vite connection status
+  // More aggressive connection monitoring
   const checkViteConnection = () => {
     const checkInterval = setInterval(() => {
       if (connectionLost && reconnectAttempts >= maxReconnectAttempts) {
-        console.log('🔄 Vite connection permanently lost, reloading application...');
+        console.log('🔄 Vite connection permanently lost, forcing reload...');
         clearInterval(checkInterval);
         window.location.reload();
       }
-    }, 5000);
+      
+      if (connectionFailures >= maxConnectionFailures) {
+        console.log('❌ Too many connection failures, forcing complete reload...');
+        clearInterval(checkInterval);
+        window.location.reload();
+      }
+    }, 3000); // Check every 3 seconds instead of 5
     
-    // Clear interval after 30 seconds if connection is restored
+    // Clear interval after successful connection restoration
     setTimeout(() => {
-      if (!connectionLost) {
+      if (!connectionLost && connectionFailures < 3) {
         clearInterval(checkInterval);
       }
-    }, 30000);
+    }, 20000); // Reduced from 30 seconds
   };
   
   const originalWebSocket = window.WebSocket;
@@ -138,69 +146,97 @@ if (typeof window !== 'undefined' && 'WebSocket' in window) {
       ws.addEventListener('error', (event) => {
         console.warn('🔌 Vite WebSocket error:', event);
         connectionLost = true;
+        connectionFailures++;
       });
       
       ws.addEventListener('close', (event) => {
         connectionLost = true;
         reconnectAttempts++;
-        console.log(`📡 Vite connection closed (${event.code}), attempt ${reconnectAttempts}/${maxReconnectAttempts}`);
+        connectionFailures++;
+        console.log(`📡 Vite connection closed (code: ${event.code}), attempt ${reconnectAttempts}/${maxReconnectAttempts}, failures: ${connectionFailures}`);
         
         if (reconnectAttempts === 1) {
           checkViteConnection();
         }
         
-        if (reconnectAttempts >= maxReconnectAttempts) {
-          console.log('❌ Max reconnection attempts reached, will reload soon...');
+        // More aggressive reload for certain error codes
+        if (event.code === 1006 || event.code === 1011) {
+          console.log('💥 Critical connection error detected, forcing immediate reload...');
+          setTimeout(() => window.location.reload(), 2000);
         }
       });
       
       ws.addEventListener('open', () => {
+        if (connectionLost) {
+          console.log('✅ Vite WebSocket reconnected successfully');
+        }
         connectionLost = false;
         reconnectAttempts = 0;
-        console.log('✅ Vite WebSocket connected successfully');
+        connectionFailures = Math.max(0, connectionFailures - 2); // Reduce failure count on success
       });
     }
     
     return ws;
   };
   
-  // Additional connection monitoring using fetch with better error handling
+  // Enhanced health check with exponential backoff
+  let healthCheckInterval = 5000; // Start with 5 seconds
   let viteHealthCheck = setInterval(() => {
-    fetch('/__vite_ping')
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    
+    fetch('/__vite_ping', { 
+      signal: controller.signal,
+      cache: 'no-cache',
+      headers: { 'Cache-Control': 'no-cache' }
+    })
       .then(response => {
+        clearTimeout(timeoutId);
         if (response.ok) {
-          if (connectionLost) {
-            console.log('🎯 Vite server responded, connection restored');
+          if (connectionLost || connectionFailures > 0) {
+            console.log('🎯 Vite server health check passed, connection stable');
             connectionLost = false;
             reconnectAttempts = 0;
+            connectionFailures = Math.max(0, connectionFailures - 1);
+            healthCheckInterval = 5000; // Reset interval
           }
         } else {
           throw new Error(`Health check failed: ${response.status}`);
         }
       })
       .catch((error) => {
-        console.log('⚠️ Vite health check failed:', error.message);
+        clearTimeout(timeoutId);
+        connectionFailures++;
+        
+        if (error.name === 'AbortError') {
+          console.log('⏰ Vite health check timeout');
+        } else {
+          console.log('⚠️ Vite health check failed:', error.message);
+        }
+        
         if (!connectionLost) {
           connectionLost = true;
         }
         
-        // If health check fails repeatedly, try to reload
-        if (reconnectAttempts >= maxReconnectAttempts) {
-          console.log('🔄 Multiple health check failures, reloading in 3 seconds...');
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
+        // Exponential backoff for health checks
+        healthCheckInterval = Math.min(healthCheckInterval * 1.5, 15000);
+        
+        // Force reload on persistent failures
+        if (connectionFailures >= maxConnectionFailures) {
+          console.log('🔄 Persistent health check failures, reloading application...');
+          setTimeout(() => window.location.reload(), 1000);
         }
       });
-  }, 8000); // Check every 8 seconds instead of 10
+  }, healthCheckInterval);
   
-  // Clear health check after app initialization
+  // Shorter monitoring window for faster recovery
   setTimeout(() => {
-    if (viteHealthCheck) {
+    if (viteHealthCheck && connectionFailures < 3) {
       clearInterval(viteHealthCheck);
       viteHealthCheck = null;
+      console.log('🏁 Vite connection monitoring completed successfully');
     }
-  }, 45000); // Reduced from 60 seconds
+  }, 30000); // Reduced from 45 seconds
 }
 
 // Initialize React app safely
