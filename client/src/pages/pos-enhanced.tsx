@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -64,6 +65,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatCurrency } from "@/lib/currency";
 import type { Product, Customer } from "@shared/schema";
 import { printReceipt } from "@/components/pos/print-receipt";
 
@@ -169,17 +171,7 @@ export default function POSEnhanced() {
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Currency formatting function
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
-
+  
 
   // Fetch products
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
@@ -321,7 +313,7 @@ export default function POSEnhanced() {
         p.code.toLowerCase() === searchTerm || 
         p.name.toLowerCase().includes(searchTerm)
       );
-
+      
       if (mockProduct) {
         product = {
           id: parseInt(mockProduct.code) || Math.floor(Math.random() * 10000),
@@ -385,7 +377,7 @@ export default function POSEnhanced() {
   // Smart customer search
   const handleCustomerSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return [];
-
+    
     const term = searchTerm.toLowerCase();
     return customerDatabase.filter(customer =>
       customer.name.toLowerCase().includes(term) ||
@@ -475,7 +467,7 @@ export default function POSEnhanced() {
         stock: selectedProduct.stockQuantity
       };
       setCart(prev => [...prev, newItem]);
-
+      
       toast({
         title: "✅ Item Added to Cart",
         description: (
@@ -525,7 +517,7 @@ export default function POSEnhanced() {
   const removeFromCart = (productId: number) => {
     const item = cart.find(item => item.id === productId);
     setCart(prev => prev.filter(item => item.id !== productId));
-
+    
     if (item) {
       toast({
         title: "🗑️ Item Removed",
@@ -555,7 +547,7 @@ export default function POSEnhanced() {
         phone: "",
         email: ""
       });
-
+      
       toast({
         title: "🧹 Sale Cleared",
         description: "Cart has been cleared and reset for new sale",
@@ -623,17 +615,8 @@ export default function POSEnhanced() {
         notes
       };
 
-      // Print receipt with error handling
-      try {
-        await printReceipt(receiptData);
-      } catch (printError) {
-        console.error("Print error:", printError);
-        toast({
-          title: "⚠️ Print Warning",
-          description: "Sale completed but receipt printing failed",
-          variant: "default"
-        });
-      }
+      // Print receipt
+      printReceipt(receiptData);
 
       toast({
         title: "🎉 Sale Completed Successfully!",
@@ -937,15 +920,11 @@ export default function POSEnhanced() {
                 <div className="flex space-x-1">
                   <Button
                     variant={activeTab === 'scan' ? 'default' : 'ghost'}
-                    size="lg"
+                    size="sm"
                     onClick={() => setActiveTab('scan')}
-                    className={`rounded-full px-6 py-3 font-bold text-lg ${
-                      activeTab === 'scan' 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-2 border-blue-300' 
-                        : 'hover:bg-blue-50 hover:text-blue-700 border border-gray-300'
-                    }`}
+                    className="rounded-full"
                   >
-                    <ScanIcon className="h-5 w-5 mr-2" />
+                    <ScanIcon className="h-4 w-4 mr-2" />
                     Scan (F1)
                   </Button>
                   <Button
@@ -998,34 +977,32 @@ export default function POSEnhanced() {
               <div className="p-4 bg-white border-b">
                 {activeTab === 'scan' && (
                   <div className="space-y-4">
-                    <div className="bg-white rounded-xl border-3 border-gray-300 shadow-lg p-4">
-                      <div className="flex space-x-3 items-center">
-                        <div className="flex-1 relative">
-                          <BarcodeIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6" />
-                          <Input
-                            ref={barcodeInputRef}
-                            placeholder="Scan barcode or enter product code... (Press F1 to focus)"
-                            value={barcodeInput}
-                            onChange={(e) => setBarcodeInput(e.target.value)}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                handleBarcodeInput(barcodeInput);
-                              }
-                            }}
-                            className="pl-14 h-16 text-xl font-mono border-2 border-gray-200 focus:border-blue-500 bg-gray-50 focus:bg-white rounded-xl"
-                            autoComplete="off"
-                          />
-                        </div>
-                        <Button
-                          variant="default"
-                          onClick={() => handleBarcodeInput(barcodeInput)}
-                          disabled={!barcodeInput}
-                          className="h-16 px-8 bg-blue-600 hover:bg-blue-700 shadow-xl text-white font-bold text-lg rounded-xl"
-                        >
-                          <ZapIcon className="h-6 w-6 mr-2" />
-                          Find Product
-                        </Button>
+                    <div className="flex space-x-3">
+                      <div className="flex-1 relative">
+                        <BarcodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500 h-6 w-6" />
+                        <Input
+                          ref={barcodeInputRef}
+                          placeholder="🔍 Scan barcode or enter product code... (Press F1 to focus)"
+                          value={barcodeInput}
+                          onChange={(e) => setBarcodeInput(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleBarcodeInput(barcodeInput);
+                            }
+                          }}
+                          className="pl-12 h-14 text-lg font-mono border-2 border-blue-300 focus:border-blue-600 shadow-lg"
+                          autoComplete="off"
+                        />
                       </div>
+                      <Button
+                        variant="default"
+                        onClick={() => handleBarcodeInput(barcodeInput)}
+                        disabled={!barcodeInput}
+                        className="h-14 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg"
+                      >
+                        <ZapIcon className="h-5 w-5 mr-2" />
+                        Find Product
+                      </Button>
                     </div>
 
                     {/* Enhanced Selected Product Display */}
@@ -1178,7 +1155,7 @@ export default function POSEnhanced() {
                               createdAt: new Date().toISOString(),
                               updatedAt: new Date().toISOString()
                             };
-
+                            
                             setSelectedProduct(actualProduct);
                             setRateInput(actualProduct.price);
                             setQuantityInput(1);
@@ -1436,7 +1413,7 @@ export default function POSEnhanced() {
                     Customer (F12)
                   </Button>
                 </div>
-
+                
                 <Button
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
@@ -1445,7 +1422,7 @@ export default function POSEnhanced() {
                   <CreditCard className="h-6 w-6 mr-3" />
                   💳 Complete Payment (F10)
                 </Button>
-
+                
                 {/* Enhanced Print Last Receipt */}
                 {cart.length === 0 && (
                   <Button
@@ -1541,7 +1518,7 @@ export default function POSEnhanced() {
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                       };
-
+                      
                       const existingItem = cart.find(item => item.id === actualProduct.id);
                       if (existingItem) {
                         updateQuantity(actualProduct.id, existingItem.quantity + 1);
@@ -1555,9 +1532,9 @@ export default function POSEnhanced() {
                         };
                         setCart(prev => [...prev, newItem]);
                       }
-
+                      
                       setShowProductList(false);
-
+                      
                       toast({
                         title: "✅ Added to Cart!",
                         description: `${actualProduct.name} x 1 - ${formatCurrency(parseFloat(actualProduct.price))}`
@@ -1672,7 +1649,7 @@ export default function POSEnhanced() {
               >
                 Cancel
               </Button>
-
+              
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1701,7 +1678,7 @@ export default function POSEnhanced() {
                 <PrinterIcon className="h-4 w-4 mr-2" />
                 Preview Receipt
               </Button>
-
+              
               <Button
                 onClick={processSale}
                 disabled={isProcessing}
@@ -1804,7 +1781,6 @@ export default function POSEnhanced() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-                    
       </div>
     </DashboardLayout>
   );
