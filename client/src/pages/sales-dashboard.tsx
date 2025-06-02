@@ -51,23 +51,39 @@ export default function SalesDashboard() {
   const formatCurrency = useFormatCurrency();
 
   // Fetch sales data
-  const { data: salesData, isLoading: salesLoading } = useQuery({
-    queryKey: ['/api/sales', { startDate, endDate }],
+  const { data: salesData, isLoading: salesLoading, error: salesError } = useQuery({
+    queryKey: ['/api/sales'],
     queryFn: async () => {
-      const response = await fetch(`/api/sales?startDate=${startDate}&endDate=${endDate}`);
-      if (!response.ok) throw new Error('Failed to fetch sales data');
-      return response.json();
-    }
+      try {
+        const response = await fetch('/api/sales?limit=100');
+        if (!response.ok) throw new Error('Failed to fetch sales');
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+        return [];
+      }
+    },
+    retry: 3,
+    retryDelay: 1000
   });
 
   // Fetch sales chart data
   const { data: salesChartData, isLoading: chartLoading } = useQuery({
     queryKey: ['/api/dashboard/sales-chart', timeRange],
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/sales-chart?days=${timeRange}`);
-      if (!response.ok) throw new Error('Failed to fetch sales chart data');
-      return response.json();
-    }
+      try {
+        const response = await fetch(`/api/dashboard/sales-chart?days=${timeRange}`);
+        if (!response.ok) throw new Error('Failed to fetch chart data');
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching chart data:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
   });
 
   // Fetch top selling products

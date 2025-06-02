@@ -75,11 +75,23 @@ args = "pkill -f \"npm run dev\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pkill -f \"node\" || true"
+args = "pkill -f \"node.*server\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "sleep 3"
+args = "pkill -f \"vite\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 5"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "fuser -k 5000/tcp 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

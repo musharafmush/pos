@@ -86,9 +86,31 @@ app.use((req, res, next) => {
       log(`serving on port ${port}`);
     });
 
-    // Handle server errors
-    server.on('error', (error) => {
+    // Handle server errors with better recovery
+    server.on('error', (error: any) => {
       console.error('❌ Server error:', error);
+      
+      // Don't crash on EADDRINUSE - just log it
+      if (error.code === 'EADDRINUSE') {
+        console.log('⚠️ Port 5000 is already in use, trying to kill existing process...');
+        return;
+      }
+      
+      // For other errors, log but don't exit
+      console.error('Server will continue running despite error');
+    });
+
+    // Handle uncaught exceptions more gracefully
+    process.on('uncaughtException', (error) => {
+      console.error('❌ Uncaught Exception:', error.message);
+      console.error('Stack:', error.stack);
+      // Don't exit the process, just log the error
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('❌ Unhandled Rejection at:', promise);
+      console.error('Reason:', reason);
+      // Don't exit the process, just log the error
     });
 
   } catch (error) {

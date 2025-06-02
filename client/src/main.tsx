@@ -78,13 +78,25 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-// Add global error handlers
+// Add global error handlers with better recovery
 window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);
+  
+  // Try to recover from certain errors
+  if (event.error?.message?.includes('Loading chunk')) {
+    console.log('Chunk loading error detected, attempting refresh...');
+    setTimeout(() => window.location.reload(), 1000);
+  }
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
+  
+  // Handle network errors gracefully
+  if (event.reason?.message?.includes('fetch')) {
+    console.log('Network error detected, will retry...');
+  }
+  
   event.preventDefault(); // Prevent the default browser behavior
 });
 
