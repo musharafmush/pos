@@ -83,22 +83,64 @@ window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);
   
   // Try to recover from certain errors
-  if (event.error?.message?.includes('Loading chunk')) {
-    console.log('Chunk loading error detected, attempting refresh...');
-    setTimeout(() => window.location.reload(), 1000);
+  if (event.error?.message?.includes('Loading chunk') || 
+      event.error?.message?.includes('Failed to fetch') ||
+      event.error?.message?.includes('import')) {
+    console.log('Module loading error detected, attempting refresh...');
+    setTimeout(() => window.location.reload(), 1500);
   }
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
   
-  // Handle network errors gracefully
-  if (event.reason?.message?.includes('fetch')) {
-    console.log('Network error detected, will retry...');
+  // Handle network and Vite connection errors gracefully
+  if (event.reason?.message?.includes('fetch') ||
+      event.reason?.message?.includes('WebSocket') ||
+      event.reason?.message?.includes('ERR_NETWORK')) {
+    console.log('Network/Vite connection error detected, will retry...');
+    // Don't prevent default for network errors, let them be handled
+    return;
   }
   
   event.preventDefault(); // Prevent the default browser behavior
 });
+
+// Add Vite-specific connection monitoring
+if (typeof window !== 'undefined' && 'WebSocket' in window) {
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
+  
+  const originalWebSocket = window.WebSocket;
+  window.WebSocket = function(url, protocols) {
+    const ws = new originalWebSocket(url, protocols);
+    
+    ws.addEventListener('error', (event) => {
+      console.warn('WebSocket error (likely Vite HMR):', event);
+    });
+    
+    ws.addEventListener('close', (event) => {
+      if (url.includes('vite') && reconnectAttempts < maxReconnectAttempts) {
+        reconnectAttempts++;
+        console.log(`Vite WebSocket closed, attempt ${reconnectAttempts}/${maxReconnectAttempts}`);
+        
+        if (reconnectAttempts >= maxReconnectAttempts) {
+          console.log('Too many reconnection attempts, reloading page...');
+          setTimeout(() => window.location.reload(), 2000);
+        }
+      }
+    });
+    
+    ws.addEventListener('open', () => {
+      if (url.includes('vite')) {
+        reconnectAttempts = 0; // Reset on successful connection
+        console.log('Vite WebSocket reconnected successfully');
+      }
+    });
+    
+    return ws;
+  };
+}
 
 // Initialize React app safely
 function initializeApp() {
