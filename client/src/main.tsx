@@ -106,40 +106,86 @@ window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault(); // Prevent the default browser behavior
 });
 
-// Add Vite-specific connection monitoring
+// Add comprehensive Vite connection monitoring and recovery
 if (typeof window !== 'undefined' && 'WebSocket' in window) {
   let reconnectAttempts = 0;
-  const maxReconnectAttempts = 5;
+  let connectionLost = false;
+  const maxReconnectAttempts = 3;
+  
+  // Monitor for Vite connection status
+  const checkViteConnection = () => {
+    const checkInterval = setInterval(() => {
+      if (connectionLost && reconnectAttempts >= maxReconnectAttempts) {
+        console.log('🔄 Vite connection permanently lost, reloading application...');
+        clearInterval(checkInterval);
+        window.location.reload();
+      }
+    }, 5000);
+    
+    // Clear interval after 30 seconds if connection is restored
+    setTimeout(() => {
+      if (!connectionLost) {
+        clearInterval(checkInterval);
+      }
+    }, 30000);
+  };
   
   const originalWebSocket = window.WebSocket;
   window.WebSocket = function(url, protocols) {
     const ws = new originalWebSocket(url, protocols);
     
-    ws.addEventListener('error', (event) => {
-      console.warn('WebSocket error (likely Vite HMR):', event);
-    });
-    
-    ws.addEventListener('close', (event) => {
-      if (url.includes('vite') && reconnectAttempts < maxReconnectAttempts) {
+    if (url.includes('vite') || url.includes('5173') || url.includes('5000')) {
+      ws.addEventListener('error', (event) => {
+        console.warn('🔌 Vite WebSocket error:', event);
+        connectionLost = true;
+      });
+      
+      ws.addEventListener('close', (event) => {
+        connectionLost = true;
         reconnectAttempts++;
-        console.log(`Vite WebSocket closed, attempt ${reconnectAttempts}/${maxReconnectAttempts}`);
+        console.log(`📡 Vite connection closed (${event.code}), attempt ${reconnectAttempts}/${maxReconnectAttempts}`);
+        
+        if (reconnectAttempts === 1) {
+          checkViteConnection();
+        }
         
         if (reconnectAttempts >= maxReconnectAttempts) {
-          console.log('Too many reconnection attempts, reloading page...');
-          setTimeout(() => window.location.reload(), 2000);
+          console.log('❌ Max reconnection attempts reached, will reload soon...');
         }
-      }
-    });
-    
-    ws.addEventListener('open', () => {
-      if (url.includes('vite')) {
-        reconnectAttempts = 0; // Reset on successful connection
-        console.log('Vite WebSocket reconnected successfully');
-      }
-    });
+      });
+      
+      ws.addEventListener('open', () => {
+        connectionLost = false;
+        reconnectAttempts = 0;
+        console.log('✅ Vite WebSocket connected successfully');
+      });
+    }
     
     return ws;
   };
+  
+  // Additional connection monitoring using fetch
+  let viteHealthCheck = setInterval(() => {
+    fetch('/__vite_ping')
+      .then(() => {
+        if (connectionLost) {
+          console.log('🎯 Vite server responded, connection restored');
+          connectionLost = false;
+          reconnectAttempts = 0;
+        }
+      })
+      .catch(() => {
+        if (!connectionLost) {
+          console.log('⚠️ Vite health check failed');
+          connectionLost = true;
+        }
+      });
+  }, 10000);
+  
+  // Clear health check after app initialization
+  setTimeout(() => {
+    clearInterval(viteHealthCheck);
+  }, 60000);
 }
 
 // Initialize React app safely
