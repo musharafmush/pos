@@ -105,24 +105,30 @@ try {
   if (!root) {
     console.error("Root element not found");
     document.body.innerHTML = '<div style="padding: 20px; text-align: center;">Loading...</div>';
-  } else {
-    createRoot(root).render(
-      <React.StrictMode>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
-      </React.StrictMode>
-    );
+    throw new Error("Root element not found");
   }
+
+  const reactRoot = createRoot(root);
+  reactRoot.render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
 } catch (error) {
   console.error('Failed to render app:', error);
-  document.body.innerHTML = `
-    <div style="padding: 20px; text-align: center; color: red;">
-      <h1>Failed to start application</h1>
+  const fallbackContent = `
+    <div style="padding: 20px; text-align: center; color: #fff; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+      <h1 style="color: #ff6b6b;">Failed to start application</h1>
       <p>Please check the console for more details and refresh the page.</p>
-      <button onclick="window.location.reload()" style="padding: 10px 20px; margin-top: 10px;">
+      <button onclick="window.location.reload()" style="padding: 10px 20px; margin-top: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
         Refresh Page
       </button>
+      <pre style="margin-top: 20px; padding: 10px; background: #2a2a2a; border-radius: 4px; max-width: 600px; overflow: auto; font-size: 12px;">
+        ${error.toString()}
+      </pre>
     </div>
   `;
+  document.body.innerHTML = fallbackContent;
 }
