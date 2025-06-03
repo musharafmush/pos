@@ -1384,14 +1384,398 @@ export default function POSEnhanced() {
                 )}
 
                 {activeTab === 'browse' && (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
+                    {/* Active Items Header */}
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border-2 border-blue-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xl font-bold text-blue-800 flex items-center">
+                          <Package2Icon className="h-6 w-6 mr-2" />
+                          Product Catalog - Real-time Inventory
+                        </h3>
+                        <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                          Last updated: {lastUpdateTime.toLocaleTimeString()}
+                        </Badge>
+                      </div>
+                      <p className="text-blue-600 text-sm">
+                        Click any product to add to cart instantly. {mockProductList.length} products available.
+                      </p>
+                    </div>
+
+                    {/* Active Items Grid by Category */}
+                    <div className="space-y-4 max-h-80 overflow-y-auto">
+                      {/* Dry Fruits Category */}
+                      <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-bold text-gray-800 flex items-center">
+                            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs mr-2">Dry Fruits</span>
+                            Category Products
+                          </h4>
+                          <Badge variant="outline" className="text-xs">
+                            {mockProductList.filter(p => p.category === "Dry Fruits").length} items
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {mockProductList
+                            .filter(product => product.category === "Dry Fruits")
+                            .slice(0, 4)
+                            .map((product) => (
+                              <div
+                                key={product.sno}
+                                className="border-2 rounded-lg p-3 hover:shadow-lg cursor-pointer transition-all hover:border-blue-400 bg-gradient-to-br from-white to-orange-50 hover:scale-105"
+                                onClick={() => {
+                                  let actualProduct = {
+                                    id: parseInt(product.code) || Math.floor(Math.random() * 10000),
+                                    name: product.name,
+                                    sku: product.code,
+                                    price: product.selfRate.toString(),
+                                    cost: product.selfRate.toString(),
+                                    stockQuantity: product.stock,
+                                    description: product.name,
+                                    barcode: product.code,
+                                    brand: "",
+                                    manufacturer: "",
+                                    categoryId: 1,
+                                    mrp: product.mrp.toString(),
+                                    unit: "PCS",
+                                    hsnCode: "",
+                                    taxRate: "18",
+                                    active: true,
+                                    trackInventory: true,
+                                    allowNegativeStock: false,
+                                    alertThreshold: 10,
+                                    createdAt: new Date().toISOString(),
+                                    updatedAt: new Date().toISOString()
+                                  };
+                                  
+                                  setSelectedProduct(actualProduct);
+                                  setRateInput(actualProduct.price);
+                                  setQuantityInput(1);
+                                  setActiveTab('scan');
+                                  
+                                  toast({
+                                    title: "🎯 Product Selected!",
+                                    description: `${actualProduct.name} ready to add`
+                                  });
+                                }}
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center space-x-1">
+                                    <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">
+                                      Dry Fruits
+                                    </Badge>
+                                    {product.trending && (
+                                      <Badge variant="default" className="text-xs bg-red-500 text-white">
+                                        HOT
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <Badge 
+                                    variant={product.stock > 20 ? "default" : product.stock > 10 ? "secondary" : "destructive"} 
+                                    className={`text-xs font-bold ${
+                                      product.stock > 20 ? "bg-blue-500 text-white" : 
+                                      product.stock > 10 ? "bg-yellow-500 text-white" : 
+                                      "bg-red-500 text-white"
+                                    }`}
+                                  >
+                                    Stock: {product.stock}
+                                  </Badge>
+                                </div>
+                                <h5 className="font-bold text-gray-900 mb-1 text-sm leading-tight">{product.name}</h5>
+                                <p className="text-xs text-gray-600 mb-2">Code: {product.code}</p>
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <div className="text-lg font-bold text-green-600">{formatCurrency(product.selfRate)}</div>
+                                    <div className="text-xs text-gray-500">MRP: {formatCurrency(product.mrp)}</div>
+                                  </div>
+                                  <PlusIcon className="h-5 w-5 text-blue-600" />
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+
+                      {/* Grains Category */}
+                      <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-bold text-gray-800 flex items-center">
+                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs mr-2">Grains</span>
+                            Category Products
+                          </h4>
+                          <Badge variant="outline" className="text-xs">
+                            {mockProductList.filter(p => p.category === "Grains").length} items
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {mockProductList
+                            .filter(product => product.category === "Grains")
+                            .slice(0, 4)
+                            .map((product) => (
+                              <div
+                                key={product.sno}
+                                className="border-2 rounded-lg p-3 hover:shadow-lg cursor-pointer transition-all hover:border-blue-400 bg-gradient-to-br from-white to-blue-50 hover:scale-105"
+                                onClick={() => {
+                                  let actualProduct = {
+                                    id: parseInt(product.code) || Math.floor(Math.random() * 10000),
+                                    name: product.name,
+                                    sku: product.code,
+                                    price: product.selfRate.toString(),
+                                    cost: product.selfRate.toString(),
+                                    stockQuantity: product.stock,
+                                    description: product.name,
+                                    barcode: product.code,
+                                    brand: "",
+                                    manufacturer: "",
+                                    categoryId: 1,
+                                    mrp: product.mrp.toString(),
+                                    unit: "PCS",
+                                    hsnCode: "",
+                                    taxRate: "18",
+                                    active: true,
+                                    trackInventory: true,
+                                    allowNegativeStock: false,
+                                    alertThreshold: 10,
+                                    createdAt: new Date().toISOString(),
+                                    updatedAt: new Date().toISOString()
+                                  };
+                                  
+                                  setSelectedProduct(actualProduct);
+                                  setRateInput(actualProduct.price);
+                                  setQuantityInput(1);
+                                  setActiveTab('scan');
+                                  
+                                  toast({
+                                    title: "🎯 Product Selected!",
+                                    description: `${actualProduct.name} ready to add`
+                                  });
+                                }}
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center space-x-1">
+                                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                                      Grains
+                                    </Badge>
+                                    {product.trending && (
+                                      <Badge variant="default" className="text-xs bg-red-500 text-white">
+                                        HOT
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <Badge 
+                                    variant={product.stock > 30 ? "default" : product.stock > 15 ? "secondary" : "destructive"} 
+                                    className={`text-xs font-bold ${
+                                      product.stock > 30 ? "bg-blue-500 text-white" : 
+                                      product.stock > 15 ? "bg-yellow-500 text-white" : 
+                                      "bg-red-500 text-white"
+                                    }`}
+                                  >
+                                    Stock: {product.stock}
+                                  </Badge>
+                                </div>
+                                <h5 className="font-bold text-gray-900 mb-1 text-sm leading-tight">{product.name}</h5>
+                                <p className="text-xs text-gray-600 mb-2">Code: {product.code}</p>
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <div className="text-lg font-bold text-green-600">{formatCurrency(product.selfRate)}</div>
+                                    <div className="text-xs text-gray-500">MRP: {formatCurrency(product.mrp)}</div>
+                                  </div>
+                                  <PlusIcon className="h-5 w-5 text-blue-600" />
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+
+                      {/* Spices Category */}
+                      <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-bold text-gray-800 flex items-center">
+                            <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs mr-2">Spices</span>
+                            Category Products
+                          </h4>
+                          <Badge variant="outline" className="text-xs">
+                            {mockProductList.filter(p => p.category === "Spices").length} items
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {mockProductList
+                            .filter(product => product.category === "Spices")
+                            .slice(0, 4)
+                            .map((product) => (
+                              <div
+                                key={product.sno}
+                                className="border-2 rounded-lg p-3 hover:shadow-lg cursor-pointer transition-all hover:border-blue-400 bg-gradient-to-br from-white to-purple-50 hover:scale-105"
+                                onClick={() => {
+                                  let actualProduct = {
+                                    id: parseInt(product.code) || Math.floor(Math.random() * 10000),
+                                    name: product.name,
+                                    sku: product.code,
+                                    price: product.selfRate.toString(),
+                                    cost: product.selfRate.toString(),
+                                    stockQuantity: product.stock,
+                                    description: product.name,
+                                    barcode: product.code,
+                                    brand: "",
+                                    manufacturer: "",
+                                    categoryId: 1,
+                                    mrp: product.mrp.toString(),
+                                    unit: "PCS",
+                                    hsnCode: "",
+                                    taxRate: "18",
+                                    active: true,
+                                    trackInventory: true,
+                                    allowNegativeStock: false,
+                                    alertThreshold: 10,
+                                    createdAt: new Date().toISOString(),
+                                    updatedAt: new Date().toISOString()
+                                  };
+                                  
+                                  setSelectedProduct(actualProduct);
+                                  setRateInput(actualProduct.price);
+                                  setQuantityInput(1);
+                                  setActiveTab('scan');
+                                  
+                                  toast({
+                                    title: "🎯 Product Selected!",
+                                    description: `${actualProduct.name} ready to add`
+                                  });
+                                }}
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center space-x-1">
+                                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-300">
+                                      Spices
+                                    </Badge>
+                                    {product.trending && (
+                                      <Badge variant="default" className="text-xs bg-red-500 text-white">
+                                        HOT
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <Badge 
+                                    variant={product.stock > 20 ? "default" : product.stock > 10 ? "secondary" : "destructive"} 
+                                    className={`text-xs font-bold ${
+                                      product.stock > 20 ? "bg-blue-500 text-white" : 
+                                      product.stock > 10 ? "bg-yellow-500 text-white" : 
+                                      "bg-red-500 text-white"
+                                    }`}
+                                  >
+                                    Stock: {product.stock}
+                                  </Badge>
+                                </div>
+                                <h5 className="font-bold text-gray-900 mb-1 text-sm leading-tight">{product.name}</h5>
+                                <p className="text-xs text-gray-600 mb-2">Code: {product.code}</p>
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <div className="text-lg font-bold text-green-600">{formatCurrency(product.selfRate)}</div>
+                                    <div className="text-xs text-gray-500">MRP: {formatCurrency(product.mrp)}</div>
+                                  </div>
+                                  <PlusIcon className="h-5 w-5 text-blue-600" />
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+
+                      {/* Other Categories */}
+                      <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-bold text-gray-800 flex items-center">
+                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs mr-2">Other</span>
+                            All Categories
+                          </h4>
+                          <Badge variant="outline" className="text-xs">
+                            {mockProductList.filter(p => !["Dry Fruits", "Grains", "Spices"].includes(p.category || "")).length} items
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {mockProductList
+                            .filter(product => !["Dry Fruits", "Grains", "Spices"].includes(product.category || ""))
+                            .slice(0, 6)
+                            .map((product) => (
+                              <div
+                                key={product.sno}
+                                className="border-2 rounded-lg p-3 hover:shadow-lg cursor-pointer transition-all hover:border-blue-400 bg-gradient-to-br from-white to-green-50 hover:scale-105"
+                                onClick={() => {
+                                  let actualProduct = {
+                                    id: parseInt(product.code) || Math.floor(Math.random() * 10000),
+                                    name: product.name,
+                                    sku: product.code,
+                                    price: product.selfRate.toString(),
+                                    cost: product.selfRate.toString(),
+                                    stockQuantity: product.stock,
+                                    description: product.name,
+                                    barcode: product.code,
+                                    brand: "",
+                                    manufacturer: "",
+                                    categoryId: 1,
+                                    mrp: product.mrp.toString(),
+                                    unit: "PCS",
+                                    hsnCode: "",
+                                    taxRate: "18",
+                                    active: true,
+                                    trackInventory: true,
+                                    allowNegativeStock: false,
+                                    alertThreshold: 10,
+                                    createdAt: new Date().toISOString(),
+                                    updatedAt: new Date().toISOString()
+                                  };
+                                  
+                                  setSelectedProduct(actualProduct);
+                                  setRateInput(actualProduct.price);
+                                  setQuantityInput(1);
+                                  setActiveTab('scan');
+                                  
+                                  toast({
+                                    title: "🎯 Product Selected!",
+                                    description: `${actualProduct.name} ready to add`
+                                  });
+                                }}
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center space-x-1">
+                                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                                      {product.category || "General"}
+                                    </Badge>
+                                    {product.trending && (
+                                      <Badge variant="default" className="text-xs bg-red-500 text-white">
+                                        HOT
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <Badge 
+                                    variant={product.stock > 20 ? "default" : product.stock > 10 ? "secondary" : "destructive"} 
+                                    className={`text-xs font-bold ${
+                                      product.stock > 20 ? "bg-blue-500 text-white" : 
+                                      product.stock > 10 ? "bg-yellow-500 text-white" : 
+                                      "bg-red-500 text-white"
+                                    }`}
+                                  >
+                                    Stock: {product.stock}
+                                  </Badge>
+                                </div>
+                                <h5 className="font-bold text-gray-900 mb-1 text-sm leading-tight">{product.name}</h5>
+                                <p className="text-xs text-gray-600 mb-2">Code: {product.code}</p>
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <div className="text-lg font-bold text-green-600">{formatCurrency(product.selfRate)}</div>
+                                    <div className="text-xs text-gray-500">MRP: {formatCurrency(product.mrp)}</div>
+                                  </div>
+                                  <PlusIcon className="h-5 w-5 text-blue-600" />
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* View All Products Button */}
                     <Button
                       onClick={() => setShowProductList(true)}
-                      className="w-full h-12 text-lg bg-purple-600 hover:bg-purple-700"
+                      className="w-full h-12 text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg"
                       variant="default"
                     >
                       <Package2Icon className="h-5 w-5 mr-2" />
-                      Browse All Products ({mockProductList.length} items available)
+                      View Complete Product Catalog ({mockProductList.length} items)
                     </Button>
                   </div>
                 )}
