@@ -2129,63 +2129,63 @@ export default function POSEnhanced() {
             </DialogFooter>
             <div className="mt-4">
               <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={() => handleQuickPayment('cash')}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-              >
-                💵 Cash
-              </Button>
-              <Button
-                onClick={() => handleQuickPayment('upi')}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-              >
-                📱 UPI
-              </Button>
-              <Button
-                onClick={() => handleQuickPayment('card')}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-              >
-                💳 Card
-              </Button>
-              <Button
-                onClick={() => handleQuickPayment('paytm')}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-              >
-                📲 Paytm
-              </Button>
-              <Button
-                onClick={() => handleQuickPayment('phonepe')}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-              >
-                💸 PhonePe
-              </Button>
-              <Button
-                onClick={() => handleQuickPayment('giftcard')}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-              >
-                🎁 Gift Card
-              </Button>
-              <Button
-                onClick={() => handleQuickPayment('split')}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-              >
-                💸 Split
-              </Button>
-            </div>
+                <Button
+                  onClick={() => handleQuickPayment('cash')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  💵 Cash
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('upi')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  📱 UPI
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('card')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  💳 Card
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('paytm')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  📲 Paytm
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('phonepe')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  💸 PhonePe
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('giftcard')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  🎁 Gift Card
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('split')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  💸 Split
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -2199,7 +2199,7 @@ export default function POSEnhanced() {
                 Master these shortcuts to boost your efficiency
               </DialogDescription>
             </DialogHeader>
-<div className="space-y-4">
+            <div className="space-y-4">
               <div>
                 <h4 className="font-semibold mb-2">🔥 Function Keys (F1-F12)</h4>
                 <div className="space-y-1 text-sm">
