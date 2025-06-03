@@ -142,6 +142,16 @@ export default function POSEnhanced() {
     email: ""
   });
 
+  // Auto Shopping Cart Features
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
+  const [autoSuggestions, setAutoSuggestions] = useState<ProductListItem[]>([]);
+  const [showAutoSuggestions, setShowAutoSuggestions] = useState(false);
+  const [cartHistory, setCartHistory] = useState<Array<{id: string, cart: CartItem[], timestamp: Date, customer: string}>>([]);
+  const [autoRecallEnabled, setAutoRecallEnabled] = useState(true);
+  const [smartQuantityEnabled, setSmartQuantityEnabled] = useState(true);
+  const [frequentlyBoughtTogether, setFrequentlyBoughtTogether] = useState<Array<{productId: number, suggestions: ProductListItem[]}>>([]);
+
   // Dynamic bill number generation
   const generateBillNumber = () => {
     const today = new Date();
@@ -427,6 +437,151 @@ export default function POSEnhanced() {
     });
   };
 
+  // Auto Shopping Cart Functions
+  const autoSaveCart = () => {
+    if (!autoSaveEnabled || cart.length === 0) return;
+
+    try {
+      const cartData = {
+        id: `auto-save-${Date.now()}`,
+        cart: cart,
+        customer: customerDetails.name,
+        timestamp: new Date(),
+        billNumber: billNumber,
+        subtotal: subtotal
+      };
+
+      // Save to localStorage
+      const savedCarts = JSON.parse(localStorage.getItem('autoSavedCarts') || '[]');
+      savedCarts.unshift(cartData);
+      
+      // Keep only last 10 auto-saves
+      const limitedCarts = savedCarts.slice(0, 10);
+      localStorage.setItem('autoSavedCarts', JSON.stringify(limitedCarts));
+      
+      setLastAutoSave(new Date());
+      setCartHistory(limitedCarts);
+
+      toast({
+        title: "💾 Cart Auto-Saved",
+        description: `Cart automatically saved at ${new Date().toLocaleTimeString()}`,
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
+  };
+
+  const generateAutoSuggestions = (currentCart: CartItem[]) => {
+    if (currentCart.length === 0) {
+      setAutoSuggestions([]);
+      return;
+    }
+
+    // Get categories of items in cart
+    const cartCategories = currentCart.map(item => {
+      const mockItem = mockProductList.find(p => p.name === item.name);
+      return mockItem?.category || "General";
+    });
+
+    // Suggest complementary products
+    const suggestions = mockProductList.filter(product => {
+      // Don't suggest items already in cart
+      const alreadyInCart = currentCart.some(cartItem => cartItem.name === product.name);
+      if (alreadyInCart) return false;
+
+      // Suggest items from same categories
+      return cartCategories.includes(product.category || "General") || product.trending;
+    }).slice(0, 6);
+
+    setAutoSuggestions(suggestions);
+    setShowAutoSuggestions(suggestions.length > 0);
+  };
+
+  const loadAutoSavedCart = (savedCart: any) => {
+    try {
+      setCart(savedCart.cart);
+      setCustomerDetails(prev => ({
+        ...prev,
+        name: savedCart.customer
+      }));
+
+      toast({
+        title: "🔄 Cart Restored",
+        description: `Cart from ${savedCart.timestamp ? new Date(savedCart.timestamp).toLocaleTimeString() : 'earlier'} restored successfully`
+      });
+    } catch (error) {
+      console.error('Failed to load auto-saved cart:', error);
+      toast({
+        title: "❌ Restore Failed",
+        description: "Failed to restore saved cart",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getSmartQuantity = (product: ProductListItem) => {
+    if (!smartQuantityEnabled) return 1;
+
+    // Check if product is commonly bought in multiples
+    const bulkProducts = ["Rice", "Oil", "Salt", "Flour"];
+    const isBulkItem = bulkProducts.some(bulk => product.name.toLowerCase().includes(bulk.toLowerCase()));
+    
+    if (isBulkItem) return 2;
+
+    // Check if it's a trending item (suggest 1 extra)
+    if (product.trending) return 1;
+
+    return 1;
+  };
+
+  const addSuggestedProductToCart = (suggestion: ProductListItem) => {
+    const actualProduct = {
+      id: parseInt(suggestion.code) || Math.floor(Math.random() * 10000),
+      name: suggestion.name,
+      sku: suggestion.code,
+      price: suggestion.selfRate.toString(),
+      cost: suggestion.selfRate.toString(),
+      stockQuantity: suggestion.stock,
+      description: suggestion.name,
+      barcode: suggestion.code,
+      brand: "",
+      manufacturer: "",
+      categoryId: 1,
+      mrp: suggestion.mrp.toString(),
+      unit: "PCS",
+      hsnCode: "",
+      taxRate: "18",
+      active: true,
+      trackInventory: true,
+      allowNegativeStock: false,
+      alertThreshold: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const smartQty = getSmartQuantity(suggestion);
+    const existingItem = cart.find(item => item.id === actualProduct.id);
+
+    if (existingItem) {
+      updateQuantity(actualProduct.id, existingItem.quantity + smartQty);
+    } else {
+      const newItem: CartItem = {
+        ...actualProduct,
+        quantity: smartQty,
+        total: parseFloat(actualProduct.price) * smartQty,
+        mrp: parseFloat(actualProduct.mrp || actualProduct.price),
+        stock: actualProduct.stockQuantity
+      };
+      setCart(prev => [...prev, newItem]);
+    }
+
+    toast({
+      title: "🤖 Smart Add",
+      description: `${actualProduct.name} x ${smartQty} added via AI suggestion`
+    });
+  };
+
   // Add product to cart with enhanced feedback
   const addToCart = () => {
     if (!selectedProduct) {
@@ -673,6 +828,45 @@ export default function POSEnhanced() {
     };
   }, []);
 
+  // Auto-save cart when it changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      // Auto-save after 30 seconds of cart changes
+      const autoSaveTimer = setTimeout(() => {
+        autoSaveCart();
+      }, 30000);
+
+      // Generate suggestions when cart changes
+      generateAutoSuggestions(cart);
+
+      return () => clearTimeout(autoSaveTimer);
+    } else {
+      setAutoSuggestions([]);
+      setShowAutoSuggestions(false);
+    }
+  }, [cart, autoSaveEnabled]);
+
+  // Load cart history on component mount
+  useEffect(() => {
+    try {
+      const savedCarts = JSON.parse(localStorage.getItem('autoSavedCarts') || '[]');
+      setCartHistory(savedCarts);
+      
+      // Auto-recall last cart if enabled and no current cart
+      if (autoRecallEnabled && cart.length === 0 && savedCarts.length > 0) {
+        const lastCart = savedCarts[0];
+        if (lastCart && new Date().getTime() - new Date(lastCart.timestamp).getTime() < 3600000) { // Within 1 hour
+          toast({
+            title: "🔄 Auto-Recall Available",
+            description: "Found a recent cart. Press Ctrl+R to restore it.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load cart history:', error);
+    }
+  }, []);
+
   // Enhanced keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -745,6 +939,14 @@ export default function POSEnhanced() {
               // Recall held sales
               setShowHoldSales(true);
               toast({ title: "📋 Recall", description: "Showing held sales" });
+            } else if (e.ctrlKey) {
+              e.preventDefault();
+              // Auto-recall last saved cart
+              if (cartHistory.length > 0) {
+                loadAutoSavedCart(cartHistory[0]);
+              } else {
+                toast({ title: "📝 No Saved Carts", description: "No auto-saved carts available" });
+              }
             }
             break;
           case 'c':
@@ -941,7 +1143,11 @@ export default function POSEnhanced() {
     { key: "Alt+R", action: "Recall Sales" },
     { key: "Alt+C", action: "Quick Cash Payment" },
     { key: "Alt+U", action: "Quick UPI Payment" },
-    { key: "Alt+Del", action: "Remove Last Item" }
+    { key: "Alt+Del", action: "Remove Last Item" },
+    { key: "Ctrl+S", action: "Auto-Save Cart" },
+    { key: "Ctrl+R", action: "Auto-Recall Last Cart" },
+    { key: "Ctrl+Shift+S", action: "Toggle Auto-Save" },
+    { key: "Ctrl+Shift+A", action: "Toggle Auto-Suggest" }
   ];
 
   return (
@@ -1470,6 +1676,72 @@ export default function POSEnhanced() {
                           <PlusIcon className="h-6 w-6 mr-2" />
                           Add to Cart (Press Enter)
                         </Button>
+                      </div>
+                    )}
+
+                    {/* Auto Suggestions */}
+                    {showAutoSuggestions && autoSuggestions.length > 0 && (
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-4 shadow-lg animate-in slide-in-from-bottom-2 duration-500">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-lg font-bold text-purple-800 flex items-center">
+                            🤖 Smart Suggestions
+                            <Badge variant="outline" className="ml-2 bg-purple-100 text-purple-700">
+                              AI Powered
+                            </Badge>
+                          </h3>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAutoSuggestions(false)}
+                            className="text-purple-600 hover:bg-purple-100"
+                          >
+                            <XCircleIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-purple-600 text-sm mb-3">
+                          Based on your current cart, customers often buy these items together:
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {autoSuggestions.map((suggestion, index) => (
+                            <div
+                              key={suggestion.sno}
+                              className="bg-white border-2 border-purple-200 rounded-lg p-3 hover:shadow-md cursor-pointer transition-all hover:border-purple-400 hover:scale-105"
+                              onClick={() => addSuggestedProductToCart(suggestion)}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700">
+                                  {suggestion.category}
+                                </Badge>
+                                {suggestion.trending && (
+                                  <Badge variant="default" className="text-xs bg-orange-500">
+                                    HOT
+                                  </Badge>
+                                )}
+                              </div>
+                              <h5 className="font-bold text-gray-900 mb-1 text-sm">{suggestion.name}</h5>
+                              <div className="flex justify-between items-center">
+                                <div className="text-lg font-bold text-green-600">
+                                  {formatCurrency(suggestion.selfRate)}
+                                </div>
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <ZapIcon className="h-3 w-3 mr-1" />
+                                  Smart Qty: {getSmartQuantity(suggestion)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 flex justify-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => generateAutoSuggestions(cart)}
+                            className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                          >
+                            <RefreshCwIcon className="h-4 w-4 mr-1" />
+                            Refresh Suggestions
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2101,7 +2373,7 @@ export default function POSEnhanced() {
 
             {/* Enhanced Quick Actions */}
             <div className="p-4 border-t bg-gradient-to-r from-gray-50 to-blue-50">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-2 mb-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -2159,6 +2431,66 @@ export default function POSEnhanced() {
                   Help (F9)
                 </Button>
               </div>
+
+              {/* Auto Cart Features */}
+              <div className="grid grid-cols-3 gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-cyan-300 hover:bg-cyan-50"
+                  onClick={() => autoSaveCart()}
+                  disabled={cart.length === 0}
+                  title="Ctrl+S"
+                >
+                  <SaveIcon className="h-4 w-4 mr-1" />
+                  Auto-Save
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-indigo-300 hover:bg-indigo-50"
+                  onClick={() => {
+                    if (cartHistory.length > 0) {
+                      loadAutoSavedCart(cartHistory[0]);
+                    }
+                  }}
+                  disabled={cartHistory.length === 0}
+                  title="Ctrl+R"
+                >
+                  <RefreshCwIcon className="h-4 w-4 mr-1" />
+                  Auto-Recall
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-pink-300 hover:bg-pink-50"
+                  onClick={() => generateAutoSuggestions(cart)}
+                  disabled={cart.length === 0}
+                >
+                  <ZapIcon className="h-4 w-4 mr-1" />
+                  AI Suggest
+                </Button>
+              </div>
+
+              {/* Auto Status */}
+              {(lastAutoSave || cartHistory.length > 0) && (
+                <div className="mt-2 text-xs text-gray-600 bg-white/50 rounded p-2">
+                  <div className="flex justify-between items-center">
+                    {lastAutoSave && (
+                      <span className="flex items-center">
+                        <CheckCircleIcon className="h-3 w-3 mr-1 text-green-600" />
+                        Last saved: {lastAutoSave.toLocaleTimeString()}
+                      </span>
+                    )}
+                    {cartHistory.length > 0 && (
+                      <span className="flex items-center">
+                        <Package2Icon className="h-3 w-3 mr-1 text-blue-600" />
+                        {cartHistory.length} saved carts
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
