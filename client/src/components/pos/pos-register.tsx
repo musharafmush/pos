@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
 import { 
-  CashIcon, 
+  Banknote, 
   XIcon, 
   PlusIcon, 
   MinusIcon, 
@@ -167,7 +167,7 @@ export function POSRegister({ isOpen, onOpenChange, initialCashAmount = 0 }: POS
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
-            <CashIcon className="h-6 w-6 text-green-600" />
+            <Banknote className="h-6 w-6 text-green-600" />
             POS Register
           </DialogTitle>
         </DialogHeader>
@@ -410,7 +410,7 @@ export function POSRegisterTrigger() {
         onClick={() => setIsOpen(true)}
         className="flex items-center gap-2 border-green-300 text-green-700 hover:bg-green-50"
       >
-        <CashIcon className="h-4 w-4" />
+        <Banknote className="h-4 w-4" />
         Cash Register
       </Button>
       
