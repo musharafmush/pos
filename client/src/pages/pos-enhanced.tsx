@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -170,7 +171,7 @@ export default function POSEnhanced() {
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
+  
 
   // Fetch products
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
@@ -312,7 +313,7 @@ export default function POSEnhanced() {
         p.code.toLowerCase() === searchTerm || 
         p.name.toLowerCase().includes(searchTerm)
       );
-
+      
       if (mockProduct) {
         product = {
           id: parseInt(mockProduct.code) || Math.floor(Math.random() * 10000),
@@ -376,7 +377,7 @@ export default function POSEnhanced() {
   // Smart customer search
   const handleCustomerSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return [];
-
+    
     const term = searchTerm.toLowerCase();
     return customerDatabase.filter(customer =>
       customer.name.toLowerCase().includes(term) ||
@@ -466,7 +467,7 @@ export default function POSEnhanced() {
         stock: selectedProduct.stockQuantity
       };
       setCart(prev => [...prev, newItem]);
-
+      
       toast({
         title: "✅ Item Added to Cart",
         description: (
@@ -516,7 +517,7 @@ export default function POSEnhanced() {
   const removeFromCart = (productId: number) => {
     const item = cart.find(item => item.id === productId);
     setCart(prev => prev.filter(item => item.id !== productId));
-
+    
     if (item) {
       toast({
         title: "🗑️ Item Removed",
@@ -546,7 +547,7 @@ export default function POSEnhanced() {
         phone: "",
         email: ""
       });
-
+      
       toast({
         title: "🧹 Sale Cleared",
         description: "Cart has been cleared and reset for new sale",
@@ -925,7 +926,6 @@ export default function POSEnhanced() {
     { key: "F7", action: "Browse Mode" },
     { key: "F8", action: "Toggle View Mode" },
     { key: "F9", action: "Show Shortcuts" },
-    ```python
     { key: "F10", action: "Process Payment" },
     { key: "F11", action: "Clear Sale" },
     { key: "F12", action: "New Customer" },
@@ -1241,12 +1241,12 @@ export default function POSEnhanced() {
                                   createdAt: new Date().toISOString(),
                                   updatedAt: new Date().toISOString()
                                 };
-
+                                
                                 setSelectedProduct(actualProduct);
                                 setRateInput(actualProduct.price);
                                 setQuantityInput(1);
                                 setBarcodeInput("");
-
+                                
                                 toast({
                                   title: "🎯 Product Selected!",
                                   description: `${actualProduct.name} ready to add`
@@ -1261,22 +1261,12 @@ export default function POSEnhanced() {
                                 <div className="text-xs text-gray-500">{product.code}</div>
                               </div>
                               <div className="text-right">
-                                <Badge 
-                                variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"} 
-                                className={`text-xs font-bold ${
-                                  product.stock > 10 ? "bg-green-500 text-white" : 
-                                  product.stock > 0 ? "bg-yellow-500 text-white" : 
-                                  "bg-red-500 text-white"
-                                }`}
-                              >
-                                Stock: {product.stock}
-                              </Badge>
-                              {product.stock === 0 && (
-                                <div className="text-xs text-red-600 font-bold">(Out of stock)</div>
-                              )}
-                              {product.stock > 0 && product.stock <= 5 && (
-                                <div className="text-xs text-orange-600 font-medium">(Low stock)</div>
-                              )}
+                                <Badge variant={product.stock > 10 ? "default" : "destructive"} className="mb-1">
+                                  Stock: {product.stock}
+                                </Badge>
+                                {product.stock <= 10 && (
+                                  <div className="text-xs text-red-600">(Out of stock)</div>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -1456,12 +1446,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-
+                                  
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-
+                                  
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1480,21 +1470,15 @@ export default function POSEnhanced() {
                                     )}
                                   </div>
                                   <Badge 
-                                variant={product.stock > 20 ? "default" : product.stock > 10 ? "secondary" : "destructive"} 
-                                className={`text-xs font-bold ${
-                                  product.stock > 20 ? "bg-blue-500 text-white" : 
-                                  product.stock > 10 ? "bg-yellow-500 text-white" : 
-                                  "bg-red-500 text-white"
-                                }`}
-                              >
-                                Stock: {product.stock}
-                              </Badge>
-                              {product.stock === 0 && (
-                                <div className="text-xs text-red-600 font-bold">(Out of stock)</div>
-                              )}
-                              {product.stock > 0 && product.stock <= 5 && (
-                                <div className="text-xs text-orange-600 font-medium">(Low stock)</div>
-                              )}
+                                    variant={product.stock > 20 ? "default" : product.stock > 10 ? "secondary" : "destructive"} 
+                                    className={`text-xs font-bold ${
+                                      product.stock > 20 ? "bg-blue-500 text-white" : 
+                                      product.stock > 10 ? "bg-yellow-500 text-white" : 
+                                      "bg-red-500 text-white"
+                                    }`}
+                                  >
+                                    Stock: {product.stock}
+                                  </Badge>
                                 </div>
                                 <h5 className="font-bold text-gray-900 mb-1 text-sm leading-tight">{product.name}</h5>
                                 <p className="text-xs text-gray-600 mb-2">Code: {product.code}</p>
@@ -1553,12 +1537,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-
+                                  
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-
+                                  
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1577,21 +1561,15 @@ export default function POSEnhanced() {
                                     )}
                                   </div>
                                   <Badge 
-                                variant={product.stock > 30 ? "default" : product.stock > 15 ? "secondary" : "destructive"} 
-                                className={`text-xs font-bold ${
-                                  product.stock > 30 ? "bg-blue-500 text-white" : 
-                                  product.stock > 15 ? "bg-yellow-500 text-white" : 
-                                  "bg-red-500 text-white"
-                                }`}
-                              >
-                                Stock: {product.stock}
-                              </Badge>
-                              {product.stock === 0 && (
-                                <div className="text-xs text-red-600 font-bold">(Out of stock)</div>
-                              )}
-                              {product.stock > 0 && product.stock <= 5 && (
-                                <div className="text-xs text-orange-600 font-medium">(Low stock)</div>
-                              )}
+                                    variant={product.stock > 30 ? "default" : product.stock > 15 ? "secondary" : "destructive"} 
+                                    className={`text-xs font-bold ${
+                                      product.stock > 30 ? "bg-blue-500 text-white" : 
+                                      product.stock > 15 ? "bg-yellow-500 text-white" : 
+                                      "bg-red-500 text-white"
+                                    }`}
+                                  >
+                                    Stock: {product.stock}
+                                  </Badge>
                                 </div>
                                 <h5 className="font-bold text-gray-900 mb-1 text-sm leading-tight">{product.name}</h5>
                                 <p className="text-xs text-gray-600 mb-2">Code: {product.code}</p>
@@ -1650,12 +1628,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-
+                                  
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-
+                                  
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1674,21 +1652,15 @@ export default function POSEnhanced() {
                                     )}
                                   </div>
                                   <Badge 
-                                variant={product.stock > 20 ? "default" : product.stock > 10 ? "secondary" : "destructive"} 
-                                className={`text-xs font-bold ${
-                                  product.stock > 20 ? "bg-blue-500 text-white" : 
-                                  product.stock > 10 ? "bg-yellow-500 text-white" : 
-                                  "bg-red-500 text-white"
-                                }`}
-                              >
-                                Stock: {product.stock}
-                              </Badge>
-                              {product.stock === 0 && (
-                                <div className="text-xs text-red-600 font-bold">(Out of stock)</div>
-                              )}
-                              {product.stock > 0 && product.stock <= 5 && (
-                                <div className="text-xs text-orange-600 font-medium">(Low stock)</div>
-                              )}
+                                    variant={product.stock > 20 ? "default" : product.stock > 10 ? "secondary" : "destructive"} 
+                                    className={`text-xs font-bold ${
+                                      product.stock > 20 ? "bg-blue-500 text-white" : 
+                                      product.stock > 10 ? "bg-yellow-500 text-white" : 
+                                      "bg-red-500 text-white"
+                                    }`}
+                                  >
+                                    Stock: {product.stock}
+                                  </Badge>
                                 </div>
                                 <h5 className="font-bold text-gray-900 mb-1 text-sm leading-tight">{product.name}</h5>
                                 <p className="text-xs text-gray-600 mb-2">Code: {product.code}</p>
@@ -1717,7 +1689,7 @@ export default function POSEnhanced() {
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           {mockProductList
-                            .filter(product => !["Dry Fruits", "Grains", "Spices"].includes(p.category || ""))
+                            .filter(product => !["Dry Fruits", "Grains", "Spices"].includes(product.category || ""))
                             .slice(0, 6)
                             .map((product) => (
                               <div
@@ -1747,12 +1719,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-
+                                  
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-
+                                  
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1771,21 +1743,15 @@ export default function POSEnhanced() {
                                     )}
                                   </div>
                                   <Badge 
-                                variant={product.stock > 20 ? "default" : product.stock > 10 ? "secondary" : "destructive"} 
-                                className={`text-xs font-bold ${
-                                  product.stock > 20 ? "bg-blue-500 text-white" : 
-                                  product.stock > 10 ? "bg-yellow-500 text-white" : 
-                                  "bg-red-500 text-white"
-                                }`}
-                              >
-                                Stock: {product.stock}
-                              </Badge>
-                              {product.stock === 0 && (
-                                <div className="text-xs text-red-600 font-bold">(Out of stock)</div>
-                              )}
-                              {product.stock > 0 && product.stock <= 5 && (
-                                <div className="text-xs text-orange-600 font-medium">(Low stock)</div>
-                              )}
+                                    variant={product.stock > 20 ? "default" : product.stock > 10 ? "secondary" : "destructive"} 
+                                    className={`text-xs font-bold ${
+                                      product.stock > 20 ? "bg-blue-500 text-white" : 
+                                      product.stock > 10 ? "bg-yellow-500 text-white" : 
+                                      "bg-red-500 text-white"
+                                    }`}
+                                  >
+                                    Stock: {product.stock}
+                                  </Badge>
                                 </div>
                                 <h5 className="font-bold text-gray-900 mb-1 text-sm leading-tight">{product.name}</h5>
                                 <p className="text-xs text-gray-600 mb-2">Code: {product.code}</p>
@@ -1851,7 +1817,7 @@ export default function POSEnhanced() {
                               createdAt: new Date().toISOString(),
                               updatedAt: new Date().toISOString()
                             };
-
+                            
                             setSelectedProduct(actualProduct);
                             setRateInput(actualProduct.price);
                             setQuantityInput(1);
@@ -1862,22 +1828,9 @@ export default function POSEnhanced() {
                             <Badge variant="default" className="bg-orange-500 text-white text-xs">
                               🔥 TRENDING
                             </Badge>
-                            <Badge 
-                                variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"} 
-                                className={`text-xs font-bold ${
-                                  product.stock > 10 ? "bg-green-500 text-white" : 
-                                  product.stock > 0 ? "bg-yellow-500 text-white" : 
-                                  "bg-red-500 text-white"
-                                }`}
-                              >
-                                Stock: {product.stock}
-                              </Badge>
-                              {product.stock === 0 && (
-                                <div className="text-xs text-red-600 font-bold">(Out of stock)</div>
-                              )}
-                              {product.stock > 0 && product.stock <= 5 && (
-                                <div className="text-xs text-orange-600 font-medium">(Low stock)</div>
-                              )}
+                            <Badge variant={product.stock > 10 ? "default" : "destructive"} className="text-xs">
+                              {product.stock}
+                            </Badge>
                           </div>
                           <h4 className="font-bold text-sm text-gray-900 mb-1">{product.name}</h4>
                           <p className="text-xs text-gray-600 mb-2">{product.category} • {product.code}</p>
@@ -2162,7 +2115,7 @@ export default function POSEnhanced() {
                     Customer (F12)
                   </Button>
                 </div>
-
+                
                 <Button
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
@@ -2171,7 +2124,7 @@ export default function POSEnhanced() {
                   <CreditCard className="h-6 w-6 mr-3" />
                   💳 Complete Payment (F10)
                 </Button>
-
+                
                 {/* Enhanced Print Last Receipt */}
                 {cart.length === 0 && (
                   <Button
@@ -2267,7 +2220,7 @@ export default function POSEnhanced() {
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                       };
-
+                      
                       const existingItem = cart.find(item => item.id === actualProduct.id);
                       if (existingItem) {
                         updateQuantity(actualProduct.id, existingItem.quantity + 1);
@@ -2281,9 +2234,9 @@ export default function POSEnhanced() {
                         };
                         setCart(prev => [...prev, newItem]);
                       }
-
+                      
                       setShowProductList(false);
-
+                      
                       toast({
                         title: "✅ Added to Cart!",
                         description: `${actualProduct.name} x 1 - ${formatCurrency(parseFloat(actualProduct.price))}`
@@ -2301,22 +2254,9 @@ export default function POSEnhanced() {
                           </Badge>
                         )}
                       </div>
-                      <Badge 
-                                variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"} 
-                                className={`text-xs font-bold ${
-                                  product.stock > 10 ? "bg-green-500 text-white" : 
-                                  product.stock > 0 ? "bg-yellow-500 text-white" : 
-                                  "bg-red-500 text-white"
-                                }`}
-                              >
-                                Stock: {product.stock}
-                              </Badge>
-                              {product.stock === 0 && (
-                                <div className="text-xs text-red-600 font-bold">(Out of stock)</div>
-                              )}
-                              {product.stock > 0 && product.stock <= 5 && (
-                                <div className="text-xs text-orange-600 font-medium">(Low stock)</div>
-                              )}
+                      <Badge variant={product.stock > 10 ? "default" : "destructive"} className="text-xs font-bold">
+                        Stock: {product.stock}
+                      </Badge>
                     </div>
                     <h4 className="font-bold text-gray-900 mb-2 text-sm leading-tight">{product.name}</h4>
                     <p className="text-xs text-gray-600 mb-3">Code: {product.code}</p>
@@ -2390,8 +2330,6 @@ export default function POSEnhanced() {
                     💰 Change Due: {formatCurrency(changeDue)}
                   </div>
                 </div>
-              ```python
-
               )}
 
               <div>
@@ -2413,7 +2351,7 @@ export default function POSEnhanced() {
               >
                 Cancel
               </Button>
-
+              
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2442,7 +2380,7 @@ export default function POSEnhanced() {
                 <PrinterIcon className="h-4 w-4 mr-2" />
                 Preview Receipt
               </Button>
-
+              
               <Button
                 onClick={processSale}
                 disabled={isProcessing}
