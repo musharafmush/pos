@@ -924,10 +924,7 @@ export default function POSEnhanced() {
     { key: "F6", action: "Search Mode" },
     { key: "F7", action: "Browse Mode" },
     { key: "F8", action: "Toggle View Mode" },
-    { key: "F```typescript
-// Removing tab-based content sections and keep only the scan functionality
-// Removing tab-based content sections and keep only the scan functionality
-9", action: "Show Shortcuts" },
+    { key: "F9", action: "Show Shortcuts" },
     { key: "F10", action: "Process Payment" },
     { key: "F11", action: "Clear Sale" },
     { key: "F12", action: "New Customer" },
