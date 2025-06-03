@@ -14,7 +14,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Final Recovery Start"
+runButton = "POS Application Start"
 
 [[workflows.workflow]]
 name = "Project"
@@ -1028,3 +1028,116 @@ args = "  npm run dev"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "fi"
+
+[[workflows.workflow]]
+name = "POS Application Start"
+author = 43114682
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "#!/bin/bash"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Starting Awesome Shop POS Application...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Kill any existing processes"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"npm\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"node\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"vite\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"tsx\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"⏳ Cleaning up processes...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Clear ports"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "lsof -ti:5000 | xargs -r kill -9 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "lsof -ti:5173 | xargs -r kill -9 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "fuser -k 5000/tcp 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Navigate to the correct POS application directory"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace/AwesomeShopPOS-Portable/app"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📁 Switched to POS application directory\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Clear Vite caches"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf node_modules/.vite .vite dist 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🧹 Cleared development caches\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Install dependencies if needed"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "if [ ! -d \"node_modules\" ]; then"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  echo \"📦 Installing dependencies...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "fi"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Starting POS system on port 5000...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
