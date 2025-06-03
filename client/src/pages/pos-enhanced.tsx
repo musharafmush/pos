@@ -1167,33 +1167,121 @@ export default function POSEnhanced() {
               <div className="p-4 bg-white border-b">
                 {activeTab === 'scan' && (
                   <div className="space-y-4">
-                    <div className="flex space-x-3">
-                      <div className="flex-1 relative">
-                        <BarcodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500 h-6 w-6" />
-                        <Input
-                          ref={barcodeInputRef}
-                          placeholder="🔍 Scan barcode or enter product code... (Press F1 to focus)"
-                          value={barcodeInput}
-                          onChange={(e) => setBarcodeInput(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              handleBarcodeInput(barcodeInput);
-                            }
-                          }}
-                          className="pl-12 h-14 text-lg font-mono border-2 border-blue-300 focus:border-blue-600 shadow-lg"
-                          autoComplete="off"
-                        />
+                    {/* Enhanced Barcode Scanning Interface */}
+                    <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg overflow-hidden">
+                      <div className="flex items-center p-2">
+                        <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg mr-3">
+                          <SearchIcon className="h-6 w-6 text-gray-600" />
+                        </div>
+                        <div className="flex-1 relative">
+                          <Input
+                            ref={barcodeInputRef}
+                            placeholder="Enter Product name / SKU / Scan bar code"
+                            value={barcodeInput}
+                            onChange={(e) => setBarcodeInput(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleBarcodeInput(barcodeInput);
+                              }
+                            }}
+                            className="h-12 text-lg border-0 focus:ring-0 focus:outline-none bg-transparent"
+                            autoComplete="off"
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleBarcodeInput(barcodeInput)}
+                          disabled={!barcodeInput}
+                          className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white mr-2"
+                        >
+                          <PlusIcon className="h-5 w-5" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="default"
-                        onClick={() => handleBarcodeInput(barcodeInput)}
-                        disabled={!barcodeInput}
-                        className="h-14 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg"
-                      >
-                        <ZapIcon className="h-5 w-5 mr-2" />
-                        Find Product
-                      </Button>
                     </div>
+
+                    {/* Live Search Results */}
+                    {barcodeInput && barcodeInput.length > 2 && (
+                      <div className="bg-white rounded-xl border border-gray-200 shadow-lg max-h-80 overflow-y-auto">
+                        <div className="p-3 border-b bg-gray-50">
+                          <h4 className="font-medium text-gray-900">Search Results</h4>
+                          <p className="text-sm text-gray-600">Click any product to add to cart</p>
+                        </div>
+                        {mockProductList
+                          .filter(product => 
+                            product.name.toLowerCase().includes(barcodeInput.toLowerCase()) ||
+                            product.code.toLowerCase().includes(barcodeInput.toLowerCase())
+                          )
+                          .slice(0, 8)
+                          .map((product, index) => (
+                            <div
+                              key={product.sno}
+                              className="flex items-center justify-between p-4 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-all"
+                              onClick={() => {
+                                let actualProduct = {
+                                  id: parseInt(product.code) || Math.floor(Math.random() * 10000),
+                                  name: product.name,
+                                  sku: product.code,
+                                  price: product.selfRate.toString(),
+                                  cost: product.selfRate.toString(),
+                                  stockQuantity: product.stock,
+                                  description: product.name,
+                                  barcode: product.code,
+                                  brand: "",
+                                  manufacturer: "",
+                                  categoryId: 1,
+                                  mrp: product.mrp.toString(),
+                                  unit: "PCS",
+                                  hsnCode: "",
+                                  taxRate: "18",
+                                  active: true,
+                                  trackInventory: true,
+                                  allowNegativeStock: false,
+                                  alertThreshold: 10,
+                                  createdAt: new Date().toISOString(),
+                                  updatedAt: new Date().toISOString()
+                                };
+                                
+                                setSelectedProduct(actualProduct);
+                                setRateInput(actualProduct.price);
+                                setQuantityInput(1);
+                                setBarcodeInput("");
+                                
+                                toast({
+                                  title: "🎯 Product Selected!",
+                                  description: `${actualProduct.name} ready to add`
+                                });
+                              }}
+                            >
+                              <div className="flex-1">
+                                <div className="font-semibold text-gray-900">{product.name}</div>
+                                <div className="text-sm text-gray-600">
+                                  Price: {formatCurrency(product.selfRate)} - 100.00Pc(s)
+                                </div>
+                                <div className="text-xs text-gray-500">{product.code}</div>
+                              </div>
+                              <div className="text-right">
+                                <Badge variant={product.stock > 10 ? "default" : "destructive"} className="mb-1">
+                                  Stock: {product.stock}
+                                </Badge>
+                                {product.stock <= 10 && (
+                                  <div className="text-xs text-red-600">(Out of stock)</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        {mockProductList.filter(product => 
+                          product.name.toLowerCase().includes(barcodeInput.toLowerCase()) ||
+                          product.code.toLowerCase().includes(barcodeInput.toLowerCase())
+                        ).length === 0 && (
+                          <div className="p-6 text-center text-gray-500">
+                            <SearchIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                            <div className="font-medium">No products found</div>
+                            <div className="text-sm">Try searching with a different term</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Enhanced Selected Product Display */}
                     {selectedProduct && (
