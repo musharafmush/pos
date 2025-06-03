@@ -1152,10 +1152,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // In-memory storage for currency settings (temporary solution)
   let currencySettings = {
-    baseCurrency: "USD",
-    currencySymbol: "$",
+    baseCurrency: "INR",
+    currencySymbol: "₹",
     currencyPosition: "before",
-    decimalPlaces: "2",
+    decimalPlaces: "0",
     thousandSeparator: ",",
     decimalSeparator: ".",
     enableMultiCurrency: false,
