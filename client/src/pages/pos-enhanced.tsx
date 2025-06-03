@@ -947,43 +947,53 @@ export default function POSEnhanced() {
   return (
     <DashboardLayout>
       <div className="h-full flex flex-col bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-        {/* Enhanced Header */}
-        <div className="bg-white border-b shadow-lg p-4">
+        {/* Enhanced Dynamic Header */}
+        <div className="bg-gradient-to-r from-white via-blue-50 to-purple-50 border-b shadow-lg p-4 transition-all duration-500">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
-                  <ShoppingCartIcon className="h-7 w-7 text-white" />
+                <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
+                  <ShoppingCartIcon className="h-7 w-7 text-white animate-pulse" />
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Awesome Shop POS Pro</h1>
+                <div className="transform hover:scale-105 transition-all duration-300">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Awesome Shop POS Pro
+                  </h1>
                   <p className="text-sm text-gray-600">Real-time Point of Sale System</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1 hover:bg-green-100 transition-all duration-300 cursor-pointer">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                   System Ready
                 </Badge>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
-                  <TrendingUpIcon className="w-3 h-3 mr-1" />
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1 hover:bg-blue-100 transition-all duration-300 cursor-pointer">
+                  <TrendingUpIcon className="w-3 h-3 mr-1 animate-bounce" />
                   Product Catalog
+                </Badge>
+                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 px-3 py-1 hover:bg-orange-100 transition-all duration-300 cursor-pointer">
+                  <ZapIcon className="w-3 h-3 mr-1" />
+                  Fast Mode
                 </Badge>
               </div>
             </div>
 
             <div className="flex items-center space-x-6">
-              <div className="text-center">
+              <div className="text-center group hover:bg-gray-50 p-2 rounded-lg transition-all duration-300 cursor-pointer">
                 <div className="text-xs text-gray-500 font-medium">Sales Person</div>
-                <div className="font-bold text-gray-800">{salesMan}</div>
+                <div className="font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-300">{salesMan}</div>
               </div>
-              <div className="text-center">
+              <div className="text-center group hover:bg-green-50 p-2 rounded-lg transition-all duration-300 cursor-pointer">
                 <div className="text-xs text-gray-500 font-medium">Current Bill</div>
-                <div className="text-3xl font-bold text-green-600">{formatCurrency(grandTotal)}</div>
+                <div className="text-3xl font-bold text-green-600 group-hover:scale-110 transition-transform duration-300">
+                  {formatCurrency(grandTotal)}
+                </div>
               </div>
-              <div className="text-center">
+              <div className="text-center group hover:bg-blue-50 p-2 rounded-lg transition-all duration-300 cursor-pointer">
                 <div className="text-xs text-gray-500 font-medium">Today's Sales</div>
-                <div className="text-xl font-bold text-blue-600">₹{Math.floor(Math.random() * 50000 + 25000).toLocaleString()}</div>
+                <div className="text-xl font-bold text-blue-600 group-hover:scale-105 transition-transform duration-300">
+                  ₹{Math.floor(Math.random() * 50000 + 25000).toLocaleString()}
+                </div>
                 <div className="text-xs text-gray-500">{Math.floor(Math.random() * 25 + 10)} transactions</div>
               </div>
               <div className="flex space-x-2">
@@ -991,7 +1001,7 @@ export default function POSEnhanced() {
                   variant="outline"
                   size="sm"
                   onClick={() => window.open('/sales-dashboard', '_blank')}
-                  className="flex items-center space-x-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300"
+                  className="flex items-center space-x-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300 transform hover:scale-105 transition-all duration-300 hover:shadow-md"
                 >
                   <TrendingUpIcon className="h-4 w-4" />
                   <span>Sales Analytics</span>
@@ -1000,12 +1010,39 @@ export default function POSEnhanced() {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowKeyboardShortcuts(true)}
-                  className="flex items-center space-x-1"
+                  className="flex items-center space-x-1 transform hover:scale-105 transition-all duration-300 hover:shadow-md"
                 >
                   <KeyboardIcon className="h-4 w-4" />
                   <span>Shortcuts (F9)</span>
                 </Button>
               </div>
+            </div>
+          </div>
+
+          {/* Dynamic Status Bar */}
+          <div className="mt-3 flex items-center justify-between text-xs text-gray-600 bg-white/50 backdrop-blur rounded-lg p-2">
+            <div className="flex items-center space-x-4">
+              <span className="flex items-center">
+                <ClockIcon className="h-3 w-3 mr-1" />
+                {currentTime.toLocaleTimeString()}
+              </span>
+              <span className="flex items-center">
+                <Package2Icon className="h-3 w-3 mr-1" />
+                {mockProductList.length} Products
+              </span>
+              <span className="flex items-center">
+                <UsersIcon className="h-3 w-3 mr-1" />
+                {customerDatabase.length} Customers
+              </span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="flex items-center text-green-600">
+                <CheckCircleIcon className="h-3 w-3 mr-1" />
+                Connected
+              </span>
+              <span className="flex items-center">
+                Cart: {cart.length} items
+              </span>
             </div>
           </div>
         </div>
@@ -1987,14 +2024,18 @@ export default function POSEnhanced() {
               ) : (
                 <div className="space-y-2 p-3">
                   {cart.map((item, index) => (
-                    <div key={item.id} className="bg-white border-2 rounded-lg p-4 shadow-sm hover:shadow-md transition-all">
+                    <div 
+                      key={item.id} 
+                      className="bg-gradient-to-r from-white to-blue-50 border-2 rounded-lg p-4 shadow-sm hover:shadow-lg transform hover:scale-[1.02] transition-all duration-300 hover:border-blue-300 animate-in slide-in-from-right-5 duration-500"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-3">
-                          <span className="bg-blue-600 text-white text-sm font-bold px-3 py-1 rounded-full">
+                          <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-bold px-3 py-1 rounded-full shadow-md hover:shadow-lg transition-shadow duration-300">
                             #{index + 1}
                           </span>
-                          <div>
-                            <h4 className="font-bold text-lg text-gray-900">{item.name}</h4>
+                          <div className="group">
+                            <h4 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors duration-300">{item.name}</h4>
                             <p className="text-sm text-gray-600">{item.sku} • Available: {item.stock || item.stockQuantity}</p>
                           </div>
                         </div>
@@ -2002,47 +2043,55 @@ export default function POSEnhanced() {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeFromCart(item.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 transform hover:scale-110 transition-all duration-300 hover:shadow-md"
                         >
                           <XCircleIcon className="h-5 w-5" />
                         </Button>
                       </div>
 
                       <div className="grid grid-cols-4 gap-3 items-center">
-                        <div className="text-center">
+                        <div className="text-center group">
                           <Label className="text-xs text-gray-600 font-medium">Quantity</Label>
                           <div className="flex items-center justify-center space-x-1 mt-1">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transform hover:scale-110 transition-all duration-300"
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             >
                               <MinusIcon className="h-4 w-4" />
                             </Button>
-                            <span className="font-bold text-blue-600 min-w-[40px] text-center text-lg">{item.quantity}</span>
+                            <span className="font-bold text-blue-600 min-w-[40px] text-center text-lg group-hover:scale-110 transition-transform duration-300 bg-blue-50 px-2 py-1 rounded">{item.quantity}</span>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 hover:bg-green-50 hover:border-green-300 hover:text-green-600 transform hover:scale-110 transition-all duration-300"
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             >
                               <PlusIcon className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
-                        <div className="text-center">
+                        <div className="text-center group">
                           <Label className="text-xs text-gray-600 font-medium">Rate</Label>
-                          <div className="font-mono text-sm font-bold mt-1">{formatCurrency(parseFloat(item.price))}</div>
+                          <div className="font-mono text-sm font-bold mt-1 group-hover:text-blue-600 transition-colors duration-300 bg-gray-50 px-2 py-1 rounded">{formatCurrency(parseFloat(item.price))}</div>
                         </div>
-                        <div className="text-center">
+                        <div className="text-center group">
                           <Label className="text-xs text-gray-600 font-medium">M.R.P</Label>
-                          <div className="text-xs text-gray-500 mt-1">{formatCurrency(item.mrp || parseFloat(item.price))}</div>
+                          <div className="text-xs text-gray-500 mt-1 group-hover:text-gray-700 transition-colors duration-300">{formatCurrency(item.mrp || parseFloat(item.price))}</div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right group">
                           <Label className="text-xs text-gray-600 font-medium">Amount</Label>
-                          <div className="font-bold text-green-600 text-xl mt-1">{formatCurrency(item.total)}</div>
+                          <div className="font-bold text-green-600 text-xl mt-1 group-hover:scale-110 transition-transform duration-300 bg-green-50 px-2 py-1 rounded">{formatCurrency(item.total)}</div>
                         </div>
+                      </div>
+
+                      {/* Dynamic Progress Bar */}
+                      <div className="mt-3 w-full bg-gray-200 rounded-full h-1 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-1 rounded-full transition-all duration-1000 ease-out"
+                          style={{ width: `${Math.min((item.quantity / (item.stock || 10)) * 100, 100)}%` }}
+                        ></div>
                       </div>
                     </div>
                   ))}
@@ -2113,81 +2162,139 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          {/* Enhanced Right Panel - Billing Summary */}
-          <div className="w-96 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white flex flex-col shadow-2xl">
-            {/* Enhanced Bill Summary Header */}
-            <div className="p-5 border-b border-blue-500">
+          {/* Enhanced Dynamic Right Panel - Billing Summary */}
+          <div className="w-96 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white flex flex-col shadow-2xl relative overflow-hidden">
+            {/* Animated Background Elements */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-10 left-10 w-20 h-20 bg-white rounded-full animate-pulse"></div>
+              <div className="absolute bottom-20 right-10 w-16 h-16 bg-yellow-300 rounded-full animate-bounce"></div>
+              <div className="absolute top-1/2 left-1/4 w-12 h-12 bg-green-300 rounded-full animate-ping"></div>
+            </div>
+
+            {/* Enhanced Dynamic Bill Summary Header */}
+            <div className="p-5 border-b border-blue-500 relative z-10">
               <div className="text-center">
-                <div className="text-2xl font-bold">💰 Bill Summary</div>
-                <div className="text-lg opacity-90">#{billNumber}</div>
-                <div className="text-sm opacity-75 mt-1">{billDate} • {currentTime.toLocaleTimeString()}</div>
+                <div className="text-2xl font-bold animate-pulse">💰 Bill Summary</div>
+                <div className="text-lg opacity-90 hover:opacity-100 transition-opacity duration-300 cursor-pointer transform hover:scale-105">
+                  #{billNumber}
+                </div>
+                <div className="text-sm opacity-75 mt-1 bg-white/10 backdrop-blur rounded-full px-3 py-1 inline-block">
+                  {billDate} • {currentTime.toLocaleTimeString()}
+                </div>
+                {cart.length > 0 && (
+                  <div className="mt-2 animate-in slide-in-from-bottom-2 duration-500">
+                    <Badge variant="outline" className="bg-white/20 text-white border-white/30 hover:bg-white/30 transition-all duration-300">
+                      {cart.length} items in cart
+                    </Badge>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Enhanced Bill Details */}
-            <div className="flex-1 p-4 space-y-4 text-sm overflow-y-auto">
-              <div className="bg-white/15 backdrop-blur rounded-xl p-4">
-                <h3 className="font-bold mb-3 text-lg">📊 Basic Details</h3>
+            {/* Enhanced Dynamic Bill Details */}
+            <div className="flex-1 p-4 space-y-4 text-sm overflow-y-auto relative z-10">
+              <div className="bg-white/15 backdrop-blur rounded-xl p-4 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 hover:shadow-lg animate-in slide-in-from-left-5 duration-700">
+                <h3 className="font-bold mb-3 text-lg flex items-center">
+                  📊 Basic Details
+                  <div className="ml-2 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                </h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between group hover:bg-white/10 p-2 rounded transition-all duration-300">
                     <span>Items Count</span>
-                    <span className="font-mono font-bold">{cart.length}</span>
+                    <span className="font-mono font-bold group-hover:scale-110 transition-transform duration-300 bg-blue-500/30 px-2 py-1 rounded">{cart.length}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between group hover:bg-white/10 p-2 rounded transition-all duration-300">
                     <span>Total Quantity</span>
-                    <span className="font-mono font-bold">{totalItems}</span>
+                    <span className="font-mono font-bold group-hover:scale-110 transition-transform duration-300 bg-purple-500/30 px-2 py-1 rounded">{totalItems}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between group hover:bg-white/10 p-2 rounded transition-all duration-300">
                     <span>Gross Amount</span>
-                    <span className="font-mono font-bold">{formatCurrency(subtotal)}</span>
+                    <span className="font-mono font-bold group-hover:scale-110 transition-transform duration-300 bg-green-500/30 px-2 py-1 rounded">{formatCurrency(subtotal)}</span>
                   </div>
+                </div>
+                {/* Progress indicator */}
+                <div className="mt-3 w-full bg-white/20 rounded-full h-1">
+                  <div className="bg-gradient-to-r from-green-400 to-blue-400 h-1 rounded-full transition-all duration-1000" style={{ width: `${Math.min((cart.length / 10) * 100, 100)}%` }}></div>
                 </div>
               </div>
 
-              <div className="bg-white/15 backdrop-blur rounded-xl p-4">
-                <h3 className="font-bold mb-3 text-lg">💸 Discounts & Charges</h3>
+              <div className="bg-white/15 backdrop-blur rounded-xl p-4 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 hover:shadow-lg animate-in slide-in-from-left-5 duration-700" style={{ animationDelay: '200ms' }}>
+                <h3 className="font-bold mb-3 text-lg flex items-center">
+                  💸 Discounts & Charges
+                  <div className="ml-2 w-2 h-2 bg-yellow-400 rounded-full animate-bounce"></div>
+                </h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between group hover:bg-white/10 p-2 rounded transition-all duration-300">
                     <span>Cash Discount ({discount}%)</span>
-                    <span className="font-mono font-bold">{formatCurrency(totalDiscount)}</span>
+                    <span className="font-mono font-bold group-hover:scale-110 transition-transform duration-300 bg-red-500/30 px-2 py-1 rounded">{formatCurrency(totalDiscount)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between group hover:bg-white/10 p-2 rounded transition-all duration-300">
                     <span>Taxable Amount</span>
-                    <span className="font-mono font-bold">{formatCurrency(taxableAmount)}</span>
+                    <span className="font-mono font-bold group-hover:scale-110 transition-transform duration-300 bg-blue-500/30 px-2 py-1 rounded">{formatCurrency(taxableAmount)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between group hover:bg-white/10 p-2 rounded transition-all duration-300">
                     <span>GST ({taxRate}%)</span>
-                    <span className="font-mono font-bold">{formatCurrency(taxAmount)}</span>
+                    <span className="font-mono font-bold group-hover:scale-110 transition-transform duration-300 bg-purple-500/30 px-2 py-1 rounded">{formatCurrency(taxAmount)}</span>
+                  </div>
+                </div>
+                {/* Tax visualization */}
+                <div className="mt-3 w-full bg-white/20 rounded-full h-1">
+                  <div className="bg-gradient-to-r from-yellow-400 to-red-400 h-1 rounded-full transition-all duration-1000" style={{ width: `${(taxAmount / grandTotal) * 100}%` }}></div>
+                </div>
+              </div>
+
+              <div className="bg-white/15 backdrop-blur rounded-xl p-4 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 hover:shadow-lg animate-in slide-in-from-left-5 duration-700" style={{ animationDelay: '400ms' }}>
+                <h3 className="font-bold mb-3 text-lg flex items-center">
+                  ➕ Additional Info
+                  <div className="ml-2 w-2 h-2 bg-cyan-400 rounded-full animate-ping"></div>
+                </h3>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between group hover:bg-white/10 p-2 rounded transition-all duration-300">
+                    <span>Customer</span>
+                    <span className="font-mono group-hover:text-cyan-300 transition-colors duration-300">{customerDetails.name}</span>
+                  </div>
+                  <div className="flex justify-between group hover:bg-white/10 p-2 rounded transition-all duration-300">
+                    <span>Sales Person</span>
+                    <span className="font-mono group-hover:text-green-300 transition-colors duration-300">{salesMan}</span>
+                  </div>
+                  <div className="flex justify-between group hover:bg-white/10 p-2 rounded transition-all duration-300">
+                    <span>Payment Method</span>
+                    <span className="font-mono capitalize group-hover:text-yellow-300 transition-colors duration-300">{paymentMethod}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white/15 backdrop-blur rounded-xl p-4">
-                <h3 className="font-bold mb-3 text-lg">➕ Additional Info</h3>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span>Customer</span>
-                    <span className="font-mono">{customerDetails.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Sales Person</span>
-                    <span className="font-mono">{salesMan}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Payment Method</span>
-                    <span className="font-mono capitalize">{paymentMethod}</span>
+              {/* Dynamic Activity Indicator */}
+              {cart.length > 0 && (
+                <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur rounded-xl p-3 border border-white/20 animate-in fade-in duration-1000">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-xs font-medium">Transaction in progress...</span>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '500ms' }}></div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Enhanced Net Amount Display */}
-            <div className="p-5 border-t border-blue-500">
-              <div className="text-center mb-4">
-                <div className="text-sm opacity-90">💰 Net Amount Payable</div>
-                <div className="text-5xl font-bold bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
-                  {formatCurrency(grandTotal)}
+            {/* Enhanced Dynamic Net Amount Display */}
+            <div className="p-5 border-t border-blue-500 relative z-10">
+              <div className="text-center mb-4 group">
+                <div className="text-sm opacity-90 group-hover:opacity-100 transition-opacity duration-300">💰 Net Amount Payable</div>
+                <div className="relative">
+                  <div className="text-5xl font-bold bg-gradient-to-r from-yellow-300 via-orange-300 to-red-300 bg-clip-text text-transparent hover:scale-110 transition-transform duration-500 cursor-pointer animate-pulse">
+                    {formatCurrency(grandTotal)}
+                  </div>
+                  {grandTotal > 0 && (
+                    <div className="absolute -inset-2 bg-gradient-to-r from-yellow-300/20 to-orange-300/20 rounded-lg blur-lg animate-pulse"></div>
+                  )}
                 </div>
+                {grandTotal > 0 && (
+                  <div className="mt-2 flex justify-center">
+                    <div className="px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs animate-bounce">
+                      Total: {totalItems} items
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Enhanced Quick Actions */}
