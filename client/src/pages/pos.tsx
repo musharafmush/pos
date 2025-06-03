@@ -702,20 +702,10 @@ export default function POS() {
                   <SelectValue placeholder="Select payment method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cash">💵 Cash</SelectItem>
-                  <SelectItem value="credit_card">💳 Credit Card</SelectItem>
-                  <SelectItem value="debit_card">💳 Debit Card</SelectItem>
-                  <SelectItem value="upi">📱 UPI</SelectItem>
-                  <SelectItem value="paytm">📲 Paytm Wallet</SelectItem>
-                  <SelectItem value="phonepe">💸 PhonePe</SelectItem>
-                  <SelectItem value="googlepay">🎯 Google Pay</SelectItem>
-                  <SelectItem value="amazonpay">📦 Amazon Pay</SelectItem>
-                  <SelectItem value="mobikwik">💰 MobiKwik</SelectItem>
-                  <SelectItem value="freecharge">⚡ FreeCharge</SelectItem>
-                  <SelectItem value="giftcard">🎁 Gift Card</SelectItem>
-                  <SelectItem value="loyalty">⭐ Loyalty Points</SelectItem>
-                  <SelectItem value="sodexo">🍽️ Sodexo Card</SelectItem>
-                  <SelectItem value="mobile_payment">📱 Mobile Payment</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="credit_card">Credit Card</SelectItem>
+                  <SelectItem value="debit_card">Debit Card</SelectItem>
+                  <SelectItem value="mobile_payment">Mobile Payment</SelectItem>
                 </SelectContent>
               </Select>
             </div>
