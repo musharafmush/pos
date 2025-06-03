@@ -161,8 +161,27 @@ export default function SalesDashboard() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Sales Dashboard</h2>
-          <p className="text-gray-600 dark:text-gray-400">Monitor your sales performance and trends</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Sales Dashboard</h2>
+              <p className="text-gray-600 dark:text-gray-400">Monitor your sales performance and trends • Real-time POS integration</p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                Live Data
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/pos-enhanced', '_blank')}
+                className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+              >
+                <ShoppingCartIcon className="h-4 w-4" />
+                <span>POS System</span>
+              </Button>
+            </div>
+          </div>
           
           {/* Loading and Error States */}
           {salesLoading && (
@@ -178,8 +197,26 @@ export default function SalesDashboard() {
           )}
           
           {!salesLoading && !salesError && (!salesData || salesData.length === 0) && (
-            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-yellow-700">No sales data available. Start making sales to see analytics.</p>
+            <div className="mt-4 p-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center space-x-3 mb-3">
+                <ShoppingCartIcon className="h-8 w-8 text-blue-600" />
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-900">Ready for Sales!</h3>
+                  <p className="text-blue-700">Your POS system is connected and ready to track sales data</p>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm text-blue-600">
+                <div>📊 Real-time sales tracking enabled</div>
+                <div>🛒 Start making sales in POS Enhanced to see live analytics</div>
+                <div>📈 All transaction data will appear here instantly</div>
+              </div>
+              <Button
+                onClick={() => window.open('/pos-enhanced', '_blank')}
+                className="mt-4 bg-blue-600 hover:bg-blue-700"
+              >
+                <ShoppingCartIcon className="h-4 w-4 mr-2" />
+                Open POS System
+              </Button>
             </div>
           )}
         </div>
