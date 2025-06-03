@@ -948,147 +948,116 @@ export default function POSEnhanced() {
   return (
     <DashboardLayout>
       <div className="h-full flex flex-col bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-        {/* Enhanced User-Friendly Header */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b-2 border-blue-200 shadow-lg p-4">
+        {/* Enhanced Header */}
+        <div className="bg-white border-b shadow-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg animate-pulse">
+                <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
                   <ShoppingCartIcon className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    ✨ Awesome Shop POS Pro
-                  </h1>
-                  <p className="text-sm text-gray-600 flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                    Easy-to-use Point of Sale System
-                  </p>
+                  <h1 className="text-2xl font-bold text-gray-900">Awesome Shop POS Pro</h1>
+                  <p className="text-sm text-gray-600">Real-time Point of Sale System</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1 shadow-sm">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                  ✅ Ready to Sell
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  System Ready
                 </Badge>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1 shadow-sm">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
                   <TrendingUpIcon className="w-3 h-3 mr-1" />
-                  📦 {mockProductList.length} Products
+                  Product Catalog
                 </Badge>
               </div>
             </div>
 
             <div className="flex items-center space-x-6">
-              <div className="text-center bg-white rounded-lg p-3 shadow-sm border">
-                <div className="text-xs text-gray-500 font-medium">📋 Bill Number</div>
+              <div className="text-center">
+                <div className="text-xs text-gray-500 font-medium">Bill Number</div>
                 <div className="font-mono font-bold text-blue-600 text-lg">{billNumber}</div>
               </div>
-              <div className="text-center bg-white rounded-lg p-3 shadow-sm border">
-                <div className="text-xs text-gray-500 font-medium">📅 Date & Time</div>
-                <div className="font-bold text-gray-800">{billDate}</div>
-                <div className="text-sm text-blue-600 font-mono">{currentTime.toLocaleTimeString()}</div>
+              <div className="text-center">
+                <div className="text-xs text-gray-500 font-medium">Date & Time</div>
+                <div className="font-bold text-gray-800">{billDate} • {currentTime.toLocaleTimeString()}</div>
               </div>
-              <div className="text-center bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 shadow-lg border-2 border-green-200">
-                <div className="text-xs text-green-600 font-bold">💰 TOTAL AMOUNT</div>
+              <div className="text-center">
+                <div className="text-xs text-gray-500 font-medium">Total Amount</div>
                 <div className="text-3xl font-bold text-green-600">{formatCurrency(grandTotal)}</div>
-                {cart.length > 0 && (
-                  <div className="text-xs text-green-600">{totalItems} items in cart</div>
-                )}
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowKeyboardShortcuts(true)}
-                className="flex items-center space-x-1 bg-white hover:bg-blue-50 border-blue-200"
+                className="flex items-center space-x-1"
               >
                 <KeyboardIcon className="h-4 w-4" />
-                <span>🔑 Help (F9)</span>
+                <span>Shortcuts (F9)</span>
               </Button>
             </div>
           </div>
         </div>
 
-        {/* User-Friendly Customer Section */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-b-2 border-purple-200 px-4 py-3">
-          <div className="mb-2">
-            <h3 className="text-lg font-bold text-purple-800 flex items-center">
-              👤 Customer & Sales Information
-              <Badge variant="outline" className="ml-2 text-xs bg-purple-100 text-purple-700">
-                Quick Entry
-              </Badge>
-            </h3>
-            <p className="text-sm text-purple-600">Fill customer details for personalized service and billing</p>
-          </div>
-          
+        {/* Enhanced Customer Section */}
+        <div className="bg-white border-b px-4 py-3">
           <div className="grid grid-cols-6 gap-4">
             <div>
-              <Label className="text-sm font-bold text-purple-700 flex items-center">
-                👨‍💼 Sales Person
-                <span className="text-red-500 ml-1">*</span>
-              </Label>
+              <Label className="text-sm font-medium text-gray-700">Sales Person</Label>
               <Input 
                 value={salesMan} 
                 onChange={(e) => setSalesMan(e.target.value)} 
-                className="h-9 mt-1 border-2 border-purple-200 focus:border-purple-500"
-                placeholder="👨‍💼 Enter your name"
+                className="h-9 mt-1"
+                placeholder="Enter sales person"
               />
             </div>
             <div>
-              <Label className="text-sm font-bold text-purple-700 flex items-center">
-                🔍 Quick Customer Search
-                <Badge variant="outline" className="ml-1 text-xs">F4</Badge>
-              </Label>
+              <Label className="text-sm font-medium text-gray-700">Customer Search (F4)</Label>
               <div className="relative">
                 <Input 
                   ref={customerSearchRef}
                   value={customerSearch} 
                   onChange={(e) => setCustomerSearch(e.target.value)}
-                  className="h-9 mt-1 border-2 border-purple-200 focus:border-purple-500 pl-8" 
-                  placeholder="🔍 Name, phone, or email..."
+                  className="h-9 mt-1" 
+                  placeholder="Search by name, phone, email..."
                 />
-                <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400" />
+                <SearchIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               </div>
             </div>
             <div>
-              <Label className="text-sm font-bold text-purple-700">
-                👤 Customer Name
-              </Label>
+              <Label className="text-sm font-medium text-gray-700">Customer Name</Label>
               <Input 
                 value={customerDetails.name} 
                 onChange={(e) => setCustomerDetails({...customerDetails, name: e.target.value})}
-                className="h-9 mt-1 border-2 border-purple-200 focus:border-purple-500" 
-                placeholder="👤 Enter customer name"
+                className="h-9 mt-1" 
+                placeholder="Customer name"
               />
             </div>
             <div>
-              <Label className="text-sm font-bold text-purple-700">
-                📱 Phone Number
-              </Label>
+              <Label className="text-sm font-medium text-gray-700">Phone Number</Label>
               <Input 
                 value={customerDetails.phone} 
                 onChange={(e) => setCustomerDetails({...customerDetails, phone: e.target.value})}
-                className="h-9 mt-1 border-2 border-purple-200 focus:border-purple-500" 
-                placeholder="📱 +91 98765 43210"
+                className="h-9 mt-1" 
+                placeholder="Phone number"
               />
             </div>
             <div>
-              <Label className="text-sm font-bold text-purple-700">
-                🏠 Address
-              </Label>
+              <Label className="text-sm font-medium text-gray-700">Address</Label>
               <Input 
                 value={customerDetails.address} 
                 onChange={(e) => setCustomerDetails({...customerDetails, address: e.target.value})}
-                className="h-9 mt-1 border-2 border-purple-200 focus:border-purple-500" 
-                placeholder="🏠 Customer address"
+                className="h-9 mt-1" 
+                placeholder="Customer address"
               />
             </div>
             <div className="flex items-end">
               <Button
                 onClick={() => setShowNewCustomerDialog(true)}
-                className="h-9 w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg"
+                className="h-9 w-full bg-purple-600 hover:bg-purple-700"
               >
                 <UsersIcon className="h-4 w-4 mr-2" />
-                ➕ Add Customer (F12)
+                New Customer (F12)
               </Button>
             </div>
           </div>
@@ -1198,57 +1167,32 @@ export default function POSEnhanced() {
               <div className="p-4 bg-white border-b">
                 {activeTab === 'scan' && (
                   <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-xl border-2 border-blue-200">
-                      <div className="text-center mb-3">
-                        <h4 className="text-lg font-bold text-blue-800 flex items-center justify-center">
-                          📱 Smart Barcode Scanner
-                          <Badge variant="outline" className="ml-2 bg-green-100 text-green-700">
-                            Active
-                          </Badge>
-                        </h4>
-                        <p className="text-sm text-blue-600">Scan product barcode or type product code for instant lookup</p>
+                    <div className="flex space-x-3">
+                      <div className="flex-1 relative">
+                        <BarcodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500 h-6 w-6" />
+                        <Input
+                          ref={barcodeInputRef}
+                          placeholder="🔍 Scan barcode or enter product code... (Press F1 to focus)"
+                          value={barcodeInput}
+                          onChange={(e) => setBarcodeInput(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleBarcodeInput(barcodeInput);
+                            }
+                          }}
+                          className="pl-12 h-14 text-lg font-mono border-2 border-blue-300 focus:border-blue-600 shadow-lg"
+                          autoComplete="off"
+                        />
                       </div>
-                      
-                      <div className="flex space-x-3">
-                        <div className="flex-1 relative">
-                          <BarcodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500 h-6 w-6 animate-pulse" />
-                          <Input
-                            ref={barcodeInputRef}
-                            placeholder="📱 Scan barcode or type product code... (Press F1 to focus)"
-                            value={barcodeInput}
-                            onChange={(e) => setBarcodeInput(e.target.value)}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                handleBarcodeInput(barcodeInput);
-                              }
-                            }}
-                            className="pl-12 h-14 text-lg font-mono border-3 border-blue-300 focus:border-blue-600 shadow-lg bg-white"
-                            autoComplete="off"
-                          />
-                          <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                            <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700">
-                              Press Enter ⏎
-                            </Badge>
-                          </div>
-                        </div>
-                        <Button
-                          variant="default"
-                          onClick={() => handleBarcodeInput(barcodeInput)}
-                          disabled={!barcodeInput}
-                          className="h-14 px-8 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 shadow-lg text-white font-bold"
-                        >
-                          <ZapIcon className="h-5 w-5 mr-2" />
-                          🔍 Find Product
-                        </Button>
-                      </div>
-                      
-                      <div className="mt-3 flex justify-center space-x-4 text-xs text-blue-600">
-                        <span>💡 Tip: Use barcode scanner or type manually</span>
-                        <span>|</span>
-                        <span>⌨️ Press F1 to focus scanner</span>
-                        <span>|</span>
-                        <span>⏎ Press Enter to search</span>
-                      </div>
+                      <Button
+                        variant="default"
+                        onClick={() => handleBarcodeInput(barcodeInput)}
+                        disabled={!barcodeInput}
+                        className="h-14 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg"
+                      >
+                        <ZapIcon className="h-5 w-5 mr-2" />
+                        Find Product
+                      </Button>
                     </div>
 
                     {/* Enhanced Selected Product Display */}
@@ -1433,39 +1377,23 @@ export default function POSEnhanced() {
               </div>
             </div>
 
-            {/* User-Friendly Cart Section */}
-            <div className="p-4 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white shadow-lg">
+            {/* Enhanced Cart Section */}
+            <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-white/20 rounded-lg">
-                    <ShoppingCartIcon className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold">🛒 Shopping Cart</h2>
-                    <div className="text-sm opacity-90">
-                      {cart.length === 0 ? (
-                        <span>Empty cart - Start adding products!</span>
-                      ) : (
-                        <span>{cart.length} different products • {totalItems} total items • {formatCurrency(subtotal)}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <h2 className="text-xl font-bold flex items-center">
+                  <ShoppingCartIcon className="h-6 w-6 mr-2" />
+                  Shopping Cart ({cart.length} items • {totalItems} qty)
+                </h2>
                 {cart.length > 0 && (
-                  <div className="flex space-x-2">
-                    <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-                      💰 {formatCurrency(subtotal)}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearSale}
-                      className="text-white hover:bg-red-500/50 border border-white/30 bg-red-500/20"
-                    >
-                      <TrashIcon className="h-4 w-4 mr-1" />
-                      🗑️ Clear All (F11)
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSale}
+                    className="text-white hover:bg-blue-700 border border-white/30"
+                  >
+                    <TrashIcon className="h-4 w-4 mr-1" />
+                    Clear All (F11)
+                  </Button>
                 )}
               </div>
             </div>
@@ -1473,72 +1401,16 @@ export default function POSEnhanced() {
             {/* Enhanced Cart Items */}
             <div className="flex-1 overflow-y-auto">
               {cart.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center p-8">
-                    <div className="bg-gradient-to-br from-blue-100 to-purple-100 rounded-full p-8 mx-auto mb-6 w-32 h-32 flex items-center justify-center">
-                      <ShoppingCartIcon className="h-16 w-16 text-blue-500" />
-                    </div>
-                    <div className="text-3xl font-bold text-gray-800 mb-3">🛒 Ready to Start Selling!</div>
-                    <div className="text-lg text-gray-600 mb-6">Your cart is empty. Let's add some products to get started!</div>
-                    
-                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-6 border-2 border-blue-200">
-                      <h4 className="text-lg font-bold text-blue-800 mb-4">🚀 Quick Start Guide</h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="text-left space-y-2">
-                          <div className="flex items-center text-blue-700">
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono text-xs mr-2">F1</span>
-                            📱 Focus Scanner
-                          </div>
-                          <div className="flex items-center text-blue-700">
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono text-xs mr-2">F2</span>
-                            📦 Browse Products
-                          </div>
-                          <div className="flex items-center text-blue-700">
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono text-xs mr-2">F3</span>
-                            🔥 Trending Items
-                          </div>
-                        </div>
-                        <div className="text-left space-y-2">
-                          <div className="flex items-center text-purple-700">
-                            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded font-mono text-xs mr-2">F4</span>
-                            👤 Customer Search
-                          </div>
-                          <div className="flex items-center text-purple-700">
-                            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded font-mono text-xs mr-2">F9</span>
-                            ⌨️ All Shortcuts
-                          </div>
-                          <div className="flex items-center text-purple-700">
-                            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded font-mono text-xs mr-2">F12</span>
-                            ➕ New Customer
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-center space-x-3">
-                      <Button 
-                        onClick={() => {
-                          setActiveTab('scan');
-                          barcodeInputRef.current?.focus();
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        📱 Start Scanning
-                      </Button>
-                      <Button 
-                        onClick={() => setShowProductList(true)}
-                        variant="outline"
-                        className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                      >
-                        📦 Browse Products
-                      </Button>
-                      <Button 
-                        onClick={() => setActiveTab('trending')}
-                        variant="outline"
-                        className="border-orange-300 text-orange-700 hover:bg-orange-50"
-                      >
-                        🔥 Trending
-                      </Button>
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="text-center">
+                    <ShoppingCartIcon className="h-20 w-20 mx-auto mb-4 text-gray-300" />
+                    <div className="text-2xl font-medium mb-2">Cart is empty</div>
+                    <div className="text-sm mb-4">Scan a product or browse catalog to start billing</div>
+                    <div className="text-xs text-gray-400 space-y-1">
+                      <div>🔑 Press F1 to focus scanner</div>
+                      <div>📦 Press F2 to browse products</div>
+                      <div>🔥 Press F3 for trending items</div>
+                      <div>💳 Press F10 to checkout</div>
                     </div>
                   </div>
                 </div>
