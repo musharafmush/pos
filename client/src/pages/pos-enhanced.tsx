@@ -940,7 +940,7 @@ export default function POSEnhanced() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
+    window.addEventListener('keydown', handleKeyPress);```python
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [cart.length, selectedProduct, discount, grandTotal, amountPaid, paymentMethod, viewMode]);
 
@@ -1661,7 +1661,8 @@ export default function POSEnhanced() {
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
-                                  setActiveTab('scan');
+                                  ```python
+setActiveTab('scan');
 
                                   toast({
                                     title: "🎯 Product Selected!",
@@ -2440,7 +2441,8 @@ export default function POSEnhanced() {
                 Master these shortcuts to boost your efficiency
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4              {keyboardShortcuts.map((shortcut, index) => (
+            <div className="grid grid-cols-2 gap-4">
+              {keyboardShortcuts.map((shortcut, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <span className="font-medium">{shortcut.action}</span>
                   <Badge variant="outline" className="font-mono font-bold">
