@@ -11,9 +11,10 @@ run = ["sh", "-c", "npm run dev"]
 
 [[ports]]
 localPort = 5000
+externalPort = 80
 
 [workflows]
-runButton = "Preview App"
+runButton = "Fixed Start"
 
 [[workflows.workflow]]
 name = "Project"
@@ -171,37 +172,21 @@ task = "shell.exec"
 args = "npm run dev"
 
 [[workflows.workflow]]
-name = "Preview App"
+name = "Debug Start"
 author = 43114682
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "#!/bin/bash"
+args = "pkill -f \"npm run dev\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🚀 Starting POS Application Preview...\""
+args = "pkill -f \"node.*server\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "# Force kill all Node processes"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -9 -f \"npm\" 2>/dev/null || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -9 -f \"node\" 2>/dev/null || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -9 -f \"vite\" 2>/dev/null || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"⏳ Cleaning up processes...\""
+args = "pkill -f \"vite\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -209,15 +194,7 @@ args = "sleep 3"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "# Clear port 5000 specifically"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
 args = "fuser -k 5000/tcp 2>/dev/null || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "lsof -ti:5000 | xargs -r kill -9 2>/dev/null || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -225,7 +202,36 @@ args = "sleep 2"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"✅ Starting development server on port 5000...\""
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Fixed Start"
+author = 43114682
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"npm run dev\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"node.*server\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"vite\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "fuser -k 5000/tcp 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
