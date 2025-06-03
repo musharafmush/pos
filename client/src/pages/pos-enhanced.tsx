@@ -1178,16 +1178,16 @@ export default function POSEnhanced() {
               <div className="p-4 bg-white border-b">
                 {activeTab === 'scan' && (
                   <div className="space-y-4">
-                    {/* Enhanced Barcode Scanning Interface */}
-                    <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg overflow-hidden">
-                      <div className="flex items-center p-2">
-                        <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg mr-3">
-                          <SearchIcon className="h-6 w-6 text-gray-600" />
+                    {/* Enhanced Product Search Interface */}
+                    <div className="bg-white rounded-xl border-2 border-blue-200 shadow-lg overflow-hidden">
+                      <div className="flex items-center p-4 bg-gradient-to-r from-blue-50 to-purple-50">
+                        <div className="flex items-center justify-center w-14 h-14 bg-blue-600 rounded-xl mr-4 shadow-md">
+                          <SearchIcon className="h-7 w-7 text-white" />
                         </div>
                         <div className="flex-1 relative">
                           <Input
                             ref={barcodeInputRef}
-                            placeholder="Enter Product name / SKU / Scan bar code"
+                            placeholder="🔍 Enter Product name / SKU / Scan bar code"
                             value={barcodeInput}
                             onChange={(e) => setBarcodeInput(e.target.value)}
                             onKeyPress={(e) => {
@@ -1195,102 +1195,190 @@ export default function POSEnhanced() {
                                 handleBarcodeInput(barcodeInput);
                               }
                             }}
-                            className="h-12 text-lg border-0 focus:ring-0 focus:outline-none bg-transparent"
+                            className="h-14 text-lg border-2 border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-xl pl-4 pr-16 bg-white shadow-inner"
                             autoComplete="off"
                           />
+                          {barcodeInput && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setBarcodeInput("")}
+                              className="absolute right-16 top-1/2 transform -translate-y-1/2 h-8 w-8 rounded-full text-gray-400 hover:text-gray-600"
+                            >
+                              <XCircleIcon className="h-5 w-5" />
+                            </Button>
+                          )}
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleBarcodeInput(barcodeInput)}
                           disabled={!barcodeInput}
-                          className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white mr-2"
+                          className="w-14 h-14 rounded-xl bg-green-600 hover:bg-green-700 text-white ml-3 shadow-md disabled:bg-gray-300"
                         >
-                          <PlusIcon className="h-5 w-5" />
+                          <PlusIcon className="h-6 w-6" />
                         </Button>
+                      </div>
+                      
+                      {/* Quick Action Buttons */}
+                      <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex space-x-2">
+                            <Badge variant="outline" className="text-xs">
+                              F1: Focus Search
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              Enter: Add Product
+                            </Badge>
+                          </div>
+                          <div className="text-gray-500">
+                            Last Update: {lastUpdateTime.toLocaleTimeString()}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Live Search Results */}
-                    {barcodeInput && barcodeInput.length > 2 && (
-                      <div className="bg-white rounded-xl border border-gray-200 shadow-lg max-h-80 overflow-y-auto">
-                        <div className="p-3 border-b bg-gray-50">
-                          <h4 className="font-medium text-gray-900">Search Results</h4>
-                          <p className="text-sm text-gray-600">Click any product to add to cart</p>
+                    {/* Enhanced Live Search Results */}
+                    {barcodeInput && barcodeInput.length > 1 && (
+                      <div className="bg-white rounded-xl border-2 border-blue-200 shadow-xl max-h-96 overflow-hidden">
+                        <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-bold text-lg">🔍 Search Results</h4>
+                              <p className="text-blue-100 text-sm">Click any product to add to cart instantly</p>
+                            </div>
+                            <Badge variant="outline" className="bg-white text-blue-600 border-blue-200">
+                              {mockProductList.filter(product => 
+                                product.name.toLowerCase().includes(barcodeInput.toLowerCase()) ||
+                                product.code.toLowerCase().includes(barcodeInput.toLowerCase())
+                              ).length} found
+                            </Badge>
+                          </div>
                         </div>
-                        {mockProductList
-                          .filter(product => 
+                        
+                        <div className="max-h-80 overflow-y-auto">
+                          {mockProductList
+                            .filter(product => 
+                              product.name.toLowerCase().includes(barcodeInput.toLowerCase()) ||
+                              product.code.toLowerCase().includes(barcodeInput.toLowerCase())
+                            )
+                            .slice(0, 10)
+                            .map((product, index) => (
+                              <div
+                                key={product.sno}
+                                className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer border-b last:border-b-0 transition-all duration-200 hover:shadow-md"
+                                onClick={() => {
+                                  let actualProduct = {
+                                    id: parseInt(product.code) || Math.floor(Math.random() * 10000),
+                                    name: product.name,
+                                    sku: product.code,
+                                    price: product.selfRate.toString(),
+                                    cost: product.selfRate.toString(),
+                                    stockQuantity: product.stock,
+                                    description: product.name,
+                                    barcode: product.code,
+                                    brand: "",
+                                    manufacturer: "",
+                                    categoryId: 1,
+                                    mrp: product.mrp.toString(),
+                                    unit: "PCS",
+                                    hsnCode: "",
+                                    taxRate: "18",
+                                    active: true,
+                                    trackInventory: true,
+                                    allowNegativeStock: false,
+                                    alertThreshold: 10,
+                                    createdAt: new Date().toISOString(),
+                                    updatedAt: new Date().toISOString()
+                                  };
+
+                                  setSelectedProduct(actualProduct);
+                                  setRateInput(actualProduct.price);
+                                  setQuantityInput(1);
+                                  setBarcodeInput("");
+
+                                  toast({
+                                    title: "🎯 Product Selected!",
+                                    description: `${actualProduct.name} ready to add to cart`
+                                  });
+                                }}
+                              >
+                                <div className="flex items-center flex-1">
+                                  <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mr-4">
+                                    <Package2Icon className="h-6 w-6 text-blue-600" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="font-bold text-lg text-gray-900 mb-1">{product.name}</div>
+                                    <div className="flex items-center space-x-3 text-sm text-gray-600">
+                                      <span className="font-mono bg-gray-100 px-2 py-1 rounded">
+                                        {product.code}
+                                      </span>
+                                      <span className="text-green-600 font-medium">
+                                        {formatCurrency(product.selfRate)}
+                                      </span>
+                                      <span className="text-gray-500">
+                                        MRP: {formatCurrency(product.mrp)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center mt-1 space-x-2">
+                                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                        {product.category}
+                                      </Badge>
+                                      {product.trending && (
+                                        <Badge variant="default" className="text-xs bg-orange-500 text-white">
+                                          🔥 Trending
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center space-x-3">
+                                  <div className="text-right">
+                                    <Badge 
+                                      variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"} 
+                                      className={`text-sm font-bold ${
+                                        product.stock > 10 ? "bg-green-500 text-white" : 
+                                        product.stock > 0 ? "bg-yellow-500 text-white" : 
+                                        "bg-red-500 text-white"
+                                      }`}
+                                    >
+                                      {product.stock > 0 ? `Stock: ${product.stock}` : "Out of Stock"}
+                                    </Badge>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700 text-white rounded-full w-10 h-10 p-0 shadow-md"
+                                  >
+                                    <PlusIcon className="h-5 w-5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          
+                          {mockProductList.filter(product => 
                             product.name.toLowerCase().includes(barcodeInput.toLowerCase()) ||
                             product.code.toLowerCase().includes(barcodeInput.toLowerCase())
-                          )
-                          .slice(0, 8)
-                          .map((product, index) => (
-                            <div
-                              key={product.sno}
-                              className="flex items-center justify-between p-4 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-all"
-                              onClick={() => {
-                                let actualProduct = {
-                                  id: parseInt(product.code) || Math.floor(Math.random() * 10000),
-                                  name: product.name,
-                                  sku: product.code,
-                                  price: product.selfRate.toString(),
-                                  cost: product.selfRate.toString(),
-                                  stockQuantity: product.stock,
-                                  description: product.name,
-                                  barcode: product.code,
-                                  brand: "",
-                                  manufacturer: "",
-                                  categoryId: 1,
-                                  mrp: product.mrp.toString(),
-                                  unit: "PCS",
-                                  hsnCode: "",
-                                  taxRate: "18",
-                                  active: true,
-                                  trackInventory: true,
-                                  allowNegativeStock: false,
-                                  alertThreshold: 10,
-                                  createdAt: new Date().toISOString(),
-                                  updatedAt: new Date().toISOString()
-                                };
-
-                                setSelectedProduct(actualProduct);
-                                setRateInput(actualProduct.price);
-                                setQuantityInput(1);
-                                setBarcodeInput("");
-
-                                toast({
-                                  title: "🎯 Product Selected!",
-                                  description: `${actualProduct.name} ready to add`
-                                });
-                              }}
-                            >
-                              <div className="flex-1">
-                                <div className="font-semibold text-gray-900">{product.name}</div>
-                                <div className="text-sm text-gray-600">
-                                  Price: {formatCurrency(product.selfRate)} - 100.00Pc(s)
-                                </div>
-                                <div className="text-xs text-gray-500">{product.code}</div>
+                          ).length === 0 && (
+                            <div className="p-8 text-center text-gray-500">
+                              <div className="flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mx-auto mb-4">
+                                <SearchIcon className="h-10 w-10 text-gray-300" />
                               </div>
-                              <div className="text-right">
-                                <Badge variant={product.stock > 10 ? "default" : "destructive"} className="mb-1">
-                                  Stock: {product.stock}
-                                </Badge>
-                                {product.stock <= 10 && (
-                                  <div className="text-xs text-red-600">(Out of stock)</div>
-                                )}
+                              <div className="text-xl font-medium mb-2 text-gray-700">No products found</div>
+                              <div className="text-sm text-gray-500">
+                                Try searching with a different product name or SKU
                               </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setBarcodeInput("")}
+                                className="mt-4 border-blue-300 text-blue-600 hover:bg-blue-50"
+                              >
+                                Clear Search
+                              </Button>
                             </div>
-                          ))}
-                        {mockProductList.filter(product => 
-                          product.name.toLowerCase().includes(barcodeInput.toLowerCase()) ||
-                          product.code.toLowerCase().includes(barcodeInput.toLowerCase())
-                        ).length === 0 && (
-                          <div className="p-6 text-center text-gray-500">
-                            <SearchIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                            <div className="font-medium">No products found</div>
-                            <div className="text-sm">Try searching with a different term</div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     )}
 
