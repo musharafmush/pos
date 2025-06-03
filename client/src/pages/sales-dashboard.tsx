@@ -56,15 +56,30 @@ export default function SalesDashboard() {
     queryFn: async () => {
       try {
         const response = await fetch('/api/sales?limit=100');
-        if (!response.ok) throw new Error('Failed to fetch sales');
+        if (!response.ok) {
+          console.error('Sales API response not ok:', response.status, response.statusText);
+          throw new Error(`Failed to fetch sales: ${response.status}`);
+        }
         const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        console.log('Sales data received:', data);
+        
+        // Handle different response formats
+        if (Array.isArray(data)) {
+          return data;
+        } else if (data && Array.isArray(data.sales)) {
+          return data.sales;
+        } else if (data && data.data && Array.isArray(data.data)) {
+          return data.data;
+        } else {
+          console.warn('Unexpected sales data format:', data);
+          return [];
+        }
       } catch (error) {
         console.error('Error fetching sales data:', error);
         return [];
       }
     },
-    retry: 3,
+    retry: 2,
     retryDelay: 1000
   });
 
@@ -96,16 +111,21 @@ export default function SalesDashboard() {
     }
   });
 
-  // Process chart data
-  const chartData = salesChartData?.map((item: { date: string; total: string }) => ({
-    date: format(new Date(item.date), "MMM dd"),
-    total: parseFloat(item.total),
-    sales: parseFloat(item.total)
-  })) || [];
+  // Process chart data with better error handling
+  const chartData = salesChartData?.map((item: any) => {
+    const date = item.date || item.createdAt || new Date().toISOString();
+    const total = parseFloat(item.total || item.totalAmount || item.amount || 0);
+    return {
+      date: format(new Date(date), "MMM dd"),
+      total: isNaN(total) ? 0 : total,
+      sales: isNaN(total) ? 0 : total
+    };
+  }).filter(item => item.total > 0) || [];
 
-  // Calculate metrics
+  // Calculate metrics with better error handling
   const totalSalesAmount = salesData?.reduce((total: number, sale: any) => {
-    return total + parseFloat(sale.total);
+    const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
+    return total + (isNaN(saleTotal) ? 0 : saleTotal);
   }, 0) || 0;
 
   const totalTransactions = salesData?.length || 0;
@@ -143,6 +163,25 @@ export default function SalesDashboard() {
         <div className="mb-6">
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Sales Dashboard</h2>
           <p className="text-gray-600 dark:text-gray-400">Monitor your sales performance and trends</p>
+          
+          {/* Loading and Error States */}
+          {salesLoading && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-700">Loading sales data...</p>
+            </div>
+          )}
+          
+          {salesError && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700">Error loading sales data. Please try refreshing the page.</p>
+            </div>
+          )}
+          
+          {!salesLoading && !salesError && (!salesData || salesData.length === 0) && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-700">No sales data available. Start making sales to see analytics.</p>
+            </div>
+          )}
         </div>
 
         {/* Key Metrics Cards */}
@@ -410,24 +449,30 @@ export default function SalesDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {salesData?.slice(0, 10).map((sale: any) => (
-                        <TableRow key={sale.id}>
-                          <TableCell>
-                            {format(new Date(sale.createdAt), "MMM dd, yyyy")}
-                          </TableCell>
-                          <TableCell>{sale.customerName || "Walk-in Customer"}</TableCell>
-                          <TableCell>{sale.items?.length || 0} items</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(parseFloat(sale.total))}
-                          </TableCell>
-                          <TableCell>{sale.paymentMethod || "Cash"}</TableCell>
-                          <TableCell>
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                              Completed
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      )) || (
+                      {salesData?.slice(0, 10).map((sale: any) => {
+                        const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
+                        const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
+                        const itemCount = sale.items?.length || sale.saleItems?.length || sale.sale_items?.length || 0;
+                        
+                        return (
+                          <TableRow key={sale.id || Math.random()}>
+                            <TableCell>
+                              {format(new Date(saleDate), "MMM dd, yyyy")}
+                            </TableCell>
+                            <TableCell>{sale.customerName || sale.customer_name || "Walk-in Customer"}</TableCell>
+                            <TableCell>{itemCount} items</TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(isNaN(saleTotal) ? 0 : saleTotal)}
+                            </TableCell>
+                            <TableCell>{sale.paymentMethod || sale.payment_method || "Cash"}</TableCell>
+                            <TableCell>
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                                {sale.status || "Completed"}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }) || (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center text-muted-foreground">
                             No sales data available
