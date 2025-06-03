@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -142,6 +141,7 @@ export default function POSEnhanced() {
     address: "",
     email: ""
   });
+  const [showSalesDashboard, setShowSalesDashboard] = useState(false);
 
   // Dynamic bill number generation
   const generateBillNumber = () => {
@@ -171,7 +171,7 @@ export default function POSEnhanced() {
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
 
   // Fetch products
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
@@ -313,7 +313,7 @@ export default function POSEnhanced() {
         p.code.toLowerCase() === searchTerm || 
         p.name.toLowerCase().includes(searchTerm)
       );
-      
+
       if (mockProduct) {
         product = {
           id: parseInt(mockProduct.code) || Math.floor(Math.random() * 10000),
@@ -377,7 +377,7 @@ export default function POSEnhanced() {
   // Smart customer search
   const handleCustomerSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return [];
-    
+
     const term = searchTerm.toLowerCase();
     return customerDatabase.filter(customer =>
       customer.name.toLowerCase().includes(term) ||
@@ -467,7 +467,7 @@ export default function POSEnhanced() {
         stock: selectedProduct.stockQuantity
       };
       setCart(prev => [...prev, newItem]);
-      
+
       toast({
         title: "✅ Item Added to Cart",
         description: (
@@ -517,7 +517,7 @@ export default function POSEnhanced() {
   const removeFromCart = (productId: number) => {
     const item = cart.find(item => item.id === productId);
     setCart(prev => prev.filter(item => item.id !== productId));
-    
+
     if (item) {
       toast({
         title: "🗑️ Item Removed",
@@ -547,7 +547,7 @@ export default function POSEnhanced() {
         phone: "",
         email: ""
       });
-      
+
       toast({
         title: "🧹 Sale Cleared",
         description: "Cart has been cleared and reset for new sale",
@@ -810,8 +810,20 @@ export default function POSEnhanced() {
         return;
       }
 
-      // Function keys and other shortcuts
-      switch (e.key) {
+            // Additional Ctrl combinations
+        if (e.ctrlKey) {
+          switch (e.key.toLowerCase()) {
+            case 's':
+              if (e.shiftKey) {
+                e.preventDefault();
+                setShowSalesDashboard(true);
+                toast({ title: "📊 Dashboard", description: "Sales dashboard opened" });
+              }
+              break;
+          }
+        }
+
+        switch (e.key) {
         case 'F1':
           e.preventDefault();
           barcodeInputRef.current?.focus();
@@ -864,9 +876,25 @@ export default function POSEnhanced() {
           clearSale();
           break;
         case 'F12':
-          e.preventDefault();
-          setShowNewCustomerDialog(true);
-          break;
+            e.preventDefault();
+            setShowNewCustomerDialog(true);
+            break;
+        }
+
+        // Additional Ctrl combinations
+        if (e.ctrlKey) {
+          switch (e.key.toLowerCase()) {
+            case 's':
+              if (e.shiftKey) {
+                e.preventDefault();
+                setShowSalesDashboard(true);
+                toast({ title: "📊 Dashboard", description: "Sales dashboard opened" });
+              }
+              break;
+          }
+        }
+
+        switch (e.key) {
         case 'Enter':
           if (selectedProduct) {
             e.preventDefault();
@@ -929,6 +957,7 @@ export default function POSEnhanced() {
     { key: "F10", action: "Process Payment" },
     { key: "F11", action: "Clear Sale" },
     { key: "F12", action: "New Customer" },
+    { key: "Ctrl+Shift+S", action: "Sales Dashboard" },
     { key: "Enter", action: "Add to Cart" },
     { key: "Esc", action: "Cancel/Close Dialogs" },
     { key: "+/=", action: "Increase Last Item Qty" },
@@ -1241,12 +1270,12 @@ export default function POSEnhanced() {
                                   createdAt: new Date().toISOString(),
                                   updatedAt: new Date().toISOString()
                                 };
-                                
+
                                 setSelectedProduct(actualProduct);
                                 setRateInput(actualProduct.price);
                                 setQuantityInput(1);
                                 setBarcodeInput("");
-                                
+
                                 toast({
                                   title: "🎯 Product Selected!",
                                   description: `${actualProduct.name} ready to add`
@@ -1446,12 +1475,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-                                  
+
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-                                  
+
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1537,12 +1566,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-                                  
+
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-                                  
+
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1628,12 +1657,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-                                  
+
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-                                  
+
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1719,12 +1748,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-                                  
+
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-                                  
+
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1817,7 +1846,7 @@ export default function POSEnhanced() {
                               createdAt: new Date().toISOString(),
                               updatedAt: new Date().toISOString()
                             };
-                            
+
                             setSelectedProduct(actualProduct);
                             setRateInput(actualProduct.price);
                             setQuantityInput(1);
@@ -2115,7 +2144,7 @@ export default function POSEnhanced() {
                     Customer (F12)
                   </Button>
                 </div>
-                
+
                 <Button
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
@@ -2124,7 +2153,7 @@ export default function POSEnhanced() {
                   <CreditCard className="h-6 w-6 mr-3" />
                   💳 Complete Payment (F10)
                 </Button>
-                
+
                 {/* Enhanced Print Last Receipt */}
                 {cart.length === 0 && (
                   <Button
@@ -2220,7 +2249,7 @@ export default function POSEnhanced() {
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                       };
-                      
+
                       const existingItem = cart.find(item => item.id === actualProduct.id);
                       if (existingItem) {
                         updateQuantity(actualProduct.id, existingItem.quantity + 1);
@@ -2234,9 +2263,9 @@ export default function POSEnhanced() {
                         };
                         setCart(prev => [...prev, newItem]);
                       }
-                      
+
                       setShowProductList(false);
-                      
+
                       toast({
                         title: "✅ Added to Cart!",
                         description: `${actualProduct.name} x 1 - ${formatCurrency(parseFloat(actualProduct.price))}`
@@ -2351,7 +2380,7 @@ export default function POSEnhanced() {
               >
                 Cancel
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2380,7 +2409,7 @@ export default function POSEnhanced() {
                 <PrinterIcon className="h-4 w-4 mr-2" />
                 Preview Receipt
               </Button>
-              
+
               <Button
                 onClick={processSale}
                 disabled={isProcessing}
@@ -2411,8 +2440,7 @@ export default function POSEnhanced() {
                 Master these shortcuts to boost your efficiency
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              {keyboardShortcuts.map((shortcut, index) => (
+            <div className="grid grid-cols-2 gap-4              {keyboardShortcuts.map((shortcut, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <span className="font-medium">{shortcut.action}</span>
                   <Badge variant="outline" className="font-mono font-bold">
@@ -2572,6 +2600,93 @@ export default function POSEnhanced() {
                 Add Customer
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+         {/* Enhanced Sales Dashboard Dialog */}
+         <Dialog open={showSalesDashboard} onOpenChange={setShowSalesDashboard}>
+          <DialogContent className="max-w-5xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">📊 Sales Dashboard</DialogTitle>
+              <DialogDescription>
+                Real-time sales statistics and analytics.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-3 gap-6">
+              {/* Total Sales */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold">Total Sales</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">{formatCurrency(52450)}</div>
+                  <p className="text-sm text-gray-500">Since last month</p>
+                </CardContent>
+              </Card>
+
+              {/* Items Sold */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold">Items Sold</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600">1,250</div>
+                  <p className="text-sm text-gray-500">Total items sold</p>
+                </CardContent>
+              </Card>
+
+              {/* Average Order Value */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold">Average Order Value</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-purple-600">{formatCurrency(41.96)}</div>
+                  <p className="text-sm text-gray-500">Average value per order</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Transactions */}
+            <div className="mt-6">
+              <h3 className="text-xl font-bold mb-3">Recent Transactions</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bill #</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Payment</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {/* Mock Transaction Data */}
+                  <TableRow>
+                    <TableCell>POS2405159876</TableCell>
+                    <TableCell>2024-05-15</TableCell>
+                    <TableCell>Rajesh Kumar</TableCell>
+                    <TableCell>{formatCurrency(65.50)}</TableCell>
+                    <TableCell>Cash</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>POS2405152345</TableCell>
+                    <TableCell>2024-05-15</TableCell>
+                    <TableCell>Walk-in Customer</TableCell>
+                    <TableCell>{formatCurrency(32.00)}</TableCell>
+                    <TableCell>Card</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>POS2405146789</TableCell>
+                    <TableCell>2024-05-14</TableCell>
+                    <TableCell>Priya Sharma</TableCell>
+                    <TableCell>{formatCurrency(120.75)}</TableCell>
+                    <TableCell>UPI</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
           </DialogContent>
         </Dialog>
       </div>
