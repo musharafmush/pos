@@ -1,0 +1,81 @@
+Error:   Failed to scan for dependencies from entries:
+  /home/runner/workspace/client/index.html
+
+  ✘ [ERROR] Unexpected closing "DialogContent" tag does not match opening "div" tag
+
+    client/src/pages/pos-enhanced.tsx:2189:12:
+      2189 │           </DialogContent>
+           │             ~~~~~~~~~~~~~
+           ╵             div
+
+  The opening "div" tag is here:
+
+    client/src/pages/pos-enhanced.tsx:1850:13:
+      1850 │             <div className="space-y-4">
+           ╵              ~~~
+
+
+✘ [ERROR] Unexpected closing "Dialog" tag does not match opening "DialogContent" tag
+
+    client/src/pages/pos-enhanced.tsx:2190:10:
+      2190 │         </Dialog>
+           │           ~~~~~~
+           ╵           DialogContent
+
+  The opening "DialogContent" tag is here:
+
+    client/src/pages/pos-enhanced.tsx:1842:11:
+      1842 │           <DialogContent className="max-w-lg">
+           ╵            ~~~~~~~~~~~~~
+
+
+✘ [ERROR] Unexpected closing "div" tag does not match opening "Dialog" tag
+
+    client/src/pages/pos-enhanced.tsx:2408:8:
+      2408 │       </div>
+           │         ~~~
+           ╵         Dialog
+
+  The opening "Dialog" tag is here:
+
+    client/src/pages/pos-enhanced.tsx:1841:9:
+      1841 │         <Dialog open={showPaymentDialog} onOpenChange={setShowPa...
+           ╵          ~~~~~~
+
+
+✘ [ERROR] Unexpected closing "DashboardLayout" tag does not match opening "div" tag
+
+    client/src/pages/pos-enhanced.tsx:2409:6:
+      2409 │     </DashboardLayout>
+           │       ~~~~~~~~~~~~~~~
+           ╵       div
+
+  The opening "div" tag is here:
+
+    client/src/pages/pos-enhanced.tsx:984:7:
+      984 │       <div className="h-full flex flex-col bg-gradient-to-br from...
+          ╵        ~~~
+
+
+✘ [ERROR] The character "}" is not valid inside a JSX element
+
+    client/src/pages/pos-enhanced.tsx:2411:0:
+      2411 │ }
+           │ ^
+           ╵ {'}'}
+
+  Did you mean to escape it as "{'}'}" instead?
+
+
+✘ [ERROR] Unexpected end of file before a closing "DashboardLayout" tag
+
+    client/src/pages/pos-enhanced.tsx:2411:1:
+      2411 │ }
+           │  ^
+           ╵  </DashboardLayout>
+
+  The opening "DashboardLayout" tag is here:
+
+    client/src/pages/pos-enhanced.tsx:983:5:
+      983 │     <DashboardLayout>
+          ╵      ~~~~~~~~~~~~~~~
