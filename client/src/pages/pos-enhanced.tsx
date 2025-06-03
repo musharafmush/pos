@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -67,6 +68,24 @@ import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/currency";
 import type { Product, Customer } from "@shared/schema";
 import { printReceipt } from "@/components/pos/print-receipt";
+import { 
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  Cell,
+  AreaChart,
+  Area
+} from "recharts";
+import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 
 interface CartItem extends Product {
   quantity: number;
@@ -142,6 +161,7 @@ export default function POSEnhanced() {
     email: ""
   });
   const [showSalesDashboard, setShowSalesDashboard] = useState(false);
+  const [dashboardTimeRange, setDashboardTimeRange] = useState<string>("7");
 
   // Dynamic bill number generation
   const generateBillNumber = () => {
@@ -171,7 +191,7 @@ export default function POSEnhanced() {
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
+  
 
   // Fetch products
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
@@ -191,6 +211,67 @@ export default function POSEnhanced() {
       if (!response.ok) throw new Error("Failed to fetch customers");
       return response.json();
     },
+  });
+
+  // Fetch sales data for dashboard
+  const { data: salesData, isLoading: salesLoading } = useQuery({
+    queryKey: ['/api/sales'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/sales?limit=100');
+        if (!response.ok) {
+          console.error('Sales API response not ok:', response.status, response.statusText);
+          throw new Error(`Failed to fetch sales: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('Sales data received:', data);
+        
+        // Handle different response formats
+        if (Array.isArray(data)) {
+          return data;
+        } else if (data && Array.isArray(data.sales)) {
+          return data.sales;
+        } else if (data && data.data && Array.isArray(data.data)) {
+          return data.data;
+        } else {
+          console.warn('Unexpected sales data format:', data);
+          return [];
+        }
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
+  });
+
+  // Fetch sales chart data for dashboard
+  const { data: salesChartData, isLoading: chartLoading } = useQuery({
+    queryKey: ['/api/dashboard/sales-chart', dashboardTimeRange],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/dashboard/sales-chart?days=${dashboardTimeRange}`);
+        if (!response.ok) throw new Error('Failed to fetch chart data');
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching chart data:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
+  });
+
+  // Fetch top selling products for dashboard
+  const { data: topProducts, isLoading: productsLoading } = useQuery({
+    queryKey: ['/api/reports/top-selling-products', dashboardTimeRange],
+    queryFn: async () => {
+      const response = await fetch(`/api/reports/top-selling-products?days=${dashboardTimeRange}`);
+      if (!response.ok) throw new Error('Failed to fetch top products');
+      return response.json();
+    }
   });
 
   // Real-time customer database
@@ -313,7 +394,7 @@ export default function POSEnhanced() {
         p.code.toLowerCase() === searchTerm || 
         p.name.toLowerCase().includes(searchTerm)
       );
-
+      
       if (mockProduct) {
         product = {
           id: parseInt(mockProduct.code) || Math.floor(Math.random() * 10000),
@@ -377,7 +458,7 @@ export default function POSEnhanced() {
   // Smart customer search
   const handleCustomerSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return [];
-
+    
     const term = searchTerm.toLowerCase();
     return customerDatabase.filter(customer =>
       customer.name.toLowerCase().includes(term) ||
@@ -467,7 +548,7 @@ export default function POSEnhanced() {
         stock: selectedProduct.stockQuantity
       };
       setCart(prev => [...prev, newItem]);
-
+      
       toast({
         title: "✅ Item Added to Cart",
         description: (
@@ -517,7 +598,7 @@ export default function POSEnhanced() {
   const removeFromCart = (productId: number) => {
     const item = cart.find(item => item.id === productId);
     setCart(prev => prev.filter(item => item.id !== productId));
-
+    
     if (item) {
       toast({
         title: "🗑️ Item Removed",
@@ -547,7 +628,7 @@ export default function POSEnhanced() {
         phone: "",
         email: ""
       });
-
+      
       toast({
         title: "🧹 Sale Cleared",
         description: "Cart has been cleared and reset for new sale",
@@ -810,20 +891,8 @@ export default function POSEnhanced() {
         return;
       }
 
-            // Additional Ctrl combinations
-        if (e.ctrlKey) {
-          switch (e.key.toLowerCase()) {
-            case 's':
-              if (e.shiftKey) {
-                e.preventDefault();
-                setShowSalesDashboard(true);
-                toast({ title: "📊 Dashboard", description: "Sales dashboard opened" });
-              }
-              break;
-          }
-        }
-
-        switch (e.key) {
+      // Function keys and other shortcuts
+      switch (e.key) {
         case 'F1':
           e.preventDefault();
           barcodeInputRef.current?.focus();
@@ -876,25 +945,14 @@ export default function POSEnhanced() {
           clearSale();
           break;
         case 'F12':
-            e.preventDefault();
+          e.preventDefault();
+          if (e.ctrlKey) {
+            setShowSalesDashboard(true);
+            toast({ title: "📊 Sales Dashboard", description: "Viewing sales analytics" });
+          } else {
             setShowNewCustomerDialog(true);
-            break;
-        }
-
-        // Additional Ctrl combinations
-        if (e.ctrlKey) {
-          switch (e.key.toLowerCase()) {
-            case 's':
-              if (e.shiftKey) {
-                e.preventDefault();
-                setShowSalesDashboard(true);
-                toast({ title: "📊 Dashboard", description: "Sales dashboard opened" });
-              }
-              break;
           }
-        }
-
-        switch (e.key) {
+          break;
         case 'Enter':
           if (selectedProduct) {
             e.preventDefault();
@@ -940,9 +998,29 @@ export default function POSEnhanced() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);```python
+    window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [cart.length, selectedProduct, discount, grandTotal, amountPaid, paymentMethod, viewMode]);
+
+  // Calculate dashboard metrics
+  const totalSalesAmount = salesData?.reduce((total: number, sale: any) => {
+    const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
+    return total + (isNaN(saleTotal) ? 0 : saleTotal);
+  }, 0) || 0;
+
+  const totalTransactions = salesData?.length || 0;
+  const averageOrderValue = totalTransactions > 0 ? totalSalesAmount / totalTransactions : 0;
+
+  // Process chart data
+  const dashboardChartData = salesChartData?.map((item: any) => {
+    const date = item.date || item.createdAt || new Date().toISOString();
+    const total = parseFloat(item.total || item.totalAmount || item.amount || 0);
+    return {
+      date: format(new Date(date), "MMM dd"),
+      total: isNaN(total) ? 0 : total,
+      sales: isNaN(total) ? 0 : total
+    };
+  }).filter(item => item.total > 0) || [];
 
   const keyboardShortcuts = [
     { key: "F1", action: "Focus Barcode Scanner" },
@@ -957,7 +1035,7 @@ export default function POSEnhanced() {
     { key: "F10", action: "Process Payment" },
     { key: "F11", action: "Clear Sale" },
     { key: "F12", action: "New Customer" },
-    { key: "Ctrl+Shift+S", action: "Sales Dashboard" },
+    { key: "Ctrl+F12", action: "Sales Dashboard" },
     { key: "Enter", action: "Add to Cart" },
     { key: "Esc", action: "Cancel/Close Dialogs" },
     { key: "+/=", action: "Increase Last Item Qty" },
@@ -1015,6 +1093,15 @@ export default function POSEnhanced() {
                 <div className="text-xs text-gray-500 font-medium">Total Amount</div>
                 <div className="text-3xl font-bold text-green-600">{formatCurrency(grandTotal)}</div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSalesDashboard(true)}
+                className="flex items-center space-x-1 border-green-300 hover:bg-green-50"
+              >
+                <TrendingUpIcon className="h-4 w-4" />
+                <span>Sales Analytics</span>
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -1270,12 +1357,12 @@ export default function POSEnhanced() {
                                   createdAt: new Date().toISOString(),
                                   updatedAt: new Date().toISOString()
                                 };
-
+                                
                                 setSelectedProduct(actualProduct);
                                 setRateInput(actualProduct.price);
                                 setQuantityInput(1);
                                 setBarcodeInput("");
-
+                                
                                 toast({
                                   title: "🎯 Product Selected!",
                                   description: `${actualProduct.name} ready to add`
@@ -1475,12 +1562,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-
+                                  
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-
+                                  
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1566,12 +1653,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-
+                                  
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-
+                                  
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1657,13 +1744,12 @@ export default function POSEnhanced() {
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-
+                                  
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
-                                  ```python
-setActiveTab('scan');
-
+                                  setActiveTab('scan');
+                                  
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1749,12 +1835,12 @@ setActiveTab('scan');
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
                                   };
-
+                                  
                                   setSelectedProduct(actualProduct);
                                   setRateInput(actualProduct.price);
                                   setQuantityInput(1);
                                   setActiveTab('scan');
-
+                                  
                                   toast({
                                     title: "🎯 Product Selected!",
                                     description: `${actualProduct.name} ready to add`
@@ -1847,7 +1933,7 @@ setActiveTab('scan');
                               createdAt: new Date().toISOString(),
                               updatedAt: new Date().toISOString()
                             };
-
+                            
                             setSelectedProduct(actualProduct);
                             setRateInput(actualProduct.price);
                             setQuantityInput(1);
@@ -2145,7 +2231,7 @@ setActiveTab('scan');
                     Customer (F12)
                   </Button>
                 </div>
-
+                
                 <Button
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
@@ -2154,7 +2240,7 @@ setActiveTab('scan');
                   <CreditCard className="h-6 w-6 mr-3" />
                   💳 Complete Payment (F10)
                 </Button>
-
+                
                 {/* Enhanced Print Last Receipt */}
                 {cart.length === 0 && (
                   <Button
@@ -2250,7 +2336,7 @@ setActiveTab('scan');
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                       };
-
+                      
                       const existingItem = cart.find(item => item.id === actualProduct.id);
                       if (existingItem) {
                         updateQuantity(actualProduct.id, existingItem.quantity + 1);
@@ -2264,9 +2350,9 @@ setActiveTab('scan');
                         };
                         setCart(prev => [...prev, newItem]);
                       }
-
+                      
                       setShowProductList(false);
-
+                      
                       toast({
                         title: "✅ Added to Cart!",
                         description: `${actualProduct.name} x 1 - ${formatCurrency(parseFloat(actualProduct.price))}`
@@ -2381,7 +2467,7 @@ setActiveTab('scan');
               >
                 Cancel
               </Button>
-
+              
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2410,7 +2496,7 @@ setActiveTab('scan');
                 <PrinterIcon className="h-4 w-4 mr-2" />
                 Preview Receipt
               </Button>
-
+              
               <Button
                 onClick={processSale}
                 disabled={isProcessing}
@@ -2427,6 +2513,263 @@ setActiveTab('scan');
                     Complete & Print
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Enhanced Sales Dashboard Dialog */}
+        <Dialog open={showSalesDashboard} onOpenChange={setShowSalesDashboard}>
+          <DialogContent className="max-w-6xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl flex items-center">
+                <TrendingUpIcon className="h-6 w-6 mr-2 text-green-600" />
+                📊 Sales Dashboard & Analytics
+              </DialogTitle>
+              <DialogDescription className="text-lg">
+                Real-time sales performance and business insights while you work on POS
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6 overflow-y-auto max-h-[70vh]">
+              {/* Dashboard Header with Time Range */}
+              <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-xl">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Sales Overview</h3>
+                  <p className="text-gray-600">Monitor performance in real-time</p>
+                </div>
+                <Select
+                  value={dashboardTimeRange}
+                  onValueChange={(value) => setDashboardTimeRange(value)}
+                >
+                  <SelectTrigger className="w-[180px] h-10 bg-white">
+                    <SelectValue placeholder="Select time range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">Last 7 Days</SelectItem>
+                    <SelectItem value="30">Last 30 Days</SelectItem>
+                    <SelectItem value="90">Last 90 Days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Key Metrics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center">
+                      <IndianRupeeIcon className="h-5 w-5 mr-2" />
+                      Total Sales
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">{formatCurrency(totalSalesAmount)}</div>
+                    <p className="text-green-100 text-sm">Revenue generated</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center">
+                      <ShoppingCartIcon className="h-5 w-5 mr-2" />
+                      Transactions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">{totalTransactions}</div>
+                    <p className="text-blue-100 text-sm">Sales completed</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center">
+                      <Calculator className="h-5 w-5 mr-2" />
+                      Avg Order Value
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">{formatCurrency(averageOrderValue)}</div>
+                    <p className="text-purple-100 text-sm">Per transaction</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Charts Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Sales Trend Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <AreaChart className="h-5 w-5 mr-2 text-blue-600" />
+                      Sales Trend
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      {chartLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-gray-500">Loading chart...</div>
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={dashboardChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis />
+                            <Tooltip 
+                              formatter={(value) => [formatCurrency(Number(value)), 'Sales']}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="total" 
+                              stroke="#3B82F6" 
+                              fill="#3B82F6" 
+                              fillOpacity={0.3}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Top Products */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <StarIcon className="h-5 w-5 mr-2 text-orange-600" />
+                      Top Selling Products
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {productsLoading ? (
+                        <div className="text-center text-gray-500">Loading products...</div>
+                      ) : topProducts?.slice(0, 6).map((product: any, index: number) => (
+                        <div key={product.product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                              <span className="text-orange-600 font-bold text-sm">#{index + 1}</span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">{product.product.name}</div>
+                              <div className="text-sm text-gray-600">{product.product.sku}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-green-600">{formatCurrency(parseFloat(product.revenue || 0))}</div>
+                            <div className="text-sm text-gray-600">{product.soldQuantity} sold</div>
+                          </div>
+                        </div>
+                      )) || (
+                        <div className="text-center text-gray-500 py-8">
+                          <Package2Icon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                          <div>No sales data available</div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Sales Activity */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <ClockIcon className="h-5 w-5 mr-2 text-blue-600" />
+                    Recent Sales Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date & Time</TableHead>
+                          <TableHead>Customer</TableHead>
+                          <TableHead>Items</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                          <TableHead>Payment</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {salesLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center text-gray-500">
+                              Loading sales data...
+                            </TableCell>
+                          </TableRow>
+                        ) : salesData?.slice(0, 8).map((sale: any) => {
+                          const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
+                          const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
+                          const itemCount = sale.items?.length || sale.saleItems?.length || sale.sale_items?.length || 0;
+                          
+                          return (
+                            <TableRow key={sale.id || Math.random()}>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <div className="font-medium">{format(new Date(saleDate), "MMM dd, yyyy")}</div>
+                                  <div className="text-gray-500">{format(new Date(saleDate), "hh:mm a")}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">{sale.customerName || sale.customer_name || "Walk-in Customer"}</div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{itemCount} items</Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="font-bold text-green-600">
+                                  {formatCurrency(isNaN(saleTotal) ? 0 : saleTotal)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="capitalize">
+                                  {sale.paymentMethod || sale.payment_method || "Cash"}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }) || (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                              <ShoppingCartIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                              <div>No sales data available</div>
+                              <div className="text-sm">Start making sales to see analytics</div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowSalesDashboard(false)}
+                className="flex-1"
+              >
+                Close Dashboard
+              </Button>
+              <Button
+                onClick={() => {
+                  // Refresh all dashboard data
+                  queryClient.invalidateQueries({ queryKey: ['/api/sales'] });
+                  queryClient.invalidateQueries({ queryKey: ['/api/dashboard/sales-chart'] });
+                  queryClient.invalidateQueries({ queryKey: ['/api/reports/top-selling-products'] });
+                  toast({
+                    title: "🔄 Dashboard Refreshed",
+                    description: "All sales data has been updated"
+                  });
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                <RefreshCwIcon className="h-4 w-4 mr-2" />
+                Refresh Data
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2602,93 +2945,6 @@ setActiveTab('scan');
                 Add Customer
               </Button>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-         {/* Enhanced Sales Dashboard Dialog */}
-         <Dialog open={showSalesDashboard} onOpenChange={setShowSalesDashboard}>
-          <DialogContent className="max-w-5xl max-h-[90vh]">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">📊 Sales Dashboard</DialogTitle>
-              <DialogDescription>
-                Real-time sales statistics and analytics.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid grid-cols-3 gap-6">
-              {/* Total Sales */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold">Total Sales</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">{formatCurrency(52450)}</div>
-                  <p className="text-sm text-gray-500">Since last month</p>
-                </CardContent>
-              </Card>
-
-              {/* Items Sold */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold">Items Sold</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-600">1,250</div>
-                  <p className="text-sm text-gray-500">Total items sold</p>
-                </CardContent>
-              </Card>
-
-              {/* Average Order Value */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold">Average Order Value</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-purple-600">{formatCurrency(41.96)}</div>
-                  <p className="text-sm text-gray-500">Average value per order</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recent Transactions */}
-            <div className="mt-6">
-              <h3 className="text-xl font-bold mb-3">Recent Transactions</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Bill #</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Payment</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* Mock Transaction Data */}
-                  <TableRow>
-                    <TableCell>POS2405159876</TableCell>
-                    <TableCell>2024-05-15</TableCell>
-                    <TableCell>Rajesh Kumar</TableCell>
-                    <TableCell>{formatCurrency(65.50)}</TableCell>
-                    <TableCell>Cash</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>POS2405152345</TableCell>
-                    <TableCell>2024-05-15</TableCell>
-                    <TableCell>Walk-in Customer</TableCell>
-                    <TableCell>{formatCurrency(32.00)}</TableCell>
-                    <TableCell>Card</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>POS2405146789</TableCell>
-                    <TableCell>2024-05-14</TableCell>
-                    <TableCell>Priya Sharma</TableCell>
-                    <TableCell>{formatCurrency(120.75)}</TableCell>
-                    <TableCell>UPI</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-
           </DialogContent>
         </Dialog>
       </div>
