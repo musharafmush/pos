@@ -67,6 +67,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/currency";
 import type { Product, Customer } from "@shared/schema";
 import { printReceipt } from "@/components/pos/print-receipt";
+import { POSRegister, POSRegisterTrigger } from "@/components/pos/pos-register";
 
 interface CartItem extends Product {
   quantity: number;
@@ -141,6 +142,8 @@ export default function POSEnhanced() {
     address: "",
     email: ""
   });
+  const [showCashRegister, setShowCashRegister] = useState(false);
+  const [cashInRegister, setCashInRegister] = useState(5000); // Starting cash
 
   // Auto Shopping Cart Features
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
@@ -1203,6 +1206,15 @@ export default function POSEnhanced() {
                 <div className="text-xs text-gray-500">{Math.floor(Math.random() * 25 + 10)} transactions</div>
               </div>
               <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCashRegister(true)}
+                  className="flex items-center space-x-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-300 transform hover:scale-105 transition-all duration-300 hover:shadow-md"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  <span>Cash Register</span>
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -3111,6 +3123,13 @@ export default function POSEnhanced() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* POS Cash Register Dialog */}
+        <POSRegister 
+          isOpen={showCashRegister} 
+          onOpenChange={setShowCashRegister}
+          initialCashAmount={cashInRegister}
+        />
       </div>
     </DashboardLayout>
   );
