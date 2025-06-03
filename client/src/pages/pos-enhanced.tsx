@@ -936,7 +936,7 @@ export default function POSEnhanced() {
     };
 
     window.addEventListener('keydown', handleKeyPress);
-    return ()> window.removeEventListener('keydown',handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, [cart.length, selectedProduct, discount, grandTotal, amountPaid, paymentMethod, viewMode]);
 
   const keyboardShortcuts = [
