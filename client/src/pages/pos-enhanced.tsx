@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -171,7 +170,14 @@ export default function POSEnhanced() {
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
+  // Add states for new payment methods
+  const [giftCardNumber, setGiftCardNumber] = useState("");
+  const [giftCardBalance, setGiftCardBalance] = useState(0);
+  const [walletNumber, setWalletNumber] = useState("");
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [splitPayments, setSplitPayments] = useState([{ method: 'cash', amount: 0 }]);
+
 
   // Fetch products
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
@@ -313,7 +319,7 @@ export default function POSEnhanced() {
         p.code.toLowerCase() === searchTerm || 
         p.name.toLowerCase().includes(searchTerm)
       );
-      
+
       if (mockProduct) {
         product = {
           id: parseInt(mockProduct.code) || Math.floor(Math.random() * 10000),
@@ -377,7 +383,7 @@ export default function POSEnhanced() {
   // Smart customer search
   const handleCustomerSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return [];
-    
+
     const term = searchTerm.toLowerCase();
     return customerDatabase.filter(customer =>
       customer.name.toLowerCase().includes(term) ||
@@ -467,7 +473,7 @@ export default function POSEnhanced() {
         stock: selectedProduct.stockQuantity
       };
       setCart(prev => [...prev, newItem]);
-      
+
       toast({
         title: "✅ Item Added to Cart",
         description: (
@@ -517,7 +523,7 @@ export default function POSEnhanced() {
   const removeFromCart = (productId: number) => {
     const item = cart.find(item => item.id === productId);
     setCart(prev => prev.filter(item => item.id !== productId));
-    
+
     if (item) {
       toast({
         title: "🗑️ Item Removed",
@@ -547,13 +553,17 @@ export default function POSEnhanced() {
         phone: "",
         email: ""
       });
-      
+
       toast({
         title: "🧹 Sale Cleared",
         description: "Cart has been cleared and reset for new sale",
       });
     }
   };
+
+  const calculateTotal = () => {
+    return taxableAmount + taxAmount
+  }
 
   // Process sale with enhanced validation
   const processSale = async () => {
@@ -761,16 +771,29 @@ export default function POSEnhanced() {
             }
             break;
           case 'u':
-            if (e.altKey) {
-              e.preventDefault();
-              // Quick UPI payment
-              if (cart.length > 0) {
-                setPaymentMethod("upi");
-                setAmountPaid(grandTotal.toString());
-                setShowPaymentDialog(true);
-                toast({ title: "📱 UPI Payment", description: "Quick UPI payment setup" });
-              }
-            }
+            e.preventDefault();
+            setPaymentMethod('upi');
+            setShowPaymentDialog(true);
+            break;
+          case 'w':
+            e.preventDefault();
+            setPaymentMethod('paytm');
+            setShowPaymentDialog(true);
+            break;
+          case 'g':
+            e.preventDefault();
+            setPaymentMethod('giftcard');
+            setShowPaymentDialog(true);
+            break;
+          case 'l':
+            e.preventDefault();
+            setPaymentMethod('loyalty');
+            setShowPaymentDialog(true);
+            break;
+          case 's':
+            e.preventDefault();
+            setPaymentMethod('split');
+            setShowPaymentDialog(true);
             break;
           case 'q':
             if (e.ctrlKey) {
@@ -942,8 +965,19 @@ export default function POSEnhanced() {
     { key: "Alt+R", action: "Recall Sales" },
     { key: "Alt+C", action: "Quick Cash Payment" },
     { key: "Alt+U", action: "Quick UPI Payment" },
+    { key: "Alt+W", action: "Quick Wallet Payment" },
+    { key: "Alt+G", action: "Quick Gift Card" },
+    { key: "Alt+L", action: "Quick Loyalty Points" },
+    { key: "Alt+S", action: "Split Payment" },
     { key: "Alt+Del", action: "Remove Last Item" }
   ];
+
+  const handleQuickPayment = (method: string) => {
+    setPaymentMethod(method);
+    setAmountPaid(grandTotal.toString());
+    setShowPaymentDialog(true);
+    toast({ title: "💰 Quick Payment", description: `Payment method set to ${method}` });
+  };
 
   return (
     <DashboardLayout>
@@ -1345,7 +1379,7 @@ export default function POSEnhanced() {
                               createdAt: new Date().toISOString(),
                               updatedAt: new Date().toISOString()
                             };
-                            
+
                             setSelectedProduct(actualProduct);
                             setRateInput(actualProduct.price);
                             setQuantityInput(1);
@@ -1643,16 +1677,15 @@ export default function POSEnhanced() {
                     Customer (F12)
                   </Button>
                 </div>
-                
-                <Button
-                  onClick={() => setShowPaymentDialog(true)}
+
+                <Button                    onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
                   className="w-full h-16 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-xl font-bold shadow-xl border-2 border-green-400"
                 >
                   <CreditCard className="h-6 w-6 mr-3" />
                   💳 Complete Payment (F10)
                 </Button>
-                
+
                 {/* Enhanced Print Last Receipt */}
                 {cart.length === 0 && (
                   <Button
@@ -1748,7 +1781,7 @@ export default function POSEnhanced() {
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                       };
-                      
+
                       const existingItem = cart.find(item => item.id === actualProduct.id);
                       if (existingItem) {
                         updateQuantity(actualProduct.id, existingItem.quantity + 1);
@@ -1762,9 +1795,9 @@ export default function POSEnhanced() {
                         };
                         setCart(prev => [...prev, newItem]);
                       }
-                      
+
                       setShowProductList(false);
-                      
+
                       toast({
                         title: "✅ Added to Cart!",
                         description: `${actualProduct.name} x 1 - ${formatCurrency(parseFloat(actualProduct.price))}`
@@ -1825,31 +1858,197 @@ export default function POSEnhanced() {
                 </div>
               </div>
 
+              <div className="space-y-3">
               <div>
-                <Label className="text-lg font-medium">Payment Method</Label>
+                <Label>Payment Method</Label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                   <SelectTrigger className="h-12 text-lg">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cash">💵 Cash Payment</SelectItem>
-                    <SelectItem value="card">💳 Card Payment</SelectItem>
-                    <SelectItem value="upi">📱 UPI Payment</SelectItem>
-                    <SelectItem value="credit">🏷️ Credit Sale</SelectItem>
+                    <SelectItem value="cash">💵 Cash</SelectItem>
+                    <SelectItem value="card">💳 Card</SelectItem>
+                    <SelectItem value="upi">📱 UPI</SelectItem>
+                    <SelectItem value="credit">🏦 Credit</SelectItem>
+                    <SelectItem value="paytm">📲 Paytm Wallet</SelectItem>
+                    <SelectItem value="phonepe">💸 PhonePe</SelectItem>
+                    <SelectItem value="googlepay">🎯 Google Pay</SelectItem>
+                    <SelectItem value="amazonpay">📦 Amazon Pay</SelectItem>
+                    <SelectItem value="mobikwik">💰 MobiKwik</SelectItem>
+                    <SelectItem value="freecharge">⚡ FreeCharge</SelectItem>
+                    <SelectItem value="giftcard">🎁 Gift Card</SelectItem>
+                    <SelectItem value="loyalty">⭐ Loyalty Points</SelectItem>
+                    <SelectItem value="sodexo">🍽️ Sodexo Card</SelectItem>
+                    <SelectItem value="split">💸 Split Payment</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Gift Card Input */}
+              {paymentMethod === 'giftcard' && (
+                <div className="space-y-2">
+                  <Label>Gift Card Number</Label>
+                  <Input
+                    placeholder="Enter gift card number"
+                    value={giftCardNumber}
+                    onChange={(e) => setGiftCardNumber(e.target.value)}
+                  />
+                  <div className="flex justify-between text-sm">
+                    <span>Available Balance:</span>
+                    <span className="font-bold text-green-600">{formatCurrency(giftCardBalance)}</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      // Simulate gift card balance check
+                      const mockBalance = Math.random() * 5000 + 1000;
+                      setGiftCardBalance(mockBalance);
+                      toast({
+                        title: "Gift Card Verified",
+                        description: `Balance: ${formatCurrency(mockBalance)}`
+                      });
+                    }}
+                  >
+                    Verify Gift Card
+                  </Button>
+                </div>
+              )}
+
+              {/* Wallet Input */}
+              {['paytm', 'phonepe', 'googlepay', 'amazonpay', 'mobikwik', 'freecharge'].includes(paymentMethod) && (
+                <div className="space-y-2">
+                  <Label>Mobile Number / Wallet ID</Label>
+                  <Input
+                    placeholder="Enter mobile number"
+                    value={walletNumber}
+                    onChange={(e) => setWalletNumber(e.target.value)}
+                  />
+                  <div className="text-sm text-gray-500">
+                    Enter the mobile number linked to your {paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)} wallet
+                  </div>
+                </div>
+              )}
+
+              {/* Loyalty Points */}
+              {paymentMethod === 'loyalty' && (
+                <div className="space-y-2">
+                  <Label>Available Loyalty Points</Label>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                    <div className="flex justify-between">
+                      <span>Customer Points:</span>
+                      <span className="font-bold">2,450 pts</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Conversion Rate:</span>
+                      <span>1 pt = ₹1</span>
+                    </div>
+                    <div className="text-sm text-yellow-600 mt-1">
+                      Maximum redeemable: {formatCurrency(Math.min(2450, calculateTotal()))}
+                    </div>
+                  </div>
+                  <Input
+                    type="number"
+                    placeholder="Points to redeem"
+                    value={loyaltyPoints}
+                    onChange={(e) => setLoyaltyPoints(Number(e.target.value))}
+                    max={Math.min(2450, calculateTotal())}
+                  />
+                </div>
+              )}
+
+              {/* Split Payment */}
+              {paymentMethod === 'split' && (
+                <div className="space-y-3">
+                  <Label>Split Payment Methods</Label>
+                  <div className="space-y-2">
+                    {splitPayments.map((payment, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <Select 
+                          value={payment.method} 
+                          onValueChange={(value) => {
+                            const newSplitPayments = [...splitPayments];
+                            newSplitPayments[index].method = value;
+                            setSplitPayments(newSplitPayments);
+                          }}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cash">💵 Cash</SelectItem>
+                            <SelectItem value="card">💳 Card</SelectItem>
+                            <SelectItem value="upi">📱 UPI</SelectItem>
+                            <SelectItem value="paytm">📲 Paytm</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          placeholder="Amount"
+                          value={payment.amount}
+                          onChange={(e) => {
+                            const newSplitPayments = [...splitPayments];
+                            newSplitPayments[index].amount = Number(e.target.value);
+                            setSplitPayments(newSplitPayments);
+                          }}
+                          className="w-24"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const newSplitPayments = splitPayments.filter((_, i) => i !== index);
+                            setSplitPayments(newSplitPayments);
+                          }}
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    ))}
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setSplitPayments([...splitPayments, { method: 'cash', amount: 0 }]);
+                      }}
+                    >
+                      + Add Payment Method
+                    </Button>
+                    <div className="text-sm">
+                      <div className="flex justify-between">
+                        <span>Total Amount:</span>
+                        <span>{formatCurrency(calculateTotal())}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Amount Covered:</span>
+                        <span>{formatCurrency(splitPayments.reduce((sum, p) => sum + p.amount, 0))}</span>
+                      </div>
+                      <div className="flex justify-between font-bold">
+                        <span>Remaining:</span>
+                        <span className={splitPayments.reduce((sum, p) => sum + p.amount, 0) >= calculateTotal() ? 'text-green-600' : 'text-red-600'}>
+                          {formatCurrency(calculateTotal() - splitPayments.reduce((sum, p) => sum + p.amount, 0))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label className="text-lg font-medium">Amount Received (₹)</Label>
                 <Input
                   type="number"
+                  placeholder="Enter received amount..."
                   value={amountPaid}
                   onChange={(e) => setAmountPaid(e.target.value)}
-                  placeholder="Enter received amount..."
                   className="text-right font-mono text-xl h-12"
                   step="0.01"
+                  disabled={paymentMethod === 'split' || paymentMethod === 'loyalty'}
                 />
+                 {paymentMethod === 'loyalty' && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Amount will be calculated from loyalty points
+                  </div>
+                )}
               </div>
 
               {changeDue > 0 && (
@@ -1879,7 +2078,7 @@ export default function POSEnhanced() {
               >
                 Cancel
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1908,7 +2107,7 @@ export default function POSEnhanced() {
                 <PrinterIcon className="h-4 w-4 mr-2" />
                 Preview Receipt
               </Button>
-              
+
               <Button
                 onClick={processSale}
                 disabled={isProcessing}
@@ -1927,6 +2126,66 @@ export default function POSEnhanced() {
                 )}
               </Button>
             </DialogFooter>
+            <div className="mt-4">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => handleQuickPayment('cash')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  💵 Cash
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('upi')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  📱 UPI
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('card')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  💳 Card
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('paytm')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  📲 Paytm
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('phonepe')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  💸 PhonePe
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('giftcard')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  🎁 Gift Card
+                </Button>
+                <Button
+                  onClick={() => handleQuickPayment('split')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  💸 Split
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -1939,15 +2198,59 @@ export default function POSEnhanced() {
                 Master these shortcuts to boost your efficiency
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              {keyboardShortcuts.map((shortcut, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="font-medium">{shortcut.action}</span>
-                  <Badge variant="outline" className="font-mono font-bold">
-                    {shortcut.key}
-                  </Badge>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">🔥 Function Keys (F1-F12)</h4>
+                <div className="space-y-1 text-sm">
+                  <div><kbd>F1</kbd> - Focus Barcode Scanner</div>
+                  <div><kbd>F2</kbd> - Search Products</div>
+                  <div><kbd>F3</kbd> - Browse All Products</div>
+                  <div><kbd>F4</kbd> - Show Trending Products</div>
+                  <div><kbd>F5</kbd> - Add Selected Product</div>
+                  <div><kbd>F6</kbd> - Customer Search</div>
+                  <div><kbd>F7</kbd> - Hold Current Sale</div>
+                  <div><kbd>F8</kbd> - Recall Held Sales</div>
+                  <div><kbd>F9</kbd> - Show This Help</div>
+                  <div><kbd>F10</kbd> - Process Payment</div>
+                  <div><kbd>F11</kbd> - Clear Sale</div>
+                  <div><kbd>F12</kbd> - Print Last Receipt</div>
                 </div>
-              ))}
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">⚡ Quick Operations</h4>
+                <div className="space-y-1 text-sm">
+                  <div><kbd>Enter</kbd> - Add Selected Product to Cart</div>
+                  <div><kbd>+</kbd> - Increase Last Item Quantity</div>
+                  <div><kbd>-</kbd> - Decrease Last Item Quantity</div>
+                  <div><kbd>Delete</kbd> - Remove Last Item</div>
+                  <div><kbd>Esc</kbd> - Clear Search/Selection</div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">💳 Payment Shortcuts</h4>
+                <div className="space-y-1 text-sm">
+                  <div><kbd>Alt+C</kbd> - Cash Payment</div>
+                  <div><kbd>Alt+U</kbd> - UPI Payment</div>
+                  <div><kbd>Alt+W</kbd> - Wallet Payment</div>
+                  <div><kbd>Alt+G</kbd> - Gift Card Payment</div>
+                  <div><kbd>Alt+L</kbd> - Loyalty Points</div>
+                  <div><kbd>Alt+S</kbd> - Split Payment</div>
+                  <div><kbd>Ctrl+P</kbd> - Print Receipt</div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">🎯 Advanced Features</h4>
+                <div className="space-y-1 text-sm">
+                  <div><kbd>Ctrl+D</kbd> - Apply Discount</div>
+                  <div><kbd>Ctrl+N</kbd> - New Sale</div>
+                  <div><kbd>Ctrl+S</kbd> - Save Sale</div>
+                  <div><kbd>Alt+H</kbd> - Hold Sale</div>
+                  <div><kbd>Alt+R</kbd> - Recall Sale</div>
+                </div>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
