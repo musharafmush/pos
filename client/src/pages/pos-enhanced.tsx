@@ -936,7 +936,7 @@ export default function POSEnhanced() {
     };
 
     window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown',handleKeyPress);
+    return ()> window.removeEventListener('keydown',handleKeyPress);
   }, [cart.length, selectedProduct, discount, grandTotal, amountPaid, paymentMethod, viewMode]);
 
   const keyboardShortcuts = [
@@ -1678,8 +1678,7 @@ export default function POSEnhanced() {
                   </Button>
                 </div>
 
-                <Button
-                  onClick={() => setShowPaymentDialog(true)}
+                <Button                    onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
                   className="w-full h-16 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-xl font-bold shadow-xl border-2 border-green-400"
                 >
