@@ -1674,7 +1674,7 @@ export default function POSEnhanced() {
                     className="text-purple-600 border-purple-200 hover:bg-purple-50"
                   >
                     <UsersIcon className="h-4 w-4 mr-1" />
-                    Customer (F12)
+                    Customer(F12)
                   </Button>
                 </div>
 
