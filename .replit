@@ -14,7 +14,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Ultimate Recovery Start"
+runButton = "Final Recovery Start"
 
 [[workflows.workflow]]
 name = "Project"
@@ -903,3 +903,128 @@ args = "echo \"✅ Recovery cleanup complete, starting application...\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Final Recovery Start"
+author = 43114682
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "#!/bin/bash"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚨 Final Recovery Process - Targeting Correct Application...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Kill all Node.js processes"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"npm\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"node\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"vite\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -9 -f \"tsx\" 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"⏳ Waiting for process cleanup...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 5"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Clear all ports aggressively"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "for port in 5000 5173 3000; do"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  lsof -ti:$port | xargs -r kill -9 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  fuser -k ${port}/tcp 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "done"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Navigate to correct directory and clear caches"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🧹 Clearing all Vite caches...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = 'find . -name "node_modules" -type d -exec rm -rf {}/.vite \; 2>/dev/null || true'
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = 'find . -name ".vite" -type d -exec rm -rf {} \; 2>/dev/null || true'
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf dist build 2>/dev/null || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Starting fresh POS application...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Check if we have package.json in root, if not try portable version"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "if [ -f \"package.json\" ]; then"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  npm run dev"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "else"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  echo \"📁 Switching to AwesomeShopPOS-Portable/app directory...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  cd AwesomeShopPOS-Portable/app"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "  npm run dev"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "fi"
