@@ -14,7 +14,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Fixed Start"
+runButton = "Start POS System"
 
 [[workflows.workflow]]
 name = "Project"
@@ -232,6 +232,19 @@ args = "fuser -k 5000/tcp 2>/dev/null || true"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Start POS System"
+author = 43423687
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
