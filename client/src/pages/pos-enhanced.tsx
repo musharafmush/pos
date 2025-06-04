@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,9 +32,7 @@ import {
   RotateCcw,
   HelpCircle,
   Archive,
-  Percent,
-  DollarSign,
-  Monitor
+  Percent
 } from "lucide-react";
 
 interface Product {
@@ -70,7 +70,7 @@ function POSEnhanced() {
   const [taxRate, setTaxRate] = useState(18);
   const [isProcessing, setIsProcessing] = useState(false);
   const [billNumber, setBillNumber] = useState(`POS${Date.now()}`);
-
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -103,7 +103,7 @@ function POSEnhanced() {
   // Cart functions
   const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.id === product.id);
-
+    
     if (existingItem) {
       setCart(cart.map(item =>
         item.id === product.id
@@ -117,11 +117,6 @@ function POSEnhanced() {
         total: parseFloat(product.price) 
       }]);
     }
-
-    toast({
-      title: "Item Added",
-      description: `${product.name} added to cart`,
-    });
   };
 
   const removeFromCart = (productId: number) => {
@@ -145,7 +140,6 @@ function POSEnhanced() {
     setCart([]);
     setSelectedCustomer(null);
     setDiscount(0);
-    setAmountPaid("");
   };
 
   // Calculate totals
@@ -167,7 +161,7 @@ function POSEnhanced() {
     }
 
     setIsProcessing(true);
-
+    
     try {
       const saleData = {
         customerId: selectedCustomer?.id,
@@ -201,9 +195,10 @@ function POSEnhanced() {
       // Reset everything
       clearCart();
       setShowPaymentDialog(false);
+      setAmountPaid("");
       setBillNumber(`POS${Date.now()}`);
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-
+      
     } catch (error) {
       toast({
         title: "Error",
@@ -215,284 +210,416 @@ function POSEnhanced() {
     }
   };
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === "F1") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-      if (e.key === "F10") {
-        e.preventDefault();
-        if (cart.length > 0) setShowPaymentDialog(true);
-      }
-      if (e.key === "F11") {
-        e.preventDefault();
-        clearCart();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [cart.length]);
-
   const currentDate = new Date().toLocaleDateString('en-IN');
   const currentTime = new Date().toLocaleTimeString('en-IN');
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-blue-600 px-6 py-4 flex items-center justify-between text-white shadow-lg">
+    <div className="h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800 text-white">
+      {/* Top Blue Header */}
+      <div className="bg-blue-600 px-6 py-4 flex items-center justify-between border-b border-blue-500">
         <div className="flex items-center space-x-4">
           <div className="bg-white text-blue-600 p-2 rounded-lg">
-            <Monitor className="h-6 w-6" />
+            <ShoppingCart className="h-6 w-6" />
           </div>
           <div>
             <h1 className="text-xl font-bold">Awesome Shop POS Pro</h1>
-            <p className="text-blue-100 text-sm">Professional Point of Sale System</p>
+            <p className="text-blue-100 text-sm">Real-time Point of Sale System</p>
           </div>
-
+          
           <div className="flex items-center space-x-2 ml-8">
             <Badge className="bg-green-500 text-white">
               <div className="w-2 h-2 bg-white rounded-full mr-2"></div>
-              Online
+              System Ready
             </Badge>
             <Badge className="bg-blue-500 text-white">
               <TrendingUp className="h-3 w-3 mr-1" />
-              {products.length} Products
+              Product Catalog
             </Badge>
           </div>
         </div>
 
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-4">
           <div className="text-right">
-            <div className="text-sm text-blue-100">Bill #</div>
+            <div className="text-sm text-blue-100">Bill Number</div>
             <div className="font-mono font-bold">{billNumber}</div>
           </div>
           <div className="text-right">
             <div className="text-sm text-blue-100">Date & Time</div>
-            <div className="font-mono text-sm">{currentDate} • {currentTime}</div>
+            <div className="font-mono">{currentDate} • {currentTime}</div>
           </div>
           <div className="text-right">
             <div className="text-sm text-blue-100">Total Amount</div>
             <div className="text-2xl font-bold text-green-300">{formatCurrency(total)}</div>
           </div>
+          <Button variant="outline" className="bg-purple-600 border-purple-400 text-white hover:bg-purple-700">
+            Shortcuts (F9)
+          </Button>
         </div>
       </div>
 
-      {/* Customer & Search Section */}
-      <div className="bg-white border-b px-6 py-4">
-        <div className="grid grid-cols-4 gap-4 mb-4">
+      {/* Customer Section */}
+      <div className="bg-white text-gray-800 px-6 py-4 border-b">
+        <div className="grid grid-cols-5 gap-4 items-center">
           <div>
-            <label className="text-sm font-medium text-gray-600">Customer</label>
+            <label className="text-sm font-medium text-gray-600">Sales Person</label>
+            <div className="font-semibold">Sales Executive</div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-600">Customer Search (F4)</label>
+            <div className="relative">
+              <Input
+                placeholder="Search by name, phone..."
+                className="bg-gray-50"
+                value={selectedCustomer?.name || ""}
+                readOnly
+              />
+              <Button 
+                size="sm" 
+                className="absolute right-1 top-1 h-6 bg-purple-600 hover:bg-purple-700"
+                onClick={() => setSelectedCustomer(null)}
+              >
+                <UserPlus className="h-3 w-3" />
+                New Customer (F12)
+              </Button>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-600">Customer Name</label>
             <div className="font-semibold">{selectedCustomer?.name || "Walk-in Customer"}</div>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-600">Phone</label>
-            <div>{selectedCustomer?.phone || "No phone"}</div>
+            <label className="text-sm font-medium text-gray-600">Phone Number</label>
+            <div>{selectedCustomer?.phone || "Phone number"}</div>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-600">Sales Person</label>
-            <div>Admin User</div>
-          </div>
-          <div className="flex items-end">
-            <Button 
-              variant="outline" 
-              className="bg-purple-600 text-white hover:bg-purple-700"
-              onClick={() => setSelectedCustomer(null)}
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Select Customer (F4)
-            </Button>
+            <label className="text-sm font-medium text-gray-600">Address</label>
+            <div>{selectedCustomer?.email || "Customer address"}</div>
           </div>
         </div>
+      </div>
 
-        {/* Search Bar */}
+      {/* Search Section */}
+      <div className="bg-white text-gray-800 px-6 py-4 border-b">
         <div className="flex items-center space-x-4">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Scan className="h-4 w-4 mr-2" />
+            Scan (F1)
+          </Button>
+          <Button variant="outline" className="border-gray-300">
+            <Search className="h-4 w-4 mr-2" />
+            Search
+          </Button>
+          <Button variant="outline" className="border-gray-300">
+            <Calendar className="h-4 w-4 mr-2" />
+            Browse (F2)
+          </Button>
+          <Button variant="outline" className="border-gray-300">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Trending (F3)
+          </Button>
+          <div className="text-sm text-gray-600">
+            Last Update: {currentTime}
+          </div>
+          <Button variant="outline" className="border-gray-300 ml-auto">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh (F5)
+          </Button>
+        </div>
+
+        <div className="mt-4 flex items-center space-x-4">
           <div className="relative flex-1">
             <Input
               ref={searchInputRef}
-              placeholder="Scan barcode or search products... (Press F1 to focus)"
+              placeholder="Scan barcode or enter product code... (Press F1 to focus scanner)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="text-lg py-3 pl-12"
             />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2 text-gray-400">
+              <div className="flex flex-col">
+                <div className="w-1 h-3 bg-gray-400"></div>
+                <div className="w-1 h-3 bg-gray-400 mt-1"></div>
+                <div className="w-1 h-3 bg-gray-400 mt-1"></div>
+              </div>
+              <Search className="h-4 w-4" />
+            </div>
           </div>
           <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8">
-            <Scan className="h-4 w-4 mr-2" />
-            Scan (F1)
-          </Button>
-          <Button variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh (F5)
+            <Search className="h-4 w-4 mr-2" />
+            Find Product
           </Button>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Products/Cart Section */}
-        <div className="flex-1 p-6 overflow-auto">
-          <Card className="h-full">
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-              <CardTitle className="flex items-center">
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Shopping Cart ({cart.length} items • {cart.reduce((sum, item) => sum + item.quantity, 0)} qty)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {cart.length === 0 ? (
-                <div className="text-center py-20">
-                  <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">Cart is empty</h3>
-                  <p className="text-gray-500 mb-6">Search and add products to start billing</p>
-                  <div className="space-y-2 text-sm text-gray-500">
-                    <div>🔍 Press F1 to focus search</div>
-                    <div>💳 Press F10 to checkout</div>
-                    <div>🗑️ Press F11 to clear cart</div>
+        {/* Products Section */}
+        <div className="flex-1 bg-white text-gray-800 p-6">
+          {/* Shopping Cart Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg mb-4">
+            <div className="flex items-center">
+              <ShoppingCart className="h-5 w-5 mr-2" />
+              <h2 className="text-lg font-bold">Shopping Cart ({cart.length} items • {cart.reduce((sum, item) => sum + item.quantity, 0)} qty)</h2>
+            </div>
+          </div>
+
+          {/* Cart Content */}
+          <div className="min-h-96 bg-gray-50 rounded-b-lg p-6">
+            {cart.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="text-gray-300 mb-4">
+                  <ShoppingCart className="h-24 w-24 mx-auto mb-4" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">Cart is empty</h3>
+                <p className="text-gray-500 mb-4">Scan a product or browse catalog to start billing</p>
+                <div className="space-y-2 text-sm text-gray-500">
+                  <div className="flex items-center justify-center">
+                    <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded mr-2">📦</span>
+                    Press F1 to focus scanner
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded mr-2">🔍</span>
+                    Press F2 to browse products
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <span className="bg-purple-100 text-purple-600 px-2 py-1 rounded mr-2">📊</span>
+                    Press F3 for trending items
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <span className="bg-green-100 text-green-600 px-2 py-1 rounded mr-2">💳</span>
+                    Press F10 to checkout
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {cart.map((item) => (
-                    <Card key={item.id} className="p-4 border-l-4 border-l-blue-500">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-lg">{item.name}</h4>
-                          <p className="text-sm text-gray-500">{item.sku}</p>
-                          <p className="text-sm font-semibold text-green-600">{formatCurrency(parseFloat(item.price))} each</p>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-12 text-center font-bold text-lg">{item.quantity}</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="text-right min-w-24">
-                            <div className="font-bold text-xl text-green-600">{formatCurrency(item.total)}</div>
-                          </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {cart.map((item) => (
+                  <Card key={item.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold">{item.name}</h4>
+                        <p className="text-sm text-gray-500">{item.sku}</p>
+                        <p className="text-sm font-semibold text-green-600">{formatCurrency(parseFloat(item.price))} each</p>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="h-8 w-8 p-0"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="w-12 text-center font-semibold">{item.quantity}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Plus className="h-3 w-3" />
                           </Button>
                         </div>
+                        <div className="text-right">
+                          <div className="font-bold text-lg text-green-600">{formatCurrency(item.total)}</div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Action Buttons */}
+          <div className="flex items-center justify-between mt-6 p-4 bg-gray-100 rounded-lg">
+            <div className="flex space-x-2">
+              <Button variant="outline" className="text-gray-700">
+                <Archive className="h-4 w-4 mr-2" />
+                Hold (Alt+H)
+              </Button>
+              <Button variant="outline" className="text-gray-700">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Recall (Alt+R)
+              </Button>
+              <Button variant="outline" className="text-gray-700">
+                <Percent className="h-4 w-4 mr-2" />
+                Discount (Ctrl+D)
+              </Button>
+              <Button variant="outline" className="text-gray-700">
+                <HelpCircle className="h-4 w-4 mr-2" />
+                Help (F9)
+              </Button>
+            </div>
+            
+            <div className="flex items-center space-x-4 text-sm">
+              <span className="flex items-center text-green-600">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                System Ready
+              </span>
+              <span>User: Admin</span>
+              <span>Terminal: POS-PRO-01</span>
+              <span>Products: {products.length}</span>
+              <span className="text-orange-600">Trending: 8</span>
+              <span>Customers: {customers.length}</span>
+              <span className="text-red-600">⏰ {currentTime}</span>
+            </div>
+          </div>
         </div>
 
         {/* Bill Summary Section */}
-        <div className="w-80 bg-white border-l p-6">
-          <Card className="mb-4">
-            <CardHeader className="bg-purple-600 text-white">
-              <CardTitle className="flex items-center">
-                <Receipt className="h-5 w-5 mr-2" />
-                Bill Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 space-y-3">
+        <div className="w-80 bg-gradient-to-b from-purple-600 to-purple-800 text-white p-6">
+          <div className="bg-purple-700 p-4 rounded-lg mb-6">
+            <div className="flex items-center mb-2">
+              <Receipt className="h-5 w-5 mr-2" />
+              <h2 className="text-lg font-bold">Bill Summary</h2>
+            </div>
+            <div className="text-purple-200 text-sm">#{billNumber}</div>
+            <div className="text-purple-200 text-sm">{currentDate} • {currentTime}</div>
+          </div>
+
+          {/* Basic Details */}
+          <div className="bg-purple-700 p-4 rounded-lg mb-4">
+            <div className="flex items-center mb-3">
+              <Calculator className="h-4 w-4 mr-2" />
+              <h3 className="font-semibold">Basic Details</h3>
+            </div>
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span>Items Count:</span>
-                <span className="font-semibold">{cart.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total Quantity:</span>
-                <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
-              </div>
-              <Separator />
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span className="font-semibold">{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Discount ({discount}%):</span>
-                <span className="font-semibold text-red-600">-{formatCurrency(discountAmount)}</span>
+                <span>Items Count</span>
+                <span>{cart.length}</span>
               </div>
               <div className="flex justify-between">
-                <span>GST ({taxRate}%):</span>
-                <span className="font-semibold">{formatCurrency(taxAmount)}</span>
+                <span>Total Quantity</span>
+                <span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
               </div>
-              <Separator />
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total:</span>
-                <span className="text-green-600">{formatCurrency(total)}</span>
+              <div className="flex justify-between">
+                <span>Gross Amount</span>
+                <span>{formatCurrency(subtotal)}</span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+
+          {/* Discounts & Charges */}
+          <div className="bg-purple-700 p-4 rounded-lg mb-4">
+            <div className="flex items-center mb-3">
+              <Percent className="h-4 w-4 mr-2" />
+              <h3 className="font-semibold">Discounts & Charges</h3>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Cash Discount (0%)</span>
+                <span>{formatCurrency(discountAmount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Taxable Amount</span>
+                <span>{formatCurrency(taxableAmount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>GST (18%)</span>
+                <span>{formatCurrency(taxAmount)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="bg-purple-700 p-4 rounded-lg mb-6">
+            <div className="flex items-center mb-3">
+              <User className="h-4 w-4 mr-2" />
+              <h3 className="font-semibold">Additional Info</h3>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Customer</span>
+                <span>{selectedCustomer?.name || "Walk-in Customer"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Sales Person</span>
+                <span>Sales Executive</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Payment Method</span>
+                <span className="capitalize">{paymentMethod}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Net Amount */}
+          <div className="bg-yellow-500 text-black p-4 rounded-lg mb-6">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold">💰 Net Amount Payable</span>
+            </div>
+            <div className="text-3xl font-bold mt-2">{formatCurrency(total)}</div>
+          </div>
 
           {/* Action Buttons */}
           <div className="space-y-3">
             <Button
               variant="outline" 
-              className="w-full border-red-300 text-red-600 hover:bg-red-50"
+              className="w-full bg-red-500 hover:bg-red-600 text-white border-red-400"
               onClick={clearCart}
               disabled={cart.length === 0}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Clear Cart (F11)
+              Clear (F11)
             </Button>
-
+            
             <Button
-              variant="outline"
-              className="w-full border-blue-300 text-blue-600 hover:bg-blue-50"
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => setSelectedCustomer(null)}
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              Customer (F4)
+              Customer (F12)
             </Button>
 
             <Button
-              className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-3"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-3"
               onClick={() => setShowPaymentDialog(true)}
               disabled={cart.length === 0}
             >
               <CreditCard className="h-5 w-5 mr-2" />
-              Checkout (F10)
+              Complete Payment (F10)
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full border-white text-white hover:bg-white hover:text-purple-800"
+            >
+              <Receipt className="h-4 w-4 mr-2" />
+              Test Print Receipt
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Product Search Results */}
-      {searchTerm && filteredProducts.length > 0 && (
-        <div className="absolute top-32 left-6 right-96 bg-white border rounded-lg shadow-lg z-10 max-h-64 overflow-auto">
-          {filteredProducts.slice(0, 10).map((product: Product) => (
+      {/* Available Products (when searching) */}
+      {searchTerm && (
+        <div className="absolute top-64 left-6 right-96 bg-white text-gray-800 border rounded-lg shadow-lg z-10 max-h-64 overflow-auto">
+          {filteredProducts.map((product: Product) => (
             <div
               key={product.id}
-              className="p-3 hover:bg-gray-50 cursor-pointer border-b flex justify-between items-center"
+              className="p-3 hover:bg-gray-50 cursor-pointer border-b"
               onClick={() => {
                 addToCart(product);
                 setSearchTerm("");
               }}
             >
-              <div>
-                <h4 className="font-semibold">{product.name}</h4>
-                <p className="text-sm text-gray-500">{product.sku}</p>
-              </div>
-              <div className="text-right">
-                <div className="font-bold text-green-600">{formatCurrency(parseFloat(product.price))}</div>
-                <div className="text-sm text-gray-500">Stock: {product.stockQuantity}</div>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="font-semibold">{product.name}</h4>
+                  <p className="text-sm text-gray-500">{product.sku}</p>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-green-600">{formatCurrency(parseFloat(product.price))}</div>
+                  <div className="text-sm text-gray-500">Stock: {product.stockQuantity}</div>
+                </div>
               </div>
             </div>
           ))}
@@ -508,10 +635,10 @@ function POSEnhanced() {
               Complete Payment
             </DialogTitle>
           </DialogHeader>
-
+          
           <div className="space-y-4">
             <div className="p-4 bg-green-50 rounded-lg text-center">
-              <div className="text-3xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-green-600">
                 {formatCurrency(total)}
               </div>
             </div>
