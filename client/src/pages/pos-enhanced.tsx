@@ -429,70 +429,390 @@ export default function POSEnhanced() {
   });
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
-      <DashboardLayout>
-        <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900 ${isFullscreen ? 'h-screen overflow-hidden' : ''}`}>
-          {/* Modern Header */}
-          <div className="bg-white border-b border-gray-200 shadow-sm">
-            <div className="px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-blue-600 text-white p-3 rounded-xl shadow-lg">
-                    <Monitor className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Enhanced POS</h1>
-                    <p className="text-sm text-gray-500">Professional Point of Sale System</p>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 ml-8">
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      System Ready
-                    </Badge>
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                      <Zap className="h-3 w-3 mr-1" />
-                      {isFullscreen ? 'Fullscreen' : 'Live Mode'}
-                    </Badge>
-                  </div>
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
+      {isFullscreen ? (
+        /* Fullscreen Layout */
+        <div className="h-screen bg-blue-600 text-white flex flex-col">
+          {/* Fullscreen Header */}
+          <div className="bg-blue-600 px-6 py-4 border-b border-blue-500">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <div className="bg-white text-blue-600 p-2 rounded-lg">
+                  <Monitor className="h-6 w-6" />
                 </div>
-
-                <div className="flex items-center space-x-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Enhanced POS</h1>
+                  <p className="text-blue-100">Professional Point of Sale System</p>
+                </div>
+                
+                <div className="flex items-center space-x-4 ml-8">
+                  <Badge className="bg-green-500 text-white border-green-400">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    System Ready
+                  </Badge>
+                  <Badge className="bg-white/20 text-white border-white/30">
+                    <Zap className="h-3 w-3 mr-1" />
+                    Live Mode
+                  </Badge>
                   <Button
                     onClick={toggleFullscreen}
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="hover:bg-blue-50 border-blue-200"
+                    className="text-white hover:bg-white/20"
                   >
-                    {isFullscreen ? (
-                      <>
-                        <Archive className="h-4 w-4 mr-2" />
-                        Exit Fullscreen (F11)
-                      </>
-                    ) : (
-                      <>
-                        <Monitor className="h-4 w-4 mr-2" />
-                        Fullscreen (F11)
-                      </>
-                    )}
+                    Fullscreen (F11)
                   </Button>
-                  
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">Bill Number</div>
-                    <div className="font-mono font-semibold text-gray-900">{billNumber}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">Date & Time</div>
-                    <div className="font-mono text-sm text-gray-700">{currentDate} • {currentTime}</div>
-                  </div>
-                  <div className="text-right bg-green-50 p-3 rounded-lg border border-green-200">
-                    <div className="text-sm text-green-600 font-medium">Total Amount</div>
-                    <div className="text-2xl font-bold text-green-700">{formatCurrency(total)}</div>
-                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-6 text-white">
+                <div className="text-center">
+                  <div className="text-sm opacity-80">Bill Number</div>
+                  <div className="font-mono font-semibold">{billNumber}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm opacity-80">Date & Time</div>
+                  <div className="font-mono text-sm">{currentDate} • {currentTime}</div>
+                </div>
+                <div className="bg-white/20 p-3 rounded-lg border border-white/30">
+                  <div className="text-sm opacity-80">Total Amount</div>
+                  <div className="text-2xl font-bold">{formatCurrency(total)}</div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Fullscreen Top Bar with Customer & Search */}
+          <div className="bg-blue-500 px-6 py-3 border-b border-blue-400">
+            <div className="grid grid-cols-12 gap-4 items-center">
+              <div className="col-span-2">
+                <Select 
+                  value={selectedCustomer?.id?.toString() || ""} 
+                  onValueChange={(value) => {
+                    if (value === "walk-in") {
+                      setSelectedCustomer(null);
+                    } else {
+                      const customer = customers.find(c => c.id.toString() === value);
+                      setSelectedCustomer(customer || null);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full bg-white/20 border-white/30 text-white">
+                    <SelectValue placeholder="Select Customer">
+                      {selectedCustomer?.name || "Walk-in Customer"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="walk-in">Walk-in Customer</SelectItem>
+                    {customers?.map((customer: Customer) => (
+                      <SelectItem key={customer.id} value={customer.id.toString()}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-6">
+                <div className="relative">
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Type product name, SKU, or scan barcode..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="text-lg py-3 pl-12 bg-white border-white/30 text-gray-900"
+                  />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                </div>
+              </div>
+
+              <div className="col-span-4 flex justify-end space-x-2">
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => setShowNewCustomerDialog(true)}
+                  className="text-white hover:bg-white/20"
+                >
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  Add Customer
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => queryClient.invalidateQueries()}
+                  className="text-white hover:bg-white/20"
+                  size="sm"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Fullscreen Main Content */}
+          <div className="flex-1 flex bg-white text-gray-900">
+            {/* Left Panel - Products */}
+            <div className="w-1/3 bg-gray-50 p-4 border-r border-gray-200">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Products ({filteredProducts.length})</h3>
+                <div className="text-sm text-gray-600">Available items</div>
+              </div>
+              
+              <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto">
+                {filteredProducts.slice(0, 10).map((product: Product) => (
+                  <Card 
+                    key={product.id} 
+                    className="p-3 hover:shadow-md cursor-pointer transition-all hover:bg-blue-50"
+                    onClick={() => addToCart(product)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{product.name}</h4>
+                        <p className="text-xs text-gray-500 font-mono">{product.sku}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className="text-lg font-bold text-green-600">
+                            {formatCurrency(parseFloat(product.price))}
+                          </span>
+                          {product.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {product.category.name}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-sm ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {product.stockQuantity > 0 ? `${product.stockQuantity} stock` : 'Out of stock'}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Center Panel - Shopping Cart */}
+            <div className="flex-1 p-4">
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-lg mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <ShoppingCart className="h-6 w-6 mr-3" />
+                    <h2 className="text-xl font-bold">Shopping Cart</h2>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold">
+                      {cart.length} items • {cart.reduce((sum, item) => sum + item.quantity, 0)} units
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="max-h-[calc(100vh-360px)] overflow-y-auto">
+                {cart.length === 0 ? (
+                  <div className="text-center py-20">
+                    <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">Cart is Empty</h3>
+                    <p className="text-gray-500">Add products to start a sale</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {cart.map((item) => (
+                      <Card key={item.id} className="p-4 border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                            <p className="text-sm text-gray-500 font-mono">{item.sku}</p>
+                            <p className="text-lg font-bold text-green-600 mt-1">
+                              {formatCurrency(parseFloat(item.price))}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="w-12 text-center font-bold">{item.quantity}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            <div className="text-right min-w-20">
+                              <div className="font-bold text-green-600">
+                                {formatCurrency(item.total)}
+                              </div>
+                            </div>
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFromCart(item.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Panel - Bill Summary */}
+            <div className="w-96 bg-gray-50 p-4 border-l border-gray-200">
+              <div className="bg-gradient-to-br from-green-600 to-blue-600 text-white p-4 rounded-lg mb-4">
+                <div className="flex items-center mb-2">
+                  <Receipt className="h-5 w-5 mr-2" />
+                  <h2 className="text-lg font-bold">Bill Summary</h2>
+                </div>
+                <div className="text-sm opacity-90">Bill #{billNumber}</div>
+              </div>
+
+              <Card className="mb-4">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <span>Items:</span>
+                    <span className="font-semibold">{cart.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Quantity:</span>
+                    <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Gross Amount:</span>
+                    <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex justify-between items-center">
+                    <span>Discount:</span>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        value={discount}
+                        onChange={(e) => setDiscount(Number(e.target.value))}
+                        className="w-16 h-8 text-center"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="text-sm">%</span>
+                    </div>
+                  </div>
+                  
+                  {discount > 0 && (
+                    <div className="flex justify-between text-red-600">
+                      <span>Discount Amount:</span>
+                      <span>-{formatCurrency(discountAmount)}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between">
+                    <span>GST ({taxRate}%):</span>
+                    <span>{formatCurrency(taxAmount)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg mb-4">
+                <div className="text-center">
+                  <div className="text-sm opacity-90">Net Payable</div>
+                  <div className="text-3xl font-bold">{formatCurrency(total)}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
+                  onClick={() => setShowPaymentDialog(true)}
+                  disabled={cart.length === 0}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Checkout (F10)
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={clearCart}
+                  disabled={cart.length === 0}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear Cart
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Normal Layout */
+        <DashboardLayout>
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900">
+            {/* Modern Header */}
+            <div className="bg-white border-b border-gray-200 shadow-sm">
+              <div className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-blue-600 text-white p-3 rounded-xl shadow-lg">
+                      <Monitor className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900">Enhanced POS</h1>
+                      <p className="text-sm text-gray-500">Professional Point of Sale System</p>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 ml-8">
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        System Ready
+                      </Badge>
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                        <Zap className="h-3 w-3 mr-1" />
+                        Live Mode
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-6">
+                    <Button
+                      onClick={toggleFullscreen}
+                      variant="outline"
+                      size="sm"
+                      className="hover:bg-blue-50 border-blue-200"
+                    >
+                      <Monitor className="h-4 w-4 mr-2" />
+                      Fullscreen (F11)
+                    </Button>
+                    
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Bill Number</div>
+                      <div className="font-mono font-semibold text-gray-900">{billNumber}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Date & Time</div>
+                      <div className="font-mono text-sm text-gray-700">{currentDate} • {currentTime}</div>
+                    </div>
+                    <div className="text-right bg-green-50 p-3 rounded-lg border border-green-200">
+                      <div className="text-sm text-green-600 font-medium">Total Amount</div>
+                      <div className="text-2xl font-bold text-green-700">{formatCurrency(total)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
         {/* Customer Selection Bar */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
