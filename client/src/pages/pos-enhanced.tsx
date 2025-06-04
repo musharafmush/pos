@@ -72,6 +72,11 @@ function POSEnhanced() {
   const [taxRate, setTaxRate] = useState(18);
   const [isProcessing, setIsProcessing] = useState(false);
   const [billNumber, setBillNumber] = useState(`POS${Date.now()}`);
+  const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -169,6 +174,65 @@ function POSEnhanced() {
   const taxableAmount = subtotal - discountAmount;
   const taxAmount = (taxableAmount * taxRate) / 100;
   const total = taxableAmount + taxAmount;
+
+  // Create new customer
+  const createNewCustomer = async () => {
+    if (!newCustomerName.trim()) {
+      toast({
+        title: "Error",
+        description: "Customer name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingCustomer(true);
+    
+    try {
+      const customerData = {
+        name: newCustomerName.trim(),
+        phone: newCustomerPhone.trim() || undefined,
+        email: newCustomerEmail.trim() || undefined,
+      };
+
+      const response = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(customerData),
+      });
+
+      if (!response.ok) throw new Error("Failed to create customer");
+      
+      const newCustomer = await response.json();
+
+      // Refresh customers data
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      
+      // Select the newly created customer
+      setSelectedCustomer(newCustomer);
+      
+      // Reset form and close dialog
+      setNewCustomerName("");
+      setNewCustomerPhone("");
+      setNewCustomerEmail("");
+      setShowNewCustomerDialog(false);
+
+      toast({
+        title: "Customer Created",
+        description: `${newCustomer.name} has been added successfully`,
+      });
+      
+    } catch (error) {
+      console.error("Customer creation error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create customer",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingCustomer(false);
+    }
+  };
 
   // Process sale
   const processSale = async () => {
@@ -368,6 +432,7 @@ function POSEnhanced() {
               <Button 
                 size="sm" 
                 className="bg-purple-600 hover:bg-purple-700"
+                onClick={() => setShowNewCustomerDialog(true)}
               >
                 <UserPlus className="h-3 w-3 mr-1" />
                 New Customer
@@ -693,6 +758,74 @@ function POSEnhanced() {
                   className="flex-1 bg-green-600 hover:bg-green-700"
                 >
                   {isProcessing ? "Processing..." : "Complete Sale"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* New Customer Dialog */}
+        <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <UserPlus className="h-5 w-5 mr-2" />
+                Add New Customer
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Customer Name *</label>
+                <Input
+                  placeholder="Enter customer name"
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Phone Number</label>
+                <Input
+                  placeholder="Enter phone number"
+                  value={newCustomerPhone}
+                  onChange={(e) => setNewCustomerPhone(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Email Address</label>
+                <Input
+                  placeholder="Enter email address"
+                  type="email"
+                  value={newCustomerEmail}
+                  onChange={(e) => setNewCustomerEmail(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="flex space-x-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowNewCustomerDialog(false);
+                    setNewCustomerName("");
+                    setNewCustomerPhone("");
+                    setNewCustomerEmail("");
+                  }}
+                  className="flex-1"
+                  disabled={isCreatingCustomer}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={createNewCustomer}
+                  disabled={isCreatingCustomer || !newCustomerName.trim()}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                >
+                  {isCreatingCustomer ? "Creating..." : "Create Customer"}
                 </Button>
               </div>
             </div>
