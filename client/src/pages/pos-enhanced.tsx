@@ -78,6 +78,7 @@ export default function POSEnhanced() {
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -357,6 +358,26 @@ export default function POSEnhanced() {
     }
   };
 
+  // Fullscreen functionality
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+      }).catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        toast({
+          title: "Fullscreen Error",
+          description: "Unable to enter fullscreen mode",
+          variant: "destructive",
+        });
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false);
+      });
+    }
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -373,17 +394,32 @@ export default function POSEnhanced() {
         if (cart.length > 0) setShowPaymentDialog(true);
       } else if (e.key === "F11") {
         e.preventDefault();
+        toggleFullscreen();
+      } else if (e.key === "F12") {
+        e.preventDefault();
         clearCart();
       } else if (e.key === "Escape") {
         e.preventDefault();
         setSearchTerm("");
         setShowPaymentDialog(false);
         setShowNewCustomerDialog(false);
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        }
       }
     };
 
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
     window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
   }, [cart.length]);
 
   const currentDate = new Date().toLocaleDateString('en-IN');
@@ -393,50 +429,70 @@ export default function POSEnhanced() {
   });
 
   return (
-    <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900">
-        {/* Modern Header */}
-        <div className="bg-white border-b border-gray-200 shadow-sm">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="bg-blue-600 text-white p-3 rounded-xl shadow-lg">
-                  <Monitor className="h-6 w-6" />
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
+      <DashboardLayout>
+        <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900 ${isFullscreen ? 'h-screen overflow-hidden' : ''}`}>
+          {/* Modern Header */}
+          <div className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-blue-600 text-white p-3 rounded-xl shadow-lg">
+                    <Monitor className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Enhanced POS</h1>
+                    <p className="text-sm text-gray-500">Professional Point of Sale System</p>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3 ml-8">
+                    <Badge className="bg-green-100 text-green-800 border-green-200">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      System Ready
+                    </Badge>
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                      <Zap className="h-3 w-3 mr-1" />
+                      {isFullscreen ? 'Fullscreen' : 'Live Mode'}
+                    </Badge>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Enhanced POS</h1>
-                  <p className="text-sm text-gray-500">Professional Point of Sale System</p>
-                </div>
-                
-                <div className="flex items-center space-x-3 ml-8">
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    System Ready
-                  </Badge>
-                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                    <Zap className="h-3 w-3 mr-1" />
-                    Live Mode
-                  </Badge>
-                </div>
-              </div>
 
-              <div className="flex items-center space-x-6">
-                <div className="text-right">
-                  <div className="text-sm text-gray-500">Bill Number</div>
-                  <div className="font-mono font-semibold text-gray-900">{billNumber}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-500">Date & Time</div>
-                  <div className="font-mono text-sm text-gray-700">{currentDate} • {currentTime}</div>
-                </div>
-                <div className="text-right bg-green-50 p-3 rounded-lg border border-green-200">
-                  <div className="text-sm text-green-600 font-medium">Total Amount</div>
-                  <div className="text-2xl font-bold text-green-700">{formatCurrency(total)}</div>
+                <div className="flex items-center space-x-6">
+                  <Button
+                    onClick={toggleFullscreen}
+                    variant="outline"
+                    size="sm"
+                    className="hover:bg-blue-50 border-blue-200"
+                  >
+                    {isFullscreen ? (
+                      <>
+                        <Archive className="h-4 w-4 mr-2" />
+                        Exit Fullscreen (F11)
+                      </>
+                    ) : (
+                      <>
+                        <Monitor className="h-4 w-4 mr-2" />
+                        Fullscreen (F11)
+                      </>
+                    )}
+                  </Button>
+                  
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">Bill Number</div>
+                    <div className="font-mono font-semibold text-gray-900">{billNumber}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">Date & Time</div>
+                    <div className="font-mono text-sm text-gray-700">{currentDate} • {currentTime}</div>
+                  </div>
+                  <div className="text-right bg-green-50 p-3 rounded-lg border border-green-200">
+                    <div className="text-sm text-green-600 font-medium">Total Amount</div>
+                    <div className="text-2xl font-bold text-green-700">{formatCurrency(total)}</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
         {/* Customer Selection Bar */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -572,7 +628,7 @@ export default function POSEnhanced() {
           </div>
         </div>
 
-        <div className="flex-1 flex min-h-0">
+        <div className={`flex-1 flex ${isFullscreen ? 'h-[calc(100vh-280px)]' : 'min-h-0'}`}>
           {/* Main Cart Section */}
           <div className="flex-1 bg-white p-6">
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-xl mb-6 shadow-lg">
@@ -580,6 +636,11 @@ export default function POSEnhanced() {
                 <div className="flex items-center">
                   <ShoppingCart className="h-6 w-6 mr-3" />
                   <h2 className="text-xl font-bold">Shopping Cart</h2>
+                  {isFullscreen && (
+                    <Badge className="ml-3 bg-white/20 text-white border-white/30">
+                      Fullscreen Mode
+                    </Badge>
+                  )}
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-semibold">
@@ -592,13 +653,13 @@ export default function POSEnhanced() {
               </div>
             </div>
 
-            <div className="min-h-96 bg-gray-50 rounded-xl p-6 border border-gray-200">
+            <div className={`${isFullscreen ? 'h-[calc(100vh-400px)]' : 'min-h-96'} bg-gray-50 rounded-xl p-6 border border-gray-200`}>
               {cart.length === 0 ? (
                 <div className="text-center py-20">
                   <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-gray-300" />
                   <h3 className="text-2xl font-semibold text-gray-600 mb-3">Cart is Empty</h3>
                   <p className="text-gray-500 mb-6 text-lg">Start by searching for products above</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto text-sm text-gray-500">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-3xl mx-auto text-sm text-gray-500">
                     <div className="bg-white p-4 rounded-lg border">
                       <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F1</kbd>
                       <p className="mt-2">Focus search bar</p>
@@ -608,13 +669,17 @@ export default function POSEnhanced() {
                       <p className="mt-2">Quick checkout</p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border">
-                      <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">ESC</kbd>
-                      <p className="mt-2">Clear search</p>
+                      <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F11</kbd>
+                      <p className="mt-2">Toggle fullscreen</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border">
+                      <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F12</kbd>
+                      <p className="mt-2">Clear cart</p>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                <div className={`space-y-4 ${isFullscreen ? 'max-h-[calc(100vh-500px)]' : 'max-h-96'} overflow-y-auto`}>
                   {cart.map((item) => (
                     <Card key={item.id} className="p-4 hover:shadow-md transition-shadow border border-gray-200">
                       <div className="flex items-center justify-between">
@@ -1031,7 +1096,8 @@ export default function POSEnhanced() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+      </DashboardLayout>
+    </div>
   );
 }
 
