@@ -34,7 +34,9 @@ import {
   Package,
   CheckCircle,
   AlertCircle,
-  Info
+  Info,
+  Banknote,
+  DollarSign
 } from "lucide-react";
 
 interface Product {
@@ -78,6 +80,11 @@ export default function POSEnhanced() {
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showCashRegister, setShowCashRegister] = useState(false);
+  const [cashInHand, setCashInHand] = useState(0);
+  const [cashOperation, setCashOperation] = useState<'add' | 'remove'>('add');
+  const [cashAmount, setCashAmount] = useState("");
+  const [cashReason, setCashReason] = useState("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -227,6 +234,45 @@ export default function POSEnhanced() {
   const taxableAmount = subtotal - discountAmount;
   const taxAmount = (taxableAmount * taxRate) / 100;
   const total = taxableAmount + taxAmount;
+
+  // Cash register management
+  const handleCashOperation = () => {
+    const amount = parseFloat(cashAmount);
+    
+    if (!amount || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount greater than 0",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!cashReason.trim()) {
+      toast({
+        title: "Reason Required",
+        description: "Please provide a reason for this cash transaction",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newCashAmount = cashOperation === 'add' 
+      ? cashInHand + amount 
+      : Math.max(0, cashInHand - amount);
+
+    setCashInHand(newCashAmount);
+    
+    toast({
+      title: "Cash Updated",
+      description: `${cashOperation === 'add' ? 'Added' : 'Removed'} ${formatCurrency(amount)}. Current cash: ${formatCurrency(newCashAmount)}`,
+    });
+
+    // Reset form
+    setCashAmount("");
+    setCashReason("");
+    setShowCashRegister(false);
+  };
 
   // Create new customer
   const createNewCustomer = async () => {
@@ -514,6 +560,15 @@ export default function POSEnhanced() {
 
                 <div className="flex items-center space-x-6">
                   <Button
+                    onClick={() => setShowCashRegister(true)}
+                    variant="outline"
+                    size="sm"
+                    className="hover:bg-green-50 border-green-200 text-green-700"
+                  >
+                    <Banknote className="h-4 w-4 mr-2" />
+                    Cash Register
+                  </Button>
+                  <Button
                     onClick={toggleFullscreen}
                     variant="outline"
                     size="sm"
@@ -530,6 +585,10 @@ export default function POSEnhanced() {
                   <div className="text-right">
                     <div className="text-sm text-gray-500">Date & Time</div>
                     <div className="font-mono text-sm text-gray-700">{currentDate} • {currentTime}</div>
+                  </div>
+                  <div className="text-right bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <div className="text-sm text-blue-600 font-medium">Cash in Hand</div>
+                    <div className="text-xl font-bold text-blue-700">{formatCurrency(cashInHand)}</div>
                   </div>
                   <div className="text-right bg-green-50 p-3 rounded-lg border border-green-200">
                     <div className="text-sm text-green-600 font-medium">Total Amount</div>
@@ -1172,6 +1231,117 @@ export default function POSEnhanced() {
               </Card>
             </div>
           )}
+
+          {/* Cash Register Dialog */}
+          <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center text-xl">
+                  <Banknote className="h-6 w-6 mr-3" />
+                  Cash Register Management
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                <div className="p-4 bg-blue-50 rounded-xl text-center border border-blue-200">
+                  <div className="text-sm text-blue-600 font-medium">Current Cash in Hand</div>
+                  <div className="text-3xl font-bold text-blue-700">
+                    {formatCurrency(cashInHand)}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Operation Type</label>
+                  <Select value={cashOperation} onValueChange={(value: 'add' | 'remove') => setCashOperation(value)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="add">
+                        <div className="flex items-center">
+                          <Plus className="h-4 w-4 mr-2 text-green-600" />
+                          Add Cash
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="remove">
+                        <div className="flex items-center">
+                          <Minus className="h-4 w-4 mr-2 text-red-600" />
+                          Remove Cash
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                  <Input
+                    type="number"
+                    placeholder="Enter amount"
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(e.target.value)}
+                    step="0.01"
+                    min="0"
+                    className="text-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                  <Input
+                    placeholder="Enter reason for this transaction"
+                    value={cashReason}
+                    onChange={(e) => setCashReason(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                {cashAmount && (
+                  <div className={`p-3 rounded-lg border ${
+                    cashOperation === 'add' 
+                      ? 'bg-green-50 border-green-200' 
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <p className={`font-semibold ${
+                      cashOperation === 'add' ? 'text-green-700' : 'text-red-700'
+                    }`}>
+                      {cashOperation === 'add' ? 'New' : 'Remaining'} cash in hand: {formatCurrency(
+                        cashOperation === 'add' 
+                          ? cashInHand + parseFloat(cashAmount || "0")
+                          : Math.max(0, cashInHand - parseFloat(cashAmount || "0"))
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowCashRegister(false);
+                      setCashAmount("");
+                      setCashReason("");
+                    }}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCashOperation}
+                    disabled={!cashAmount || !cashReason.trim()}
+                    className={`flex-1 ${
+                      cashOperation === 'add' 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-red-600 hover:bg-red-700'
+                    } text-white`}
+                  >
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    {cashOperation === 'add' ? 'Add Cash' : 'Remove Cash'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Error Toast */}
           {productsError && (
