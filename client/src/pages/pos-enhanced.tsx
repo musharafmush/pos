@@ -34,7 +34,9 @@ import {
   Archive,
   Percent,
   Monitor,
-  Zap
+  Zap,
+  DollarSign,
+  Package
 } from "lucide-react";
 
 interface Product {
@@ -61,7 +63,7 @@ interface CartItem extends Product {
   total: number;
 }
 
-function POSEnhanced() {
+export default function POSEnhanced() {
   const [searchTerm, setSearchTerm] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -82,8 +84,8 @@ function POSEnhanced() {
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch data with better error handling
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  // Fetch products with error handling
+  const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
       try {
@@ -94,11 +96,17 @@ function POSEnhanced() {
         return data;
       } catch (error) {
         console.error("Error fetching products:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load products",
+          variant: "destructive",
+        });
         return [];
       }
     },
   });
 
+  // Fetch customers with error handling
   const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
@@ -114,7 +122,7 @@ function POSEnhanced() {
     },
   });
 
-  // Filter products
+  // Filter products based on search term
   const filteredProducts = products.filter((product: Product) => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchTerm.toLowerCase())
@@ -122,9 +130,27 @@ function POSEnhanced() {
 
   // Cart functions
   const addToCart = (product: Product) => {
+    if (product.stockQuantity <= 0) {
+      toast({
+        title: "Out of Stock",
+        description: `${product.name} is out of stock`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const existingItem = cart.find(item => item.id === product.id);
     
     if (existingItem) {
+      if (existingItem.quantity >= product.stockQuantity) {
+        toast({
+          title: "Insufficient Stock",
+          description: `Only ${product.stockQuantity} items available`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setCart(cart.map(item =>
         item.id === product.id
           ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * parseFloat(item.price) }
@@ -142,15 +168,32 @@ function POSEnhanced() {
       title: "Added to Cart",
       description: `${product.name} added successfully`,
     });
+
+    // Clear search after adding
+    setSearchTerm("");
   };
 
   const removeFromCart = (productId: number) => {
     setCart(cart.filter(item => item.id !== productId));
+    toast({
+      title: "Removed from Cart",
+      description: "Item removed successfully",
+    });
   };
 
   const updateQuantity = (productId: number, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeFromCart(productId);
+      return;
+    }
+
+    const product = products.find((p: Product) => p.id === productId);
+    if (product && newQuantity > product.stockQuantity) {
+      toast({
+        title: "Insufficient Stock",
+        description: `Only ${product.stockQuantity} items available`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -166,6 +209,10 @@ function POSEnhanced() {
     setSelectedCustomer(null);
     setDiscount(0);
     setAmountPaid("");
+    toast({
+      title: "Cart Cleared",
+      description: "All items removed from cart",
+    });
   };
 
   // Calculate totals
@@ -245,6 +292,16 @@ function POSEnhanced() {
       return;
     }
 
+    const paidAmount = parseFloat(amountPaid) || total;
+    if (paidAmount < total) {
+      toast({
+        title: "Error",
+        description: "Insufficient payment amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     
     try {
@@ -261,7 +318,7 @@ function POSEnhanced() {
         tax: taxAmount,
         total,
         paymentMethod,
-        amountPaid: parseFloat(amountPaid) || total,
+        amountPaid: paidAmount,
       };
 
       const response = await fetch("/api/sales", {
@@ -307,6 +364,9 @@ function POSEnhanced() {
       } else if (e.key === "F11") {
         e.preventDefault();
         clearCart();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setSearchTerm("");
       }
     };
 
@@ -319,7 +379,7 @@ function POSEnhanced() {
 
   return (
     <DashboardLayout>
-      <div className="h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800 text-white">
+      <div className="h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800 text-white overflow-hidden">
         {/* Top Header */}
         <div className="bg-blue-600 px-6 py-4 flex items-center justify-between border-b border-blue-500">
           <div className="flex items-center space-x-4">
@@ -327,30 +387,30 @@ function POSEnhanced() {
               <Monitor className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Professional POS Pro</h1>
-              <p className="text-blue-100 text-sm">Enhanced Point of Sale System</p>
+              <h1 className="text-xl font-bold">Enhanced POS System</h1>
+              <p className="text-blue-100 text-sm">Professional Point of Sale</p>
             </div>
             
             <div className="flex items-center space-x-2 ml-8">
               <Badge className="bg-green-500 text-white">
                 <Zap className="w-3 h-3 mr-1" />
-                System Online
+                Online
               </Badge>
               <Badge className="bg-blue-500 text-white">
                 <TrendingUp className="h-3 w-3 mr-1" />
-                Live Data
+                Live
               </Badge>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <div className="text-sm text-blue-100">Bill Number</div>
+              <div className="text-sm text-blue-100">Bill #</div>
               <div className="font-mono font-bold">{billNumber}</div>
             </div>
             <div className="text-right">
               <div className="text-sm text-blue-100">Date & Time</div>
-              <div className="font-mono">{currentDate} • {currentTime}</div>
+              <div className="font-mono text-sm">{currentDate} • {currentTime}</div>
             </div>
             <div className="text-right">
               <div className="text-sm text-blue-100">Total Amount</div>
@@ -363,8 +423,11 @@ function POSEnhanced() {
         <div className="bg-white text-gray-800 px-6 py-4 border-b">
           <div className="grid grid-cols-4 gap-4 items-center">
             <div>
-              <label className="text-sm font-medium text-gray-600">Sales Person</label>
-              <div className="font-semibold">Admin User</div>
+              <label className="text-sm font-medium text-gray-600">Cashier</label>
+              <div className="font-semibold flex items-center">
+                <User className="h-4 w-4 mr-1" />
+                Admin User
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Customer</label>
@@ -393,13 +456,11 @@ function POSEnhanced() {
                   </SelectItem>
                   {customers?.map((customer: Customer) => (
                     <SelectItem key={customer.id} value={customer.id.toString()}>
-                      <div className="flex items-center justify-between w-full">
-                        <div>
-                          <div className="font-medium">{customer.name}</div>
-                          {customer.phone && (
-                            <div className="text-sm text-gray-500">{customer.phone}</div>
-                          )}
-                        </div>
+                      <div>
+                        <div className="font-medium">{customer.name}</div>
+                        {customer.phone && (
+                          <div className="text-sm text-gray-500">{customer.phone}</div>
+                        )}
                       </div>
                     </SelectItem>
                   ))}
@@ -435,7 +496,7 @@ function POSEnhanced() {
                 onClick={() => setShowNewCustomerDialog(true)}
               >
                 <UserPlus className="h-3 w-3 mr-1" />
-                New Customer
+                New
               </Button>
             </div>
           </div>
@@ -444,7 +505,10 @@ function POSEnhanced() {
         {/* Search Section */}
         <div className="bg-white text-gray-800 px-6 py-4 border-b">
           <div className="flex items-center space-x-4 mb-4">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => searchInputRef.current?.focus()}
+            >
               <Scan className="h-4 w-4 mr-2" />
               Scan (F1)
             </Button>
@@ -453,7 +517,7 @@ function POSEnhanced() {
               Search
             </Button>
             <Button variant="outline" className="border-gray-300">
-              <Calendar className="h-4 w-4 mr-2" />
+              <Package className="h-4 w-4 mr-2" />
               Browse
             </Button>
             <Button 
@@ -478,7 +542,7 @@ function POSEnhanced() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
             <div className="text-sm text-gray-600">
-              Products: {products.length} | Stock Ready
+              Products: {products.length} | Ready
             </div>
           </div>
         </div>
@@ -511,7 +575,7 @@ function POSEnhanced() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-80 overflow-y-auto">
                   {cart.map((item) => (
                     <Card key={item.id} className="p-4">
                       <div className="flex items-center justify-between">
@@ -581,9 +645,11 @@ function POSEnhanced() {
               </div>
               
               <div className="flex items-center space-x-4 text-sm">
-                <span className="text-green-600">● System Ready</span>
-                <span>Terminal: POS-PRO-01</span>
-                <span>Time: {currentTime}</span>
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  ● System Ready
+                </Badge>
+                <span>Terminal: POS-01</span>
+                <span>{currentTime}</span>
               </div>
             </div>
           </div>
@@ -615,8 +681,22 @@ function POSEnhanced() {
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 <Separator className="bg-purple-600" />
+                <div className="flex justify-between items-center">
+                  <span>Discount</span>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="number"
+                      value={discount}
+                      onChange={(e) => setDiscount(Number(e.target.value))}
+                      className="w-12 h-6 text-xs text-black"
+                      min="0"
+                      max="100"
+                    />
+                    <span className="text-xs">%</span>
+                  </div>
+                </div>
                 <div className="flex justify-between">
-                  <span>Discount ({discount}%)</span>
+                  <span>Discount Amount</span>
                   <span>-{formatCurrency(discountAmount)}</span>
                 </div>
                 <div className="flex justify-between">
@@ -675,22 +755,24 @@ function POSEnhanced() {
             {filteredProducts.slice(0, 10).map((product: Product) => (
               <div
                 key={product.id}
-                className="p-3 hover:bg-gray-50 cursor-pointer border-b"
-                onClick={() => {
-                  addToCart(product);
-                  setSearchTerm("");
-                }}
+                className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                onClick={() => addToCart(product)}
               >
                 <div className="flex justify-between items-center">
                   <div>
                     <h4 className="font-semibold">{product.name}</h4>
                     <p className="text-sm text-gray-500">{product.sku}</p>
+                    {product.category && (
+                      <p className="text-xs text-blue-600">{product.category.name}</p>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className="font-bold text-green-600">
                       {formatCurrency(parseFloat(product.price))}
                     </div>
-                    <div className="text-sm text-gray-500">Stock: {product.stockQuantity}</div>
+                    <div className="text-sm text-gray-500">
+                      Stock: {product.stockQuantity}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -713,6 +795,7 @@ function POSEnhanced() {
                 <div className="text-2xl font-bold text-green-600">
                   {formatCurrency(total)}
                 </div>
+                <div className="text-sm text-gray-600">Amount to Pay</div>
               </div>
 
               <div>
@@ -722,9 +805,10 @@ function POSEnhanced() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
+                    <SelectItem value="cash">💵 Cash</SelectItem>
+                    <SelectItem value="card">💳 Card</SelectItem>
+                    <SelectItem value="upi">📱 UPI</SelectItem>
+                    <SelectItem value="cheque">📝 Cheque</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -733,9 +817,11 @@ function POSEnhanced() {
                 <label className="text-sm font-medium">Amount Paid</label>
                 <Input
                   type="number"
-                  placeholder={`Enter amount (min: ${formatCurrency(total)})`}
+                  placeholder={`Minimum: ${formatCurrency(total)}`}
                   value={amountPaid}
                   onChange={(e) => setAmountPaid(e.target.value)}
+                  step="0.01"
+                  min={total}
                 />
                 {parseFloat(amountPaid) > total && (
                   <p className="text-sm text-green-600 mt-1">
@@ -747,17 +833,32 @@ function POSEnhanced() {
               <div className="flex space-x-2">
                 <Button
                   variant="outline"
-                  onClick={() => setShowPaymentDialog(false)}
+                  onClick={() => {
+                    setShowPaymentDialog(false);
+                    setAmountPaid("");
+                  }}
                   className="flex-1"
+                  disabled={isProcessing}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={processSale}
-                  disabled={isProcessing || parseFloat(amountPaid) < total}
+                  disabled={isProcessing || (parseFloat(amountPaid) && parseFloat(amountPaid) < total)}
                   className="flex-1 bg-green-600 hover:bg-green-700"
                 >
                   {isProcessing ? "Processing..." : "Complete Sale"}
+                </Button>
+              </div>
+
+              <div className="text-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAmountPaid(total.toString())}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  Use Exact Amount
                 </Button>
               </div>
             </div>
@@ -843,9 +944,17 @@ function POSEnhanced() {
             </div>
           </div>
         )}
+
+        {/* Error State */}
+        {productsError && (
+          <div className="absolute top-4 right-4 bg-red-500 text-white p-4 rounded-lg z-50">
+            <div className="flex items-center space-x-2">
+              <HelpCircle className="h-4 w-4" />
+              <span>Failed to load products</span>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
 }
-
-export default POSEnhanced;
