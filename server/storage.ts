@@ -1154,5 +1154,95 @@ export const storage = {
       console.error('Error fetching top selling products:', error);
       return [];
     }
+  },
+
+  // Update sale
+  async updateSale(id: number, saleData: any): Promise<any> {
+    try {
+      const { sqlite } = await import('@db');
+
+      // Update the sale record
+      const updateSale = sqlite.prepare(`
+        UPDATE sales SET
+          order_number = COALESCE(?, order_number),
+          customer_id = ?,
+          total = COALESCE(?, total),
+          tax = COALESCE(?, tax),
+          discount = COALESCE(?, discount),
+          payment_method = COALESCE(?, payment_method),
+          status = COALESCE(?, status)
+        WHERE id = ?
+      `);
+
+      const result = updateSale.run(
+        saleData.orderNumber || null,
+        saleData.customerId || null,
+        saleData.total ? saleData.total.toString() : null,
+        saleData.tax ? saleData.tax.toString() : null,
+        saleData.discount ? saleData.discount.toString() : null,
+        saleData.paymentMethod || null,
+        saleData.status || null,
+        id
+      );
+
+      if (result.changes === 0) {
+        throw new Error('Sale not found or no changes made');
+      }
+
+      // Fetch and return the updated sale
+      const getSale = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
+      const updatedSale = getSale.get(id);
+
+      return {
+        ...updatedSale,
+        createdAt: new Date(updatedSale.created_at)
+      };
+    } catch (error) {
+      console.error('Error updating sale:', error);
+      throw error;
+    }
+  },
+
+  // Delete sale
+  async deleteSale(id: number): Promise<boolean> {
+    try {
+      const { sqlite } = await import('@db');
+
+      // Start a transaction to delete sale and its items
+      const result = sqlite.transaction(() => {
+        // First, get the sale items to restore stock
+        const getSaleItems = sqlite.prepare(`
+          SELECT product_id, quantity FROM sale_items WHERE sale_id = ?
+        `);
+        const saleItems = getSaleItems.all(id);
+
+        // Restore stock for each item
+        const updateStock = sqlite.prepare(`
+          UPDATE products 
+          SET stock_quantity = COALESCE(stock_quantity, 0) + ?
+          WHERE id = ?
+        `);
+
+        for (const item of saleItems) {
+          updateStock.run(item.quantity, item.product_id);
+          console.log(`📦 Restored stock for product ${item.product_id}: +${item.quantity}`);
+        }
+
+        // Delete sale items first (foreign key constraint)
+        const deleteSaleItems = sqlite.prepare('DELETE FROM sale_items WHERE sale_id = ?');
+        deleteSaleItems.run(id);
+
+        // Delete the sale
+        const deleteSale = sqlite.prepare('DELETE FROM sales WHERE id = ?');
+        const deleteResult = deleteSale.run(id);
+
+        return deleteResult.changes > 0;
+      })();
+
+      return result;
+    } catch (error) {
+      console.error('Error deleting sale:', error);
+      throw error;
+    }
   }
 };

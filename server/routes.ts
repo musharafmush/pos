@@ -757,6 +757,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/sales/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = req.body;
+
+      console.log('Updating sale:', id, updateData);
+
+      // Check if sale exists
+      const existingSale = await storage.getSaleById(id);
+      if (!existingSale) {
+        return res.status(404).json({ message: 'Sale not found' });
+      }
+
+      // Update the sale
+      const updatedSale = await storage.updateSale(id, updateData);
+      
+      res.json({
+        ...updatedSale,
+        message: 'Sale updated successfully'
+      });
+    } catch (error) {
+      console.error('Error updating sale:', error);
+      res.status(500).json({ 
+        message: 'Failed to update sale',
+        error: error.message 
+      });
+    }
+  });
+
+  app.delete('/api/sales/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      console.log('Deleting sale:', id);
+
+      // Check if sale exists
+      const existingSale = await storage.getSaleById(id);
+      if (!existingSale) {
+        return res.status(404).json({ message: 'Sale not found' });
+      }
+
+      // Delete the sale
+      const deleted = await storage.deleteSale(id);
+      
+      if (!deleted) {
+        return res.status(500).json({ message: 'Failed to delete sale' });
+      }
+
+      res.json({ 
+        message: 'Sale deleted successfully',
+        deletedId: id
+      });
+    } catch (error) {
+      console.error('Error deleting sale:', error);
+      res.status(500).json({ 
+        message: 'Failed to delete sale',
+        error: error.message 
+      });
+    }
+  });
+
   // Purchases API
   app.post('/api/purchases', isAuthenticated, async (req, res) => {
     try {

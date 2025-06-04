@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Table, 
   TableBody, 
@@ -51,8 +52,21 @@ export default function SalesDashboard() {
   const [endDate, setEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const formatCurrency = useFormatCurrency();
 
+  const [selectedSale, setSelectedSale] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    orderNumber: '',
+    customerId: '',
+    customerName: '',
+    total: '',
+    paymentMethod: 'cash',
+    status: 'completed'
+  });
+
   // Fetch sales data
-  const { data: salesData, isLoading: salesLoading, error: salesError } = useQuery({
+  const { data: salesData, isLoading: salesLoading, error: salesError, refetch: refetchSales } = useQuery({
     queryKey: ['/api/sales'],
     queryFn: async () => {
       try {
@@ -84,6 +98,126 @@ export default function SalesDashboard() {
     retryDelay: 1000,
     refetchInterval: 10000 // Refresh every 10 seconds for live data
   });
+
+  // CRUD Operations
+  const handleCreateSale = async (saleData: any) => {
+    try {
+      const response = await fetch('/api/sales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...saleData,
+          items: saleData.items || [],
+          customerId: saleData.customerId || null,
+          userId: 1, // Default user ID
+          total: parseFloat(saleData.total || '0'),
+          tax: parseFloat(saleData.tax || '0'),
+          discount: parseFloat(saleData.discount || '0'),
+          status: saleData.status || 'completed'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create sale');
+      }
+
+      const result = await response.json();
+      console.log('Sale created successfully:', result);
+      refetchSales();
+      setIsCreateDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error creating sale:', error);
+      alert('Failed to create sale. Please try again.');
+    }
+  };
+
+  const handleUpdateSale = async (saleId: number, saleData: any) => {
+    try {
+      const response = await fetch(`/api/sales/${saleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...saleData,
+          total: parseFloat(saleData.total || '0'),
+          tax: parseFloat(saleData.tax || '0'),
+          discount: parseFloat(saleData.discount || '0')
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update sale');
+      }
+
+      const result = await response.json();
+      console.log('Sale updated successfully:', result);
+      refetchSales();
+      setIsEditDialogOpen(false);
+      setSelectedSale(null);
+      resetForm();
+    } catch (error) {
+      console.error('Error updating sale:', error);
+      alert('Failed to update sale. Please try again.');
+    }
+  };
+
+  const handleDeleteSale = async (saleId: number) => {
+    try {
+      const response = await fetch(`/api/sales/${saleId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete sale');
+      }
+
+      console.log('Sale deleted successfully');
+      refetchSales();
+      setIsDeleteDialogOpen(false);
+      setSelectedSale(null);
+    } catch (error) {
+      console.error('Error deleting sale:', error);
+      alert('Failed to delete sale. Please try again.');
+    }
+  };
+
+  const resetForm = () => {
+    setEditForm({
+      orderNumber: '',
+      customerId: '',
+      customerName: '',
+      total: '',
+      paymentMethod: 'cash',
+      status: 'completed'
+    });
+  };
+
+  const openEditDialog = (sale: any) => {
+    setSelectedSale(sale);
+    setEditForm({
+      orderNumber: sale.orderNumber || '',
+      customerId: sale.customerId?.toString() || '',
+      customerName: sale.customerName || sale.customer?.name || '',
+      total: sale.total?.toString() || '',
+      paymentMethod: sale.paymentMethod || 'cash',
+      status: sale.status || 'completed'
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (sale: any) => {
+    setSelectedSale(sale);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setIsCreateDialogOpen(true);
+  };
 
   // Fetch sales chart data
   const { data: salesChartData, isLoading: chartLoading } = useQuery({
@@ -187,6 +321,15 @@ export default function SalesDashboard() {
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                 Live Data
               </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openCreateDialog}
+                className="flex items-center space-x-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+              >
+                <ShoppingCartIcon className="h-4 w-4" />
+                <span>New Sale</span>
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -499,6 +642,7 @@ export default function SalesDashboard() {
                         <TableHead className="text-right">Total</TableHead>
                         <TableHead>Payment Method</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -523,6 +667,26 @@ export default function SalesDashboard() {
                                 {sale.status || "Completed"}
                               </span>
                             </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditDialog(sale)}
+                                  className="h-8 px-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openDeleteDialog(sale)}
+                                  className="h-8 px-2 text-red-600 hover:text-red-800"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
                         );
                       }) || (
@@ -539,6 +703,212 @@ export default function SalesDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Create Sale Dialog */}
+        {isCreateDialogOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Create New Sale</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Order Number</label>
+                  <Input
+                    type="text"
+                    value={editForm.orderNumber}
+                    onChange={(e) => setEditForm({...editForm, orderNumber: e.target.value})}
+                    placeholder="Auto-generated if empty"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Customer Name</label>
+                  <Input
+                    type="text"
+                    value={editForm.customerName}
+                    onChange={(e) => setEditForm({...editForm, customerName: e.target.value})}
+                    placeholder="Walk-in Customer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Total Amount</label>
+                  <Input
+                    type="number"
+                    value={editForm.total}
+                    onChange={(e) => setEditForm({...editForm, total: e.target.value})}
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Payment Method</label>
+                  <Select
+                    value={editForm.paymentMethod}
+                    onValueChange={(value) => setEditForm({...editForm, paymentMethod: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="card">Card</SelectItem>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="credit">Credit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Status</label>
+                  <Select
+                    value={editForm.status}
+                    onValueChange={(value) => setEditForm({...editForm, status: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleCreateSale({
+                    ...editForm,
+                    items: [], // Empty items for now - you can extend this
+                    orderNumber: editForm.orderNumber || `SALE-${Date.now()}`
+                  })}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Create Sale
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Sale Dialog */}
+        {isEditDialogOpen && selectedSale && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Edit Sale</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Order Number</label>
+                  <Input
+                    type="text"
+                    value={editForm.orderNumber}
+                    onChange={(e) => setEditForm({...editForm, orderNumber: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Customer Name</label>
+                  <Input
+                    type="text"
+                    value={editForm.customerName}
+                    onChange={(e) => setEditForm({...editForm, customerName: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Total Amount</label>
+                  <Input
+                    type="number"
+                    value={editForm.total}
+                    onChange={(e) => setEditForm({...editForm, total: e.target.value})}
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Payment Method</label>
+                  <Select
+                    value={editForm.paymentMethod}
+                    onValueChange={(value) => setEditForm({...editForm, paymentMethod: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="card">Card</SelectItem>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="credit">Credit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Status</label>
+                  <Select
+                    value={editForm.status}
+                    onValueChange={(value) => setEditForm({...editForm, status: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setSelectedSale(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleUpdateSale(selectedSale.id, editForm)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Update Sale
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        {isDeleteDialogOpen && selectedSale && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Delete Sale</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to delete sale #{selectedSale.orderNumber || selectedSale.id}? 
+                This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteDialogOpen(false);
+                    setSelectedSale(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleDeleteSale(selectedSale.id)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete Sale
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
