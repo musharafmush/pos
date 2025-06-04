@@ -577,58 +577,7 @@ export const storage = {
     if (!updated) return null;
 
     return this.getPurchaseById(id);
-  }
-
-  // Create sale with items
-  async createSaleWithItems(saleData: any, items: any[]): Promise<any> {
-    try {
-      console.log('Creating sale with data:', saleData);
-      console.log('Sale items:', items);
-
-      // Start a transaction
-      const result = await db.transaction(async (tx) => {
-        // Insert the sale
-        const [newSale] = await tx.insert(sales).values({
-          orderNumber: saleData.orderNumber,
-          customerId: saleData.customerId,
-          userId: saleData.userId,
-          total: saleData.total,
-          tax: saleData.tax,
-          discount: saleData.discount,
-          paymentMethod: saleData.paymentMethod,
-          status: saleData.status
-        }).returning();
-
-        console.log('Created sale:', newSale);
-
-        // Insert sale items and update stock
-        for (const item of items) {
-          // Insert sale item
-          await tx.insert(saleItems).values({
-            saleId: newSale.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            subtotal: item.subtotal
-          });
-
-          // Update product stock
-          await tx.update(products)
-            .set({
-              stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`
-            })
-            .where(eq(products.id, item.productId));
-        }
-
-        return newSale;
-      });
-
-      return result;
-    } catch (error) {
-      console.error('Error creating sale:', error);
-      throw error;
-    }
-  }
+  },
 
   // Purchase related operations
   async createPurchase(
@@ -945,6 +894,7 @@ export const storage = {
     });
   },
 
+  // Create sale with items
   async createSaleWithItems(saleData: any, items: any[]): Promise<any> {
     try {
       console.log('Creating sale with data:', saleData);
@@ -993,8 +943,7 @@ export const storage = {
       console.error('Error creating sale:', error);
       throw error;
     }
-  }
-,
+  },
 
   // Dashboard related operations
   async getDashboardStats(): Promise<any> {
@@ -1010,8 +959,7 @@ export const storage = {
       });
 
       // Get low stock products
-      const lowStockProducts = await db.query.products.findMany```text
-({
+      const lowStockProducts = await db.query.products.findMany({
         where: sql`${products.stockQuantity} <= ${products.alertThreshold}`,
         limit: 10
       });
