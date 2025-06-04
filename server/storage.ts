@@ -467,8 +467,8 @@ export const storage = {
         const insertSale = sqlite.prepare(`
           INSERT INTO sales (
             order_number, customer_id, user_id, total, tax, discount, 
-            payment_method, status, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            payment_method, status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `);
 
         const saleResult = insertSale.run(
@@ -518,8 +518,7 @@ export const storage = {
 
         return {
           ...newSale,
-          createdAt: new Date(newSale.created_at),
-          updatedAt: new Date(newSale.updated_at)
+          createdAt: new Date(newSale.created_at)
         };
       })();
 
@@ -955,8 +954,8 @@ export const storage = {
         const insertSale = sqlite.prepare(`
           INSERT INTO sales (
             order_number, customer_id, user_id, total, tax, discount, 
-            payment_method, status, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            payment_method, status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `);
 
         const saleResult = insertSale.run(
@@ -1006,9 +1005,8 @@ export const storage = {
         const newSale = getSale.get(saleId);
 
         return {
-          ...newSale,
-          createdAt: new Date(newSale.created_at),
-          updatedAt: new Date(newSale.updated_at)
+...newSale,
+          createdAt: new Date(newSale.created_at)
         };
       })();
 
