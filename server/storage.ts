@@ -442,42 +442,61 @@ export const storage = {
 
   // Sales related operations
   async createSale(
-    userId: number,
-    items: Array<{ productId: number; quantity: number; unitPrice: number }>,
     saleData: {
+      orderNumber?: string;
       customerId?: number;
+      userId: number;
+      total: number;
       tax?: number;
       discount?: number;
       paymentMethod?: string;
       status?: string;
-    }
+    },
+    items: Array<{ productId: number; quantity: number; unitPrice: number; subtotal: number }>
   ): Promise<Sale> {
     try {
-      // Calculate total
-      const total = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      console.log('Creating sale with data:', saleData);
+      console.log('Sale items:', items);
 
-      const [newSale] = await db.insert(sales).values({
-        userId,
-        customerId: saleData.customerId || null,
-        total: total.toString(),
-        tax: saleData.tax?.toString() || '0',
-        discount: saleData.discount?.toString() || '0',
-        paymentMethod: saleData.paymentMethod || 'cash',
-        status: saleData.status || 'completed'
-      }).returning();
+      // Start a transaction
+      const result = await db.transaction(async (tx) => {
+        // Insert the sale
+        const [newSale] = await tx.insert(sales).values({
+          orderNumber: saleData.orderNumber || `SALE-${Date.now()}`,
+          customerId: saleData.customerId || null,
+          userId: saleData.userId,
+          total: saleData.total.toString(),
+          tax: (saleData.tax || 0).toString(),
+          discount: (saleData.discount || 0).toString(),
+          paymentMethod: saleData.paymentMethod || 'cash',
+          status: saleData.status || 'completed'
+        }).returning();
 
-      // Insert sale items
-      for (const item of items) {
-        await db.insert(saleItems).values({
-          saleId: newSale.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice.toString(),
-          subtotal: (item.quantity * item.unitPrice).toString()
-        });
-      }
+        console.log('Created sale:', newSale);
 
-      return newSale;
+        // Insert sale items and update stock
+        for (const item of items) {
+          // Insert sale item
+          await tx.insert(saleItems).values({
+            saleId: newSale.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice.toString(),
+            subtotal: item.subtotal.toString()
+          });
+
+          // Update product stock
+          await tx.update(products)
+            .set({
+              stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`
+            })
+            .where(eq(products.id, item.productId));
+        }
+
+        return newSale;
+      });
+
+      return result;
     } catch (error) {
       console.error('Error creating sale:', error);
       throw error;

@@ -617,41 +617,67 @@ app.post("/api/sales", async (req, res) => {
 
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Items are required for sale" });
+      return res.status(400).json({ 
+        error: "Transaction failed",
+        message: "Items are required for sale",
+        details: "Please add items to complete the transaction"
+      });
     }
 
     if (!total || parseFloat(total) <= 0) {
-      return res.status(400).json({ error: "Valid total amount is required" });
+      return res.status(400).json({ 
+        error: "Transaction failed",
+        message: "Valid total amount is required",
+        details: "Please check the total amount"
+      });
     }
 
     // Generate order number if not provided
     const orderNumber = billNumber || `SALE-${Date.now()}`;
 
-    // Process sale using storage layer
+    // Safely handle customerId - ensure it's null if undefined/empty
+    const safeCustomerId = customerId && parseInt(customerId.toString()) > 0 ? parseInt(customerId.toString()) : null;
+
+    // Get user ID safely
+    const userId = (req.user as any)?.id || 1;
+
+    // Prepare sale items with validation
+    const saleItems = items.map((item: any) => {
+      const productId = parseInt(item.productId);
+      const quantity = parseInt(item.quantity);
+      const unitPrice = parseFloat(item.unitPrice || item.price || "0");
+      const itemSubtotal = parseFloat(item.total || item.subtotal || (quantity * unitPrice));
+
+      if (isNaN(productId) || isNaN(quantity) || isNaN(unitPrice)) {
+        throw new Error(`Invalid item data: productId=${item.productId}, quantity=${item.quantity}, price=${item.unitPrice || item.price}`);
+      }
+
+      return {
+        productId,
+        quantity,
+        unitPrice,
+        subtotal: itemSubtotal
+      };
+    });
+
+    console.log("Validated sale items:", saleItems);
+
+    // Use the createSaleWithItems method from storage
     const saleData = {
       orderNumber,
-      customerId: customerId || null,
-      userId: (req.user as any)?.id || 1, // Default to user 1 if no authenticated user
-      total: parseFloat(total).toString(),
-      tax: parseFloat(tax || "0").toString(),
-      discount: parseFloat(discount || "0").toString(),
+      customerId: safeCustomerId,
+      userId,
+      total: parseFloat(total),
+      tax: parseFloat(tax || "0"),
+      discount: parseFloat(discount || "0"),
       paymentMethod: paymentMethod || "cash",
       status: status || "completed"
     };
 
-    // Prepare sale items
-    const saleItems = items.map((item: any) => ({
-      productId: parseInt(item.productId),
-      quantity: parseInt(item.quantity),
-      unitPrice: parseFloat(item.unitPrice || item.price || "0").toString(),
-      subtotal: parseFloat(item.total || item.subtotal || (item.quantity * (item.unitPrice || item.price || 0))).toString()
-    }));
-
     console.log("Creating sale with data:", saleData);
-    console.log("Sale items:", saleItems);
 
-    // Create the sale using storage layer
-    const newSale = await storage.createSale(saleData, saleItems);
+    // Create the sale using the correct storage method
+    const newSale = await storage.createSaleWithItems(saleData, saleItems);
 
     // Return success response
     const responseData = {
