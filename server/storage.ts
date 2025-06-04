@@ -975,8 +975,8 @@ export const storage = {
         // Insert sale items and update stock
         const insertSaleItem = sqlite.prepare(`
           INSERT INTO sale_items (
-            sale_id, product_id, quantity, unit_price, subtotal
-          ) VALUES (?, ?, ?, ?, ?)
+            sale_id, product_id, quantity, unit_price, price, subtotal, total
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `);
 
         const updateStock = sqlite.prepare(`
@@ -992,7 +992,9 @@ export const storage = {
             item.productId,
             item.quantity,
             item.unitPrice.toString(),
-            item.subtotal.toString()
+            (item.price || item.unitPrice).toString(),
+            item.subtotal.toString(),
+            (item.total || item.subtotal).toString()
           );
 
           // Update product stock
