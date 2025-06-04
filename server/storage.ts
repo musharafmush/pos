@@ -459,9 +459,9 @@ export const storage = {
       console.log('Sale items:', items);
 
       // Start a transaction
-      const result = await db.transaction(async (tx) => {
+      const result = db.transaction((tx) => {
         // Insert the sale
-        const [newSale] = await tx.insert(sales).values({
+        const newSale = tx.insert(sales).values({
           orderNumber: saleData.orderNumber || `SALE-${Date.now()}`,
           customerId: saleData.customerId || null,
           userId: saleData.userId,
@@ -470,27 +470,28 @@ export const storage = {
           discount: (saleData.discount || 0).toString(),
           paymentMethod: saleData.paymentMethod || 'cash',
           status: saleData.status || 'completed'
-        }).returning();
+        }).returning().get();
 
         console.log('Created sale:', newSale);
 
         // Insert sale items and update stock
         for (const item of items) {
           // Insert sale item
-          await tx.insert(saleItems).values({
+          tx.insert(saleItems).values({
             saleId: newSale.id,
             productId: item.productId,
             quantity: item.quantity,
             unitPrice: item.unitPrice.toString(),
             subtotal: item.subtotal.toString()
-          });
+          }).run();
 
           // Update product stock
-          await tx.update(products)
+          tx.update(products)
             .set({
               stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`
             })
-            .where(eq(products.id, item.productId));
+            .where(eq(products.id, item.productId))
+            .run();
         }
 
         return newSale;
@@ -920,38 +921,39 @@ export const storage = {
       console.log('Sale items:', items);
 
       // Start a transaction
-      const result = await db.transaction(async (tx) => {
+      const result = db.transaction((tx) => {
         // Insert the sale
-        const [newSale] = await tx.insert(sales).values({
+        const newSale = tx.insert(sales).values({
           orderNumber: saleData.orderNumber,
           customerId: saleData.customerId,
           userId: saleData.userId,
-          total: saleData.total,
-          tax: saleData.tax,
-          discount: saleData.discount,
+          total: saleData.total.toString(),
+          tax: (saleData.tax || 0).toString(),
+          discount: (saleData.discount || 0).toString(),
           paymentMethod: saleData.paymentMethod,
           status: saleData.status
-        }).returning();
+        }).returning().get();
 
         console.log('Created sale:', newSale);
 
         // Insert sale items and update stock
         for (const item of items) {
           // Insert sale item
-          await tx.insert(saleItems).values({
+          tx.insert(saleItems).values({
             saleId: newSale.id,
             productId: item.productId,
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            subtotal: item.subtotal
-          });
+            unitPrice: item.unitPrice.toString(),
+            subtotal: item.subtotal.toString()
+          }).run();
 
           // Update product stock
-          await tx.update(products)
+          tx.update(products)
             .set({
               stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`
             })
-            .where(eq(products.id, item.productId));
+            .where(eq(products.id, item.productId))
+            .run();
         }
 
         return newSale;
