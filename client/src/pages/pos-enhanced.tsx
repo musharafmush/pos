@@ -62,7 +62,7 @@ interface CartItem extends Product {
   total: number;
 }
 
-function POSEnhanced() {
+export default function POSEnhanced() {
   const [searchTerm, setSearchTerm] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -1035,4 +1035,4 @@ function POSEnhanced() {
   );
 }
 
-export default POSEnhanced;
+
