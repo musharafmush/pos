@@ -65,6 +65,25 @@ export default function SalesDashboard() {
     status: 'completed'
   });
 
+  // Product CRUD state
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [isEditProductDialogOpen, setIsEditProductDialogOpen] = useState(false);
+  const [isDeleteProductDialogOpen, setIsDeleteProductDialogOpen] = useState(false);
+  const [isCreateProductDialogOpen, setIsCreateProductDialogOpen] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [productForm, setProductForm] = useState({
+    name: '',
+    sku: '',
+    price: '',
+    cost: '',
+    categoryId: '',
+    stockQuantity: '',
+    alertThreshold: '5',
+    active: true,
+    description: '',
+    barcode: ''
+  });
+
   // Fetch sales data
   const { data: salesData, isLoading: salesLoading, error: salesError, refetch: refetchSales } = useQuery({
     queryKey: ['/api/sales'],
@@ -219,6 +238,135 @@ export default function SalesDashboard() {
     setIsCreateDialogOpen(true);
   };
 
+  // Product CRUD Operations
+  const handleCreateProduct = async (productData: any) => {
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...productData,
+          price: parseFloat(productData.price || '0'),
+          cost: parseFloat(productData.cost || '0'),
+          categoryId: parseInt(productData.categoryId || '1'),
+          stockQuantity: parseInt(productData.stockQuantity || '0'),
+          alertThreshold: parseInt(productData.alertThreshold || '5'),
+          active: productData.active !== false
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create product');
+      }
+
+      const result = await response.json();
+      console.log('Product created successfully:', result);
+      refetchProducts();
+      setIsCreateProductDialogOpen(false);
+      resetProductForm();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      alert('Failed to create product. Please try again.');
+    }
+  };
+
+  const handleUpdateProduct = async (productId: number, productData: any) => {
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...productData,
+          price: parseFloat(productData.price || '0'),
+          cost: parseFloat(productData.cost || '0'),
+          categoryId: parseInt(productData.categoryId || '1'),
+          stockQuantity: parseInt(productData.stockQuantity || '0'),
+          alertThreshold: parseInt(productData.alertThreshold || '5')
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update product');
+      }
+
+      const result = await response.json();
+      console.log('Product updated successfully:', result);
+      refetchProducts();
+      setIsEditProductDialogOpen(false);
+      setSelectedProduct(null);
+      resetProductForm();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Failed to update product. Please try again.');
+    }
+  };
+
+  const handleDeleteProduct = async (productId: number) => {
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete product');
+      }
+
+      console.log('Product deleted successfully');
+      refetchProducts();
+      setIsDeleteProductDialogOpen(false);
+      setSelectedProduct(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Failed to delete product. Please try again.');
+    }
+  };
+
+  const resetProductForm = () => {
+    setProductForm({
+      name: '',
+      sku: '',
+      price: '',
+      cost: '',
+      categoryId: '',
+      stockQuantity: '',
+      alertThreshold: '5',
+      active: true,
+      description: '',
+      barcode: ''
+    });
+  };
+
+  const openEditProductDialog = (product: any) => {
+    setSelectedProduct(product);
+    setProductForm({
+      name: product.name || '',
+      sku: product.sku || '',
+      price: product.price?.toString() || '',
+      cost: product.cost?.toString() || '',
+      categoryId: product.categoryId?.toString() || '',
+      stockQuantity: product.stockQuantity?.toString() || '',
+      alertThreshold: product.alertThreshold?.toString() || '5',
+      active: product.active !== false,
+      description: product.description || '',
+      barcode: product.barcode || ''
+    });
+    setIsEditProductDialogOpen(true);
+  };
+
+  const openDeleteProductDialog = (product: any) => {
+    setSelectedProduct(product);
+    setIsDeleteProductDialogOpen(true);
+  };
+
+  const openCreateProductDialog = () => {
+    resetProductForm();
+    setIsCreateProductDialogOpen(true);
+  };
+
   // Fetch sales chart data
   const { data: salesChartData, isLoading: chartLoading } = useQuery({
     queryKey: ['/api/dashboard/sales-chart', timeRange],
@@ -258,6 +406,46 @@ export default function SalesDashboard() {
     retry: 2,
     retryDelay: 1000
   });
+
+  // Fetch all products for selling products management
+  const { data: allProducts, isLoading: allProductsLoading, refetch: refetchProducts } = useQuery({
+    queryKey: ['/api/products'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/products');
+        if (!response.ok) throw new Error('Failed to fetch products');
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
+  });
+
+  // Fetch categories for product form
+  const { data: categories } = useQuery({
+    queryKey: ['/api/categories'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/categories');
+        if (!response.ok) throw new Error('Failed to fetch categories');
+        return response.json();
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        return [];
+      }
+    }
+  });
+
+  // Filter products based on search term
+  const filteredProducts = allProducts?.filter((product: any) =>
+    product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+    product.sku.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+    product.category?.name.toLowerCase().includes(productSearchTerm.toLowerCase())
+  ) || [];
 
   // Process chart data with better error handling
   const chartData = salesChartData?.map((item: any) => {
@@ -449,6 +637,7 @@ export default function SalesDashboard() {
             <TabsTrigger value="trends">Sales Trends</TabsTrigger>
             <TabsTrigger value="products">Product Performance</TabsTrigger>
             <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
+            <TabsTrigger value="selling-products">Selling Products</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -702,6 +891,105 @@ export default function SalesDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Selling Products CRUD Tab */}
+          <TabsContent value="selling-products" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Selling Products Management</CardTitle>
+                    <CardDescription>Manage products for sales operations</CardDescription>
+                  </div>
+                  <Button
+                    onClick={openCreateProductDialog}
+                    className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+                  >
+                    <ShoppingCartIcon className="h-4 w-4" />
+                    <span>Add Product</span>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <Input
+                    placeholder="Search products by name, SKU, or category..."
+                    value={productSearchTerm}
+                    onChange={(e) => setProductSearchTerm(e.target.value)}
+                    className="max-w-md"
+                  />
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product Name</TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                        <TableHead className="text-right">Stock</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProducts?.map((product: any) => (
+                        <TableRow key={product.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                                <ShoppingCartIcon className="h-4 w-4 text-gray-500" />
+                              </div>
+                              <span>{product.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{product.sku}</TableCell>
+                          <TableCell>{product.category?.name || "Uncategorized"}</TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(parseFloat(product.price || 0))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className={`${product.stockQuantity <= product.alertThreshold ? 'text-red-600 font-semibold' : ''}`}>
+                              {product.stockQuantity}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              product.active 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {product.active ? 'Active' : 'Inactive'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditProductDialog(product)}
+                                className="h-8 px-2 text-blue-600 hover:text-blue-800"
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openDeleteProductDialog(product)}
+                                className="h-8 px-2 text-red-600 hover:text-red-800"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Create Sale Dialog */}
@@ -904,6 +1192,295 @@ export default function SalesDashboard() {
                   className="bg-red-600 hover:bg-red-700"
                 >
                   Delete Sale
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Product Dialog */}
+        {isCreateProductDialogOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Product Name *</label>
+                  <Input
+                    type="text"
+                    value={productForm.name}
+                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                    placeholder="Enter product name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">SKU *</label>
+                  <Input
+                    type="text"
+                    value={productForm.sku}
+                    onChange={(e) => setProductForm({...productForm, sku: e.target.value})}
+                    placeholder="Enter SKU"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Selling Price *</label>
+                  <Input
+                    type="number"
+                    value={productForm.price}
+                    onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Cost Price</label>
+                  <Input
+                    type="number"
+                    value={productForm.cost}
+                    onChange={(e) => setProductForm({...productForm, cost: e.target.value})}
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Category *</label>
+                  <Select
+                    value={productForm.categoryId}
+                    onValueChange={(value) => setProductForm({...productForm, categoryId: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories?.map((category: any) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Stock Quantity</label>
+                  <Input
+                    type="number"
+                    value={productForm.stockQuantity}
+                    onChange={(e) => setProductForm({...productForm, stockQuantity: e.target.value})}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Alert Threshold</label>
+                  <Input
+                    type="number"
+                    value={productForm.alertThreshold}
+                    onChange={(e) => setProductForm({...productForm, alertThreshold: e.target.value})}
+                    placeholder="5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Barcode</label>
+                  <Input
+                    type="text"
+                    value={productForm.barcode}
+                    onChange={(e) => setProductForm({...productForm, barcode: e.target.value})}
+                    placeholder="Enter barcode"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <Input
+                    type="text"
+                    value={productForm.description}
+                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                    placeholder="Product description"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={productForm.active}
+                      onChange={(e) => setProductForm({...productForm, active: e.target.checked})}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium">Active Product</span>
+                  </label>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateProductDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleCreateProduct(productForm)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Create Product
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Product Dialog */}
+        {isEditProductDialogOpen && selectedProduct && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Edit Product</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Product Name *</label>
+                  <Input
+                    type="text"
+                    value={productForm.name}
+                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                    placeholder="Enter product name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">SKU *</label>
+                  <Input
+                    type="text"
+                    value={productForm.sku}
+                    onChange={(e) => setProductForm({...productForm, sku: e.target.value})}
+                    placeholder="Enter SKU"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Selling Price *</label>
+                  <Input
+                    type="number"
+                    value={productForm.price}
+                    onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Cost Price</label>
+                  <Input
+                    type="number"
+                    value={productForm.cost}
+                    onChange={(e) => setProductForm({...productForm, cost: e.target.value})}
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Category *</label>
+                  <Select
+                    value={productForm.categoryId}
+                    onValueChange={(value) => setProductForm({...productForm, categoryId: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories?.map((category: any) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Stock Quantity</label>
+                  <Input
+                    type="number"
+                    value={productForm.stockQuantity}
+                    onChange={(e) => setProductForm({...productForm, stockQuantity: e.target.value})}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Alert Threshold</label>
+                  <Input
+                    type="number"
+                    value={productForm.alertThreshold}
+                    onChange={(e) => setProductForm({...productForm, alertThreshold: e.target.value})}
+                    placeholder="5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Barcode</label>
+                  <Input
+                    type="text"
+                    value={productForm.barcode}
+                    onChange={(e) => setProductForm({...productForm, barcode: e.target.value})}
+                    placeholder="Enter barcode"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <Input
+                    type="text"
+                    value={productForm.description}
+                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                    placeholder="Product description"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={productForm.active}
+                      onChange={(e) => setProductForm({...productForm, active: e.target.checked})}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium">Active Product</span>
+                  </label>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditProductDialogOpen(false);
+                    setSelectedProduct(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleUpdateProduct(selectedProduct.id, productForm)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Update Product
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Product Confirmation Dialog */}
+        {isDeleteProductDialogOpen && selectedProduct && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Delete Product</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to delete "{selectedProduct.name}"? 
+                This action cannot be undone and may affect existing sales records.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteProductDialogOpen(false);
+                    setSelectedProduct(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleDeleteProduct(selectedProduct.id)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete Product
                 </Button>
               </div>
             </div>
