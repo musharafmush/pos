@@ -19,17 +19,24 @@ import {
   TrendingUp,
   User,
   Phone,
+  MapPin,
+  Calendar,
+  Clock,
   Plus,
   Minus,
   Trash2,
   CreditCard,
   Receipt,
   UserPlus,
+  Calculator,
   RotateCcw,
+  HelpCircle,
+  Archive,
+  Percent,
   Monitor,
   Zap,
-  Package,
-  DollarSign
+  DollarSign,
+  Package
 } from "lucide-react";
 
 interface Product {
@@ -77,8 +84,8 @@ export default function POSEnhanced() {
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch products
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  // Fetch products with error handling
+  const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
       try {
@@ -99,14 +106,15 @@ export default function POSEnhanced() {
     },
   });
 
-  // Fetch customers
-  const { data: customers = [] } = useQuery({
+  // Fetch customers with error handling
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
       try {
         const response = await fetch("/api/customers");
         if (!response.ok) throw new Error("Failed to fetch customers");
-        return await response.json();
+        const data = await response.json();
+        return data;
       } catch (error) {
         console.error("Error fetching customers:", error);
         return [];
@@ -161,6 +169,7 @@ export default function POSEnhanced() {
       description: `${product.name} added successfully`,
     });
 
+    // Clear search after adding
     setSearchTerm("");
   };
 
@@ -242,9 +251,14 @@ export default function POSEnhanced() {
       if (!response.ok) throw new Error("Failed to create customer");
       
       const newCustomer = await response.json();
+
+      // Refresh customers data
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      
+      // Select the newly created customer
       setSelectedCustomer(newCustomer);
       
+      // Reset form and close dialog
       setNewCustomerName("");
       setNewCustomerPhone("");
       setNewCustomerEmail("");
@@ -320,6 +334,7 @@ export default function POSEnhanced() {
         description: `Sale processed successfully for ${formatCurrency(total)}`,
       });
 
+      // Reset everything
       clearCart();
       setShowPaymentDialog(false);
       setBillNumber(`POS${Date.now()}`);
@@ -364,44 +379,42 @@ export default function POSEnhanced() {
 
   return (
     <DashboardLayout>
-      <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 text-white overflow-hidden">
+      <div className="h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800 text-white overflow-hidden">
         {/* Top Header */}
-        <div className="bg-slate-800 border-b border-slate-600 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-blue-600 text-white p-2 rounded-lg">
-                <Monitor className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Enhanced POS System</h1>
-                <p className="text-slate-300 text-sm">Professional Point of Sale</p>
-              </div>
-              
-              <div className="flex items-center space-x-2 ml-8">
-                <Badge className="bg-green-600 text-white border-green-500">
-                  <Zap className="w-3 h-3 mr-1" />
-                  Online
-                </Badge>
-                <Badge className="bg-blue-600 text-white border-blue-500">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  Live
-                </Badge>
-              </div>
+        <div className="bg-blue-600 px-6 py-4 flex items-center justify-between border-b border-blue-500">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white text-blue-600 p-2 rounded-lg">
+              <Monitor className="h-6 w-6" />
             </div>
+            <div>
+              <h1 className="text-xl font-bold">Enhanced POS System</h1>
+              <p className="text-blue-100 text-sm">Professional Point of Sale</p>
+            </div>
+            
+            <div className="flex items-center space-x-2 ml-8">
+              <Badge className="bg-green-500 text-white">
+                <Zap className="w-3 h-3 mr-1" />
+                Online
+              </Badge>
+              <Badge className="bg-blue-500 text-white">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                Live
+              </Badge>
+            </div>
+          </div>
 
-            <div className="flex items-center space-x-6">
-              <div className="text-right">
-                <div className="text-sm text-slate-300">Bill #</div>
-                <div className="font-mono font-bold text-white">{billNumber}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-slate-300">Date & Time</div>
-                <div className="font-mono text-sm text-white">{currentDate} • {currentTime}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-slate-300">Total Amount</div>
-                <div className="text-2xl font-bold text-green-400">{formatCurrency(total)}</div>
-              </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-right">
+              <div className="text-sm text-blue-100">Bill #</div>
+              <div className="font-mono font-bold">{billNumber}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-blue-100">Date & Time</div>
+              <div className="font-mono text-sm">{currentDate} • {currentTime}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-blue-100">Total Amount</div>
+              <div className="text-2xl font-bold text-green-300">{formatCurrency(total)}</div>
             </div>
           </div>
         </div>
@@ -479,7 +492,7 @@ export default function POSEnhanced() {
               </Button>
               <Button 
                 size="sm" 
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-purple-600 hover:bg-purple-700"
                 onClick={() => setShowNewCustomerDialog(true)}
               >
                 <UserPlus className="h-3 w-3 mr-1" />
@@ -621,6 +634,14 @@ export default function POSEnhanced() {
                   <Trash2 className="h-4 w-4 mr-2" />
                   Clear (F11)
                 </Button>
+                <Button variant="outline">
+                  <Archive className="h-4 w-4 mr-2" />
+                  Hold
+                </Button>
+                <Button variant="outline">
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Recall
+                </Button>
               </div>
               
               <div className="flex items-center space-x-4 text-sm">
@@ -634,18 +655,18 @@ export default function POSEnhanced() {
           </div>
 
           {/* Bill Summary Section */}
-          <div className="w-80 bg-slate-800 text-white p-6">
-            <div className="bg-slate-700 p-4 rounded-lg mb-6">
+          <div className="w-80 bg-gradient-to-b from-purple-600 to-purple-800 text-white p-6">
+            <div className="bg-purple-700 p-4 rounded-lg mb-6">
               <div className="flex items-center mb-2">
                 <Receipt className="h-5 w-5 mr-2" />
                 <h2 className="text-lg font-bold">Bill Summary</h2>
               </div>
-              <div className="text-slate-300 text-sm">#{billNumber}</div>
-              <div className="text-slate-300 text-sm">{currentDate}</div>
+              <div className="text-purple-200 text-sm">#{billNumber}</div>
+              <div className="text-purple-200 text-sm">{currentDate}</div>
             </div>
 
             {/* Calculations */}
-            <div className="bg-slate-700 p-4 rounded-lg mb-4">
+            <div className="bg-purple-700 p-4 rounded-lg mb-4">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Items Count</span>
@@ -659,7 +680,7 @@ export default function POSEnhanced() {
                   <span>Gross Amount</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
-                <Separator className="bg-slate-600" />
+                <Separator className="bg-purple-600" />
                 <div className="flex justify-between items-center">
                   <span>Discount</span>
                   <div className="flex items-center space-x-2">
@@ -690,7 +711,7 @@ export default function POSEnhanced() {
             </div>
 
             {/* Net Amount */}
-            <div className="bg-yellow-600 text-black p-4 rounded-lg mb-6">
+            <div className="bg-yellow-500 text-black p-4 rounded-lg mb-6">
               <div className="text-center">
                 <div className="text-sm font-medium">Net Amount Payable</div>
                 <div className="text-3xl font-bold mt-2">{formatCurrency(total)}</div>
@@ -710,7 +731,7 @@ export default function POSEnhanced() {
 
               <Button
                 variant="outline" 
-                className="w-full bg-red-600 hover:bg-red-700 text-white border-red-500"
+                className="w-full bg-red-500 hover:bg-red-600 text-white border-red-400"
                 onClick={clearCart}
                 disabled={cart.length === 0}
               >
@@ -719,7 +740,7 @@ export default function POSEnhanced() {
 
               <Button
                 variant="outline"
-                className="w-full border-slate-500 text-slate-300 hover:bg-slate-700"
+                className="w-full border-white text-white hover:bg-white hover:text-purple-800"
               >
                 <Receipt className="h-4 w-4 mr-2" />
                 Print Receipt
@@ -912,14 +933,24 @@ export default function POSEnhanced() {
           </DialogContent>
         </Dialog>
 
-        {/* Loading State */}
-        {productsLoading && (
+        {/* Loading States */}
+        {(productsLoading || customersLoading) && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg">
               <div className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 <span>Loading...</span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {productsError && (
+          <div className="absolute top-4 right-4 bg-red-500 text-white p-4 rounded-lg z-50">
+            <div className="flex items-center space-x-2">
+              <HelpCircle className="h-4 w-4" />
+              <span>Failed to load products</span>
             </div>
           </div>
         )}
