@@ -304,20 +304,73 @@ function POSEnhanced() {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Customer</label>
-              <div className="font-semibold">{selectedCustomer?.name || "Walk-in Customer"}</div>
+              <Select 
+                value={selectedCustomer?.id?.toString() || ""} 
+                onValueChange={(value) => {
+                  if (value === "walk-in") {
+                    setSelectedCustomer(null);
+                  } else {
+                    const customer = customers.find(c => c.id.toString() === value);
+                    setSelectedCustomer(customer || null);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Customer">
+                    {selectedCustomer?.name || "Walk-in Customer"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="walk-in">
+                    <div className="flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      Walk-in Customer
+                    </div>
+                  </SelectItem>
+                  {customers?.map((customer: Customer) => (
+                    <SelectItem key={customer.id} value={customer.id.toString()}>
+                      <div className="flex items-center justify-between w-full">
+                        <div>
+                          <div className="font-medium">{customer.name}</div>
+                          {customer.phone && (
+                            <div className="text-sm text-gray-500">{customer.phone}</div>
+                          )}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Phone</label>
-              <div>{selectedCustomer?.phone || "N/A"}</div>
+              <div className="flex items-center">
+                {selectedCustomer?.phone ? (
+                  <>
+                    <Phone className="h-3 w-3 mr-1 text-gray-500" />
+                    {selectedCustomer.phone}
+                  </>
+                ) : (
+                  "N/A"
+                )}
+              </div>
             </div>
             <div className="flex space-x-2">
               <Button 
                 size="sm" 
-                className="bg-purple-600 hover:bg-purple-700"
+                variant="outline"
+                className="border-green-300 text-green-700 hover:bg-green-50"
                 onClick={() => setSelectedCustomer(null)}
               >
+                <RotateCcw className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+              <Button 
+                size="sm" 
+                className="bg-purple-600 hover:bg-purple-700"
+              >
                 <UserPlus className="h-3 w-3 mr-1" />
-                Select Customer
+                New Customer
               </Button>
             </div>
           </div>
