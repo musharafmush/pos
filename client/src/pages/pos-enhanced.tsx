@@ -1415,8 +1415,9 @@ export default function POSEnhanced() {
             </div>
           </div>
         )}
-      </div>
+        </div>
       </DashboardLayout>
+      )}
     </div>
   );
 }
