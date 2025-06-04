@@ -207,16 +207,18 @@ export default function POSEnhanced() {
   };
 
   const clearCart = () => {
-    if (cart.length === 0) return;
-
     setCart([]);
     setSelectedCustomer(null);
     setDiscount(0);
     setAmountPaid("");
-    toast({
-      title: "Cart Cleared",
-      description: "All items have been removed from cart",
-    });
+    setPaymentMethod("cash");
+    
+    if (cart.length > 0) {
+      toast({
+        title: "Cart Cleared",
+        description: "All items have been removed from cart",
+      });
+    }
   };
 
   // Calculate totals
@@ -319,19 +321,27 @@ export default function POSEnhanced() {
 
       const saleData = {
         customerId: selectedCustomer?.id || null,
+        customerName: selectedCustomer?.name || "Walk-in Customer",
         items: cart.map(item => ({
           productId: item.id,
           quantity: item.quantity,
-          unitPrice: parseFloat(item.price),
-          subtotal: item.total,
+          unitPrice: parseFloat(item.price).toString(),
+          subtotal: item.total.toString(),
+          price: parseFloat(item.price).toString(),
+          total: item.total.toString()
         })),
-        subtotal: Math.round(subtotal * 100) / 100,
-        discount: Math.round(discountAmount * 100) / 100,
-        tax: Math.round(taxAmount * 100) / 100,
-        total: Math.round(total * 100) / 100,
+        subtotal: subtotal.toFixed(2),
+        discount: discountAmount.toFixed(2),
+        discountPercent: discount,
+        tax: taxAmount.toFixed(2),
+        taxRate: taxRate,
+        total: total.toFixed(2),
         paymentMethod,
-        amountPaid: Math.round(paidAmount * 100) / 100,
+        amountPaid: paidAmount.toFixed(2),
+        change: (paidAmount - total).toFixed(2),
         notes: `Bill: ${billNumber}`,
+        billNumber: billNumber,
+        status: "completed"
       };
 
       console.log("Processing sale with data:", saleData);
@@ -345,31 +355,27 @@ export default function POSEnhanced() {
         body: JSON.stringify(saleData),
       });
 
-      const responseText = await response.text();
-      console.log("Sale response:", responseText);
-
       if (!response.ok) {
-        let errorMessage = "Failed to process sale";
+        const errorText = await response.text();
+        console.error("Sale API error:", errorText);
+        
+        let errorMessage = "Transaction failed";
         try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || "Server error occurred";
         } catch (e) {
-          errorMessage = responseText || errorMessage;
+          errorMessage = errorText || "Unknown server error";
         }
+        
         throw new Error(errorMessage);
       }
 
-      let saleResult;
-      try {
-        saleResult = JSON.parse(responseText);
-      } catch (e) {
-        console.warn("Could not parse sale response as JSON:", responseText);
-        saleResult = { id: Date.now() };
-      }
+      const saleResult = await response.json();
+      console.log("Sale completed successfully:", saleResult);
 
       toast({
         title: "✅ Sale Completed!",
-        description: `Transaction successful for ${formatCurrency(total)}. Change: ${formatCurrency(paidAmount - total)}`,
+        description: `Transaction successful for ${formatCurrency(total)}${paidAmount > total ? `. Change: ${formatCurrency(paidAmount - total)}` : ''}`,
         variant: "default",
       });
 
@@ -386,15 +392,13 @@ export default function POSEnhanced() {
     } catch (error) {
       console.error("Sale processing error:", error);
 
-      let errorMessage = "Please try again or contact support";
+      let errorMessage = "Transaction failed. Please try again.";
       if (error instanceof Error) {
         if (error.message.includes("stock")) {
           errorMessage = error.message;
-        } else if (error.message.includes("network") || error.message.includes("fetch")) {
-          errorMessage = "Network error. Please check your connection and try again.";
-        } else if (error.message.includes("server")) {
-          errorMessage = "Server error. Please try again in a moment.";
-        } else if (error.message.length > 0 && error.message.length < 100) {
+        } else if (error.message.includes("Network") || error.message.includes("fetch")) {
+          errorMessage = "Network error. Please check your connection.";
+        } else if (error.message.length > 0 && error.message.length < 200) {
           errorMessage = error.message;
         }
       }
