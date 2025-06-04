@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -613,7 +612,6 @@ export default function POSEnhanced() {
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
-      <DashboardLayout>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900">
           {/* Modern Header */}
           <div className="bg-white border-b border-gray-200 shadow-sm">
@@ -1539,7 +1537,6 @@ export default function POSEnhanced() {
             </DialogContent>
           </Dialog>
         </div>
-      </DashboardLayout>
     </div>
   );
 }
