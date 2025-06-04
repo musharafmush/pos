@@ -17,7 +17,7 @@ const isAuthenticated = (req: any, res: any, next: any) => {
     user: req.user,
     session: req.session?.passport
   });
-  
+
   if (req.isAuthenticated()) {
     return next();
   }
@@ -30,11 +30,11 @@ const hasRole = (roles: string[]) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
     }
-    
+
     return next();
   };
 };
@@ -68,33 +68,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (usernameOrEmail, password, done) => {
       try {
         console.log('Login attempt with:', usernameOrEmail);
-        
+
         // Find user by either username or email
         const user = await storage.getUserByUsernameOrEmail(usernameOrEmail);
-        
+
         if (!user) {
           console.log('User not found for:', usernameOrEmail);
           return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
         }
-        
+
         console.log('User found:', user.id, user.email);
-        
+
         // Check if user is active
         if (!user.active) {
           return done(null, false, { message: 'Account is disabled. Please contact an administrator.' });
         }
-        
+
         // Verify password
         try {
           console.log('Attempting password verification');
           const isValidPassword = await bcrypt.compare(password, user.password);
           console.log('Password validation result:', isValidPassword);
-          
+
           if (!isValidPassword) {
             console.log('Password verification failed');
             return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
           }
-          
+
           console.log('Authentication successful, user logged in');
           return done(null, user);
         } catch (error) {
@@ -124,44 +124,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post('/api/auth/login', (req, res, next) => {
     console.log('Login request received:', req.body.usernameOrEmail);
-    
+
     passport.authenticate('local', (err: Error | null, user: any, info: { message: string } | undefined) => {
       if (err) {
         console.error('Login error:', err);
         return res.status(500).json({ message: 'Internal server error during login' });
       }
-      
+
       if (!user) {
         console.log('Authentication failed:', info?.message);
         return res.status(401).json({ message: info?.message || 'Invalid username or password' });
       }
-      
+
       console.log('Authentication successful for user:', user.id);
-      
+
       // Log the user in
       req.login(user, (loginErr) => {
         if (loginErr) {
           console.error('Session login error:', loginErr);
           return res.status(500).json({ message: 'Error establishing session' });
         }
-        
+
         console.log('Session created successfully');
-        
+
         // Remove password from response
         const userResponse = { ...user };
         if (userResponse.password) delete userResponse.password;
-        
+
         return res.json({ user: userResponse });
       });
     })(req, res, next);
   });
-  
+
   app.post('/api/auth/register', async (req, res) => {
     try {
       // Validate user data with more specific error messages
       try {
         const userData = schema.userInsertSchema.parse(req.body);
-        
+
         // If username is provided, check if it already exists
         if (userData.username) {
           const existingUsername = await storage.getUserByUsername(userData.username);
@@ -169,16 +169,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: 'Username already exists' });
           }
         }
-        
+
         // Always check if email already exists since it's required now
         const existingEmail = await storage.getUserByEmail(userData.email);
         if (existingEmail) {
           return res.status(400).json({ message: 'Email already exists' });
         }
-        
+
         // Hash password
         const hashedPassword = await bcrypt.hash(userData.password, 10);
-        
+
         // Set default values for new user
         const userToCreate = {
           ...userData,
@@ -187,23 +187,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           active: true, // Account active by default
           image: userData.image || null
         };
-        
+
         // Create user
         const newUser = await storage.createUser(userToCreate);
-        
+
         // Auto login after registration
         req.login(newUser, (err) => {
           if (err) {
             console.error('Error logging in after registration:', err);
             return res.status(500).json({ message: 'Account created but error logging in automatically. Please login manually.' });
           }
-          
+
           // Remove password from response
           const userResponse = { ...newUser };
           if (userResponse.password) {
             delete userResponse.password;
           }
-          
+
           res.status(201).json({ user: userResponse });
         });
       } catch (zodError) {
@@ -237,20 +237,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/user', (req, res) => {
     console.log('User session check');
-    
+
     if (!req.isAuthenticated() || !req.user) {
       console.log('User not authenticated');
       return res.status(401).json({ message: "Not authenticated" });
     }
-    
+
     console.log('User authenticated:', req.user.id);
     const user = { ...req.user as any };
-    
+
     // Safety check to ensure password is never sent to client
     if (user.password) {
       delete user.password;
     }
-    
+
     res.json({ user });
   });
 
@@ -269,11 +269,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const category = await storage.getCategoryById(id);
-      
+
       if (!category) {
         return res.status(404).json({ message: 'Category not found' });
       }
-      
+
       res.json(category);
     } catch (error) {
       console.error('Error fetching category:', error);
@@ -300,11 +300,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const categoryData = schema.categoryInsertSchema.parse(req.body);
       const category = await storage.updateCategory(id, categoryData);
-      
+
       if (!category) {
         return res.status(404).json({ message: 'Category not found' });
       }
-      
+
       res.json(category);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -319,11 +319,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteCategory(id);
-      
+
       if (!deleted) {
         return res.status(404).json({ message: 'Category not found' });
       }
-      
+
       res.json({ message: 'Category deleted successfully' });
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -363,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   // Purchase recommendations API
   app.get('/api/purchase-recommendations', isAuthenticated, async (req, res) => {
     try {
@@ -379,11 +379,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const product = await storage.getProductById(id);
-      
+
       if (!product) {
         return res.status(404).json({ message: 'Product not found' });
       }
-      
+
       res.json(product);
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -394,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/products', isAuthenticated, async (req, res) => {
     try {
       console.log('Product creation request body:', req.body);
-      
+
       // Ensure required fields have default values if missing
       const requestData = {
         ...req.body,
@@ -411,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         categoryId: parseInt(req.body.categoryId) || 1,
         active: req.body.active !== false,
         barcode: req.body.barcode || req.body.eanCode || '',
-        
+
         // GST and tax information
         hsnCode: req.body.hsnCode || '',
         gstCode: req.body.gstCode || '',
@@ -421,34 +421,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cessRate: req.body.cessRate || '0',
         taxCalculationMethod: req.body.taxCalculationMethod || 'exclusive'
       };
-      
+
       console.log('Processed product data:', requestData);
-      
+
       // Validate required fields
       if (!requestData.name) {
         return res.status(400).json({ 
           message: 'Product name is required' 
         });
       }
-      
+
       if (!requestData.sku) {
         return res.status(400).json({ 
           message: 'Product SKU/Item Code is required' 
         });
       }
-      
+
       if (!requestData.price || requestData.price === '0') {
         return res.status(400).json({ 
           message: 'Product price is required and must be greater than 0' 
         });
       }
-      
+
       if (!requestData.categoryId) {
         return res.status(400).json({ 
           message: 'Category is required' 
         });
       }
-      
+
       // Check if SKU already exists
       const existingProduct = await storage.getProductBySku(requestData.sku);
       if (existingProduct) {
@@ -456,13 +456,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: 'A product with this SKU/Item Code already exists' 
         });
       }
-      
+
       const productData = schema.productInsertSchema.parse(requestData);
       console.log('Validated product data:', productData);
-      
+
       const product = await storage.createProduct(productData);
       console.log('Created product successfully:', product.id);
-      
+
       res.status(201).json({
         ...product,
         message: 'Product created successfully'
@@ -496,11 +496,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const productData = schema.productInsertSchema.parse(req.body);
       const product = await storage.updateProduct(id, productData);
-      
+
       if (!product) {
         return res.status(404).json({ message: 'Product not found' });
       }
-      
+
       res.json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -516,14 +516,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const productData = req.body; // For PATCH, we accept partial updates
       console.log('PATCH request received for product:', id, 'with data:', productData);
-      
+
       const product = await storage.updateProduct(id, productData);
-      
+
       if (!product) {
         console.log('Product not found for ID:', id);
         return res.status(404).json({ message: 'Product not found' });
       }
-      
+
       console.log('Product updated successfully:', product);
       res.json(product);
     } catch (error) {
@@ -548,21 +548,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const force = req.query.force === 'true';
-      
+
       // Check if product exists first
       const product = await storage.getProductById(id);
       if (!product) {
         return res.status(404).json({ message: 'Product not found' });
       }
-      
+
       // Attempt deletion
       try {
         const deleted = await storage.deleteProduct(id, force);
-        
+
         if (!deleted) {
           return res.status(404).json({ message: 'Product not found' });
         }
-        
+
         res.json({ 
           message: force 
             ? 'Product and all related records deleted successfully' 
@@ -570,7 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (deleteError: any) {
         console.error('Delete error:', deleteError);
-        
+
         if (deleteError.message === 'CONSTRAINT_ERROR' || deleteError.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
           const references = await storage.checkProductReferences(id);
           return res.status(400).json({ 
@@ -582,7 +582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             canForceDelete: true
           });
         }
-        
+
         throw deleteError;
       }
     } catch (error) {
@@ -592,40 +592,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sales API
-  app.post('/api/sales', isAuthenticated, async (req, res) => {
-    try {
-      const { items, ...saleData } = req.body;
-      
-      if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ message: 'Sale must have at least one item' });
-      }
-      
-      const parsedSaleData = {
-        customerId: saleData.customerId,
-        tax: parseFloat(saleData.tax || 0),
-        discount: parseFloat(saleData.discount || 0),
-        paymentMethod: saleData.paymentMethod,
-        status: saleData.status
-      };
+  // POST /api/sales - Create a new sale
+app.post("/api/sales", async (req, res) => {
+  try {
+    console.log("Processing sale request:", req.body);
 
-      const parsedItems = items.map(item => ({
-        productId: item.productId,
-        quantity: parseInt(item.quantity),
-        unitPrice: parseFloat(item.unitPrice)
-      }));
+    const {
+      customerId,
+      customerName,
+      items,
+      subtotal,
+      discount,
+      discountPercent,
+      tax,
+      taxRate,
+      total,
+      paymentMethod,
+      amountPaid,
+      change,
+      notes,
+      billNumber,
+      status
+    } = req.body;
 
-      const sale = await storage.createSale(
-        (req.user as any).id,
-        parsedItems,
-        parsedSaleData
-      );
-      
-      res.status(201).json(sale);
-    } catch (error) {
-      console.error('Error creating sale:', error);
-      res.status(500).json({ message: 'Internal server error' });
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Items are required for sale" });
     }
-  });
+
+    if (!total || parseFloat(total) <= 0) {
+      return res.status(400).json({ error: "Valid total amount is required" });
+    }
+
+    // Get database connection
+    const db = getDb();
+
+    // Validate all products exist and have sufficient stock before processing
+    const getProduct = db.prepare("SELECT id, name, stockQuantity FROM products WHERE id = ?");
+
+    for (const item of items) {
+      const product = getProduct.get(item.productId);
+      if (!product) {
+        return res.status(400).json({ error: `Product with ID ${item.productId} not found` });
+      }
+
+      if (product.stockQuantity < item.quantity) {
+        return res.status(400).json({ 
+          error: `Insufficient stock for ${product.name}. Available: ${product.stockQuantity}, Required: ${item.quantity}` 
+        });
+      }
+    }
+
+    // Create the sale record
+    const saleData = {
+      customerId: customerId || null,
+      customerName: customerName || "Walk-in Customer",
+      subtotal: parseFloat(subtotal || "0"),
+      discount: parseFloat(discount || "0"),
+      discountPercent: parseFloat(discountPercent || "0"),
+      tax: parseFloat(tax || "0"),
+      taxRate: parseFloat(taxRate || "18"),
+      total: parseFloat(total),
+      paymentMethod: paymentMethod || "cash",
+      amountPaid: parseFloat(amountPaid || total),
+      change: parseFloat(change || "0"),
+      notes: notes || "",
+      billNumber: billNumber || `SALE-${Date.now()}`,
+      status: status || "completed",
+      saleDate: new Date().toISOString()
+    };
+
+    console.log("Creating sale with data:", saleData);
+
+    // Insert sale record
+    const insertSaleQuery = `
+      INSERT INTO sales (
+        customerId, customerName, subtotal, discount, discountPercent,
+        tax, taxRate, total, paymentMethod, amountPaid, 
+        change, notes, billNumber, status, saleDate
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const saleResult = db.prepare(insertSaleQuery).run(
+      saleData.customerId,
+      saleData.customerName,
+      saleData.subtotal,
+      saleData.discount,
+      saleData.discountPercent,
+      saleData.tax,
+      saleData.taxRate,
+      saleData.total,
+      saleData.paymentMethod,
+      saleData.amountPaid,
+      saleData.change,
+      saleData.notes,
+      saleData.billNumber,
+      saleData.status,
+      saleData.saleDate
+    );
+
+    const saleId = saleResult.lastInsertRowid as number;
+    console.log("Created sale with ID:", saleId);
+
+    // Insert sale items and update stock
+    const insertSaleItemQuery = `
+      INSERT INTO sale_items (
+        saleId, productId, quantity, unitPrice, subtotal, price, total
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const insertSaleItem = db.prepare(insertSaleItemQuery);
+    const updateStock = db.prepare("UPDATE products SET stockQuantity = stockQuantity - ? WHERE id = ?");
+
+    for (const item of items) {
+      const quantity = parseInt(item.quantity);
+      const unitPrice = parseFloat(item.unitPrice || item.price || "0");
+      const itemTotal = parseFloat(item.total || item.subtotal || (quantity * unitPrice).toString());
+
+      // Insert sale item
+      insertSaleItem.run(
+        saleId,
+        item.productId,
+        quantity,
+        unitPrice,
+        itemTotal,
+        unitPrice,
+        itemTotal
+      );
+
+      // Update product stock
+      updateStock.run(quantity, item.productId);
+      console.log(`Updated stock for product ${item.productId}: -${quantity}`);
+    }
+
+    // Return success response
+    const responseData = {
+      id: saleId,
+      saleId: saleId,
+      billNumber: saleData.billNumber,
+      total: saleData.total,
+      change: saleData.change,
+      paymentMethod: saleData.paymentMethod,
+      status: "completed",
+      message: "Sale completed successfully",
+      timestamp: saleData.saleDate
+    };
+
+    console.log("Sale completed successfully:", responseData);
+    res.status(201).json(responseData);
+
+  } catch (error) {
+    console.error("Error creating sale:", error);
+
+    // Return detailed error information
+    const errorResponse = {
+      error: "Transaction failed",
+      message: error.message || "Internal server error occurred",
+      details: "Please check your connection and try again",
+      timestamp: new Date().toISOString()
+    };
+
+    res.status(500).json(errorResponse);
+  }
+});
 
   app.get('/api/sales', isAuthenticated, async (req, res) => {
     try {
@@ -635,7 +764,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
       const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const customerId = req.query.customerId ? parseInt(req.query.customerId as string) : undefined;
-      
+
       const sales = await storage.listSales(limit, offset, startDate, endDate, userId, customerId);
       res.json(sales);
     } catch (error) {
@@ -660,11 +789,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const sale = await storage.getSaleById(id);
-      
+
       if (!sale) {
         return res.status(404).json({ message: 'Sale not found' });
       }
-      
+
       res.json(sale);
     } catch (error) {
       console.error('Error fetching sale:', error);
@@ -676,27 +805,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/purchases', isAuthenticated, async (req, res) => {
     try {
       const { supplierId, items, ...purchaseData } = req.body;
-      
+
       if (!supplierId) {
         return res.status(400).json({ message: 'Supplier ID is required' });
       }
-      
+
       if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ message: 'Purchase must have at least one item' });
       }
-      
+
       const parsedItems = items.map(item => {
         // Ensure all values are valid numbers
         const ensureInt = (val: any) => {
           const num = parseInt(val);
           return isNaN(num) ? 0 : num;
         };
-        
+
         const ensureFloat = (val: any) => {
           const num = parseFloat(val);
           return isNaN(num) ? 0 : num;
         };
-        
+
         return {
           productId: ensureInt(item.productId),
           quantity: ensureInt(item.quantity),
@@ -707,17 +836,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ensure supplier ID is a valid number
       const suppId = parseInt(supplierId);
       const validSupplierId = isNaN(suppId) ? 1 : suppId;
-      
+
       console.log("Creating purchase with supplier ID:", validSupplierId);
       console.log("Parsed items:", JSON.stringify(parsedItems));
-      
+
       const purchase = await storage.createPurchase(
         (req.user as any).id,
         validSupplierId,
         parsedItems,
         purchaseData
       );
-      
+
       res.status(201).json(purchase);
     } catch (error) {
       console.error('Error creating purchase:', error);
@@ -729,7 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string || '20');
       const offset = parseInt(req.query.offset as string || '0');
-      
+
       // Use direct DB query to avoid the complex ORM issues
       const result = await db.query.purchases.findMany({
         limit,
@@ -740,7 +869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           user: true
         }
       });
-      
+
       console.log(`Found ${result.length} purchases`);
       res.json(result);
     } catch (error) {
@@ -753,11 +882,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const purchase = await storage.getPurchaseById(id);
-      
+
       if (!purchase) {
         return res.status(404).json({ message: 'Purchase not found' });
       }
-      
+
       res.json(purchase);
     } catch (error) {
       console.error('Error fetching purchase:', error);
@@ -769,21 +898,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const { status, receivedDate } = req.body;
-      
+
       if (!status) {
         return res.status(400).json({ message: 'Status is required' });
       }
-      
+
       const purchase = await storage.updatePurchaseStatus(
         id,
         status,
         receivedDate ? new Date(receivedDate) : undefined
       );
-      
+
       if (!purchase) {
         return res.status(404).json({ message: 'Purchase not found' });
       }
-      
+
       res.json(purchase);
     } catch (error) {
       console.error('Error updating purchase status:', error);
@@ -806,11 +935,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const supplier = await storage.getSupplierById(id);
-      
+
       if (!supplier) {
         return res.status(404).json({ message: 'Supplier not found' });
       }
-      
+
       res.json(supplier);
     } catch (error) {
       console.error('Error fetching supplier:', error);
@@ -837,11 +966,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const supplierData = schema.supplierInsertSchema.parse(req.body);
       const supplier = await storage.updateSupplier(id, supplierData);
-      
+
       if (!supplier) {
         return res.status(404).json({ message: 'Supplier not found' });
       }
-      
+
       res.json(supplier);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -856,11 +985,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteSupplier(id);
-      
+
       if (!deleted) {
         return res.status(404).json({ message: 'Supplier not found' });
       }
-      
+
       res.json({ message: 'Supplier deleted successfully' });
     } catch (error) {
       console.error('Error deleting supplier:', error);
@@ -894,11 +1023,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const customer = await storage.getCustomerById(id);
-      
+
       if (!customer) {
         return res.status(404).json({ message: 'Customer not found' });
       }
-      
+
       res.json(customer);
     } catch (error) {
       console.error('Error fetching customer:', error);
@@ -925,11 +1054,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const customerData = schema.customerInsertSchema.parse(req.body);
       const customer = await storage.updateCustomer(id, customerData);
-      
+
       if (!customer) {
         return res.status(404).json({ message: 'Customer not found' });
       }
-      
+
       res.json(customer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -944,11 +1073,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteCustomer(id);
-      
+
       if (!deleted) {
         return res.status(404).json({ message: 'Customer not found' });
       }
-      
+
       res.json({ message: 'Customer deleted successfully' });
     } catch (error) {
       console.error('Error deleting customer:', error);
@@ -965,14 +1094,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { password, ...safeUser } = user;
         return safeUser;
       });
-      
+
       res.json(safeUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   app.get('/api/users/roles', isAuthenticated, async (req, res) => {
     try {
       // Return the available roles
@@ -986,24 +1115,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/users', isAdmin, async (req, res) => {
     try {
       const userData = schema.userInsertSchema.parse(req.body);
-      
+
       // Check if username already exists
       const existingUser = await storage.getUserByUsername(userData.username);
       if (existingUser) {
         return res.status(400).json({ message: 'Username already exists' });
       }
-      
+
       // Hash password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
+
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword
       });
-      
+
       // Remove password from response
       const { password, ...safeUser } = user;
-      
+
       res.status(201).json(safeUser);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1018,21 +1147,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const currentUser = req.user as any;
-      
+
       // Only allow users to update their own profile or admins to update any profile
       if (currentUser.id !== id && currentUser.role !== 'admin') {
         return res.status(403).json({ message: 'Forbidden' });
       }
-      
+
       // Get current user data
       const existingUser = await storage.getUserById(id);
       if (!existingUser) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       // Handle password updates specially
       let userData = { ...req.body };
-      
+
       if (userData.password) {
         // If password is being changed, hash it
         userData.password = await bcrypt.hash(userData.password, 10);
@@ -1040,18 +1169,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If not changing password, remove it from the update
         delete userData.password;
       }
-      
+
       // Remove sensitive fields if not admin
       if (currentUser.role !== 'admin') {
         delete userData.role;
         delete userData.active;
       }
-      
+
       const user = await storage.updateUser(id, userData);
-      
+
       // Remove password from response
       const { password, ...safeUser } = user;
-      
+
       res.json(safeUser);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1061,52 +1190,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   // Add endpoint to change user status (active/inactive) - admin only
   app.put('/api/users/:id/status', isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { active } = req.body;
-      
+
       if (typeof active !== 'boolean') {
         return res.status(400).json({ message: 'Active status must be a boolean' });
       }
-      
+
       const user = await storage.updateUser(id, { active });
-      
+
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       // Remove password from response
       const { password, ...safeUser } = user;
-      
+
       res.json(safeUser);
     } catch (error) {
       console.error('Error updating user status:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   // Add endpoint to change user role - admin only
   app.put('/api/users/:id/role', isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { role } = req.body;
-      
+
       if (!role || !['admin', 'manager', 'cashier'].includes(role)) {
         return res.status(400).json({ message: 'Invalid role' });
       }
-      
+
       const user = await storage.updateUser(id, { role });
-      
+
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       // Remove password from response
       const { password, ...safeUser } = user;
-      
+
       res.json(safeUser);
     } catch (error) {
       console.error('Error updating user role:', error);
@@ -1141,7 +1270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string || '5');
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
       const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
-      
+
       const topProducts = await storage.getTopSellingProducts(limit, startDate, endDate);
       res.json(topProducts);
     } catch (error) {
@@ -1307,24 +1436,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all products with current stock levels
       const products = await storage.listProducts();
-      
+
       // Get sales data for the past period (3x forecast period for better analysis)
       const analysisPeriod = parseInt(forecastDays as string) * 3;
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - analysisPeriod);
-      
+
       const salesData = await storage.listSales(startDate, new Date(), 1000, 0);
-      
+
       // Calculate forecasting data for each product
       const forecastData = await Promise.all(products.map(async (product: any) => {
         // Calculate sales velocity from actual sales data
         const productSales = salesData.filter((sale: any) => 
           sale.items && sale.items.some((item: any) => item.productId === product.id)
         );
-        
+
         let totalSold = 0;
         let lastSaleDate = null;
-        
+
         productSales.forEach((sale: any) => {
           const saleItem = sale.items.find((item: any) => item.productId === product.id);
           if (saleItem) {
@@ -1334,15 +1463,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         });
-        
+
         // Calculate average daily usage
         const daysAnalyzed = analysisPeriod;
         const averageDailyUsage = totalSold / daysAnalyzed;
-        
+
         // Forecast future demand based on analysis method
         let forecastedDemand = 0;
         let trend = 'stable';
-        
+
         switch (analysisMethod) {
           case 'moving_average':
             forecastedDemand = averageDailyUsage * parseInt(forecastDays as string);
@@ -1362,7 +1491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             forecastedDemand = averageDailyUsage * parseInt(forecastDays as string) * seasonalMultiplier;
             break;
         }
-        
+
         // Determine trend based on recent vs older sales
         const midPoint = Math.floor(daysAnalyzed / 2);
         const recentPeriodSales = productSales.filter((sale: any) => {
@@ -1374,24 +1503,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const saleItem = sale.items.find((item: any) => item.productId === product.id);
           return sum + (saleItem ? saleItem.quantity : 0);
         }, 0);
-        
+
         const olderPeriodSales = totalSold - recentPeriodSales;
-        
+
         if (recentPeriodSales > olderPeriodSales * 1.1) {
           trend = 'increasing';
         } else if (recentPeriodSales < olderPeriodSales * 0.9) {
           trend = 'decreasing';
         }
-        
+
         // Calculate recommendations
         const currentStock = product.stockQuantity || 0;
         const daysUntilStockout = averageDailyUsage > 0 ? Math.ceil(currentStock / averageDailyUsage) : 999;
-        
+
         // Safety stock calculation (25% of average usage)
         const safetyStock = Math.ceil(averageDailyUsage * 7); // 1 week safety stock
         const recommendedReorderPoint = Math.ceil(averageDailyUsage * 14) + safetyStock; // 2 weeks + safety
         const recommendedOrderQuantity = Math.ceil(averageDailyUsage * 30); // 1 month supply
-        
+
         // Determine risk level
         let riskLevel = 'low';
         if (daysUntilStockout <= 3) {
@@ -1401,10 +1530,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (daysUntilStockout <= 14) {
           riskLevel = 'medium';
         }
-        
+
         // Get category name
         const category = await storage.getCategoryById(product.categoryId);
-        
+
         return {
           productId: product.id,
           productName: product.name,
@@ -1421,33 +1550,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price: parseFloat(product.price) || 0
         };
       }));
-      
+
       // Filter by category if specified
       let filteredData = forecastData;
       if (categoryFilter !== 'all') {
         filteredData = forecastData.filter(item => item.category === categoryFilter);
       }
-      
+
       // Sort by risk level (critical first)
       const riskOrder = { critical: 0, high: 1, medium: 2, low: 3 };
       filteredData.sort((a, b) => riskOrder[a.riskLevel as keyof typeof riskOrder] - riskOrder[b.riskLevel as keyof typeof riskOrder]);
-      
+
       res.json(filteredData);
     } catch (error) {
       console.error('Error generating forecast:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   // Generate Purchase Order from forecast
   app.post('/api/inventory/generate-po', isAuthenticated, async (req, res) => {
     try {
       const { productIds } = req.body;
-      
+
       if (!productIds || !Array.isArray(productIds)) {
         return res.status(400).json({ error: 'Product IDs are required' });
       }
-      
+
       // Get product details for the PO
       const products = await Promise.all(
         productIds.map(async (productId: number) => {
@@ -1455,7 +1584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return product;
         })
       );
-      
+
       // For now, create a basic PO structure
       // In a real implementation, you'd determine the best supplier and quantities
       const poData = {
@@ -1472,7 +1601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subtotal: (parseFloat(product.price) || 0) * Math.max(20, Math.ceil((parseFloat(product.price) || 0) / 10))
         }))
       };
-      
+
       // Create the purchase order
       const purchase = await storage.createPurchase(
         poData.supplierId,
@@ -1483,7 +1612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         poData.items || [],
         poData.notes || ''
       );
-      
+
       res.json({
         message: 'Purchase order generated successfully',
         purchaseOrder: purchase
@@ -1504,7 +1633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   // Product routes for purchase entry form
   app.get('/api/products', isAuthenticated, async (req, res) => {
     try {
@@ -1515,7 +1644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   // Purchase management routes
   app.get('/api/purchases', isAuthenticated, async (req, res) => {
     try {
@@ -1530,63 +1659,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/purchases', isAuthenticated, async (req, res) => {
     try {
       console.log('Purchase creation request received:', req.body);
-      
+
       // Extract main purchase fields
       const { 
         poNo, poDate, dueDate, paymentType, supplierId, 
         invoiceNo, invoiceDate, remarks, items, 
         grossAmount, itemDiscountAmount, taxAmount 
       } = req.body;
-      
+
       // Validation
       if (!supplierId || !items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ 
           message: 'Missing required fields: supplierId and items are required' 
         });
       }
-      
+
       // Validate items
       const validItems = items.filter(item => 
         item.productId && 
         Number(item.productId) > 0 && 
         Number(item.receivedQty || item.quantity) > 0
       );
-      
+
       if (validItems.length === 0) {
         return res.status(400).json({ 
           message: 'At least one valid item with product and quantity is required' 
         });
       }
-      
+
       // Process purchase items with proper error handling
       const purchaseItems = validItems.map((item: any) => {
         const productId = Number(item.productId);
         const quantity = Number(item.receivedQty || item.quantity || 1);
         const unitCost = Number(item.cost || item.unitCost || 0);
-        
+
         if (isNaN(productId) || isNaN(quantity) || isNaN(unitCost)) {
           throw new Error(`Invalid item data: productId=${item.productId}, quantity=${item.receivedQty || item.quantity}, cost=${item.cost || item.unitCost}`);
         }
-        
+
         return {
           productId,
           quantity,
           unitCost
         };
       });
-      
+
       console.log('Processed purchase items:', purchaseItems);
-      
+
       // Get user ID
       const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
-      
+
       const purchaseData = {
         status: 'pending'
       };
-      
+
       // Create the purchase in the database
       const newPurchase = await storage.createPurchase(
         userId, 
@@ -1594,7 +1723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         purchaseItems,
         purchaseData
       );
-      
+
       console.log('Purchase created successfully:', newPurchase);
       res.status(201).json(newPurchase);
     } catch (error) {
@@ -1610,7 +1739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string || '20');
       const offset = parseInt(req.query.offset as string || '0');
-      
+
       // Use direct DB query to avoid the complex ORM issues
       const result = await db.query.purchases.findMany({
         limit,
@@ -1621,7 +1750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           user: true
         }
       });
-      
+
       console.log(`Found ${result.length} purchases`);
       res.json(result);
     } catch (error) {
@@ -1634,11 +1763,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const purchaseId = parseInt(req.params.id);
       const purchase = await storage.getPurchaseById(purchaseId);
-      
+
       if (!purchase) {
         return res.status(404).json({ message: 'Purchase not found' });
       }
-      
+
       res.json(purchase);
     } catch (error) {
       console.error('Error fetching purchase:', error);
@@ -1650,7 +1779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       console.log('PUT /api/purchases/:id received data:', req.body);
-      
+
       const { 
         supplierId, orderNumber, orderDate, expectedDate, dueDate,
         paymentTerms, paymentMethod, status, invoiceNumber, 
@@ -1658,20 +1787,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         freightAmount, surchargeAmount, packingCharges, 
         otherCharges, additionalDiscount
       } = req.body;
-      
+
       // Handle both professional and legacy format
       const actualSupplierId = supplierId || req.body.supplier_id;
       const actualOrderNumber = orderNumber || req.body.poNo || req.body.po_no;
       const actualOrderDate = orderDate || req.body.poDate || req.body.po_date;
       const actualDueDate = expectedDate || dueDate || req.body.due_date;
-      
+
       // Validate required fields
       if (!actualOrderNumber || !actualOrderDate || !actualSupplierId) {
         return res.status(400).json({ 
           message: 'Missing required fields: orderNumber, orderDate, and supplierId are required' 
         });
       }
-      
+
       // Calculate total from items if not provided
       let totalAmount = 0;
       if (items && Array.isArray(items)) {
@@ -1681,7 +1810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return sum + (qty * cost);
         }, 0);
       }
-      
+
       // Update the purchase object
       const purchaseUpdate = {
         orderNumber: actualOrderNumber,
@@ -1691,16 +1820,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total: totalAmount.toString(),
         notes: remarks || ''
       };
-      
+
       console.log('Updating purchase with:', purchaseUpdate);
       console.log('Items to update:', items);
-      
+
       const updatedPurchase = await storage.updatePurchase(id, purchaseUpdate, items);
-      
+
       if (!updatedPurchase) {
         return res.status(404).json({ message: 'Purchase not found' });
       }
-      
+
       console.log('Purchase updated successfully:', updatedPurchase.id);
       res.json(updatedPurchase);
     } catch (error) {
@@ -1716,11 +1845,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deletePurchase(id);
-      
+
       if (!deleted) {
         return res.status(404).json({ message: 'Purchase not found' });
       }
-      
+
       res.json({ message: 'Purchase deleted successfully' });
     } catch (error) {
       console.error('Error deleting purchase:', error);
@@ -1756,11 +1885,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const days = parseInt(req.query.days as string || '30');
       const limit = parseInt(req.query.limit as string || '10');
-      
+
       // Calculate start date
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-      
+
       const topProducts = await storage.getTopSellingProducts(limit, startDate, new Date());
       res.json(topProducts);
     } catch (error) {
@@ -1773,14 +1902,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
       const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
-      
+
       const salesData = await storage.listSales(1000, 0, startDate, endDate);
-      
+
       // Calculate summary metrics
       const totalSales = salesData.reduce((sum: number, sale: any) => sum + parseFloat(sale.total || 0), 0);
       const totalTransactions = salesData.length;
       const averageOrderValue = totalTransactions > 0 ? totalSales / totalTransactions : 0;
-      
+
       res.json({
         totalSales,
         totalTransactions,
@@ -1824,3 +1953,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   return httpServer;
 }
+// This code fixes the sales API endpoint to correctly process sales transactions and handle errors.
