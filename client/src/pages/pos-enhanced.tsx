@@ -309,47 +309,99 @@ export default function POSEnhanced() {
     setIsProcessing(true);
 
     try {
+      // Validate cart items have valid stock
+      for (const item of cart) {
+        const product = products.find((p: Product) => p.id === item.id);
+        if (!product || product.stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for ${item.name}. Available: ${product?.stockQuantity || 0}, Required: ${item.quantity}`);
+        }
+      }
+
       const saleData = {
-        customerId: selectedCustomer?.id,
+        customerId: selectedCustomer?.id || null,
         items: cart.map(item => ({
           productId: item.id,
           quantity: item.quantity,
           unitPrice: parseFloat(item.price),
           subtotal: item.total,
         })),
-        subtotal,
-        discount: discountAmount,
-        tax: taxAmount,
-        total,
+        subtotal: Math.round(subtotal * 100) / 100,
+        discount: Math.round(discountAmount * 100) / 100,
+        tax: Math.round(taxAmount * 100) / 100,
+        total: Math.round(total * 100) / 100,
         paymentMethod,
-        amountPaid: paidAmount,
+        amountPaid: Math.round(paidAmount * 100) / 100,
+        notes: `Bill: ${billNumber}`,
       };
+
+      console.log("Processing sale with data:", saleData);
 
       const response = await fetch("/api/sales", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify(saleData),
       });
 
-      if (!response.ok) throw new Error("Failed to process sale");
+      const responseText = await response.text();
+      console.log("Sale response:", responseText);
+
+      if (!response.ok) {
+        let errorMessage = "Failed to process sale";
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = responseText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      let saleResult;
+      try {
+        saleResult = JSON.parse(responseText);
+      } catch (e) {
+        console.warn("Could not parse sale response as JSON:", responseText);
+        saleResult = { id: Date.now() };
+      }
 
       toast({
-        title: "Sale Completed!",
-        description: `Transaction successful for ${formatCurrency(total)}`,
+        title: "✅ Sale Completed!",
+        description: `Transaction successful for ${formatCurrency(total)}. Change: ${formatCurrency(paidAmount - total)}`,
         variant: "default",
       });
 
       // Reset everything
       clearCart();
       setShowPaymentDialog(false);
+      setAmountPaid("");
       setBillNumber(`POS${Date.now()}`);
+      
+      // Refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
 
     } catch (error) {
       console.error("Sale processing error:", error);
+      
+      let errorMessage = "Please try again or contact support";
+      if (error instanceof Error) {
+        if (error.message.includes("stock")) {
+          errorMessage = error.message;
+        } else if (error.message.includes("network") || error.message.includes("fetch")) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (error.message.includes("server")) {
+          errorMessage = "Server error. Please try again in a moment.";
+        } else if (error.message.length > 0 && error.message.length < 100) {
+          errorMessage = error.message;
+        }
+      }
+
       toast({
-        title: "Transaction Failed",
-        description: "Please try again or contact support",
+        title: "❌ Transaction Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -942,50 +994,96 @@ export default function POSEnhanced() {
                     type="number"
                     placeholder={`Enter amount (min: ${formatCurrency(total)})`}
                     value={amountPaid}
-                    onChange={(e) => setAmountPaid(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow empty string or valid decimal numbers
+                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                        setAmountPaid(value);
+                      }
+                    }}
                     step="0.01"
-                    min={total}
+                    min={0}
                     className="text-lg p-3"
+                    autoFocus
                   />
-                  {parseFloat(amountPaid) > total && (
+                  {amountPaid && parseFloat(amountPaid) < total && (
+                    <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                      <p className="text-red-700 font-semibold">
+                        Insufficient amount. Need at least {formatCurrency(total)}
+                      </p>
+                    </div>
+                  )}
+                  {amountPaid && parseFloat(amountPaid) > total && (
                     <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-blue-700 font-semibold">
                         Change to return: {formatCurrency(parseFloat(amountPaid) - total)}
                       </p>
                     </div>
                   )}
+                  {amountPaid && parseFloat(amountPaid) === total && (
+                    <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-green-700 font-semibold">
+                        Exact amount - No change required
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex space-x-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowPaymentDialog(false);
-                      setAmountPaid("");
-                    }}
-                    className="flex-1"
-                    disabled={isProcessing}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={processSale}
-                    disabled={isProcessing || (parseFloat(amountPaid) && parseFloat(amountPaid) < total)}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
-                  >
-                    {isProcessing ? "Processing..." : "Complete Sale"}
-                  </Button>
-                </div>
+                <div className="space-y-3">
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAmountPaid(total.toString())}
+                      className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      Exact Amount
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAmountPaid((Math.ceil(total / 10) * 10).toString())}
+                      className="flex-1 text-green-600 border-green-200 hover:bg-green-50"
+                    >
+                      Round Up ₹10
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAmountPaid((Math.ceil(total / 50) * 50).toString())}
+                      className="flex-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+                    >
+                      Round Up ₹50
+                    </Button>
+                  </div>
 
-                <div className="text-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAmountPaid(total.toString())}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    Use Exact Amount
-                  </Button>
+                  <div className="flex space-x-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowPaymentDialog(false);
+                        setAmountPaid("");
+                      }}
+                      className="flex-1"
+                      disabled={isProcessing}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={processSale}
+                      disabled={isProcessing || !amountPaid || parseFloat(amountPaid) < total}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isProcessing ? (
+                        <div className="flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Processing...
+                        </div>
+                      ) : (
+                        "Complete Sale"
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </DialogContent>
