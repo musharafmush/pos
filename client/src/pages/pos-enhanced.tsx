@@ -378,14 +378,14 @@ export default function POSEnhanced() {
       setShowPaymentDialog(false);
       setAmountPaid("");
       setBillNumber(`POS${Date.now()}`);
-      
+
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
 
     } catch (error) {
       console.error("Sale processing error:", error);
-      
+
       let errorMessage = "Please try again or contact support";
       if (error instanceof Error) {
         if (error.message.includes("stock")) {
@@ -862,7 +862,7 @@ export default function POSEnhanced() {
                     <div className="flex justify-between text-red-600">
                       <span>Discount Amount:</span>
                       <span>-{formatCurrency(discountAmount)}</span>
-                    </div>
+                                        </div>
                   )}
 
                   <div className="flex justify-between">
