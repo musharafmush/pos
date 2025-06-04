@@ -36,7 +36,15 @@ import {
   AlertCircle,
   Info,
   Banknote,
-  DollarSign
+  DollarSign,
+  Star,
+  Heart,
+  Settings,
+  Filter,
+  Grid,
+  List,
+  Eye,
+  X
 } from "lucide-react";
 
 interface Product {
@@ -81,10 +89,11 @@ export default function POSEnhanced() {
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
-  const [cashInHand, setCashInHand] = useState(0);
+  const [cashInHand, setCashInHand] = useState(5000);
   const [cashOperation, setCashOperation] = useState<'add' | 'remove'>('add');
   const [cashAmount, setCashAmount] = useState("");
   const [cashReason, setCashReason] = useState("");
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -171,8 +180,8 @@ export default function POSEnhanced() {
     }
 
     toast({
-      title: "Item Added",
-      description: `${product.name} added to cart successfully`,
+      title: "✅ Added to Cart",
+      description: `${product.name} added successfully`,
       variant: "default",
     });
 
@@ -612,314 +621,355 @@ export default function POSEnhanced() {
   };
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
       <DashboardLayout>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900">
-          {/* Modern Header */}
-          <div className="bg-white border-b border-gray-200 shadow-sm">
-            <div className="px-6 py-4">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+
+          {/* Modern Top Header */}
+          <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+            <div className="px-6 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="bg-blue-600 text-white p-3 rounded-xl shadow-lg">
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-2xl shadow-lg">
                     <Monitor className="h-6 w-6" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Enhanced POS</h1>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      Enhanced POS
+                    </h1>
                     <p className="text-sm text-gray-500">Professional Point of Sale System</p>
-                  </div>
-
-                  <div className="flex items-center space-x-3 ml-8">
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      System Ready
-                    </Badge>
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                      <Zap className="h-3 w-3 mr-1" />
-                      Live Mode
-                    </Badge>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-6">
-                  <Button
-                    onClick={() => setShowCashRegister(true)}
-                    variant="outline"
-                    size="sm"
-                    className="hover:bg-green-50 border-green-200 text-green-700"
-                  >
-                    <Banknote className="h-4 w-4 mr-2" />
-                    Cash Register
-                  </Button>
-                  <Button
-                    onClick={toggleFullscreen}
-                    variant="outline"
-                    size="sm"
-                    className="hover:bg-blue-50 border-blue-200"
-                  >
-                    <Monitor className="h-4 w-4 mr-2" />
-                    Fullscreen (F11)
-                  </Button>
+                <div className="flex items-center space-x-4">
+                  {/* Real-time Info Cards */}
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-green-50 border border-green-200 px-4 py-2 rounded-xl">
+                      <div className="text-xs text-green-600 font-medium">Cash in Hand</div>
+                      <div className="text-lg font-bold text-green-700">{formatCurrency(cashInHand)}</div>
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 px-4 py-2 rounded-xl">
+                      <div className="text-xs text-blue-600 font-medium">Cart Total</div>
+                      <div className="text-lg font-bold text-blue-700">{formatCurrency(total)}</div>
+                    </div>
+                    <div className="bg-purple-50 border border-purple-200 px-4 py-2 rounded-xl">
+                      <div className="text-xs text-purple-600 font-medium">Bill No.</div>
+                      <div className="text-sm font-bold text-purple-700 font-mono">{billNumber}</div>
+                    </div>
+                  </div>
 
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">Bill Number</div>
-                    <div className="font-mono font-semibold text-gray-900">{billNumber}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">Date & Time</div>
-                    <div className="font-mono text-sm text-gray-700">{currentDate} • {currentTime}</div>
-                  </div>
-                  <div className="text-right bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <div className="text-sm text-blue-600 font-medium">Cash in Hand</div>
-                    <div className="text-xl font-bold text-blue-700">{formatCurrency(cashInHand)}</div>
-                  </div>
-                  <div className="text-right bg-green-50 p-3 rounded-lg border border-green-200">
-                    <div className="text-sm text-green-600 font-medium">Total Amount</div>
-                    <div className="text-2xl font-bold text-green-700">{formatCurrency(total)}</div>
+                  {/* Action Buttons */}
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      onClick={() => setShowCashRegister(true)}
+                      variant="outline"
+                      size="sm"
+                      className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+                    >
+                      <Banknote className="h-4 w-4 mr-2" />
+                      Cash Register
+                    </Button>
+                    <Button
+                      onClick={toggleFullscreen}
+                      variant="outline"
+                      size="sm"
+                      className="bg-gray-50 hover:bg-gray-100"
+                    >
+                      <Monitor className="h-4 w-4 mr-2" />
+                      Fullscreen
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Customer Selection Bar */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-2">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Cashier</label>
-                <div className="flex items-center text-gray-900 font-medium">
-                  <User className="h-4 w-4 mr-2 text-gray-500" />
-                  Admin User
+          <div className="flex h-[calc(100vh-80px)]">
+
+            {/* Left Panel - Products & Search */}
+            <div className="flex-1 flex flex-col bg-white border-r border-gray-200">
+
+              {/* Enhanced Search Bar */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative flex-1">
+                      <Input
+                        ref={searchInputRef}
+                        placeholder="Search products by name, SKU, or scan barcode..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="text-lg py-4 pl-12 pr-16 border-2 border-gray-200 focus:border-blue-500 rounded-2xl bg-gray-50 focus:bg-white transition-all"
+                      />
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      {searchTerm && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSearchTerm("")}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <Button 
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                      className="shrink-0"
+                    >
+                      {viewMode === 'grid' ? <List className="h-4 w-4" /> : <Grid className="h-4 w-4" />}
+                    </Button>
+                  </div>
+
+                  {/* Quick Action Buttons */}
+                  <div className="flex items-center space-x-2">
+                    <Button size="sm" variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      <Scan className="h-4 w-4 mr-2" />
+                      Barcode Scanner
+                    </Button>
+                    <Button size="sm" variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                      <Package className="h-4 w-4 mr-2" />
+                      Categories
+                    </Button>
+                    <Button size="sm" variant="outline" className="bg-gray-50">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filters
+                    </Button>
+                    <div className="flex-1" />
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      {products.length} products
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
-              <div className="col-span-4">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Customer</label>
-                <Select 
-                  value={selectedCustomer?.id?.toString() || ""} 
-                  onValueChange={(value) => {
-                    if (value === "walk-in") {
-                      setSelectedCustomer(null);
-                    } else {
-                      const customer = customers.find(c => c.id.toString() === value);
-                      setSelectedCustomer(customer || null);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Customer">
-                      {selectedCustomer?.name || "Walk-in Customer"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="walk-in">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2" />
-                        Walk-in Customer
-                      </div>
-                    </SelectItem>
-                    {customers?.map((customer: Customer) => (
-                      <SelectItem key={customer.id} value={customer.id.toString()}>
-                        <div>
-                          <div className="font-medium">{customer.name}</div>
-                          {customer.phone && (
-                            <div className="text-sm text-gray-500">{customer.phone}</div>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Customer Selection - Compact */}
+              <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">Customer:</span>
+                  </div>
+                  <Select 
+                    value={selectedCustomer?.id?.toString() || ""} 
+                    onValueChange={(value) => {
+                      if (value === "walk-in") {
+                        setSelectedCustomer(null);
+                      } else {
+                        const customer = customers.find(c => c.id.toString() === value);
+                        setSelectedCustomer(customer || null);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-64 bg-white">
+                      <SelectValue placeholder="Select Customer">
+                        {selectedCustomer?.name || "Walk-in Customer"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="walk-in">Walk-in Customer</SelectItem>
+                      {customers?.map((customer: Customer) => (
+                        <SelectItem key={customer.id} value={customer.id.toString()}>
+                          <div>
+                            <div className="font-medium">{customer.name}</div>
+                            {customer.phone && <div className="text-xs text-gray-500">{customer.phone}</div>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    size="sm" 
+                    onClick={() => setShowNewCustomerDialog(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Add Customer
+                  </Button>
+                </div>
               </div>
 
-              <div className="col-span-3">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Contact</label>
-                <div className="flex items-center text-gray-600">
-                  {selectedCustomer?.phone ? (
-                    <>
-                      <Phone className="h-4 w-4 mr-2" />
-                      {selectedCustomer.phone}
-                    </>
-                  ) : (
-                    <span className="text-gray-400">No contact info</span>
+              {/* Products Grid/List */}
+              <div className="flex-1 overflow-auto p-4">
+                {searchTerm && filteredProducts.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-gray-800">Search Results ({filteredProducts.length})</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setSearchTerm("")}
+                        className="text-gray-500"
+                      >
+                        Clear Search
+                      </Button>
+                    </div>
+                    <div className={viewMode === 'grid' ? "grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" : "space-y-2"}>
+                      {filteredProducts.slice(0, 12).map((product: Product) => (
+                        <Card 
+                          key={product.id}
+                          className={`cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-300 group ${
+                            viewMode === 'grid' ? 'aspect-square' : 'h-20'
+                          }`}
+                          onClick={() => addToCart(product)}
+                        >
+                          <CardContent className={`p-3 h-full flex ${viewMode === 'grid' ? 'flex-col justify-between' : 'items-center space-x-4'}`}>
+                            {viewMode === 'grid' ? (
+                              <>
+                                <div className="text-center flex-1">
+                                  <h4 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2">{product.name}</h4>
+                                  <p className="text-xs text-gray-500 font-mono mb-2">{product.sku}</p>
+                                  {product.category && (
+                                    <Badge variant="outline" className="text-xs mb-2">
+                                      {product.category.name}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-green-600 mb-1">
+                                    {formatCurrency(parseFloat(product.price))}
+                                  </div>
+                                  <div className={`text-xs ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-900">{product.name}</h4>
+                                  <p className="text-sm text-gray-500 font-mono">{product.sku}</p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-bold text-green-600">
+                                    {formatCurrency(parseFloat(product.price))}
+                                  </div>
+                                  <div className={`text-xs ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {product.stockQuantity > 0 ? `${product.stockQuantity} stock` : 'Out of stock'}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ) : searchTerm ? (
+                  <div className="text-center py-20">
+                    <Search className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">No products found</h3>
+                    <p className="text-gray-500">Try searching with different keywords</p>
+                  </div>
+                ) : (
+                  <div className="text-center py-20">
+                    <Package className="h-20 w-20 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-2xl font-semibold text-gray-600 mb-3">Start Searching</h3>
+                    <p className="text-gray-500 mb-6">Use the search bar above to find products</p>
+                    <div className="grid grid-cols-2 gap-4 max-w-md mx-auto text-sm">
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <kbd className="bg-blue-200 px-2 py-1 rounded text-xs">F1</kbd>
+                        <p className="mt-1 text-blue-700">Focus search</p>
+                      </div>
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <kbd className="bg-green-200 px-2 py-1 rounded text-xs">F10</kbd>
+                        <p className="mt-1 text-green-700">Quick checkout</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Panel - Cart & Bill */}
+            <div className="w-96 bg-white flex flex-col">
+
+              {/* Cart Header */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-2 rounded-xl">
+                      <ShoppingCart className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">Cart</h2>
+                      <p className="text-sm text-gray-500">
+                        {cart.length} items • {cart.reduce((sum, item) => sum + item.quantity, 0)} units
+                      </p>
+                    </div>
+                  </div>
+                  {cart.length > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={clearCart}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
               </div>
 
-              <div className="col-span-3 flex justify-end space-x-2">
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => setSelectedCustomer(null)}
-                  className="hover:bg-gray-50"
-                >
-                  <RotateCcw className="h-4 w-4 mr-1" />
-                  Clear
-                </Button>
-                <Button 
-                  size="sm" 
-                  onClick={() => setShowNewCustomerDialog(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <UserPlus className="h-4 w-4 mr-1" />
-                  Add Customer
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Search Section */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center space-x-4 mb-4">
-              <Button 
-                onClick={() => searchInputRef.current?.focus()}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Scan className="h-4 w-4 mr-2" />
-                Scan Barcode (F1)
-              </Button>
-              <Button variant="outline" className="hover:bg-gray-50">
-                <Search className="h-4 w-4 mr-2" />
-                Search Products
-              </Button>
-              <Button variant="outline" className="hover:bg-gray-50">
-                <Package className="h-4 w-4 mr-2" />
-                Browse Categories
-              </Button>
-              <div className="flex-1" />
-              <Button 
-                variant="outline" 
-                onClick={() => queryClient.invalidateQueries()}
-                className="hover:bg-gray-50"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh Data
-              </Button>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="relative flex-1">
-                <Input
-                  ref={searchInputRef}
-                  placeholder="Type product name, SKU, or scan barcode..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="text-lg py-3 pl-12 border-2 border-gray-200 focus:border-blue-500"
-                />
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                <Info className="h-4 w-4" />
-                <span>{products.length} products available</span>
-                {productsLoading && <span className="text-blue-600">• Loading...</span>}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex">
-            {/* Main Cart Section */}
-            <div className="flex-1 bg-white p-6">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-xl mb-6 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <ShoppingCart className="h-6 w-6 mr-3" />
-                    <h2 className="text-xl font-bold">Shopping Cart</h2>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold">
-                      {cart.length} items • {cart.reduce((sum, item) => sum + item.quantity, 0)} units
-                    </div>
-                    <div className="text-blue-100 text-sm">
-                      Subtotal: {formatCurrency(subtotal)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="min-h-96 bg-gray-50 rounded-xl p-6 border border-gray-200">
+              {/* Cart Items */}
+              <div className="flex-1 overflow-auto">
                 {cart.length === 0 ? (
-                  <div className="text-center py-20">
-                    <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-gray-300" />
-                    <h3 className="text-2xl font-semibold text-gray-600 mb-3">Cart is Empty</h3>
-                    <p className="text-gray-500 mb-6 text-lg">Start by searching for products above</p>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-3xl mx-auto text-sm text-gray-500">
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F1</kbd>
-                        <p className="mt-2">Focus search bar</p>
-                      </div>
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F10</kbd>
-                        <p className="mt-2">Quick checkout</p>
-                      </div>
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F11</kbd>
-                        <p className="mt-2">Toggle fullscreen</p>
-                      </div>
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F12</kbd>
-                        <p className="mt-2">Clear cart</p>
-                      </div>
-                    </div>
+                  <div className="text-center py-16 px-6">
+                    <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">Your cart is empty</h3>
+                    <p className="text-gray-500 text-sm">Search and add products to get started</p>
                   </div>
                 ) : (
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                  <div className="p-4 space-y-3">
                     {cart.map((item) => (
-                      <Card key={item.id} className="p-4 hover:shadow-md transition-shadow border border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-lg text-gray-900">{item.name}</h4>
-                            <p className="text-sm text-gray-500 font-mono">{item.sku}</p>
-                            <div className="flex items-center space-x-4 mt-2">
-                              <p className="text-lg font-bold text-green-600">
-                                {formatCurrency(parseFloat(item.price))}
-                              </p>
-                              {item.category && (
-                                <Badge variant="outline" className="text-xs">
-                                  {item.category.name}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2 bg-gray-100```python
-# Fix syntax error at end of file - missing closing tags and brackets
- rounded-lg p-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                className="h-8 w-8 p-0 hover:bg-red-100"
-                              >
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <span className="w-12 text-center font-bold text-lg">{item.quantity}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                className="h-8 w-8 p-0 hover:bg-green-100"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-
-                            <div className="text-right min-w-24">
-                              <div className="font-bold text-xl text-green-600">
-                                {formatCurrency(item.total)}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                Total
+                      <Card key={item.id} className="p-4 border border-gray-200 hover:shadow-md transition-shadow">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 pr-3">
+                              <h4 className="font-semibold text-gray-900 mb-1">{item.name}</h4>
+                              <p className="text-xs text-gray-500 font-mono mb-2">{item.sku}</p>
+                              <div className="text-lg font-bold text-green-600">
+                                {formatCurrency(parseFloat(item.price))} each
                               </div>
                             </div>
-
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => removeFromCart(item.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1"
                             >
-                              <Trash2 className="h-5 w-5" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                className="h-7 w-7 p-0 hover:bg-red-100"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-8 text-center font-bold">{item.quantity}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                className="h-7 w-7 p-0 hover:bg-green-100"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-lg text-blue-600">
+                                {formatCurrency(item.total)}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </Card>
@@ -928,181 +978,66 @@ export default function POSEnhanced() {
                 )}
               </div>
 
-              {/* Bottom Action Bar */}
-              <div className="flex items-center justify-between mt-6 p-4 bg-gray-100 rounded-xl border border-gray-200">
-                <div className="flex space-x-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={clearCart} 
-                    disabled={cart.length === 0}
-                    className="hover:bg-red-50 hover:text-red-700 hover:border-red-200"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear Cart
-                  </Button>
-                  <Button variant="outline" className="hover:bg-gray-50">
-                    <Archive className="h-4 w-4 mr-2" />
-                    Hold Sale
-                  </Button>
-                  <Button variant="outline" className="hover:bg-gray-50">
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Recall Sale
-                  </Button>
-                </div>
+              {/* Bill Summary & Checkout */}
+              {cart.length > 0 && (
+                <div className="border-t border-gray-100 p-6 space-y-4">
 
-                <div className="flex items-center space-x-4 text-sm">
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    System Online
-                  </Badge>
-                  <span className="text-gray-600">Terminal: POS-01</span>
-                  <span className="text-gray-600 font-mono">{currentTime}</span>
-                </div>
-              </div>
-            </div>
+                  {/* Bill Calculation */}
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
+                      <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                    </div>
 
-            {/* Bill Summary Sidebar */}
-            <div className="w-96 bg-white border-l border-gray-200 p-6">
-              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-6 rounded-xl mb-6 shadow-lg">
-                <div className="flex items-center mb-3">
-                  <Receipt className="h-6 w-6 mr-3" />
-                  <h2 className="text-xl font-bold">Bill Summary</h2>
-                </div>
-                <div className="text-purple-100 text-sm">Bill #{billNumber}</div>
-                <div className="text-purple-100 text-sm">{currentDate}</div>
-              </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Discount</span>
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          type="number"
+                          value={discount}
+                          onChange={(e) => setDiscount(Number(e.target.value))}
+                          className="w-16 h-7 text-center text-xs"
+                          min="0"
+                          max="100"
+                        />
+                        <span className="text-xs text-gray-500">%</span>
+                      </div>
+                    </div>
 
-              {/* Bill Details */}
-              <Card className="mb-6 border border-gray-200">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex justify-between text-lg">
-                    <span className="text-gray-600">Items:</span>
-                    <span className="font-semibold">{cart.length}</span>
-                  </div>
-                  <div className="flex justify-between text-lg">
-                    <span className="text-gray-600">Total Qty:</span>
-                    <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
-                  </div>
-                  <div className="flex justify-between text-lg">
-                    <span className="text-gray-600">Gross Amount:</span>
-                    <span className="font-semibold">{formatCurrency(subtotal)}</span>
-                  </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-red-600">
+                        <span>Discount Amount</span>
+                        <span>-{formatCurrency(discountAmount)}</span>
+                      </div>
+                    )}
 
-                  <Separator />
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">GST ({taxRate}%)</span>
+                      <span>{formatCurrency(taxAmount)}</span>
+                    </div>
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Discount:</span>
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        type="number"
-                        value={discount}
-                        onChange={(e) => setDiscount(Number(e.target.value))}
-                        className="w-16 h-8 text-center"
-                        min="0"
-                        max="100"
-                      />
-                      <span className="text-sm text-gray-500">%</span>
+                    <Separator />
+
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span className="text-green-600">{formatCurrency(total)}</span>
                     </div>
                   </div>
 
-                  {discount > 0 && (
-                    <div className="flex justify-between text-red-600">
-                      <span>Discount Amount:</span>
-                      <span>-{formatCurrency(discountAmount)}</span>
-                                        </div>
-                  )}
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Taxable Amount:</span>
-                    <span>{formatCurrency(taxableAmount)}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">GST ({taxRate}%):</span>
-                    <span>{formatCurrency(taxAmount)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Net Amount */}
-              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl mb-6 shadow-lg">
-                <div className="text-center">
-                  <div className="text-sm font-medium opacity-90">Net Amount Payable</div>
-                  <div className="text-4xl font-bold mt-2">{formatCurrency(total)}</div>
+                  {/* Checkout Button */}
+                  <Button
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-lg py-4 h-auto font-semibold shadow-lg"
+                    onClick={() => setShowPaymentDialog(true)}
+                  >
+                    <CreditCard className="h-5 w-5 mr-3" />
+                    Proceed to Payment
+                  </Button>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <Button
-                  className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 h-auto"
-                  onClick={() => setShowPaymentDialog(true)}
-                  disabled={cart.length === 0}
-                >
-                  <CreditCard className="h-5 w-5 mr-3" />
-                  Proceed to Payment (F10)
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full text-red-600 border-red-200 hover:bg-red-50"
-                  onClick={clearCart}
-                  disabled={cart.length === 0}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear All Items
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full hover:bg-gray-50"
-                >
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Print Receipt
-                </Button>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Product Search Results Overlay */}
-          {searchTerm && filteredProducts.length > 0 && (
-            <div className="absolute top-48 left-6 right-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-20 max-h-80 overflow-auto">
-              <div className="p-3 bg-gray-50 border-b border-gray-200 rounded-t-xl">
-                <h3 className="font-semibold text-gray-900">
-                  Found {filteredProducts.length} products
-                </h3>
-              </div>
-              {filteredProducts.slice(0, 8).map((product: Product) => (
-                <div
-                  key={product.id}
-                  className="p-4 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
-                  onClick={() => addToCart(product)}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{product.name}</h4>
-                      <p className="text-sm text-gray-500 font-mono">{product.sku}</p>
-                      {product.category && (
-                        <Badge variant="outline" className="mt-1 text-xs">
-                          {product.category.name}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-right ml-4">
-                      <div className="font-bold text-lg text-green-600">
-                        {formatCurrency(parseFloat(product.price))}
-                      </div>
-                      <div className={`text-sm ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Enhanced Cash Register Dialog */}
+          {/* Modern Cash Register Dialog */}
           <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
@@ -1110,42 +1045,43 @@ export default function POSEnhanced() {
                   <Banknote className="h-8 w-8 mr-3 text-green-600" />
                   Cash Register Management
                 </DialogTitle>
-                <p className="text-gray-600">Manage cash and digital payments in your register</p>
               </DialogHeader>
 
               <div className="space-y-6">
                 {/* Current Balance Display */}
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-xl border border-green-200">
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-2xl border border-green-200">
                   <div className="text-center">
-                    <div className="text-sm text-gray-600 mb-1">Current Cash in Hand</div>
-                    <div className="text-3xl font-bold text-green-700">{formatCurrency(cashInHand)}</div>
+                    <div className="text-sm text-gray-600 mb-2">Current Cash in Hand</div>
+                    <div className="text-4xl font-bold text-green-700">{formatCurrency(cashInHand)}</div>
                   </div>
                 </div>
 
-                {/* Operation Selection */}
+                {/* Add/Remove Selection */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    cashOperation === 'add' 
-                      ? 'border-green-500 bg-green-50' 
-                      : 'border-gray-200 hover:border-green-300'
-                  }`} onClick={() => setCashOperation('add')}>
-                    <div className="text-center">
-                      <Plus className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                      <div className="font-semibold text-green-700">Add Money</div>
-                      <div className="text-sm text-gray-600">Increase cash register</div>
-                    </div>
-                  </div>
-                  <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    cashOperation === 'remove' 
-                      ? 'border-red-500 bg-red-50' 
-                      : 'border-gray-200 hover:border-red-300'
-                  }`} onClick={() => setCashOperation('remove')}>
-                    <div className="text-center">
-                      <Minus className="h-8 w-8 mx-auto mb-2 text-red-600" />
-                      <div className="font-semibold text-red-700">Remove Money</div>
-                      <div className="text-sm text-gray-600">Decrease cash register</div>
-                    </div>
-                  </div>
+                  <button
+                    onClick={() => setCashOperation('add')}
+                    className={`p-6 rounded-2xl border-2 transition-all ${
+                      cashOperation === 'add' 
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-gray-200 hover:border-green-300'
+                    }`}
+                  >
+                    <Plus className="h-8 w-8 mx-auto mb-3 text-green-600" />
+                    <div className="font-semibold text-green-700">Add Cash</div>
+                    <div className="text-sm text-gray-600">Increase register balance</div>
+                  </button>
+                  <button
+                    onClick={() => setCashOperation('remove')}
+                    className={`p-6 rounded-2xl border-2 transition-all ${
+                      cashOperation === 'remove' 
+                        ? 'border-red-500 bg-red-50' 
+                        : 'border-gray-200 hover:border-red-300'
+                    }`}
+                  >
+                    <Minus className="h-8 w-8 mx-auto mb-3 text-red-600" />
+                    <div className="font-semibold text-red-700">Remove Cash</div>
+                    <div className="text-sm text-gray-600">Decrease register balance</div>
+                  </button>
                 </div>
 
                 {/* Amount Input */}
@@ -1156,7 +1092,7 @@ export default function POSEnhanced() {
                     placeholder="₹ 0.00"
                     value={cashAmount}
                     onChange={(e) => setCashAmount(e.target.value)}
-                    className="text-2xl p-4 text-center font-bold"
+                    className="text-2xl p-4 text-center font-bold rounded-xl"
                   />
                 </div>
 
@@ -1167,154 +1103,62 @@ export default function POSEnhanced() {
                     placeholder="Enter reason (e.g., Cash sales, Bank deposit, etc.)"
                     value={cashReason}
                     onChange={(e) => setCashReason(e.target.value)}
-                    className="p-3"
+                    className="p-3 rounded-xl"
                   />
                 </div>
 
-                {/* Quick Amount Buttons */}
+                {/* Quick Actions */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-800 flex items-center">
-                    <Banknote className="h-5 w-5 mr-2" />
-                    Cash Transactions
-                  </h3>
+                  <h3 className="font-semibold text-gray-800">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
+                    {/* Add Cash Buttons */}
                     <Button
                       variant="outline"
-                      className="h-12 bg-green-50 border-2 border-green-200 hover:bg-green-100 text-green-700 font-semibold"
                       onClick={() => {
                         setCashAmount("1000");
                         setCashOperation("add");
                         setCashReason("Cash sales ₹1000");
                       }}
+                      className="h-12 bg-green-50 border-green-200 hover:bg-green-100 text-green-700"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add ₹1000
                     </Button>
                     <Button
                       variant="outline"
-                      className="h-12 bg-green-50 border-2 border-green-200 hover:bg-green-100 text-green-700 font-semibold"
                       onClick={() => {
                         setCashAmount("2000");
                         setCashOperation("add");
                         setCashReason("Cash sales ₹2000");
                       }}
+                      className="h-12 bg-green-50 border-green-200 hover:bg-green-100 text-green-700"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add ₹2000
                     </Button>
                     <Button
                       variant="outline"
-                      className="h-12 bg-green-50 border-2 border-green-200 hover:bg-green-100 text-green-700 font-semibold"
-                      onClick={() => {
-                        setCashAmount("5000");
-                        setCashOperation("add");
-                        setCashReason("Cash sales ₹5000");
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add ₹5000
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="h-12 bg-green-50 border-2 border-green-200 hover:bg-green-100 text-green-700 font-semibold"
-                      onClick={() => {
-                        setCashAmount("10000");
-                        setCashOperation("add");
-                        setCashReason("Cash sales ₹10000");
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add ₹10000
-                    </Button>
-                  </div>
-
-                  <Separator className="my-4" />
-
-                  <h3 className="font-semibold text-gray-800 flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    UPI & Digital Payments
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      variant="outline"
-                      className="h-12 bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold"
-                      onClick={() => {
-                        setCashAmount("500");
-                        setCashOperation("add");
-                        setCashReason("UPI payment ₹500");
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      UPI ₹500
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="h-12 bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold"
-                      onClick={() => {
-                        setCashAmount("1000");
-                        setCashOperation("add");
-                        setCashReason("UPI payment ₹1000");
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      UPI ₹1000
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="h-12 bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold"
-                      onClick={() => {
-                        setCashAmount("2000");
-                        setCashOperation("add");
-                        setCashReason("UPI payment ₹2000");
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      UPI ₹2000
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="h-12 bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold"
                       onClick={() => {
                         setCashAmount("5000");
                         setCashOperation("add");
                         setCashReason("UPI payment ₹5000");
                       }}
+                      className="h-12 bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
+                      <DollarSign className="h-4 w-4 mr-2" />
                       UPI ₹5000
                     </Button>
-                  </div>
-
-                  <Separator className="my-4" />
-
-                  <h3 className="font-semibold text-gray-800 flex items-center text-red-700">
-                    <Minus className="h-5 w-5 mr-2" />
-                    Remove Money
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
-                      className="h-12 bg-red-50 border-2 border-red-200 hover:bg-red-100 text-red-700 font-semibold"
                       onClick={() => {
                         setCashAmount("1000");
                         setCashOperation("remove");
                         setCashReason("Bank deposit ₹1000");
                       }}
+                      className="h-12 bg-red-50 border-red-200 hover:bg-red-100 text-red-700"
                     >
                       <Minus className="h-4 w-4 mr-2" />
                       Remove ₹1000
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="h-12 bg-red-50 border-2 border-red-200 hover:bg-red-100 text-red-700 font-semibold"
-                      onClick={() => {
-                        setCashAmount("5000");
-                        setCashOperation("remove");
-                        setCashReason("Bank deposit ₹5000");
-                      }}
-                    >
-                      <Minus className="h-4 w-4 mr-2" />
-                      Remove ₹5000
                     </Button>
                   </div>
                 </div>
@@ -1426,11 +1270,11 @@ export default function POSEnhanced() {
               </DialogHeader>
 
               <div className="space-y-6">
-                <div className="p-6 bg-green-50 rounded-xl text-center border border-green-200">
-                  <div className="text-3xl font-bold text-green-700">
+                <div className="p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl text-center border border-green-200">
+                  <div className="text-4xl font-bold text-green-700 mb-2">
                     {formatCurrency(total)}
                   </div>
-                  <div className="text-green-600 mt-1">Amount to Pay</div>
+                  <div className="text-green-600">Amount to Pay</div>
                 </div>
 
                 <div>
@@ -1456,14 +1300,13 @@ export default function POSEnhanced() {
                     value={amountPaid}
                     onChange={(e) => {
                       const value = e.target.value;
-                      // Allow empty string or valid decimal numbers
                       if (value === "" || /^\d*\.?\d*$/.test(value)) {
                         setAmountPaid(value);
                       }
                     }}
                     step="0.01"
                     min={0}
-                    className="text-lg p-3"
+                    className="text-lg p-3 rounded-xl"
                     autoFocus
                   />
                   {amountPaid && parseFloat(amountPaid) < total && (
@@ -1480,18 +1323,10 @@ export default function POSEnhanced() {
                       </p>
                     </div>
                   )}
-                  {amountPaid && parseFloat(amountPaid) === total && (
-                    <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-green-700 font-semibold">
-                        Exact amount - No change required
-                      </p>
-                    </div>
-                  )}
                 </div>
 
-                {/* Detailed Payment Options */}
                 {paymentMethod === "cash" && (
-                  <div className="grid grid-cols-3 gap-2 mt-4">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button
                       type="button"
                       variant="outline"
@@ -1530,9 +1365,9 @@ export default function POSEnhanced() {
                   <Button
                     onClick={processSale}
                     disabled={isProcessing || !amountPaid || parseFloat(amountPaid) < total}
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="bg-green-600 hover:bg-green-700 text-white px-8"
                   >
-                    {isProcessing ? "Processing..." : `Complete Sale ${formatCurrency(total)}`}
+                    {isProcessing ? "Processing..." : `Complete Sale`}
                   </Button>
                 </div>
               </div>
