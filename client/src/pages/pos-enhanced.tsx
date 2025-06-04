@@ -1102,130 +1102,251 @@ export default function POSEnhanced() {
             </div>
           )}
 
-          {/* Cash Register Dialog */}
+          {/* Enhanced Cash Register Dialog */}
           <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle className="flex items-center text-xl">
-                  <Banknote className="h-6 w-6 mr-3" />
+                <DialogTitle className="flex items-center text-2xl font-bold">
+                  <Banknote className="h-8 w-8 mr-3 text-green-600" />
                   Cash Register Management
                 </DialogTitle>
+                <p className="text-gray-600">Manage cash and digital payments in your register</p>
               </DialogHeader>
 
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Select value={cashOperation} onValueChange={setCashOperation}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue placeholder="Operation" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="add">Add Cash</SelectItem>
-                      <SelectItem value="remove">Remove Cash</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-6">
+                {/* Current Balance Display */}
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-xl border border-green-200">
+                  <div className="text-center">
+                    <div className="text-sm text-gray-600 mb-1">Current Cash in Hand</div>
+                    <div className="text-3xl font-bold text-green-700">{formatCurrency(cashInHand)}</div>
+                  </div>
+                </div>
 
+                {/* Operation Selection */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    cashOperation === 'add' 
+                      ? 'border-green-500 bg-green-50' 
+                      : 'border-gray-200 hover:border-green-300'
+                  }`} onClick={() => setCashOperation('add')}>
+                    <div className="text-center">
+                      <Plus className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                      <div className="font-semibold text-green-700">Add Money</div>
+                      <div className="text-sm text-gray-600">Increase cash register</div>
+                    </div>
+                  </div>
+                  <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    cashOperation === 'remove' 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-200 hover:border-red-300'
+                  }`} onClick={() => setCashOperation('remove')}>
+                    <div className="text-center">
+                      <Minus className="h-8 w-8 mx-auto mb-2 text-red-600" />
+                      <div className="font-semibold text-red-700">Remove Money</div>
+                      <div className="text-sm text-gray-600">Decrease cash register</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amount Input */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700">Enter Amount</label>
                   <Input
                     type="number"
-                    placeholder="Enter amount"
+                    placeholder="₹ 0.00"
                     value={cashAmount}
                     onChange={(e) => setCashAmount(e.target.value)}
-                    className="flex-1"
+                    className="text-2xl p-4 text-center font-bold"
                   />
                 </div>
 
-                <div>
+                {/* Reason Input */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700">Reason for Transaction</label>
                   <Input
-                    placeholder="Reason for transaction"
+                    placeholder="Enter reason (e.g., Cash sales, Bank deposit, etc.)"
                     value={cashReason}
                     onChange={(e) => setCashReason(e.target.value)}
+                    className="p-3"
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
+                {/* Quick Amount Buttons */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-800 flex items-center">
+                    <Banknote className="h-5 w-5 mr-2" />
+                    Cash Transactions
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
                     <Button
-                      size="sm"
+                      variant="outline"
+                      className="h-12 bg-green-50 border-2 border-green-200 hover:bg-green-100 text-green-700 font-semibold"
                       onClick={() => {
                         setCashAmount("1000");
                         setCashOperation("add");
                         setCashReason("Cash sales ₹1000");
                       }}
-                      className="border-green-300 text-green-700 hover:bg-green-50"
                     >
+                      <Plus className="h-4 w-4 mr-2" />
                       Add ₹1000
                     </Button>
                     <Button
-                      size="sm"
+                      variant="outline"
+                      className="h-12 bg-green-50 border-2 border-green-200 hover:bg-green-100 text-green-700 font-semibold"
                       onClick={() => {
                         setCashAmount("2000");
                         setCashOperation("add");
                         setCashReason("Cash sales ₹2000");
                       }}
-                      className="border-green-300 text-green-700 hover:bg-green-50"
                     >
+                      <Plus className="h-4 w-4 mr-2" />
                       Add ₹2000
                     </Button>
                     <Button
-                      size="sm"
+                      variant="outline"
+                      className="h-12 bg-green-50 border-2 border-green-200 hover:bg-green-100 text-green-700 font-semibold"
                       onClick={() => {
                         setCashAmount("5000");
                         setCashOperation("add");
                         setCashReason("Cash sales ₹5000");
                       }}
-                      className="border-green-300 text-green-700 hover:bg-green-50"
                     >
+                      <Plus className="h-4 w-4 mr-2" />
                       Add ₹5000
                     </Button>
                     <Button
-                      size="sm"
+                      variant="outline"
+                      className="h-12 bg-green-50 border-2 border-green-200 hover:bg-green-100 text-green-700 font-semibold"
                       onClick={() => {
                         setCashAmount("10000");
                         setCashOperation("add");
                         setCashReason("Cash sales ₹10000");
                       }}
-                      className="border-green-300 text-green-700 hover:bg-green-50"
                     >
+                      <Plus className="h-4 w-4 mr-2" />
                       Add ₹10000
                     </Button>
                   </div>
 
-                  <Separator />
+                  <Separator className="my-4" />
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <h3 className="font-semibold text-gray-800 flex items-center">
+                    <DollarSign className="h-5 w-5 mr-2" />
+                    UPI & Digital Payments
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
                     <Button
-                      size="sm"
+                      variant="outline"
+                      className="h-12 bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold"
+                      onClick={() => {
+                        setCashAmount("500");
+                        setCashOperation("add");
+                        setCashReason("UPI payment ₹500");
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      UPI ₹500
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-12 bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold"
+                      onClick={() => {
+                        setCashAmount("1000");
+                        setCashOperation("add");
+                        setCashReason("UPI payment ₹1000");
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      UPI ₹1000
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-12 bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold"
+                      onClick={() => {
+                        setCashAmount("2000");
+                        setCashOperation("add");
+                        setCashReason("UPI payment ₹2000");
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      UPI ₹2000
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-12 bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold"
+                      onClick={() => {
+                        setCashAmount("5000");
+                        setCashOperation("add");
+                        setCashReason("UPI payment ₹5000");
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      UPI ₹5000
+                    </Button>
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  <h3 className="font-semibold text-gray-800 flex items-center text-red-700">
+                    <Minus className="h-5 w-5 mr-2" />
+                    Remove Money
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      className="h-12 bg-red-50 border-2 border-red-200 hover:bg-red-100 text-red-700 font-semibold"
                       onClick={() => {
                         setCashAmount("1000");
                         setCashOperation("remove");
                         setCashReason("Bank deposit ₹1000");
                       }}
-                      className="border-red-300 text-red-700 hover:bg-red-50"
                     >
+                      <Minus className="h-4 w-4 mr-2" />
                       Remove ₹1000
                     </Button>
                     <Button
-                      size="sm"
+                      variant="outline"
+                      className="h-12 bg-red-50 border-2 border-red-200 hover:bg-red-100 text-red-700 font-semibold"
                       onClick={() => {
                         setCashAmount("5000");
                         setCashOperation("remove");
                         setCashReason("Bank deposit ₹5000");
                       }}
-                      className="border-red-300 text-red-700 hover:bg-red-50"
                     >
+                      <Minus className="h-4 w-4 mr-2" />
                       Remove ₹5000
                     </Button>
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-2">
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-3 pt-4">
                   <Button
                     variant="outline"
                     onClick={() => setShowCashRegister(false)}
+                    className="px-6"
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleCashOperation}>
-                    {cashOperation === 'add' ? 'Add Cash' : 'Remove Cash'}
+                  <Button 
+                    onClick={handleCashOperation}
+                    className={`px-8 font-semibold ${
+                      cashOperation === 'add' 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                  >
+                    {cashOperation === 'add' ? (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Cash
+                      </>
+                    ) : (
+                      <>
+                        <Minus className="h-4 w-4 mr-2" />
+                        Remove Cash
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
