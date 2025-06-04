@@ -867,88 +867,39 @@ export default function POSEnhanced() {
 
           {/* Product Search Results Overlay */}
           {searchTerm && filteredProducts.length > 0 && (
-            <div className="absolute top-48 left-6 right-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-20 max-h-96 overflow-auto">
-              <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-xl">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-lg">
-                    {filteredProducts.length} products found
-                  </h3>
-                  <Badge className="bg-white/20 text-white border-white/30">
-                    Search Results
-                  </Badge>
-                </div>
-                <p className="text-blue-100 text-sm mt-1">
-                  Click on any product to add to cart
-                </p>
+            <div className="absolute top-48 left-6 right-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-20 max-h-80 overflow-auto">
+              <div className="p-3 bg-gray-50 border-b border-gray-200 rounded-t-xl">
+                <h3 className="font-semibold text-gray-900">
+                  Found {filteredProducts.length} products
+                </h3>
               </div>
-              
-              <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
-                {filteredProducts.slice(0, 10).map((product: Product) => (
-                  <Card
-                    key={product.id}
-                    className="p-4 hover:shadow-lg cursor-pointer transition-all duration-200 hover:border-blue-300 hover:bg-blue-50"
-                    onClick={() => addToCart(product)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Package className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-gray-900 text-lg">{product.name}</h4>
-                            <p className="text-sm text-gray-500 font-mono">{product.sku}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              {product.category && (
-                                <Badge variant="outline" className="text-xs">
-                                  {product.category.name}
-                                </Badge>
-                              )}
-                              <Badge 
-                                className={`text-xs ${
-                                  product.stockQuantity > 0 
-                                    ? 'bg-green-100 text-green-800 border-green-200' 
-                                    : 'bg-red-100 text-red-800 border-red-200'
-                                }`}
-                              >
-                                {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
+              {filteredProducts.slice(0, 8).map((product: Product) => (
+                <div
+                  key={product.id}
+                  className="p-4 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                  onClick={() => addToCart(product)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">{product.name}</h4>
+                      <p className="text-sm text-gray-500 font-mono">{product.sku}</p>
+                      {product.category && (
+                        <Badge variant="outline" className="mt-1 text-xs">
+                          {product.category.name}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-right ml-4">
+                      <div className="font-bold text-lg text-green-600">
+                        {formatCurrency(parseFloat(product.price))}
                       </div>
-                      
-                      <div className="text-right ml-4">
-                        <div className="text-2xl font-bold text-green-600 mb-1">
-                          {formatCurrency(parseFloat(product.price))}
-                        </div>
-                        {product.mrp && parseFloat(product.price) < product.mrp && (
-                          <div className="text-sm text-gray-500 line-through">
-                            MRP: {formatCurrency(product.mrp)}
-                          </div>
-                        )}
-                        <Button
-                          size="sm"
-                          className="mt-2 bg-blue-600 hover:bg-blue-700 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(product);
-                          }}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add to Cart
-                        </Button>
+                      <div className={`text-sm ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
-              
-              {filteredProducts.length > 10 && (
-                <div className="p-3 bg-gray-50 border-t text-center text-sm text-gray-600 rounded-b-xl">
-                  Showing first 10 results. Refine your search for more specific results.
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           )}
 
