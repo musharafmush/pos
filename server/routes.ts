@@ -1,7 +1,4 @@
-The code has been modified to include the price field in the saleItems array for database compatibility.
-```
 
-```replit_final_file
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -596,125 +593,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sales API
-  // POST /api/sales - Create a new sale
-app.post("/api/sales", async (req, res) => {
-  try {
-    console.log("Processing sale request:", req.body);
+  app.post("/api/sales", async (req, res) => {
+    try {
+      console.log("Processing sale request:", req.body);
 
-    const {
-      customerId,
-      customerName,
-      items,
-      subtotal,
-      discount,
-      discountPercent,
-      tax,
-      taxRate,
-      total,
-      paymentMethod,
-      amountPaid,
-      change,
-      notes,
-      billNumber,
-      status
-    } = req.body;
+      const {
+        customerId,
+        customerName,
+        items,
+        subtotal,
+        discount,
+        discountPercent,
+        tax,
+        taxRate,
+        total,
+        paymentMethod,
+        amountPaid,
+        change,
+        notes,
+        billNumber,
+        status
+      } = req.body;
 
-    // Validate required fields
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ 
-        error: "Transaction failed",
-        message: "Items are required for sale",
-        details: "Please add items to complete the transaction"
-      });
-    }
-
-    if (!total || parseFloat(total) <= 0) {
-      return res.status(400).json({ 
-        error: "Transaction failed",
-        message: "Valid total amount is required",
-        details: "Please check the total amount"
-      });
-    }
-
-    // Generate order number if not provided
-    const orderNumber = billNumber || `SALE-${Date.now()}`;
-
-    // Safely handle customerId - ensure it's null if undefined/empty
-    const safeCustomerId = customerId && parseInt(customerId.toString()) > 0 ? parseInt(customerId.toString()) : null;
-
-    // Get user ID safely
-    const userId = (req.user as any)?.id || 1;
-
-    // Prepare sale items with validation
-    const saleItems = items.map((item: any) => {
-      const productId = parseInt(item.productId);
-      const quantity = parseInt(item.quantity);
-      const unitPrice = parseFloat(item.unitPrice || item.price || "0");
-      const itemSubtotal = parseFloat(item.total || item.subtotal || (quantity * unitPrice));
-
-      if (isNaN(productId) || isNaN(quantity) || isNaN(unitPrice)) {
-        throw new Error(`Invalid item data: productId=${item.productId}, quantity=${item.quantity}, price=${item.unitPrice || item.price}`);
+      // Validate required fields
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ 
+          error: "Transaction failed",
+          message: "Items are required for sale",
+          details: "Please add items to complete the transaction"
+        });
       }
 
-      return {
-        productId,
-        quantity,
-        unitPrice,
-        price: unitPrice, // Add price field for database compatibility
-        subtotal: itemSubtotal,
-        total: itemSubtotal // Add total field for database compatibility
+      if (!total || parseFloat(total) <= 0) {
+        return res.status(400).json({ 
+          error: "Transaction failed",
+          message: "Valid total amount is required",
+          details: "Please check the total amount"
+        });
+      }
+
+      // Generate order number if not provided
+      const orderNumber = billNumber || `SALE-${Date.now()}`;
+
+      // Safely handle customerId - ensure it's null if undefined/empty
+      const safeCustomerId = customerId && parseInt(customerId.toString()) > 0 ? parseInt(customerId.toString()) : null;
+
+      // Get user ID safely
+      const userId = (req.user as any)?.id || 1;
+
+      // Prepare sale items with validation
+      const saleItems = items.map((item: any) => {
+        const productId = parseInt(item.productId);
+        const quantity = parseInt(item.quantity);
+        const unitPrice = parseFloat(item.unitPrice || item.price || "0");
+        const itemSubtotal = parseFloat(item.total || item.subtotal || (quantity * unitPrice));
+
+        if (isNaN(productId) || isNaN(quantity) || isNaN(unitPrice)) {
+          throw new Error(`Invalid item data: productId=${item.productId}, quantity=${item.quantity}, price=${item.unitPrice || item.price}`);
+        }
+
+        return {
+          productId,
+          quantity,
+          unitPrice,
+          price: unitPrice, // Add price field for database compatibility
+          subtotal: itemSubtotal,
+          total: itemSubtotal // Add total field for database compatibility
+        };
+      });
+
+      console.log("Validated sale items:", saleItems);
+
+      // Use the createSaleWithItems method from storage
+      const saleData = {
+        orderNumber,
+        customerId: safeCustomerId,
+        userId,
+        total: parseFloat(total),
+        tax: parseFloat(tax || "0"),
+        discount: parseFloat(discount || "0"),
+        paymentMethod: paymentMethod || "cash",
+        status: status || "completed"
       };
-    });
 
-    console.log("Validated sale items:", saleItems);
+      console.log("Creating sale with data:", saleData);
 
-    // Use the createSaleWithItems method from storage
-    const saleData = {
-      orderNumber,
-      customerId: safeCustomerId,
-      userId,
-      total: parseFloat(total),
-      tax: parseFloat(tax || "0"),
-      discount: parseFloat(discount || "0"),
-      paymentMethod: paymentMethod || "cash",
-      status: status || "completed"
-    };
+      // Create the sale using the correct storage method
+      const newSale = await storage.createSaleWithItems(saleData, saleItems);
 
-    console.log("Creating sale with data:", saleData);
+      // Return success response
+      const responseData = {
+        id: newSale.id,
+        saleId: newSale.id,
+        billNumber: orderNumber,
+        total: parseFloat(total),
+        change: parseFloat(change || "0"),
+        paymentMethod: paymentMethod || "cash",
+        status: "completed",
+        message: "Sale completed successfully",
+        timestamp: new Date().toISOString()
+      };
 
-    // Create the sale using the correct storage method
-    const newSale = await storage.createSaleWithItems(saleData, saleItems);
+      console.log("Sale completed successfully:", responseData);
+      res.status(201).json(responseData);
 
-    // Return success response
-    const responseData = {
-      id: newSale.id,
-      saleId: newSale.id,
-      billNumber: orderNumber,
-      total: parseFloat(total),
-      change: parseFloat(change || "0"),
-      paymentMethod: paymentMethod || "cash",
-      status: "completed",
-      message: "Sale completed successfully",
-      timestamp: new Date().toISOString()
-    };
+    } catch (error) {
+      console.error("Error creating sale:", error);
 
-    console.log("Sale completed successfully:", responseData);
-    res.status(201).json(responseData);
+      // Return detailed error information
+      const errorResponse = {
+        error: "Transaction failed",
+        message: error.message || "Internal server error occurred",
+        details: "Please check your connection and try again",
+        timestamp: new Date().toISOString()
+      };
 
-  } catch (error) {
-    console.error("Error creating sale:", error);
-
-    // Return detailed error information
-    const errorResponse = {
-      error: "Transaction failed",
-      message: error.message || "Internal server error occurred",
-      details: "Please check your connection and try again",
-      timestamp: new Date().toISOString()
-    };
-
-    res.status(500).json(errorResponse);
-  }
-});
+      res.status(500).json(errorResponse);
+    }
+  });
 
   app.get('/api/sales', isAuthenticated, async (req, res) => {
     try {
@@ -924,3 +920,250 @@ app.post("/api/sales", async (req, res) => {
   app.put('/api/suppliers/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const supplierData = schema.supplierInsertSchema.parse(req.body);
+      const supplier = await storage.updateSupplier(id, supplierData);
+
+      if (!supplier) {
+        return res.status(404).json({ message: 'Supplier not found' });
+      }
+
+      res.json(supplier);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error('Error updating supplier:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/suppliers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteSupplier(id);
+
+      if (!deleted) {
+        return res.status(404).json({ message: 'Supplier not found' });
+      }
+
+      res.json({ message: 'Supplier deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Customers API
+  app.get('/api/customers', async (req, res) => {
+    try {
+      const customers = await storage.listCustomers();
+      res.json(customers);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/customers/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const customer = await storage.getCustomerById(id);
+
+      if (!customer) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+
+      res.json(customer);
+    } catch (error) {
+      console.error('Error fetching customer:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/customers', isAuthenticated, async (req, res) => {
+    try {
+      const customerData = schema.customerInsertSchema.parse(req.body);
+      const customer = await storage.createCustomer(customerData);
+      res.status(201).json(customer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error('Error creating customer:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/customers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const customerData = schema.customerInsertSchema.parse(req.body);
+      const customer = await storage.updateCustomer(id, customerData);
+
+      if (!customer) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+
+      res.json(customer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error('Error updating customer:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/customers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteCustomer(id);
+
+      if (!deleted) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+
+      res.json({ message: 'Customer deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Users API (Admin only)
+  app.get('/api/users', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const users = await storage.listUsers();
+      // Remove passwords from response
+      const safeUsers = users.map(user => {
+        const { password, ...safeUser } = user;
+        return safeUser;
+      });
+      res.json(safeUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/users/:id', isAuthenticated, isAdminOrManager, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = await storage.getUserById(id);
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const userData = schema.userInsertSchema.parse(req.body);
+
+      // Check if username already exists (if provided)
+      if (userData.username) {
+        const existingUser = await storage.getUserByUsername(userData.username);
+        if (existingUser) {
+          return res.status(400).json({ message: 'Username already exists' });
+        }
+      }
+
+      // Check if email already exists
+      const existingEmail = await storage.getUserByEmail(userData.email);
+      if (existingEmail) {
+        return res.status(400).json({ message: 'Email already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+      const userToCreate = {
+        ...userData,
+        password: hashedPassword,
+        active: userData.active !== false
+      };
+
+      const user = await storage.createUser(userToCreate);
+
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      res.status(201).json(safeUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error('Error creating user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/users/:id', isAuthenticated, isAdminOrManager, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userData = req.body;
+
+      // Don't allow updating password through this endpoint
+      if (userData.password) {
+        delete userData.password;
+      }
+
+      const user = await storage.updateUser(id, userData);
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Don't allow deleting yourself
+      if ((req.user as any).id === id) {
+        return res.status(400).json({ message: 'Cannot delete your own account' });
+      }
+
+      const deleted = await storage.deleteUser(id);
+
+      if (!deleted) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Dashboard stats API
+  app.get('/api/dashboard/stats', async (req, res) => {
+    try {
+      const stats = await storage.getDashboardStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Create HTTP server
+  const httpServer = createServer(app);
+  return httpServer;
+}
