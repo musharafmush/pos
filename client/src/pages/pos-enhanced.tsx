@@ -1371,7 +1371,7 @@ export default function POSEnhanced() {
                         onClick={() => {
                           setCashAmount("5000");
                           setCashOperation("remove");
-                          setCashReason("Bank deposit ₹5000";
+                          setCashReason("Bank deposit ₹5000");
                         }}
                         className="border-red-300 text-red-700 hover:bg-red-50"
                       >
