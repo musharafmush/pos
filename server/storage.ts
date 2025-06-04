@@ -563,6 +563,73 @@ export const storage = {
     }
   },
 
+  async updatePurchaseStatus(id: number, status: string, receivedDate?: Date): Promise<any> {
+    const purchaseData: any = { status };
+    if (receivedDate) {
+      purchaseData.receivedDate = receivedDate;
+    }
+
+    const [updated] = await db.update(purchases)
+      .set(purchaseData)
+      .where(eq(purchases.id, id))
+      .returning();
+
+    if (!updated) return null;
+
+    return this.getPurchaseById(id);
+  }
+
+  // Create sale with items
+  async createSaleWithItems(saleData: any, items: any[]): Promise<any> {
+    try {
+      console.log('Creating sale with data:', saleData);
+      console.log('Sale items:', items);
+
+      // Start a transaction
+      const result = await db.transaction(async (tx) => {
+        // Insert the sale
+        const [newSale] = await tx.insert(sales).values({
+          orderNumber: saleData.orderNumber,
+          customerId: saleData.customerId,
+          userId: saleData.userId,
+          total: saleData.total,
+          tax: saleData.tax,
+          discount: saleData.discount,
+          paymentMethod: saleData.paymentMethod,
+          status: saleData.status
+        }).returning();
+
+        console.log('Created sale:', newSale);
+
+        // Insert sale items and update stock
+        for (const item of items) {
+          // Insert sale item
+          await tx.insert(saleItems).values({
+            saleId: newSale.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal
+          });
+
+          // Update product stock
+          await tx.update(products)
+            .set({
+              stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`
+            })
+            .where(eq(products.id, item.productId));
+        }
+
+        return newSale;
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error creating sale:', error);
+      throw error;
+    }
+  }
+
   // Purchase related operations
   async createPurchase(
     userId: number,
@@ -878,6 +945,57 @@ export const storage = {
     });
   },
 
+  async createSaleWithItems(saleData: any, items: any[]): Promise<any> {
+    try {
+      console.log('Creating sale with data:', saleData);
+      console.log('Sale items:', items);
+
+      // Start a transaction
+      const result = await db.transaction(async (tx) => {
+        // Insert the sale
+        const [newSale] = await tx.insert(sales).values({
+          orderNumber: saleData.orderNumber,
+          customerId: saleData.customerId,
+          userId: saleData.userId,
+          total: saleData.total,
+          tax: saleData.tax,
+          discount: saleData.discount,
+          paymentMethod: saleData.paymentMethod,
+          status: saleData.status
+        }).returning();
+
+        console.log('Created sale:', newSale);
+
+        // Insert sale items and update stock
+        for (const item of items) {
+          // Insert sale item
+          await tx.insert(saleItems).values({
+            saleId: newSale.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal
+          });
+
+          // Update product stock
+          await tx.update(products)
+            .set({
+              stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`
+            })
+            .where(eq(products.id, item.productId));
+        }
+
+        return newSale;
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error creating sale:', error);
+      throw error;
+    }
+  }
+,
+
   // Dashboard related operations
   async getDashboardStats(): Promise<any> {
     try {
@@ -892,7 +1010,8 @@ export const storage = {
       });
 
       // Get low stock products
-      const lowStockProducts = await db.query.products.findMany({
+      const lowStockProducts = await db.query.products.findMany```text
+({
         where: sql`${products.stockQuantity} <= ${products.alertThreshold}`,
         limit: 10
       });

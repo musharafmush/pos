@@ -624,118 +624,46 @@ app.post("/api/sales", async (req, res) => {
       return res.status(400).json({ error: "Valid total amount is required" });
     }
 
-    // Get database connection
-    const db = getDb();
+    // Generate order number if not provided
+    const orderNumber = billNumber || `SALE-${Date.now()}`;
 
-    // Validate all products exist and have sufficient stock before processing
-    const getProduct = db.prepare("SELECT id, name, stockQuantity FROM products WHERE id = ?");
-
-    for (const item of items) {
-      const product = getProduct.get(item.productId);
-      if (!product) {
-        return res.status(400).json({ error: `Product with ID ${item.productId} not found` });
-      }
-
-      if (product.stockQuantity < item.quantity) {
-        return res.status(400).json({ 
-          error: `Insufficient stock for ${product.name}. Available: ${product.stockQuantity}, Required: ${item.quantity}` 
-        });
-      }
-    }
-
-    // Create the sale record
+    // Process sale using storage layer
     const saleData = {
+      orderNumber,
       customerId: customerId || null,
-      customerName: customerName || "Walk-in Customer",
-      subtotal: parseFloat(subtotal || "0"),
-      discount: parseFloat(discount || "0"),
-      discountPercent: parseFloat(discountPercent || "0"),
-      tax: parseFloat(tax || "0"),
-      taxRate: parseFloat(taxRate || "18"),
-      total: parseFloat(total),
+      userId: (req.user as any)?.id || 1, // Default to user 1 if no authenticated user
+      total: parseFloat(total).toString(),
+      tax: parseFloat(tax || "0").toString(),
+      discount: parseFloat(discount || "0").toString(),
       paymentMethod: paymentMethod || "cash",
-      amountPaid: parseFloat(amountPaid || total),
-      change: parseFloat(change || "0"),
-      notes: notes || "",
-      billNumber: billNumber || `SALE-${Date.now()}`,
-      status: status || "completed",
-      saleDate: new Date().toISOString()
+      status: status || "completed"
     };
 
+    // Prepare sale items
+    const saleItems = items.map((item: any) => ({
+      productId: parseInt(item.productId),
+      quantity: parseInt(item.quantity),
+      unitPrice: parseFloat(item.unitPrice || item.price || "0").toString(),
+      subtotal: parseFloat(item.total || item.subtotal || (item.quantity * (item.unitPrice || item.price || 0))).toString()
+    }));
+
     console.log("Creating sale with data:", saleData);
+    console.log("Sale items:", saleItems);
 
-    // Insert sale record
-    const insertSaleQuery = `
-      INSERT INTO sales (
-        customerId, customerName, subtotal, discount, discountPercent,
-        tax, taxRate, total, paymentMethod, amountPaid, 
-        change, notes, billNumber, status, saleDate
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    const saleResult = db.prepare(insertSaleQuery).run(
-      saleData.customerId,
-      saleData.customerName,
-      saleData.subtotal,
-      saleData.discount,
-      saleData.discountPercent,
-      saleData.tax,
-      saleData.taxRate,
-      saleData.total,
-      saleData.paymentMethod,
-      saleData.amountPaid,
-      saleData.change,
-      saleData.notes,
-      saleData.billNumber,
-      saleData.status,
-      saleData.saleDate
-    );
-
-    const saleId = saleResult.lastInsertRowid as number;
-    console.log("Created sale with ID:", saleId);
-
-    // Insert sale items and update stock
-    const insertSaleItemQuery = `
-      INSERT INTO sale_items (
-        saleId, productId, quantity, unitPrice, subtotal, price, total
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    const insertSaleItem = db.prepare(insertSaleItemQuery);
-    const updateStock = db.prepare("UPDATE products SET stockQuantity = stockQuantity - ? WHERE id = ?");
-
-    for (const item of items) {
-      const quantity = parseInt(item.quantity);
-      const unitPrice = parseFloat(item.unitPrice || item.price || "0");
-      const itemTotal = parseFloat(item.total || item.subtotal || (quantity * unitPrice).toString());
-
-      // Insert sale item
-      insertSaleItem.run(
-        saleId,
-        item.productId,
-        quantity,
-        unitPrice,
-        itemTotal,
-        unitPrice,
-        itemTotal
-      );
-
-      // Update product stock
-      updateStock.run(quantity, item.productId);
-      console.log(`Updated stock for product ${item.productId}: -${quantity}`);
-    }
+    // Create the sale using storage layer
+    const newSale = await storage.createSale(saleData, saleItems);
 
     // Return success response
     const responseData = {
-      id: saleId,
-      saleId: saleId,
-      billNumber: saleData.billNumber,
-      total: saleData.total,
-      change: saleData.change,
-      paymentMethod: saleData.paymentMethod,
+      id: newSale.id,
+      saleId: newSale.id,
+      billNumber: orderNumber,
+      total: parseFloat(total),
+      change: parseFloat(change || "0"),
+      paymentMethod: paymentMethod || "cash",
       status: "completed",
       message: "Sale completed successfully",
-      timestamp: saleData.saleDate
+      timestamp: new Date().toISOString()
     };
 
     console.log("Sale completed successfully:", responseData);
