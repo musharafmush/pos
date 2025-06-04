@@ -219,7 +219,7 @@ export default function POSEnhanced() {
     setDiscount(0);
     setAmountPaid("");
     setPaymentMethod("cash");
-    
+
     if (cart.length > 0) {
       toast({
         title: "Cart Cleared",
@@ -238,7 +238,7 @@ export default function POSEnhanced() {
   // Cash register management
   const handleCashOperation = () => {
     const amount = parseFloat(cashAmount);
-    
+
     if (!amount || amount <= 0) {
       toast({
         title: "Invalid Amount",
@@ -262,7 +262,7 @@ export default function POSEnhanced() {
       : Math.max(0, cashInHand - amount);
 
     setCashInHand(newCashAmount);
-    
+
     toast({
       title: "Cash Updated",
       description: `${cashOperation === 'add' ? 'Added' : 'Removed'} ${formatCurrency(amount)}. Current cash: ${formatCurrency(newCashAmount)}`,
@@ -404,7 +404,7 @@ export default function POSEnhanced() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Sale API error:", errorText);
-        
+
         let errorMessage = "Transaction failed";
         try {
           const errorData = JSON.parse(errorText);
@@ -412,7 +412,7 @@ export default function POSEnhanced() {
         } catch (e) {
           errorMessage = errorText || "Unknown server error";
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -528,6 +528,88 @@ export default function POSEnhanced() {
     hour: '2-digit', 
     minute: '2-digit' 
   });
+
+  // Printing receipt functionality
+  const printReceipt = (receiptData: any) => {
+    const receiptContent = `
+      <html>
+      <head>
+        <title>Receipt</title>
+        <style>
+          body { font-family: monospace; }
+          .receipt { width: 280px; padding: 10px; }
+          .text-center { text-align: center; }
+          .text-right { text-align: right; }
+          .line { border-bottom: 1px dashed #000; margin: 5px 0; }
+          .item-row { display: flex; justify-content: space-between; }
+          .item-row .item { flex: 2; }
+          .item-row .qty { flex: 1; text-align: center; }
+          .item-row .price { flex: 1; text-align: right; }
+          .footer { margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="text-center">
+            <h2>Receipt</h2>
+            <p>Bill Number: ${receiptData.billNumber}</p>
+            <p>Date: ${receiptData.billDate}</p>
+          </div>
+          <div class="line"></div>
+          <div>
+            <p>Customer: ${receiptData.customerDetails.name}</p>
+            <p>Salesman: ${receiptData.salesMan}</p>
+          </div>
+          <div class="line"></div>
+          ${receiptData.items.map((item: any) => `
+            <div class="item-row">
+              <div class="item">${item.name}</div>
+              <div class="qty">${item.quantity} x ${item.price}</div>
+              <div class="price">${formatCurrency(item.total)}</div>
+            </div>
+          `).join('')}
+          <div class="line"></div>
+          <div class="text-right">
+            <p>Subtotal: ${formatCurrency(receiptData.subtotal)}</p>
+            <p>Discount: ${formatCurrency(receiptData.discount)}</p>
+            <p>Tax (${receiptData.taxRate}%): ${formatCurrency(receiptData.taxAmount)}</p>
+            <h3 style="margin-top: 10px;">Total: ${formatCurrency(receiptData.grandTotal)}</h3>
+          </div>
+          <div class="line"></div>
+          <div class="text-right footer">
+            <p>Amount Paid: ${formatCurrency(receiptData.amountPaid)}</p>
+            <p>Change Due: ${formatCurrency(receiptData.changeDue)}</p>
+            <p>Payment Method: ${receiptData.paymentMethod}</p>
+          </div>
+          <div class="line"></div>
+          <div class="text-center">
+            <p>Thank you!</p>
+          </div>
+        </div>
+        <script>
+          window.onload = function() {
+            window.print();
+            window.onafterprint = function() {
+              window.close();
+            }
+          }
+        </script>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(receiptContent);
+      printWindow.document.close();
+    } else {
+      toast({
+        title: "Popup Blocked",
+        description: "Please allow popups to print the receipt.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
@@ -1091,502 +1173,3 @@ export default function POSEnhanced() {
                     </div>
                   )}
                 </div>
-
-                <div className="space-y-3">
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAmountPaid(total.toString())}
-                      className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                    >
-                      Exact Amount
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAmountPaid((Math.ceil(total / 10) * 10).toString())}
-                      className="flex-1 text-green-600 border-green-200 hover:bg-green-50"
-                    >
-                      Round Up ₹10
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAmountPaid((Math.ceil(total / 50) * 50).toString())}
-                      className="flex-1 text-purple-600 border-purple-200 hover:bg-purple-50"
-                    >
-                      Round Up ₹50
-                    </Button>
-                  </div>
-
-                  <div className="flex space-x-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowPaymentDialog(false);
-                        setAmountPaid("");
-                      }}
-                      className="flex-1"
-                      disabled={isProcessing}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={processSale}
-                      disabled={isProcessing || !amountPaid || parseFloat(amountPaid) < total}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {isProcessing ? (
-                        <div className="flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Processing...
-                        </div>
-                      ) : (
-                        "Complete Sale"
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* New Customer Dialog */}
-          <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center text-xl">
-                  <UserPlus className="h-6 w-6 mr-3" />
-                  Add New Customer
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name *</label>
-                  <Input
-                    placeholder="Enter customer name"
-                    value={newCustomerName}
-                    onChange={(e) => setNewCustomerName(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                  <Input
-                    placeholder="Enter phone number"
-                    value={newCustomerPhone}
-                    onChange={(e) => setNewCustomerPhone(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                  <Input
-                    placeholder="Enter email address"
-                    type="email"
-                    value={newCustomerEmail}
-                    onChange={(e) => setNewCustomerEmail(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="flex space-x-3 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowNewCustomerDialog(false);
-                      setNewCustomerName("");
-                      setNewCustomerPhone("");
-                      setNewCustomerEmail("");
-                    }}
-                    className="flex-1"
-                    disabled={isCreatingCustomer}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={createNewCustomer}
-                    disabled={isCreatingCustomer || !newCustomerName.trim()}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
-                  >
-                    {isCreatingCustomer ? "Creating..." : "Add Customer"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Loading Overlay */}
-          {(productsLoading || customersLoading) && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <Card className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <span className="text-lg font-medium">Loading system data...</span>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* Enhanced Cash Register Dialog */}
-          <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center text-xl">
-                  <Banknote className="h-6 w-6 mr-3 text-green-600" />
-                  Cash Register Management
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-6">
-                {/* Current Balance Display */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl text-center border-2 border-green-200">
-                    <div className="text-sm text-green-600 font-medium mb-1">Cash in Hand</div>
-                    <div className="text-3xl font-bold text-green-700">
-                      {formatCurrency(cashInHand)}
-                    </div>
-                    <div className="text-xs text-green-600 mt-1">Physical Cash</div>
-                  </div>
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl text-center border-2 border-blue-200">
-                    <div className="text-sm text-blue-600 font-medium mb-1">UPI Balance</div>
-                    <div className="text-3xl font-bold text-blue-700">
-                      {formatCurrency(0)}
-                    </div>
-                    <div className="text-xs text-blue-600 mt-1">Digital Payments</div>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Cash Operations */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                      <Banknote className="h-5 w-5 mr-2 text-green-600" />
-                      Cash Operations
-                    </h3>
-                    
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCashAmount("100");
-                          setCashOperation("add");
-                          setCashReason("Add ₹100 cash");
-                        }}
-                        className="border-green-300 text-green-700 hover:bg-green-50"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        +₹100
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCashAmount("500");
-                          setCashOperation("add");
-                          setCashReason("Add ₹500 cash");
-                        }}
-                        className="border-green-300 text-green-700 hover:bg-green-50"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        +₹500
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCashAmount("1000");
-                          setCashOperation("add");
-                          setCashReason("Add ₹1000 cash");
-                        }}
-                        className="border-green-300 text-green-700 hover:bg-green-50"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        +₹1,000
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCashAmount("2000");
-                          setCashOperation("add");
-                          setCashReason("Add ₹2000 cash");
-                        }}
-                        className="border-green-300 text-green-700 hover:bg-green-50"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        +₹2,000
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCashAmount("100");
-                          setCashOperation("remove");
-                          setCashReason("Remove ₹100 cash");
-                        }}
-                        className="border-red-300 text-red-700 hover:bg-red-50"
-                      >
-                        <Minus className="h-3 w-3 mr-1" />
-                        -₹100
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCashAmount("500");
-                          setCashOperation("remove");
-                          setCashReason("Remove ₹500 cash");
-                        }}
-                        className="border-red-300 text-red-700 hover:bg-red-50"
-                      >
-                        <Minus className="h-3 w-3 mr-1" />
-                        -₹500
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCashAmount("1000");
-                          setCashOperation("remove");
-                          setCashReason("Bank deposit ₹1000");
-                        }}
-                        className="border-red-300 text-red-700 hover:bg-red-50"
-                      >
-                        <Minus className="h-3 w-3 mr-1" />
-                        Bank ₹1K
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCashAmount("5000");
-                          setCashOperation("remove");
-                          setCashReason("Bank deposit ₹5000");
-                        }}
-                        className="border-red-300 text-red-700 hover:bg-red-50"
-                      >
-                        <Minus className="h-3 w-3 mr-1" />
-                        Bank ₹5K
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* UPI Operations */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                      <Phone className="h-5 w-5 mr-2 text-blue-600" />
-                      UPI & Digital
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-blue-300 text-blue-700 hover:bg-blue-50 justify-start"
-                        onClick={() => {
-                          toast({
-                            title: "UPI Settlement",
-                            description: "UPI transactions are automatically settled",
-                          });
-                        }}
-                      >
-                        <Phone className="h-4 w-4 mr-2" />
-                        Check UPI Balance
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-purple-300 text-purple-700 hover:bg-purple-50 justify-start"
-                        onClick={() => {
-                          toast({
-                            title: "Payment Methods",
-                            description: "Card, UPI, Wallet payments tracked separately",
-                          });
-                        }}
-                      >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Card Settlements
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-orange-300 text-orange-700 hover:bg-orange-50 justify-start"
-                        onClick={() => {
-                          toast({
-                            title: "Settlement Report",
-                            description: "Daily settlement report generated",
-                          });
-                        }}
-                      >
-                        <Receipt className="h-4 w-4 mr-2" />
-                        Settlement Report
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-green-300 text-green-700 hover:bg-green-50 justify-start"
-                        onClick={() => {
-                          setCashAmount("0");
-                          setCashOperation("add");
-                          setCashReason("UPI to Cash conversion");
-                        }}
-                      >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        UPI to Cash
-                      </Button>
-                    </div>
-
-                    {/* Payment Summary */}
-                    <div className="bg-gray-50 p-3 rounded-lg border">
-                      <div className="text-sm font-medium text-gray-700 mb-2">Today's Summary</div>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Cash Sales:</span>
-                          <span className="font-medium">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">UPI Sales:</span>
-                          <span className="font-medium">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Card Sales:</span>
-                          <span className="font-medium">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between font-semibold border-t pt-1">
-                          <span>Total Sales:</span>
-                          <span>{formatCurrency(0)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Manual Entry Form */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <Calculator className="h-5 w-5 mr-2" />
-                    Manual Entry
-                  </h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Operation Type</label>
-                      <Select value={cashOperation} onValueChange={(value: 'add' | 'remove') => setCashOperation(value)}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="add">
-                            <div className="flex items-center">
-                              <Plus className="h-4 w-4 mr-2 text-green-600" />
-                              Add Cash
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="remove">
-                            <div className="flex items-center">
-                              <Minus className="h-4 w-4 mr-2 text-red-600" />
-                              Remove Cash
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
-                      <Input
-                        type="number"
-                        placeholder="Enter amount"
-                        value={cashAmount}
-                        onChange={(e) => setCashAmount(e.target.value)}
-                        step="0.01"
-                        min="0"
-                        className="text-lg"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
-                    <Input
-                      placeholder="Enter reason for this transaction"
-                      value={cashReason}
-                      onChange={(e) => setCashReason(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-
-                  {cashAmount && (
-                    <div className={`mt-4 p-3 rounded-lg border ${
-                      cashOperation === 'add' 
-                        ? 'bg-green-50 border-green-200' 
-                        : 'bg-red-50 border-red-200'
-                    }`}>
-                      <p className={`font-semibold ${
-                        cashOperation === 'add' ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        {cashOperation === 'add' ? 'New' : 'Remaining'} cash in hand: {formatCurrency(
-                          cashOperation === 'add' 
-                            ? cashInHand + parseFloat(cashAmount || "0")
-                            : Math.max(0, cashInHand - parseFloat(cashAmount || "0"))
-                        )}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex space-x-3 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowCashRegister(false);
-                      setCashAmount("");
-                      setCashReason("");
-                    }}
-                    className="flex-1"
-                  >
-                    <Clock className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCashOperation}
-                    disabled={!cashAmount || !cashReason.trim()}
-                    className={`flex-1 ${
-                      cashOperation === 'add' 
-                        ? 'bg-green-600 hover:bg-green-700' 
-                        : 'bg-red-600 hover:bg-red-700'
-                    } text-white`}
-                  >
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    {cashOperation === 'add' ? 'Add Cash' : 'Remove Cash'}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Error Toast */}
-          {productsError && (
-            <div className="fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5" />
-                <span>Failed to load products. Please refresh.</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </DashboardLayout>
-    </div>
-  );
-}
