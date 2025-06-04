@@ -881,7 +881,9 @@ export default function POSEnhanced() {
                           </div>
 
                           <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
+                            <div className="flex items-center space-x-2 bg-gray-100```python
+# Fix syntax error at end of file - missing closing tags and brackets
+ rounded-lg p-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1100,6 +1102,198 @@ export default function POSEnhanced() {
             </div>
           )}
 
+          {/* Cash Register Dialog */}
+          <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center text-xl">
+                  <Banknote className="h-6 w-6 mr-3" />
+                  Cash Register Management
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Select value={cashOperation} onValueChange={setCashOperation}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Operation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="add">Add Cash</SelectItem>
+                      <SelectItem value="remove">Remove Cash</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    type="number"
+                    placeholder="Enter amount"
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+
+                <div>
+                  <Input
+                    placeholder="Reason for transaction"
+                    value={cashReason}
+                    onChange={(e) => setCashReason(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setCashAmount("1000");
+                        setCashOperation("add");
+                        setCashReason("Cash sales ₹1000");
+                      }}
+                      className="border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      Add ₹1000
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setCashAmount("2000");
+                        setCashOperation("add");
+                        setCashReason("Cash sales ₹2000");
+                      }}
+                      className="border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      Add ₹2000
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setCashAmount("5000");
+                        setCashOperation("add");
+                        setCashReason("Cash sales ₹5000");
+                      }}
+                      className="border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      Add ₹5000
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setCashAmount("10000");
+                        setCashOperation("add");
+                        setCashReason("Cash sales ₹10000");
+                      }}
+                      className="border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      Add ₹10000
+                    </Button>
+                  </div>
+
+                  <Separator />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setCashAmount("1000");
+                        setCashOperation("remove");
+                        setCashReason("Bank deposit ₹1000");
+                      }}
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      Remove ₹1000
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setCashAmount("5000");
+                        setCashOperation("remove");
+                        setCashReason("Bank deposit ₹5000");
+                      }}
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      Remove ₹5000
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCashRegister(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCashOperation}>
+                    {cashOperation === 'add' ? 'Add Cash' : 'Remove Cash'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* New Customer Dialog */}
+          <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center text-xl">
+                  <UserPlus className="h-6 w-6 mr-3" />
+                  Add New Customer
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name *</label>
+                  <Input
+                    placeholder="Enter customer name"
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    className="w-full"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <Input
+                    placeholder="Enter phone number"
+                    value={newCustomerPhone}
+                    onChange={(e) => setNewCustomerPhone(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                  <Input
+                    placeholder="Enter email address"
+                    value={newCustomerEmail}
+                    onChange={(e) => setNewCustomerEmail(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowNewCustomerDialog(false)}
+                    disabled={isCreatingCustomer}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={createNewCustomer}
+                    disabled={isCreatingCustomer}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {isCreatingCustomer ? "Creating..." : "Create Customer"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {/* Payment Dialog */}
           <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
             <DialogContent className="max-w-lg">
@@ -1173,3 +1367,58 @@ export default function POSEnhanced() {
                     </div>
                   )}
                 </div>
+
+                {/* Detailed Payment Options */}
+                {paymentMethod === "cash" && (
+                  <div className="grid grid-cols-3 gap-2 mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAmountPaid(total.toString())}
+                      className="text-sm"
+                    >
+                      Exact Amount
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAmountPaid((total + 100).toString())}
+                      className="text-sm"
+                    >
+                      +₹100
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAmountPaid((total + 500).toString())}
+                      className="text-sm"
+                    >
+                      +₹500
+                    </Button>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3 pt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPaymentDialog(false)}
+                    disabled={isProcessing}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={processSale}
+                    disabled={isProcessing || !amountPaid || parseFloat(amountPaid) < total}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isProcessing ? "Processing..." : `Complete Sale ${formatCurrency(total)}`}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </DashboardLayout>
+    </div>
+  );
+}
