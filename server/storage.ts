@@ -458,44 +458,70 @@ export const storage = {
       console.log('Creating sale with data:', saleData);
       console.log('Sale items:', items);
 
-      // Start a transaction
-      const result = db.transaction((tx) => {
-        // Insert the sale
-        const newSale = tx.insert(sales).values({
-          orderNumber: saleData.orderNumber || `SALE-${Date.now()}`,
-          customerId: saleData.customerId || null,
-          userId: saleData.userId,
-          total: saleData.total.toString(),
-          tax: (saleData.tax || 0).toString(),
-          discount: (saleData.discount || 0).toString(),
-          paymentMethod: saleData.paymentMethod || 'cash',
-          status: saleData.status || 'completed'
-        }).returning().get();
+      // Import SQLite database directly for raw SQL operations
+      const { sqlite } = await import('@db');
 
-        console.log('Created sale:', newSale);
+      // Start a transaction using SQLite directly
+      const result = sqlite.transaction(() => {
+        // Insert the sale using raw SQL to avoid timestamp issues
+        const insertSale = sqlite.prepare(`
+          INSERT INTO sales (
+            order_number, customer_id, user_id, total, tax, discount, 
+            payment_method, status, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `);
+
+        const saleResult = insertSale.run(
+          saleData.orderNumber || `SALE-${Date.now()}`,
+          saleData.customerId || null,
+          saleData.userId,
+          saleData.total.toString(),
+          (saleData.tax || 0).toString(),
+          (saleData.discount || 0).toString(),
+          saleData.paymentMethod || 'cash',
+          saleData.status || 'completed'
+        );
+
+        const saleId = saleResult.lastInsertRowid;
+        console.log('Created sale with ID:', saleId);
 
         // Insert sale items and update stock
+        const insertSaleItem = sqlite.prepare(`
+          INSERT INTO sale_items (
+            sale_id, product_id, quantity, unit_price, subtotal
+          ) VALUES (?, ?, ?, ?, ?)
+        `);
+
+        const updateStock = sqlite.prepare(`
+          UPDATE products 
+          SET stock_quantity = COALESCE(stock_quantity, 0) - ?
+          WHERE id = ?
+        `);
+
         for (const item of items) {
           // Insert sale item
-          tx.insert(saleItems).values({
-            saleId: newSale.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice.toString(),
-            subtotal: item.subtotal.toString()
-          }).run();
+          insertSaleItem.run(
+            saleId,
+            item.productId,
+            item.quantity,
+            item.unitPrice.toString(),
+            item.subtotal.toString()
+          );
 
           // Update product stock
-          tx.update(products)
-            .set({
-              stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`
-            })
-            .where(eq(products.id, item.productId))
-            .run();
+          updateStock.run(item.quantity, item.productId);
         }
 
-        return newSale;
-      });
+        // Get the created sale
+        const getSale = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
+        const newSale = getSale.get(saleId);
+
+        return {
+          ...newSale,
+          createdAt: new Date(newSale.created_at),
+          updatedAt: new Date(newSale.updated_at)
+        };
+      })();
 
       return result;
     } catch (error) {
@@ -920,44 +946,71 @@ export const storage = {
       console.log('Creating sale with data:', saleData);
       console.log('Sale items:', items);
 
-      // Start a transaction
-      const result = db.transaction((tx) => {
-        // Insert the sale
-        const newSale = tx.insert(sales).values({
-          orderNumber: saleData.orderNumber,
-          customerId: saleData.customerId,
-          userId: saleData.userId,
-          total: saleData.total.toString(),
-          tax: (saleData.tax || 0).toString(),
-          discount: (saleData.discount || 0).toString(),
-          paymentMethod: saleData.paymentMethod,
-          status: saleData.status
-        }).returning().get();
+      // Import SQLite database directly for raw SQL operations
+      const { sqlite } = await import('@db');
 
-        console.log('Created sale:', newSale);
+      // Start a transaction using SQLite directly
+      const result = sqlite.transaction(() => {
+        // Insert the sale using raw SQL to avoid timestamp issues
+        const insertSale = sqlite.prepare(`
+          INSERT INTO sales (
+            order_number, customer_id, user_id, total, tax, discount, 
+            payment_method, status, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `);
+
+        const saleResult = insertSale.run(
+          saleData.orderNumber || `SALE-${Date.now()}`,
+          saleData.customerId || null,
+          saleData.userId,
+          saleData.total.toString(),
+          (saleData.tax || 0).toString(),
+          (saleData.discount || 0).toString(),
+          saleData.paymentMethod || 'cash',
+          saleData.status || 'completed'
+        );
+
+        const saleId = saleResult.lastInsertRowid;
+        console.log('Created sale with ID:', saleId);
 
         // Insert sale items and update stock
+        const insertSaleItem = sqlite.prepare(`
+          INSERT INTO sale_items (
+            sale_id, product_id, quantity, unit_price, subtotal
+          ) VALUES (?, ?, ?, ?, ?)
+        `);
+
+        const updateStock = sqlite.prepare(`
+          UPDATE products 
+          SET stock_quantity = COALESCE(stock_quantity, 0) - ?
+          WHERE id = ?
+        `);
+
         for (const item of items) {
           // Insert sale item
-          tx.insert(saleItems).values({
-            saleId: newSale.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice.toString(),
-            subtotal: item.subtotal.toString()
-          }).run();
+          insertSaleItem.run(
+            saleId,
+            item.productId,
+            item.quantity,
+            item.unitPrice.toString(),
+            item.subtotal.toString()
+          );
 
           // Update product stock
-          tx.update(products)
-            .set({
-              stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`
-            })
-            .where(eq(products.id, item.productId))
-            .run();
+          updateStock.run(item.quantity, item.productId);
+          console.log(`📦 Updated stock for product ${item.productId}: -${item.quantity}`);
         }
 
-        return newSale;
-      });
+        // Get the created sale
+        const getSale = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
+        const newSale = getSale.get(saleId);
+
+        return {
+          ...newSale,
+          createdAt: new Date(newSale.created_at),
+          updatedAt: new Date(newSale.updated_at)
+        };
+      })();
 
       return result;
     } catch (error) {
