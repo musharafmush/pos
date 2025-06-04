@@ -1057,8 +1057,9 @@ export const storage = {
     }
   },
 
-  async getDailySalesData(days: number = 7): Promise<any[]> {
+  async getDailySalesData(days: number = 7): Promise<{ date: string; total: string; sales: number }[]> {
     try {
+      const { sqlite } = await import('@db');
       const salesData = [];
       const today = new Date();
 
@@ -1070,19 +1071,24 @@ export const storage = {
         const nextDate = new Date(date);
         nextDate.setDate(date.getDate() + 1);
 
-        const daySales = await db.query.sales.findMany({
-          where: and(
-            gte(sales.createdAt, date),
-            lt(sales.createdAt, nextDate)
-          )
-        });
+        // Get sales for this day using raw SQL
+        const daySalesQuery = sqlite.prepare(`
+          SELECT 
+            COUNT(*) as count,
+            COALESCE(SUM(CAST(total AS REAL)), 0) as revenue
+          FROM sales 
+          WHERE created_at >= ? AND created_at < ?
+        `);
 
-        const revenue = daySales.reduce((sum, sale) => sum + parseFloat(sale.total || '0'), 0);
+        const result = daySalesQuery.get(
+          date.toISOString(),
+          nextDate.toISOString()
+        );
 
         salesData.push({
           date: date.toISOString().split('T')[0],
-          sales: daySales.length,
-          revenue
+          total: (result?.revenue || 0).toString(),
+          sales: result?.count || 0
         });
       }
 
@@ -1095,8 +1101,55 @@ export const storage = {
 
   async getTopSellingProducts(limit: number = 5, startDate?: Date, endDate?: Date): Promise<any[]> {
     try {
-      // This would need a more complex query in a real implementation
-      return [];
+      const { sqlite } = await import('@db');
+      
+      let dateFilter = '';
+      const params = [];
+      
+      if (startDate) {
+        dateFilter += ' AND s.created_at >= ?';
+        params.push(startDate.toISOString());
+      }
+      
+      if (endDate) {
+        dateFilter += ' AND s.created_at <= ?';
+        params.push(endDate.toISOString());
+      }
+
+      params.push(limit);
+
+      const query = sqlite.prepare(`
+        SELECT 
+          p.id,
+          p.name,
+          p.sku,
+          c.name as category_name,
+          SUM(CAST(si.quantity AS INTEGER)) as sold_quantity,
+          SUM(CAST(si.subtotal AS REAL)) as revenue
+        FROM sale_items si
+        INNER JOIN sales s ON si.sale_id = s.id
+        INNER JOIN products p ON si.product_id = p.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE 1=1 ${dateFilter}
+        GROUP BY p.id, p.name, p.sku, c.name
+        ORDER BY sold_quantity DESC
+        LIMIT ?
+      `);
+
+      const results = query.all(...params);
+
+      return results.map((row: any) => ({
+        product: {
+          id: row.id,
+          name: row.name,
+          sku: row.sku,
+          category: {
+            name: row.category_name || 'Uncategorized'
+          }
+        },
+        soldQuantity: row.sold_quantity || 0,
+        revenue: (row.revenue || 0).toString()
+      }));
     } catch (error) {
       console.error('Error fetching top selling products:', error);
       return [];

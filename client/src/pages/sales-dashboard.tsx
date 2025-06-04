@@ -81,7 +81,8 @@ export default function SalesDashboard() {
       }
     },
     retry: 2,
-    retryDelay: 1000
+    retryDelay: 1000,
+    refetchInterval: 10000 // Refresh every 10 seconds for live data
   });
 
   // Fetch sales chart data
@@ -106,10 +107,22 @@ export default function SalesDashboard() {
   const { data: topProducts, isLoading: productsLoading } = useQuery({
     queryKey: ['/api/reports/top-selling-products', timeRange],
     queryFn: async () => {
-      const response = await fetch(`/api/reports/top-selling-products?days=${timeRange}`);
-      if (!response.ok) throw new Error('Failed to fetch top products');
-      return response.json();
-    }
+      try {
+        const response = await fetch(`/api/reports/top-selling-products?days=${timeRange}&limit=10`);
+        if (!response.ok) {
+          console.error('Top products API error:', response.status);
+          return [];
+        }
+        const data = await response.json();
+        console.log('Top products data:', data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching top products:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
   });
 
   // Process chart data with better error handling
@@ -119,9 +132,11 @@ export default function SalesDashboard() {
     return {
       date: format(new Date(date), "MMM dd"),
       total: isNaN(total) ? 0 : total,
-      sales: isNaN(total) ? 0 : total
+      sales: item.sales || 0
     };
-  }).filter(item => item.total > 0) || [];
+  }) || [];
+
+  console.log('Processed chart data:', chartData);
 
   // Calculate metrics with better error handling
   const totalSalesAmount = salesData?.reduce((total: number, sale: any) => {

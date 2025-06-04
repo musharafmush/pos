@@ -1163,6 +1163,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sales chart data API
+  app.get('/api/dashboard/sales-chart', async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 7;
+      const salesData = await storage.getDailySalesData(days);
+      res.json(salesData);
+    } catch (error) {
+      console.error('Error fetching sales chart data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Top selling products API
+  app.get('/api/reports/top-selling-products', async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 7;
+      const limit = parseInt(req.query.limit as string) || 5;
+      
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      
+      const topProducts = await storage.getTopSellingProducts(limit, startDate);
+      res.json(topProducts);
+    } catch (error) {
+      console.error('Error fetching top selling products:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
