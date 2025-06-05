@@ -82,10 +82,29 @@ export default function POSEnhanced() {
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
+  const [showOpenRegister, setShowOpenRegister] = useState(false);
+  const [showCloseRegister, setShowCloseRegister] = useState(false);
+  const [showWithdrawal, setShowWithdrawal] = useState(false);
+  
+  // Cash register state
+  const [registerOpened, setRegisterOpened] = useState(false);
+  const [openingCash, setOpeningCash] = useState(0);
   const [cashInHand, setCashInHand] = useState(0);
+  const [cashReceived, setCashReceived] = useState(0);
+  const [upiReceived, setUpiReceived] = useState(0);
+  const [cardReceived, setCardReceived] = useState(0);
+  const [bankReceived, setBankReceived] = useState(0);
+  const [chequeReceived, setChequeReceived] = useState(0);
+  const [otherReceived, setOtherReceived] = useState(0);
+  const [totalWithdrawals, setTotalWithdrawals] = useState(0);
+  const [totalRefunds, setTotalRefunds] = useState(0);
+  
+  // Form state
   const [cashOperation, setCashOperation] = useState<'add' | 'remove'>('add');
   const [cashAmount, setCashAmount] = useState("");
   const [cashReason, setCashReason] = useState("");
+  const [withdrawalAmount, setWithdrawalAmount] = useState("");
+  const [withdrawalNote, setWithdrawalNote] = useState("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -236,7 +255,33 @@ export default function POSEnhanced() {
   const taxAmount = (taxableAmount * taxRate) / 100;
   const total = taxableAmount + taxAmount;
 
-  // Cash register management
+  // Register opening
+  const handleOpenRegister = () => {
+    const amount = parseFloat(cashAmount);
+
+    if (!amount || amount < 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid opening amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setOpeningCash(amount);
+    setCashInHand(amount);
+    setRegisterOpened(true);
+    
+    toast({
+      title: "Register Opened",
+      description: `Register opened with ${formatCurrency(amount)}`,
+    });
+
+    setCashAmount("");
+    setShowOpenRegister(false);
+  };
+
+  // Cash operation handler
   const handleCashOperation = () => {
     const amount = parseFloat(cashAmount);
 
@@ -264,15 +309,80 @@ export default function POSEnhanced() {
 
     setCashInHand(newCashAmount);
 
+    if (cashOperation === 'add') {
+      setCashReceived(prev => prev + amount);
+    }
+
     toast({
       title: "Cash Updated",
       description: `${cashOperation === 'add' ? 'Added' : 'Removed'} ${formatCurrency(amount)}. Current cash: ${formatCurrency(newCashAmount)}`,
     });
 
-    // Reset form
     setCashAmount("");
     setCashReason("");
     setShowCashRegister(false);
+  };
+
+  // Withdrawal handler
+  const handleWithdrawal = () => {
+    const amount = parseFloat(withdrawalAmount);
+
+    if (!amount || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid withdrawal amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (amount > cashInHand) {
+      toast({
+        title: "Insufficient Cash",
+        description: "Cannot withdraw more than available cash",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCashInHand(prev => prev - amount);
+    setTotalWithdrawals(prev => prev + amount);
+
+    toast({
+      title: "Withdrawal Processed",
+      description: `Withdrew ${formatCurrency(amount)}. ${withdrawalNote ? `Note: ${withdrawalNote}` : ''}`,
+    });
+
+    setWithdrawalAmount("");
+    setWithdrawalNote("");
+    setShowWithdrawal(false);
+  };
+
+  // Update payment tracking when processing sales
+  const updatePaymentTracking = (method: string, amount: number) => {
+    switch (method.toLowerCase()) {
+      case 'cash':
+        setCashReceived(prev => prev + amount);
+        setCashInHand(prev => prev + amount);
+        break;
+      case 'upi':
+        setUpiReceived(prev => prev + amount);
+        setCashInHand(prev => prev + amount); // UPI can be converted to cash
+        break;
+      case 'card':
+        setCardReceived(prev => prev + amount);
+        break;
+      case 'bank':
+      case 'bank transfer':
+        setBankReceived(prev => prev + amount);
+        break;
+      case 'cheque':
+        setChequeReceived(prev => prev + amount);
+        break;
+      default:
+        setOtherReceived(prev => prev + amount);
+        break;
+    }
   };
 
   // Create new customer
@@ -419,6 +529,9 @@ export default function POSEnhanced() {
 
       const saleResult = await response.json();
       console.log("Sale completed successfully:", saleResult);
+
+      // Update payment tracking
+      updatePaymentTracking(paymentMethod, paidAmount);
 
       toast({
         title: "✅ Sale Completed!",
@@ -641,15 +754,47 @@ export default function POSEnhanced() {
                 </div>
 
                 <div className="flex items-center space-x-6">
-                  <Button
-                    onClick={() => setShowCashRegister(true)}
-                    variant="outline"
-                    size="sm"
-                    className="hover:bg-green-50 border-green-200 text-green-700"
-                  >
-                    <Banknote className="h-4 w-4 mr-2" />
-                    Cash Register
-                  </Button>
+                  {!registerOpened ? (
+                    <Button
+                      onClick={() => setShowOpenRegister(true)}
+                      variant="outline"
+                      size="sm"
+                      className="hover:bg-blue-50 border-blue-200 text-blue-700"
+                    >
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      Open Register
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() => setShowCashRegister(true)}
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-green-50 border-green-200 text-green-700"
+                      >
+                        <Banknote className="h-4 w-4 mr-2" />
+                        Manage Cash
+                      </Button>
+                      <Button
+                        onClick={() => setShowWithdrawal(true)}
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-orange-50 border-orange-200 text-orange-700"
+                      >
+                        <TrendingDown className="h-4 w-4 mr-2" />
+                        Withdrawal
+                      </Button>
+                      <Button
+                        onClick={() => setShowCloseRegister(true)}
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-red-50 border-red-200 text-red-700"
+                      >
+                        <Archive className="h-4 w-4 mr-2" />
+                        Close Register
+                      </Button>
+                    </>
+                  )}
                   <Button
                     onClick={toggleFullscreen}
                     variant="outline"
@@ -668,9 +813,13 @@ export default function POSEnhanced() {
                     <div className="text-sm text-gray-500">Date & Time</div>
                     <div className="font-mono text-sm text-gray-700">{currentDate} • {currentTime}</div>
                   </div>
-                  <div className="text-right bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <div className="text-sm text-blue-600 font-medium">Cash in Hand</div>
-                    <div className="text-xl font-bold text-blue-700">{formatCurrency(cashInHand)}</div>
+                  <div className={`text-right p-3 rounded-lg border ${registerOpened ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                    <div className={`text-sm font-medium ${registerOpened ? 'text-green-600' : 'text-gray-600'}`}>
+                      {registerOpened ? 'Cash in Hand' : 'Register Closed'}
+                    </div>
+                    <div className={`text-xl font-bold ${registerOpened ? 'text-green-700' : 'text-gray-700'}`}>
+                      {registerOpened ? formatCurrency(cashInHand) : '---'}
+                    </div>
                   </div>
                   <div className="text-right bg-green-50 p-3 rounded-lg border border-green-200">
                     <div className="text-sm text-green-600 font-medium">Total Amount</div>
@@ -1101,6 +1250,260 @@ export default function POSEnhanced() {
             </div>
           )}
 
+          {/* Open Register Dialog */}
+          <Dialog open={showOpenRegister} onOpenChange={setShowOpenRegister}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <DollarSign className="h-6 w-6 text-blue-600" />
+                  Open Cash Register
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <p className="text-blue-800 text-sm mb-2">Enter the opening cash amount you're placing in the register drawer.</p>
+                  <p className="text-blue-600 text-xs">This will be your starting balance for the day.</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="openingCash" className="text-sm font-medium">Opening Cash Amount</Label>
+                  <Input
+                    id="openingCash"
+                    type="number"
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(e.target.value)}
+                    placeholder="Enter opening amount"
+                    className="mt-1 text-lg"
+                    step="0.01"
+                    min="0"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowOpenRegister(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleOpenRegister}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={!cashAmount || parseFloat(cashAmount) < 0}
+                  >
+                    Open Register
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Withdrawal Dialog */}
+          <Dialog open={showWithdrawal} onOpenChange={setShowWithdrawal}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <TrendingDown className="h-6 w-6 text-orange-600" />
+                  Cash Withdrawal
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <p className="text-orange-800 text-sm mb-2">Available Cash: {formatCurrency(cashInHand)}</p>
+                  <p className="text-orange-600 text-xs">Enter amount to withdraw from register</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="withdrawalAmount" className="text-sm font-medium">Withdrawal Amount</Label>
+                  <Input
+                    id="withdrawalAmount"
+                    type="number"
+                    value={withdrawalAmount}
+                    onChange={(e) => setWithdrawalAmount(e.target.value)}
+                    placeholder="Enter withdrawal amount"
+                    className="mt-1 text-lg"
+                    step="0.01"
+                    min="0"
+                    max={cashInHand}
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="withdrawalNote" className="text-sm font-medium">Note (Optional)</Label>
+                  <Input
+                    id="withdrawalNote"
+                    value={withdrawalNote}
+                    onChange={(e) => setWithdrawalNote(e.target.value)}
+                    placeholder="e.g., Cash sent to bank"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowWithdrawal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleWithdrawal}
+                    className="bg-orange-600 hover:bg-orange-700"
+                    disabled={!withdrawalAmount || parseFloat(withdrawalAmount) <= 0 || parseFloat(withdrawalAmount) > cashInHand}
+                  >
+                    Process Withdrawal
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Close Register Dialog */}
+          <Dialog open={showCloseRegister} onOpenChange={setShowCloseRegister}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Archive className="h-6 w-6 text-red-600" />
+                  End of Day Summary
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Opening Summary */}
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 className="font-semibold text-blue-800 mb-3">Opening</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">Opening Cash:</span>
+                        <span className="font-semibold">{formatCurrency(openingCash)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sales Summary */}
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h3 className="font-semibold text-green-800 mb-3">Sales Received</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Cash Payments:</span>
+                        <span className="font-semibold">{formatCurrency(cashReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">UPI Payments:</span>
+                        <span className="font-semibold">{formatCurrency(upiReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Card Payments:</span>
+                        <span className="font-semibold">{formatCurrency(cardReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Bank Transfer:</span>
+                        <span className="font-semibold">{formatCurrency(bankReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Cheque:</span>
+                        <span className="font-semibold">{formatCurrency(chequeReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Other:</span>
+                        <span className="font-semibold">{formatCurrency(otherReceived)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-bold">
+                        <span className="text-green-700">Total Sales:</span>
+                        <span>{formatCurrency(cashReceived + upiReceived + cardReceived + bankReceived + chequeReceived + otherReceived)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Outgoing Summary */}
+                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                    <h3 className="font-semibold text-red-800 mb-3">Outgoing</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-red-700">Withdrawals:</span>
+                        <span className="font-semibold">{formatCurrency(totalWithdrawals)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-red-700">Refunds:</span>
+                        <span className="font-semibold">{formatCurrency(totalRefunds)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Final Summary */}
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <h3 className="font-semibold text-purple-800 mb-3">Final Cash Count</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-700">Opening Cash:</span>
+                        <span>{formatCurrency(openingCash)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-700">+ Cash Payments:</span>
+                        <span>{formatCurrency(cashReceived)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-700">+ UPI (as cash):</span>
+                        <span>{formatCurrency(upiReceived)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-700">- Withdrawals:</span>
+                        <span>{formatCurrency(totalWithdrawals)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-bold text-lg">
+                        <span className="text-purple-700">Expected Cash:</span>
+                        <span className="text-purple-800">{formatCurrency(openingCash + cashReceived + upiReceived - totalWithdrawals)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg">
+                        <span className="text-purple-700">Current Cash:</span>
+                        <span className="text-purple-800">{formatCurrency(cashInHand)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCloseRegister(false)}
+                  >
+                    Keep Open
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setRegisterOpened(false);
+                      setOpeningCash(0);
+                      setCashInHand(0);
+                      setCashReceived(0);
+                      setUpiReceived(0);
+                      setCardReceived(0);
+                      setBankReceived(0);
+                      setChequeReceived(0);
+                      setOtherReceived(0);
+                      setTotalWithdrawals(0);
+                      setTotalRefunds(0);
+                      setShowCloseRegister(false);
+                      toast({
+                        title: "Register Closed",
+                        description: "End of day completed successfully",
+                      });
+                    }}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Close Register
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {/* Cash Register Management Modal */}
       <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -1450,9 +1853,11 @@ export default function POSEnhanced() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cash">💵 Cash Payment</SelectItem>
-                      <SelectItem value="card">💳 Card Payment</SelectItem>
                       <SelectItem value="upi">📱 UPI Payment</SelectItem>
+                      <SelectItem value="card">💳 Card Payment</SelectItem>
+                      <SelectItem value="bank">🏦 Bank Transfer</SelectItem>
                       <SelectItem value="cheque">📝 Cheque Payment</SelectItem>
+                      <SelectItem value="other">🔄 Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
