@@ -22,9 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  CashIcon, 
-  LockClosedIcon, 
-  LockOpenIcon,
+  DollarSignIcon as CashIcon, 
+  LockIcon as LockClosedIcon, 
+  UnlockIcon as LockOpenIcon,
   PlusIcon,
   MinusIcon,
   ClockIcon,

@@ -1126,11 +1126,6 @@ export const storage = {
       .select()
       .from(registerSessions)
       .where(eq(registerSessions.status, "open"))
-      .with({
-        openedByUser: {
-          columns: { id: true, name: true, username: true },
-        },
-      })
       .limit(1);
 
     return session[0] || null;
