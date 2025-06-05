@@ -1,4 +1,3 @@
-
 import Database from 'better-sqlite3';
 import path from 'path';
 import bcrypt from 'bcryptjs';
@@ -7,14 +6,14 @@ const dbPath = path.join(process.cwd(), 'pos-data.db');
 
 export async function initializeDatabase() {
   const db = new Database(dbPath);
-  
+
   // Enable foreign keys
   db.pragma('foreign_keys = ON');
-  
+
   console.log('🔄 Creating database tables...');
-  
+
   // Create tables in the correct order (dependencies first)
-  
+
   // Users table
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -29,7 +28,7 @@ export async function initializeDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  
+
   // Categories table
   db.exec(`
     CREATE TABLE IF NOT EXISTS categories (
@@ -39,7 +38,7 @@ export async function initializeDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  
+
   // Suppliers table
   db.exec(`
     CREATE TABLE IF NOT EXISTS suppliers (
@@ -53,7 +52,7 @@ export async function initializeDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  
+
   // Customers table
   db.exec(`
     CREATE TABLE IF NOT EXISTS customers (
@@ -65,7 +64,7 @@ export async function initializeDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  
+
   // Products table
   db.exec(`
     CREATE TABLE IF NOT EXISTS products (
@@ -89,7 +88,7 @@ export async function initializeDatabase() {
       FOREIGN KEY (category_id) REFERENCES categories(id)
     )
   `);
-  
+
   // Sales table
   db.exec(`
     CREATE TABLE IF NOT EXISTS sales (
@@ -107,7 +106,7 @@ export async function initializeDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
-  
+
   // Sale items table
   db.exec(`
     CREATE TABLE IF NOT EXISTS sale_items (
@@ -126,7 +125,7 @@ export async function initializeDatabase() {
       FOREIGN KEY (product_id) REFERENCES products(id)
     )
   `);
-  
+
   // Purchases table
   db.exec(`
     CREATE TABLE IF NOT EXISTS purchases (
@@ -155,7 +154,7 @@ export async function initializeDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
-  
+
   // Purchase items table
   db.exec(`
     CREATE TABLE IF NOT EXISTS purchase_items (
@@ -191,30 +190,62 @@ export async function initializeDatabase() {
       FOREIGN KEY (product_id) REFERENCES products(id)
     )
   `);
-  
+
+  // Returns table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS returns (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sale_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      refund_method TEXT NOT NULL,
+      total_refund TEXT NOT NULL,
+      reason TEXT,
+      notes TEXT,
+      status TEXT NOT NULL DEFAULT 'completed',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (sale_id) REFERENCES sales(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+
+  // Return items table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS return_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      return_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      quantity INTEGER NOT NULL,
+      unit_price TEXT NOT NULL,
+      subtotal TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (return_id) REFERENCES returns(id),
+      FOREIGN KEY (product_id) REFERENCES products(id)
+    )
+  `);
+
   console.log('✅ All tables created successfully');
-  
+
   // Create default admin user if it doesn't exist
   const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
-  
+
   if (!existingAdmin) {
     console.log('🔄 Creating default admin user...');
     const hashedPassword = await bcrypt.hash('admin123', 10);
-    
+
     db.prepare(`
       INSERT INTO users (username, password, name, email, role, active)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run('admin', hashedPassword, 'Administrator', 'admin@pos.local', 'admin', 1);
-    
+
     console.log('✅ Default admin user created (username: admin, password: admin123)');
   }
-  
+
   // Create default category if none exist
   const categoryCount = db.prepare('SELECT COUNT(*) as count FROM categories').get();
-  
+
   if (categoryCount.count === 0) {
     console.log('🔄 Creating default categories...');
-    
+
     const categories = [
       { name: 'General', description: 'General products' },
       { name: 'Electronics', description: 'Electronic items and gadgets' },
@@ -222,22 +253,22 @@ export async function initializeDatabase() {
       { name: 'Food & Beverages', description: 'Food products and drinks' },
       { name: 'Home & Garden', description: 'Home improvement and gardening items' }
     ];
-    
+
     const insertCategory = db.prepare('INSERT INTO categories (name, description) VALUES (?, ?)');
-    
+
     for (const category of categories) {
       insertCategory.run(category.name, category.description);
     }
-    
+
     console.log('✅ Default categories created');
   }
-  
+
   // Create default supplier if none exist
   const supplierCount = db.prepare('SELECT COUNT(*) as count FROM suppliers').get();
-  
+
   if (supplierCount.count === 0) {
     console.log('🔄 Creating default suppliers...');
-    
+
     const suppliers = [
       {
         name: 'General Supplier',
@@ -254,12 +285,12 @@ export async function initializeDatabase() {
         contact_person: 'Jane Smith'
       }
     ];
-    
+
     const insertSupplier = db.prepare(`
       INSERT INTO suppliers (name, email, phone, address, contact_person)
       VALUES (?, ?, ?, ?, ?)
     `);
-    
+
     for (const supplier of suppliers) {
       insertSupplier.run(
         supplier.name,
@@ -269,10 +300,10 @@ export async function initializeDatabase() {
         supplier.contact_person
       );
     }
-    
+
     console.log('✅ Default suppliers created');
   }
-  
+
   db.close();
   console.log('🎉 Database initialization completed successfully!');
 }

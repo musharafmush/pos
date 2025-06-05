@@ -1213,6 +1213,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Returns API
+  app.post('/api/returns', isAuthenticated, async (req, res) => {
+    try {
+      const { saleId, items, refundMethod, totalRefund, reason, notes } = req.body;
+
+      if (!saleId || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: 'Sale ID and return items are required' });
+      }
+
+      const returnData = {
+        saleId: parseInt(saleId),
+        userId: (req.user as any).id,
+        refundMethod: refundMethod || 'cash',
+        totalRefund: parseFloat(totalRefund || '0'),
+        reason: reason || '',
+        notes: notes || '',
+        status: 'completed'
+      };
+
+      const returnRecord = await storage.createReturn(returnData, items);
+      res.status(201).json(returnRecord);
+    } catch (error) {
+      console.error('Error creating return:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/returns', isAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string || '20');
+      const offset = parseInt(req.query.offset as string || '0');
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+      const returns = await storage.listReturns(limit, offset, startDate, endDate);
+      res.json(returns);
+    } catch (error) {
+      console.error('Error fetching returns:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/returns/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const returnRecord = await storage.getReturnById(id);
+
+      if (!returnRecord) {
+        return res.status(404).json({ message: 'Return not found' });
+      }
+
+      res.json(returnRecord);
+    } catch (error) {
+      console.error('Error fetching return:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Dashboard stats API
   app.get('/api/dashboard/stats', async (req, res) => {
     try {

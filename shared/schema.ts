@@ -340,6 +340,61 @@ export type PurchaseItemInsert = z.infer<typeof purchaseItemInsertSchema>;
 export const purchaseItemSelectSchema = createSelectSchema(purchaseItems);
 export type PurchaseItem = z.infer<typeof purchaseItemSelectSchema>;
 
+// Returns table
+export const returns = pgTable('returns', {
+  id: serial('id').primaryKey(),
+  saleId: integer('sale_id').references(() => sales.id).notNull(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  refundMethod: text('refund_method').notNull().default('cash'),
+  totalRefund: decimal('total_refund', { precision: 10, scale: 2 }).notNull(),
+  reason: text('reason'),
+  notes: text('notes'),
+  status: text('status').notNull().default('completed'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Return items table
+export const returnItems = pgTable('return_items', {
+  id: serial('id').primaryKey(),
+  returnId: integer('return_id').references(() => returns.id).notNull(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  quantity: integer('quantity').notNull(),
+  unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
+  subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Return relations
+export const returnsRelations = relations(returns, ({ one, many }) => ({
+  sale: one(sales, { fields: [returns.saleId], references: [sales.id] }),
+  user: one(users, { fields: [returns.userId], references: [users.id] }),
+  items: many(returnItems)
+}));
+
+export const returnItemsRelations = relations(returnItems, ({ one }) => ({
+  return: one(returns, { fields: [returnItems.returnId], references: [returns.id] }),
+  product: one(products, { fields: [returnItems.productId], references: [products.id] })
+}));
+
+// Return validation schemas
+export const returnInsertSchema = createInsertSchema(returns, {
+  totalRefund: (schema) => schema.min(0, "Total refund must be at least 0"),
+  refundMethod: (schema) => schema.min(2, "Refund method must be at least 2 characters"),
+  status: (schema) => schema.optional()
+});
+export type ReturnInsert = z.infer<typeof returnInsertSchema>;
+export const returnSelectSchema = createSelectSchema(returns);
+export type Return = z.infer<typeof returnSelectSchema>;
+
+export const returnItemInsertSchema = createInsertSchema(returnItems, {
+  quantity: (schema) => schema.min(1, "Quantity must be at least 1"),
+  unitPrice: (schema) => schema.min(0, "Unit price must be at least 0"),
+  subtotal: (schema) => schema.min(0, "Subtotal must be at least 0")
+});
+export type ReturnItemInsert = z.infer<typeof returnItemInsertSchema>;
+export const returnItemSelectSchema = createSelectSchema(returnItems);
+export type ReturnItem = z.infer<typeof returnItemSelectSchema>;
+
 export const settingsInsertSchema = createInsertSchema(settings, {
   key: (schema) => schema.min(1, "Key must not be empty"),
   value: (schema) => schema.min(1, "Value must not be empty")

@@ -1244,5 +1244,163 @@ export const storage = {
       console.error('Error deleting sale:', error);
       throw error;
     }
+  },
+
+  // Return management operations
+  async createReturn(returnData: any, items: any[]): Promise<any> {
+    try {
+      const { sqlite } = await import('@db');
+
+      // Start transaction
+      const result = sqlite.transaction(() => {
+        // Insert the return record
+        const insertReturn = sqlite.prepare(`
+          INSERT INTO returns (
+            sale_id, user_id, refund_method, total_refund, reason, notes, status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `);
+
+        const returnResult = insertReturn.run(
+          returnData.saleId,
+          returnData.userId,
+          returnData.refundMethod,
+          returnData.totalRefund.toString(),
+          returnData.reason,
+          returnData.notes,
+          returnData.status
+        );
+
+        const returnId = returnResult.lastInsertRowid;
+
+        // Insert return items and restore stock
+        const insertReturnItem = sqlite.prepare(`
+          INSERT INTO return_items (
+            return_id, product_id, quantity, unit_price, subtotal
+          ) VALUES (?, ?, ?, ?, ?)
+        `);
+
+        const updateStock = sqlite.prepare(`
+          UPDATE products 
+          SET stock_quantity = COALESCE(stock_quantity, 0) + ?
+          WHERE id = ?
+        `);
+
+        for (const item of items) {
+          // Insert return item
+          insertReturnItem.run(
+            returnId,
+            item.productId,
+            item.quantity,
+            item.unitPrice.toString(),
+            item.subtotal.toString()
+          );
+
+          // Restore stock
+          updateStock.run(item.quantity, item.productId);
+          console.log(`📦 Restored stock for return - Product ${item.productId}: +${item.quantity}`);
+        }
+
+        // Get the created return
+        const getReturn = sqlite.prepare('SELECT * FROM returns WHERE id = ?');
+        const newReturn = getReturn.get(returnId);
+
+        return {
+          ...newReturn,
+          createdAt: new Date(newReturn.created_at)
+        };
+      })();
+
+      return result;
+    } catch (error) {
+      console.error('Error creating return:', error);
+      throw error;
+    }
+  },
+
+  async getReturnById(id: number): Promise<any> {
+    try {
+      const { sqlite } = await import('@db');
+      
+      const getReturn = sqlite.prepare(`
+        SELECT r.*, s.order_number as sale_order_number
+        FROM returns r
+        LEFT JOIN sales s ON r.sale_id = s.id
+        WHERE r.id = ?
+      `);
+      
+      const returnRecord = getReturn.get(id);
+      
+      if (!returnRecord) {
+        return null;
+      }
+
+      // Get return items
+      const getReturnItems = sqlite.prepare(`
+        SELECT ri.*, p.name as product_name, p.sku as product_sku
+        FROM return_items ri
+        LEFT JOIN products p ON ri.product_id = p.id
+        WHERE ri.return_id = ?
+      `);
+      
+      const items = getReturnItems.all(id);
+
+      return {
+        ...returnRecord,
+        items,
+        createdAt: new Date(returnRecord.created_at)
+      };
+    } catch (error) {
+      console.error('Error fetching return by ID:', error);
+      throw error;
+    }
+  },
+
+  async listReturns(limit?: number, offset?: number, startDate?: Date, endDate?: Date): Promise<any[]> {
+    try {
+      const { sqlite } = await import('@db');
+      
+      let query = `
+        SELECT r.*, s.order_number as sale_order_number, c.name as customer_name
+        FROM returns r
+        LEFT JOIN sales s ON r.sale_id = s.id
+        LEFT JOIN customers c ON s.customer_id = c.id
+        WHERE 1=1
+      `;
+      
+      const params = [];
+      
+      if (startDate) {
+        query += ' AND r.created_at >= ?';
+        params.push(startDate.toISOString());
+      }
+      
+      if (endDate) {
+        query += ' AND r.created_at <= ?';
+        params.push(endDate.toISOString());
+      }
+      
+      query += ' ORDER BY r.created_at DESC';
+      
+      if (limit) {
+        query += ' LIMIT ?';
+        params.push(limit);
+      }
+      
+      if (offset) {
+        query += ' OFFSET ?';
+        params.push(offset);
+      }
+
+      const getReturns = sqlite.prepare(query);
+      const returns = getReturns.all(...params);
+
+      return returns.map((returnRecord: any) => ({
+        ...returnRecord,
+        createdAt: new Date(returnRecord.created_at)
+      }));
+    } catch (error) {
+      console.error('Error listing returns:', error);
+      throw error;
+    }
   }
 };
