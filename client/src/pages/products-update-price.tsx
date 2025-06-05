@@ -61,7 +61,7 @@ export default function ProductsUpdatePrice() {
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [productUpdates, setProductUpdates] = useState<ProductPriceUpdate[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
 
   // Fetch products
   const { data: products = [], isLoading } = useQuery({
@@ -98,7 +98,7 @@ export default function ProductsUpdatePrice() {
   const filteredProducts = products.filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !filterCategory || product.categoryId.toString() === filterCategory;
+    const matchesCategory = !filterCategory || filterCategory === "all" || product.categoryId.toString() === filterCategory;
     return matchesSearch && matchesCategory && product.active;
   });
 
@@ -388,7 +388,7 @@ export default function ProductsUpdatePrice() {
                           <SelectValue placeholder="Filter by category" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Categories</SelectItem>
+                          <SelectItem value="all">All Categories</SelectItem>
                           {categories.map((category: any) => (
                             <SelectItem key={category.id} value={category.id.toString()}>
                               {category.name}
