@@ -94,41 +94,13 @@ export default function Customers() {
   const formatCurrency = useFormatCurrency();
 
   // Fetch customers
-  const { data: customers = [], isLoading, error, refetch } = useQuery({
+  const { data: customers = [] } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
-      try {
-        console.log("Fetching customers...");
-        const response = await fetch("/api/customers");
-        console.log("Response status:", response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Failed to fetch customers:", errorText);
-          // Return empty array instead of throwing to prevent error state
-          return [];
-        }
-
-        const data = await response.json();
-        console.log("Customers data:", data);
-        
-        // Ensure we always return an array
-        return Array.isArray(data) ? data : [];
-      } catch (error) {
-        console.error("Error fetching customers:", error);
-        // Return empty array and show a less intrusive message
-        toast({
-          title: "Connection Issue",
-          description: "Unable to load customers. Showing empty list.",
-          variant: "default",
-        });
-        return [];
-      }
-    },
-    retry: 2,
-    retryDelay: 1000,
-    // Don't show error state, just return empty array
-    throwOnError: false,
+      const res = await fetch("/api/customers");
+      if (!res.ok) throw new Error("Failed to fetch customers");
+      return await res.json();
+    }
   });
 
   // Create customer form
@@ -238,7 +210,6 @@ export default function Customers() {
 
   // Handle adding a new customer
   const onSubmit = (data: CustomerFormValues) => {
-    console.log('Form data being submitted:', data);
     createCustomerMutation.mutate(data);
   };
 

@@ -381,36 +381,22 @@ export const storage = {
     email?: string;
     phone?: string;
     address?: string;
-    taxId?: string;
-    creditLimit?: string;
-    businessName?: string;
     loyaltyPoints?: number;
     totalSpent?: string;
     pointsEarned?: number;
     pointsRedeemed?: number;
   }): Promise<Customer> {
     try {
-      console.log('Creating customer with data:', customer);
-      
-      const customerData = {
-        name: customer.name,
-        email: customer.email || null,
-        phone: customer.phone || null,
-        address: customer.address || null,
-        taxId: customer.taxId || null,
-        creditLimit: customer.creditLimit || '0',
-        businessName: customer.businessName || null,
+      const [newCustomer] = await db.insert(customers).values({
+        ...customer,
         loyaltyPoints: customer.loyaltyPoints || 0,
         totalSpent: customer.totalSpent || '0',
         pointsEarned: customer.pointsEarned || 0,
         pointsRedeemed: customer.pointsRedeemed || 0
-      };
-
-      const [newCustomer] = await db.insert(customers).values(customerData).returning();
-      console.log('Customer created in database:', newCustomer);
+      }).returning();
       return newCustomer;
     } catch (error) {
-      console.error('Database error creating customer:', error);
+      console.error('Error creating customer:', error);
       throw error;
     }
   },
@@ -440,15 +426,12 @@ export const storage = {
 
   async listCustomers(): Promise<Customer[]> {
     try {
-      const customerList = await db.query.customers.findMany({
+      return await db.query.customers.findMany({
         orderBy: customers.name
       });
-      console.log(`Found ${customerList.length} customers in database`);
-      return customerList;
     } catch (error) {
       console.error('Error listing customers:', error);
-      // Return empty array instead of throwing to prevent frontend errors
-      return [];
+      throw error;
     }
   },
 

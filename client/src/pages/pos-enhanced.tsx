@@ -1075,17 +1075,11 @@ export default function POSEnhanced() {
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select Customer">
-                      {selectedCustomer ? (
-                        <div className="flex items-center justify-between w-full">
-                          <span className="font-medium">{selectedCustomer.name}</span>
-                          {customerPoints > 0 && (
-                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                              💎 {customerPoints} pts
-                            </Badge>
-                          )}
+                      {selectedCustomer?.name || "Walk-in Customer"}
+                      {selectedCustomer && (
+                        <div className="text-xs text-blue-600 font-medium">
+                          💎 {customerPoints} points available
                         </div>
-                      ) : (
-                        "Walk-in Customer"
                       )}
                     </SelectValue>
                   </SelectTrigger>
@@ -1098,16 +1092,10 @@ export default function POSEnhanced() {
                     </SelectItem>
                     {customers?.map((customer: Customer) => (
                       <SelectItem key={customer.id} value={customer.id.toString()}>
-                        <div className="flex flex-col items-start">
+                        <div>
                           <div className="font-medium">{customer.name}</div>
                           {customer.phone && (
-                            <div className="text-sm text-gray-500 flex items-center">
-                              <Phone className="h-3 w-3 mr-1" />
-                              {customer.phone}
-                            </div>
-                          )}
-                          {customer.email && (
-                            <div className="text-xs text-gray-400">{customer.email}</div>
+                            <div className="text-sm text-gray-500">{customer.phone}</div>
                           )}
                         </div>
                       </SelectItem>
@@ -1118,27 +1106,14 @@ export default function POSEnhanced() {
 
               <div className="col-span-3">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Contact</label>
-                <div className="flex flex-col text-gray-600 space-y-1">
-                  {selectedCustomer ? (
+                <div className="flex items-center text-gray-600">
+                  {selectedCustomer?.phone ? (
                     <>
-                      {selectedCustomer.phone && (
-                        <div className="flex items-center text-sm">
-                          <Phone className="h-4 w-4 mr-2 text-blue-600" />
-                          <span className="font-medium">{selectedCustomer.phone}</span>
-                        </div>
-                      )}
-                      {selectedCustomer.email && (
-                        <div className="flex items-center text-sm">
-                          <span className="mr-2">📧</span>
-                          <span className="text-gray-600">{selectedCustomer.email}</span>
-                        </div>
-                      )}
-                      {!selectedCustomer.phone && !selectedCustomer.email && (
-                        <span className="text-gray-400 text-sm italic">No contact details available</span>
-                      )}
+                      <Phone className="h-4 w-4 mr-2" />
+                      {selectedCustomer.phone}
                     </>
                   ) : (
-                    <span className="text-gray-400 italic">Walk-in customer - No contact info</span>
+                    <span className="text-gray-400">No contact info</span>
                   )}
                 </div>
               </div>

@@ -795,7 +795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If search is provided, use a different approach to search sales
       if (search) {
         const { sqlite } = await import('@db');
-
+        
         let query = `
           SELECT s.*, c.name as customerName, c.phone as customerPhone, u.name as userName
           FROM sales s
@@ -808,7 +808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             c.email LIKE ?
           )
         `;
-
+        
         const params = [
           `%${search}%`,
           `%${search}%`, 
@@ -820,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           query += ` AND s.createdAt >= ?`;
           params.push(startDate.toISOString());
         }
-
+        
         if (endDate) {
           query += ` AND s.createdAt <= ?`;
           params.push(endDate.toISOString());
@@ -830,7 +830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         params.push(limit);
 
         const sales = sqlite.prepare(query).all(params);
-
+        
         // Format the results to match expected structure
         const formattedSales = sales.map(sale => ({
           ...sale,
@@ -926,7 +926,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 });
 
   app.put('/api/sales/:id', isAuthenticated, async (req, res) => {
-    try {      const id = parseInt(req.params.id);
+    try {
+      const id = parseInt(req.params.id);
       const updateData = req.body;
 
       console.log('Updating sale:', id, updateData);
@@ -1184,17 +1185,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customers API
   app.get('/api/customers', async (req, res) => {
     try {
-      console.log("Fetching customers from database...");
       const customers = await storage.listCustomers();
-      console.log(`Found ${customers.length} customers`);
-      
-      // Ensure we always return an array
-      const safeCustomers = Array.isArray(customers) ? customers : [];
-      res.json(safeCustomers);
+      res.json(customers);
     } catch (error) {
-      console.error("Error fetching customers:", error);
-      // Return empty array instead of error to prevent frontend crashes
-      res.json([]);
+      console.error('Error fetching customers:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -1216,45 +1211,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/customers', isAuthenticated, async (req, res) => {
     try {
-      console.log('Customer creation request:', req.body);
-      
-      // Map form fields to database fields
-      const mappedData = {
-        name: req.body.name,
-        email: req.body.email || null,
-        phone: req.body.phone || null,
-        address: req.body.address || null,
-        taxId: req.body.taxNumber || null,
-        creditLimit: req.body.creditLimit || '0',
-        businessName: req.body.businessName || null,
-        loyaltyPoints: 0,
-        totalSpent: '0',
-        pointsEarned: 0,
-        pointsRedeemed: 0
-      };
-
-      console.log('Mapped customer data:', mappedData);
-      
-      const customerData = schema.customerInsertSchema.parse(mappedData);
+      const customerData = schema.customerInsertSchema.parse(req.body);
       const customer = await storage.createCustomer(customerData);
-      
-      console.log('Customer created successfully:', customer);
       res.status(201).json(customer);
     } catch (error) {
-      console.error('Detailed error creating customer:', error);
-      
       if (error instanceof z.ZodError) {
-        console.error('Validation errors:', error.errors);
-        return res.status(400).json({ 
-          message: 'Validation failed',
-          errors: error.errors 
-        });
+        return res.status(400).json({ errors: error.errors });
       }
-      
-      res.status(500).json({ 
-        message: 'Internal server error',
-        error: error.message 
-      });
+      console.error('Error creating customer:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
