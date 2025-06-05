@@ -72,7 +72,9 @@ export default function RepackingDashboardProfessional() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isRepackDialogOpen, setIsRepackDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedBulkProduct, setSelectedBulkProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     sku: "",
@@ -83,6 +85,17 @@ export default function RepackingDashboardProfessional() {
     weight: "",
     weightUnit: "g",
     alertThreshold: ""
+  });
+
+  const [repackFormData, setRepackFormData] = useState({
+    sourceQuantity: "1",
+    targetQuantity: "8",
+    unitWeight: "250",
+    targetName: "",
+    targetSku: "",
+    sellingPrice: "",
+    costPrice: "",
+    mrp: ""
   });
 
   // Fetch all products to identify repacked items
@@ -231,6 +244,100 @@ export default function RepackingDashboardProfessional() {
   const handleDelete = (id: number) => {
     deleteProductMutation.mutate(id);
   };
+
+  const handleStartRepack = (product: Product) => {
+    setSelectedBulkProduct(product);
+    
+    // Auto-generate target product details
+    const timestamp = Date.now();
+    const targetName = product.name.includes('BULK') 
+      ? product.name.replace('BULK', '250g Pack') 
+      : `${product.name} (250g Pack)`;
+    const targetSku = `${product.sku}-REPACK-250G-${timestamp}`;
+    
+    setRepackFormData({
+      sourceQuantity: "1",
+      targetQuantity: "8",
+      unitWeight: "250",
+      targetName,
+      targetSku,
+      sellingPrice: (parseFloat(product.price) * 1.2).toFixed(2),
+      costPrice: product.cost,
+      mrp: (parseFloat(product.price) * 1.5).toFixed(2)
+    });
+    
+    setIsRepackDialogOpen(true);
+  };
+
+  // Repack mutation
+  const repackMutation = useMutation({
+    mutationFn: async (data: typeof repackFormData) => {
+      if (!selectedBulkProduct) throw new Error("No bulk product selected");
+
+      // Create new repacked product
+      const repackedProduct = {
+        name: data.targetName,
+        description: `Repacked from bulk item: ${selectedBulkProduct.name}. Original weight: ${selectedBulkProduct.weight}${selectedBulkProduct.weightUnit}`,
+        sku: data.targetSku,
+        price: data.sellingPrice,
+        mrp: data.mrp,
+        cost: data.costPrice,
+        weight: data.unitWeight,
+        weightUnit: "g",
+        categoryId: selectedBulkProduct.categoryId || 1,
+        stockQuantity: parseInt(data.targetQuantity),
+        alertThreshold: 5,
+        barcode: "",
+        active: true,
+      };
+
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(repackedProduct),
+      });
+
+      if (!response.ok) throw new Error("Failed to create repacked product");
+
+      // Update bulk product stock
+      const bulkUnitsUsed = parseFloat(data.sourceQuantity);
+      const newBulkStock = Math.max(0, selectedBulkProduct.stockQuantity - bulkUnitsUsed);
+
+      const updateResponse = await fetch(`/api/products/${selectedBulkProduct.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...selectedBulkProduct,
+          stockQuantity: newBulkStock,
+          price: selectedBulkProduct.price.toString(),
+          cost: selectedBulkProduct.cost.toString(),
+          mrp: selectedBulkProduct.mrp.toString()
+        }),
+      });
+
+      if (!updateResponse.ok) throw new Error("Failed to update bulk product stock");
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({ title: "Success", description: "Repacking completed successfully!" });
+      setIsRepackDialogOpen(false);
+      setRepackFormData({
+        sourceQuantity: "1",
+        targetQuantity: "8",
+        unitWeight: "250",
+        targetName: "",
+        targetSku: "",
+        sellingPrice: "",
+        costPrice: "",
+        mrp: ""
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to complete repacking", variant: "destructive" });
+    },
+  });
 
   // Filter repacked products (those with "REPACK" in SKU)
   const repackedProducts = products.filter((product: Product) => 
@@ -615,7 +722,11 @@ export default function RepackingDashboardProfessional() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                          <Button 
+                            size="sm" 
+                            className="bg-blue-600 hover:bg-blue-700"
+                            onClick={() => handleStartRepack(product)}
+                          >
                             <PackageIcon className="h-4 w-4 mr-1" />
                             Repack
                           </Button>
@@ -1003,6 +1114,151 @@ export default function RepackingDashboardProfessional() {
                   Edit Product
                 </Button>
               )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Repack Dialog */}
+        <Dialog open={isRepackDialogOpen} onOpenChange={setIsRepackDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Repack Bulk Product</DialogTitle>
+              <DialogDescription>
+                Create smaller units from bulk product: {selectedBulkProduct?.name}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedBulkProduct && (
+              <div className="space-y-6">
+                {/* Source Product Info */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">Source Product</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Name:</span>
+                      <p className="font-medium">{selectedBulkProduct.name}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">SKU:</span>
+                      <p className="font-mono text-xs">{selectedBulkProduct.sku}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Available Stock:</span>
+                      <p className="font-medium">{selectedBulkProduct.stockQuantity}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Unit Price:</span>
+                      <p className="font-medium">{formatCurrency(parseFloat(selectedBulkProduct.price))}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Repack Configuration */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="repack-sourceQuantity">Bulk Units to Use</Label>
+                    <Input
+                      id="repack-sourceQuantity"
+                      type="number"
+                      min="1"
+                      max={selectedBulkProduct.stockQuantity}
+                      value={repackFormData.sourceQuantity}
+                      onChange={(e) => setRepackFormData({ ...repackFormData, sourceQuantity: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repack-targetQuantity">Units to Create</Label>
+                    <Input
+                      id="repack-targetQuantity"
+                      type="number"
+                      min="1"
+                      value={repackFormData.targetQuantity}
+                      onChange={(e) => setRepackFormData({ ...repackFormData, targetQuantity: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repack-unitWeight">Unit Weight (g)</Label>
+                    <Input
+                      id="repack-unitWeight"
+                      type="number"
+                      min="1"
+                      value={repackFormData.unitWeight}
+                      onChange={(e) => setRepackFormData({ ...repackFormData, unitWeight: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repack-targetName">New Product Name</Label>
+                    <Input
+                      id="repack-targetName"
+                      value={repackFormData.targetName}
+                      onChange={(e) => setRepackFormData({ ...repackFormData, targetName: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repack-targetSku">New SKU</Label>
+                    <Input
+                      id="repack-targetSku"
+                      value={repackFormData.targetSku}
+                      onChange={(e) => setRepackFormData({ ...repackFormData, targetSku: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repack-sellingPrice">Selling Price</Label>
+                    <Input
+                      id="repack-sellingPrice"
+                      type="number"
+                      step="0.01"
+                      value={repackFormData.sellingPrice}
+                      onChange={(e) => setRepackFormData({ ...repackFormData, sellingPrice: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repack-costPrice">Cost Price</Label>
+                    <Input
+                      id="repack-costPrice"
+                      type="number"
+                      step="0.01"
+                      value={repackFormData.costPrice}
+                      onChange={(e) => setRepackFormData({ ...repackFormData, costPrice: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repack-mrp">MRP</Label>
+                    <Input
+                      id="repack-mrp"
+                      type="number"
+                      step="0.01"
+                      value={repackFormData.mrp}
+                      onChange={(e) => setRepackFormData({ ...repackFormData, mrp: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-green-900 mb-2">Repack Summary</h4>
+                  <div className="text-sm text-green-800">
+                    <p>• Using {repackFormData.sourceQuantity} bulk unit(s) of {selectedBulkProduct.name}</p>
+                    <p>• Creating {repackFormData.targetQuantity} units of {repackFormData.unitWeight}g each</p>
+                    <p>• New product will be priced at {formatCurrency(parseFloat(repackFormData.sellingPrice || "0"))}</p>
+                    <p>• Remaining bulk stock: {selectedBulkProduct.stockQuantity - parseInt(repackFormData.sourceQuantity)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRepackDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => repackMutation.mutate(repackFormData)}
+                disabled={repackMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Scissors className="w-4 h-4 mr-2" />
+                {repackMutation.isPending ? "Processing..." : "Complete Repack"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
