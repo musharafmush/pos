@@ -428,7 +428,6 @@ function POSEnhanced() {
   });
 
   return (
-    <>
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white h-screen' : ''}`}>
       {isFullscreen ? (
         // Full Screen Mode - Reference Image Layout
@@ -1462,7 +1461,7 @@ function POSEnhanced() {
             </div>
           </div>
         )}
-</>
+    </div>
   );
 }
 
