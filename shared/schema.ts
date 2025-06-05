@@ -38,7 +38,7 @@ export const products = pgTable('products', {
   alertThreshold: integer('alert_threshold').notNull().default(10),
   barcode: text('barcode'),
   image: text('image'),
-
+  
   // Tax Information - Indian GST Compliance
   hsnCode: text('hsn_code'),
   gstCode: text('gst_code'),
@@ -47,7 +47,7 @@ export const products = pgTable('products', {
   igstRate: decimal('igst_rate', { precision: 5, scale: 2 }),
   cessRate: decimal('cess_rate', { precision: 5, scale: 2 }),
   taxCalculationMethod: text('tax_calculation_method'),
-
+  
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()

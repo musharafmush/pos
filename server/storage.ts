@@ -17,8 +17,7 @@ import {
   Sale,
   SaleItem,
   Purchase,
-  PurchaseItem,
-  cashRegisters
+  PurchaseItem
 } from "@shared/schema";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -1004,7 +1003,6 @@ export const storage = {
         }
 
         // Get the created sale
-        ```text
         const getSale = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
         const newSale = getSale.get(saleId);
 
@@ -1104,15 +1102,15 @@ export const storage = {
   async getTopSellingProducts(limit: number = 5, startDate?: Date, endDate?: Date): Promise<any[]> {
     try {
       const { sqlite } = await import('@db');
-
+      
       let dateFilter = '';
       const params = [];
-
+      
       if (startDate) {
         dateFilter += ' AND s.created_at >= ?';
         params.push(startDate.toISOString());
       }
-
+      
       if (endDate) {
         dateFilter += ' AND s.created_at <= ?';
         params.push(endDate.toISOString());
@@ -1246,167 +1244,5 @@ export const storage = {
       console.error('Error deleting sale:', error);
       throw error;
     }
-  },
-  // Cash register management
-  async openRegister(openingCash: number, openedBy: string) {
-    const [register] = await db.insert(cashRegisters).values({
-      status: 'open',
-      openingCash,
-      currentCash: openingCash,
-      openedAt: new Date().toISOString(),
-      openedBy,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }).returning();
-
-    return register;
-  },
-
-  async closeRegister(closedBy: string, withdrawal: number = 0, notes?: string) {
-    const currentRegister = await this.getCurrentRegister();
-    if (!currentRegister) {
-      throw new Error("No open register found");
-    }
-
-    // Get sales summary for the register
-    const summary = await this.getRegisterSalesSummary(currentRegister.id);
-
-    const [register] = await db.update(cashRegisters)
-      .set({
-        status: 'closed',
-        closedAt: new Date().toISOString(),
-        closedBy,
-        totalWithdrawals: withdrawal,
-        totalSales: summary.totalSales,
-        cashReceived: summary.cashReceived,
-        upiReceived: summary.upiReceived,
-        cardReceived: summary.cardReceived,
-        bankReceived: summary.bankReceived,
-        chequeReceived: summary.chequeReceived,
-        otherReceived: summary.otherReceived,
-        totalRefunds: summary.totalRefunds,
-        currentCash: currentRegister.openingCash + summary.cashReceived - withdrawal,
-        notes,
-        updatedAt: new Date().toISOString()
-      })
-      .where(eq(cashRegisters.id, currentRegister.id))
-      .returning();
-
-    return register;
-  },
-
-  async getCurrentRegister() {
-    const [register] = await db.select()
-      .from(cashRegisters)
-      .where(eq(cashRegisters.status, 'open'))
-      .orderBy(desc(cashRegisters.createdAt))
-      .limit(1);
-
-    return register;
-  },
-
-  async getRegisterSalesSummary(registerId: string) {
-    const today = new Date().toISOString().split('T')[0];
-
-    const salesData = await db.select({
-      total: sales.total,
-      paymentMethod: sales.paymentMethod,
-      saleDate: sales.saleDate
-    })
-    .from(sales)
-    .where(
-      and(
-        eq(sales.registerId, registerId),
-        sql`DATE(${sales.saleDate}) = ${today}`
-      )
-    );
-
-    const summary = {
-      totalSales: 0,
-      cashReceived: 0,
-      upiReceived: 0,
-      cardReceived: 0,
-      bankReceived: 0,
-      chequeReceived: 0,
-      otherReceived: 0,
-      totalRefunds: 0,
-      transactionCount: salesData.length
-    };
-
-    salesData.forEach(sale => {
-      const amount = parseFloat(sale.total.toString());
-      summary.totalSales += amount;
-
-      switch (sale.paymentMethod) {
-        case 'cash':
-          summary.cashReceived += amount;
-          break;
-        case 'upi':
-          summary.upiReceived += amount;
-          break;
-        case 'card':
-          summary.cardReceived += amount;
-          break;
-        case 'bank':
-          summary.bankReceived += amount;
-          break;
-        case 'cheque':
-          summary.chequeReceived += amount;
-          break;
-        default:
-          summary.otherReceived += amount;
-          break;
-      }
-    });
-
-    return summary;
-  },
-
-  // Add these functions for sales management
-  async insertSale(saleData: any) {
-    return await db.transaction(async (tx) => {
-      // Insert sale
-      const [sale] = await tx.insert(sales).values({
-        customerId: saleData.customerId || null,
-        registerId: saleData.register_id,
-        subtotal: saleData.subtotal,
-        discount: saleData.discount || 0,
-        tax: saleData.tax || 0,
-        total: saleData.total,
-        paymentMethod: saleData.paymentMethod || 'cash',
-        amountPaid: saleData.amountPaid,
-        changeGiven: saleData.changeGiven || 0,
-        saleDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }).returning();
-
-      // Insert sale items
-      if (saleData.items && saleData.items.length > 0) {
-        const saleItemsData = saleData.items.map((item: any) => ({
-          saleId: sale.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          subtotal: item.subtotal,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }));
-
-        await tx.insert(saleItems).values(saleItemsData);
-
-        // Update product stock
-        for (const item of saleData.items) {
-          await tx.update(products)
-            .set({
-              stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`,
-              updatedAt: new Date().toISOString()
-            })
-            .where(eq(products.id, item.productId));
-        }
-      }
-
-      return sale;
-    });
   }
 };

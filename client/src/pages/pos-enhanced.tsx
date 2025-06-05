@@ -85,7 +85,7 @@ export default function POSEnhanced() {
   const [showOpenRegister, setShowOpenRegister] = useState(false);
   const [showCloseRegister, setShowCloseRegister] = useState(false);
   const [showWithdrawal, setShowWithdrawal] = useState(false);
-
+  
   // Cash register state
   const [registerOpened, setRegisterOpened] = useState(false);
   const [openingCash, setOpeningCash] = useState(0);
@@ -98,7 +98,7 @@ export default function POSEnhanced() {
   const [otherReceived, setOtherReceived] = useState(0);
   const [totalWithdrawals, setTotalWithdrawals] = useState(0);
   const [totalRefunds, setTotalRefunds] = useState(0);
-
+  
   // Form state
   const [cashOperation, setCashOperation] = useState<'add' | 'remove'>('add');
   const [cashAmount, setCashAmount] = useState("");
@@ -271,7 +271,7 @@ export default function POSEnhanced() {
     setOpeningCash(amount);
     setCashInHand(amount);
     setRegisterOpened(true);
-
+    
     toast({
       title: "Register Opened",
       description: `Register opened with ${formatCurrency(amount)}`,
@@ -444,20 +444,22 @@ export default function POSEnhanced() {
     }
   };
 
+  // Process sale
   const processSale = async () => {
     if (cart.length === 0) {
       toast({
         title: "Empty Cart",
-        description: "Please add items to the cart before processing the sale.",
+        description: "Please add items to cart before checkout",
         variant: "destructive",
       });
       return;
     }
 
-    if (paymentMethod !== "credit" && (!amountPaid || parseFloat(amountPaid) < total)) {
+    const paidAmount = parseFloat(amountPaid) || total;
+    if (paidAmount < total) {
       toast({
         title: "Insufficient Payment",
-        description: "Please enter the correct amount paid.",
+        description: `Please pay at least ${formatCurrency(total)}`,
         variant: "destructive",
       });
       return;
@@ -466,68 +468,104 @@ export default function POSEnhanced() {
     setIsProcessing(true);
 
     try {
+      // Validate cart items have valid stock
+      for (const item of cart) {
+        const product = products.find((p: Product) => p.id === item.id);
+        if (!product || product.stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for ${item.name}. Available: ${product?.stockQuantity || 0}, Required: ${item.quantity}`);
+        }
+      }
+
       const saleData = {
-        customerId: selectedCustomer ? parseInt(selectedCustomer) : null,
+        customerId: selectedCustomer?.id || null,
+        customerName: selectedCustomer?.name || "Walk-in Customer",
         items: cart.map(item => ({
           productId: item.id,
           quantity: item.quantity,
-          unitPrice: parseFloat(item.price),
-          subtotal: item.total
+          unitPrice: parseFloat(item.price).toString(),
+          subtotal: item.total.toString(),
+          price: parseFloat(item.price).toString(),
+          total: item.total.toString()
         })),
-        subtotal: subtotal,
-        discount: discount,
-        tax: tax,
-        total: total,
-        paymentMethod: paymentMethod,
-        amountPaid: parseFloat(amountPaid || "0"),
-        changeGiven: paymentMethod === "cash" ? Math.max(0, parseFloat(amountPaid || "0") - total) : 0
+        subtotal: subtotal.toFixed(2),
+        discount: discountAmount.toFixed(2),
+        discountPercent: discount,
+        tax: taxAmount.toFixed(2),
+        taxRate: taxRate,
+        total: total.toFixed(2),
+        paymentMethod,
+        amountPaid: paidAmount.toFixed(2),
+        change: (paidAmount - total).toFixed(2),
+        notes: `Bill: ${billNumber}`,
+        billNumber: billNumber,
+        status: "completed"
       };
 
       console.log("Processing sale with data:", saleData);
 
       const response = await fetch("/api/sales", {
         method: "POST",
-        headers: {
+        headers: { 
           "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify(saleData),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        if (response.status === 400 && errorData.error?.includes("No open register")) {
-          toast({
-            title: "Register Not Open",
-            description: "Please open the cash register before processing sales. Go to Sales Dashboard to open the register.",
-            variant: "destructive",
-          });
-          return;
+        const errorText = await response.text();
+        console.error("Sale API error:", errorText);
+
+        let errorMessage = "Transaction failed";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || "Server error occurred";
+        } catch (e) {
+          errorMessage = errorText || "Unknown server error";
         }
-        throw new Error(errorData.error || "Failed to process sale");
+
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      console.log("Sale processed successfully:", result);
+      const saleResult = await response.json();
+      console.log("Sale completed successfully:", saleResult);
+
+      // Update payment tracking
+      updatePaymentTracking(paymentMethod, paidAmount);
 
       toast({
-        title: "Sale Processed",
-        description: `Sale completed successfully! Total: ${formatCurrency(total)}`,
+        title: "✅ Sale Completed!",
+        description: `Transaction successful for ${formatCurrency(total)}${paidAmount > total ? `. Change: ${formatCurrency(paidAmount - total)}` : ''}`,
+        variant: "default",
       });
 
-      // Reset the form
-      setCart([]);
-      setSelectedCustomer("");
+      // Reset everything
+      clearCart();
+      setShowPaymentDialog(false);
       setAmountPaid("");
-      setPaymentMethod("cash");
-      setShowCheckout(false);
+      setBillNumber(`POS${Date.now()}`);
 
-      // Refresh product data to update stock levels
+      // Refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-    } catch (error: any) {
-      console.error("Error processing sale:", error);
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+
+    } catch (error) {
+      console.error("Sale processing error:", error);
+
+      let errorMessage = "Transaction failed. Please try again.";
+      if (error instanceof Error) {
+        if (error.message.includes("stock")) {
+          errorMessage = error.message;
+        } else if (error.message.includes("Network") || error.message.includes("fetch")) {
+          errorMessage = "Network error. Please check your connection.";
+        } else if (error.message.length > 0 && error.message.length < 200) {
+          errorMessage = error.message;
+        }
+      }
+
       toast({
-        title: "Error",
-        description: error.message || "Failed to process sale. Please try again.",
+        title: "❌ Transaction Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
