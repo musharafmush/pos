@@ -141,11 +141,26 @@ export default function AddItemProfessional() {
   const [, setLocation] = useLocation();
   const [currentSection, setCurrentSection] = useState("item-information");
 
-  // Generate default item code
+  // Generate sequential item code
   const generateItemCode = () => {
-    const timestamp = Date.now().toString().slice(-6);
-    const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `ITM${timestamp}${randomNum}`;
+    // Get all existing products to find the highest item code number
+    const existingProducts = allProducts || [];
+    let maxNumber = 0;
+    
+    // Extract numbers from existing item codes
+    existingProducts.forEach((product: any) => {
+      if (product.sku && product.sku.startsWith('ITM')) {
+        const numberPart = product.sku.replace('ITM', '');
+        const num = parseInt(numberPart);
+        if (!isNaN(num) && num > maxNumber) {
+          maxNumber = num;
+        }
+      }
+    });
+    
+    // Generate next sequential number
+    const nextNumber = (maxNumber + 1).toString().padStart(6, '0');
+    return `ITM${nextNumber}`;
   };
 
   // Fetch categories
