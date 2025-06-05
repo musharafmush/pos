@@ -1455,6 +1455,7 @@ export const storage = {
       throw error;
     }
   },
+
   async addCashTransaction(transactionData: any) {
     try {
       const { sqlite } = await import('@db');
