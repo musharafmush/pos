@@ -1,23 +1,25 @@
 import { db } from "../db/sqlite-index";
 import {
   users,
-  products,
   categories,
-  customers,
+  products,
   suppliers,
+  customers,
   sales,
   saleItems,
   purchases,
   purchaseItems,
-  User,
-  Product,
-  Category,
-  Customer,
-  Supplier,
-  Sale,
-  SaleItem,
-  Purchase,
-  PurchaseItem
+  registerSessions,
+  cashTransactions,
+  type User,
+  type Product,
+  type Category,
+  type Supplier,
+  type Customer,
+  type Sale,
+  type Purchase,
+  type RegisterSession,
+  type CashTransaction,
 } from "@shared/schema";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -442,92 +444,144 @@ export const storage = {
 
   // Sales related operations
   async createSale(
-    saleData: {
-      orderNumber?: string;
+    userId: number,
+    items: Array<{ productId: number; quantity: number; unitPrice: number }>,
+    saleData?: {
       customerId?: number;
-      userId: number;
-      total: number;
       tax?: number;
       discount?: number;
       paymentMethod?: string;
       status?: string;
-    },
-    items: Array<{ productId: number; quantity: number; unitPrice: number; subtotal: number }>
-  ): Promise<Sale> {
-    try {
-      console.log('Creating sale with data:', saleData);
-      console.log('Sale items:', items);
+    }
+  ) {
+    return await db.transaction(async (tx) => {
+      // Get current register session
+      const currentSession = await tx
+        .select()
+        .from(registerSessions)
+        .where(eq(registerSessions.status, "open"))
+        .limit(1);
 
-      // Import SQLite database directly for raw SQL operations
-      const { sqlite } = await import('@db');
+      if (!currentSession.length) {
+        throw new Error("No open register session. Please open the register first.");
+      }
 
-      // Start a transaction using SQLite directly
-      const result = sqlite.transaction(() => {
-        // Insert the sale using raw SQL to avoid timestamp issues
-        const insertSale = sqlite.prepare(`
-          INSERT INTO sales (
-            order_number, customer_id, user_id, total, tax, discount, 
-            payment_method, status, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        `);
+      // Generate order number
+      const orderNumber = `POS${Date.now()}`;
 
-        const saleResult = insertSale.run(
-          saleData.orderNumber || `SALE-${Date.now()}`,
-          saleData.customerId || null,
-          saleData.userId,
-          saleData.total.toString(),
-          (saleData.tax || 0).toString(),
-          (saleData.discount || 0).toString(),
-          saleData.paymentMethod || 'cash',
-          saleData.status || 'completed'
-        );
+      // Calculate totals
+      let subtotal = 0;
+      const processedItems = [];
 
-        const saleId = saleResult.lastInsertRowid;
-        console.log('Created sale with ID:', saleId);
+      for (const item of items) {
+        const product = await tx
+          .select()
+          .from(products)
+          .where(eq(products.id, item.productId))
+          .limit(1);
 
-        // Insert sale items and update stock
-        const insertSaleItem = sqlite.prepare(`
-          INSERT INTO sale_items (
-            sale_id, product_id, quantity, unit_price, subtotal
-          ) VALUES (?, ?, ?, ?, ?)
-        `);
-
-        const updateStock = sqlite.prepare(`
-          UPDATE products 
-          SET stock_quantity = COALESCE(stock_quantity, 0) - ?
-          WHERE id = ?
-        `);
-
-        for (const item of items) {
-          // Insert sale item
-          insertSaleItem.run(
-            saleId,
-            item.productId,
-            item.quantity,
-            item.unitPrice.toString(),
-            item.subtotal.toString()
-          );
-
-          // Update product stock
-          updateStock.run(item.quantity, item.productId);
+        if (!product.length) {
+          throw new Error(`Product with ID ${item.productId} not found`);
         }
 
-        // Get the created sale
-        const getSale = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
-        const newSale = getSale.get(saleId);
+        // Check stock
+        if (product[0].stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for ${product[0].name}`);
+        }
 
-        return {
-          ...newSale,
-          createdAt: new Date(newSale.created_at)
-        };
-      })();
+        const itemSubtotal = item.quantity * item.unitPrice;
+        subtotal += itemSubtotal;
 
-      return result;
-    } catch (error) {
-      console.error('Error creating sale:', error);
-      throw error;
-    }
-  },
+        processedItems.push({
+          ...item,
+          subtotal: itemSubtotal,
+        });
+
+        // Update stock
+        await tx
+          .update(products)
+          .set({
+            stockQuantity: product[0].stockQuantity - item.quantity,
+            updatedAt: new Date(),
+          })
+          .where(eq(products.id, item.productId));
+      }
+
+      const tax = saleData?.tax || 0;
+      const discount = saleData?.discount || 0;
+      const total = subtotal + tax - discount;
+      const paymentMethod = saleData?.paymentMethod || "cash";
+
+      // Create sale
+      const [sale] = await tx
+        .insert(sales)
+        .values({
+          orderNumber,
+          userId,
+          customerId: saleData?.customerId,
+          registerSessionId: currentSession[0].id,
+          subtotal: subtotal.toString(),
+          tax: tax.toString(),
+          discount: discount.toString(),
+          total: total.toString(),
+          paymentMethod,
+          status: saleData?.status || "completed",
+        })
+        .returning();
+
+      // Create sale items
+      for (const item of processedItems) {
+        await tx.insert(saleItems).values({
+          saleId: sale.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice.toString(),
+          subtotal: item.subtotal.toString(),
+        });
+      }
+
+      // Update register session totals
+      const session = currentSession[0];
+      let totalSales = parseFloat(session.totalSales) + total;
+      let currentCash = parseFloat(session.currentCash);
+      let totalCashSales = parseFloat(session.totalCashSales);
+      let totalUpiSales = parseFloat(session.totalUpiSales);
+      let totalOtherSales = parseFloat(session.totalOtherSales);
+
+      if (paymentMethod === "cash") {
+        currentCash += total;
+        totalCashSales += total;
+      } else if (paymentMethod === "upi" || paymentMethod === "mobile_payment") {
+        totalUpiSales += total;
+      } else {
+        totalOtherSales += total;
+      }
+
+      await tx
+        .update(registerSessions)
+        .set({
+          totalSales: totalSales.toString(),
+          currentCash: currentCash.toString(),
+          totalCashSales: totalCashSales.toString(),
+          totalUpiSales: totalUpiSales.toString(),
+          totalOtherSales: totalOtherSales.toString(),
+        })
+        .where(eq(registerSessions.id, session.id));
+
+      // Record cash transaction if cash payment
+      if (paymentMethod === "cash") {
+        await tx.insert(cashTransactions).values({
+          registerSessionId: session.id,
+          type: "sale_cash",
+          amount: total.toString(),
+          reason: `Sale ${orderNumber}`,
+          performedBy: userId,
+        });
+      }
+
+      return sale;
+    });
+  }
 
   async getSaleById(id: number): Promise<Sale | null> {
     try {
@@ -954,8 +1008,7 @@ export const storage = {
         const insertSale = sqlite.prepare(`
           INSERT INTO sales (
             order_number, customer_id, user_id, total, tax, discount, 
-            payment_method, status, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            payment_method, status, created_at          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `);
 
         const saleResult = insertSale.run(
@@ -1018,6 +1071,227 @@ export const storage = {
       throw error;
     }
   },
+  // Register Session Management
+  async openRegister(userId: number, openingCash: number, notes?: string) {
+    // Check if there's already an open register
+    const existingSession = await db
+      .select()
+      .from(registerSessions)
+      .where(eq(registerSessions.status, "open"))
+      .limit(1);
+
+    if (existingSession.length > 0) {
+      throw new Error("Register is already open. Please close the current session first.");
+    }
+
+    const [newSession] = await db
+      .insert(registerSessions)
+      .values({
+        openedBy: userId,
+        openingCash: openingCash.toString(),
+        currentCash: openingCash.toString(),
+        notes,
+      })
+      .returning();
+
+    // Record opening cash transaction
+    await db.insert(cashTransactions).values({
+      registerSessionId: newSession.id,
+      type: "deposit",
+      amount: openingCash.toString(),
+      reason: "Opening cash",
+      performedBy: userId,
+    });
+
+    return newSession;
+  }
+
+  async closeRegister(sessionId: number, userId: number, closingCash: number, notes?: string) {
+    const [closedSession] = await db
+      .update(registerSessions)
+      .set({
+        status: "closed",
+        closedAt: new Date(),
+        closedBy: userId,
+        notes,
+      })
+      .where(eq(registerSessions.id, sessionId))
+      .returning();
+
+    return closedSession;
+  }
+
+  async getCurrentRegisterSession() {
+    const session = await db
+      .select()
+      .from(registerSessions)
+      .where(eq(registerSessions.status, "open"))
+      .with({
+        openedByUser: {
+          columns: { id: true, name: true, username: true },
+        },
+      })
+      .limit(1);
+
+    return session[0] || null;
+  }
+
+  async addCashTransaction(
+    registerSessionId: number,
+    type: "deposit" | "withdrawal" | "sale_cash" | "refund",
+    amount: number,
+    userId: number,
+    reason?: string
+  ) {
+    // Insert cash transaction
+    const [transaction] = await db
+      .insert(cashTransactions)
+      .values({
+        registerSessionId,
+        type,
+        amount: amount.toString(),
+        reason,
+        performedBy: userId,
+      })
+      .returning();
+
+    // Update register session totals
+    const session = await db
+      .select()
+      .from(registerSessions)
+      .where(eq(registerSessions.id, registerSessionId))
+      .limit(1);
+
+    if (session.length > 0) {
+      const currentSession = session[0];
+      let currentCash = parseFloat(currentSession.currentCash);
+      let totalWithdrawals = parseFloat(currentSession.totalWithdrawals);
+
+      if (type === "deposit") {
+        currentCash += amount;
+      } else if (type === "withdrawal") {
+        currentCash -= amount;
+        totalWithdrawals += amount;
+      }
+
+      await db
+        .update(registerSessions)
+        .set({
+          currentCash: currentCash.toString(),
+          totalWithdrawals: totalWithdrawals.toString(),
+        })
+        .where(eq(registerSessions.id, registerSessionId));
+    }
+
+    return transaction;
+  }
+
+  async getRegisterDashboard(sessionId?: number) {
+    const currentSession = sessionId 
+      ? await db.select().from(registerSessions).where(eq(registerSessions.id, sessionId)).limit(1)
+      : await db.select().from(registerSessions).where(eq(registerSessions.status, "open")).limit(1);
+
+    if (!currentSession.length) {
+      return null;
+    }
+
+    const session = currentSession[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get today's sales for this session
+    const todaysSales = await db
+      .select({
+        total: sql<number>`COALESCE(sum(${sales.total}), 0)`,
+        count: sql<number>`count(*)`,
+        cashSales: sql<number>`COALESCE(sum(CASE WHEN ${sales.paymentMethod} = 'cash' THEN ${sales.total} ELSE 0 END), 0)`,
+        upiSales: sql<number>`COALESCE(sum(CASE WHEN ${sales.paymentMethod} IN ('upi', 'mobile_payment') THEN ${sales.total} ELSE 0 END), 0)`,
+        otherSales: sql<number>`COALESCE(sum(CASE WHEN ${sales.paymentMethod} NOT IN ('cash', 'upi', 'mobile_payment') THEN ${sales.total} ELSE 0 END), 0)`,
+      })
+      .from(sales)
+      .where(
+        and(
+          eq(sales.registerSessionId, session.id),
+          gte(sales.createdAt, today)
+        )
+      );
+
+    // Get withdrawals for this session
+    const withdrawals = await db
+      .select({
+        total: sql<number>`COALESCE(sum(${cashTransactions.amount}), 0)`,
+      })
+      .from(cashTransactions)
+      .where(
+        and(
+          eq(cashTransactions.registerSessionId, session.id),
+          eq(cashTransactions.type, "withdrawal")
+        )
+      );
+
+    // Get refunds for this session
+    const refunds = await db
+      .select({
+        total: sql<number>`COALESCE(sum(${sales.total}), 0)`,
+      })
+      .from(sales)
+      .where(
+        and(
+          eq(sales.registerSessionId, session.id),
+          eq(sales.status, "refunded"),
+          gte(sales.createdAt, today)
+        )
+      );
+
+    const salesData = todaysSales[0];
+    const cashInDrawer = 
+      parseFloat(session.openingCash) + 
+      (salesData?.cashSales || 0) - 
+      (withdrawals[0]?.total || 0) - 
+      (refunds[0]?.total || 0);
+
+    return {
+      session: {
+        id: session.id,
+        status: session.status,
+        openingCash: parseFloat(session.openingCash),
+        cashInHand: cashInDrawer,
+        openedAt: session.openedAt,
+        openedBy: session.openedBy,
+      },
+      sales: {
+        totalSales: salesData?.total || 0,
+        salesCount: salesData?.count || 0,
+        cashSales: salesData?.cashSales || 0,
+        upiSales: salesData?.upiSales || 0,
+        otherSales: salesData?.otherSales || 0,
+        totalRefunds: refunds[0]?.total || 0,
+        totalWithdrawals: withdrawals[0]?.total || 0,
+      },
+      cashInDrawer,
+    };
+  }
+
+  async getCashTransactions(registerSessionId: number, limit = 10) {
+    return await db
+      .select({
+        id: cashTransactions.id,
+        type: cashTransactions.type,
+        amount: cashTransactions.amount,
+        reason: cashTransactions.reason,
+        createdAt: cashTransactions.createdAt,
+        performedBy: {
+          id: users.id,
+          name: users.name,
+          username: users.username,
+        },
+      })
+      .from(cashTransactions)
+      .leftJoin(users, eq(cashTransactions.performedBy, users.id))
+      .where(eq(cashTransactions.registerSessionId, registerSessionId))
+      .orderBy(desc(cashTransactions.createdAt))
+      .limit(limit);
+  }
 
   // Dashboard related operations
   async getDashboardStats(): Promise<any> {
@@ -1102,15 +1376,15 @@ export const storage = {
   async getTopSellingProducts(limit: number = 5, startDate?: Date, endDate?: Date): Promise<any[]> {
     try {
       const { sqlite } = await import('@db');
-      
+
       let dateFilter = '';
       const params = [];
-      
+
       if (startDate) {
         dateFilter += ' AND s.created_at >= ?';
         params.push(startDate.toISOString());
       }
-      
+
       if (endDate) {
         dateFilter += ' AND s.created_at <= ?';
         params.push(endDate.toISOString());

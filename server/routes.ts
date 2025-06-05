@@ -1213,6 +1213,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register Management API
+  app.post('/api/register/open', isAuthenticated, async (req, res) => {
+    try {
+      const { openingCash, notes } = req.body;
+      const userId = (req.user as any).id;
+
+      if (typeof openingCash !== 'number' || openingCash < 0) {
+        return res.status(400).json({ message: 'Opening cash must be a valid positive number' });
+      }
+
+      const session = await storage.openRegister(userId, openingCash, notes);
+      res.status(201).json(session);
+    } catch (error) {
+      console.error('Error opening register:', error);
+      res.status(500).json({ message: error.message || 'Internal server error' });
+    }
+  });
+
+  app.post('/api/register/close', isAuthenticated, async (req, res) => {
+    try {
+      const { sessionId, closingCash, notes } = req.body;
+      const userId = (req.user as any).id;
+
+      if (!sessionId) {
+        return res.status(400).json({ message: 'Session ID is required' });
+      }
+
+      const session = await storage.closeRegister(sessionId, userId, closingCash, notes);
+      res.json(session);
+    } catch (error) {
+      console.error('Error closing register:', error);
+      res.status(500).json({ message: error.message || 'Internal server error' });
+    }
+  });
+
+  app.get('/api/register/current', isAuthenticated, async (req, res) => {
+    try {
+      const session = await storage.getCurrentRegisterSession();
+      res.json(session);
+    } catch (error) {
+      console.error('Error fetching current register session:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/register/dashboard', isAuthenticated, async (req, res) => {
+    try {
+      const sessionId = req.query.sessionId ? parseInt(req.query.sessionId as string) : undefined;
+      const dashboard = await storage.getRegisterDashboard(sessionId);
+      
+      if (!dashboard) {
+        return res.status(404).json({ message: 'No active register session found' });
+      }
+      
+      res.json(dashboard);
+    } catch (error) {
+      console.error('Error fetching register dashboard:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/register/cash-transaction', isAuthenticated, async (req, res) => {
+    try {
+      const { type, amount, reason } = req.body;
+      const userId = (req.user as any).id;
+
+      if (!type || !['deposit', 'withdrawal'].includes(type)) {
+        return res.status(400).json({ message: 'Transaction type must be deposit or withdrawal' });
+      }
+
+      if (typeof amount !== 'number' || amount <= 0) {
+        return res.status(400).json({ message: 'Amount must be a positive number' });
+      }
+
+      // Get current register session
+      const session = await storage.getCurrentRegisterSession();
+      if (!session) {
+        return res.status(400).json({ message: 'No open register session found' });
+      }
+
+      const transaction = await storage.addCashTransaction(
+        session.id,
+        type,
+        amount,
+        userId,
+        reason
+      );
+
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error('Error recording cash transaction:', error);
+      res.status(500).json({ message: error.message || 'Internal server error' });
+    }
+  });
+
+  app.get('/api/register/cash-transactions', isAuthenticated, async (req, res) => {
+    try {
+      const sessionId = req.query.sessionId ? parseInt(req.query.sessionId as string) : undefined;
+      
+      if (!sessionId) {
+        const session = await storage.getCurrentRegisterSession();
+        if (!session) {
+          return res.status(400).json({ message: 'No register session specified or active' });
+        }
+        sessionId = session.id;
+      }
+
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const transactions = await storage.getCashTransactions(sessionId, limit);
+      res.json(transactions);
+    } catch (error) {
+      console.error('Error fetching cash transactions:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Dashboard stats API
   app.get('/api/dashboard/stats', async (req, res) => {
     try {
