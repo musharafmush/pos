@@ -667,7 +667,10 @@ export default function AddItemProfessional() {
                       />
 
                       <div className="border-t pt-4">
-                        <h3 className="text-blue-600 font-medium mb-4">Category</h3>
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <h3 className="text-blue-600 font-medium">Category</h3>
+                        </div>
 
                         <div className="grid grid-cols-2 gap-6">
                           <FormField
@@ -675,16 +678,23 @@ export default function AddItemProfessional() {
                             name="department"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>DEPARTMENT *</FormLabel>
+                                <FormLabel className="text-sm font-medium text-gray-700">DEPARTMENT *</FormLabel>
                                 <FormControl>
                                   <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="h-10">
                                       <SelectValue placeholder="Select department" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="electronics">Electronics</SelectItem>
-                                      <SelectItem value="clothing">Clothing</SelectItem>
-                                      <SelectItem value="home">Home & Garden</SelectItem>
+                                      <SelectItem value="FMCG">FMCG</SelectItem>
+                                      <SelectItem value="Grocery">Grocery</SelectItem>
+                                      <SelectItem value="Electronics">Electronics</SelectItem>
+                                      <SelectItem value="Clothing">Clothing</SelectItem>
+                                      <SelectItem value="Home & Garden">Home & Garden</SelectItem>
+                                      <SelectItem value="Health & Beauty">Health & Beauty</SelectItem>
+                                      <SelectItem value="Sports & Fitness">Sports & Fitness</SelectItem>
+                                      <SelectItem value="Automotive">Automotive</SelectItem>
+                                      <SelectItem value="Books & Stationery">Books & Stationery</SelectItem>
+                                      <SelectItem value="Toys & Games">Toys & Games</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
@@ -693,39 +703,39 @@ export default function AddItemProfessional() {
                             )}
                           />
                           <FormField
-                                control={form.control}
-                                name="mainCategory"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>MAIN CATEGORY</FormLabel>
-                                    <FormControl>
-                                      <Select 
-                                        onValueChange={(value) => {
-                                          field.onChange(value);
-                                          // Also update the categoryId for the backend
-                                          const categoryId = parseInt(value);
-                                          if (!isNaN(categoryId)) {
-                                            form.setValue("categoryId", categoryId);
-                                          }
-                                        }} 
-                                        value={field.value}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select main category" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {categories.map((category: any) => (
-                                            <SelectItem key={category.id} value={category.id.toString()}>
-                                              {category.name}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
+                            control={form.control}
+                            name="mainCategory"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium text-gray-700">MAIN CATEGORY</FormLabel>
+                                <FormControl>
+                                  <Select 
+                                    onValueChange={(value) => {
+                                      field.onChange(value);
+                                      // Also update the categoryId for the backend
+                                      const category = categories.find((cat: any) => cat.name === value);
+                                      if (category) {
+                                        form.setValue("categoryId", category.id);
+                                      }
+                                    }} 
+                                    value={field.value}
+                                  >
+                                    <SelectTrigger className="h-10">
+                                      <SelectValue placeholder="Select main category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {categories.map((category: any) => (
+                                        <SelectItem key={category.id} value={category.name}>
+                                          {category.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
 
                         <div className="grid grid-cols-2 gap-6 mt-4">
@@ -734,15 +744,23 @@ export default function AddItemProfessional() {
                             name="subCategory"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>SUB CATEGORY</FormLabel>
+                                <FormLabel className="text-sm font-medium text-gray-700">SUB CATEGORY</FormLabel>
                                 <FormControl>
                                   <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="h-10">
                                       <SelectValue placeholder="Select sub category" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="subcategory1">Sub Category 1</SelectItem>
-                                      <SelectItem value="subcategory2">Sub Category 2</SelectItem>
+                                      <SelectItem value="Food & Beverages">Food & Beverages</SelectItem>
+                                      <SelectItem value="Personal Care">Personal Care</SelectItem>
+                                      <SelectItem value="Household Items">Household Items</SelectItem>
+                                      <SelectItem value="Dairy Products">Dairy Products</SelectItem>
+                                      <SelectItem value="Snacks & Confectionery">Snacks & Confectionery</SelectItem>
+                                      <SelectItem value="Beverages">Beverages</SelectItem>
+                                      <SelectItem value="Spices & Seasonings">Spices & Seasonings</SelectItem>
+                                      <SelectItem value="Packaged Foods">Packaged Foods</SelectItem>
+                                      <SelectItem value="Cleaning Supplies">Cleaning Supplies</SelectItem>
+                                      <SelectItem value="Health Supplements">Health Supplements</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
@@ -755,15 +773,31 @@ export default function AddItemProfessional() {
                             name="brand"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>BRAND</FormLabel>
+                                <FormLabel className="text-sm font-medium text-gray-700">BRAND</FormLabel>
                                 <FormControl>
                                   <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="h-10">
                                       <SelectValue placeholder="Select brand" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="brand1">Brand 1</SelectItem>
-                                      <SelectItem value="brand2">Brand 2</SelectItem>
+                                      <SelectItem value="Amul">Amul</SelectItem>
+                                      <SelectItem value="Britannia">Britannia</SelectItem>
+                                      <SelectItem value="Parle">Parle</SelectItem>
+                                      <SelectItem value="ITC">ITC</SelectItem>
+                                      <SelectItem value="Nestle">Nestle</SelectItem>
+                                      <SelectItem value="Tata">Tata</SelectItem>
+                                      <SelectItem value="Hindustan Unilever">Hindustan Unilever</SelectItem>
+                                      <SelectItem value="Patanjali">Patanjali</SelectItem>
+                                      <SelectItem value="Mother Dairy">Mother Dairy</SelectItem>
+                                      <SelectItem value="Dabur">Dabur</SelectItem>
+                                      <SelectItem value="Haldiram's">Haldiram's</SelectItem>
+                                      <SelectItem value="MTR">MTR</SelectItem>
+                                      <SelectItem value="Everest">Everest</SelectItem>
+                                      <SelectItem value="MDH">MDH</SelectItem>
+                                      <SelectItem value="Catch">Catch</SelectItem>
+                                      <SelectItem value="Generic">Generic</SelectItem>
+                                      <SelectItem value="Store Brand">Store Brand</SelectItem>
+                                      <SelectItem value="Other">Other</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
@@ -778,15 +812,21 @@ export default function AddItemProfessional() {
                           name="buyer"
                           render={({ field }) => (
                             <FormItem className="mt-4">
-                              <FormLabel>BUYER *</FormLabel>
+                              <FormLabel className="text-sm font-medium text-gray-700">BUYER *</FormLabel>
                               <FormControl>
                                 <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
+                                  <SelectTrigger className="h-10">
                                     <SelectValue placeholder="Select buyer" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="buyer1">Buyer 1</SelectItem>
-                                    <SelectItem value="buyer2">Buyer 2</SelectItem>
+                                    <SelectItem value="Primary Buyer">Primary Buyer</SelectItem>
+                                    <SelectItem value="Secondary Buyer">Secondary Buyer</SelectItem>
+                                    <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
+                                    <SelectItem value="Purchase Head">Purchase Head</SelectItem>
+                                    <SelectItem value="Store Manager">Store Manager</SelectItem>
+                                    <SelectItem value="Category Manager">Category Manager</SelectItem>
+                                    <SelectItem value="Regional Buyer">Regional Buyer</SelectItem>
+                                    <SelectItem value="Local Supplier">Local Supplier</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </FormControl>
