@@ -744,6 +744,159 @@ export default function POSEnhanced() {
     }
   };
 
+  //Process sale
+  const processSale = async () => {
+    try {
+      if (cart.length === 0) {
+        toast({
+          title: "No Items",
+          description: "Add items to cart before completing sale",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if register is open
+      try {
+        const registerResponse = await fetch('/api/cash-register/current', {
+          credentials: 'include'
+        });
+
+        if (registerResponse.status === 404) {
+          toast({
+            title: "Register Not Open",
+            description: "Please open the cash register before making sales",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (error) {
+        console.warn('Could not check register status, continuing with sale');
+      }
+
+      const amountPaidValue = parseFloat(amountPaid) || 0;
+
+      if (amountPaidValue < total) {
+        toast({
+          title: "Insufficient Payment",
+          description: `Minimum amount to pay is ${formatCurrency(total)}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsProcessing(true);
+
+      try {
+        // Validate cart items have valid stock
+        for (const item of cart) {
+          const product = products.find((p: Product) => p.id === item.id);
+          if (!product || product.stockQuantity < item.quantity) {
+            throw new Error(`Insufficient stock for ${item.name}. Available: ${product?.stockQuantity || 0}, Required: ${item.quantity}`);
+          }
+        }
+
+        const saleData = {
+          customerId: selectedCustomer?.id || null,
+          customerName: selectedCustomer?.name || "Walk-in Customer",
+          items: cart.map(item => ({
+            productId: item.id,
+            quantity: item.quantity,
+            unitPrice: parseFloat(item.price).toString(),
+            subtotal: item.total.toString(),
+            price: parseFloat(item.price).toString(),
+            total: item.total.toString()
+          })),
+          subtotal: subtotal.toFixed(2),
+          discount: discountAmount.toFixed(2),
+          discountPercent: discount,
+          tax: taxAmount.toFixed(2),
+          taxRate: taxRate,
+          total: total.toFixed(2),
+          paymentMethod,
+          amountPaid: amountPaidValue.toFixed(2),
+          change: (amountPaidValue - total).toFixed(2),
+          notes: `Bill: ${billNumber}`,
+          billNumber: billNumber,
+          status: "completed"
+        };
+
+        console.log("Processing sale with data:", saleData);
+
+        const response = await fetch("/api/sales", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(saleData),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Sale API error:", errorText);
+
+          let errorMessage = "Transaction failed";
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || "Server error occurred";
+          } catch (e) {
+            errorMessage = errorText || "Unknown server error";
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        const saleResult = await response.json();
+        console.log("Sale completed successfully:", saleResult);
+
+        // Update payment tracking
+        updatePaymentTracking(paymentMethod, amountPaidValue);
+
+        toast({
+          title: "✅ Sale Completed!",
+          description: `Transaction successful for ${formatCurrency(total)}${amountPaidValue > total ? `. Change: ${formatCurrency(amountPaidValue - total)}` : ''}`,
+          variant: "default",
+        });
+
+        // Reset everything
+        clearCart();
+        setShowPaymentDialog(false);
+        setAmountPaid("");
+        setBillNumber(`POS${Date.now()}`);
+
+        // Refresh data
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+
+      } catch (error) {
+        console.error("Sale processing error:", error);
+
+        let errorMessage = "Transaction failed. Please try again.";
+        if (error instanceof Error) {
+          if (error.message.includes("stock")) {
+            errorMessage = error.message;
+          } else if (error.message.includes("Network") || error.message.includes("fetch")) {
+            errorMessage = "Network error. Please check your connection.";
+          } else if (error.message.length > 0 && error.message.length < 200) {
+            errorMessage = error.message;
+          }
+        }
+
+        toast({
+          title: "❌ Transaction Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+    
+    
+
+  };
+
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900">
@@ -1583,7 +1736,7 @@ export default function POSEnhanced() {
                       key={amount}
                       variant="outline"
                       size="sm"
-                      onClick={() => {
+                      onClick={(){
                         setCashAmount(amount.toString());
                         setCashOperation('add');
                         setCashReason(`Cash payment ₹${amount}`);
