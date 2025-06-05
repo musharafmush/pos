@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { TrendingUp, DollarSign, BarChart3 } from "lucide-react";
 
 interface SidebarProps {
   open: boolean;
