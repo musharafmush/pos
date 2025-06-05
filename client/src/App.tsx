@@ -81,7 +81,6 @@ function Router() {
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/suppliers" component={Suppliers} />
       <ProtectedRoute path="/customers" component={Customers} />
-      <ProtectedRoute path="/products/update-price" component={() => import("@/pages/products-update-price")} />
       <ProtectedRoute path="/products/update-price" component={ProductsUpdatePrice} />
       <ProtectedRoute path="/settings/currency" component={CurrencySettings} />
       <ProtectedRoute path="/settings/business" component={BusinessSettings} />
