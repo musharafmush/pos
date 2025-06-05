@@ -1246,7 +1246,6 @@ function POSEnhanced() {
           </div>
         </DashboardLayout>
       )}
-      </div>
 
       {/* Product Search Results Overlay */}
       {searchTerm && filteredProducts.length > 0 && (
@@ -1463,3 +1462,8 @@ function POSEnhanced() {
             </div>
           </div>
         )}
+</>
+  );
+}
+
+export default POSEnhanced;
