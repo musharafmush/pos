@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import {
   Search,
   ShoppingCart,
@@ -36,7 +37,8 @@ import {
   AlertCircle,
   Info,
   Banknote,
-  DollarSign
+  DollarSign,
+  Cash as CashIcon,
 } from "lucide-react";
 
 interface Product {
@@ -880,9 +882,8 @@ export default function POSEnhanced() {
                           </div>
 
                           <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2 bg-gray-100```python
-# Fix syntax error at end of file - missing closing tags and brackets
- rounded-lg p-2">
+                            ```python
+                            <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1101,342 +1102,266 @@ export default function POSEnhanced() {
             </div>
           )}
 
-          {/* Premium Cash Register Dialog */}
-          <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
-            <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
-              <DialogHeader className="pb-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-lg">
-                      <Banknote className="h-8 w-8 text-white" />
-                    </div>
-                    <div>
-                      <DialogTitle className="text-3xl font-bold text-gray-900">
-                        Cash Register Management
-                      </DialogTitle>
-                      <p className="text-gray-600 text-lg mt-1">Professional cash & payment tracking system</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className="bg-green-100 text-green-800 border-green-200 px-3 py-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                      Live System
-                    </Badge>
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 px-3 py-1">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {currentTime}
-                    </Badge>
-                  </div>
-                </div>
-              </DialogHeader>
+          {/* Cash Register Management Modal */}
+      <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg">
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                <CashIcon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="text-gray-800">Cash Register Management</div>
+                <div className="text-sm text-gray-600 font-normal">Professional cash & payment tracking system</div>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-sm text-gray-600">Live System</span>
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">06:29 am</span>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
 
-              <div className="grid grid-cols-12 gap-8 py-6">
-                {/* Left Panel - Current Status & Quick Actions */}
-                <div className="col-span-5 space-y-6">
-                  {/* Current Balance Display */}
-                  <div className="bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 p-8 rounded-3xl text-white shadow-2xl">
-                    <div className="text-center">
-                      <div className="text-emerald-100 text-lg font-medium mb-2">Current Cash Balance</div>
-                      <div className="text-5xl font-bold mb-4">{formatCurrency(cashInHand)}</div>
-                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-emerald-100">Today's Sales</div>
-                            <div className="font-bold text-xl">{formatCurrency(0)}</div>
-                          </div>
-                          <div>
-                            <div className="text-emerald-100">Transactions</div>
-                            <div className="font-bold text-xl">0</div>
-                          </div>
-                        </div>
+          <div className="grid grid-cols-12 gap-6 p-2">
+            {/* Current Balance Display */}
+            <div className="col-span-4">
+              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-2xl shadow-lg">
+                <div className="text-center">
+                  <h3 className="text-lg font-medium mb-2 opacity-90">Current Cash Balance</h3>
+                  <div className="text-4xl font-bold mb-4">{formatCurrency(cashInHand)}</div>
+                  <div className="bg-green-400/30 rounded-lg p-3">
+                    <div className="flex justify-between">
+                      <div className="text-center">
+                        <div className="text-sm opacity-80">Today's Sales</div>
+                        <div className="font-semibold">₹0</div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Operation Type Selection */}
-                  <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-lg">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                      <Calculator className="h-6 w-6 mr-3 text-blue-600" />
-                      Transaction Type
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div 
-                        className={`p-6 rounded-2xl border-3 cursor-pointer transition-all duration-300 transform hover:scale-105 ${
-                          cashOperation === 'add' 
-                            ? 'border-green-500 bg-green-50 shadow-lg' 
-                            : 'border-gray-200 hover:border-green-300 hover:bg-green-50'
-                        }`} 
-                        onClick={() => setCashOperation('add')}
-                      >
-                        <div className="text-center">
-                          <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <Plus className="h-8 w-8 text-green-600" />
-                          </div>
-                          <div className="font-bold text-lg text-green-700">Add Money</div>
-                          <div className="text-sm text-gray-600 mt-1">Increase register balance</div>
-                        </div>
+                      <div className="text-center">
+                        <div className="text-sm opacity-80">Transactions</div>
+                        <div className="font-semibold">0</div>
                       </div>
-                      <div 
-                        className={`p-6 rounded-2xl border-3 cursor-pointer transition-all duration-300 transform hover:scale-105 ${
-                          cashOperation === 'remove' 
-                            ? 'border-red-500 bg-red-50 shadow-lg' 
-                            : 'border-gray-200 hover:border-red-300 hover:bg-red-50'
-                        }`} 
-                        onClick={() => setCashOperation('remove')}
-                      >
-                        <div className="text-center">
-                          <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <Minus className="h-8 w-8 text-red-600" />
-                          </div>
-                          <div className="font-bold text-lg text-red-700">Remove Money</div>
-                          <div className="text-sm text-gray-600 mt-1">Decrease register balance</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Manual Entry Form */}
-                  <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-lg">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                      <Info className="h-6 w-6 mr-3 text-purple-600" />
-                      Manual Entry
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (₹)</label>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={cashAmount}
-                          onChange={(e) => setCashAmount(e.target.value)}
-                          className="text-3xl p-6 text-center font-bold border-2 border-gray-200 focus:border-blue-500 rounded-xl"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Transaction Reason</label>
-                        <Input
-                          placeholder="Enter transaction details..."
-                          value={cashReason}
-                          onChange={(e) => setCashReason(e.target.value)}
-                          className="p-4 text-lg border-2 border-gray-200 focus:border-blue-500 rounded-xl"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Panel - Quick Actions */}
-                <div className="col-span-7 space-y-6">
-                  {/* Cash Payment Buttons */}
-                  <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-lg">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                        <Banknote className="h-6 w-6 mr-3 text-green-600" />
-                        Cash Payments
-                      </h3>
-                      <Badge className="bg-green-100 text-green-800 px-3 py-1">Quick Add</Badge>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                      {[
-                        { amount: "100", label: "₹100" },
-                        { amount: "500", label: "₹500" },
-                        { amount: "1000", label: "₹1,000" },
-                        { amount: "2000", label: "₹2,000" },
-                        { amount: "5000", label: "₹5,000" },
-                        { amount: "10000", label: "₹10,000" },
-                        { amount: "20000", label: "₹20,000" },
-                        { amount: "50000", label: "₹50,000" }
-                      ].map((item) => (
-                        <Button
-                          key={item.amount}
-                          variant="outline"
-                          className="h-16 bg-green-50 border-2 border-green-200 hover:bg-green-100 text-green-700 font-bold text-lg rounded-xl transition-all duration-200 transform hover:scale-105"
-                          onClick={() => {
-                            setCashAmount(item.amount);
-                            setCashOperation("add");
-                            setCashReason(`Cash sales ${item.label}`);
-                          }}
-                        >
-                          <div className="text-center">
-                            <Plus className="h-4 w-4 mx-auto mb-1" />
-                            <div>{item.label}</div>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Digital Payment Buttons */}
-                  <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-lg">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                        <DollarSign className="h-6 w-6 mr-3 text-blue-600" />
-                        Digital Payments
-                      </h3>
-                      <Badge className="bg-blue-100 text-blue-800 px-3 py-1">UPI • Cards</Badge>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                      {[
-                        { amount: "250", label: "₹250", type: "UPI" },
-                        { amount: "500", label: "₹500", type: "UPI" },
-                        { amount: "1000", label: "₹1,000", type: "UPI" },
-                        { amount: "2000", label: "₹2,000", type: "UPI" },
-                        { amount: "5000", label: "₹5,000", type: "Card" },
-                        { amount: "10000", label: "₹10,000", type: "Card" },
-                        { amount: "25000", label: "₹25,000", type: "Card" },
-                        { amount: "50000", label: "₹50,000", type: "Card" }
-                      ].map((item) => (
-                        <Button
-                          key={`${item.type}-${item.amount}`}
-                          variant="outline"
-                          className="h-16 bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 text-blue-700 font-bold text-lg rounded-xl transition-all duration-200 transform hover:scale-105"
-                          onClick={() => {
-                            setCashAmount(item.amount);
-                            setCashOperation("add");
-                            setCashReason(`${item.type} payment ${item.label}`);
-                          }}
-                        >
-                          <div className="text-center">
-                            <Plus className="h-4 w-4 mx-auto mb-1" />
-                            <div>{item.label}</div>
-                            <div className="text-xs text-blue-500">{item.type}</div>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Manual Deposit Operations */}
-                  <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-lg">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                        <TrendingUp className="h-6 w-6 mr-3 text-emerald-600" />
-                        Manual Deposits
-                      </h3>
-                      <Badge className="bg-emerald-100 text-emerald-800 px-3 py-1">Add Cash</Badge>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                      {[
-                        { amount: "5000", label: "₹5,000", reason: "Opening balance" },
-                        { amount: "10000", label: "₹10,000", reason: "Cash deposit" },
-                        { amount: "20000", label: "₹20,000", reason: "Cash deposit" },
-                        { amount: "50000", label: "₹50,000", reason: "Initial deposit" },
-                        { amount: "1000", label: "₹1,000", reason: "Petty cash" },
-                        { amount: "2500", label: "₹2,500", reason: "Change fund" },
-                        { amount: "15000", label: "₹15,000", reason: "Cash deposit" },
-                        { amount: "25000", label: "₹25,000", reason: "Manual deposit" }
-                      ].map((item) => (
-                        <Button
-                          key={`deposit-${item.amount}`}
-                          variant="outline"
-                          className="h-16 bg-emerald-50 border-2 border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-bold text-lg rounded-xl transition-all duration-200 transform hover:scale-105"
-                          onClick={() => {
-                            setCashAmount(item.amount);
-                            setCashOperation("add");
-                            setCashReason(`${item.reason} ${item.label}`);
-                          }}
-                        >
-                          <div className="text-center">
-                            <Plus className="h-4 w-4 mx-auto mb-1" />
-                            <div>{item.label}</div>
-                            <div className="text-xs text-emerald-500">Deposit</div>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Manual Withdrawal Operations */}
-                  <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-lg">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                        <TrendingDown className="h-6 w-6 mr-3 text-red-600" />
-                        Manual Withdrawals
-                      </h3>
-                      <Badge className="bg-red-100 text-red-800 px-3 py-1">Remove Cash</Badge>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                      {[
-                        { amount: "1000", label: "₹1,000", reason: "Bank deposit" },
-                        { amount: "5000", label: "₹5,000", reason: "Bank deposit" },
-                        { amount: "10000", label: "₹10,000", reason: "Bank deposit" },
-                        { amount: "25000", label: "₹25,000", reason: "Bank deposit" },
-                        { amount: "500", label: "₹500", reason: "Petty expense" },
-                        { amount: "2000", label: "₹2,000", reason: "Office expense" },
-                        { amount: "15000", label: "₹15,000", reason: "Bank transfer" },
-                        { amount: "50000", label: "₹50,000", reason: "Major withdrawal" }
-                      ].map((item) => (
-                        <Button
-                          key={`withdraw-${item.amount}`}
-                          variant="outline"
-                          className="h-16 bg-red-50 border-2 border-red-200 hover:bg-red-100 text-red-700 font-bold text-lg rounded-xl transition-all duration-200 transform hover:scale-105"
-                          onClick={() => {
-                            setCashAmount(item.amount);
-                            setCashOperation("remove");
-                            setCashReason(`${item.reason} ${item.label}`);
-                          }}
-                        >
-                          <div className="text-center">
-                            <Minus className="h-4 w-4 mx-auto mb-1" />
-                            <div>{item.label}</div>
-                            <div className="text-xs text-red-500">Withdraw</div>
-                          </div>
-                        </Button>
-                      ))}
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-                <div className="flex items-center space-x-4">
-                  <div className="text-sm text-gray-600">
-                    {cashAmount && cashReason && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <span className="font-medium">Preview: </span>
-                        <span className={`font-bold ${cashOperation === 'add' ? 'text-green-600' : 'text-red-600'}`}>
-                          {cashOperation === 'add' ? '+' : '-'}{formatCurrency(parseFloat(cashAmount || '0'))}
-                        </span>
-                        <span className="text-gray-500"> - {cashReason}</span>
-                      </div>
-                    )}
+            {/* Cash Payments Section */}
+            <div className="col-span-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CashIcon className="w-5 h-5 text-green-600" />
+                    <h4 className="font-semibold text-gray-800">Cash Payments</h4>
+                  </div>
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Quick Add</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {[100, 500, 1000, 2000, 5000, 10000, 20000, 50000].map((amount) => (
+                    <Button
+                      key={amount}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCashAmount(amount.toString());
+                        setCashOperation('add');
+                        setCashReason(`Cash payment ₹${amount}`);
+                      }}
+                      className="border-green-200 text-green-700 hover:bg-green-50 h-12 flex flex-col justify-center"
+                    >
+                      <PlusIcon className="w-3 h-3 mb-1" />
+                      <span className="font-semibold">₹{amount >= 1000 ? `${amount/1000}k` : amount}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Digital Payments Section */}
+            <div className="col-span-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCardIcon className="w-5 h-5 text-blue-600" />
+                    <h4 className="font-semibold text-gray-800">Digital Payments</h4>
+                  </div>
+                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">UPI • Cards</span>
+                </div>
+
+                {/* UPI Payments */}
+                <div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {[250, 500, 1000, 2000].map((amount) => (
+                      <Button
+                        key={`upi-${amount}`}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCashAmount(amount.toString());
+                          setCashOperation('add');
+                          setCashReason(`UPI payment ₹${amount}`);
+                        }}
+                        className="border-blue-200 text-blue-700 hover:bg-blue-50 h-12 flex flex-col justify-center"
+                      >
+                        <PlusIcon className="w-3 h-3 mb-1" />
+                        <span className="font-semibold">₹{amount}</span>
+                        <span className="text-xs text-blue-600">UPI</span>
+                      </Button>
+                    ))}
                   </div>
                 </div>
-                <div className="flex space-x-4">
+
+                {/* Card Payments */}
+                <div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[5000, 10000, 25000, 50000].map((amount) => (
+                      <Button
+                        key={`card-${amount}`}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCashAmount(amount.toString());
+                          setCashOperation('add');
+                          setCashReason(`Card payment ₹${amount}`);
+                        }}
+                        className="border-purple-200 text-purple-700 hover:bg-purple-50 h-12 flex flex-col justify-center"
+                      >
+                        <PlusIcon className="w-3 h-3 mb-1" />
+                        <span className="font-semibold">₹{amount >= 1000 ? `${amount/1000}k` : amount}</span>
+                        <span className="text-xs text-purple-600">Card</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Transaction Type Selection */}
+            <div className="col-span-6">
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-gray-100 rounded flex items-center justify-center">
+                    <span className="text-xs">📋</span>
+                  </div>
+                  Transaction Type
+                </h4>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Card className={`cursor-pointer transition-all border-2 ${cashOperation === 'add' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
+                        onClick={() => setCashOperation('add')}>
+                    <CardContent className="p-4 text-center">
+                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <PlusIcon className="w-6 h-6 text-green-600" />
+                      </div>
+                      <h4 className="font-semibold text-green-700 mb-1">Add Money</h4>
+                      <p className="text-sm text-green-600">Increase register balance</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className={`cursor-pointer transition-all border-2 ${cashOperation === 'remove' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-red-300'}`}
+                        onClick={() => setCashOperation('remove')}>
+                    <CardContent className="p-4 text-center">
+                      <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <MinusIcon className="w-6 h-6 text-red-600" />
+                      </div>
+                      <h4 className="font-semibold text-red-700 mb-1">Remove Money</h4>
+                      <p className="text-sm text-red-600">Decrease register balance</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+
+            {/* Cash Removal Section */}
+            <div className="col-span-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MinusIcon className="w-5 h-5 text-red-600" />
+                    <h4 className="font-semibold text-gray-800">Cash Removal</h4>
+                  </div>
+                  <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Bank Deposits</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
-                    onClick={() => setShowCashRegister(false)}
-                    className="px-8 py-3 text-lg"
+                    onClick={() => {
+                      setCashAmount("2000");
+                      setCashOperation("remove");
+                      setCashReason("Bank deposit ₹2000");
+                    }}
+                    className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
                   >
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Cancel
+                    <MinusIcon className="w-4 h-4 mb-1" />
+                    <span className="font-semibold">₹2,000</span>
+                    <span className="text-xs text-red-600">Bank Deposit</span>
                   </Button>
-                  <Button 
-                    onClick={handleCashOperation}
-                    disabled={!cashAmount || !cashReason}
-                    className={`px-10 py-3 text-lg font-bold shadow-lg transition-all duration-200 ${
-                      cashOperation === 'add' 
-                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' 
-                        : 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700'
-                    }`}
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCashAmount("5000");
+                      setCashOperation("remove");
+                      setCashReason("Bank deposit ₹5000");
+                    }}
+                    className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
                   >
-                    {cashOperation === 'add' ? (
-                      <>
-                        <Plus className="h-5 w-5 mr-3" />
-                        Add Cash to Register
-                      </>
-                    ) : (
-                      <>
-                        <Minus className="h-5 w-5 mr-3" />
-                        Remove Cash from Register
-                      </>
-                    )}
+                    <MinusIcon className="w-4 h-4 mb-1" />
+                    <span className="font-semibold">₹5,000</span>
+                    <span className="text-xs text-red-600">Bank Deposit</span>
                   </Button>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
+            </div>
+
+            {/* Manual Entry Form */}
+            <div className="col-span-12">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-800 mb-4">Manual Entry</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="cashAmount" className="text-sm font-medium">Amount (₹)</Label>
+                    <Input
+                      id="cashAmount"
+                      type="number"
+                      value={cashAmount}
+                      onChange={(e) => setCashAmount(e.target.value)}
+                      placeholder="Enter amount"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cashReason" className="text-sm font-medium">Reason</Label>
+                    <Input
+                      id="cashReason"
+                      value={cashReason}
+                      onChange={(e) => setCashReason(e.target.value)}
+                      placeholder="Enter reason"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={handleCashOperation} 
+                      className={`w-full h-10 ${
+                        cashOperation === 'add' 
+                          ? 'bg-green-600 hover:bg-green-700' 
+                          : cashOperation === 'remove'
+                          ? 'bg-red-600 hover:bg-red-700'
+                          : 'bg-gray-400'
+                      }`}
+                      disabled={!cashAmount || parseFloat(cashAmount) <= 0 || !cashOperation}
+                    >
+                      {cashOperation === 'add' ? 'Add to Register' : cashOperation === 'remove' ? 'Remove from Register' : 'Select Operation'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
           {/* New Customer Dialog */}
           <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
