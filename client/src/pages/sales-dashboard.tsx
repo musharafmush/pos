@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -45,12 +44,60 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFormatCurrency } from "@/lib/currency";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  DollarSign, 
+  TrendingUp, 
+  Users, 
+  CreditCard, 
+  Banknote, 
+  Smartphone,
+  Minus,
+  Plus,
+  Calculator,
+  Clock,
+  User,
+  RefreshCw
+} from 'lucide-react';
+
+interface CashRegister {
+  id: string;
+  register_id: string;
+  user_id: number;
+  opening_cash: number;
+  current_cash: number;
+  status: 'open' | 'closed';
+  opened_at: string;
+  opened_by: number;
+}
+
+interface SalesData {
+  totalSales: number;
+  totalRevenue: number;
+  cashSales: number;
+  upiSales: number;
+  cardSales: number;
+  otherSales: number;
+  totalWithdrawals: number;
+  totalRefunds: number;
+}
 
 export default function SalesDashboard() {
+  const [showOpenDialog, setShowOpenDialog] = useState(false);
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [openingAmount, setOpeningAmount] = useState('');
+  const [closingAmount, setClosingAmount] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [timeRange, setTimeRange] = useState<string>("7");
   const [startDate, setStartDate] = useState<string>(format(subDays(new Date(), 7), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
-  const formatCurrency = useFormatCurrency();
+  const formatCurrencyBase = useFormatCurrency();
 
   const [selectedSale, setSelectedSale] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -82,6 +129,30 @@ export default function SalesDashboard() {
     active: true,
     description: '',
     barcode: ''
+  });
+
+  // Fetch current register
+  const { data: currentRegister, refetch: refetchRegister } = useQuery({
+    queryKey: ['current-register'],
+    queryFn: async () => {
+      const response = await fetch('/api/cash-register/current');
+      if (!response.ok) throw new Error('Failed to fetch register');
+      return response.json();
+    },
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
+
+  // Fetch sales data for current register
+  const { data: salesDataBackend, refetch: refetchSalesData } = useQuery({
+    queryKey: ['sales-data', currentRegister?.register_id],
+    queryFn: async () => {
+      if (!currentRegister?.register_id) return null;
+      const response = await fetch(`/api/cash-register/${currentRegister.register_id}/sales-data`);
+      if (!response.ok) throw new Error('Failed to fetch sales data');
+      return response.json();
+    },
+    enabled: !!currentRegister?.register_id,
+    refetchInterval: 5000 // Refresh every 5 seconds for real-time data
   });
 
   // Fetch sales data
@@ -118,7 +189,6 @@ export default function SalesDashboard() {
     refetchInterval: 10000 // Refresh every 10 seconds for live data
   });
 
-  // CRUD Operations
   const handleCreateSale = async (saleData: any) => {
     try {
       const response = await fetch('/api/sales', {
@@ -495,998 +565,448 @@ export default function SalesDashboard() {
     return acc;
   }, []) || [];
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleOpenRegister = async () => {
+    if (!openingAmount || parseFloat(openingAmount) < 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid opening amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/cash-register/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ openingCash: parseFloat(openingAmount) })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      toast({
+        title: "Register Opened",
+        description: `Register opened with ${formatCurrency(parseFloat(openingAmount))}`,
+      });
+
+      setOpeningAmount('');
+      setShowOpenDialog(false);
+      refetchRegister();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to open register",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCloseRegister = async () => {
+    if (!currentRegister) return;
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch(`/api/cash-register/${currentRegister.register_id}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          closingCash: parseFloat(closingAmount) || 0,
+          notes 
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      toast({
+        title: "Register Closed",
+        description: "Cash register has been closed successfully",
+      });
+
+      setClosingAmount('');
+      setNotes('');
+      setShowCloseDialog(false);
+      refetchRegister();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to close register",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const calculateCashInDrawer = () => {
+    if (!currentRegister || !salesDataBackend) return 0;
+    return currentRegister.opening_cash + 
+           salesDataBackend.cashSales - 
+           salesDataBackend.totalWithdrawals;
+  };
+
+  if (!currentRegister) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="bg-blue-600 text-white p-3 rounded-xl">
+                  <DollarSign className="h-6 w-6" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Sales Dashboard</h1>
+                  <p className="text-gray-500">Open a cash register to start tracking sales</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setShowOpenDialog(true)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Open Register
+              </Button>
+            </div>
+          </div>
+
+          {/* No Register Open Message */}
+          <Card className="p-12 text-center">
+            <CardContent>
+              <div className="text-6xl mb-4">🔒</div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">No Register Open</h2>
+              <p className="text-gray-500 mb-6">Please open a cash register to start tracking sales and transactions</p>
+              <Button 
+                onClick={() => setShowOpenDialog(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Open Cash Register
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Open Register Dialog */}
+        <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                Open Cash Register
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p className="text-blue-800 text-sm">Enter the opening cash amount in the register drawer.</p>
+              </div>
+
+              <div>
+                <Label htmlFor="openingAmount">Cash In Hand (₹)</Label>
+                <Input
+                  id="openingAmount"
+                  type="number"
+                  value={openingAmount}
+                  onChange={(e) => setOpeningAmount(e.target.value)}
+                  placeholder="Enter opening amount"
+                  className="mt-1"
+                  step="0.01"
+                  min="0"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowOpenDialog(false)}
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleOpenRegister}
+                  disabled={isProcessing || !openingAmount}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isProcessing ? "Opening..." : "Open Register"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Sales Dashboard</h2>
-              <p className="text-gray-600 dark:text-gray-400">Monitor your sales performance and trends • Real-time POS integration</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                Live Data
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openCreateDialog}
-                className="flex items-center space-x-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-              >
-                <ShoppingCartIcon className="h-4 w-4" />
-                <span>New Sale</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open('/pos-enhanced', '_blank')}
-                className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
-              >
-                <ShoppingCartIcon className="h-4 w-4" />
-                <span>POS System</span>
-              </Button>
-            </div>
-          </div>
-          
-          {/* Loading and Error States */}
-          {salesLoading && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-700">Loading sales data...</p>
-            </div>
-          )}
-          
-          {salesError && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700">Error loading sales data. Please try refreshing the page.</p>
-            </div>
-          )}
-          
-          {!salesLoading && !salesError && (!salesData || salesData.length === 0) && (
-            <div className="mt-4 p-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center space-x-3 mb-3">
-                <ShoppingCartIcon className="h-8 w-8 text-blue-600" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="bg-green-600 text-white p-3 rounded-xl">
+                  <DollarSign className="h-6 w-6" />
+                </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-blue-900">Ready for Sales!</h3>
-                  <p className="text-blue-700">Your POS system is connected and ready to track sales data</p>
+                  <h1 className="text-2xl font-bold text-gray-900">Sales Dashboard</h1>
+                  <p className="text-gray-500">Real-time sales and cash register management</p>
                 </div>
               </div>
-              <div className="space-y-2 text-sm text-blue-600">
-                <div>📊 Real-time sales tracking enabled</div>
-                <div>🛒 Start making sales in POS Enhanced to see live analytics</div>
-                <div>📈 All transaction data will appear here instantly</div>
+              <div className="flex items-center space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    refetchRegister();
+                    refetchSalesData();
+                  }}
+                  size="sm"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+                <Button 
+                  onClick={() => setShowCloseDialog(true)}
+                  variant="outline"
+                  className="border-red-200 text-red-700 hover:bg-red-50"
+                >
+                  <Minus className="h-4 w-4 mr-2" />
+                  Close Register
+                </Button>
               </div>
-              <Button
-                onClick={() => window.open('/pos-enhanced', '_blank')}
-                className="mt-4 bg-blue-600 hover:bg-blue-700"
-              >
-                <ShoppingCartIcon className="h-4 w-4 mr-2" />
-                Open POS System
-              </Button>
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {/* Register Summary */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-              <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-blue-600" />
+                Register Summary
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalSalesAmount)}</div>
-              <div className="flex items-center text-xs text-muted-foreground">
-                {salesGrowth >= 0 ? (
-                  <ArrowUpIcon className="h-3 w-3 text-green-500 mr-1" />
-                ) : (
-                  <ArrowDownIcon className="h-3 w-3 text-red-500 mr-1" />
-                )}
-                <span className={salesGrowth >= 0 ? "text-green-500" : "text-red-500"}>
-                  {Math.abs(salesGrowth).toFixed(1)}%
-                </span>
-                <span className="ml-1">from last period</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-sm text-gray-500">Register Status</Label>
+                  <Badge variant={currentRegister.status === 'open' ? 'default' : 'secondary'}>
+                    {currentRegister.status.toUpperCase()}
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm text-gray-500">Cash In Hand</Label>
+                  <p className="text-lg font-semibold">{formatCurrency(currentRegister.opening_cash)}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm text-gray-500">Opened At</Label>
+                  <p className="text-lg font-semibold">{formatTime(currentRegister.opened_at)}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm text-gray-500">Register ID</Label>
+                  <p className="text-sm font-mono">{currentRegister.register_id}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
-              <ShoppingCartIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalTransactions}</div>
-              <p className="text-xs text-muted-foreground">
-                Sales transactions
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Order Value</CardTitle>
-              <TrendingUpIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(averageOrderValue)}</div>
-              <p className="text-xs text-muted-foreground">
-                Per transaction
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Top Selling Items</CardTitle>
-              <PercentIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{topProducts?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Active products
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="overview" className="mb-6">
-          <TabsList className="mb-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="trends">Sales Trends</TabsTrigger>
-            <TabsTrigger value="products">Product Performance</TabsTrigger>
-            <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
-            <TabsTrigger value="selling-products">Selling Products</TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">Sales Overview</h3>
-              <Select
-                value={timeRange}
-                onValueChange={(value) => setTimeRange(value)}
-              >
-                <SelectTrigger className="w-[180px] h-8 text-sm bg-gray-50 dark:bg-gray-700">
-                  <SelectValue placeholder="Select time range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Last 7 Days</SelectItem>
-                  <SelectItem value="30">Last 30 Days</SelectItem>
-                  <SelectItem value="90">Last 90 Days</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Sales Trend Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sales Trend</CardTitle>
-                  <CardDescription>Daily sales performance</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip 
-                          formatter={(value) => [formatCurrency(Number(value)), 'Sales']}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="total" 
-                          stroke="#8884d8" 
-                          fill="#8884d8" 
-                          fillOpacity={0.6}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+          {/* Real-Time Sales Overview */}
+          {salesDataBackend && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100 text-sm">Total Sales</p>
+                      <p className="text-2xl font-bold">{formatCurrency(salesDataBackend.totalRevenue)}</p>
+                      <p className="text-blue-200 text-xs">{salesDataBackend.totalSales} transactions</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-blue-200" />
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Category Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sales by Category</CardTitle>
-                  <CardDescription>Product category distribution</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={productCategoryData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {productCategoryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
+              <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-100 text-sm">Cash Sales</p>
+                      <p className="text-2xl font-bold">{formatCurrency(salesDataBackend.cashSales)}</p>
+                    </div>
+                    <Banknote className="h-8 w-8 text-green-200" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-100 text-sm">UPI Sales</p>
+                      <p className="text-2xl font-bold">{formatCurrency(salesDataBackend.upiSales)}</p>
+                    </div>
+                    <Smartphone className="h-8 w-8 text-purple-200" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-orange-100 text-sm">Card Sales</p>
+                      <p className="text-2xl font-bold">{formatCurrency(salesDataBackend.cardSales)}</p>
+                    </div>
+                    <CreditCard className="h-8 w-8 text-orange-200" />
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          )}
 
-          {/* Sales Trends Tab */}
-          <TabsContent value="trends" className="space-y-6">
+          {/* Live Cash Tracker */}
+          {salesDataBackend && (
             <Card>
               <CardHeader>
-                <CardTitle>Detailed Sales Analysis</CardTitle>
-                <div className="flex space-x-4">
-                  <div>
-                    <label className="text-sm font-medium">Start Date</label>
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-auto"
-                    />
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="h-5 w-5 text-green-600" />
+                  Live Cash Tracker
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Opening Cash:</span>
+                      <span className="font-mono">{formatCurrency(currentRegister.opening_cash)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>+ Cash Sales:</span>
+                      <span className="font-mono text-green-600">+{formatCurrency(salesDataBackend.cashSales)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>- Withdrawals:</span>
+                      <span className="font-mono text-red-600">-{formatCurrency(salesDataBackend.totalWithdrawals)}</span>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">End Date</label>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-auto"
-                    />
+                  <div className="border-t pt-2 flex justify-between font-semibold text-lg">
+                    <span>Cash In Drawer:</span>
+                    <span className="font-mono text-green-600">{formatCurrency(calculateCashInDrawer())}</span>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-96">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value) => [formatCurrency(Number(value)), 'Sales']}
-                      />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="total" 
-                        stroke="#8884d8" 
-                        strokeWidth={2}
-                        name="Daily Sales"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
 
-          {/* Product Performance Tab */}
-          <TabsContent value="products" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Selling Products</CardTitle>
-                <CardDescription>Best performing products by quantity sold</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product Name</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead className="text-right">Quantity Sold</TableHead>
-                        <TableHead className="text-right">Revenue</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {topProducts?.map((product: any) => (
-                        <TableRow key={product.product.id}>
-                          <TableCell className="font-medium">
-                            {product.product.name}
-                          </TableCell>
-                          <TableCell>{product.product.sku}</TableCell>
-                          <TableCell>{product.product.category?.name || "Uncategorized"}</TableCell>
-                          <TableCell className="text-right">{product.soldQuantity}</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(parseFloat(product.revenue || 0))}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-600">Other Payments</p>
+                  <p className="text-xl font-bold text-blue-700">{formatCurrency(salesDataBackend.otherSales)}</p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Recent Transactions Tab */}
-          <TabsContent value="transactions" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Sales Transactions</CardTitle>
-                <CardDescription>Latest sales activity</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                        <TableHead>Payment Method</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {salesData?.slice(0, 10).map((sale: any) => {
-                        const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
-                        const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
-                        const itemCount = sale.items?.length || sale.saleItems?.length || sale.sale_items?.length || 0;
-                        
-                        return (
-                          <TableRow key={sale.id || Math.random()}>
-                            <TableCell>
-                              {format(new Date(saleDate), "MMM dd, yyyy")}
-                            </TableCell>
-                            <TableCell>{sale.customerName || sale.customer_name || "Walk-in Customer"}</TableCell>
-                            <TableCell>{itemCount} items</TableCell>
-                            <TableCell className="text-right">
-                              {formatCurrency(isNaN(saleTotal) ? 0 : saleTotal)}
-                            </TableCell>
-                            <TableCell>{sale.paymentMethod || sale.payment_method || "Cash"}</TableCell>
-                            <TableCell>
-                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                                {sale.status || "Completed"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openEditDialog(sale)}
-                                  className="h-8 px-2 text-blue-600 hover:text-blue-800"
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openDeleteDialog(sale)}
-                                  className="h-8 px-2 text-red-600 hover:text-red-800"
-                                >
-                                  Delete
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      }) || (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground">
-                            No sales data available
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                <div className="text-center p-3 bg-red-50 rounded-lg">
+                  <p className="text-sm text-red-600">Total Refunds</p>
+                  <p className="text-xl font-bold text-red-700">{formatCurrency(salesDataBackend.totalRefunds)}</p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Selling Products CRUD Tab */}
-          <TabsContent value="selling-products" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Selling Products Management</CardTitle>
-                    <CardDescription>Manage products for sales operations</CardDescription>
-                  </div>
-                  <Button
-                    onClick={openCreateProductDialog}
-                    className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
-                  >
-                    <ShoppingCartIcon className="h-4 w-4" />
-                    <span>Add Product</span>
-                  </Button>
+                <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                  <p className="text-sm text-yellow-600">Withdrawals</p>
+                  <p className="text-xl font-bold text-yellow-700">{formatCurrency(salesDataBackend.totalWithdrawals)}</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <Input
-                    placeholder="Search products by name, SKU, or category..."
-                    value={productSearchTerm}
-                    onChange={(e) => setProductSearchTerm(e.target.value)}
-                    className="max-w-md"
-                  />
-                </div>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product Name</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead className="text-right">Price</TableHead>
-                        <TableHead className="text-right">Stock</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredProducts?.map((product: any) => (
-                        <TableRow key={product.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center space-x-2">
-                              <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                                <ShoppingCartIcon className="h-4 w-4 text-gray-500" />
-                              </div>
-                              <span>{product.name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{product.sku}</TableCell>
-                          <TableCell>{product.category?.name || "Uncategorized"}</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(parseFloat(product.price || 0))}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className={`${product.stockQuantity <= product.alertThreshold ? 'text-red-600 font-semibold' : ''}`}>
-                              {product.stockQuantity}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              product.active 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {product.active ? 'Active' : 'Inactive'}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditProductDialog(product)}
-                                className="h-8 px-2 text-blue-600 hover:text-blue-800"
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openDeleteProductDialog(product)}
-                                className="h-8 px-2 text-red-600 hover:text-red-800"
-                              >
-                                Delete
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Create Sale Dialog */}
-        {isCreateDialogOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Create New Sale</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Order Number</label>
-                  <Input
-                    type="text"
-                    value={editForm.orderNumber}
-                    onChange={(e) => setEditForm({...editForm, orderNumber: e.target.value})}
-                    placeholder="Auto-generated if empty"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Customer Name</label>
-                  <Input
-                    type="text"
-                    value={editForm.customerName}
-                    onChange={(e) => setEditForm({...editForm, customerName: e.target.value})}
-                    placeholder="Walk-in Customer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Total Amount</label>
-                  <Input
-                    type="number"
-                    value={editForm.total}
-                    onChange={(e) => setEditForm({...editForm, total: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Payment Method</label>
-                  <Select
-                    value={editForm.paymentMethod}
-                    onValueChange={(value) => setEditForm({...editForm, paymentMethod: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="card">Card</SelectItem>
-                      <SelectItem value="upi">UPI</SelectItem>
-                      <SelectItem value="credit">Credit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Status</label>
-                  <Select
-                    value={editForm.status}
-                    onValueChange={(value) => setEditForm({...editForm, status: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <p className="text-sm text-green-600">Current Cash</p>
+                  <p className="text-xl font-bold text-green-700">{formatCurrency(currentRegister.current_cash)}</p>
                 </div>
               </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleCreateSale({
-                    ...editForm,
-                    items: [], // Empty items for now - you can extend this
-                    orderNumber: editForm.orderNumber || `SALE-${Date.now()}`
-                  })}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Create Sale
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Sale Dialog */}
-        {isEditDialogOpen && selectedSale && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Edit Sale</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Order Number</label>
-                  <Input
-                    type="text"
-                    value={editForm.orderNumber}
-                    onChange={(e) => setEditForm({...editForm, orderNumber: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Customer Name</label>
-                  <Input
-                    type="text"
-                    value={editForm.customerName}
-                    onChange={(e) => setEditForm({...editForm, customerName: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Total Amount</label>
-                  <Input
-                    type="number"
-                    value={editForm.total}
-                    onChange={(e) => setEditForm({...editForm, total: e.target.value})}
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Payment Method</label>
-                  <Select
-                    value={editForm.paymentMethod}
-                    onValueChange={(value) => setEditForm({...editForm, paymentMethod: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="card">Card</SelectItem>
-                      <SelectItem value="upi">UPI</SelectItem>
-                      <SelectItem value="credit">Credit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Status</label>
-                  <Select
-                    value={editForm.status}
-                    onValueChange={(value) => setEditForm({...editForm, status: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditDialogOpen(false);
-                    setSelectedSale(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleUpdateSale(selectedSale.id, editForm)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Update Sale
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Confirmation Dialog */}
-        {isDeleteDialogOpen && selectedSale && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Delete Sale</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to delete sale #{selectedSale.orderNumber || selectedSale.id}? 
-                This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDeleteDialogOpen(false);
-                    setSelectedSale(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleDeleteSale(selectedSale.id)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Delete Sale
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Create Product Dialog */}
-        {isCreateProductDialogOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Product Name *</label>
-                  <Input
-                    type="text"
-                    value={productForm.name}
-                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
-                    placeholder="Enter product name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">SKU *</label>
-                  <Input
-                    type="text"
-                    value={productForm.sku}
-                    onChange={(e) => setProductForm({...productForm, sku: e.target.value})}
-                    placeholder="Enter SKU"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Selling Price *</label>
-                  <Input
-                    type="number"
-                    value={productForm.price}
-                    onChange={(e) => setProductForm({...productForm, price: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Cost Price</label>
-                  <Input
-                    type="number"
-                    value={productForm.cost}
-                    onChange={(e) => setProductForm({...productForm, cost: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Category *</label>
-                  <Select
-                    value={productForm.categoryId}
-                    onValueChange={(value) => setProductForm({...productForm, categoryId: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories?.map((category: any) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Stock Quantity</label>
-                  <Input
-                    type="number"
-                    value={productForm.stockQuantity}
-                    onChange={(e) => setProductForm({...productForm, stockQuantity: e.target.value})}
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Alert Threshold</label>
-                  <Input
-                    type="number"
-                    value={productForm.alertThreshold}
-                    onChange={(e) => setProductForm({...productForm, alertThreshold: e.target.value})}
-                    placeholder="5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Barcode</label>
-                  <Input
-                    type="text"
-                    value={productForm.barcode}
-                    onChange={(e) => setProductForm({...productForm, barcode: e.target.value})}
-                    placeholder="Enter barcode"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Description</label>
-                  <Input
-                    type="text"
-                    value={productForm.description}
-                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-                    placeholder="Product description"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={productForm.active}
-                      onChange={(e) => setProductForm({...productForm, active: e.target.checked})}
-                      className="rounded"
-                    />
-                    <span className="text-sm font-medium">Active Product</span>
-                  </label>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsCreateProductDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleCreateProduct(productForm)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Create Product
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Product Dialog */}
-        {isEditProductDialogOpen && selectedProduct && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Edit Product</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Product Name *</label>
-                  <Input
-                    type="text"
-                    value={productForm.name}
-                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
-                    placeholder="Enter product name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">SKU *</label>
-                  <Input
-                    type="text"
-                    value={productForm.sku}
-                    onChange={(e) => setProductForm({...productForm, sku: e.target.value})}
-                    placeholder="Enter SKU"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Selling Price *</label>
-                  <Input
-                    type="number"
-                    value={productForm.price}
-                    onChange={(e) => setProductForm({...productForm, price: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Cost Price</label>
-                  <Input
-                    type="number"
-                    value={productForm.cost}
-                    onChange={(e) => setProductForm({...productForm, cost: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Category *</label>
-                  <Select
-                    value={productForm.categoryId}
-                    onValueChange={(value) => setProductForm({...productForm, categoryId: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories?.map((category: any) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Stock Quantity</label>
-                  <Input
-                    type="number"
-                    value={productForm.stockQuantity}
-                    onChange={(e) => setProductForm({...productForm, stockQuantity: e.target.value})}
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Alert Threshold</label>
-                  <Input
-                    type="number"
-                    value={productForm.alertThreshold}
-                    onChange={(e) => setProductForm({...productForm, alertThreshold: e.target.value})}
-                    placeholder="5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Barcode</label>
-                  <Input
-                    type="text"
-                    value={productForm.barcode}
-                    onChange={(e) => setProductForm({...productForm, barcode: e.target.value})}
-                    placeholder="Enter barcode"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Description</label>
-                  <Input
-                    type="text"
-                    value={productForm.description}
-                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-                    placeholder="Product description"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={productForm.active}
-                      onChange={(e) => setProductForm({...productForm, active: e.target.checked})}
-                      className="rounded"
-                    />
-                    <span className="text-sm font-medium">Active Product</span>
-                  </label>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditProductDialogOpen(false);
-                    setSelectedProduct(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleUpdateProduct(selectedProduct.id, productForm)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Update Product
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Product Confirmation Dialog */}
-        {isDeleteProductDialogOpen && selectedProduct && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Delete Product</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to delete "{selectedProduct.name}"? 
-                This action cannot be undone and may affect existing sales records.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDeleteProductDialogOpen(false);
-                    setSelectedProduct(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleDeleteProduct(selectedProduct.id)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Delete Product
-                </Button>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
       </div>
+
+      {/* Close Register Dialog */}
+      <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Minus className="h-5 w-5 text-red-600" />
+              Close Cash Register
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <p className="text-yellow-800 text-sm">
+                Closing the register will end the current session. Count the cash in the drawer.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="closingAmount">Actual Cash Count (₹)</Label>
+              <Input
+                id="closingAmount"
+                type="number"
+                value={closingAmount}
+                onChange={(e) => setClosingAmount(e.target.value)}
+                placeholder="Enter actual cash count"
+                className="mt-1"
+                step="0.01"
+                min="0"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Expected: {formatCurrency(calculateCashInDrawer())}
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Input
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Any notes about the closing"
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowCloseDialog(false)}
+                disabled={isProcessing}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCloseRegister}
+                disabled={isProcessing}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isProcessing ? "Closing..." : "Close Register"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

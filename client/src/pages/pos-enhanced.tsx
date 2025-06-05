@@ -255,8 +255,29 @@ export default function POSEnhanced() {
   const taxAmount = (taxableAmount * taxRate) / 100;
   const total = taxableAmount + taxAmount;
 
+  // Check for open register on component mount
+  useEffect(() => {
+    const checkOpenRegister = async () => {
+      try {
+        const response = await fetch('/api/cash-register/current');
+        if (response.ok) {
+          const register = await response.json();
+          if (register) {
+            setRegisterOpened(true);
+            setOpeningCash(register.opening_cash);
+            setCashInHand(register.current_cash);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking register status:', error);
+      }
+    };
+
+    checkOpenRegister();
+  }, []);
+
   // Register opening
-  const handleOpenRegister = () => {
+  const handleOpenRegister = async () => {
     const amount = parseFloat(cashAmount);
 
     if (!amount || amount < 0) {
@@ -268,17 +289,36 @@ export default function POSEnhanced() {
       return;
     }
 
-    setOpeningCash(amount);
-    setCashInHand(amount);
-    setRegisterOpened(true);
-    
-    toast({
-      title: "Register Opened",
-      description: `Register opened with ${formatCurrency(amount)}`,
-    });
+    try {
+      const response = await fetch('/api/cash-register/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ openingCash: amount })
+      });
 
-    setCashAmount("");
-    setShowOpenRegister(false);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      setOpeningCash(amount);
+      setCashInHand(amount);
+      setRegisterOpened(true);
+      
+      toast({
+        title: "Register Opened",
+        description: `Register opened with ${formatCurrency(amount)}`,
+      });
+
+      setCashAmount("");
+      setShowOpenRegister(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to open register",
+        variant: "destructive",
+      });
+    }
   };
 
   // Cash operation handler

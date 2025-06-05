@@ -1244,5 +1244,211 @@ export const storage = {
       console.error('Error deleting sale:', error);
       throw error;
     }
+  },
+
+  // Cash Register Management
+  async openCashRegister(userId: number, openingCash: number): Promise<any> {
+    try {
+      const { sqlite } = await import('@db');
+
+      // Check if there's already an open register
+      const existingRegister = sqlite.prepare(`
+        SELECT * FROM cash_registers WHERE status = 'open' ORDER BY opened_at DESC LIMIT 1
+      `).get();
+
+      if (existingRegister) {
+        throw new Error('A cash register is already open. Please close the current register first.');
+      }
+
+      // Create new register session
+      const insertRegister = sqlite.prepare(`
+        INSERT INTO cash_registers (
+          register_id, user_id, opening_cash, current_cash, status, opened_at, opened_by
+        ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+      `);
+
+      const registerId = `REG-${Date.now()}`;
+      const result = insertRegister.run(
+        registerId,
+        userId,
+        openingCash.toString(),
+        openingCash.toString(),
+        'open',
+        userId
+      );
+
+      // Get the created register
+      const getRegister = sqlite.prepare('SELECT * FROM cash_registers WHERE id = ?');
+      const newRegister = getRegister.get(result.lastInsertRowid);
+
+      return {
+        ...newRegister,
+        openedAt: new Date(newRegister.opened_at)
+      };
+    } catch (error) {
+      console.error('Error opening cash register:', error);
+      throw error;
+    }
+  },
+
+  async getCurrentOpenRegister(): Promise<any> {
+    try {
+      const { sqlite } = await import('@db');
+      
+      const register = sqlite.prepare(`
+        SELECT * FROM cash_registers 
+        WHERE status = 'open' 
+        ORDER BY opened_at DESC 
+        LIMIT 1
+      `).get();
+
+      if (!register) {
+        return null;
+      }
+
+      return {
+        ...register,
+        openedAt: new Date(register.opened_at),
+        closedAt: register.closed_at ? new Date(register.closed_at) : null
+      };
+    } catch (error) {
+      console.error('Error checking for open register:', error);
+      return null;
+    }
+  },
+
+  async getTodaysSalesData(registerId: string) {
+    try {
+      const { sqlite } = await import('@db');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Get sales data for today
+      const salesQuery = sqlite.prepare(`
+        SELECT 
+          COUNT(*) as total_sales,
+          COALESCE(SUM(CAST(total AS REAL)), 0) as total_revenue,
+          COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN CAST(total AS REAL) ELSE 0 END), 0) as cash_sales,
+          COALESCE(SUM(CASE WHEN payment_method = 'upi' THEN CAST(total AS REAL) ELSE 0 END), 0) as upi_sales,
+          COALESCE(SUM(CASE WHEN payment_method = 'card' THEN CAST(total AS REAL) ELSE 0 END), 0) as card_sales,
+          COALESCE(SUM(CASE WHEN payment_method NOT IN ('cash', 'upi', 'card') THEN CAST(total AS REAL) ELSE 0 END), 0) as other_sales
+        FROM sales 
+        WHERE created_at >= ? AND created_at < ?
+      `);
+
+      const salesData = salesQuery.get(today.toISOString(), tomorrow.toISOString());
+
+      // Get cash transactions for today
+      const transactionsQuery = sqlite.prepare(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN type = 'withdrawal' THEN amount ELSE 0 END), 0) as total_withdrawals,
+          COALESCE(SUM(CASE WHEN type = 'refund' THEN amount ELSE 0 END), 0) as total_refunds
+        FROM cash_transactions 
+        WHERE register_id = ? AND created_at >= ? AND created_at < ?
+      `);
+
+      const transactionData = transactionsQuery.get(registerId, today.toISOString(), tomorrow.toISOString());
+
+      return {
+        totalSales: salesData.total_sales || 0,
+        totalRevenue: salesData.total_revenue || 0,
+        cashSales: salesData.cash_sales || 0,
+        upiSales: salesData.upi_sales || 0,
+        cardSales: salesData.card_sales || 0,
+        otherSales: salesData.other_sales || 0,
+        totalWithdrawals: transactionData.total_withdrawals || 0,
+        totalRefunds: transactionData.total_refunds || 0,
+        sales: []
+      };
+    } catch (error) {
+      console.error('Error fetching today\'s sales data:', error);
+      return {
+        totalSales: 0,
+        totalRevenue: 0,
+        cashSales: 0,
+        upiSales: 0,
+        cardSales: 0,
+        otherSales: 0,
+        totalWithdrawals: 0,
+        totalRefunds: 0,
+        sales: []
+      };
+    }
+  },
+
+  async closeCashRegister(registerId: string, closeData: any) {
+    try {
+      const { sqlite } = await import('@db');
+
+      const updateRegister = sqlite.prepare(`
+        UPDATE cash_registers SET
+          status = 'closed',
+          closing_cash = ?,
+          closed_at = CURRENT_TIMESTAMP,
+          closed_by = ?,
+          notes = ?
+        WHERE register_id = ? AND status = 'open'
+      `);
+
+      const result = updateRegister.run(
+        closeData.closingCash?.toString() || '0',
+        closeData.closedBy || 0,
+        closeData.notes || '',
+        registerId
+      );
+
+      if (result.changes === 0) {
+        throw new Error('No open register found to close');
+      }
+
+      return { success: true, message: 'Register closed successfully' };
+    } catch (error) {
+      console.error('Error closing cash register:', error);
+      throw error;
+    }
+  },
+
+  async addCashTransaction(transactionData: any) {
+    try {
+      const { sqlite } = await import('@db');
+
+      const insertTransaction = sqlite.prepare(`
+        INSERT INTO cash_transactions (
+          register_id, type, amount, payment_method, reason, reference, created_by, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertTransaction.run(
+        transactionData.registerId,
+        transactionData.type,
+        transactionData.amount.toString(),
+        transactionData.paymentMethod || 'cash',
+        transactionData.reason || '',
+        transactionData.reference || '',
+        transactionData.createdBy
+      );
+
+      // Update register current cash if it's a cash transaction
+      if (transactionData.paymentMethod === 'cash') {
+        const updateCash = sqlite.prepare(`
+          UPDATE cash_registers SET
+            current_cash = current_cash + ?
+          WHERE register_id = ? AND status = 'open'
+        `);
+
+        const cashChange = transactionData.type === 'add' || transactionData.type === 'sale' 
+          ? transactionData.amount 
+          : -transactionData.amount;
+
+        updateCash.run(cashChange, transactionData.registerId);
+      }
+
+      return { id: result.lastInsertRowid, ...transactionData };
+    } catch (error) {
+      console.error('Error adding cash transaction:', error);
+      throw error;
+    }
   }
 };

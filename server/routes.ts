@@ -1253,6 +1253,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cash Register API endpoints
+  app.post('/api/cash-register/open', isAuthenticated, async (req, res) => {
+    try {
+      const { openingCash } = req.body;
+      const userId = (req.user as any).id;
+
+      if (!openingCash || openingCash < 0) {
+        return res.status(400).json({ message: 'Valid opening cash amount is required' });
+      }
+
+      const register = await storage.openCashRegister(userId, parseFloat(openingCash));
+      res.status(201).json(register);
+    } catch (error) {
+      console.error('Error opening cash register:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to open cash register' 
+      });
+    }
+  });
+
+  app.get('/api/cash-register/current', async (req, res) => {
+    try {
+      const register = await storage.getCurrentOpenRegister();
+      res.json(register);
+    } catch (error) {
+      console.error('Error fetching current register:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/cash-register/:registerId/sales-data', async (req, res) => {
+    try {
+      const { registerId } = req.params;
+      const salesData = await storage.getTodaysSalesData(registerId);
+      res.json(salesData);
+    } catch (error) {
+      console.error('Error fetching sales data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/cash-register/:registerId/close', isAuthenticated, async (req, res) => {
+    try {
+      const { registerId } = req.params;
+      const closeData = {
+        ...req.body,
+        closedBy: (req.user as any).id
+      };
+
+      const result = await storage.closeCashRegister(registerId, closeData);
+      res.json(result);
+    } catch (error) {
+      console.error('Error closing cash register:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to close cash register' 
+      });
+    }
+  });
+
+  app.post('/api/cash-register/transaction', isAuthenticated, async (req, res) => {
+    try {
+      const transactionData = {
+        ...req.body,
+        createdBy: (req.user as any).id
+      };
+
+      const transaction = await storage.addCashTransaction(transactionData);
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error('Error adding cash transaction:', error);
+      res.status(500).json({ message: 'Failed to add transaction' });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
