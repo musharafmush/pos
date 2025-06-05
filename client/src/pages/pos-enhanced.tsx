@@ -1169,7 +1169,7 @@ export default function POSEnhanced() {
                       }}
                       className="border-green-200 text-green-700 hover:bg-green-50 h-12 flex flex-col justify-center"
                     >
-                      <PlusIcon className="w-3 h-3 mb-1" />
+                      <Plus className="w-3 h-3 mb-1" />
                       <span className="font-semibold">₹{amount >= 1000 ? `${amount/1000}k` : amount}</span>
                     </Button>
                   ))}
@@ -1203,7 +1203,7 @@ export default function POSEnhanced() {
                         }}
                         className="border-blue-200 text-blue-700 hover:bg-blue-50 h-12 flex flex-col justify-center"
                       >
-                        <PlusIcon className="w-3 h-3 mb-1" />
+                        <Plus className="w-3 h-3 mb-1" />
                         <span className="font-semibold">₹{amount}</span>
                         <span className="text-xs text-blue-600">UPI</span>
                       </Button>
@@ -1226,7 +1226,7 @@ export default function POSEnhanced() {
                         }}
                         className="border-purple-200 text-purple-700 hover:bg-purple-50 h-12 flex flex-col justify-center"
                       >
-                        <PlusIcon className="w-3 h-3 mb-1" />
+                        <Plus className="w-3 h-3 mb-1" />
                         <span className="font-semibold">₹{amount >= 1000 ? `${amount/1000}k` : amount}</span>
                         <span className="text-xs text-purple-600">Card</span>
                       </Button>
@@ -1251,7 +1251,7 @@ export default function POSEnhanced() {
                         onClick={() => setCashOperation('add')}>
                     <CardContent className="p-4 text-center">
                       <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <PlusIcon className="w-6 h-6 text-green-600" />
+                        <Plus className="w-6 h-6 text-green-600" />
                       </div>
                       <h4 className="font-semibold text-green-700 mb-1">Add Money</h4>
                       <p className="text-sm text-green-600">Increase register balance</p>
@@ -1262,7 +1262,7 @@ export default function POSEnhanced() {
                         onClick={() => setCashOperation('remove')}>
                     <CardContent className="p-4 text-center">
                       <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <MinusIcon className="w-6 h-6 text-red-600" />
+                        <Minus className="w-6 h-6 text-red-600" />
                       </div>
                       <h4 className="font-semibold text-red-700 mb-1">Remove Money</h4>
                       <p className="text-sm text-red-600">Decrease register balance</p>
@@ -1277,7 +1277,7 @@ export default function POSEnhanced() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <MinusIcon className="w-5 h-5 text-red-600" />
+                    <Minus className="w-5 h-5 text-red-600" />
                     <h4 className="font-semibold text-gray-800">Cash Removal</h4>
                   </div>
                   <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Bank Deposits</span>
@@ -1293,7 +1293,7 @@ export default function POSEnhanced() {
                     }}
                     className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
                   >
-                    <MinusIcon className="w-4 h-4 mb-1" />
+                    <Minus className="w-4 h-4 mb-1" />
                     <span className="font-semibold">₹2,000</span>
                     <span className="text-xs text-red-600">Bank Deposit</span>
                   </Button>
@@ -1307,7 +1307,7 @@ export default function POSEnhanced() {
                     }}
                     className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
                   >
-                    <MinusIcon className="w-4 h-4 mb-1" />
+                    <Minus className="w-4 h-4 mb-1" />
                     <span className="font-semibold">₹5,000</span>
                     <span className="text-xs text-red-600">Bank Deposit</span>
                   </Button>
