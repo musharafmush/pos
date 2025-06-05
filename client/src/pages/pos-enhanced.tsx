@@ -70,21 +70,19 @@ interface CartItem extends Product {
 }
 
 export default function POSEnhanced() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [taxRate, setTaxRate] = useState(18);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [billNumber, setBillNumber] = useState(`POS${Date.now()}`);
-  const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
-  const [newCustomerName, setNewCustomerName] = useState("");
-  const [newCustomerPhone, setNewCustomerPhone] = useState("");
-  const [newCustomerEmail, setNewCustomerEmail] = useState("");
-  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [customerPoints, setCustomerPoints] = useState(0);
+  const [pointsToUse, setPointsToUse] = useState(0);
+  const [pointsDiscount, setPointsDiscount] = useState(0);
+  const [pointsEarned, setPointsEarned] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
   const [showOpenRegister, setShowOpenRegister] = useState(false);
@@ -124,6 +122,66 @@ export default function POSEnhanced() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch customer points when customer is selected
+  useEffect(() => {
+    if (selectedCustomer?.id) {
+      fetch(`/api/customers/${selectedCustomer.id}/points`)
+        .then(res => res.json())
+        .then(data => {
+          setCustomerPoints(data.points || 0);
+        })
+        .catch(error => {
+          console.error('Error fetching customer points:', error);
+          setCustomerPoints(0);
+        });
+    } else {
+      setCustomerPoints(0);
+      setPointsToUse(0);
+      setPointsDiscount(0);
+    }
+  }, [selectedCustomer]);
+
+  // Calculate points earned when total changes
+  useEffect(() => {
+    const total = calculateTotal();
+    if (total > 0) {
+      fetch('/api/points/calculate-earned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ total })
+      })
+        .then(res => res.json())
+        .then(data => {
+          setPointsEarned(data.pointsEarned || 0);
+        })
+        .catch(error => {
+          console.error('Error calculating points earned:', error);
+          setPointsEarned(0);
+        });
+    }
+  }, [cart, discount, discountType, taxRate]);
+
+  // Calculate points discount when points to use changes
+  useEffect(() => {
+    if (pointsToUse > 0) {
+      fetch('/api/points/calculate-discount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pointsToUse })
+      })
+        .then(res => res.json())
+        .then(data => {
+          setPointsDiscount(data.discount || 0);
+        })
+        .catch(error => {
+          console.error('Error calculating points discount:', error);
+          setPointsDiscount(0);
+        });
+    } else {
+      setPointsDiscount(0);
+    }
+  }, [pointsToUse]);
 
   // Fetch products with error handling
   const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery({
@@ -254,7 +312,11 @@ export default function POSEnhanced() {
     setDiscount(0);
     setAmountPaid("");
     setPaymentMethod("cash");
-
+    setNotes("");
+    setCustomerPoints(0);
+    setPointsToUse(0);
+    setPointsDiscount(0);
+    setPointsEarned(0);
     if (cart.length > 0) {
       toast({
         title: "Cart Cleared",
@@ -263,13 +325,29 @@ export default function POSEnhanced() {
     }
   };
 
-  // Calculate totals
-  const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-  const discountAmount = (subtotal * discount) / 100;
-  const taxableAmount = subtotal - discountAmount;
-  const taxAmount = (taxableAmount * taxRate) / 100;
-  const total = taxableAmount + taxAmount;
+  const calculateSubtotal = () => {
+    return cart.reduce((sum, item) => sum + item.total, 0);
+  };
 
+  const calculateTax = () => {
+    const subtotal = calculateSubtotal();
+    const discountAmount = discountType === 'percentage' 
+      ? subtotal * (discount / 100)
+      : discount;
+    const afterDiscount = subtotal - discountAmount;
+    return afterDiscount * (taxRate / 100);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    const discountAmount = discountType === 'percentage' 
+      ? subtotal * (discount / 100)
+      : discount;
+    const afterDiscount = subtotal - discountAmount;
+    const taxAmount = afterDiscount * (taxRate / 100);
+    const totalBeforePoints = afterDiscount + taxAmount;
+    return Math.max(0, totalBeforePoints - pointsDiscount);
+  };
   // Register opening
   const handleOpenRegister = () => {
     const amount = parseFloat(cashAmount);
@@ -470,11 +548,11 @@ export default function POSEnhanced() {
       return;
     }
 
-    const paidAmount = parseFloat(amountPaid) || total;
-    if (paidAmount < total) {
+    const paidAmount = parseFloat(amountPaid) || calculateTotal();
+    if (paidAmount < calculateTotal()) {
       toast({
         title: "Insufficient Payment",
-        description: `Please pay at least ${formatCurrency(total)}`,
+        description: `Please pay at least ${formatCurrency(calculateTotal())}`,
         variant: "destructive",
       });
       return;
@@ -493,7 +571,6 @@ export default function POSEnhanced() {
 
       const saleData = {
         customerId: selectedCustomer?.id || null,
-        customerName: selectedCustomer?.name || "Walk-in Customer",
         items: cart.map(item => ({
           productId: item.id,
           quantity: item.quantity,
@@ -502,15 +579,18 @@ export default function POSEnhanced() {
           price: parseFloat(item.price).toString(),
           total: item.total.toString()
         })),
-        subtotal: subtotal.toFixed(2),
+        subtotal: calculateSubtotal().toFixed(2),
         discount: discountAmount.toFixed(2),
         discountPercent: discount,
         tax: taxAmount.toFixed(2),
         taxRate: taxRate,
-        total: total.toFixed(2),
+        total: calculateTotal().toFixed(2),
+        pointsUsed: pointsToUse,
+        pointsDiscount: pointsDiscount.toFixed(2),
+        pointsEarned: pointsEarned,
         paymentMethod,
         amountPaid: paidAmount.toFixed(2),
-        change: (paidAmount - total).toFixed(2),
+        change: (paidAmount - calculateTotal()).toFixed(2),
         notes: `Bill: ${billNumber}`,
         billNumber: billNumber,
         status: "completed"
@@ -550,7 +630,7 @@ export default function POSEnhanced() {
 
       toast({
         title: "✅ Sale Completed!",
-        description: `Transaction successful for ${formatCurrency(total)}${paidAmount > total ? `. Change: ${formatCurrency(paidAmount - total)}` : ''}`,
+        description: `Transaction successful for ${formatCurrency(calculateTotal())}${paidAmount > calculateTotal() ? `. Change: ${formatCurrency(paidAmount - calculateTotal())}` : ''}`,
         variant: "default",
       });
 
@@ -770,7 +850,7 @@ export default function POSEnhanced() {
       return;
     }
     setPaymentMethod(method);
-    setAmountPaid(total.toString());
+    setAmountPaid(calculateTotal().toString());
     setShowPaymentDialog(true);
   };
 
@@ -798,7 +878,7 @@ export default function POSEnhanced() {
       discount: discount,
       notes: `Held sale at ${new Date().toLocaleTimeString()}`,
       timestamp: new Date(),
-      total: total
+      total: calculateTotal()
     };
 
     setHoldSales(prev => [...prev, holdSale]);
@@ -942,7 +1022,7 @@ export default function POSEnhanced() {
                   </div>
                   <div className="text-right bg-green-50 p-3 rounded-lg border border-green-200">
                     <div className="text-sm text-green-600 font-medium">Total Amount</div>
-                    <div className="text-2xl font-bold text-green-700">{formatCurrency(total)}</div>
+                    <div className="text-2xl font-bold text-green-700">{formatCurrency(calculateTotal())}</div>
                   </div>
                 </div>
               </div>
@@ -976,6 +1056,11 @@ export default function POSEnhanced() {
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select Customer">
                       {selectedCustomer?.name || "Walk-in Customer"}
+                      {selectedCustomer && (
+                        <div className="text-xs text-blue-600 font-medium">
+                          💎 {customerPoints} points available
+                        </div>
+                      )}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -1097,7 +1182,7 @@ export default function POSEnhanced() {
                       {cart.length} items • {cart.reduce((sum, item) => sum + item.quantity, 0)} units
                     </div>
                     <div className="text-blue-100 text-sm">
-                      Subtotal: {formatCurrency(subtotal)}
+                      Subtotal: {formatCurrency(calculateSubtotal())}
                     </div>
                   </div>
                 </div>
@@ -1148,8 +1233,7 @@ export default function POSEnhanced() {
                             </div>
                           </div>
 
-                          <div className="flex items-center space-x-4">
-                            ```python
+                          <div className="flex items-center space-x-4">```python
                             <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
                               <Button
                                 variant="ghost"
@@ -1298,7 +1382,7 @@ export default function POSEnhanced() {
                   </div>
                   <div className="flex justify-between text-lg">
                     <span className="text-gray-600">Gross Amount:</span>
-                    <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                    <span className="font-semibold">{formatCurrency(calculateSubtotal())}</span>
                   </div>
 
                   <Separator />
@@ -1321,18 +1405,18 @@ export default function POSEnhanced() {
                   {discount > 0 && (
                     <div className="flex justify-between text-red-600">
                       <span>Discount Amount:</span>
-                      <span>-{formatCurrency(discountAmount)}</span>
+                      <span>-{formatCurrency(calculateSubtotal() * (discount / 100))}</span>
                                         </div>
                   )}
 
                   <div className="flex justify-between">
                     <span className="text-gray-600">Taxable Amount:</span>
-                    <span>{formatCurrency(taxableAmount)}</span>
+                    <span>{formatCurrency(calculateSubtotal() - (calculateSubtotal() * (discount / 100)))}</span>
                   </div>
 
                   <div className="flex justify-between">
                     <span className="text-gray-600">GST ({taxRate}%):</span>
-                    <span>{formatCurrency(taxAmount)}</span>
+                    <span>{formatCurrency(calculateTax())}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -1341,7 +1425,7 @@ export default function POSEnhanced() {
               <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl mb-6 shadow-lg">
                 <div className="text-center">
                   <div className="text-sm font-medium opacity-90">Net Amount Payable</div>
-                  <div className="text-4xl font-bold mt-2">{formatCurrency(total)}</div>
+                  <div className="text-4xl font-bold mt-2">{formatCurrency(calculateTotal())}</div>
                 </div>
               </div>
 
@@ -2093,7 +2177,7 @@ export default function POSEnhanced() {
               <div className="space-y-6">
                 <div className="p-6 bg-green-50 rounded-xl text-center border border-green-200">
                   <div className="text-3xl font-bold text-green-700">
-                    {formatCurrency(total)}
+                    {formatCurrency(calculateTotal())}
                   </div>
                   <div className="text-green-600 mt-1">Amount to Pay</div>
                 </div>
@@ -2119,7 +2203,7 @@ export default function POSEnhanced() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Amount Received</label>
                   <Input
                     type="number"
-                    placeholder={`Enter amount (min: ${formatCurrency(total)})`}
+                    placeholder={`Enter amount (min: ${formatCurrency(calculateTotal())})`}
                     value={amountPaid}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -2133,21 +2217,21 @@ export default function POSEnhanced() {
                     className="text-lg p-3"
                     autoFocus
                   />
-                  {amountPaid && parseFloat(amountPaid) < total && (
+                  {amountPaid && parseFloat(amountPaid) < calculateTotal() && (
                     <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
                       <p className="text-red-700 font-semibold">
-                        Insufficient amount. Need at least {formatCurrency(total)}
+                        Insufficient amount. Need at least {formatCurrency(calculateTotal())}
                       </p>
                     </div>
                   )}
-                  {amountPaid && parseFloat(amountPaid) > total && (
+                  {amountPaid && parseFloat(amountPaid) > calculateTotal() && (
                     <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-blue-700 font-semibold">
-                        Change to return: {formatCurrency(parseFloat(amountPaid) - total)}
+                        Change to return: {formatCurrency(parseFloat(amountPaid) - calculateTotal())}
                       </p>
                     </div>
                   )}
-                  {amountPaid && parseFloat(amountPaid) === total && (
+                  {amountPaid && parseFloat(amountPaid) === calculateTotal() && (
                     <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
                       <p className="text-green-700 font-semibold">
                         Exact amount - No change required
@@ -2162,7 +2246,7 @@ export default function POSEnhanced() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setAmountPaid(total.toString())}
+                      onClick={() => setAmountPaid(calculateTotal().toString())}
                       className="text-sm"
                     >
                       Exact Amount
@@ -2170,7 +2254,7 @@ export default function POSEnhanced() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setAmountPaid((total + 100).toString())}
+                      onClick={() => setAmountPaid((calculateTotal() + 100).toString())}
                       className="text-sm"
                     >
                       +₹100
@@ -2178,13 +2262,72 @@ export default function POSEnhanced() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setAmountPaid((total + 500).toString())}
+                      onClick={() => setAmountPaid((calculateTotal() + 500).toString())}
                       className="text-sm"
                     >
                       +₹500
                     </Button>
                   </div>
                 )}
+
+                {selectedCustomer && customerPoints > 0 && (
+                <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      💎 Use Loyalty Points
+                    </label>
+                    <span className="text-sm text-blue-700 dark:text-blue-300">
+                      Available: {customerPoints} points
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max={Math.min(customerPoints, Math.floor(calculateTotal()))}
+                      value={pointsToUse}
+                      onChange={(e) => setPointsToUse(parseInt(e.target.value))}
+                      className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-xs text-blue-700 dark:text-blue-300">
+                      <span>0 points</span>
+                      <span className="font-medium">
+                        Using: {pointsToUse} points = {formatCurrency(pointsDiscount)} off
+                      </span>
+                      <span>{Math.min(customerPoints, Math.floor(calculateTotal()))} points</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Notes (Optional)</label>
+                <Input 
+                  placeholder="Add note for this sale"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+
+                <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Tax ({taxRate}%)</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(calculateTax())}</span>
+              </div>
+              {pointsDiscount > 0 && (
+                <div className="flex justify-between text-blue-600 dark:text-blue-400">
+                  <span>Points Discount ({pointsToUse} points)</span>
+                  <span className="font-medium">-{formatCurrency(pointsDiscount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                <span className="font-bold text-gray-800 dark:text-gray-100">Total Amount</span>
+                <span className="font-bold text-lg text-gray-800 dark:text-gray-100">{formatCurrency(calculateTotal())}</span>
+              </div>
+              {selectedCustomer && pointsEarned > 0 && (
+                <div className="text-center text-sm text-green-600 dark:text-green-400 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  🎉 Customer will earn {pointsEarned} loyalty points from this purchase!
+                </div>
+              )}
 
                 <div className="flex justify-end space-x-3 pt-6">
                   <Button
@@ -2196,10 +2339,10 @@ export default function POSEnhanced() {
                   </Button>
                   <Button
                     onClick={processSale}
-                    disabled={isProcessing || !amountPaid || parseFloat(amountPaid) < total}
+                    disabled={isProcessing || !amountPaid || parseFloat(amountPaid) < calculateTotal()}
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
-                    {isProcessing ? "Processing..." : `Complete Sale ${formatCurrency(total)}`}
+                    {isProcessing ? "Processing..." : `Complete Sale ${formatCurrency(calculateTotal())}`}
                   </Button>
                 </div>
               </div>
