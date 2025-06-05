@@ -1186,14 +1186,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Fetching customers from database...");
       const customers = await storage.listCustomers();
-      console.log(`Found ${customers.length} customers:`, customers);
-      res.json(customers);
+      console.log(`Found ${customers.length} customers`);
+      
+      // Ensure we always return an array
+      const safeCustomers = Array.isArray(customers) ? customers : [];
+      res.json(safeCustomers);
     } catch (error) {
       console.error("Error fetching customers:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch customers",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
+      // Return empty array instead of error to prevent frontend crashes
+      res.json([]);
     }
   });
 

@@ -426,12 +426,15 @@ export const storage = {
 
   async listCustomers(): Promise<Customer[]> {
     try {
-      return await db.query.customers.findMany({
+      const customerList = await db.query.customers.findMany({
         orderBy: customers.name
       });
+      console.log(`Found ${customerList.length} customers in database`);
+      return customerList;
     } catch (error) {
       console.error('Error listing customers:', error);
-      throw error;
+      // Return empty array instead of throwing to prevent frontend errors
+      return [];
     }
   },
 

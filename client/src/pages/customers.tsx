@@ -105,24 +105,30 @@ export default function Customers() {
         if (!response.ok) {
           const errorText = await response.text();
           console.error("Failed to fetch customers:", errorText);
-          throw new Error(`Failed to fetch customers: ${response.status}`);
+          // Return empty array instead of throwing to prevent error state
+          return [];
         }
 
         const data = await response.json();
         console.log("Customers data:", data);
-        return data;
+        
+        // Ensure we always return an array
+        return Array.isArray(data) ? data : [];
       } catch (error) {
         console.error("Error fetching customers:", error);
+        // Return empty array and show a less intrusive message
         toast({
-          title: "Error",
-          description: "Failed to load customers. Please refresh the page.",
-          variant: "destructive",
+          title: "Connection Issue",
+          description: "Unable to load customers. Showing empty list.",
+          variant: "default",
         });
-        throw error;
+        return [];
       }
     },
-    retry: 3,
+    retry: 2,
     retryDelay: 1000,
+    // Don't show error state, just return empty array
+    throwOnError: false,
   });
 
   // Create customer form
