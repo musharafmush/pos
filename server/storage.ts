@@ -1007,7 +1007,7 @@ export const storage = {
         const newSale = getSale.get(saleId);
 
         return {
-...newSale,
+          ...newSale,
           createdAt: new Date(newSale.created_at)
         };
       })();
@@ -1402,7 +1402,7 @@ export const storage = {
       console.error('Error listing returns:', error);
       throw error;
     }
-  }
+  },
 
   async getCustomerBillingData(startDate: Date): Promise<any[]> {
     try {
@@ -1450,7 +1450,7 @@ export const storage = {
       console.error('Error in getCustomerBillingData:', error);
       return [];
     }
-  }
+  },
 
   async getCustomerTransactionHistory(startDate: Date): Promise<any[]> {
     try {
@@ -1496,7 +1496,7 @@ export const storage = {
       console.error('Error in getCustomerTransactionHistory:', error);
       return [];
     }
-  }
+  },
 
   async getCustomerDemographics(startDate: Date): Promise<any[]> {
     try {
@@ -1560,7 +1560,7 @@ export const storage = {
       console.error('Error in getCustomerDemographics:', error);
       return [];
     }
-  }
+  },
 
   async getPaymentAnalytics(startDate: Date): Promise<any[]> {
     try {
