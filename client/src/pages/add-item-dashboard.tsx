@@ -1255,6 +1255,7 @@ export default function AddItemDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+        </Tabs>
 
         {/* View Product Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
