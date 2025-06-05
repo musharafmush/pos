@@ -1002,12 +1002,12 @@ export const storage = {
           console.log(`📦 Updated stock for product ${item.productId}: -${item.quantity}`);
         }
 
-        //        // Get the created sale
-        const sqlite = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
+        // Get the created sale
+        const getSale = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
         const newSale = getSale.get(saleId);
 
         return {
-...newSale,
+          ...newSale,
           createdAt: new Date(newSale.created_at)
         };
       })();
