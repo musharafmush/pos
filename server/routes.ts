@@ -795,7 +795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If search is provided, use a different approach to search sales
       if (search) {
         const { sqlite } = await import('@db');
-        
+
         let query = `
           SELECT s.*, c.name as customerName, c.phone as customerPhone, u.name as userName
           FROM sales s
@@ -808,7 +808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             c.email LIKE ?
           )
         `;
-        
+
         const params = [
           `%${search}%`,
           `%${search}%`, 
@@ -820,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           query += ` AND s.createdAt >= ?`;
           params.push(startDate.toISOString());
         }
-        
+
         if (endDate) {
           query += ` AND s.createdAt <= ?`;
           params.push(endDate.toISOString());
@@ -830,7 +830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         params.push(limit);
 
         const sales = sqlite.prepare(query).all(params);
-        
+
         // Format the results to match expected structure
         const formattedSales = sales.map(sale => ({
           ...sale,
@@ -926,8 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 });
 
   app.put('/api/sales/:id', isAuthenticated, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
+    try {      const id = parseInt(req.params.id);
       const updateData = req.body;
 
       console.log('Updating sale:', id, updateData);
@@ -1185,11 +1184,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customers API
   app.get('/api/customers', async (req, res) => {
     try {
+      console.log("Fetching customers from database...");
       const customers = await storage.listCustomers();
+      console.log(`Found ${customers.length} customers:`, customers);
       res.json(customers);
     } catch (error) {
-      console.error('Error fetching customers:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error("Error fetching customers:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch customers",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

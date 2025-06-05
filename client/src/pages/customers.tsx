@@ -94,13 +94,35 @@ export default function Customers() {
   const formatCurrency = useFormatCurrency();
 
   // Fetch customers
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], isLoading, error, refetch } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
-      const res = await fetch("/api/customers");
-      if (!res.ok) throw new Error("Failed to fetch customers");
-      return await res.json();
-    }
+      try {
+        console.log("Fetching customers...");
+        const response = await fetch("/api/customers");
+        console.log("Response status:", response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Failed to fetch customers:", errorText);
+          throw new Error(`Failed to fetch customers: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Customers data:", data);
+        return data;
+      } catch (error) {
+        console.error("Error fetching customers:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load customers. Please refresh the page.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+    },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Create customer form
