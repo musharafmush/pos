@@ -85,7 +85,7 @@ export default function POSEnhanced() {
   const [showOpenRegister, setShowOpenRegister] = useState(false);
   const [showCloseRegister, setShowCloseRegister] = useState(false);
   const [showWithdrawal, setShowWithdrawal] = useState(false);
-
+  
   // Cash register state
   const [registerOpened, setRegisterOpened] = useState(false);
   const [openingCash, setOpeningCash] = useState(0);
@@ -98,7 +98,7 @@ export default function POSEnhanced() {
   const [otherReceived, setOtherReceived] = useState(0);
   const [totalWithdrawals, setTotalWithdrawals] = useState(0);
   const [totalRefunds, setTotalRefunds] = useState(0);
-
+  
   // Form state
   const [cashOperation, setCashOperation] = useState<'add' | 'remove'>('add');
   const [cashAmount, setCashAmount] = useState("");
@@ -255,8 +255,29 @@ export default function POSEnhanced() {
   const taxAmount = (taxableAmount * taxRate) / 100;
   const total = taxableAmount + taxAmount;
 
+  // Check for open register on component mount
+  useEffect(() => {
+    const checkOpenRegister = async () => {
+      try {
+        const response = await fetch('/api/cash-register/current');
+        if (response.ok) {
+          const register = await response.json();
+          if (register) {
+            setRegisterOpened(true);
+            setOpeningCash(register.opening_cash);
+            setCashInHand(register.current_cash);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking register status:', error);
+      }
+    };
+
+    checkOpenRegister();
+  }, []);
+
   // Register opening
-  const handleOpenRegister = () => {
+  const handleOpenRegister = async () => {
     const amount = parseFloat(cashAmount);
 
     if (!amount || amount < 0) {
@@ -268,17 +289,36 @@ export default function POSEnhanced() {
       return;
     }
 
-    setOpeningCash(amount);
-    setCashInHand(amount);
-    setRegisterOpened(true);
+    try {
+      const response = await fetch('/api/cash-register/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ openingCash: amount })
+      });
 
-    toast({
-      title: "Register Opened",
-      description: `Register opened with ${formatCurrency(amount)}`,
-    });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
 
-    setCashAmount("");
-    setShowOpenRegister(false);
+      setOpeningCash(amount);
+      setCashInHand(amount);
+      setRegisterOpened(true);
+      
+      toast({
+        title: "Register Opened",
+        description: `Register opened with ${formatCurrency(amount)}`,
+      });
+
+      setCashAmount("");
+      setShowOpenRegister(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to open register",
+        variant: "destructive",
+      });
+    }
   };
 
   // Cash operation handler
@@ -444,41 +484,22 @@ export default function POSEnhanced() {
     }
   };
 
-  // Complete sale
-  const completeSale = async () => {
+  // Process sale
+  const processSale = async () => {
     if (cart.length === 0) {
       toast({
-        title: "No Items",
-        description: "Add items to cart before completing sale",
+        title: "Empty Cart",
+        description: "Please add items to cart before checkout",
         variant: "destructive",
       });
       return;
     }
 
-    // Check if register is open
-    try {
-      const registerResponse = await fetch('/api/cash-register/current', {
-        credentials: 'include'
-      });
-
-      if (registerResponse.status === 404) {
-        toast({
-          title: "Register Not Open",
-          description: "Please open the cash register before making sales",
-          variant: "destructive",
-        });
-        return;
-      }
-    } catch (error) {
-      console.warn('Could not check register status, continuing with sale');
-    }
-
-    const amountPaidValue = parseFloat(amountPaid) || 0;
-
-    if (amountPaidValue < total) {
+    const paidAmount = parseFloat(amountPaid) || total;
+    if (paidAmount < total) {
       toast({
         title: "Insufficient Payment",
-        description: `Minimum amount to pay is ${formatCurrency(total)}`,
+        description: `Please pay at least ${formatCurrency(total)}`,
         variant: "destructive",
       });
       return;
@@ -513,8 +534,8 @@ export default function POSEnhanced() {
         taxRate: taxRate,
         total: total.toFixed(2),
         paymentMethod,
-        amountPaid: amountPaidValue.toFixed(2),
-        change: (amountPaidValue - total).toFixed(2),
+        amountPaid: paidAmount.toFixed(2),
+        change: (paidAmount - total).toFixed(2),
         notes: `Bill: ${billNumber}`,
         billNumber: billNumber,
         status: "completed"
@@ -550,11 +571,11 @@ export default function POSEnhanced() {
       console.log("Sale completed successfully:", saleResult);
 
       // Update payment tracking
-      updatePaymentTracking(paymentMethod, amountPaidValue);
+      updatePaymentTracking(paymentMethod, paidAmount);
 
       toast({
         title: "✅ Sale Completed!",
-        description: `Transaction successful for ${formatCurrency(total)}${amountPaidValue > total ? `. Change: ${formatCurrency(amountPaidValue - total)}` : ''}`,
+        description: `Transaction successful for ${formatCurrency(total)}${paidAmount > total ? `. Change: ${formatCurrency(paidAmount - total)}` : ''}`,
         variant: "default",
       });
 
@@ -742,159 +763,6 @@ export default function POSEnhanced() {
         variant: "destructive",
       });
     }
-  };
-
-  //Process sale
-  const processSale = async () => {
-    try {
-      if (cart.length === 0) {
-        toast({
-          title: "No Items",
-          description: "Add items to cart before completing sale",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if register is open
-      try {
-        const registerResponse = await fetch('/api/cash-register/current', {
-          credentials: 'include'
-        });
-
-        if (registerResponse.status === 404) {
-          toast({
-            title: "Register Not Open",
-            description: "Please open the cash register before making sales",
-            variant: "destructive",
-          });
-          return;
-        }
-      } catch (error) {
-        console.warn('Could not check register status, continuing with sale');
-      }
-
-      const amountPaidValue = parseFloat(amountPaid) || 0;
-
-      if (amountPaidValue < total) {
-        toast({
-          title: "Insufficient Payment",
-          description: `Minimum amount to pay is ${formatCurrency(total)}`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setIsProcessing(true);
-
-      try {
-        // Validate cart items have valid stock
-        for (const item of cart) {
-          const product = products.find((p: Product) => p.id === item.id);
-          if (!product || product.stockQuantity < item.quantity) {
-            throw new Error(`Insufficient stock for ${item.name}. Available: ${product?.stockQuantity || 0}, Required: ${item.quantity}`);
-          }
-        }
-
-        const saleData = {
-          customerId: selectedCustomer?.id || null,
-          customerName: selectedCustomer?.name || "Walk-in Customer",
-          items: cart.map(item => ({
-            productId: item.id,
-            quantity: item.quantity,
-            unitPrice: parseFloat(item.price).toString(),
-            subtotal: item.total.toString(),
-            price: parseFloat(item.price).toString(),
-            total: item.total.toString()
-          })),
-          subtotal: subtotal.toFixed(2),
-          discount: discountAmount.toFixed(2),
-          discountPercent: discount,
-          tax: taxAmount.toFixed(2),
-          taxRate: taxRate,
-          total: total.toFixed(2),
-          paymentMethod,
-          amountPaid: amountPaidValue.toFixed(2),
-          change: (amountPaidValue - total).toFixed(2),
-          notes: `Bill: ${billNumber}`,
-          billNumber: billNumber,
-          status: "completed"
-        };
-
-        console.log("Processing sale with data:", saleData);
-
-        const response = await fetch("/api/sales", {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify(saleData),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Sale API error:", errorText);
-
-          let errorMessage = "Transaction failed";
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.message || errorData.error || "Server error occurred";
-          } catch (e) {
-            errorMessage = errorText || "Unknown server error";
-          }
-
-          throw new Error(errorMessage);
-        }
-
-        const saleResult = await response.json();
-        console.log("Sale completed successfully:", saleResult);
-
-        // Update payment tracking
-        updatePaymentTracking(paymentMethod, amountPaidValue);
-
-        toast({
-          title: "✅ Sale Completed!",
-          description: `Transaction successful for ${formatCurrency(total)}${amountPaidValue > total ? `. Change: ${formatCurrency(amountPaidValue - total)}` : ''}`,
-          variant: "default",
-        });
-
-        // Reset everything
-        clearCart();
-        setShowPaymentDialog(false);
-        setAmountPaid("");
-        setBillNumber(`POS${Date.now()}`);
-
-        // Refresh data
-        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
-
-      } catch (error) {
-        console.error("Sale processing error:", error);
-
-        let errorMessage = "Transaction failed. Please try again.";
-        if (error instanceof Error) {
-          if (error.message.includes("stock")) {
-            errorMessage = error.message;
-          } else if (error.message.includes("Network") || error.message.includes("fetch")) {
-            errorMessage = "Network error. Please check your connection.";
-          } else if (error.message.length > 0 && error.message.length < 200) {
-            errorMessage = error.message;
-          }
-        }
-
-        toast({
-          title: "❌ Transaction Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessing(false);
-      }
-    }
-    
-    
-
   };
 
   return (
@@ -1736,7 +1604,7 @@ export default function POSEnhanced() {
                       key={amount}
                       variant="outline"
                       size="sm"
-                      onClick={(){
+                      onClick={() => {
                         setCashAmount(amount.toString());
                         setCashOperation('add');
                         setCashReason(`Cash payment ₹${amount}`);

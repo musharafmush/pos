@@ -1,3 +1,4 @@
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -9,18 +10,6 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { db } from "@db";
-import { and, desc, eq, gte, like, lt, sql } from "drizzle-orm";
-import {
-  categories,
-  customers,
-  sales,
-  saleItems,
-  purchases,
-  purchaseItems,
-  suppliers,
-  users,
-  registers,
-} from "../shared/schema";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -783,7 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update the sale
       const updatedSale = await storage.updateSale(id, updateData);
-
+      
       res.json({
         ...updatedSale,
         message: 'Sale updated successfully'
@@ -811,7 +800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete the sale
       const deleted = await storage.deleteSale(id);
-
+      
       if (!deleted) {
         return res.status(500).json({ message: 'Failed to delete sale' });
       }
@@ -933,7 +922,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const purchase = await storage.updatePurchaseStatus(
         id,
-```text
         status,
         receivedDate ? new Date(receivedDate) : undefined
       );
@@ -1206,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-
+      
       // Don't allow deleting yourself
       if ((req.user as any).id === id) {
         return res.status(400).json({ message: 'Cannot delete your own account' });
@@ -1225,160 +1213,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register routes
-  app.get("/api/register/current", async (req, res) => {
+  // Dashboard stats API
+  app.get('/api/dashboard/stats', async (req, res) => {
     try {
-      const currentRegister = await db.select()
-        .from(registers)
-        .where(eq(registers.status, 'open'))
-        .orderBy(desc(registers.createdAt))
-        .limit(1);
-
-      if (currentRegister.length > 0) {
-        res.json({ register: currentRegister[0] });
-      } else {
-        res.json({ register: null });
-      }
+      const stats = await storage.getDashboardStats();
+      res.json(stats);
     } catch (error) {
-      console.error("Error fetching current register:", error);
-      res.status(500).json({ error: "Failed to fetch register status" });
-    }
-  });
-
-  app.post("/api/register/open", async (req, res) => {
-    const { openingCash, openedBy } = req.body;
-
-    try {
-      // Check if there's already an open register
-      const existingOpen = await db.select()
-        .from(registers)
-        .where(eq(registers.status, 'open'));
-
-      if (existingOpen.length > 0) {
-        return res.status(400).json({ error: "Register is already open" });
-      }
-
-      const newRegister = await db.insert(registers).values({
-        openingCash: parseFloat(openingCash),
-        openedBy,
-        status: 'open',
-        openedAt: new Date().toISOString(),
-      }).returning();
-
-      res.json({ register: newRegister[0] });
-    } catch (error) {
-      console.error("Error opening register:", error);
-      res.status(500).json({ error: "Failed to open register" });
-    }
-  });
-
-  app.post("/api/register/close", async (req, res) => {
-    const { registerId, actualCash, notes } = req.body;
-
-    try {
-      const closedRegister = await db.update(registers)
-        .set({
-          status: 'closed',
-          closedAt: new Date().toISOString(),
-          actualCash: parseFloat(actualCash),
-          notes,
-        })
-        .where(eq(registers.id, registerId))
-        .returning();
-
-      res.json({ register: closedRegister[0] });
-    } catch (error) {
-      console.error("Error closing register:", error);
-      res.status(500).json({ error: "Failed to close register" });
-    }
-  });
-
-  app.get("/api/sales/today", async (req, res) => {
-    const { registerId } = req.query;
-
-    try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      // Get sales for today
-      const salesQuery = await db.select({
-        total: sql<number>`COALESCE(SUM(${sales.total}), 0)`,
-        paymentMethod: sales.paymentMethod,
-        count: sql<number>`COUNT(*)`
-      })
-      .from(sales)
-      .where(
-        and(
-          gte(sales.createdAt, today.toISOString()),
-          lt(sales.createdAt, tomorrow.toISOString()),
-          registerId ? eq(sales.registerId, Number(registerId)) : undefined
-        )
-      )
-      .groupBy(sales.paymentMethod);
-
-      // Calculate totals by payment method
-      let totalSales = 0;
-      let cashSales = 0;
-      let upiSales = 0;
-      let cardSales = 0;
-      let otherPayments = 0;
-      let transactionCount = 0;
-
-      for (const sale of salesQuery) {
-        totalSales += sale.total;
-        transactionCount += sale.count;
-
-        switch (sale.paymentMethod?.toLowerCase()) {
-          case 'cash':
-            cashSales += sale.total;
-            break;
-          case 'upi':
-            upiSales += sale.total;
-            break;
-          case 'card':
-            cardSales += sale.total;
-            break;
-          default:
-            otherPayments += sale.total;
-            break;
-        }
-      }
-
-      // Get refunds (assuming negative sales or separate refund tracking)
-      const totalRefunds = 0; // Implement refund tracking as needed
-      const withdrawals = 0; // Implement withdrawal tracking as needed
-
-      res.json({
-        totalSales,
-        cashSales,
-        upiSales,
-        cardSales,
-        otherPayments,
-        totalRefunds,
-        withdrawals,
-        transactionCount
-      });
-    } catch (error) {
-      console.error("Error fetching sales data:", error);
-      res.status(500).json({ error: "Failed to fetch sales data" });
-    }
-  });
-
-  // User routes
-  app.get("/api/users", isAuthenticated, isAdmin, async (req, res) => {
-    try {
-      const users = await storage.listUsers();
-      // Remove passwords from response
-      const safeUsers = users.map(user => {
-        const { password, ...safeUser } = user;
-        return safeUser;
-      });
-      res.json(safeUsers);
-    } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error fetching dashboard stats:', error);
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Sales chart data API
+  app.get('/api/dashboard/sales-chart', async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 7;
+      const salesData = await storage.getDailySalesData(days);
+      res.json(salesData);
+    } catch (error) {
+      console.error('Error fetching sales chart data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Top selling products API
+  app.get('/api/reports/top-selling-products', async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 7;
+      const limit = parseInt(req.query.limit as string) || 5;
+      
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      
+      const topProducts = await storage.getTopSellingProducts(limit, startDate);
+      res.json(topProducts);
+    } catch (error) {
+      console.error('Error fetching top selling products:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Cash Register API endpoints
+  app.post('/api/cash-register/open', isAuthenticated, async (req, res) => {
+    try {
+      const { openingCash } = req.body;
+      const userId = (req.user as any).id;
+
+      if (!openingCash || openingCash < 0) {
+        return res.status(400).json({ message: 'Valid opening cash amount is required' });
+      }
+
+      const register = await storage.openCashRegister(userId, parseFloat(openingCash));
+      res.status(201).json(register);
+    } catch (error) {
+      console.error('Error opening cash register:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to open cash register' 
+      });
+    }
+  });
+
+  app.get('/api/cash-register/current', async (req, res) => {
+    try {
+      const register = await storage.getCurrentOpenRegister();
+      res.json(register);
+    } catch (error) {
+      console.error('Error fetching current register:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/cash-register/:registerId/sales-data', async (req, res) => {
+    try {
+      const { registerId } = req.params;
+      const salesData = await storage.getTodaysSalesData(registerId);
+      res.json(salesData);
+    } catch (error) {
+      console.error('Error fetching sales data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/cash-register/:registerId/close', isAuthenticated, async (req, res) => {
+    try {
+      const { registerId } = req.params;
+      const closeData = {
+        ...req.body,
+        closedBy: (req.user as any).id
+      };
+
+      const result = await storage.closeCashRegister(registerId, closeData);
+      res.json(result);
+    } catch (error) {
+      console.error('Error closing cash register:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to close cash register' 
+      });
+    }
+  });
+
+  app.post('/api/cash-register/transaction', isAuthenticated, async (req, res) => {
+    try {
+      const transactionData = {
+        ...req.body,
+        createdBy: (req.user as any).id
+      };
+
+      const transaction = await storage.addCashTransaction(transactionData);
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error('Error adding cash transaction:', error);
+      res.status(500).json({ message: 'Failed to add transaction' });
     }
   });
 

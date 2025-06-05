@@ -38,7 +38,7 @@ export const products = pgTable('products', {
   alertThreshold: integer('alert_threshold').notNull().default(10),
   barcode: text('barcode'),
   image: text('image'),
-
+  
   // Tax Information - Indian GST Compliance
   hsnCode: text('hsn_code'),
   gstCode: text('gst_code'),
@@ -47,7 +47,7 @@ export const products = pgTable('products', {
   igstRate: decimal('igst_rate', { precision: 5, scale: 2 }),
   cessRate: decimal('cess_rate', { precision: 5, scale: 2 }),
   taxCalculationMethod: text('tax_calculation_method'),
-
+  
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
@@ -61,20 +61,6 @@ export const customers = pgTable('customers', {
   phone: text('phone'),
   address: text('address'),
   createdAt: timestamp('created_at').defaultNow().notNull()
-});
-
-// Registers table
-export const registers = pgTable("registers", {
-  id: serial("id").primaryKey(),
-  openingCash: decimal("opening_cash", { precision: 10, scale: 2 }).notNull(),
-  actualCash: decimal("actual_cash", { precision: 10, scale: 2 }),
-  openedBy: text("opened_by").notNull(),
-  openedAt: timestamp("opened_at").notNull(),
-  closedAt: timestamp("closed_at"),
-  status: text("status").notNull().default('open'), // 'open' or 'closed'
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Users table
@@ -91,18 +77,17 @@ export const users = pgTable('users', {
 });
 
 // Sales table
-export const sales = pgTable("sales", {
-  id: serial("id").primaryKey(),
+export const sales = pgTable('sales', {
+  id: serial('id').primaryKey(),
   orderNumber: text('order_number').notNull().unique(),
-  customerId: integer("customer_id").references(() => customers.id),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  tax: decimal("tax", { precision: 10, scale: 2 }).notNull(),
-  discount: decimal("discount", { precision: 10, scale: 2 }).notNull().default('0'),
-  paymentMethod: text("payment_method").notNull(),
-  status: text("status").notNull().default('completed'),
-  registerId: integer("register_id").references(() => registers.id),
-  createdAt: timestamp("created_at").defaultNow().notNull()
+  customerId: integer('customer_id').references(() => customers.id),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  total: decimal('total', { precision: 10, scale: 2 }).notNull(),
+  tax: decimal('tax', { precision: 10, scale: 2 }).notNull(),
+  discount: decimal('discount', { precision: 10, scale: 2 }).notNull().default('0'),
+  paymentMethod: text('payment_method').notNull(),
+  status: text('status').notNull().default('completed'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
 // Sale items table
