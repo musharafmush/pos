@@ -38,7 +38,6 @@ import {
   Info,
   Banknote,
   DollarSign,
-  Cash as CashIcon,
 } from "lucide-react";
 
 interface Product {
@@ -1108,7 +1107,7 @@ export default function POSEnhanced() {
           <DialogHeader className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg">
             <DialogTitle className="flex items-center gap-3 text-xl">
               <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                <CashIcon className="w-5 h-5 text-white" />
+                <Banknote className="w-5 h-5 text-white" />
               </div>
               <div>
                 <div className="text-gray-800">Cash Register Management</div>
@@ -1150,7 +1149,7 @@ export default function POSEnhanced() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CashIcon className="w-5 h-5 text-green-600" />
+                    <Banknote className="w-5 h-5 text-green-600" />
                     <h4 className="font-semibold text-gray-800">Cash Payments</h4>
                   </div>
                   <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Quick Add</span>
@@ -1182,7 +1181,7 @@ export default function POSEnhanced() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CreditCardIcon className="w-5 h-5 text-blue-600" />
+                    <CreditCard className="w-5 h-5 text-blue-600" />
                     <h4 className="font-semibold text-gray-800">Digital Payments</h4>
                   </div>
                   <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">UPI • Cards</span>
