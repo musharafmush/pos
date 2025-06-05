@@ -888,11 +888,9 @@ export default function AddItemDashboard() {
           <TabsContent value="templates" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card className="border-dashed border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer">
-                <CardContent className="The code is modified to replace the undefined `isLoading` with the correct `productsLoading` variable.
-p-6 text-center">
+                <CardContent className="p-6 text-center">
                   <PackageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="font-medium mb-2```python
-">Electronics Template</h3>
+                  <h3 className="font-medium mb-2">Electronics Template</h3>
                   <p className="text-sm text-gray-600 mb-4">Pre-configured for electronic products with GST and warranty</p>
                   <Button variant="outline" size="sm">Use Template</Button>
                 </CardContent>
@@ -919,20 +917,6 @@ p-6 text-center">
           </TabsContent>
 
           {/* Low Stock Tab */}
-          <TabsContent value="active" className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <PackageIcon className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-blue-800">Active Items</h3>
-              </div>
-              <p className="text-blue-700 text-sm">
-                Items that are currently active and available for sale.
-              </p>
-            </div>
-            <ProductsTable products={filteredProducts} />
-          </TabsContent>
-
-          {/* Active Items Tab */}
           <TabsContent value="inactive" className="space-y-4">
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -946,7 +930,7 @@ p-6 text-center">
             <ProductsTable products={filteredProducts} />
           </TabsContent>
 
-          {/* Inactive Items Tab */}
+          {/* Active Items Tab */}
           <TabsContent value="low-stock" className="space-y-4">
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -985,7 +969,292 @@ p-6 text-center">
             </div>
             <ProductsTable products={filteredProducts} />
           </TabsContent>
-        </Tabs>
+
+          {/* Active Items Tab */}
+          <TabsContent value="active" className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <PackageIcon className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-blue-800">Active Items</h3>
+              </div>
+              <p className="text-blue-700 text-sm">
+                Items that are currently active and available for sale.
+              </p>
+            </div>
+
+            {/* Enhanced Active Items CRUD Interface */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Active Items Management</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        placeholder="Search active items..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-10 w-64"
+                      />
+                    </div>
+                    <Link href="/add-item-professional">
+                      <Button className="bg-blue-600 hover:bg-blue-700">
+                        <PlusIcon className="w-4 h-4 mr-2" />
+                        Add New Item
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {productsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-600">Loading active items...</p>
+                  </div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="text-center py-12">
+                    <PackageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Items Found</h3>
+                    <p className="text-gray-600 mb-4">
+                      {searchTerm ? "No items match your search criteria." : "You haven't added any active items yet."}
+                    </p>
+                    <Link href="/add-item-professional">
+                      <Button>
+                        <PlusIcon className="w-4 h-4 mr-2" />
+                        Add Your First Item
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Product</TableHead>
+                          <TableHead>SKU</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>MRP</TableHead>
+                          <TableHead>Stock</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedProducts.map((product: Product) => (
+                          <TableRow key={product.id} className="hover:bg-gray-50">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                  <PackageIcon className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <div>
+                                  <div className="font-medium text-gray-900">{product.name}</div>
+                                  <div className="text-sm text-gray-500 truncate max-w-[200px]">
+                                    {product.description || "No description"}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-mono text-sm bg-gray-100 px-2 py-1 rounded max-w-fit">
+                                {product.sku}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-semibold text-green-600">
+                                {formatCurrency(parseFloat(product.price.toString()))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-gray-900">
+                                {formatCurrency(parseFloat(product.mrp?.toString() || product.price.toString()))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={product.stockQuantity <= (product.alertThreshold || 5) ? "destructive" : "default"}
+                                className="font-medium"
+                              >
+                                {product.stockQuantity} units
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                                Active
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleViewProduct(product)}
+                                  title="View Details"
+                                  className="h-8 w-8 p-0 hover:bg-blue-100"
+                                >
+                                  <EyeIcon className="w-4 h-4 text-blue-600" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleEditProduct(product)}
+                                  title="Edit Product"
+                                  className="h-8 w-8 p-0 hover:bg-orange-100"
+                                >
+                                  <EditIcon className="w-4 h-4 text-orange-600" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      title="Delete Product"
+                                      className="h-8 w-8 p-0 hover:bg-red-100"
+                                    >
+                                      <TrashIcon className="w-4 h-4 text-red-600" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Active Item</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete "{product.name}"? This will remove the item from your active inventory. This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleDeleteProduct(product.id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete Item
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+
+                    {/* Pagination for Active Items */}
+                    {filteredProducts.length > 0 && (
+                      <div className="flex items-center justify-between px-2 py-4 border-t">
+                        <div className="text-sm text-gray-700">
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length} active items
+                        </div>
+
+                        {totalPages > 1 && (
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious 
+                                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                />
+                              </PaginationItem>
+
+                              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                let pageNumber;
+                                if (totalPages <= 5) {
+                                  pageNumber = i + 1;
+                                } else if (currentPage <= 3) {
+                                  pageNumber = i + 1;
+                                } else if (currentPage >= totalPages - 2) {
+                                  pageNumber = totalPages - 4 + i;
+                                } else {
+                                  pageNumber = currentPage - 2 + i;
+                                }
+
+                                return (
+                                  <PaginationItem key={pageNumber}>
+                                    <PaginationLink
+                                      onClick={() => setCurrentPage(pageNumber)}
+                                      isActive={currentPage === pageNumber}
+                                      className="cursor-pointer"
+                                    >
+                                      {pageNumber}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                );
+                              })}
+
+                              <PaginationItem>
+                                <PaginationNext 
+                                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions for Active Items */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RefreshCcwIcon className="w-5 h-5" />
+                  Quick Actions for Active Items
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center justify-center gap-2 h-12"
+                    onClick={() => {
+                      // Bulk activate/deactivate functionality
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Bulk operations will be available soon",
+                      });
+                    }}
+                  >
+                    <CheckCircleIcon className="w-4 h-4" />
+                    Bulk Activate/Deactivate
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center justify-center gap-2 h-12"
+                    onClick={() => {
+                      // Export active items
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Export functionality will be available soon",
+                      });
+                    }}
+                  >
+                    <DownloadIcon className="w-4 h-4" />
+                    Export Active Items
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center justify-center gap-2 h-12"
+                    onClick={() => {
+                      // Refresh data
+                      refetchProducts();
+                      toast({
+                        title: "Data Refreshed",
+                        description: "Active items list has been updated",
+                      });
+                    }}
+                  >
+                    <RefreshCcwIcon className="w-4 h-4" />
+                    Refresh Data
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
         {/* View Product Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
