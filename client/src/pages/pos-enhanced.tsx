@@ -38,7 +38,11 @@ import {
   Info,
   Banknote,
   DollarSign,
-    Smartphone
+  Smartphone,
+  Save,
+  List,
+  FileText,
+  Download
 } from "lucide-react";
 
 interface Product {
@@ -86,6 +90,16 @@ export default function POSEnhanced() {
   const [showOpenRegister, setShowOpenRegister] = useState(false);
   const [showCloseRegister, setShowCloseRegister] = useState(false);
   const [showWithdrawal, setShowWithdrawal] = useState(false);
+  const [showHoldSales, setShowHoldSales] = useState(false);
+  const [holdSales, setHoldSales] = useState<Array<{
+    id: string;
+    cart: CartItem[];
+    customer: Customer | null;
+    discount: number;
+    notes: string;
+    timestamp: Date;
+    total: number;
+  }>>([]);
 
   // Cash register state
   const [registerOpened, setRegisterOpened] = useState(false);
@@ -630,6 +644,14 @@ export default function POSEnhanced() {
         e.preventDefault();
         setupQuickPayment("upi");
       }
+      else if (e.altKey && e.key === "h") {
+        e.preventDefault();
+        holdCurrentSale();
+      }
+      else if (e.altKey && e.key === "r") {
+        e.preventDefault();
+        setShowHoldSales(true);
+      }
       else if (e.ctrlKey && e.key === "d") {
         e.preventDefault();
         toggleDiscount();
@@ -755,6 +777,71 @@ export default function POSEnhanced() {
   // Toggle discount
   const toggleDiscount = () => {
     setDiscount(prev => (prev > 0 ? 0 : 10));
+  };
+
+  // Hold current sale
+  const holdCurrentSale = () => {
+    if (cart.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Cannot hold an empty cart",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const holdId = `HOLD-${Date.now()}`;
+    const holdSale = {
+      id: holdId,
+      cart: [...cart],
+      customer: selectedCustomer,
+      discount: discount,
+      notes: `Held sale at ${new Date().toLocaleTimeString()}`,
+      timestamp: new Date(),
+      total: total
+    };
+
+    setHoldSales(prev => [...prev, holdSale]);
+    clearCart();
+    
+    toast({
+      title: "Sale Held",
+      description: `Sale ${holdId} has been held successfully`,
+    });
+  };
+
+  // Recall held sale
+  const recallHeldSale = (holdSale: typeof holdSales[0]) => {
+    if (cart.length > 0) {
+      toast({
+        title: "Cart Not Empty",
+        description: "Please clear current cart before recalling a held sale",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCart(holdSale.cart);
+    setSelectedCustomer(holdSale.customer);
+    setDiscount(holdSale.discount);
+    
+    // Remove from held sales
+    setHoldSales(prev => prev.filter(sale => sale.id !== holdSale.id));
+    setShowHoldSales(false);
+
+    toast({
+      title: "Sale Recalled",
+      description: `Sale ${holdSale.id} has been recalled successfully`,
+    });
+  };
+
+  // Delete held sale
+  const deleteHeldSale = (holdId: string) => {
+    setHoldSales(prev => prev.filter(sale => sale.id !== holdId));
+    toast({
+      title: "Sale Deleted",
+      description: `Held sale ${holdId} has been deleted`,
+    });
   };
 
   return (
@@ -1140,6 +1227,30 @@ export default function POSEnhanced() {
                 >
                   <Calculator className="h-4 w-4 mr-2" />
                   Discount (Ctrl+D)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={holdCurrentSale}
+                  disabled={cart.length === 0}
+                  title="Hold current sale (Alt+H)"
+                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Hold (Alt+H)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowHoldSales(true)}
+                  title="Recall held sales (Alt+R)"
+                  className="hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200"
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Recall (Alt+R)
+                  {holdSales.length > 0 && (
+                    <span className="ml-1 bg-yellow-100 text-yellow-800 text-xs px-1.5 py-0.5 rounded-full">
+                      {holdSales.length}
+                    </span>
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -1877,6 +1988,94 @@ export default function POSEnhanced() {
                     {isCreatingCustomer ? "Creating..." : "Create Customer"}
                   </Button>
                 </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Hold Sales Dialog */}
+          <Dialog open={showHoldSales} onOpenChange={setShowHoldSales}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <List className="h-6 w-6 text-blue-600" />
+                  Held Sales ({holdSales.length})
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {holdSales.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No Held Sales</h3>
+                    <p className="text-gray-500">Hold a sale using Alt+H to save it for later</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {holdSales.map((holdSale) => (
+                      <Card key={holdSale.id} className="p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-2">
+                              <h4 className="font-semibold text-gray-900">{holdSale.id}</h4>
+                              <Badge variant="outline" className="text-xs">
+                                {holdSale.cart.length} items
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {holdSale.cart.reduce((sum, item) => sum + item.quantity, 0)} units
+                              </Badge>
+                            </div>
+                            
+                            <div className="text-sm text-gray-600 mb-2">
+                              <div>Customer: {holdSale.customer?.name || "Walk-in Customer"}</div>
+                              <div>Time: {holdSale.timestamp.toLocaleString()}</div>
+                              {holdSale.discount > 0 && (
+                                <div>Discount: {holdSale.discount}%</div>
+                              )}
+                            </div>
+
+                            <div className="text-sm text-gray-500">
+                              Items: {holdSale.cart.map(item => `${item.name} (${item.quantity})`).join(", ")}
+                            </div>
+                          </div>
+
+                          <div className="text-right ml-4">
+                            <div className="text-2xl font-bold text-green-600 mb-2">
+                              {formatCurrency(holdSale.total)}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => recallHeldSale(holdSale)}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Recall
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => deleteHeldSale(holdSale.id)}
+                                className="text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowHoldSales(false)}
+                >
+                  Close
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
