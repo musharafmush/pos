@@ -721,7 +721,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const customerId = req.query.customerId ? parseInt(req.query.customerId as string) : undefined;
 
-      const sales = await storage.listSales(startDate, endDate, limit, offset, userId, customerId);
+      const sales = await storage.listSales(limit, offset, startDate, endDate, userId, customerId);
       res.json(sales);
     } catch (error) {
       console.error('Error fetching sales:', error);

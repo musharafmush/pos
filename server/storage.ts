@@ -549,7 +549,7 @@ export const storage = {
     }
   },
 
-  async listSales(startDate?: Date, endDate?: Date, limit?: number, offset?: number, userId?: number, customerId?: number): Promise<Sale[]> {
+  async listSales(limit?: number, offset?: number, startDate?: Date, endDate?: Date, userId?: number, customerId?: number): Promise<Sale[]> {
     try {
       const conditions = [];
 
@@ -1263,11 +1263,11 @@ export const storage = {
         const returnResult = insertReturn.run(
           returnData.saleId,
           returnData.userId,
-          returnData.refundMethod,
-          returnData.totalRefund.toString(),
-          returnData.reason,
-          returnData.notes,
-          returnData.status
+          returnData.refundMethod || 'cash',
+          returnData.totalRefund ? returnData.totalRefund.toString() : '0',
+          returnData.reason || '',
+          returnData.notes || '',
+          returnData.status || 'completed'
         );
 
         const returnId = returnResult.lastInsertRowid;

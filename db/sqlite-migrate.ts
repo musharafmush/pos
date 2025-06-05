@@ -12,7 +12,21 @@ export async function initializeDatabase() {
 
   console.log('🔄 Creating database tables...');
 
-  // Create tables in the correct order (dependencies first)
+  // Create tables in correct order (handling foreign key dependencies)
+  const tableCreationOrder = [
+    'settings',
+    'categories', 
+    'products',
+    'customers',
+    'users',
+    'suppliers',
+    'sales',
+    'sale_items',
+    'purchases',
+    'purchase_items',
+    'returns',
+    'return_items'
+  ];
 
   // Users table
   db.exec(`
