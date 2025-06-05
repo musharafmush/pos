@@ -1,4 +1,3 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -772,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update the sale
       const updatedSale = await storage.updateSale(id, updateData);
-      
+
       res.json({
         ...updatedSale,
         message: 'Sale updated successfully'
@@ -800,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete the sale
       const deleted = await storage.deleteSale(id);
-      
+
       if (!deleted) {
         return res.status(500).json({ message: 'Failed to delete sale' });
       }
@@ -1194,7 +1193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Don't allow deleting yourself
       if ((req.user as any).id === id) {
         return res.status(400).json({ message: 'Cannot delete your own account' });
@@ -1209,124 +1208,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'User deleted successfully' });
     } catch (error) {
       console.error('Error deleting user:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  // Cash Register Management API
-  app.post('/api/cash-register/open', isAuthenticated, async (req, res) => {
-    try {
-      const { openingCash } = req.body;
-      const userId = (req.user as any)?.id || 1;
-
-      if (!openingCash || parseFloat(openingCash) < 0) {
-        return res.status(400).json({ message: 'Valid opening cash amount is required' });
-      }
-
-      // Check if there's already an open register for today
-      const today = new Date().toISOString().split('T')[0];
-      const existingRegister = await storage.getTodaysOpenRegister(userId);
-      
-      if (existingRegister) {
-        return res.status(400).json({ 
-          message: 'A register is already open for today',
-          register: existingRegister 
-        });
-      }
-
-      // Create new register session
-      const register = await storage.openCashRegister({
-        userId,
-        openingCash: parseFloat(openingCash),
-        openedAt: new Date(),
-        status: 'open'
-      });
-
-      res.status(201).json({
-        message: 'Register opened successfully',
-        register
-      });
-    } catch (error) {
-      console.error('Error opening cash register:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.get('/api/cash-register/current', isAuthenticated, async (req, res) => {
-    try {
-      const userId = (req.user as any)?.id || 1;
-      const register = await storage.getCurrentOpenRegister(userId);
-      
-      if (!register) {
-        return res.status(404).json({ message: 'No open register found' });
-      }
-
-      // Get today's sales data for this register
-      const salesData = await storage.getTodaySalesData(register.id);
-      
-      res.json({
-        register,
-        salesData
-      });
-    } catch (error) {
-      console.error('Error fetching current register:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/cash-register/close', isAuthenticated, async (req, res) => {
-    try {
-      const userId = (req.user as any)?.id || 1;
-      const { withdrawalAmount, notes } = req.body;
-
-      const register = await storage.getCurrentOpenRegister(userId);
-      if (!register) {
-        return res.status(404).json({ message: 'No open register found' });
-      }
-
-      // Close the register
-      const closedRegister = await storage.closeCashRegister(register.id, {
-        closedAt: new Date(),
-        closedBy: userId,
-        withdrawalAmount: withdrawalAmount ? parseFloat(withdrawalAmount) : 0,
-        notes: notes || ''
-      });
-
-      res.json({
-        message: 'Register closed successfully',
-        register: closedRegister
-      });
-    } catch (error) {
-      console.error('Error closing cash register:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/cash-register/transaction', isAuthenticated, async (req, res) => {
-    try {
-      const { type, amount, paymentMethod, reason, registerId } = req.body;
-      const userId = (req.user as any)?.id || 1;
-
-      if (!amount || parseFloat(amount) <= 0) {
-        return res.status(400).json({ message: 'Valid amount is required' });
-      }
-
-      const transaction = await storage.addCashTransaction({
-        registerId: registerId || null,
-        userId,
-        type,
-        amount: parseFloat(amount),
-        paymentMethod: paymentMethod || 'cash',
-        reason: reason || '',
-        createdAt: new Date()
-      });
-
-      res.status(201).json({
-        message: 'Transaction recorded successfully',
-        transaction
-      });
-    } catch (error) {
-      console.error('Error recording cash transaction:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
@@ -1359,15 +1240,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const days = parseInt(req.query.days as string) || 7;
       const limit = parseInt(req.query.limit as string) || 5;
-      
+
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-      
+
       const topProducts = await storage.getTopSellingProducts(limit, startDate);
       res.json(topProducts);
     } catch (error) {
       console.error('Error fetching top selling products:', error);
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Register Management
+  app.post('/api/register/open', async (req, res) => {
+    try {
+      const { openingCash, userId, notes } = req.body;
+      const register = await storage.openRegister(openingCash, userId || 1, notes);
+      res.json(register);
+    } catch (error) {
+      console.error('Error opening register:', error);
+      res.status(500).json({ error: 'Failed to open register' });
+    }
+  });
+
+  app.post('/api/register/close', async (req, res) => {
+    try {
+      const { registerId, closingCash, notes, withdrawal } = req.body;
+      const register = await storage.closeRegister(registerId, closingCash, notes, withdrawal);
+      res.json(register);
+    } catch (error) {
+      console.error('Error closing register:', error);
+      res.status(500).json({ error: 'Failed to close register' });
+    }
+  });
+
+  app.get('/api/register/current', async (req, res) => {
+    try {
+      const register = await storage.getCurrentRegister();
+      res.json(register);
+    } catch (error) {
+      console.error('Error fetching current register:', error);
+      res.status(500).json({ error: 'Failed to fetch current register' });
+    }
+  });
+
+  app.get('/api/register/today-sales', async (req, res) => {
+    try {
+      const registerId = req.query.registerId as string;
+      const salesData = await storage.getTodaySalesForRegister(registerId);
+      res.json(salesData);
+    } catch (error) {
+      console.error('Error fetching today sales:', error);
+      res.status(500).json({ error: 'Failed to fetch today sales' });
     }
   });
 
