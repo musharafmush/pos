@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -79,7 +78,7 @@ function POSEnhanced() {
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -140,7 +139,7 @@ function POSEnhanced() {
     }
 
     const existingItem = cart.find(item => item.id === product.id);
-    
+
     if (existingItem) {
       if (existingItem.quantity >= product.stockQuantity) {
         toast({
@@ -150,7 +149,7 @@ function POSEnhanced() {
         });
         return;
       }
-      
+
       setCart(cart.map(item =>
         item.id === product.id
           ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * parseFloat(item.price) }
@@ -163,7 +162,7 @@ function POSEnhanced() {
         total: parseFloat(product.price) 
       }]);
     }
-    
+
     toast({
       title: "Item Added",
       description: `${product.name} added to cart successfully`,
@@ -209,7 +208,7 @@ function POSEnhanced() {
 
   const clearCart = () => {
     if (cart.length === 0) return;
-    
+
     setCart([]);
     setSelectedCustomer(null);
     setDiscount(0);
@@ -239,7 +238,7 @@ function POSEnhanced() {
     }
 
     setIsCreatingCustomer(true);
-    
+
     try {
       const customerData = {
         name: newCustomerName.trim(),
@@ -254,15 +253,15 @@ function POSEnhanced() {
       });
 
       if (!response.ok) throw new Error("Failed to create customer");
-      
+
       const newCustomer = await response.json();
 
       // Refresh customers data
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      
+
       // Select the newly created customer
       setSelectedCustomer(newCustomer);
-      
+
       // Reset form and close dialog
       setNewCustomerName("");
       setNewCustomerPhone("");
@@ -273,7 +272,7 @@ function POSEnhanced() {
         title: "Customer Added",
         description: `${newCustomer.name} has been created successfully`,
       });
-      
+
     } catch (error) {
       console.error("Customer creation error:", error);
       toast({
@@ -308,7 +307,7 @@ function POSEnhanced() {
     }
 
     setIsProcessing(true);
-    
+
     try {
       const saleData = {
         customerId: selectedCustomer?.id,
@@ -345,7 +344,7 @@ function POSEnhanced() {
       setShowPaymentDialog(false);
       setBillNumber(`POS${Date.now()}`);
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      
+
     } catch (error) {
       console.error("Sale processing error:", error);
       toast({
@@ -415,7 +414,7 @@ function POSEnhanced() {
 
     window.addEventListener("keydown", handleKeyPress);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    
+
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
@@ -429,6 +428,7 @@ function POSEnhanced() {
   });
 
   return (
+    <>
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white h-screen' : ''}`}>
       {isFullscreen ? (
         // Full Screen Mode - Reference Image Layout
@@ -468,7 +468,7 @@ function POSEnhanced() {
                 >
                   Fullscreen (F11)
                 </Button>
-                
+
                 <div className="text-right">
                   <div className="text-blue-100 text-sm">Bill Number</div>
                   <div className="font-mono font-semibold">{billNumber}</div>
@@ -647,7 +647,7 @@ function POSEnhanced() {
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center space-x-3">
                             <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
                               <Button
@@ -668,13 +668,13 @@ function POSEnhanced() {
                                 <Plus className="h-4 w-4" />
                               </Button>
                             </div>
-                            
+
                             <div className="text-right min-w-20">
                               <div className="font-bold text-lg text-green-600">
                                 {formatCurrency(item.total)}
                               </div>
                             </div>
-                            
+
                             <Button
                               variant="ghost"
                               size="sm"
@@ -738,9 +738,9 @@ function POSEnhanced() {
                       <span className="text-gray-600">Gross Amount:</span>
                       <span className="font-semibold">{formatCurrency(subtotal)}</span>
                     </div>
-                    
+
                     <Separator />
-                    
+
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Discount:</span>
                       <div className="flex items-center space-x-2">
@@ -755,19 +755,19 @@ function POSEnhanced() {
                         <span className="text-sm text-gray-500">%</span>
                       </div>
                     </div>
-                    
+
                     {discount > 0 && (
                       <div className="flex justify-between text-red-600">
                         <span>Discount Amount:</span>
                         <span>-{formatCurrency(discountAmount)}</span>
                       </div>
                     )}
-                    
+
                     <div className="flex justify-between">
                       <span className="text-gray-600">Taxable Amount:</span>
                       <span>{formatCurrency(taxableAmount)}</span>
                     </div>
-                    
+
                     <div className="flex justify-between">
                       <span className="text-gray-600">GST ({taxRate}%):</span>
                       <span>{formatCurrency(taxAmount)}</span>
@@ -822,7 +822,7 @@ function POSEnhanced() {
                       <h1 className="text-2xl font-bold text-gray-900">Enhanced POS</h1>
                       <p className="text-sm text-gray-500">Professional Point of Sale System</p>
                     </div>
-                    
+
                     <div className="flex items-center space-x-3 ml-8">
                       <Badge className="bg-green-100 text-green-800 border-green-200">
                         <CheckCircle className="w-3 h-3 mr-1" />
@@ -845,7 +845,7 @@ function POSEnhanced() {
                       <Monitor className="h-4 w-4 mr-2" />
                       Fullscreen (F11)
                     </Button>
-                    
+
                     <div className="text-right">
                       <div className="text-sm text-gray-500">Bill Number</div>
                       <div className="font-mono font-semibold text-gray-900">{billNumber}</div>
@@ -873,7 +873,7 @@ function POSEnhanced() {
                     Admin User
                   </div>
                 </div>
-                
+
                 <div className="col-span-4">
                   <label className="text-sm font-medium text-gray-700 mb-1 block">Customer</label>
                   <Select 
@@ -1061,7 +1061,7 @@ function POSEnhanced() {
                                 )}
                               </div>
                             </div>
-                            
+
                             <div className="flex items-center space-x-4">
                               <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
                                 <Button
@@ -1082,7 +1082,7 @@ function POSEnhanced() {
                                   <Plus className="h-4 w-4" />
                                 </Button>
                               </div>
-                              
+
                               <div className="text-right min-w-24">
                                 <div className="font-bold text-xl text-green-600">
                                   {formatCurrency(item.total)}
@@ -1091,7 +1091,7 @@ function POSEnhanced() {
                                   Total
                                 </div>
                               </div>
-                              
+
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1129,7 +1129,7 @@ function POSEnhanced() {
                       Recall Sale
                     </Button>
                   </div>
-                  
+
                   <div className="flex items-center space-x-4 text-sm">
                     <Badge className="bg-green-100 text-green-800 border-green-200">
                       <CheckCircle className="w-3 h-3 mr-1" />
@@ -1167,9 +1167,9 @@ function POSEnhanced() {
                       <span className="text-gray-600">Gross Amount:</span>
                       <span className="font-semibold">{formatCurrency(subtotal)}</span>
                     </div>
-                    
+
                     <Separator />
-                    
+
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Discount:</span>
                       <div className="flex items-center space-x-2">
@@ -1184,19 +1184,19 @@ function POSEnhanced() {
                         <span className="text-sm text-gray-500">%</span>
                       </div>
                     </div>
-                    
+
                     {discount > 0 && (
                       <div className="flex justify-between text-red-600">
                         <span>Discount Amount:</span>
                         <span>-{formatCurrency(discountAmount)}</span>
                       </div>
                     )}
-                    
+
                     <div className="flex justify-between">
                       <span className="text-gray-600">Taxable Amount:</span>
                       <span>{formatCurrency(taxableAmount)}</span>
                     </div>
-                    
+
                     <div className="flex justify-between">
                       <span className="text-gray-600">GST ({taxRate}%):</span>
                       <span>{formatCurrency(taxAmount)}</span>
@@ -1246,9 +1246,10 @@ function POSEnhanced() {
           </div>
         </DashboardLayout>
       )}
+      </div>
 
-        {/* Product Search Results Overlay */}
-        {searchTerm && filteredProducts.length > 0 && (
+      {/* Product Search Results Overlay */}
+      {searchTerm && filteredProducts.length > 0 && (
           <div className="absolute top-48 left-6 right-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-20 max-h-80 overflow-auto">
             <div className="p-3 bg-gray-50 border-b border-gray-200 rounded-t-xl">
               <h3 className="font-semibold text-gray-900">
@@ -1294,7 +1295,7 @@ function POSEnhanced() {
                 Complete Payment
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-6">
               <div className="p-6 bg-green-50 rounded-xl text-center border border-green-200">
                 <div className="text-3xl font-bold text-green-700">
@@ -1382,7 +1383,7 @@ function POSEnhanced() {
                 Add New Customer
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name *</label>
@@ -1462,12 +1463,3 @@ function POSEnhanced() {
             </div>
           </div>
         )}
-      </div>
-      </DashboardLayout>
-    </div>
-  );
-}
-
-export default POSEnhanced;
-
-
