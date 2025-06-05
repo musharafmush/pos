@@ -163,6 +163,12 @@ export default function AddItemProfessional() {
     return `ITM${nextNumber}`;
   };
 
+  // Generate fallback item code when products aren't loaded yet
+  const generateFallbackItemCode = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    return `ITM${timestamp}`;
+  };
+
   // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/categories"],
@@ -204,7 +210,7 @@ export default function AddItemProfessional() {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
-      itemCode: generateItemCode(),
+      itemCode: allProducts ? generateItemCode() : generateFallbackItemCode(),
       itemName: "",
       manufacturerName: "",
       supplierName: "",
@@ -267,6 +273,17 @@ export default function AddItemProfessional() {
     },
   });
 
+  // Update item code when products data loads
+  useEffect(() => {
+    if (allProducts && allProducts.length > 0) {
+      const currentItemCode = form.getValues('itemCode');
+      // Only update if current code is a fallback code (contains timestamp)
+      if (currentItemCode.length === 9 && !currentItemCode.startsWith('ITM0')) {
+        form.setValue('itemCode', generateItemCode());
+      }
+    }
+  }, [allProducts, form]);
+
   // Create product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
@@ -308,7 +325,7 @@ export default function AddItemProfessional() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       form.reset({
-        itemCode: generateItemCode(),
+        itemCode: allProducts ? generateItemCode() : generateFallbackItemCode(),
         itemName: "",
         manufacturerName: "",
         supplierName: "",
@@ -531,7 +548,10 @@ export default function AddItemProfessional() {
                                     type="button" 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={() => field.onChange(generateItemCode())}
+                                    onClick={() => {
+                                      const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
+                                      field.onChange(newCode);
+                                    }}
                                     className="whitespace-nowrap"
                                   >
                                     Generate New
