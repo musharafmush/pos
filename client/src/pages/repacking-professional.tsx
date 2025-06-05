@@ -239,35 +239,31 @@ export default function RepackingProfessional() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
-        {/* Header - Desktop Style */}
-        <div className="bg-blue-600 text-white px-4 py-2">
+        {/* Header */}
+        <div className="bg-blue-600 text-white px-6 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold">Repack Entry</h1>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                <span>User: AYYAPPAN (System Admin)</span>
-                <span>Ver: 6.5.9.2 SP-65</span>
-                <span>Customer Id: 15983394</span>
-              </div>
+            <h1 className="text-xl font-semibold">Repack Entry</h1>
+            <div className="text-sm">
+              <span>User: AYYAPPAN (System Admin) | Ver: 6.5.9.2 SP-65 | Customer Id: 19983394</span>
             </div>
           </div>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="p-4">
-            {/* Top Controls - Exact Layout Match */}
-            <div className="bg-white border border-gray-300 p-3 mb-4">
-              <div className="grid grid-cols-4 gap-4 items-end">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="p-6">
+            {/* Top Controls */}
+            <div className="bg-white border border-gray-300 p-4 mb-6 rounded">
+              <div className="grid grid-cols-4 gap-4">
                 <div>
                   <FormField
                     control={form.control}
                     name="issueDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Issue Date</FormLabel>
+                        <FormLabel className="text-sm font-medium text-gray-700">Issue Date</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger className="h-8 bg-white border-gray-400">
+                            <SelectTrigger className="h-9 bg-white border-gray-300">
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>
@@ -290,9 +286,9 @@ export default function RepackingProfessional() {
                     name="issueNo"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Issue No</FormLabel>
+                        <FormLabel className="text-sm font-medium text-gray-700">Issue No</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="" className="h-8 bg-white border-gray-400" />
+                          <Input {...field} placeholder="" className="h-9 bg-white border-gray-300" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -305,9 +301,9 @@ export default function RepackingProfessional() {
                     name="repackNo"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Repack No</FormLabel>
+                        <FormLabel className="text-sm font-medium text-gray-700">Repack No</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="" className="h-8 bg-white border-gray-400" />
+                          <Input {...field} placeholder="" className="h-9 bg-white border-gray-300" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -320,11 +316,11 @@ export default function RepackingProfessional() {
                     name="bulkProductId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Select Bulk Product</FormLabel>
+                        <FormLabel className="text-sm font-medium text-gray-700">Select Bulk Product</FormLabel>
                         <Select onValueChange={(value) => field.onChange(parseInt(value))}>
                           <FormControl>
-                            <SelectTrigger className="h-8 bg-white border-gray-400">
-                              <SelectValue placeholder="Choose bulk product" />
+                            <SelectTrigger className="h-9 bg-yellow-50 border-gray-300">
+                              <SelectValue placeholder="ITTN244971391 - rice" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-h-60 overflow-y-auto">
@@ -350,250 +346,262 @@ export default function RepackingProfessional() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              {/* Left Side - Main Table (Exact Desktop Layout) */}
-              <div className="col-span-2 bg-white border border-gray-300">
-                {/* Table Header */}
-                <div className="bg-blue-500 text-white">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-blue-400 hover:bg-blue-500">
-                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400 w-16">Code</TableHead>
-                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400">Item Name</TableHead>
-                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400 w-16">Qty</TableHead>
-                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400 w-20">Cost</TableHead>
-                        <TableHead className="text-white font-semibold text-center py-2 border-r border-blue-400 w-20">Selling</TableHead>
-                        <TableHead className="text-white font-semibold text-center py-2 w-20">MRP</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                  </Table>
-                </div>
-
-                {/* Table Content */}
-                <div className="min-h-96 bg-white">
-                  {selectedProduct && (
+            <div className="grid grid-cols-4 gap-6">
+              {/* Left Side - Main Table */}
+              <div className="col-span-3">
+                <div className="bg-white border border-gray-300 rounded">
+                  {/* Table Header */}
+                  <div className="bg-blue-500 text-white rounded-t">
                     <Table>
-                      <TableBody>
-                        <TableRow className="border-b border-gray-200">
-                          <TableCell className="font-mono text-center py-3 border-r border-gray-200 text-sm">
-                            15022
-                          </TableCell>
-                          <TableCell className="text-left py-3 border-r border-gray-200 text-sm">
-                            {unitWeight}G {selectedProduct.name.replace('BULK', '').trim()} SUNBRAND
-                          </TableCell>
-                          <TableCell className="text-center py-3 border-r border-gray-200">
-                            <FormField
-                              control={form.control}
-                              name="repackQuantity"
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                                  className="w-16 h-8 text-center border-gray-400 text-sm"
-                                />
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell className="text-center py-3 border-r border-gray-200">
-                            <FormField
-                              control={form.control}
-                              name="costPrice"
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                  className="w-20 h-8 text-center border-gray-400 text-sm"
-                                />
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell className="text-center py-3 border-r border-gray-200">
-                            <FormField
-                              control={form.control}
-                              name="sellingPrice"
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                  className="w-20 h-8 text-center border-gray-400 text-sm"
-                                />
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell className="text-center py-3">
-                            <FormField
-                              control={form.control}
-                              name="mrp"
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                  className="w-20 h-8 text-center border-gray-400 text-sm"
-                                />
-                              )}
-                            />
-                          </TableCell>
+                      <TableHeader>
+                        <TableRow className="border-blue-400 hover:bg-blue-500">
+                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400 w-20">Code</TableHead>
+                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400">Item Name</TableHead>
+                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400 w-20">Qty</TableHead>
+                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400 w-24">Cost</TableHead>
+                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400 w-24">Selling</TableHead>
+                          <TableHead className="text-white font-semibold text-center py-3 w-24">MRP</TableHead>
                         </TableRow>
-                      </TableBody>
+                      </TableHeader>
                     </Table>
+                  </div>
+
+                  {/* Table Content */}
+                  <div className="min-h-96 bg-white">
+                    {selectedProduct && (
+                      <Table>
+                        <TableBody>
+                          <TableRow className="border-b border-gray-200">
+                            <TableCell className="font-mono text-center py-4 border-r border-gray-200 text-sm bg-gray-50">
+                              15022
+                            </TableCell>
+                            <TableCell className="text-left py-4 border-r border-gray-200 text-sm">
+                              {unitWeight}G {selectedProduct.name.replace('BULK', '').trim()} SUNBRAND
+                            </TableCell>
+                            <TableCell className="text-center py-4 border-r border-gray-200">
+                              <FormField
+                                control={form.control}
+                                name="repackQuantity"
+                                render={({ field }) => (
+                                  <Input
+                                    type="number"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                    className="w-16 h-8 text-center border-gray-300 text-sm"
+                                  />
+                                )}
+                              />
+                            </TableCell>
+                            <TableCell className="text-center py-4 border-r border-gray-200">
+                              <FormField
+                                control={form.control}
+                                name="costPrice"
+                                render={({ field }) => (
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    className="w-20 h-8 text-center border-gray-300 text-sm"
+                                  />
+                                )}
+                              />
+                            </TableCell>
+                            <TableCell className="text-center py-4 border-r border-gray-200">
+                              <FormField
+                                control={form.control}
+                                name="sellingPrice"
+                                render={({ field }) => (
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    className="w-20 h-8 text-center border-gray-300 text-sm"
+                                  />
+                                )}
+                              />
+                            </TableCell>
+                            <TableCell className="text-center py-4">
+                              <FormField
+                                control={form.control}
+                                name="mrp"
+                                render={({ field }) => (
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    className="w-20 h-8 text-center border-gray-300 text-sm"
+                                  />
+                                )}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Side - Bulk Item Details */}
+              <div className="col-span-1">
+                <div className="bg-white border border-gray-300 rounded">
+                  <div className="bg-blue-500 text-white text-center py-3 font-semibold text-sm rounded-t">
+                    Bulk Item Details
+                  </div>
+
+                  {selectedProduct && (
+                    <div className="p-4 space-y-4 text-sm">
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-gray-600 text-xs">Bulk Code</span>
+                          <div className="bg-gray-100 px-3 py-2 rounded text-center font-mono text-sm mt-1">
+                            13254
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-gray-600 text-xs">Bulk Item</span>
+                          <div className="bg-gray-100 px-3 py-2 rounded text-center text-sm mt-1">
+                            {selectedProduct.name.toUpperCase()}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-gray-600 text-xs">Weight</span>
+                          <div className="bg-gray-100 px-3 py-2 rounded text-center mt-1">
+                            <FormField
+                              control={form.control}
+                              name="unitWeight"
+                              render={({ field }) => (
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                  className="w-16 h-6 text-center border-none bg-transparent text-sm p-0"
+                                />
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-gray-600 text-xs">Cost</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="bg-gray-100 px-2 py-1 rounded text-xs">
+                              {formatCurrency(parseFloat(selectedProduct.cost))}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                              onClick={() => setUseLatestSell(!useLatestSell)}
+                            >
+                              Latest sel
+                            </Button>
+                            <span className="bg-yellow-200 px-2 py-1 rounded text-xs">
+                              110.00
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Stock Information */}
+                        <div className="grid grid-cols-3 gap-1 pt-3 border-t">
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600 mb-1">Current Stock</div>
+                            <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
+                              {currentStock.toFixed(2)}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600 mb-1">Packed</div>
+                            <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
+                              {packedQuantity.toFixed(2)}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600 mb-1">Avail for pack</div>
+                            <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
+                              {availableForPack.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Additional Table */}
+                        <div className="pt-3 border-t">
+                          <div className="bg-blue-500 text-white rounded-t">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-white font-semibold text-xs text-center py-2 h-8">Name</TableHead>
+                                  <TableHead className="text-white font-semibold text-xs text-center py-2 h-8">Perc %</TableHead>
+                                  <TableHead className="text-white font-semibold text-xs text-center py-2 h-8">Amount</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                            </Table>
+                          </div>
+                          <div className="bg-white border border-t-0 rounded-b min-h-20">
+                            <Table>
+                              <TableBody>
+                                {repackEntries.length === 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan={3} className="text-center text-gray-400 py-6 text-xs">
+                                      No additional entries
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
-
-              {/* Right Side - Bulk Item Details (Exact Desktop Layout) */}
-              <div className="bg-white border border-gray-300">
-                <div className="bg-blue-500 text-white text-center py-2 font-semibold text-sm">
-                  Bulk Item Details
-                </div>
-
-                {selectedProduct && (
-                  <div className="p-3 space-y-3 text-sm">
-                    <div className="grid grid-cols-2 gap-2">
-                      <span className="font-medium">Bulk Code</span>
-                      <span className="bg-gray-100 px-2 py-1 rounded text-center font-mono">
-                        13254
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <span className="font-medium">Bulk Item</span>
-                      <span className="bg-gray-100 px-2 py-1 rounded text-center">
-                        {selectedProduct.name.toUpperCase()}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <span className="font-medium">Weight</span>
-                      <div className="bg-gray-100 px-2 py-1 rounded text-center">
-                        <FormField
-                          control={form.control}
-                          name="unitWeight"
-                          render={({ field }) => (
-                            <Input
-                              type="number"
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                              className="w-16 h-6 text-center border-none bg-transparent text-sm"
-                            />
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <span className="font-medium">Cost</span>
-                      <div className="flex items-center gap-1">
-                        <span className="bg-gray-100 px-2 py-1 rounded text-xs">
-                          {formatCurrency(parseFloat(selectedProduct.cost))}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-6 px-2 text-xs"
-                          onClick={() => setUseLatestSell(!useLatestSell)}
-                        >
-                          Latest sel
-                        </Button>
-                        <span className="bg-yellow-200 px-2 py-1 rounded text-xs">
-                          110.00
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Stock Information - Exact Layout Match */}
-                    <div className="grid grid-cols-3 gap-1 pt-2 border-t">
-                      <div className="text-center">
-                        <div className="text-xs font-medium mb-1">Current Stock</div>
-                        <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
-                          {currentStock.toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-medium mb-1">Packed</div>
-                        <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
-                          {packedQuantity.toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-medium mb-1">Avail for pack</div>
-                        <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
-                          {availableForPack.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Additional Table - Exact Desktop Layout */}
-                    <div className="pt-2 border-t">
-                      <Table>
-                        <TableHeader className="bg-blue-500">
-                          <TableRow>
-                            <TableHead className="text-white font-semibold text-xs text-center py-1 h-6">Name</TableHead>
-                            <TableHead className="text-white font-semibold text-xs text-center py-1 h-6">Perc %</TableHead>
-                            <TableHead className="text-white font-semibold text-xs text-center py-1 h-6">Amount</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {repackEntries.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={3} className="text-center text-gray-400 py-4 text-xs">
-                                No additional entries
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Function Keys Bar - Exact Desktop Layout */}
-            <div className="fixed bottom-0 left-0 right-0 bg-gray-200 border-t border-gray-400 px-4 py-2">
+            {/* Function Keys Bar */}
+            <div className="fixed bottom-0 left-0 right-0 bg-gray-200 border-t border-gray-400 px-6 py-3 z-50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     <HelpCircleIcon className="w-3 h-3 mr-1" />
                     F1 Help
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     F2 ItemCode
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     F3 ItemName
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     F4 AliasName
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     F5 Pur.Prc
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     <SaveIcon className="w-3 h-3 mr-1" />
                     F6 Save
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     F7 Clear
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     F8 Key Settings
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     F9 Edit
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     <PrinterIcon className="w-3 h-3 mr-1" />
                     F10 Print
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100">
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs bg-gray-100 hover:bg-gray-200">
                     <X className="w-3 h-3 mr-1" />
                     F12 Close
                   </Button>
@@ -606,10 +614,10 @@ export default function RepackingProfessional() {
                   <Button 
                     type="submit" 
                     disabled={repackingMutation.isPending || !selectedProduct}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     <SaveIcon className="w-4 h-4 mr-2" />
-                    {repackingMutation.isPending ? "Repacking..." : "Save Repack"}
+                    Save Repack
                   </Button>
                 </div>
               </div>
