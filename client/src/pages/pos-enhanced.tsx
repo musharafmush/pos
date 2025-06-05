@@ -863,7 +863,7 @@ function POSEnhanced() {
               </div>
             </div>
 
-        {/* Customer Selection Bar */}
+            {/* Customer Selection Bar */}
             <div className="bg-white border-b border-gray-200 px-6 py-4">
               <div className="grid grid-cols-12 gap-4 items-center">
                 <div className="col-span-2">
@@ -998,7 +998,7 @@ function POSEnhanced() {
             </div>
 
             <div className="flex-1 flex min-h-0">
-          {/* Main Cart Section */}
+              {/* Main Cart Section */}
               <div className="flex-1 bg-white p-6">
                 <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-xl mb-6 shadow-lg">
                   <div className="flex items-center justify-between">
