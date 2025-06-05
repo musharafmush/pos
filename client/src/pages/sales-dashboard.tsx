@@ -941,72 +941,73 @@ export default function SalesDashboard() {
             </CardContent>
           </Card>
         )}
+        </div>
+
+        {/* Close Register Dialog */}
+        <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Minus className="h-5 w-5 text-red-600" />
+                Close Cash Register
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <p className="text-yellow-800 text-sm">
+                  Closing the register will end the current session. Count the cash in the drawer.
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="closingAmount">Actual Cash Count (₹)</Label>
+                <Input
+                  id="closingAmount"
+                  type="number"
+                  value={closingAmount}
+                  onChange={(e) => setClosingAmount(e.target.value)}
+                  placeholder="Enter actual cash count"
+                  className="mt-1"
+                  step="0.01"
+                  min="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Expected: {formatCurrency(calculateCashInDrawer())}
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Input
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Any notes about the closing"
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCloseDialog(false)}
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCloseRegister}
+                  disabled={isProcessing}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isProcessing ? "Closing..." : "Close Register"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Close Register Dialog */}
-      <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Minus className="h-5 w-5 text-red-600" />
-              Close Cash Register
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <p className="text-yellow-800 text-sm">
-                Closing the register will end the current session. Count the cash in the drawer.
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="closingAmount">Actual Cash Count (₹)</Label>
-              <Input
-                id="closingAmount"
-                type="number"
-                value={closingAmount}
-                onChange={(e) => setClosingAmount(e.target.value)}
-                placeholder="Enter actual cash count"
-                className="mt-1"
-                step="0.01"
-                min="0"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Expected: {formatCurrency(calculateCashInDrawer())}
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Input
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any notes about the closing"
-                className="mt-1"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowCloseDialog(false)}
-                disabled={isProcessing}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCloseRegister}
-                disabled={isProcessing}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                {isProcessing ? "Closing..." : "Close Register"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   );
 }
