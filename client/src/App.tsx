@@ -20,7 +20,6 @@ import AddProduct from "./pages/add-product";
 import { useAuth } from "./hooks/use-auth";
 import SalesDashboard from "./pages/sales-dashboard";
 import CustomerBillingDetails from "./pages/customer-billing-details";
-import POS from "@/pages/pos";
 import POSGofrugal from "@/pages/pos-gofrugal";
 import POSEnhanced from "@/pages/pos-enhanced";
 import Products from "@/pages/products";
