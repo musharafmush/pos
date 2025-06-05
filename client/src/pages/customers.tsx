@@ -238,6 +238,7 @@ export default function Customers() {
 
   // Handle adding a new customer
   const onSubmit = (data: CustomerFormValues) => {
+    console.log('Form data being submitted:', data);
     createCustomerMutation.mutate(data);
   };
 

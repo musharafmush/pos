@@ -381,22 +381,36 @@ export const storage = {
     email?: string;
     phone?: string;
     address?: string;
+    taxId?: string;
+    creditLimit?: string;
+    businessName?: string;
     loyaltyPoints?: number;
     totalSpent?: string;
     pointsEarned?: number;
     pointsRedeemed?: number;
   }): Promise<Customer> {
     try {
-      const [newCustomer] = await db.insert(customers).values({
-        ...customer,
+      console.log('Creating customer with data:', customer);
+      
+      const customerData = {
+        name: customer.name,
+        email: customer.email || null,
+        phone: customer.phone || null,
+        address: customer.address || null,
+        taxId: customer.taxId || null,
+        creditLimit: customer.creditLimit || '0',
+        businessName: customer.businessName || null,
         loyaltyPoints: customer.loyaltyPoints || 0,
         totalSpent: customer.totalSpent || '0',
         pointsEarned: customer.pointsEarned || 0,
         pointsRedeemed: customer.pointsRedeemed || 0
-      }).returning();
+      };
+
+      const [newCustomer] = await db.insert(customers).values(customerData).returning();
+      console.log('Customer created in database:', newCustomer);
       return newCustomer;
     } catch (error) {
-      console.error('Error creating customer:', error);
+      console.error('Database error creating customer:', error);
       throw error;
     }
   },

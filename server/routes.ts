@@ -1216,15 +1216,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/customers', isAuthenticated, async (req, res) => {
     try {
-      const customerData = schema.customerInsertSchema.parse(req.body);
+      console.log('Customer creation request:', req.body);
+      
+      // Map form fields to database fields
+      const mappedData = {
+        name: req.body.name,
+        email: req.body.email || null,
+        phone: req.body.phone || null,
+        address: req.body.address || null,
+        taxId: req.body.taxNumber || null,
+        creditLimit: req.body.creditLimit || '0',
+        businessName: req.body.businessName || null,
+        loyaltyPoints: 0,
+        totalSpent: '0',
+        pointsEarned: 0,
+        pointsRedeemed: 0
+      };
+
+      console.log('Mapped customer data:', mappedData);
+      
+      const customerData = schema.customerInsertSchema.parse(mappedData);
       const customer = await storage.createCustomer(customerData);
+      
+      console.log('Customer created successfully:', customer);
       res.status(201).json(customer);
     } catch (error) {
+      console.error('Detailed error creating customer:', error);
+      
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ errors: error.errors });
+        console.error('Validation errors:', error.errors);
+        return res.status(400).json({ 
+          message: 'Validation failed',
+          errors: error.errors 
+        });
       }
-      console.error('Error creating customer:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      
+      res.status(500).json({ 
+        message: 'Internal server error',
+        error: error.message 
+      });
     }
   });
 
