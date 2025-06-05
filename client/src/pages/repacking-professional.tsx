@@ -371,14 +371,14 @@ export default function RepackingProfessional() {
                     {selectedProduct && (
                       <Table>
                         <TableBody>
-                          <TableRow className="border-b border-gray-200">
-                            <TableCell className="font-mono text-center py-4 border-r border-gray-200 text-sm bg-gray-50">
+                          <TableRow className="border-b border-gray-200 hover:bg-gray-50">
+                            <TableCell className="font-mono text-center py-3 border-r border-gray-200 text-sm bg-gray-50 w-20">
                               15022
                             </TableCell>
-                            <TableCell className="text-left py-4 border-r border-gray-200 text-sm">
+                            <TableCell className="text-left py-3 border-r border-gray-200 text-sm px-3">
                               {unitWeight}G {selectedProduct.name.replace('BULK', '').trim()} SUNBRAND
                             </TableCell>
-                            <TableCell className="text-center py-4 border-r border-gray-200">
+                            <TableCell className="text-center py-3 border-r border-gray-200 w-20">
                               <FormField
                                 control={form.control}
                                 name="repackQuantity"
@@ -387,12 +387,12 @@ export default function RepackingProfessional() {
                                     type="number"
                                     {...field}
                                     onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                                    className="w-16 h-8 text-center border-gray-300 text-sm"
+                                    className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                   />
                                 )}
                               />
                             </TableCell>
-                            <TableCell className="text-center py-4 border-r border-gray-200">
+                            <TableCell className="text-center py-3 border-r border-gray-200 w-24">
                               <FormField
                                 control={form.control}
                                 name="costPrice"
@@ -402,12 +402,12 @@ export default function RepackingProfessional() {
                                     step="0.01"
                                     {...field}
                                     onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                    className="w-20 h-8 text-center border-gray-300 text-sm"
+                                    className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                   />
                                 )}
                               />
                             </TableCell>
-                            <TableCell className="text-center py-4 border-r border-gray-200">
+                            <TableCell className="text-center py-3 border-r border-gray-200 w-24">
                               <FormField
                                 control={form.control}
                                 name="sellingPrice"
@@ -417,12 +417,12 @@ export default function RepackingProfessional() {
                                     step="0.01"
                                     {...field}
                                     onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                    className="w-20 h-8 text-center border-gray-300 text-sm"
+                                    className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                   />
                                 )}
                               />
                             </TableCell>
-                            <TableCell className="text-center py-4">
+                            <TableCell className="text-center py-3 w-24">
                               <FormField
                                 control={form.control}
                                 name="mrp"
@@ -432,7 +432,7 @@ export default function RepackingProfessional() {
                                     step="0.01"
                                     {...field}
                                     onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                    className="w-20 h-8 text-center border-gray-300 text-sm"
+                                    className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                   />
                                 )}
                               />
