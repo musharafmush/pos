@@ -1,623 +1,1088 @@
+
 import React, { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  CashIcon, 
-  CalendarIcon, 
-  UserIcon, 
-  DollarSignIcon,
-  PlusIcon,
-  MinusIcon,
-  ClockIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
-  AlertCircleIcon,
-  CheckCircleIcon,
-  ShoppingCartIcon,
-  CreditCardIcon,
-  SmartphoneIcon,
-  BanknoteIcon
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  DollarSign,
+  Banknote,
+  TrendingUp,
+  TrendingDown,
+  Calculator,
+  Archive,
+  Plus,
+  Minus,
+  Edit,
+  Trash2,
+  Eye,
+  Clock,
+  User,
+  CreditCard,
+  Building,
+  Wallet,
+  Activity,
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  Search,
+  Filter,
+  Download,
+  Calendar,
+  Settings,
 } from "lucide-react";
-import { useFormatCurrency } from "@/lib/currency";
-import { format } from "date-fns";
 
-interface RegisterStatus {
-  id: number;
-  opening_cash: number;
-  current_cash: number;
-  closing_cash?: number;
-  withdrawal?: number;
+interface CashRegister {
+  id: string;
   status: 'open' | 'closed';
-  opened_by: number;
-  opened_by_name?: string;
-  opened_at: string;
-  closed_at?: string;
-  notes?: string;
+  openingCash: number;
+  currentCash: number;
+  cashReceived: number;
+  upiReceived: number;
+  cardReceived: number;
+  bankReceived: number;
+  chequeReceived: number;
+  otherReceived: number;
+  totalWithdrawals: number;
+  totalRefunds: number;
+  totalSales: number;
+  openedAt: string;
+  closedAt?: string;
+  openedBy: string;
+  closedBy?: string;
 }
 
-interface SalesData {
-  totalSales: number;
-  cashSales: number;
-  upiSales: number;
-  cardSales: number;
-  bankSales: number;
-  chequeSales: number;
-  otherSales: number;
-  totalRefunds: number;
-  transactionCount: number;
-  cashInDrawer: number;
-  withdrawal: number;
-  openingCash: number;
-  sales: any[];
+interface CashTransaction {
+  id: string;
+  registerId: string;
+  type: 'add' | 'remove' | 'sale' | 'refund' | 'withdrawal';
+  paymentMethod: 'cash' | 'upi' | 'card' | 'bank' | 'cheque' | 'other';
+  amount: number;
+  reason: string;
+  reference?: string;
+  createdAt: string;
+  createdBy: string;
 }
 
 export default function CashRegisterDashboard() {
+  const [selectedRegister, setSelectedRegister] = useState<CashRegister | null>(null);
   const [showOpenDialog, setShowOpenDialog] = useState(false);
+  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
+  const [showWithdrawalDialog, setShowWithdrawalDialog] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  
+  // Form states
   const [openingAmount, setOpeningAmount] = useState("");
-  const [closingAmount, setClosingAmount] = useState("");
+  const [transactionType, setTransactionType] = useState<'add' | 'remove'>('add');
+  const [transactionAmount, setTransactionAmount] = useState("");
+  const [transactionReason, setTransactionReason] = useState("");
+  const [transactionMethod, setTransactionMethod] = useState("cash");
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
-  const [notes, setNotes] = useState("");
+  const [withdrawalNote, setWithdrawalNote] = useState("");
+  
+  // Filter states
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  
   const [isProcessing, setIsProcessing] = useState(false);
-  const formatCurrency = useFormatCurrency();
+
+  const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch current register status
-  const { data: registerStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
-    queryKey: ['/api/register/current'],
-    queryFn: async (): Promise<RegisterStatus | null> => {
-      try {
-        const response = await fetch('/api/register/current');
-        if (!response.ok) return null;
-        return response.json();
-      } catch (error) {
-        console.error('Error fetching register status:', error);
-        return null;
-      }
+  // Mock data - In real app, this would come from API
+  const [registers, setRegisters] = useState<CashRegister[]>([
+    {
+      id: "REG001",
+      status: "open",
+      openingCash: 5000,
+      currentCash: 8500,
+      cashReceived: 3000,
+      upiReceived: 2500,
+      cardReceived: 1500,
+      bankReceived: 500,
+      chequeReceived: 0,
+      otherReceived: 200,
+      totalWithdrawals: 1000,
+      totalRefunds: 200,
+      totalSales: 7500,
+      openedAt: new Date().toISOString(),
+      openedBy: "Admin User",
     },
-    refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+    {
+      id: "REG002",
+      status: "closed",
+      openingCash: 3000,
+      currentCash: 4800,
+      cashReceived: 2500,
+      upiReceived: 1800,
+      cardReceived: 800,
+      bankReceived: 200,
+      chequeReceived: 100,
+      otherReceived: 0,
+      totalWithdrawals: 500,
+      totalRefunds: 100,
+      totalSales: 5400,
+      openedAt: new Date(Date.now() - 86400000).toISOString(),
+      closedAt: new Date(Date.now() - 43200000).toISOString(),
+      openedBy: "Admin User",
+      closedBy: "Admin User",
+    },
+  ]);
+
+  const [transactions, setTransactions] = useState<CashTransaction[]>([
+    {
+      id: "TXN001",
+      registerId: "REG001",
+      type: "sale",
+      paymentMethod: "cash",
+      amount: 1500,
+      reason: "Product sale",
+      reference: "INV001",
+      createdAt: new Date().toISOString(),
+      createdBy: "Admin User",
+    },
+    {
+      id: "TXN002",
+      registerId: "REG001",
+      type: "add",
+      paymentMethod: "upi",
+      amount: 1000,
+      reason: "UPI payment received",
+      reference: "UPI123",
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
+      createdBy: "Admin User",
+    },
+  ]);
+
+  // Get current open register
+  const currentRegister = registers.find(r => r.status === 'open');
+
+  // Filter registers
+  const filteredRegisters = registers.filter(register => {
+    if (filterStatus !== "all" && register.status !== filterStatus) return false;
+    if (searchTerm && !register.id.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (dateFilter && !register.openedAt.startsWith(dateFilter)) return false;
+    return true;
   });
 
-  // Fetch today's sales data if register is open
-  const { data: salesData, isLoading: salesLoading } = useQuery({
-    queryKey: ['/api/register/today-sales', registerStatus?.id],
-    queryFn: async (): Promise<SalesData | null> => {
-      if (!registerStatus?.id) return null;
-      try {
-        const response = await fetch(`/api/register/today-sales?registerId=${registerStatus.id}`);
-        if (!response.ok) return null;
-        return response.json();
-      } catch (error) {
-        console.error('Error fetching sales data:', error);
-        return null;
-      }
-    },
-    enabled: !!registerStatus?.id && registerStatus.status === 'open',
-    refetchInterval: 10000, // Refetch every 10 seconds for live updates
-  });
+  // Get transactions for selected register
+  const registerTransactions = selectedRegister 
+    ? transactions.filter(t => t.registerId === selectedRegister.id)
+    : [];
 
-  // Open register mutation
-  const openRegisterMutation = useMutation({
-    mutationFn: async (data: { openingCash: number; notes: string }) => {
-      const response = await fetch('/api/register/open', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          openingCash: data.openingCash, 
-          userId: 1, // Default user ID
-          notes: data.notes 
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to open register');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/register/current'] });
-      setShowOpenDialog(false);
-      setOpeningAmount("");
-      setNotes("");
-      setIsProcessing(false);
-    },
-    onError: (error) => {
-      console.error('Error opening register:', error);
-      setIsProcessing(false);
-    },
-  });
-
-  // Close register mutation
-  const closeRegisterMutation = useMutation({
-    mutationFn: async (data: { registerId: number; closingCash: number; notes: string; withdrawal: number }) => {
-      const response = await fetch('/api/register/close', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to close register');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/register/current'] });
-      setShowCloseDialog(false);
-      setClosingAmount("");
-      setWithdrawalAmount("");
-      setNotes("");
-      setIsProcessing(false);
-    },
-    onError: (error) => {
-      console.error('Error closing register:', error);
-      setIsProcessing(false);
-    },
-  });
-
-const handleOpenRegister = () => {
+  // Open new register
+  const handleOpenRegister = () => {
     if (!openingAmount || parseFloat(openingAmount) < 0) {
-      alert('Please enter a valid opening amount');
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid opening amount",
+        variant: "destructive",
+      });
       return;
     }
+
     setIsProcessing(true);
-    openRegisterMutation.mutate({
+
+    const newRegister: CashRegister = {
+      id: `REG${String(registers.length + 1).padStart(3, '0')}`,
+      status: 'open',
       openingCash: parseFloat(openingAmount),
-      notes: notes,
+      currentCash: parseFloat(openingAmount),
+      cashReceived: 0,
+      upiReceived: 0,
+      cardReceived: 0,
+      bankReceived: 0,
+      chequeReceived: 0,
+      otherReceived: 0,
+      totalWithdrawals: 0,
+      totalRefunds: 0,
+      totalSales: 0,
+      openedAt: new Date().toISOString(),
+      openedBy: "Admin User",
+    };
+
+    setRegisters(prev => [newRegister, ...prev]);
+    setOpeningAmount("");
+    setShowOpenDialog(false);
+    setIsProcessing(false);
+
+    toast({
+      title: "Register Opened",
+      description: `Register ${newRegister.id} opened with ${formatCurrency(parseFloat(openingAmount))}`,
     });
   };
 
-  const handleCloseRegister = () => {
-    if (!registerStatus || !closingAmount || parseFloat(closingAmount) < 0) {
-      alert('Please enter a valid closing amount');
+  // Add cash transaction
+  const handleCashTransaction = () => {
+    if (!selectedRegister || selectedRegister.status !== 'open') return;
+    
+    const amount = parseFloat(transactionAmount);
+    if (!amount || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount",
+        variant: "destructive",
+      });
       return;
     }
+
+    if (!transactionReason.trim()) {
+      toast({
+        title: "Reason Required",
+        description: "Please provide a reason for this transaction",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
-    closeRegisterMutation.mutate({
-      registerId: registerStatus.id,
-      closingCash: parseFloat(closingAmount),
-      withdrawal: parseFloat(withdrawalAmount || '0'),
-      notes: notes,
+
+    // Create transaction
+    const newTransaction: CashTransaction = {
+      id: `TXN${String(transactions.length + 1).padStart(3, '0')}`,
+      registerId: selectedRegister.id,
+      type: transactionType,
+      paymentMethod: transactionMethod as any,
+      amount,
+      reason: transactionReason.trim(),
+      createdAt: new Date().toISOString(),
+      createdBy: "Admin User",
+    };
+
+    setTransactions(prev => [newTransaction, ...prev]);
+
+    // Update register
+    setRegisters(prev => prev.map(register => {
+      if (register.id === selectedRegister.id) {
+        const newCash = transactionType === 'add' 
+          ? register.currentCash + amount 
+          : Math.max(0, register.currentCash - amount);
+
+        const updatedRegister = {
+          ...register,
+          currentCash: newCash,
+        };
+
+        // Update payment method totals
+        if (transactionType === 'add') {
+          switch (transactionMethod) {
+            case 'cash':
+              updatedRegister.cashReceived += amount;
+              break;
+            case 'upi':
+              updatedRegister.upiReceived += amount;
+              break;
+            case 'card':
+              updatedRegister.cardReceived += amount;
+              break;
+            case 'bank':
+              updatedRegister.bankReceived += amount;
+              break;
+            case 'cheque':
+              updatedRegister.chequeReceived += amount;
+              break;
+            case 'other':
+              updatedRegister.otherReceived += amount;
+              break;
+          }
+        }
+
+        return updatedRegister;
+      }
+      return register;
+    }));
+
+    // Update selected register
+    setSelectedRegister(prev => {
+      if (!prev) return null;
+      const updated = registers.find(r => r.id === prev.id);
+      return updated || prev;
+    });
+
+    setTransactionAmount("");
+    setTransactionReason("");
+    setShowTransactionDialog(false);
+    setIsProcessing(false);
+
+    toast({
+      title: "Transaction Processed",
+      description: `${transactionType === 'add' ? 'Added' : 'Removed'} ${formatCurrency(amount)}`,
     });
   };
 
-  const calculateCashInDrawer = () => {
-    if (!salesData) return 0;
-    return salesData.openingCash + salesData.cashSales - salesData.withdrawal;
+  // Process withdrawal
+  const handleWithdrawal = () => {
+    if (!selectedRegister || selectedRegister.status !== 'open') return;
+    
+    const amount = parseFloat(withdrawalAmount);
+    if (!amount || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid withdrawal amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (amount > selectedRegister.currentCash) {
+      toast({
+        title: "Insufficient Cash",
+        description: "Cannot withdraw more than available cash",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+
+    // Create withdrawal transaction
+    const newTransaction: CashTransaction = {
+      id: `TXN${String(transactions.length + 1).padStart(3, '0')}`,
+      registerId: selectedRegister.id,
+      type: 'withdrawal',
+      paymentMethod: 'cash',
+      amount,
+      reason: withdrawalNote || 'Cash withdrawal',
+      createdAt: new Date().toISOString(),
+      createdBy: "Admin User",
+    };
+
+    setTransactions(prev => [newTransaction, ...prev]);
+
+    // Update register
+    setRegisters(prev => prev.map(register => {
+      if (register.id === selectedRegister.id) {
+        return {
+          ...register,
+          currentCash: register.currentCash - amount,
+          totalWithdrawals: register.totalWithdrawals + amount,
+        };
+      }
+      return register;
+    }));
+
+    setWithdrawalAmount("");
+    setWithdrawalNote("");
+    setShowWithdrawalDialog(false);
+    setIsProcessing(false);
+
+    toast({
+      title: "Withdrawal Processed",
+      description: `Withdrew ${formatCurrency(amount)}`,
+    });
   };
 
-return (
-    <DashboardLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Cash Register Dashboard</h1>
-            <p className="text-muted-foreground">
-              Manage your cash register and track real-time sales data
-            </p>
-          </div>
+  // Close register
+  const handleCloseRegister = () => {
+    if (!selectedRegister || selectedRegister.status !== 'open') return;
 
-          <div className="flex items-center space-x-3">
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-              Live Data
-            </Badge>
-            {registerStatus?.status === 'open' ? (
-              <Button
-                onClick={() => setShowCloseDialog(true)}
-                variant="destructive"
-                className="flex items-center space-x-2"
-              >
-                <MinusIcon className="h-4 w-4" />
-                <span>Close Register</span>
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setShowOpenDialog(true)}
-                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
-              >
-                <PlusIcon className="h-4 w-4" />
-                <span>Open Register</span>
-              </Button>
-            )}
+    setIsProcessing(true);
+
+    setRegisters(prev => prev.map(register => {
+      if (register.id === selectedRegister.id) {
+        return {
+          ...register,
+          status: 'closed' as const,
+          closedAt: new Date().toISOString(),
+          closedBy: "Admin User",
+        };
+      }
+      return register;
+    }));
+
+    setSelectedRegister(null);
+    setShowCloseDialog(false);
+    setIsProcessing(false);
+
+    toast({
+      title: "Register Closed",
+      description: `Register ${selectedRegister.id} closed successfully`,
+    });
+  };
+
+  const currentDate = new Date().toLocaleDateString('en-IN');
+  const currentTime = new Date().toLocaleTimeString('en-IN', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-green-600 text-white p-3 rounded-xl shadow-lg">
+                <DollarSign className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Cash Register Dashboard</h1>
+                <p className="text-sm text-gray-500">Manage cash registers and transactions</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-6">
+              <div className="text-right">
+                <div className="text-sm text-gray-500">Current Date & Time</div>
+                <div className="font-mono text-sm text-gray-700">{currentDate} • {currentTime}</div>
+              </div>
+              
+              {!currentRegister ? (
+                <Button
+                  onClick={() => setShowOpenDialog(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Open New Register
+                </Button>
+              ) : (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="text-sm text-green-600 font-medium">Current Register</div>
+                  <div className="text-lg font-bold text-green-700">{currentRegister.id}</div>
+                  <div className="text-sm text-green-600">{formatCurrency(currentRegister.currentCash)}</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Register Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CashIcon className="h-5 w-5" />
-              <span>Register Summary</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statusLoading ? (
-              <div className="text-center py-8">Loading register status...</div>
-            ) : registerStatus ? (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <Badge 
-                    variant={registerStatus.status === 'open' ? 'default' : 'secondary'}
-                    className={`text-sm px-3 py-1 ${
-                      registerStatus.status === 'open' 
-                        ? 'bg-green-500 hover:bg-green-600' 
-                        : 'bg-gray-500 hover:bg-gray-600'
-                    }`}
-                  >
-                    <CheckCircleIcon className="h-3 w-3 mr-1" />
-                    {registerStatus.status === 'open' ? 'Register Open' : 'Register Closed'}
-                  </Badge>
-                  <p className="text-sm text-muted-foreground mt-1">Current Status</p>
+      {/* Statistics Cards */}
+      <div className="px-6 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Registers</p>
+                  <div className="text-2xl font-bold">{registers.length}</div>
                 </div>
-
-                <div className="text-center">
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(registerStatus.opening_cash)}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Cash In Hand</p>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-2xl font-bold">
-                    {registerStatus.opened_at ? format(new Date(registerStatus.opened_at), 'HH:mm') : '--:--'}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Opened At</p>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-lg font-semibold">
-                    {registerStatus.opened_by_name || 'Cashier 1'}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Opened By</p>
+                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Archive className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <AlertCircleIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No register session found</p>
-                <p className="text-sm text-muted-foreground">Open a register to start tracking sales</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Active Registers</p>
+                  <div className="text-2xl font-bold">{registers.filter(r => r.status === 'open').length}</div>
+                </div>
+                <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
               </div>
-            )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Today's Sales</p>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(registers.reduce((sum, r) => sum + r.totalSales, 0))}
+                  </div>
+                </div>
+                <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Cash</p>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(registers.reduce((sum, r) => sum + r.currentCash, 0))}
+                  </div>
+                </div>
+                <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Banknote className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Register Management</h3>
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+                <Button variant="outline" size="sm">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label className="text-sm font-medium">Search Register</Label>
+                <div className="relative">
+                  <Input
+                    placeholder="Search by ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                  <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">Status Filter</Label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">Date Filter</Label>
+                <Input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-end">
+                <Button variant="outline" className="w-full">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Reset Filters
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Sales Dashboard - Only show when register is open */}
-        {registerStatus?.status === 'open' && salesData && (
-          <>
-            {/* Real-Time Sales Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-                  <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(salesData.totalSales)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {salesData.transactionCount} transactions today
-                  </p>
-                </CardContent>
-              </Card>
+        {/* Registers Table */}
+        <Card>
+          <CardContent className="p-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Register ID</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Opening Cash</TableHead>
+                  <TableHead>Current Cash</TableHead>
+                  <TableHead>Total Sales</TableHead>
+                  <TableHead>Opened At</TableHead>
+                  <TableHead>Opened By</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRegisters.map((register) => (
+                  <TableRow key={register.id}>
+                    <TableCell className="font-mono font-medium">{register.id}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={register.status === 'open' ? 'default' : 'secondary'}
+                        className={register.status === 'open' ? 'bg-green-100 text-green-800' : ''}
+                      >
+                        {register.status.toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatCurrency(register.openingCash)}</TableCell>
+                    <TableCell className="font-semibold">{formatCurrency(register.currentCash)}</TableCell>
+                    <TableCell>{formatCurrency(register.totalSales)}</TableCell>
+                    <TableCell>
+                      {new Date(register.openedAt).toLocaleString('en-IN')}
+                    </TableCell>
+                    <TableCell>{register.openedBy}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRegister(register);
+                            setShowDetailsDialog(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        
+                        {register.status === 'open' && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedRegister(register);
+                                setShowTransactionDialog(true);
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedRegister(register);
+                                setShowWithdrawalDialog(true);
+                              }}
+                            >
+                              <TrendingDown className="h-4 w-4" />
+                            </Button>
+                            
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSelectedRegister(register)}
+                                >
+                                  <Archive className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Close Register</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to close register {register.id}?
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleCloseRegister}>
+                                    Close Register
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Cash Sales</CardTitle>
-                  <CashIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(salesData.cashSales)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Cash transactions
-                  </p>
-                </CardContent>
-              </Card>
+      {/* Open Register Dialog */}
+      <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              Open New Cash Register
+            </DialogTitle>
+          </DialogHeader>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">UPI Sales</CardTitle>
-                  <SmartphoneIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(salesData.upiSales)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    UPI transactions
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Other Payments</CardTitle>
-                  <CreditCardIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(salesData.cardSales + salesData.bankSales + salesData.chequeSales + salesData.otherSales)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Card, Bank, Cheque
-                  </p>
-                </CardContent>
-              </Card>
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <p className="text-blue-800 text-sm">Enter the opening cash amount for the new register.</p>
             </div>
 
-            {/* Payment Method Breakdown */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CreditCardIcon className="h-5 w-5" />
-                  <span>Payment Method Breakdown</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <div className="text-center p-4 border rounded-lg">
-                    <CashIcon className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                    <div className="font-semibold">{formatCurrency(salesData.cashSales)}</div>
-                    <div className="text-sm text-muted-foreground">Cash</div>
-                  </div>
+            <div>
+              <Label htmlFor="openingAmount">Opening Cash Amount</Label>
+              <Input
+                id="openingAmount"
+                type="number"
+                value={openingAmount}
+                onChange={(e) => setOpeningAmount(e.target.value)}
+                placeholder="Enter opening amount"
+                className="mt-1"
+                step="0.01"
+                min="0"
+                autoFocus
+              />
+            </div>
 
-                  <div className="text-center p-4 border rounded-lg">
-                    <SmartphoneIcon className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                    <div className="font-semibold">{formatCurrency(salesData.upiSales)}</div>
-                    <div className="text-sm text-muted-foreground">UPI</div>
-                  </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowOpenDialog(false)}
+                disabled={isProcessing}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleOpenRegister}
+                disabled={isProcessing || !openingAmount}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isProcessing ? "Opening..." : "Open Register"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-                  <div className="text-center p-4 border rounded-lg">
-                    <CreditCardIcon className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-                    <div className="font-semibold">{formatCurrency(salesData.cardSales)}</div>
-                    <div className="text-sm text-muted-foreground">Card</div>
-                  </div>
+      {/* Cash Transaction Dialog */}
+      <Dialog open={showTransactionDialog} onOpenChange={setShowTransactionDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-blue-600" />
+              Cash Transaction - {selectedRegister?.id}
+            </DialogTitle>
+          </DialogHeader>
 
-                  <div className="text-center p-4 border rounded-lg">
-                    <BanknoteIcon className="h-8 w-8 mx-auto mb-2 text-orange-600" />
-                    <div className="font-semibold">{formatCurrency(salesData.bankSales)}</div>
-                    <div className="text-sm text-muted-foreground">Bank</div>
-                  </div>
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <p className="text-blue-800 text-sm">
+                Current Cash: {selectedRegister ? formatCurrency(selectedRegister.currentCash) : '---'}
+              </p>
+            </div>
 
-                  <div className="text-center p-4 border rounded-lg">
-                    <DollarSignIcon className="h-8 w-8 mx-auto mb-2 text-yellow-600" />
-                    <div className="font-semibold">{formatCurrency(salesData.chequeSales)}</div>
-                    <div className="text-sm text-muted-foreground">Cheque</div>
-                  </div>
+            <div>
+              <Label>Transaction Type</Label>
+              <Select value={transactionType} onValueChange={(value: 'add' | 'remove') => setTransactionType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="add">Add Cash</SelectItem>
+                  <SelectItem value="remove">Remove Cash</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                  <div className="text-center p-4 border rounded-lg">
-                    <ShoppingCartIcon className="h-8 w-8 mx-auto mb-2 text-gray-600" />
-                    <div className="font-semibold">{formatCurrency(salesData.otherSales)}</div>
-                    <div className="text-sm text-muted-foreground">Other</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <div>
+              <Label>Payment Method</Label>
+              <Select value={transactionMethod} onValueChange={setTransactionMethod}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="upi">UPI</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="bank">Bank Transfer</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            {/* Cash Calculation Formula */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUpIcon className="h-5 w-5" />
-                  <span>Live Cash Tracker</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="text-center space-y-2">
-                    <div className="text-lg font-mono">
-                      <span className="text-green-700 dark:text-green-300 font-semibold">Cash In Drawer</span> = 
-                      <span className="mx-2 text-blue-600">Opening Cash</span> + 
-                      <span className="mx-2 text-green-600">Cash Sales</span> - 
-                      <span className="mx-2 text-red-600">Withdrawals</span>
+            <div>
+              <Label htmlFor="transactionAmount">Amount</Label>
+              <Input
+                id="transactionAmount"
+                type="number"
+                value={transactionAmount}
+                onChange={(e) => setTransactionAmount(e.target.value)}
+                placeholder="Enter amount"
+                className="mt-1"
+                step="0.01"
+                min="0"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="transactionReason">Reason</Label>
+              <Textarea
+                id="transactionReason"
+                value={transactionReason}
+                onChange={(e) => setTransactionReason(e.target.value)}
+                placeholder="Enter reason for transaction"
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowTransactionDialog(false)}
+                disabled={isProcessing}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCashTransaction}
+                disabled={isProcessing || !transactionAmount || !transactionReason}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isProcessing ? "Processing..." : "Process Transaction"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdrawal Dialog */}
+      <Dialog open={showWithdrawalDialog} onOpenChange={setShowWithdrawalDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingDown className="h-5 w-5 text-orange-600" />
+              Cash Withdrawal - {selectedRegister?.id}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+              <p className="text-orange-800 text-sm">
+                Available Cash: {selectedRegister ? formatCurrency(selectedRegister.currentCash) : '---'}
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="withdrawalAmount">Withdrawal Amount</Label>
+              <Input
+                id="withdrawalAmount"
+                type="number"
+                value={withdrawalAmount}
+                onChange={(e) => setWithdrawalAmount(e.target.value)}
+                placeholder="Enter withdrawal amount"
+                className="mt-1"
+                step="0.01"
+                min="0"
+                max={selectedRegister?.currentCash}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="withdrawalNote">Note (Optional)</Label>
+              <Textarea
+                id="withdrawalNote"
+                value={withdrawalNote}
+                onChange={(e) => setWithdrawalNote(e.target.value)}
+                placeholder="e.g., Cash sent to bank"
+                className="mt-1"
+                rows={2}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowWithdrawalDialog(false)}
+                disabled={isProcessing}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleWithdrawal}
+                disabled={
+                  isProcessing || 
+                  !withdrawalAmount || 
+                  parseFloat(withdrawalAmount) <= 0 || 
+                  (selectedRegister && parseFloat(withdrawalAmount) > selectedRegister.currentCash)
+                }
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {isProcessing ? "Processing..." : "Process Withdrawal"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Register Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-blue-600" />
+              Register Details - {selectedRegister?.id}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedRegister && (
+            <div className="space-y-6">
+              {/* Register Summary */}
+              <div className="grid grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Register Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <Badge variant={selectedRegister.status === 'open' ? 'default' : 'secondary'}>
+                        {selectedRegister.status.toUpperCase()}
+                      </Badge>
                     </div>
-                    <div className="text-xl font-bold text-green-700 dark:text-green-300">
-                      = {formatCurrency(salesData.openingCash)} + {formatCurrency(salesData.cashSales)} - {formatCurrency(salesData.withdrawal)} = {formatCurrency(calculateCashInDrawer())}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Opened At:</span>
+                      <span>{new Date(selectedRegister.openedAt).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Opened By:</span>
+                      <span>{selectedRegister.openedBy}</span>
+                    </div>
+                    {selectedRegister.closedAt && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Closed At:</span>
+                          <span>{new Date(selectedRegister.closedAt).toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Closed By:</span>
+                          <span>{selectedRegister.closedBy}</span>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Cash Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Opening Cash:</span>
+                      <span className="font-semibold">{formatCurrency(selectedRegister.openingCash)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Current Cash:</span>
+                      <span className="font-semibold text-green-600">{formatCurrency(selectedRegister.currentCash)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Withdrawals:</span>
+                      <span className="font-semibold text-red-600">{formatCurrency(selectedRegister.totalWithdrawals)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Refunds:</span>
+                      <span className="font-semibold text-orange-600">{formatCurrency(selectedRegister.totalRefunds)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Payment Methods Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Payment Methods Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{formatCurrency(selectedRegister.cashReceived)}</div>
+                      <div className="text-sm text-gray-600">Cash Payments</div>
+                    </div>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">{formatCurrency(selectedRegister.upiReceived)}</div>
+                      <div className="text-sm text-gray-600">UPI Payments</div>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">{formatCurrency(selectedRegister.cardReceived)}</div>
+                      <div className="text-sm text-gray-600">Card Payments</div>
+                    </div>
+                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                      <div className="text-2xl font-bold text-indigo-600">{formatCurrency(selectedRegister.bankReceived)}</div>
+                      <div className="text-sm text-gray-600">Bank Transfer</div>
+                    </div>
+                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                      <div className="text-2xl font-bold text-yellow-600">{formatCurrency(selectedRegister.chequeReceived)}</div>
+                      <div className="text-sm text-gray-600">Cheque Payments</div>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-gray-600">{formatCurrency(selectedRegister.otherReceived)}</div>
+                      <div className="text-sm text-gray-600">Other Payments</div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Recent Transactions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <ClockIcon className="h-5 w-5" />
-                  <span>Today's Transactions</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead>Payment Method</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {salesData.sales.length > 0 ? (
-                        salesData.sales.slice(0, 10).map((sale: any) => (
-                          <TableRow key={sale.id}>
+              {/* Transactions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Recent Transactions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {registerTransactions.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Method</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Reason</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {registerTransactions.slice(0, 10).map((transaction) => (
+                          <TableRow key={transaction.id}>
+                            <TableCell>{new Date(transaction.createdAt).toLocaleTimeString('en-IN')}</TableCell>
                             <TableCell>
-                              {format(new Date(sale.createdAt), 'HH:mm')}
-                            </TableCell>
-                            <TableCell>{sale.customerName || 'Walk-in Customer'}</TableCell>
-                            <TableCell>{sale.items?.length || 0} items</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="capitalize">
-                                {sale.paymentMethod || 'Cash'}
+                              <Badge variant={transaction.type === 'add' ? 'default' : 'secondary'}>
+                                {transaction.type.toUpperCase()}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right font-semibold">
-                              {formatCurrency(sale.total)}
+                            <TableCell className="capitalize">{transaction.paymentMethod}</TableCell>
+                            <TableCell className={`font-semibold ${
+                              transaction.type === 'add' ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {transaction.type === 'add' ? '+' : '-'}{formatCurrency(transaction.amount)}
                             </TableCell>
+                            <TableCell>{transaction.reason}</TableCell>
                           </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground">
-                            No transactions yet today
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {/* Open Register Dialog */}
-        <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <PlusIcon className="h-5 w-5 text-green-600" />
-                🔓 Open Cash Register
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <p className="text-blue-800 text-sm">
-                  Enter the amount of cash you're starting with in the register drawer.
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="openingAmount">🔘 Cash In Hand: ₹</Label>
-                <Input
-                  id="openingAmount"
-                  type="number"
-                  value={openingAmount}
-                  onChange={(e) => setOpeningAmount(e.target.value)}
-                  placeholder="Enter opening cash amount"
-                  className="mt-1"
-                  step="0.01"
-                  min="0"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any notes about opening the register"
-                  className="mt-1"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowOpenDialog(false)}
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleOpenRegister}
-                  disabled={isProcessing}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isProcessing ? "Opening..." : "Open Register"}
-                </Button>
-              </div>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No transactions found for this register
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Close Register Dialog */}
-        <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <MinusIcon className="h-5 w-5 text-red-600" />
-                Close Cash Register
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <p className="text-yellow-800 text-sm">
-                  Closing the register will end the current session. Count the cash in the drawer.
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="closingAmount">Actual Cash Count (₹)</Label>
-                <Input
-                  id="closingAmount"
-                  type="number"
-                  value={closingAmount}
-                  onChange={(e) => setClosingAmount(e.target.value)}
-                  placeholder="Enter actual cash count"
-                  className="mt-1"
-                  step="0.01"
-                  min="0"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Expected: {formatCurrency(calculateCashInDrawer())}
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="withdrawalAmount">Cash Withdrawal (₹)</Label>
-                <Input
-                  id="withdrawalAmount"
-                  type="number"
-                  value={withdrawalAmount}
-                  onChange={(e) => setWithdrawalAmount(e.target.value)}
-                  placeholder="Enter withdrawal amount"
-                  className="mt-1"
-                  step="0.01"
-                  min="0"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Amount taken out of the drawer
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any notes about the closing"
-                  className="mt-1"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCloseDialog(false)}
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCloseRegister}
-                  disabled={isProcessing}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  {isProcessing ? "Closing..." : "Close Register"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </DashboardLayout>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
