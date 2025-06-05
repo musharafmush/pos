@@ -1,4 +1,3 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -592,6 +591,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Returns routes
+  app.get("/api/returns", async (req, res) => {
+    try {
+      const { search, limit = 50 } = req.query;
+
+      let query = `
+        SELECT r.*, s.orderNumber as saleOrderNumber, s.total as saleTotal,
+               c.name as customerName, u.name as userName
+        FROM returns r
+        LEFT JOIN sales s ON r.saleId = s.id
+        LEFT JOIN customers c ON s.customerId = c.id
+        LEFT JOIN users u ON r.userId = u.id
+      `;
+      const params: any[] = [];
+
+      if (search) {
+        query += ` WHERE s.orderNumber LIKE ? OR c.name LIKE ?`;
+        params.push(`%${search}%`, `%${search}%`);
+      }
+
+      query += ` ORDER BY r.createdAt DESC LIMIT ?`;
+      params.push(parseInt(limit as string));
+
+      const returns = db.prepare(query).all(params);
+      res.json(returns);
+    } catch (error) {
+      console.error('Error fetching returns:', error);
+      res.status(500).json({ message: 'Failed to fetch returns' });
+    }
+  });
+
+  app.post("/api/returns", async (req, res) => {
+    try {
+      const { saleId, items, refundMethod, totalRefund, reason, notes } = req.body;
+      const userId = req.user?.id || 1;
+
+      // Start transaction
+      const insertReturn = db.prepare(`
+        INSERT INTO returns (saleId, userId, totalRefund, refundMethod, reason, notes, status, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, 'completed', ?)
+      `);
+
+      const insertReturnItem = db.prepare(`
+        INSERT INTO return_items (returnId, productId, quantity, unitPrice, subtotal)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      const updateProductStock = db.prepare(`
+        UPDATE products SET stockQuantity = stockQuantity + ? WHERE id = ?
+      `);
+
+      const now = new Date().toISOString();
+      const result = insertReturn.run(saleId, userId, totalRefund, refundMethod, reason, notes || '', now);
+      const returnId = result.lastInsertRowid;
+
+      // Insert return items and update stock
+      for (const item of items) {
+        insertReturnItem.run(returnId, item.productId, item.quantity, item.unitPrice, item.subtotal);
+        updateProductStock.run(item.quantity, item.productId);
+      }
+
+      res.json({ 
+        id: returnId, 
+        message: 'Return processed successfully'
+      });
+    } catch (error) {
+      console.error('Error processing return:', error);
+      res.status(500).json({ message: 'Failed to process return' });
+    }
+  });
+
   // Sales API
   app.post("/api/sales", async (req, res) => {
     try {
@@ -741,21 +811,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/sales/:id', isAuthenticated, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const sale = await storage.getSaleById(id);
+  app.get("/api/sales/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sale = db.prepare(`
+      SELECT s.*, c.name as customerName, c.phone as customerPhone, u.name as userName
+      FROM sales s
+      LEFT JOIN customers c ON s.customerId = c.id
+      LEFT JOIN users u ON s.userId = u.id
+      WHERE s.id = ?
+    `).get(id);
 
-      if (!sale) {
-        return res.status(404).json({ message: 'Sale not found' });
-      }
-
-      res.json(sale);
-    } catch (error) {
-      console.error('Error fetching sale:', error);
-      res.status(500).json({ message: 'Internal server error' });
+    if (!sale) {
+      return res.status(404).json({ message: 'Sale not found' });
     }
-  });
+
+    // Get sale items
+    const items = db.prepare(`
+      SELECT si.*, p.name as productName, p.sku, p.price as productPrice
+      FROM sale_items si
+      LEFT JOIN products p ON si.productId = p.id
+      WHERE si.saleId = ?
+    `).all(id);
+
+    // Format the sale data to match the expected structure
+    const formattedSale = {
+      ...sale,
+      customer: sale.customerName ? {
+        id: sale.customerId,
+        name: sale.customerName,
+        phone: sale.customerPhone
+      } : null,
+      user: {
+        id: sale.userId,
+        name: sale.userName
+      },
+      items: items.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unit_price || item.price || '0',
+        subtotal: item.subtotal || '0',
+        product: {
+          id: item.productId,
+          name: item.productName,
+          sku: item.sku,
+          price: item.productPrice
+        }
+      }))
+    };
+
+    res.json(formattedSale);
+  } catch (error) {
+    console.error('Error fetching sale:', error);
+    res.status(500).json({ message: 'Failed to fetch sale' });
+  }
+});
 
   app.put('/api/sales/:id', isAuthenticated, async (req, res) => {
     try {
@@ -772,7 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update the sale
       const updatedSale = await storage.updateSale(id, updateData);
-      
+
       res.json({
         ...updatedSale,
         message: 'Sale updated successfully'
@@ -800,7 +911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete the sale
       const deleted = await storage.deleteSale(id);
-      
+
       if (!deleted) {
         return res.status(500).json({ message: 'Failed to delete sale' });
       }
@@ -1194,7 +1305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Don't allow deleting yourself
       if ((req.user as any).id === id) {
         return res.status(400).json({ message: 'Cannot delete your own account' });
@@ -1209,64 +1320,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'User deleted successfully' });
     } catch (error) {
       console.error('Error deleting user:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  // Returns API
-  app.post('/api/returns', isAuthenticated, async (req, res) => {
-    try {
-      const { saleId, items, refundMethod, totalRefund, reason, notes } = req.body;
-
-      if (!saleId || !items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ message: 'Sale ID and return items are required' });
-      }
-
-      const returnData = {
-        saleId: parseInt(saleId),
-        userId: (req.user as any).id,
-        refundMethod: refundMethod || 'cash',
-        totalRefund: parseFloat(totalRefund || '0'),
-        reason: reason || '',
-        notes: notes || '',
-        status: 'completed'
-      };
-
-      const returnRecord = await storage.createReturn(returnData, items);
-      res.status(201).json(returnRecord);
-    } catch (error) {
-      console.error('Error creating return:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.get('/api/returns', isAuthenticated, async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string || '20');
-      const offset = parseInt(req.query.offset as string || '0');
-      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
-      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
-
-      const returns = await storage.listReturns(limit, offset, startDate, endDate);
-      res.json(returns);
-    } catch (error) {
-      console.error('Error fetching returns:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.get('/api/returns/:id', isAuthenticated, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const returnRecord = await storage.getReturnById(id);
-
-      if (!returnRecord) {
-        return res.status(404).json({ message: 'Return not found' });
-      }
-
-      res.json(returnRecord);
-    } catch (error) {
-      console.error('Error fetching return:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
@@ -1299,10 +1352,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const days = parseInt(req.query.days as string) || 7;
       const limit = parseInt(req.query.limit as string) || 5;
-      
+
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-      
+
       const topProducts = await storage.getTopSellingProducts(limit, startDate);
       res.json(topProducts);
     } catch (error) {
