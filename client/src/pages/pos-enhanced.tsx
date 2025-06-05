@@ -70,6 +70,9 @@ interface CartItem extends Product {
 }
 
 export default function POSEnhanced() {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [billNumber, setBillNumber] = useState(`POS${Date.now()}`);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -83,6 +86,11 @@ export default function POSEnhanced() {
   const [pointsToUse, setPointsToUse] = useState(0);
   const [pointsDiscount, setPointsDiscount] = useState(0);
   const [pointsEarned, setPointsEarned] = useState(0);
+  const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
   const [showOpenRegister, setShowOpenRegister] = useState(false);
@@ -348,6 +356,18 @@ export default function POSEnhanced() {
     const totalBeforePoints = afterDiscount + taxAmount;
     return Math.max(0, totalBeforePoints - pointsDiscount);
   };
+
+  // Helper function to get discount amount for display
+  const getDiscountAmount = () => {
+    const subtotal = calculateSubtotal();
+    return discountType === 'percentage' 
+      ? subtotal * (discount / 100)
+      : discount;
+  };
+
+  // Helper variables for display
+  const discountAmount = getDiscountAmount();
+  const taxAmount = calculateTax();
   // Register opening
   const handleOpenRegister = () => {
     const amount = parseFloat(cashAmount);
