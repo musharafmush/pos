@@ -1694,7 +1694,7 @@ export default function POSEnhanced() {
 
             {/* Transaction Type Selection */}
             <div className="col-span-6">
-              <div className{"space-y-4">
+              <div className="space-y-4">
                 <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                   <div className="w-5 h-5 bg-gray-100 rounded flex items-center justify-center">
                     <span className="text-xs">📋</span>
