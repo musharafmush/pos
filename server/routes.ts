@@ -1481,52 +1481,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Loyalty Points API
-  app.get('/api/customers/:id/points', async (req, res) => {
-    try {
-      const customerId = parseInt(req.params.id);
-      const points = await storage.getCustomerPoints(customerId);
-      res.json({ points });
-    } catch (error) {
-      console.error('Error fetching customer points:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.get('/api/customers/:id/point-history', async (req, res) => {
-    try {
-      const customerId = parseInt(req.params.id);
-      const limit = parseInt(req.query.limit as string) || 20;
-      const history = await storage.getCustomerPointHistory(customerId, limit);
-      res.json(history);
-    } catch (error) {
-      console.error('Error fetching point history:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/points/calculate-discount', async (req, res) => {
-    try {
-      const { pointsToUse } = req.body;
-      const discount = await storage.calculatePointsDiscount(pointsToUse);
-      res.json({ discount });
-    } catch (error) {
-      console.error('Error calculating points discount:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/points/calculate-earned', async (req, res) => {
-    try {
-      const { total } = req.body;
-      const pointsEarned = await storage.calculatePointsEarned(total);
-      res.json({ pointsEarned });
-    } catch (error) {
-      console.error('Error calculating points earned:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

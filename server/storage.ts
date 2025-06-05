@@ -381,19 +381,9 @@ export const storage = {
     email?: string;
     phone?: string;
     address?: string;
-    loyaltyPoints?: number;
-    totalSpent?: string;
-    pointsEarned?: number;
-    pointsRedeemed?: number;
   }): Promise<Customer> {
     try {
-      const [newCustomer] = await db.insert(customers).values({
-        ...customer,
-        loyaltyPoints: customer.loyaltyPoints || 0,
-        totalSpent: customer.totalSpent || '0',
-        pointsEarned: customer.pointsEarned || 0,
-        pointsRedeemed: customer.pointsRedeemed || 0
-      }).returning();
+      const [newCustomer] = await db.insert(customers).values(customer).returning();
       return newCustomer;
     } catch (error) {
       console.error('Error creating customer:', error);
@@ -960,61 +950,27 @@ export const storage = {
 
       // Start a transaction using SQLite directly
       const result = sqlite.transaction(() => {
-        // Calculate loyalty points
-        const pointsUsed = saleData.pointsUsed || 0;
-        const pointsDiscount = saleData.pointsDiscount || 0;
-        const finalTotal = parseFloat(saleData.total) - pointsDiscount;
-        const pointsEarned = this.calculatePointsEarned(finalTotal);
-
         // Insert the sale using raw SQL to avoid timestamp issues
         const insertSale = sqlite.prepare(`
           INSERT INTO sales (
             order_number, customer_id, user_id, total, tax, discount, 
-            points_used, points_earned, points_discount, payment_method, status, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            payment_method, status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `);
 
         const saleResult = insertSale.run(
           saleData.orderNumber || `SALE-${Date.now()}`,
           saleData.customerId || null,
           saleData.userId,
-          finalTotal.toString(),
+          saleData.total.toString(),
           (saleData.tax || 0).toString(),
           (saleData.discount || 0).toString(),
-          pointsUsed,
-          pointsEarned,
-          pointsDiscount.toString(),
           saleData.paymentMethod || 'cash',
           saleData.status || 'completed'
         );
 
         const saleId = saleResult.lastInsertRowid;
         console.log('Created sale with ID:', saleId);
-
-        // Update customer loyalty points if customer exists
-        if (saleData.customerId) {
-          this.updateCustomerPoints(saleData.customerId, pointsUsed, pointsEarned, finalTotal);
-
-          // Record point transactions
-          if (pointsUsed > 0) {
-            this.recordPointTransaction(
-              saleData.customerId,
-              saleId,
-              -pointsUsed,
-              'redeemed',
-              `Points redeemed for purchase ${saleData.orderNumber}`
-            );
-          }
-          if (pointsEarned > 0) {
-            this.recordPointTransaction(
-              saleData.customerId,
-              saleId,
-              pointsEarned,
-              'earned',
-              `Points earned from purchase ${saleData.orderNumber}`
-            );
-          }
-        }
 
         // Insert sale items and update stock
         const insertSaleItem = sqlite.prepare(`
@@ -1629,88 +1585,6 @@ export const storage = {
       }));
     } catch (error) {
       console.error('Error in getPaymentAnalytics:', error);
-      return [];
-    }
-  },
-
-  // Loyalty Points Management
-  async updateCustomerPoints(customerId: number, pointsUsed: number, pointsEarned: number, saleTotal: number): Promise<void> {
-    try {
-      const { sqlite } = await import('@db');
-
-      // Update customer points and total spent
-      const updateCustomer = sqlite.prepare(`
-        UPDATE customers SET
-          loyalty_points = COALESCE(loyalty_points, 0) - ? + ?,
-          total_spent = COALESCE(CAST(total_spent AS REAL), 0) + ?,
-          points_earned = COALESCE(points_earned, 0) + ?,
-          points_redeemed = COALESCE(points_redeemed, 0) + ?
-        WHERE id = ?
-      `);
-
-      updateCustomer.run(pointsUsed, pointsEarned, saleTotal, pointsEarned, pointsUsed, customerId);
-    } catch (error) {
-      console.error('Error updating customer points:', error);
-      throw error;
-    }
-  },
-
-  async getCustomerPoints(customerId: number): Promise<number> {
-    try {
-      const { sqlite } = await import('@db');
-      const query = sqlite.prepare('SELECT loyalty_points FROM customers WHERE id = ?');
-      const result = query.get(customerId);
-      return result?.loyalty_points || 0;
-    } catch (error) {
-      console.error('Error getting customer points:', error);
-      return 0;
-    }
-  },
-
-  async calculatePointsEarned(total: number): Promise<number> {
-    // Earn 1 point for every ₹10 spent
-    return Math.floor(total / 10);
-  },
-
-  async calculatePointsDiscount(pointsToUse: number): Promise<number> {
-    // 1 point = ₹1 discount
-    return pointsToUse;
-  },
-
-  async recordPointTransaction(customerId: number, saleId: number | null, points: number, type: string, description?: string): Promise<void> {
-    try {
-      const { sqlite } = await import('@db');
-      const insertTransaction = sqlite.prepare(`
-        INSERT INTO point_transactions (customer_id, sale_id, points, type, description, created_at)
-        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `);
-
-      insertTransaction.run(customerId, saleId, points, type, description || '');
-    } catch (error) {
-      console.error('Error recording point transaction:', error);
-      throw error;
-    }
-  },
-
-  async getCustomerPointHistory(customerId: number, limit: number = 20): Promise<any[]> {
-    try {
-      const { sqlite } = await import('@db');
-      const query = sqlite.prepare(`
-        SELECT pt.*, s.order_number
-        FROM point_transactions pt
-        LEFT JOIN sales s ON pt.sale_id = s.id
-        WHERE pt.customer_id = ?
-        ORDER BY pt.created_at DESC
-        LIMIT ?
-      `);
-
-      const results = query.all(customerId, limit);
-      return results.map((row: any) => ({
-        ...row,
-        createdAt: new Date(row.created_at)
-      }));
-    } catch (error) {
-      console.error('Error getting customer point history:', error);
       return [];
     }
   }

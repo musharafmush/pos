@@ -60,10 +60,6 @@ export const customers = pgTable('customers', {
   email: text('email'),
   phone: text('phone'),
   address: text('address'),
-  loyaltyPoints: integer('loyalty_points').notNull().default(0),
-  totalSpent: decimal('total_spent', { precision: 10, scale: 2 }).notNull().default('0'),
-  pointsEarned: integer('points_earned').notNull().default(0),
-  pointsRedeemed: integer('points_redeemed').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
@@ -89,9 +85,6 @@ export const sales = pgTable('sales', {
   total: decimal('total', { precision: 10, scale: 2 }).notNull(),
   tax: decimal('tax', { precision: 10, scale: 2 }).notNull(),
   discount: decimal('discount', { precision: 10, scale: 2 }).notNull().default('0'),
-  pointsUsed: integer('points_used').notNull().default(0),
-  pointsEarned: integer('points_earned').notNull().default(0),
-  pointsDiscount: decimal('points_discount', { precision: 10, scale: 2 }).notNull().default('0'),
   paymentMethod: text('payment_method').notNull(),
   status: text('status').notNull().default('completed'),
   createdAt: timestamp('created_at').defaultNow().notNull()
@@ -401,33 +394,6 @@ export const returnItemInsertSchema = createInsertSchema(returnItems, {
 export type ReturnItemInsert = z.infer<typeof returnItemInsertSchema>;
 export const returnItemSelectSchema = createSelectSchema(returnItems);
 export type ReturnItem = z.infer<typeof returnItemSelectSchema>;
-
-// Point transactions table for tracking point history
-export const pointTransactions = pgTable('point_transactions', {
-  id: serial('id').primaryKey(),
-  customerId: integer('customer_id').references(() => customers.id).notNull(),
-  saleId: integer('sale_id').references(() => sales.id),
-  points: integer('points').notNull(),
-  type: text('type').notNull(), // 'earned', 'redeemed', 'expired', 'adjusted'
-  description: text('description'),
-  createdAt: timestamp('created_at').defaultNow().notNull()
-});
-
-// Point transactions relations
-export const pointTransactionsRelations = relations(pointTransactions, ({ one }) => ({
-  customer: one(customers, { fields: [pointTransactions.customerId], references: [customers.id] }),
-  sale: one(sales, { fields: [pointTransactions.saleId], references: [sales.id] })
-}));
-
-// Point transaction validation schemas
-export const pointTransactionInsertSchema = createInsertSchema(pointTransactions, {
-  points: (schema) => schema.min(1, "Points must be at least 1"),
-  type: (schema) => schema.min(1, "Type is required"),
-  description: (schema) => schema.optional()
-});
-export type PointTransactionInsert = z.infer<typeof pointTransactionInsertSchema>;
-export const pointTransactionSelectSchema = createSelectSchema(pointTransactions);
-export type PointTransaction = z.infer<typeof pointTransactionSelectSchema>;
 
 export const settingsInsertSchema = createInsertSchema(settings, {
   key: (schema) => schema.min(1, "Key must not be empty"),
