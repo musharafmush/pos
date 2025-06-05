@@ -1379,6 +1379,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer transaction history API
+  app.get('/api/reports/customer-transactions', async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 7;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const transactions = await storage.getCustomerTransactionHistory(startDate);
+      res.json(transactions);
+    } catch (error) {
+      console.error('Error fetching customer transaction history:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Customer demographics API
+  app.get('/api/reports/customer-demographics', async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 7;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const demographics = await storage.getCustomerDemographics(startDate);
+      res.json(demographics);
+    } catch (error) {
+      console.error('Error fetching customer demographics:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Payment method analytics API
   app.get('/api/reports/payment-analytics', async (req, res) => {
     try {

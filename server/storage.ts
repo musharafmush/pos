@@ -1413,14 +1413,19 @@ export const storage = {
           c.name as customer_name,
           c.phone as phone,
           c.email as email,
+          c.address as address,
           COALESCE(SUM(CAST(s.total AS REAL)), 0) as total_billed,
           COUNT(s.id) as order_count,
           COALESCE(AVG(CAST(s.total AS REAL)), 0) as average_order_value,
-          MAX(s.created_at) as last_purchase_date
+          MAX(s.created_at) as last_purchase_date,
+          MIN(s.created_at) as first_purchase_date,
+          COUNT(DISTINCT DATE(s.created_at)) as active_days,
+          MAX(CAST(s.total AS REAL)) as highest_order,
+          MIN(CAST(s.total AS REAL)) as lowest_order
         FROM customers c
         LEFT JOIN sales s ON c.id = s.customer_id
-        WHERE s.created_at >= ?
-        GROUP BY c.id, c.name, c.phone, c.email
+        WHERE s.created_at >= ? OR s.created_at IS NULL
+        GROUP BY c.id, c.name, c.phone, c.email, c.address
         ORDER BY total_billed DESC
       `);
 
@@ -1431,13 +1436,128 @@ export const storage = {
         customerName: row.customer_name,
         phone: row.phone,
         email: row.email,
+        address: row.address,
         totalBilled: row.total_billed.toString(),
         orderCount: row.order_count,
         averageOrderValue: row.average_order_value.toString(),
-        lastPurchaseDate: row.last_purchase_date ? new Date(row.last_purchase_date) : null
+        lastPurchaseDate: row.last_purchase_date ? new Date(row.last_purchase_date) : null,
+        firstPurchaseDate: row.first_purchase_date ? new Date(row.first_purchase_date) : null,
+        activeDays: row.active_days,
+        highestOrder: row.highest_order?.toString() || '0',
+        lowestOrder: row.lowest_order?.toString() || '0'
       }));
     } catch (error) {
       console.error('Error in getCustomerBillingData:', error);
+      return [];
+    }
+  }
+
+  async getCustomerTransactionHistory(startDate: Date): Promise<any[]> {
+    try {
+      const { sqlite } = await import('@db');
+      const query = sqlite.prepare(`
+        SELECT
+          s.id as sale_id,
+          s.order_number,
+          s.created_at,
+          s.total,
+          s.payment_method,
+          s.status,
+          c.id as customer_id,
+          c.name as customer_name,
+          c.phone as customer_phone,
+          COUNT(si.id) as item_count,
+          GROUP_CONCAT(p.name) as product_names
+        FROM sales s
+        LEFT JOIN customers c ON s.customer_id = c.id
+        LEFT JOIN sale_items si ON s.id = si.sale_id
+        LEFT JOIN products p ON si.product_id = p.id
+        WHERE s.created_at >= ?
+        GROUP BY s.id, s.order_number, s.created_at, s.total, s.payment_method, s.status, c.id, c.name, c.phone
+        ORDER BY s.created_at DESC
+      `);
+
+      const results = query.all(startDate.toISOString());
+
+      return results.map((row: any) => ({
+        saleId: row.sale_id,
+        orderNumber: row.order_number,
+        createdAt: new Date(row.created_at),
+        total: row.total.toString(),
+        paymentMethod: row.payment_method,
+        status: row.status,
+        customerId: row.customer_id,
+        customerName: row.customer_name || 'Walk-in Customer',
+        customerPhone: row.customer_phone,
+        itemCount: row.item_count,
+        productNames: row.product_names ? row.product_names.split(',') : []
+      }));
+    } catch (error) {
+      console.error('Error in getCustomerTransactionHistory:', error);
+      return [];
+    }
+  }
+
+  async getCustomerDemographics(startDate: Date): Promise<any[]> {
+    try {
+      const { sqlite } = await import('@db');
+      const query = sqlite.prepare(`
+        SELECT
+          CASE 
+            WHEN SUM(CAST(s.total AS REAL)) > 5000 THEN 'VIP'
+            WHEN COUNT(s.id) > 5 THEN 'Frequent'
+            WHEN COUNT(s.id) > 1 THEN 'Regular'
+            ELSE 'New'
+          END as customer_segment,
+          COUNT(DISTINCT c.id) as customer_count,
+          SUM(CAST(s.total AS REAL)) as total_revenue,
+          AVG(CAST(s.total AS REAL)) as avg_order_value,
+          COUNT(s.id) as total_orders
+        FROM customers c
+        LEFT JOIN sales s ON c.id = s.customer_id
+        WHERE s.created_at >= ? OR s.created_at IS NULL
+        GROUP BY c.id
+        ORDER BY total_revenue DESC
+      `);
+
+      const customerSegments = sqlite.prepare(`
+        SELECT
+          customer_segment,
+          COUNT(*) as count,
+          SUM(total_revenue) as revenue,
+          AVG(avg_order_value) as avg_order,
+          SUM(total_orders) as orders
+        FROM (
+          SELECT
+            CASE 
+              WHEN SUM(CAST(s.total AS REAL)) > 5000 THEN 'VIP'
+              WHEN COUNT(s.id) > 5 THEN 'Frequent'
+              WHEN COUNT(s.id) > 1 THEN 'Regular'
+              ELSE 'New'
+            END as customer_segment,
+            SUM(CAST(s.total AS REAL)) as total_revenue,
+            AVG(CAST(s.total AS REAL)) as avg_order_value,
+            COUNT(s.id) as total_orders
+          FROM customers c
+          LEFT JOIN sales s ON c.id = s.customer_id
+          WHERE s.created_at >= ? OR s.created_at IS NULL
+          GROUP BY c.id
+        ) 
+        GROUP BY customer_segment
+        ORDER BY revenue DESC
+      `);
+
+      const results = customerSegments.all(startDate.toISOString());
+
+      return results.map((row: any) => ({
+        segment: row.customer_segment,
+        customerCount: row.count,
+        totalRevenue: row.revenue?.toString() || '0',
+        averageOrderValue: row.avg_order?.toString() || '0',
+        totalOrders: row.orders || 0
+      }));
+    } catch (error) {
+      console.error('Error in getCustomerDemographics:', error);
       return [];
     }
   }

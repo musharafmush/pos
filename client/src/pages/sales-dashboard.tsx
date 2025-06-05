@@ -118,7 +118,7 @@ export default function SalesDashboard() {
     refetchInterval: 10000 // Refresh every 10 seconds for live data
   });
 
-  // Fetch detailed customer billing data
+  // Fetch detailed customer billing data with enhanced information
   const { data: customerBillingData, isLoading: billingLoading } = useQuery({
     queryKey: ['/api/reports/customer-billing', timeRange],
     queryFn: async () => {
@@ -133,6 +133,50 @@ export default function SalesDashboard() {
         return Array.isArray(data) ? data : [];
       } catch (error) {
         console.error('Error fetching customer billing data:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
+  });
+
+  // Fetch detailed customer transaction history
+  const { data: customerTransactionHistory, isLoading: transactionLoading } = useQuery({
+    queryKey: ['/api/reports/customer-transactions', timeRange],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/reports/customer-transactions?days=${timeRange}`);
+        if (!response.ok) {
+          console.error('Customer transactions API error:', response.status);
+          return [];
+        }
+        const data = await response.json();
+        console.log('Customer transaction history:', data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching customer transaction history:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
+  });
+
+  // Fetch customer demographics and segmentation data
+  const { data: customerDemographics, isLoading: demographicsLoading } = useQuery({
+    queryKey: ['/api/reports/customer-demographics', timeRange],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/reports/customer-demographics?days=${timeRange}`);
+        if (!response.ok) {
+          console.error('Customer demographics API error:', response.status);
+          return [];
+        }
+        const data = await response.json();
+        console.log('Customer demographics data:', data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching customer demographics:', error);
         return [];
       }
     },
@@ -770,6 +814,71 @@ export default function SalesDashboard() {
 
           {/* Customer Billing Tab */}
           <TabsContent value="customer-billing" className="space-y-6">
+            {/* Billing Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+                  <UsersIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{customerBillingData?.length || 0}</div>
+                  <p className="text-xs text-muted-foreground">Active billing customers</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                  <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(
+                      customerBillingData?.reduce((sum: number, customer: any) => 
+                        sum + parseFloat(customer.totalBilled || customer.totalAmount || 0), 0
+                      ) || 0
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">From all customers</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Avg Customer Value</CardTitle>
+                  <TrendingUpIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(
+                      customerBillingData?.length > 0 
+                        ? customerBillingData.reduce((sum: number, customer: any) => 
+                            sum + parseFloat(customer.totalBilled || customer.totalAmount || 0), 0
+                          ) / customerBillingData.length
+                        : 0
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Per customer</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                  <ShoppingCartIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {customerBillingData?.reduce((sum: number, customer: any) => 
+                      sum + (customer.orderCount || 0), 0
+                    ) || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">All customer orders</p>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Customer Billing Summary */}
               <Card className="lg:col-span-2">
@@ -783,132 +892,400 @@ export default function SalesDashboard() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Customer</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Email</TableHead>
+                          <TableHead>Contact</TableHead>
                           <TableHead className="text-right">Total Billed</TableHead>
                           <TableHead className="text-right">Orders</TableHead>
                           <TableHead className="text-right">Avg Order</TableHead>
+                          <TableHead className="text-right">Frequency</TableHead>
                           <TableHead>Last Purchase</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {customerBillingData?.map((customer: any) => (
-                          <TableRow key={customer.customerId || customer.id}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center space-x-2">
-                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <UsersIcon className="h-4 w-4 text-blue-600" />
+                        {customerBillingData?.map((customer: any) => {
+                          const totalBilled = parseFloat(customer.totalBilled || customer.totalAmount || 0);
+                          const orderCount = customer.orderCount || 0;
+                          const avgOrderValue = orderCount > 0 ? totalBilled / orderCount : 0;
+                          const isHighValue = totalBilled > 5000;
+                          const isFrequent = orderCount > 5;
+                          
+                          return (
+                            <TableRow key={customer.customerId || customer.id}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center space-x-2">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                    isHighValue ? 'bg-yellow-100 text-yellow-600' : 
+                                    isFrequent ? 'bg-green-100 text-green-600' : 
+                                    'bg-blue-100 text-blue-600'
+                                  }`}>
+                                    <UsersIcon className="h-4 w-4" />
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">{customer.customerName || customer.name || "Walk-in Customer"}</div>
+                                    <div className="text-xs text-gray-500">ID: {customer.customerId || customer.id}</div>
+                                    {isHighValue && <div className="text-xs text-yellow-600 font-medium">VIP Customer</div>}
+                                    {isFrequent && <div className="text-xs text-green-600 font-medium">Frequent Buyer</div>}
+                                  </div>
                                 </div>
-                                <div>
-                                  <div className="font-medium">{customer.customerName || customer.name || "Walk-in Customer"}</div>
-                                  <div className="text-xs text-gray-500">ID: {customer.customerId || customer.id}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {customer.phone && <div className="font-medium">{customer.phone}</div>}
+                                  {customer.email && <div className="text-gray-500 text-xs">{customer.email}</div>}
+                                  {!customer.phone && !customer.email && <span className="text-gray-400">No contact</span>}
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{customer.phone || "N/A"}</TableCell>
-                            <TableCell>{customer.email || "N/A"}</TableCell>
-                            <TableCell className="text-right font-semibold">
-                              {formatCurrency(parseFloat(customer.totalBilled || customer.totalAmount || 0))}
-                            </TableCell>
-                            <TableCell className="text-right">{customer.orderCount || 0}</TableCell>
-                            <TableCell className="text-right">
-                              {formatCurrency(parseFloat(customer.averageOrderValue || 0))}
-                            </TableCell>
-                            <TableCell>
-                              {customer.lastPurchaseDate ? format(new Date(customer.lastPurchaseDate), "MMM dd, yyyy") : "N/A"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end space-x-1">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    // View customer details logic
-                                    console.log('View customer:', customer);
-                                  }}
-                                  className="h-8 px-2 text-blue-600 hover:text-blue-800"
-                                >
-                                  View
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    // Generate billing statement logic
-                                    console.log('Generate statement for:', customer);
-                                  }}
-                                  className="h-8 px-2 text-green-600 hover:text-green-800"
-                                >
-                                  Statement
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="font-semibold">{formatCurrency(totalBilled)}</div>
+                                <div className="text-xs text-gray-500">
+                                  {totalBilled > 0 && `${((totalBilled / (customerBillingData?.reduce((sum: number, c: any) => 
+                                    sum + parseFloat(c.totalBilled || c.totalAmount || 0), 0) || 1)) * 100).toFixed(1)}% of total`}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="font-medium">{orderCount}</div>
+                                <div className="text-xs text-gray-500">orders</div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="font-medium">{formatCurrency(avgOrderValue)}</div>
+                                <div className="text-xs text-gray-500">per order</div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="text-sm">
+                                  {orderCount > 10 ? "Very High" : 
+                                   orderCount > 5 ? "High" : 
+                                   orderCount > 2 ? "Medium" : "Low"}
+                                </div>
+                                <div className="text-xs text-gray-500">{orderCount} orders</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {customer.lastPurchaseDate ? format(new Date(customer.lastPurchaseDate), "MMM dd, yyyy") : "Never"}
+                                </div>
+                                {customer.lastPurchaseDate && (
+                                  <div className="text-xs text-gray-500">
+                                    {Math.floor((new Date().getTime() - new Date(customer.lastPurchaseDate).getTime()) / (1000 * 60 * 60 * 24))} days ago
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  isHighValue ? 'bg-yellow-100 text-yellow-800' :
+                                  isFrequent ? 'bg-green-100 text-green-800' :
+                                  orderCount > 0 ? 'bg-blue-100 text-blue-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {isHighValue ? 'VIP' : isFrequent ? 'Frequent' : orderCount > 0 ? 'Active' : 'Inactive'}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end space-x-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      // View customer details logic
+                                      console.log('View customer:', customer);
+                                    }}
+                                    className="h-8 px-2 text-blue-600 hover:text-blue-800"
+                                  >
+                                    View
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Generate billing statement logic
+                                      console.log('Generate statement for:', customer);
+                                    }}
+                                    className="h-8 px-2 text-green-600 hover:text-green-800"
+                                  >
+                                    Statement
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Send reminder logic
+                                      console.log('Send reminder to:', customer);
+                                    }}
+                                    className="h-8 px-2 text-orange-600 hover:text-orange-800"
+                                  >
+                                    Remind
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Top Customers Card */}
+              {/* Customer Insights and Analytics */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Top Customers</CardTitle>
-                  <CardDescription>By total purchase value</CardDescription>
+                  <CardTitle>Customer Insights</CardTitle>
+                  <CardDescription>Customer behavior and analytics</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {customerBillingData?.slice(0, 5).map((customer: any, index: number) => (
-                      <div key={customer.customerId || customer.id} className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
-                            index === 0 ? 'bg-yellow-500' : 
-                            index === 1 ? 'bg-gray-400' : 
-                            index === 2 ? 'bg-orange-500' : 'bg-blue-500'
-                          }`}>
-                            {index + 1}
+                <CardContent className="space-y-6">
+                  {/* Top Customers */}
+                  <div>
+                    <h4 className="font-medium text-sm mb-3 text-gray-700">Top Customers by Value</h4>
+                    <div className="space-y-3">
+                      {customerBillingData?.slice(0, 5).map((customer: any, index: number) => (
+                        <div key={customer.customerId || customer.id} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                              index === 0 ? 'bg-yellow-500' : 
+                              index === 1 ? 'bg-gray-400' : 
+                              index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{customer.customerName || customer.name || "Walk-in"}</div>
+                              <div className="text-xs text-gray-500">{customer.orderCount || 0} orders</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-medium text-sm">{customer.customerName || customer.name || "Walk-in"}</div>
-                            <div className="text-xs text-gray-500">{customer.orderCount || 0} orders</div>
+                          <div className="text-right">
+                            <div className="font-semibold text-sm">{formatCurrency(parseFloat(customer.totalBilled || 0))}</div>
+                            <div className="text-xs text-gray-500">
+                              {formatCurrency(parseFloat(customer.averageOrderValue || 0))} avg
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-semibold text-sm">{formatCurrency(parseFloat(customer.totalBilled || 0))}</div>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Customer Segmentation */}
+                  <div>
+                    <h4 className="font-medium text-sm mb-3 text-gray-700">Customer Segmentation</h4>
+                    <div className="space-y-2">
+                      {(() => {
+                        const vipCustomers = customerBillingData?.filter((c: any) => parseFloat(c.totalBilled || 0) > 5000).length || 0;
+                        const frequentCustomers = customerBillingData?.filter((c: any) => (c.orderCount || 0) > 5).length || 0;
+                        const newCustomers = customerBillingData?.filter((c: any) => (c.orderCount || 0) === 1).length || 0;
+                        const totalCustomers = customerBillingData?.length || 0;
+
+                        return (
+                          <>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-xs text-gray-600">VIP Customers (>₹5000)</span>
+                              <span className="text-xs font-medium text-yellow-600">{vipCustomers} ({totalCustomers > 0 ? ((vipCustomers/totalCustomers)*100).toFixed(0) : 0}%)</span>
+                            </div>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-xs text-gray-600">Frequent Buyers (>5 orders)</span>
+                              <span className="text-xs font-medium text-green-600">{frequentCustomers} ({totalCustomers > 0 ? ((frequentCustomers/totalCustomers)*100).toFixed(0) : 0}%)</span>
+                            </div>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-xs text-gray-600">New Customers (1 order)</span>
+                              <span className="text-xs font-medium text-blue-600">{newCustomers} ({totalCustomers > 0 ? ((newCustomers/totalCustomers)*100).toFixed(0) : 0}%)</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div>
+                    <h4 className="font-medium text-sm mb-3 text-gray-700">Quick Actions</h4>
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs h-8 text-blue-600 hover:text-blue-800"
+                        onClick={() => {
+                          console.log('Export customer data');
+                        }}
+                      >
+                        📊 Export Customer Data
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs h-8 text-green-600 hover:text-green-800"
+                        onClick={() => {
+                          console.log('Send bulk statements');
+                        }}
+                      >
+                        📄 Send Bulk Statements
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs h-8 text-purple-600 hover:text-purple-800"
+                        onClick={() => {
+                          console.log('Customer loyalty program');
+                        }}
+                      >
+                        🎁 Loyalty Program
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Customer Purchase Trends */}
+            {/* Customer Billing Trends and Analytics */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Customer Purchase Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Customer Purchase Trends</CardTitle>
+                  <CardDescription>Top customers by purchase volume</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={customerBillingData?.slice(0, 8) || []}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="customerName" 
+                          tick={{ fontSize: 12 }}
+                          interval={0}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                        />
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <Tooltip 
+                          formatter={(value, name) => [
+                            name === 'totalBilled' ? formatCurrency(Number(value)) : value,
+                            name === 'totalBilled' ? 'Total Billed' : 'Orders'
+                          ]}
+                        />
+                        <Legend />
+                        <Bar dataKey="totalBilled" fill="#3b82f6" name="Total Billed" />
+                        <Bar dataKey="orderCount" fill="#10b981" name="Order Count" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Customer Distribution Pie Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Customer Value Distribution</CardTitle>
+                  <CardDescription>Revenue distribution by customer segments</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={(() => {
+                            const vipRevenue = customerBillingData?.filter((c: any) => parseFloat(c.totalBilled || 0) > 5000)
+                              .reduce((sum: number, c: any) => sum + parseFloat(c.totalBilled || 0), 0) || 0;
+                            const frequentRevenue = customerBillingData?.filter((c: any) => (c.orderCount || 0) > 5 && parseFloat(c.totalBilled || 0) <= 5000)
+                              .reduce((sum: number, c: any) => sum + parseFloat(c.totalBilled || 0), 0) || 0;
+                            const regularRevenue = customerBillingData?.filter((c: any) => (c.orderCount || 0) <= 5 && parseFloat(c.totalBilled || 0) <= 5000)
+                              .reduce((sum: number, c: any) => sum + parseFloat(c.totalBilled || 0), 0) || 0;
+
+                            return [
+                              { name: 'VIP Customers', value: vipRevenue, color: '#fbbf24' },
+                              { name: 'Frequent Buyers', value: frequentRevenue, color: '#10b981' },
+                              { name: 'Regular Customers', value: regularRevenue, color: '#3b82f6' }
+                            ].filter(item => item.value > 0);
+                          })()}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {(() => {
+                            const vipRevenue = customerBillingData?.filter((c: any) => parseFloat(c.totalBilled || 0) > 5000)
+                              .reduce((sum: number, c: any) => sum + parseFloat(c.totalBilled || 0), 0) || 0;
+                            const frequentRevenue = customerBillingData?.filter((c: any) => (c.orderCount || 0) > 5 && parseFloat(c.totalBilled || 0) <= 5000)
+                              .reduce((sum: number, c: any) => sum + parseFloat(c.totalBilled || 0), 0) || 0;
+                            const regularRevenue = customerBillingData?.filter((c: any) => (c.orderCount || 0) <= 5 && parseFloat(c.totalBilled || 0) <= 5000)
+                              .reduce((sum: number, c: any) => sum + parseFloat(c.totalBilled || 0), 0) || 0;
+
+                            const data = [
+                              { name: 'VIP Customers', value: vipRevenue, color: '#fbbf24' },
+                              { name: 'Frequent Buyers', value: frequentRevenue, color: '#10b981' },
+                              { name: 'Regular Customers', value: regularRevenue, color: '#3b82f6' }
+                            ].filter(item => item.value > 0);
+
+                            return data.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ));
+                          })()}
+                        </Pie>
+                        <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Revenue']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Customer Billing Summary Table */}
             <Card>
               <CardHeader>
-                <CardTitle>Customer Purchase Trends</CardTitle>
-                <CardDescription>Monthly customer acquisition and retention</CardDescription>
+                <CardTitle>Customer Billing Summary</CardTitle>
+                <CardDescription>Detailed financial overview by customer segments</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={customerBillingData?.slice(0, 10) || []}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="customerName" />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value, name) => [
-                          name === 'totalBilled' ? formatCurrency(Number(value)) : value,
-                          name === 'totalBilled' ? 'Total Billed' : 'Orders'
-                        ]}
-                      />
-                      <Legend />
-                      <Bar dataKey="totalBilled" fill="#8884d8" name="Total Billed" />
-                      <Bar dataKey="orderCount" fill="#82ca9d" name="Order Count" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {(() => {
+                    const vipCustomers = customerBillingData?.filter((c: any) => parseFloat(c.totalBilled || 0) > 5000) || [];
+                    const frequentCustomers = customerBillingData?.filter((c: any) => (c.orderCount || 0) > 5 && parseFloat(c.totalBilled || 0) <= 5000) || [];
+                    const regularCustomers = customerBillingData?.filter((c: any) => (c.orderCount || 0) <= 5 && parseFloat(c.totalBilled || 0) <= 5000) || [];
+
+                    const vipRevenue = vipCustomers.reduce((sum: number, c: any) => sum + parseFloat(c.totalBilled || 0), 0);
+                    const frequentRevenue = frequentCustomers.reduce((sum: number, c: any) => sum + parseFloat(c.totalBilled || 0), 0);
+                    const regularRevenue = regularCustomers.reduce((sum: number, c: any) => sum + parseFloat(c.totalBilled || 0), 0);
+
+                    return (
+                      <>
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-medium text-yellow-800">VIP Customers</h4>
+                            <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">Premium</span>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-lg font-bold text-yellow-900">{vipCustomers.length}</div>
+                            <div className="text-sm text-yellow-700">Total Revenue: {formatCurrency(vipRevenue)}</div>
+                            <div className="text-xs text-yellow-600">Avg: {formatCurrency(vipCustomers.length > 0 ? vipRevenue / vipCustomers.length : 0)}</div>
+                          </div>
+                        </div>
+
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-medium text-green-800">Frequent Buyers</h4>
+                            <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">Active</span>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-lg font-bold text-green-900">{frequentCustomers.length}</div>
+                            <div className="text-sm text-green-700">Total Revenue: {formatCurrency(frequentRevenue)}</div>
+                            <div className="text-xs text-green-600">Avg: {formatCurrency(frequentCustomers.length > 0 ? frequentRevenue / frequentCustomers.length : 0)}</div>
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-medium text-blue-800">Regular Customers</h4>
+                            <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">Standard</span>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-lg font-bold text-blue-900">{regularCustomers.length}</div>
+                            <div className="text-sm text-blue-700">Total Revenue: {formatCurrency(regularRevenue)}</div>
+                            <div className="text-xs text-blue-600">Avg: {formatCurrency(regularCustomers.length > 0 ? regularRevenue / regularCustomers.length : 0)}</div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
