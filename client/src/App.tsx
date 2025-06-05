@@ -41,6 +41,7 @@ import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
 import Categories from "./pages/categories";
+import Brands from "./pages/brands";
 
 function Router() {
   return (
@@ -87,6 +88,7 @@ function Router() {
       <ProtectedRoute path="/settings/business" component={BusinessSettings} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/categories" component={Categories} />
+      <ProtectedRoute path="/brands" component={Brands} />
       <Route component={NotFound} />
     </Switch>
   );
