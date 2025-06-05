@@ -1003,7 +1003,7 @@ export const storage = {
         }
 
         //        // Get the created sale
-        const getSale = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
+        const sqlite = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
         const newSale = getSale.get(saleId);
 
         return {
@@ -1454,8 +1454,7 @@ export const storage = {
       console.error('Error closing cash register:', error);
       throw error;
     }
-  }
-,
+  },
   async addCashTransaction(transactionData: any) {
     try {
       const { sqlite } = await import('@db');
