@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   PackageIcon,
   TrendingUpIcon,
@@ -33,15 +55,35 @@ import {
   EditIcon,
   TrendingDownIcon,
   ScaleIcon,
-  DollarSignIcon
+  DollarSignIcon,
+  TrashIcon,
+  SaveIcon
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 
 export default function RepackingDashboardProfessional() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    sku: "",
+    description: "",
+    price: "",
+    cost: "",
+    stockQuantity: "",
+    weight: "",
+    weightUnit: "g",
+    alertThreshold: ""
+  });
 
   // Fetch all products to identify repacked items
   const { data: products = [], isLoading } = useQuery({
@@ -52,6 +94,143 @@ export default function RepackingDashboardProfessional() {
       return response.json();
     },
   });
+
+  // Create product mutation
+  const createProductMutation = useMutation({
+    mutationFn: async (productData: any) => {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...productData,
+          sku: productData.sku.includes("REPACK") ? productData.sku : `${productData.sku}-REPACK`,
+          active: true,
+          categoryId: 1
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to create product");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({ title: "Success", description: "Repacked product created successfully" });
+      setIsCreateDialogOpen(false);
+      resetForm();
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create repacked product", variant: "destructive" });
+    },
+  });
+
+  // Update product mutation
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, ...productData }: any) => {
+      const response = await fetch(`/api/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productData),
+      });
+      if (!response.ok) throw new Error("Failed to update product");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({ title: "Success", description: "Repacked product updated successfully" });
+      setIsEditDialogOpen(false);
+      resetForm();
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update repacked product", variant: "destructive" });
+    },
+  });
+
+  // Delete product mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/products/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete product");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({ title: "Success", description: "Repacked product deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete repacked product", variant: "destructive" });
+    },
+  });
+
+  // Form management functions
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      sku: "",
+      description: "",
+      price: "",
+      cost: "",
+      stockQuantity: "",
+      weight: "",
+      weightUnit: "g",
+      alertThreshold: ""
+    });
+    setSelectedProduct(null);
+  };
+
+  const handleEdit = (product: Product) => {
+    setSelectedProduct(product);
+    setFormData({
+      name: product.name,
+      sku: product.sku,
+      description: product.description || "",
+      price: product.price.toString(),
+      cost: product.cost.toString(),
+      stockQuantity: product.stockQuantity.toString(),
+      weight: product.weight?.toString() || "",
+      weightUnit: product.weightUnit || "g",
+      alertThreshold: product.alertThreshold.toString()
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleView = (product: Product) => {
+    setSelectedProduct(product);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleCreate = () => {
+    resetForm();
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleSubmitCreate = () => {
+    createProductMutation.mutate({
+      ...formData,
+      price: parseFloat(formData.price),
+      cost: parseFloat(formData.cost),
+      stockQuantity: parseInt(formData.stockQuantity),
+      weight: formData.weight ? parseFloat(formData.weight) : null,
+      alertThreshold: parseInt(formData.alertThreshold)
+    });
+  };
+
+  const handleSubmitEdit = () => {
+    if (!selectedProduct) return;
+    updateProductMutation.mutate({
+      id: selectedProduct.id,
+      ...formData,
+      price: parseFloat(formData.price),
+      cost: parseFloat(formData.cost),
+      stockQuantity: parseInt(formData.stockQuantity),
+      weight: formData.weight ? parseFloat(formData.weight) : null,
+      alertThreshold: parseInt(formData.alertThreshold)
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    deleteProductMutation.mutate(id);
+  };
 
   // Filter repacked products (those with "REPACK" in SKU)
   const repackedProducts = products.filter((product: Product) => 
@@ -110,7 +289,7 @@ export default function RepackingDashboardProfessional() {
               <BarChart3Icon className="mr-2 h-4 w-4" />
               Export Report
             </Button>
-            <Button>
+            <Button onClick={handleCreate}>
               <PlusIcon className="mr-2 h-4 w-4" />
               New Repack Entry
             </Button>
@@ -333,12 +512,36 @@ export default function RepackingDashboardProfessional() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(product)}>
                                 <EyeIcon className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>
                                 <EditIcon className="h-4 w-4" />
                               </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                                    <TrashIcon className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Repacked Product</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDelete(product.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -490,6 +693,319 @@ export default function RepackingDashboardProfessional() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Create Product Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create New Repacked Product</DialogTitle>
+              <DialogDescription>
+                Add a new repacked product to your inventory
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Product Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter product name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sku">SKU *</Label>
+                <Input
+                  id="sku"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                  placeholder="Enter SKU (REPACK will be added)"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="price">Unit Price *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cost">Unit Cost *</Label>
+                <Input
+                  id="cost"
+                  type="number"
+                  step="0.01"
+                  value={formData.cost}
+                  onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stockQuantity">Stock Quantity *</Label>
+                <Input
+                  id="stockQuantity"
+                  type="number"
+                  value={formData.stockQuantity}
+                  onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="alertThreshold">Alert Threshold *</Label>
+                <Input
+                  id="alertThreshold"
+                  type="number"
+                  value={formData.alertThreshold}
+                  onChange={(e) => setFormData({ ...formData, alertThreshold: e.target.value })}
+                  placeholder="5"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="weight">Weight</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="weight"
+                    type="number"
+                    step="0.01"
+                    value={formData.weight}
+                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                    placeholder="0.00"
+                    className="flex-1"
+                  />
+                  <Select value={formData.weightUnit} onValueChange={(value) => setFormData({ ...formData, weightUnit: value })}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="g">g</SelectItem>
+                      <SelectItem value="kg">kg</SelectItem>
+                      <SelectItem value="ml">ml</SelectItem>
+                      <SelectItem value="l">l</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter product description"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmitCreate} disabled={createProductMutation.isPending}>
+                <SaveIcon className="w-4 h-4 mr-2" />
+                {createProductMutation.isPending ? "Creating..." : "Create Product"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Product Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Repacked Product</DialogTitle>
+              <DialogDescription>
+                Update the details of this repacked product
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Product Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter product name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-sku">SKU *</Label>
+                <Input
+                  id="edit-sku"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                  placeholder="Enter SKU"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">Unit Price *</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-cost">Unit Cost *</Label>
+                <Input
+                  id="edit-cost"
+                  type="number"
+                  step="0.01"
+                  value={formData.cost}
+                  onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-stockQuantity">Stock Quantity *</Label>
+                <Input
+                  id="edit-stockQuantity"
+                  type="number"
+                  value={formData.stockQuantity}
+                  onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-alertThreshold">Alert Threshold *</Label>
+                <Input
+                  id="edit-alertThreshold"
+                  type="number"
+                  value={formData.alertThreshold}
+                  onChange={(e) => setFormData({ ...formData, alertThreshold: e.target.value })}
+                  placeholder="5"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-weight">Weight</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="edit-weight"
+                    type="number"
+                    step="0.01"
+                    value={formData.weight}
+                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                    placeholder="0.00"
+                    className="flex-1"
+                  />
+                  <Select value={formData.weightUnit} onValueChange={(value) => setFormData({ ...formData, weightUnit: value })}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="g">g</SelectItem>
+                      <SelectItem value="kg">kg</SelectItem>
+                      <SelectItem value="ml">ml</SelectItem>
+                      <SelectItem value="l">l</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter product description"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmitEdit} disabled={updateProductMutation.isPending}>
+                <SaveIcon className="w-4 h-4 mr-2" />
+                {updateProductMutation.isPending ? "Updating..." : "Update Product"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Product Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Product Details</DialogTitle>
+              <DialogDescription>
+                View details of this repacked product
+              </DialogDescription>
+            </DialogHeader>
+            {selectedProduct && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Product Name</Label>
+                    <p className="text-sm text-gray-600">{selectedProduct.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">SKU</Label>
+                    <code className="text-sm bg-gray-100 px-2 py-1 rounded">{selectedProduct.sku}</code>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Unit Price</Label>
+                    <p className="text-sm text-gray-600">{formatCurrency(parseFloat(selectedProduct.price))}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Unit Cost</Label>
+                    <p className="text-sm text-gray-600">{formatCurrency(parseFloat(selectedProduct.cost))}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Stock Quantity</Label>
+                    <p className="text-sm text-gray-600">{selectedProduct.stockQuantity}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Alert Threshold</Label>
+                    <p className="text-sm text-gray-600">{selectedProduct.alertThreshold}</p>
+                  </div>
+                  {selectedProduct.weight && (
+                    <div>
+                      <Label className="text-sm font-medium">Weight</Label>
+                      <p className="text-sm text-gray-600">{selectedProduct.weight}{selectedProduct.weightUnit}</p>
+                    </div>
+                  )}
+                  <div>
+                    <Label className="text-sm font-medium">Status</Label>
+                    <Badge variant={selectedProduct.active ? "default" : "secondary"}>
+                      {selectedProduct.active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                </div>
+                {selectedProduct.description && (
+                  <div>
+                    <Label className="text-sm font-medium">Description</Label>
+                    <p className="text-sm text-gray-600">{selectedProduct.description}</p>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-sm font-medium">Total Value</Label>
+                  <p className="text-lg font-semibold text-green-600">
+                    {formatCurrency(parseFloat(selectedProduct.price) * selectedProduct.stockQuantity)}
+                  </p>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                Close
+              </Button>
+              {selectedProduct && (
+                <Button onClick={() => handleEdit(selectedProduct)}>
+                  <EditIcon className="w-4 h-4 mr-2" />
+                  Edit Product
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
