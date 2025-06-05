@@ -30,7 +30,6 @@ import RepackingProfessional from "@/pages/repacking-professional";
 import RepackingDashboardProfessional from "@/pages/repacking-dashboard-professional";
 import RepackingMainDashboard from "./pages/repacking-main-dashboard";
 import Units from "@/pages/units";
-import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
 import PurchaseDashboard from "@/pages/purchase-dashboard";
 import PurchaseEntry from "@/pages/purchase-entry";
