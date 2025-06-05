@@ -40,6 +40,7 @@ import BusinessSettings from "@/pages/business-settings";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
+import Categories from "./pages/categories";
 
 function Router() {
   return (
@@ -85,6 +86,7 @@ function Router() {
       <ProtectedRoute path="/settings/currency" component={CurrencySettings} />
       <ProtectedRoute path="/settings/business" component={BusinessSettings} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/categories" component={Categories} />
       <Route component={NotFound} />
     </Switch>
   );
