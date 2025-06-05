@@ -74,7 +74,7 @@ function Router() {
       <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
       <ProtectedRoute path="/purchase-entry-professional" component={PurchaseEntryProfessional} />
       <ProtectedRoute path="/reports" component={Reports} />
-      <ProtectedRoute path="/sale-return" component={SaleReturn} />
+      <ProtectedRoute path="/sales/return" component={SaleReturn} />
       <ProtectedRoute path="/sales-dashboard" component={SalesDashboard} />
       <ProtectedRoute path="/users" component={Users} adminOnly />
       <ProtectedRoute path="/settings" component={Settings} />
