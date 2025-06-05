@@ -159,6 +159,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [{ href: "/reports", icon: <BarChart4Icon className="h-5 w-5" />, label: "Reports" }]
     },
     {
+      id: "accounts",
+      items: [{ href: "/accounts-dashboard", icon: <Calculator className="h-5 w-5" />, label: "Accounts Dashboard" }]
+    },
+    {
       id: "settings",
       label: "Settings",
       icon: <SettingsIcon className="h-5 w-5" />,
