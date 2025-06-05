@@ -1,4 +1,3 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -592,6 +591,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register management endpoints
+  app.post("/api/register/open", async (req, res) => {
+    try {
+      const { openingCash, openedBy } = req.body;
+
+      // Check if register is already open
+      const currentRegister = await storage.getCurrentRegister();
+      if (currentRegister && currentRegister.status === 'open') {
+        return res.status(400).json({ error: "Register is already open" });
+      }
+
+      const register = await storage.openRegister(openingCash, openedBy);
+      res.json(register);
+    } catch (error) {
+      console.error("Error opening register:", error);
+      res.status(500).json({ error: "Failed to open register" });
+    }
+  });
+
+  app.post("/api/register/close", async (req, res) => {
+    try {
+      const { closedBy, withdrawal = 0, notes } = req.body;
+
+      const register = await storage.closeRegister(closedBy, withdrawal, notes);
+      res.json(register);
+    } catch (error) {
+      console.error("Error closing register:", error);
+      res.status(500).json({ error: "Failed to close register" });
+    }
+  });
+
+  app.get("/api/register/current", async (req, res) => {
+    try {
+      const register = await storage.getCurrentRegister();
+      res.json(register);
+    } catch (error) {
+      console.error("Error getting current register:", error);
+      res.status(500).json({ error: "Failed to get current register" });
+    }
+  });
+
+  app.get("/api/register/sales-summary", async (req, res) => {
+    try {
+      const currentRegister = await storage.getCurrentRegister();
+      if (!currentRegister) {
+        return res.status(400).json({ error: "No open register found" });
+      }
+
+      const summary = await storage.getRegisterSalesSummary(currentRegister.id);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error getting sales summary:", error);
+      res.status(500).json({ error: "Failed to get sales summary" });
+    }
+  });
+
   // Sales API
   app.post("/api/sales", async (req, res) => {
     try {
@@ -664,11 +719,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Validated sale items:", saleItems);
 
+      // Get current register
+      const currentRegister = await storage.getCurrentRegister();
+      if (!currentRegister || currentRegister.status !== 'open') {
+        return res.status(400).json({ error: "No open register found. Please open the register first." });
+      }
+
       // Use the createSaleWithItems method from storage
       const saleData = {
         orderNumber,
         customerId: safeCustomerId,
         userId,
+        registerId: currentRegister.id, // Include register ID
         total: parseFloat(total),
         tax: parseFloat(tax || "0"),
         discount: parseFloat(discount || "0"),
@@ -772,7 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update the sale
       const updatedSale = await storage.updateSale(id, updateData);
-      
+
       res.json({
         ...updatedSale,
         message: 'Sale updated successfully'
@@ -800,7 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete the sale
       const deleted = await storage.deleteSale(id);
-      
+
       if (!deleted) {
         return res.status(500).json({ message: 'Failed to delete sale' });
       }
@@ -858,7 +920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Parsed items:", JSON.stringify(parsedItems));
 
       const purchase = await storage.createPurchase(
-        (req.user as any).id,
+        (req.user asany).id,
         validSupplierId,
         parsedItems,
         purchaseData
@@ -1194,7 +1256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Don't allow deleting yourself
       if ((req.user as any).id === id) {
         return res.status(400).json({ message: 'Cannot delete your own account' });
@@ -1241,10 +1303,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const days = parseInt(req.query.days as string) || 7;
       const limit = parseInt(req.query.limit as string) || 5;
-      
+
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-      
+
       const topProducts = await storage.getTopSellingProducts(limit, startDate);
       res.json(topProducts);
     } catch (error) {
