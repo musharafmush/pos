@@ -22,7 +22,6 @@ import SalesDashboard from "./pages/sales-dashboard";
 import CustomerBillingDetails from "./pages/customer-billing-details";
 import POSGofrugal from "@/pages/pos-gofrugal";
 import POSEnhanced from "@/pages/pos-enhanced";
-import Products from "@/pages/products";
 import ProductsEnhanced from "@/pages/products-enhanced";
 import ProductManager from "@/pages/product-manager";
 import AddItemProfessional from "@/pages/add-item-professional";
