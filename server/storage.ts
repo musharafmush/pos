@@ -1002,7 +1002,7 @@ export const storage = {
           console.log(`📦 Updated stock for product ${item.productId}: -${item.quantity}`);
         }
 
-        // Get the created sale
+        //        // Get the created sale
         const getSale = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
         const newSale = getSale.get(saleId);
 
@@ -1455,7 +1455,7 @@ export const storage = {
       throw error;
     }
   }
-
+,
   async addCashTransaction(transactionData: any) {
     try {
       const { sqlite } = await import('@db');
