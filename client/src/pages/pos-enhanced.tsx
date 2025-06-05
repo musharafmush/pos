@@ -803,7 +803,7 @@ export default function POSEnhanced() {
 
     setHoldSales(prev => [...prev, holdSale]);
     clearCart();
-    
+
     toast({
       title: "Sale Held",
       description: `Sale ${holdId} has been held successfully`,
@@ -824,7 +824,7 @@ export default function POSEnhanced() {
     setCart(holdSale.cart);
     setSelectedCustomer(holdSale.customer);
     setDiscount(holdSale.discount);
-    
+
     // Remove from held sales
     setHoldSales(prev => prev.filter(sale => sale.id !== holdSale.id));
     setShowHoldSales(false);
@@ -1197,7 +1197,7 @@ export default function POSEnhanced() {
 
               {/* Bottom Action Bar */}
               <div className="flex items-center justify-between mt-6 p-4 bg-gray-100 rounded-xl border border-gray-200">
-                
+
                 <div className="flex space-x-3">
                 <Button 
                   variant="outline"
@@ -1206,7 +1206,7 @@ export default function POSEnhanced() {
                   title="Quick cash payment (Alt+C)"
                   className="hover:bg-green-50 hover:text-green-700 hover:border-green-200"
                 >
-                  <Banknote className="h-4 w-4 mr-2" />
+                  <DollarSign className="h-4 w-4 mr-2" />
                   Cash (Alt+C)
                 </Button>
                 <Button 
@@ -2024,7 +2024,7 @@ export default function POSEnhanced() {
                                 {holdSale.cart.reduce((sum, item) => sum + item.quantity, 0)} units
                               </Badge>
                             </div>
-                            
+
                             <div className="text-sm text-gray-600 mb-2">
                               <div>Customer: {holdSale.customer?.name || "Walk-in Customer"}</div>
                               <div>Time: {holdSale.timestamp.toLocaleString()}</div>
