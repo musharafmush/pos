@@ -175,6 +175,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
+          labelSize === '40mm' ? '12px' :
           labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; margin-bottom: 8px;">
@@ -199,6 +200,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
+          labelSize === '40mm' ? '12px' :
           labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; font-weight: bold; color: #2563eb;">
@@ -304,6 +306,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
+          labelSize === '40mm' ? '12px' :
           labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; margin-bottom: 8px;">
@@ -326,6 +329,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
+          labelSize === '40mm' ? '12px' :
           labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; font-weight: bold; color: #2563eb;">
@@ -803,6 +807,12 @@ export default function PrintLabels() {
                   <div className="flex items-center justify-between w-full">
                     <span>Extra Large Label</span>
                     <span className="text-xs text-gray-500 ml-4">(3.5" x 2")</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="40mm">
+                  <div className="flex items-center justify-between w-full">
+                    <span>40mm x 40mm Label</span>
+                    <span className="text-xs text-gray-500 ml-4">(40mm x 40mm)</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="custom">Custom</SelectItem>
