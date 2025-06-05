@@ -1008,7 +1008,7 @@ export const storage = {
         const insertSale = sqlite.prepare(`
           INSERT INTO sales (
             order_number, customer_id, user_id, total, tax, discount, 
-            payment_method, status, created_at          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            payment_method, status          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const saleResult = insertSale.run(
@@ -1060,7 +1060,7 @@ export const storage = {
         const newSale = getSale.get(saleId);
 
         return {
-...newSale,
+          ...newSale,
           createdAt: new Date(newSale.created_at)
         };
       })();
@@ -1071,6 +1071,7 @@ export const storage = {
       throw error;
     }
   },
+
   // Register Session Management
   async openRegister(userId: number, openingCash: number, notes?: string) {
     // Check if there's already an open register
@@ -1182,7 +1183,7 @@ export const storage = {
   }
 
   async getRegisterDashboard(sessionId?: number) {
-    const currentSession = sessionId 
+    const currentSession = sessionId
       ? await db.select().from(registerSessions).where(eq(registerSessions.id, sessionId)).limit(1)
       : await db.select().from(registerSessions).where(eq(registerSessions.status, "open")).limit(1);
 
@@ -1239,10 +1240,10 @@ export const storage = {
       );
 
     const salesData = todaysSales[0];
-    const cashInDrawer = 
-      parseFloat(session.openingCash) + 
-      (salesData?.cashSales || 0) - 
-      (withdrawals[0]?.total || 0) - 
+    const cashInDrawer =
+      parseFloat(session.openingCash) +
+      (salesData?.cashSales || 0) -
+      (withdrawals[0]?.total || 0) -
       (refunds[0]?.total || 0);
 
     return {
@@ -1324,7 +1325,7 @@ export const storage = {
         lowStockItems: 0
       };
     }
-  },
+  }
 
   async getDailySalesData(days: number = 7): Promise<{ date: string; total: string; sales: number }[]> {
     try {
@@ -1342,10 +1343,10 @@ export const storage = {
 
         // Get sales for this day using raw SQL
         const daySalesQuery = sqlite.prepare(`
-          SELECT 
+          SELECT
             COUNT(*) as count,
             COALESCE(SUM(CAST(total AS REAL)), 0) as revenue
-          FROM sales 
+          FROM sales
           WHERE created_at >= ? AND created_at < ?
         `);
 
@@ -1366,7 +1367,7 @@ export const storage = {
       console.error('Error fetching daily sales data:', error);
       return [];
     }
-  },
+  }
 
   async getTopSellingProducts(limit: number = 5, startDate?: Date, endDate?: Date): Promise<any[]> {
     try {
@@ -1388,7 +1389,7 @@ export const storage = {
       params.push(limit);
 
       const query = sqlite.prepare(`
-        SELECT 
+        SELECT
           p.id,
           p.name,
           p.sku,
@@ -1423,7 +1424,7 @@ export const storage = {
       console.error('Error fetching top selling products:', error);
       return [];
     }
-  },
+  }
 
   // Update sale
   async updateSale(id: number, saleData: any): Promise<any> {
@@ -1470,7 +1471,7 @@ export const storage = {
       console.error('Error updating sale:', error);
       throw error;
     }
-  },
+  }
 
   // Delete sale
   async deleteSale(id: number): Promise<boolean> {
@@ -1487,7 +1488,7 @@ export const storage = {
 
         // Restore stock for each item
         const updateStock = sqlite.prepare(`
-          UPDATE products 
+          UPDATE products
           SET stock_quantity = COALESCE(stock_quantity, 0) + ?
           WHERE id = ?
         `);
