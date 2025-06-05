@@ -15,8 +15,7 @@ import {
   ArrowDownIcon,
   PlusIcon,
   Loader2,
-  Calculator,
-  CreditCard
+  Calculator
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -142,8 +141,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [
         { href: "/sales-dashboard", icon: <BarChart4Icon className="h-5 w-5" />, label: "Sales Dashboard" },
         { href: "/pos-enhanced", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>, label: "Enhanced Desktop POS" },
-        { href: "/sales/return", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Sale Returns" },
-        { href: "/customer-billing", icon: <CreditCard className="h-5 w-5" />, label: "Customer Billing" }
+        { href: "/sales/return", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Sale Returns" }
       ]
     },
     {

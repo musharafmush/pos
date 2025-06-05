@@ -4,24 +4,11 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import { ThemeProvider } from "@/components/ui/theme-provider";
-import Dashboard from "./pages/dashboard";
-import AuthPage from "./pages/auth-page";
-import Products from "./pages/products";
-import Customers from "./pages/customers";
-import Users from "./pages/users";
-import POS from "./pages/pos";
-import Reports from "./pages/reports";
-import Settings from "./pages/settings";
-import Inventory from "./pages/inventory";
-import Purchases from "./pages/purchases";
-import Suppliers from "./pages/suppliers";
-import ProtectedRoute from "./components/auth/protected-route";
-import AddProduct from "./pages/add-product";
-import { useAuth } from "./hooks/use-auth";
-import SalesDashboard from "./pages/sales-dashboard";
-import CustomerBillingDetails from "./pages/customer-billing-details";
+import Dashboard from "@/pages/dashboard";
+import POS from "@/pages/pos";
 import POSGofrugal from "@/pages/pos-gofrugal";
 import POSEnhanced from "@/pages/pos-enhanced";
+import Products from "@/pages/products";
 import ProductsEnhanced from "@/pages/products-enhanced";
 import ProductManager from "@/pages/product-manager";
 import AddItemProfessional from "@/pages/add-item-professional";
@@ -30,6 +17,7 @@ import RepackingProfessional from "@/pages/repacking-professional";
 import RepackingDashboardProfessional from "@/pages/repacking-dashboard-professional";
 import RepackingMainDashboard from "./pages/repacking-main-dashboard";
 import Units from "@/pages/units";
+import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
 import PurchaseDashboard from "@/pages/purchase-dashboard";
 import PurchaseEntry from "@/pages/purchase-entry";
@@ -95,7 +83,6 @@ function Router() {
       <ProtectedRoute path="/settings/currency" component={CurrencySettings} />
       <ProtectedRoute path="/settings/business" component={BusinessSettings} />
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/customer-billing" component={CustomerBillingDetails} />
       <Route component={NotFound} />
     </Switch>
   );
