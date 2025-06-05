@@ -38,6 +38,7 @@ import {
   Info,
   Banknote,
   DollarSign,
+    Smartphone
 } from "lucide-react";
 
 interface Product {
@@ -85,7 +86,7 @@ export default function POSEnhanced() {
   const [showOpenRegister, setShowOpenRegister] = useState(false);
   const [showCloseRegister, setShowCloseRegister] = useState(false);
   const [showWithdrawal, setShowWithdrawal] = useState(false);
-  
+
   // Cash register state
   const [registerOpened, setRegisterOpened] = useState(false);
   const [openingCash, setOpeningCash] = useState(0);
@@ -98,7 +99,7 @@ export default function POSEnhanced() {
   const [otherReceived, setOtherReceived] = useState(0);
   const [totalWithdrawals, setTotalWithdrawals] = useState(0);
   const [totalRefunds, setTotalRefunds] = useState(0);
-  
+
   // Form state
   const [cashOperation, setCashOperation] = useState<'add' | 'remove'>('add');
   const [cashAmount, setCashAmount] = useState("");
@@ -271,7 +272,7 @@ export default function POSEnhanced() {
     setOpeningCash(amount);
     setCashInHand(amount);
     setRegisterOpened(true);
-    
+
     toast({
       title: "Register Opened",
       description: `Register opened with ${formatCurrency(amount)}`,
@@ -621,6 +622,17 @@ export default function POSEnhanced() {
         if (document.fullscreenElement) {
           document.exitFullscreen();
         }
+      } else if (e.altKey && e.key === "c") {
+        e.preventDefault();
+        setupQuickPayment("cash");
+      }
+      else if (e.altKey && e.key === "u") {
+        e.preventDefault();
+        setupQuickPayment("upi");
+      }
+      else if (e.ctrlKey && e.key === "d") {
+        e.preventDefault();
+        toggleDiscount();
       }
     };
 
@@ -635,7 +647,7 @@ export default function POSEnhanced() {
       window.removeEventListener("keydown", handleKeyPress);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
-  }, [cart.length]);
+  }, [cart.length, discount]);
 
   const currentDate = new Date().toLocaleDateString('en-IN');
   const currentTime = new Date().toLocaleTimeString('en-IN', { 
@@ -723,6 +735,26 @@ export default function POSEnhanced() {
         variant: "destructive",
       });
     }
+  };
+
+  // Quick payment setup
+  const setupQuickPayment = (method: string) => {
+    if (cart.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Please add items to cart before using quick payment",
+        variant: "destructive",
+      });
+      return;
+    }
+    setPaymentMethod(method);
+    setAmountPaid(total.toString());
+    setShowPaymentDialog(true);
+  };
+
+  // Toggle discount
+  const toggleDiscount = () => {
+    setDiscount(prev => (prev > 0 ? 0 : 10));
   };
 
   return (
@@ -917,7 +949,7 @@ export default function POSEnhanced() {
           </div>
 
           {/* Search Section */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="bg-white border-b border-gray-200px-6 py-4">
             <div className="flex items-center space-x-4 mb-4">
               <Button 
                 onClick={() => searchInputRef.current?.focus()}
@@ -1078,25 +1110,47 @@ export default function POSEnhanced() {
 
               {/* Bottom Action Bar */}
               <div className="flex items-center justify-between mt-6 p-4 bg-gray-100 rounded-xl border border-gray-200">
+                
                 <div className="flex space-x-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={clearCart} 
-                    disabled={cart.length === 0}
-                    className="hover:bg-red-50 hover:text-red-700 hover:border-red-200"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear Cart
-                  </Button>
-                  <Button variant="outline" className="hover:bg-gray-50">
-                    <Archive className="h-4 w-4 mr-2" />
-                    Hold Sale
-                  </Button>
-                  <Button variant="outline" className="hover:bg-gray-50">
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Recall Sale
-                  </Button>
-                </div>
+                <Button 
+                  variant="outline"
+                  onClick={() => setupQuickPayment("cash")}
+                  disabled={cart.length === 0}
+                  title="Quick cash payment (Alt+C)"
+                  className="hover:bg-green-50 hover:text-green-700 hover:border-green-200"
+                >
+                  <Banknote className="h-4 w-4 mr-2" />
+                  Cash (Alt+C)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setupQuickPayment("upi")}
+                  disabled={cart.length === 0}
+                  title="Quick UPI payment (Alt+U)"
+                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                >
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  UPI (Alt+U)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={toggleDiscount}
+                  title="Toggle 10% discount (Ctrl+D)"
+                  className={`hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
+                >
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Discount (Ctrl+D)
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={clearCart} 
+                  disabled={cart.length === 0}
+                  className="hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear (F12)
+                </Button>
+              </div>
 
                 <div className="flex items-center space-x-4 text-sm">
                   <Badge className="bg-green-100 text-green-800 border-green-200">
@@ -1640,7 +1694,7 @@ export default function POSEnhanced() {
 
             {/* Transaction Type Selection */}
             <div className="col-span-6">
-              <div className="space-y-4">
+              <div className{"space-y-4">
                 <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                   <div className="w-5 h-5 bg-gray-100 rounded flex items-center justify-center">
                     <span className="text-xs">📋</span>
