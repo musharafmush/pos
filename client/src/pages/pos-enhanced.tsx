@@ -15,6 +15,7 @@ import {
   Scan,
   RefreshCw,
   TrendingUp,
+  TrendingDown,
   User,
   Phone,
   Calendar,
@@ -1305,24 +1306,68 @@ export default function POSEnhanced() {
                     </div>
                   </div>
 
-                  {/* Cash Removal Buttons */}
+                  {/* Manual Deposit Operations */}
                   <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-lg">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                        <Minus className="h-6 w-6 mr-3 text-red-600" />
-                        Cash Removal
+                        <TrendingUp className="h-6 w-6 mr-3 text-emerald-600" />
+                        Manual Deposits
                       </h3>
-                      <Badge className="bg-red-100 text-red-800 px-3 py-1">Bank Deposits</Badge>
+                      <Badge className="bg-emerald-100 text-emerald-800 px-3 py-1">Add Cash</Badge>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4">
+                      {[
+                        { amount: "5000", label: "₹5,000", reason: "Opening balance" },
+                        { amount: "10000", label: "₹10,000", reason: "Cash deposit" },
+                        { amount: "20000", label: "₹20,000", reason: "Cash deposit" },
+                        { amount: "50000", label: "₹50,000", reason: "Initial deposit" },
+                        { amount: "1000", label: "₹1,000", reason: "Petty cash" },
+                        { amount: "2500", label: "₹2,500", reason: "Change fund" },
+                        { amount: "15000", label: "₹15,000", reason: "Cash deposit" },
+                        { amount: "25000", label: "₹25,000", reason: "Manual deposit" }
+                      ].map((item) => (
+                        <Button
+                          key={`deposit-${item.amount}`}
+                          variant="outline"
+                          className="h-16 bg-emerald-50 border-2 border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-bold text-lg rounded-xl transition-all duration-200 transform hover:scale-105"
+                          onClick={() => {
+                            setCashAmount(item.amount);
+                            setCashOperation("add");
+                            setCashReason(`${item.reason} ${item.label}`);
+                          }}
+                        >
+                          <div className="text-center">
+                            <Plus className="h-4 w-4 mx-auto mb-1" />
+                            <div>{item.label}</div>
+                            <div className="text-xs text-emerald-500">Deposit</div>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Manual Withdrawal Operations */}
+                  <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                        <TrendingDown className="h-6 w-6 mr-3 text-red-600" />
+                        Manual Withdrawals
+                      </h3>
+                      <Badge className="bg-red-100 text-red-800 px-3 py-1">Remove Cash</Badge>
                     </div>
                     <div className="grid grid-cols-4 gap-4">
                       {[
                         { amount: "1000", label: "₹1,000", reason: "Bank deposit" },
                         { amount: "5000", label: "₹5,000", reason: "Bank deposit" },
                         { amount: "10000", label: "₹10,000", reason: "Bank deposit" },
-                        { amount: "25000", label: "₹25,000", reason: "Bank deposit" }
+                        { amount: "25000", label: "₹25,000", reason: "Bank deposit" },
+                        { amount: "500", label: "₹500", reason: "Petty expense" },
+                        { amount: "2000", label: "₹2,000", reason: "Office expense" },
+                        { amount: "15000", label: "₹15,000", reason: "Bank transfer" },
+                        { amount: "50000", label: "₹50,000", reason: "Major withdrawal" }
                       ].map((item) => (
                         <Button
-                          key={`remove-${item.amount}`}
+                          key={`withdraw-${item.amount}`}
                           variant="outline"
                           className="h-16 bg-red-50 border-2 border-red-200 hover:bg-red-100 text-red-700 font-bold text-lg rounded-xl transition-all duration-200 transform hover:scale-105"
                           onClick={() => {
@@ -1334,7 +1379,7 @@ export default function POSEnhanced() {
                           <div className="text-center">
                             <Minus className="h-4 w-4 mx-auto mb-1" />
                             <div>{item.label}</div>
-                            <div className="text-xs text-red-500">Remove</div>
+                            <div className="text-xs text-red-500">Withdraw</div>
                           </div>
                         </Button>
                       ))}
