@@ -1226,10 +1226,65 @@ export default function AddItemDashboard() {
                     variant="outline" 
                     className="flex items-center justify-center gap-2 h-12"
                     onClick={() => {
-                      // Export active items
+                      // Export active items to CSV
+                      const activeItems = filteredProducts.filter(product => product.active);
+                      if (activeItems.length === 0) {
+                        toast({
+                          title: "No Data",
+                          description: "No active items to export",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      // Create CSV content
+                      const headers = [
+                        'Product Name',
+                        'SKU',
+                        'Price',
+                        'MRP', 
+                        'Stock',
+                        'Status',
+                        'Category',
+                        'Description',
+                        'Weight',
+                        'Weight Unit',
+                        'Barcode',
+                        'Alert Threshold'
+                      ];
+
+                      const csvContent = [
+                        headers.join(','),
+                        ...activeItems.map(product => [
+                          `"${product.name}"`,
+                          `"${product.sku}"`,
+                          product.price,
+                          product.mrp || product.price,
+                          product.stockQuantity,
+                          product.active ? 'Active' : 'Inactive',
+                          product.categoryId,
+                          `"${product.description || ''}"`,
+                          product.weight || '',
+                          product.weightUnit || '',
+                          `"${product.barcode || ''}"`,
+                          product.alertThreshold || 5
+                        ].join(','))
+                      ].join('\n');
+
+                      // Create and download file
+                      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                      const link = document.createElement('a');
+                      const url = URL.createObjectURL(blob);
+                      link.setAttribute('href', url);
+                      link.setAttribute('download', `active-items-${new Date().toISOString().split('T')[0]}.csv`);
+                      link.style.visibility = 'hidden';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+
                       toast({
-                        title: "Feature Coming Soon",
-                        description: "Export functionality will be available soon",
+                        title: "Export Successful",
+                        description: `Exported ${activeItems.length} active items to CSV`,
                       });
                     }}
                   >
