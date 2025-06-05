@@ -1130,7 +1130,8 @@ export const storage = {
       .limit(1);
 
     return session[0] || null;
-  }
+  },
+  },
 
   async addCashTransaction(
     registerSessionId: number,
