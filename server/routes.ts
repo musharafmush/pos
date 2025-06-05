@@ -1,3 +1,4 @@
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -771,7 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update the sale
       const updatedSale = await storage.updateSale(id, updateData);
-
+      
       res.json({
         ...updatedSale,
         message: 'Sale updated successfully'
@@ -799,7 +800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete the sale
       const deleted = await storage.deleteSale(id);
-
+      
       if (!deleted) {
         return res.status(500).json({ message: 'Failed to delete sale' });
       }
@@ -930,7 +931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(purchase);
-    } catch (error) {```text
+    } catch (error) {
       console.error('Error updating purchase status:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
@@ -1193,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-
+      
       // Don't allow deleting yourself
       if ((req.user as any).id === id) {
         return res.status(400).json({ message: 'Cannot delete your own account' });
@@ -1240,10 +1241,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const days = parseInt(req.query.days as string) || 7;
       const limit = parseInt(req.query.limit as string) || 5;
-
+      
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-
+      
       const topProducts = await storage.getTopSellingProducts(limit, startDate);
       res.json(topProducts);
     } catch (error) {
