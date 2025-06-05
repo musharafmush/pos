@@ -96,7 +96,7 @@ export default function SalesDashboard() {
         }
         const data = await response.json();
         console.log('Sales data received:', data);
-        
+
         // Handle different response formats
         if (Array.isArray(data)) {
           return data;
@@ -617,20 +617,20 @@ export default function SalesDashboard() {
               </Button>
             </div>
           </div>
-          
+
           {/* Loading and Error States */}
           {salesLoading && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-blue-700">Loading sales data...</p>
             </div>
           )}
-          
+
           {salesError && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-700">Error loading sales data. Please try refreshing the page.</p>
             </div>
           )}
-          
+
           {!salesLoading && !salesError && (!salesData || salesData.length === 0) && (
             <div className="mt-4 p-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
               <div className="flex items-center space-x-3 mb-3">
@@ -826,7 +826,7 @@ export default function SalesDashboard() {
                   <p className="text-xs text-muted-foreground">Active billing customers</p>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -864,7 +864,8 @@ export default function SalesDashboard() {
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardHeader className="flex flex-row```text
+ items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
                   <ShoppingCartIcon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -909,7 +910,7 @@ export default function SalesDashboard() {
                           const avgOrderValue = orderCount > 0 ? totalBilled / orderCount : 0;
                           const isHighValue = totalBilled > 5000;
                           const isFrequent = orderCount > 5;
-                          
+
                           return (
                             <TableRow key={customer.customerId || customer.id}>
                               <TableCell className="font-medium">
@@ -1075,11 +1076,11 @@ export default function SalesDashboard() {
                         return (
                           <>
                             <div className="flex justify-between items-center py-1">
-                              <span className="text-xs text-gray-600">VIP Customers (>₹5000)</span>
+                              <span className="text-xs text-gray-600">VIP Customers (&gt;₹5000)</span>
                               <span className="text-xs font-medium text-yellow-600">{vipCustomers} ({totalCustomers > 0 ? ((vipCustomers/totalCustomers)*100).toFixed(0) : 0}%)</span>
                             </div>
                             <div className="flex justify-between items-center py-1">
-                              <span className="text-xs text-gray-600">Frequent Buyers (>5 orders)</span>
+                              <span className="text-xs text-gray-600">Frequent Buyers (&gt;5 orders)</span>
                               <span className="text-xs font-medium text-green-600">{frequentCustomers} ({totalCustomers > 0 ? ((frequentCustomers/totalCustomers)*100).toFixed(0) : 0}%)</span>
                             </div>
                             <div className="flex justify-between items-center py-1">
@@ -1521,7 +1522,7 @@ export default function SalesDashboard() {
                         const saleTax = parseFloat(sale.tax || sale.taxAmount || 0);
                         const saleDiscount = parseFloat(sale.discount || sale.discountAmount || 0);
                         const itemCount = sale.items?.length || sale.saleItems?.length || sale.sale_items?.length || 0;
-                        
+
                         return (
                           <TableRow key={sale.id || Math.random()}>
                             <TableCell>
