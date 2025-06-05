@@ -941,9 +941,9 @@ export default function SalesDashboard() {
             </CardContent>
           </Card>
         )}
-      </div>
+        </div>
 
-      {/* Close Register Dialog */}
+        {/* Close Register Dialog */}
       <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
