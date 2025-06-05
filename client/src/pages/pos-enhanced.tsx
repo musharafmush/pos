@@ -85,7 +85,7 @@ export default function POSEnhanced() {
   const [showOpenRegister, setShowOpenRegister] = useState(false);
   const [showCloseRegister, setShowCloseRegister] = useState(false);
   const [showWithdrawal, setShowWithdrawal] = useState(false);
-
+  
   // Cash register state
   const [registerOpened, setRegisterOpened] = useState(false);
   const [openingCash, setOpeningCash] = useState(0);
@@ -98,7 +98,7 @@ export default function POSEnhanced() {
   const [otherReceived, setOtherReceived] = useState(0);
   const [totalWithdrawals, setTotalWithdrawals] = useState(0);
   const [totalRefunds, setTotalRefunds] = useState(0);
-
+  
   // Form state
   const [cashOperation, setCashOperation] = useState<'add' | 'remove'>('add');
   const [cashAmount, setCashAmount] = useState("");
@@ -271,7 +271,7 @@ export default function POSEnhanced() {
     setOpeningCash(amount);
     setCashInHand(amount);
     setRegisterOpened(true);
-
+    
     toast({
       title: "Register Opened",
       description: `Register opened with ${formatCurrency(amount)}`,
@@ -444,41 +444,22 @@ export default function POSEnhanced() {
     }
   };
 
-  // Complete sale
-  const completeSale = async () => {
+  // Process sale
+  const processSale = async () => {
     if (cart.length === 0) {
       toast({
-        title: "No Items",
-        description: "Add items to cart before completing sale",
+        title: "Empty Cart",
+        description: "Please add items to cart before checkout",
         variant: "destructive",
       });
       return;
     }
 
-    // Check if register is open
-    try {
-      const registerResponse = await fetch('/api/cash-register/current', {
-        credentials: 'include'
-      });
-
-      if (registerResponse.status === 404) {
-        toast({
-          title: "Register Not Open",
-          description: "Please open the cash register before making sales",
-          variant: "destructive",
-        });
-        return;
-      }
-    } catch (error) {
-      console.warn('Could not check register status, continuing with sale');
-    }
-
-    const amountPaidValue = parseFloat(amountPaid) || 0;
-
-    if (amountPaidValue < total) {
+    const paidAmount = parseFloat(amountPaid) || total;
+    if (paidAmount < total) {
       toast({
         title: "Insufficient Payment",
-        description: `Minimum amount to pay is ${formatCurrency(total)}`,
+        description: `Please pay at least ${formatCurrency(total)}`,
         variant: "destructive",
       });
       return;
@@ -513,8 +494,8 @@ export default function POSEnhanced() {
         taxRate: taxRate,
         total: total.toFixed(2),
         paymentMethod,
-        amountPaid: amountPaidValue.toFixed(2),
-        change: (amountPaidValue - total).toFixed(2),
+        amountPaid: paidAmount.toFixed(2),
+        change: (paidAmount - total).toFixed(2),
         notes: `Bill: ${billNumber}`,
         billNumber: billNumber,
         status: "completed"
@@ -550,11 +531,11 @@ export default function POSEnhanced() {
       console.log("Sale completed successfully:", saleResult);
 
       // Update payment tracking
-      updatePaymentTracking(paymentMethod, amountPaidValue);
+      updatePaymentTracking(paymentMethod, paidAmount);
 
       toast({
         title: "✅ Sale Completed!",
-        description: `Transaction successful for ${formatCurrency(total)}${amountPaidValue > total ? `. Change: ${formatCurrency(amountPaidValue - total)}` : ''}`,
+        description: `Transaction successful for ${formatCurrency(total)}${paidAmount > total ? `. Change: ${formatCurrency(paidAmount - total)}` : ''}`,
         variant: "default",
       });
 
