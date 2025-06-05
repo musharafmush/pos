@@ -57,7 +57,8 @@ import {
   ScaleIcon,
   DollarSignIcon,
   TrashIcon,
-  SaveIcon
+  SaveIcon,
+  Scissors
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
