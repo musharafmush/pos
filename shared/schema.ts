@@ -2,6 +2,7 @@ import { pgTable, text, serial, integer, boolean, timestamp, decimal, pgEnum } f
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { relations } from 'drizzle-orm';
 import { z } from 'zod';
+import { sql } from 'drizzle-orm';
 
 // User roles enum
 export const userRoleEnum = pgEnum('user_role', ['admin', 'cashier', 'manager']);
@@ -38,7 +39,7 @@ export const products = pgTable('products', {
   alertThreshold: integer('alert_threshold').notNull().default(10),
   barcode: text('barcode'),
   image: text('image'),
-  
+
   // Tax Information - Indian GST Compliance
   hsnCode: text('hsn_code'),
   gstCode: text('gst_code'),
@@ -47,7 +48,7 @@ export const products = pgTable('products', {
   igstRate: decimal('igst_rate', { precision: 5, scale: 2 }),
   cessRate: decimal('cess_rate', { precision: 5, scale: 2 }),
   taxCalculationMethod: text('tax_calculation_method'),
-  
+
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
@@ -99,6 +100,33 @@ export const saleItems = pgTable('sale_items', {
   unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
   subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Returns table
+export const returns = pgTable('returns', {
+  id: serial('id').primaryKey(),
+  originalSaleId: integer('original_sale_id').references(() => sales.id),
+  returnNumber: text('return_number').notNull().unique(),
+  customerName: text('customer_name').notNull(),
+  totalReturnAmount: decimal('total_return_amount', { precision: 10, scale: 2 }).notNull(),
+  refundMethod: text('refund_method').notNull(),
+  returnReason: text('return_reason'),
+  status: text('status').notNull().default('completed'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Return items table
+export const returnItems = pgTable('return_items', {
+  id: serial('id').primaryKey(),
+  returnId: integer('return_id').references(() => returns.id),
+  saleItemId: integer('sale_item_id').references(() => saleItems.id),
+  productId: integer('product_id').references(() => products.id),
+  returnQuantity: integer('return_quantity').notNull(),
+  unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
+  returnAmount: decimal('return_amount', { precision: 10, scale: 2 }).notNull(),
+  returnReason: text('return_reason').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 // Suppliers table
@@ -195,12 +223,31 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const salesRelations = relations(sales, ({ one, many }) => ({
   customer: one(customers, { fields: [sales.customerId], references: [customers.id] }),
   user: one(users, { fields: [sales.userId], references: [users.id] }),
-  items: many(saleItems)
+  items: many(saleItems),
+  returns: many(returns)
 }));
 
-export const saleItemsRelations = relations(saleItems, ({ one }) => ({
-  sale: one(sales, { fields: [saleItems.saleId], references: [sales.id] }),
-  product: one(products, { fields: [saleItems.productId], references: [products.id] })
+export const returnsRelations = relations(returns, ({ one, many }) => ({
+  originalSale: one(sales, {
+    fields: [returns.originalSaleId],
+    references: [sales.id],
+  }),
+  items: many(returnItems),
+}));
+
+export const returnItemsRelations = relations(returnItems, ({ one }) => ({
+  return: one(returns, {
+    fields: [returnItems.returnId],
+    references: [returns.id],
+  }),
+  saleItem: one(saleItems, {
+    fields: [returnItems.saleItemId],
+    references: [saleItems.id],
+  }),
+  product: one(products, {
+    fields: [returnItems.productId],
+    references: [products.id],
+  }),
 }));
 
 export const suppliersRelations = relations(suppliers, ({ many }) => ({

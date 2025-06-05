@@ -1,4 +1,3 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -10,6 +9,21 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { db } from "@db";
+import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { 
+  products, 
+  categories, 
+  sales, 
+  saleItems, 
+  customers, 
+  purchases, 
+  purchaseItems, 
+  suppliers, 
+  users,
+  returns,
+  returnItems
+} from "@/shared/schema";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -772,7 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update the sale
       const updatedSale = await storage.updateSale(id, updateData);
-      
+
       res.json({
         ...updatedSale,
         message: 'Sale updated successfully'
@@ -800,7 +814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete the sale
       const deleted = await storage.deleteSale(id);
-      
+
       if (!deleted) {
         return res.status(500).json({ message: 'Failed to delete sale' });
       }
@@ -918,6 +932,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!status) {
         return res.status(400).json({ message: 'Status is required' });
+```text
+
       }
 
       const purchase = await storage.updatePurchaseStatus(
@@ -1014,7 +1030,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Customers API
+  // Returns routes
+  app.post("/api/returns", async (req, res) => {
+    try {
+      const returnData = req.body;
+      console.log("Processing return:", returnData);
+
+      // Insert return record
+      const [returnRecord] = await db.insert(returns).values({
+        originalSaleId: returnData.originalSaleId,
+        returnNumber: returnData.returnNumber,
+        customerName: returnData.customerName,
+        totalReturnAmount: returnData.totalReturnAmount,
+        refundMethod: returnData.refundMethod,
+        returnReason: returnData.returnReason,
+        status: returnData.status,
+        createdAt: new Date(),
+      }).returning();
+
+      // Insert return items
+      for (const item of returnData.items) {
+        await db.insert(returnItems).values({
+          returnId: returnRecord.id,
+          saleItemId: item.saleItemId,
+          productId: item.productId,
+          returnQuantity: item.returnQuantity,
+          unitPrice: item.unitPrice,
+          returnAmount: item.returnAmount,
+          returnReason: item.returnReason,
+        });
+
+        // Update product stock (add back returned items)
+        await db.update(products)
+          .set({
+            stockQuantity: sql`stock_quantity + ${item.returnQuantity}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(products.id, item.productId));
+      }
+
+      res.json({ success: true, return: returnRecord });
+    } catch (error) {
+      console.error("Return creation error:", error);
+      res.status(500).json({ 
+        error: "Failed to process return",
+        details: error.message 
+      });
+    }
+  });
+
+  app.get("/api/returns", async (req, res) => {
+    try {
+      const allReturns = await db.query.returns.findMany({
+        with: {
+          items: {
+            with: {
+              product: true
+            }
+          }
+        },
+        orderBy: (returns, { desc }) => [desc(returns.createdAt)]
+      });
+
+      res.json(allReturns);
+    } catch (error) {
+      console.error("Error fetching returns:", error);
+      res.status(500).json({ error: "Failed to fetch returns" });
+    }
+  });
+
+  // Customer routes
+  app.post("/api/customers", async (req, res) => {
+    try {
+      const customerData = schema.customerInsertSchema.parse(req.body);
+      const customer = await storage.createCustomer(customerData);
+      res.status(201).json(customer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error('Error creating customer:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/customers', async (req, res) => {
     try {
       const customers = await storage.listCustomers();
@@ -1037,20 +1136,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(customer);
     } catch (error) {
       console.error('Error fetching customer:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/customers', isAuthenticated, async (req, res) => {
-    try {
-      const customerData = schema.customerInsertSchema.parse(req.body);
-      const customer = await storage.createCustomer(customerData);
-      res.status(201).json(customer);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ errors: error.errors });
-      }
-      console.error('Error creating customer:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
@@ -1194,7 +1279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Don't allow deleting yourself
       if ((req.user as any).id === id) {
         return res.status(400).json({ message: 'Cannot delete your own account' });
@@ -1241,10 +1326,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const days = parseInt(req.query.days as string) || 7;
       const limit = parseInt(req.query.limit as string) || 5;
-      
+
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-      
+
       const topProducts = await storage.getTopSellingProducts(limit, startDate);
       res.json(topProducts);
     } catch (error) {
