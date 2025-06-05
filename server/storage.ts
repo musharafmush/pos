@@ -1338,7 +1338,7 @@ export const storage = {
       console.error('Error checking for open register:', error);
       return null;
     }
-  }
+  },
 
   async getTodaysSalesData(registerId: string) {
     try {
@@ -1454,7 +1454,7 @@ export const storage = {
       console.error('Error closing cash register:', error);
       throw error;
     }
-  }
+  },
 
   async addCashTransaction(transactionData: any) {
     try {
