@@ -1340,7 +1340,7 @@ export const storage = {
     }
   }
 
-  async getTodaySalesData(registerId: string) {
+  async getTodaysSalesData(registerId: string) {
     try {
       const { sqlite } = await import('@db');
       const today = new Date();
@@ -1416,7 +1416,7 @@ export const storage = {
         sales: []
       };
     }
-  }
+  },
 
   async closeCashRegister(registerId: string, closeData: any) {
     try {
