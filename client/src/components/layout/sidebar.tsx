@@ -34,31 +34,6 @@ import {
 } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import {
-  Calendar,
-  Home,
-  Inbox,
-  Search,
-  Settings,
-  ShoppingCart,
-  Users,
-  Package,
-  TrendingUp,
-  CreditCard,
-  FileText,
-  BarChart3,
-  Truck,
-  Monitor,
-  PlusCircle,
-  Building2,
-  UserPlus,
-  DollarSign,
-  Boxes,
-  Archive,
-  RefreshCw,
-  Calculator,
-  RotateCcw
-} from "lucide-react";
 
 interface SidebarProps {
   open: boolean;
@@ -165,8 +140,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       icon: <ShoppingBagIcon className="h-5 w-5" />,
       items: [
         { href: "/sales-dashboard", icon: <BarChart4Icon className="h-5 w-5" />, label: "Sales Dashboard" },
-        { href: "/pos-enhanced", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>, label: "Enhanced Desktop POS" },
-        { href: "/sale-return", icon: <RotateCcw className="h-5 w-5" />, label: "Sale Return" }
+        { href: "/pos-enhanced", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>, label: "Enhanced Desktop POS" }
       ]
     },
     {

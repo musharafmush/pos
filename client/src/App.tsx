@@ -38,7 +38,6 @@ import BusinessSettings from "@/pages/business-settings";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
-import SaleReturn from "./pages/sale-return";
 
 function Router() {
   return (
@@ -81,7 +80,6 @@ function Router() {
       <ProtectedRoute path="/customers" component={Customers} />
       <ProtectedRoute path="/settings/currency" component={CurrencySettings} />
       <ProtectedRoute path="/settings/business" component={BusinessSettings} />
-      <ProtectedRoute path="/sale-return" component={SaleReturn} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
