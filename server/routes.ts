@@ -1364,6 +1364,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer billing analytics API
+  app.get('/api/reports/customer-billing', async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 7;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const customerBilling = await storage.getCustomerBillingData(startDate);
+      res.json(customerBilling);
+    } catch (error) {
+      console.error('Error fetching customer billing data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Payment method analytics API
+  app.get('/api/reports/payment-analytics', async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 7;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const paymentAnalytics = await storage.getPaymentAnalytics(startDate);
+      res.json(paymentAnalytics);
+    } catch (error) {
+      console.error('Error fetching payment analytics:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

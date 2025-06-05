@@ -1102,15 +1102,15 @@ export const storage = {
   async getTopSellingProducts(limit: number = 5, startDate?: Date, endDate?: Date): Promise<any[]> {
     try {
       const { sqlite } = await import('@db');
-      
+
       let dateFilter = '';
       const params = [];
-      
+
       if (startDate) {
         dateFilter += ' AND s.created_at >= ?';
         params.push(startDate.toISOString());
       }
-      
+
       if (endDate) {
         dateFilter += ' AND s.created_at <= ?';
         params.push(endDate.toISOString());
@@ -1320,16 +1320,16 @@ export const storage = {
   async getReturnById(id: number): Promise<any> {
     try {
       const { sqlite } = await import('@db');
-      
+
       const getReturn = sqlite.prepare(`
         SELECT r.*, s.order_number as sale_order_number
         FROM returns r
         LEFT JOIN sales s ON r.sale_id = s.id
         WHERE r.id = ?
       `);
-      
+
       const returnRecord = getReturn.get(id);
-      
+
       if (!returnRecord) {
         return null;
       }
@@ -1341,7 +1341,7 @@ export const storage = {
         LEFT JOIN products p ON ri.product_id = p.id
         WHERE ri.return_id = ?
       `);
-      
+
       const items = getReturnItems.all(id);
 
       return {
@@ -1358,7 +1358,7 @@ export const storage = {
   async listReturns(limit?: number, offset?: number, startDate?: Date, endDate?: Date): Promise<any[]> {
     try {
       const { sqlite } = await import('@db');
-      
+
       let query = `
         SELECT r.*, s.order_number as sale_order_number, c.name as customer_name
         FROM returns r
@@ -1366,26 +1366,26 @@ export const storage = {
         LEFT JOIN customers c ON s.customer_id = c.id
         WHERE 1=1
       `;
-      
+
       const params = [];
-      
+
       if (startDate) {
         query += ' AND r.created_at >= ?';
         params.push(startDate.toISOString());
       }
-      
+
       if (endDate) {
         query += ' AND r.created_at <= ?';
         params.push(endDate.toISOString());
       }
-      
+
       query += ' ORDER BY r.created_at DESC';
-      
+
       if (limit) {
         query += ' LIMIT ?';
         params.push(limit);
       }
-      
+
       if (offset) {
         query += ' OFFSET ?';
         params.push(offset);
@@ -1401,6 +1401,71 @@ export const storage = {
     } catch (error) {
       console.error('Error listing returns:', error);
       throw error;
+    }
+  }
+
+  async getCustomerBillingData(startDate: Date): Promise<any[]> {
+    try {
+      const { sqlite } = await import('@db');
+      const query = sqlite.prepare(`
+        SELECT
+          c.id as customer_id,
+          c.name as customer_name,
+          c.phone as phone,
+          c.email as email,
+          COALESCE(SUM(CAST(s.total AS REAL)), 0) as total_billed,
+          COUNT(s.id) as order_count,
+          COALESCE(AVG(CAST(s.total AS REAL)), 0) as average_order_value,
+          MAX(s.created_at) as last_purchase_date
+        FROM customers c
+        LEFT JOIN sales s ON c.id = s.customer_id
+        WHERE s.created_at >= ?
+        GROUP BY c.id, c.name, c.phone, c.email
+        ORDER BY total_billed DESC
+      `);
+
+      const results = query.all(startDate.toISOString());
+
+      return results.map((row: any) => ({
+        customerId: row.customer_id,
+        customerName: row.customer_name,
+        phone: row.phone,
+        email: row.email,
+        totalBilled: row.total_billed.toString(),
+        orderCount: row.order_count,
+        averageOrderValue: row.average_order_value.toString(),
+        lastPurchaseDate: row.last_purchase_date ? new Date(row.last_purchase_date) : null
+      }));
+    } catch (error) {
+      console.error('Error in getCustomerBillingData:', error);
+      return [];
+    }
+  }
+
+  async getPaymentAnalytics(startDate: Date): Promise<any[]> {
+    try {
+      const { sqlite } = await import('@db');
+      const query = sqlite.prepare(`
+        SELECT
+          payment_method,
+          SUM(CAST(total AS REAL)) as amount,
+          COUNT(id) as transaction_count
+        FROM sales
+        WHERE created_at >= ?
+        GROUP BY payment_method
+        ORDER BY amount DESC
+      `);
+
+      const results = query.all(startDate.toISOString());
+
+      return results.map((row: any) => ({
+        paymentMethod: row.payment_method,
+        amount: row.amount.toString(),
+        transactionCount: row.transaction_count
+      }));
+    } catch (error) {
+      console.error('Error in getPaymentAnalytics:', error);
+      return [];
     }
   }
 };

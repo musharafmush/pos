@@ -84,12 +84,12 @@ export default function SalesDashboard() {
     barcode: ''
   });
 
-  // Fetch sales data
+  // Fetch sales data with enhanced customer billing details
   const { data: salesData, isLoading: salesLoading, error: salesError, refetch: refetchSales } = useQuery({
     queryKey: ['/api/sales'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/sales?limit=100');
+        const response = await fetch('/api/sales?limit=100&include=customer,items,billing');
         if (!response.ok) {
           console.error('Sales API response not ok:', response.status, response.statusText);
           throw new Error(`Failed to fetch sales: ${response.status}`);
@@ -116,6 +116,50 @@ export default function SalesDashboard() {
     retry: 2,
     retryDelay: 1000,
     refetchInterval: 10000 // Refresh every 10 seconds for live data
+  });
+
+  // Fetch detailed customer billing data
+  const { data: customerBillingData, isLoading: billingLoading } = useQuery({
+    queryKey: ['/api/reports/customer-billing', timeRange],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/reports/customer-billing?days=${timeRange}`);
+        if (!response.ok) {
+          console.error('Customer billing API error:', response.status);
+          return [];
+        }
+        const data = await response.json();
+        console.log('Customer billing data:', data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching customer billing data:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
+  });
+
+  // Fetch payment method analytics
+  const { data: paymentAnalytics, isLoading: paymentLoading } = useQuery({
+    queryKey: ['/api/reports/payment-analytics', timeRange],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/reports/payment-analytics?days=${timeRange}`);
+        if (!response.ok) {
+          console.error('Payment analytics API error:', response.status);
+          return [];
+        }
+        const data = await response.json();
+        console.log('Payment analytics data:', data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching payment analytics data:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
   });
 
   // CRUD Operations
@@ -634,6 +678,8 @@ export default function SalesDashboard() {
         <Tabs defaultValue="overview" className="mb-6">
           <TabsList className="mb-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="customer-billing">Customer Billing</TabsTrigger>
+            <TabsTrigger value="payment-analytics">Payment Analytics</TabsTrigger>
             <TabsTrigger value="trends">Sales Trends</TabsTrigger>
             <TabsTrigger value="products">Product Performance</TabsTrigger>
             <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
@@ -720,6 +766,258 @@ export default function SalesDashboard() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Customer Billing Tab */}
+          <TabsContent value="customer-billing" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Customer Billing Summary */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Customer Billing Details</CardTitle>
+                  <CardDescription>Comprehensive billing information for all customers</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Customer</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead className="text-right">Total Billed</TableHead>
+                          <TableHead className="text-right">Orders</TableHead>
+                          <TableHead className="text-right">Avg Order</TableHead>
+                          <TableHead>Last Purchase</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {customerBillingData?.map((customer: any) => (
+                          <TableRow key={customer.customerId || customer.id}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <UsersIcon className="h-4 w-4 text-blue-600" />
+                                </div>
+                                <div>
+                                  <div className="font-medium">{customer.customerName || customer.name || "Walk-in Customer"}</div>
+                                  <div className="text-xs text-gray-500">ID: {customer.customerId || customer.id}</div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{customer.phone || "N/A"}</TableCell>
+                            <TableCell>{customer.email || "N/A"}</TableCell>
+                            <TableCell className="text-right font-semibold">
+                              {formatCurrency(parseFloat(customer.totalBilled || customer.totalAmount || 0))}
+                            </TableCell>
+                            <TableCell className="text-right">{customer.orderCount || 0}</TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(parseFloat(customer.averageOrderValue || 0))}
+                            </TableCell>
+                            <TableCell>
+                              {customer.lastPurchaseDate ? format(new Date(customer.lastPurchaseDate), "MMM dd, yyyy") : "N/A"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end space-x-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    // View customer details logic
+                                    console.log('View customer:', customer);
+                                  }}
+                                  className="h-8 px-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Generate billing statement logic
+                                    console.log('Generate statement for:', customer);
+                                  }}
+                                  className="h-8 px-2 text-green-600 hover:text-green-800"
+                                >
+                                  Statement
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top Customers Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Customers</CardTitle>
+                  <CardDescription>By total purchase value</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {customerBillingData?.slice(0, 5).map((customer: any, index: number) => (
+                      <div key={customer.customerId || customer.id} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                            index === 0 ? 'bg-yellow-500' : 
+                            index === 1 ? 'bg-gray-400' : 
+                            index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{customer.customerName || customer.name || "Walk-in"}</div>
+                            <div className="text-xs text-gray-500">{customer.orderCount || 0} orders</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-sm">{formatCurrency(parseFloat(customer.totalBilled || 0))}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Customer Purchase Trends */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Purchase Trends</CardTitle>
+                <CardDescription>Monthly customer acquisition and retention</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={customerBillingData?.slice(0, 10) || []}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="customerName" />
+                      <YAxis />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          name === 'totalBilled' ? formatCurrency(Number(value)) : value,
+                          name === 'totalBilled' ? 'Total Billed' : 'Orders'
+                        ]}
+                      />
+                      <Legend />
+                      <Bar dataKey="totalBilled" fill="#8884d8" name="Total Billed" />
+                      <Bar dataKey="orderCount" fill="#82ca9d" name="Order Count" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Payment Analytics Tab */}
+          <TabsContent value="payment-analytics" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Payment Method Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment Method Distribution</CardTitle>
+                  <CardDescription>Breakdown of payment methods used</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={paymentAnalytics}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="amount"
+                        >
+                          {paymentAnalytics?.map((entry: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Amount']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Payment Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment Trends</CardTitle>
+                  <CardDescription>Daily payment method usage</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Amount']} />
+                        <Legend />
+                        <Line type="monotone" dataKey="total" stroke="#8884d8" strokeWidth={2} name="Total Sales" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Payment Method Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Method Details</CardTitle>
+                <CardDescription>Detailed breakdown by payment method</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Payment Method</TableHead>
+                        <TableHead className="text-right">Transactions</TableHead>
+                        <TableHead className="text-right">Total Amount</TableHead>
+                        <TableHead className="text-right">Average Transaction</TableHead>
+                        <TableHead className="text-right">Percentage</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paymentAnalytics?.map((payment: any) => {
+                        const percentage = ((payment.amount / totalSalesAmount) * 100).toFixed(1);
+                        return (
+                          <TableRow key={payment.paymentMethod}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[paymentAnalytics.indexOf(payment) % COLORS.length] }}></div>
+                                <span className="capitalize">{payment.paymentMethod}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">{payment.transactionCount}</TableCell>
+                            <TableCell className="text-right font-semibold">
+                              {formatCurrency(parseFloat(payment.amount || 0))}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(parseFloat(payment.amount || 0) / (payment.transactionCount || 1))}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="font-medium">{percentage}%</span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Sales Trends Tab */}
@@ -818,18 +1116,22 @@ export default function SalesDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Recent Sales Transactions</CardTitle>
-                <CardDescription>Latest sales activity</CardDescription>
+                <CardDescription>Latest sales activity with detailed billing information</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Customer</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Invoice#</TableHead>
+                        <TableHead>Customer Details</TableHead>
                         <TableHead>Items</TableHead>
+                        <TableHead className="text-right">Subtotal</TableHead>
+                        <TableHead className="text-right">Tax</TableHead>
+                        <TableHead className="text-right">Discount</TableHead>
                         <TableHead className="text-right">Total</TableHead>
-                        <TableHead>Payment Method</TableHead>
+                        <TableHead>Payment</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -838,31 +1140,107 @@ export default function SalesDashboard() {
                       {salesData?.slice(0, 10).map((sale: any) => {
                         const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
                         const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
+                        const saleSubtotal = parseFloat(sale.subtotal || sale.total || 0);
+                        const saleTax = parseFloat(sale.tax || sale.taxAmount || 0);
+                        const saleDiscount = parseFloat(sale.discount || sale.discountAmount || 0);
                         const itemCount = sale.items?.length || sale.saleItems?.length || sale.sale_items?.length || 0;
                         
                         return (
                           <TableRow key={sale.id || Math.random()}>
                             <TableCell>
-                              {format(new Date(saleDate), "MMM dd, yyyy")}
+                              <div className="text-sm">
+                                <div className="font-medium">{format(new Date(saleDate), "MMM dd, yyyy")}</div>
+                                <div className="text-gray-500">{format(new Date(saleDate), "hh:mm a")}</div>
+                              </div>
                             </TableCell>
-                            <TableCell>{sale.customerName || sale.customer_name || "Walk-in Customer"}</TableCell>
-                            <TableCell>{itemCount} items</TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div className="font-medium">{sale.customerName || sale.customer_name || "Walk-in Customer"}</div>
+                                {sale.customerPhone && (
+                                  <div className="text-gray-500">{sale.customerPhone}</div>
+                                )}
+                                {sale.customerEmail && (
+                                  <div className="text-gray-500 text-xs">{sale.customerEmail}</div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div className="font-medium">{itemCount} items</div>
+                                <div className="text-gray-500">
+                                  {sale.items?.slice(0, 2).map((item: any, index: number) => (
+                                    <div key={index} className="text-xs">
+                                      {item.productName || item.name} x{item.quantity}
+                                    </div>
+                                  ))}
+                                  {itemCount > 2 && (
+                                    <div className="text-xs text-blue-600">+{itemCount - 2} more</div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
                             <TableCell className="text-right">
+                              {formatCurrency(isNaN(saleSubtotal) ? saleTotal : saleSubtotal)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(isNaN(saleTax) ? 0 : saleTax)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {saleDiscount > 0 ? formatCurrency(saleDiscount) : "-"}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">
                               {formatCurrency(isNaN(saleTotal) ? 0 : saleTotal)}
                             </TableCell>
-                            <TableCell>{sale.paymentMethod || sale.payment_method || "Cash"}</TableCell>
                             <TableCell>
-                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                              <div className="text-sm">
+                                <div className="capitalize font-medium">{sale.paymentMethod || sale.payment_method || "Cash"}</div>
+                                {sale.paymentReference && (
+                                  <div className="text-gray-500 text-xs">Ref: {sale.paymentReference}</div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                sale.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                sale.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                sale.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
                                 {sale.status || "Completed"}
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              <div className="flex justify-end space-x-2">
+                              <div className="flex justify-end space-x-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    // View detailed invoice
+                                    console.log('View invoice:', sale);
+                                  }}
+                                  className="h-8 px-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Print receipt
+                                    window.print();
+                                  }}
+                                  className="h-8 px-2 text-green-600 hover:text-green-800"
+                                >
+                                  Print
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => openEditDialog(sale)}
-                                  className="h-8 px-2 text-blue-600 hover:text-blue-800"
+                                  className="h-8 px-2 text-orange-600 hover:text-orange-800"
                                 >
                                   Edit
                                 </Button>
@@ -880,7 +1258,7 @@ export default function SalesDashboard() {
                         );
                       }) || (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          <TableCell colSpan={11} className="text-center text-muted-foreground">
                             No sales data available
                           </TableCell>
                         </TableRow>
