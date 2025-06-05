@@ -786,10 +786,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string || '20');
       const offset = parseInt(req.query.offset as string || '0');
+      const search = req.query.search as string;
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
       const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
       const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const customerId = req.query.customerId ? parseInt(req.query.customerId as string) : undefined;
+
+      // If search is provided, use a different approach to search sales
+      if (search) {
+        const { sqlite } = await import('@db');
+        
+        let query = `
+          SELECT s.*, c.name as customerName, c.phone as customerPhone, u.name as userName
+          FROM sales s
+          LEFT JOIN customers c ON s.customerId = c.id
+          LEFT JOIN users u ON s.userId = u.id
+          WHERE (
+            s.orderNumber LIKE ? OR
+            c.name LIKE ? OR
+            c.phone LIKE ? OR
+            c.email LIKE ?
+          )
+        `;
+        
+        const params = [
+          `%${search}%`,
+          `%${search}%`, 
+          `%${search}%`,
+          `%${search}%`
+        ];
+
+        if (startDate) {
+          query += ` AND s.createdAt >= ?`;
+          params.push(startDate.toISOString());
+        }
+        
+        if (endDate) {
+          query += ` AND s.createdAt <= ?`;
+          params.push(endDate.toISOString());
+        }
+
+        query += ` ORDER BY s.createdAt DESC LIMIT ?`;
+        params.push(limit);
+
+        const sales = sqlite.prepare(query).all(params);
+        
+        // Format the results to match expected structure
+        const formattedSales = sales.map(sale => ({
+          ...sale,
+          customer: sale.customerName ? {
+            id: sale.customerId,
+            name: sale.customerName,
+            phone: sale.customerPhone
+          } : null,
+          user: {
+            id: sale.userId,
+            name: sale.userName
+          }
+        }));
+
+        return res.json(formattedSales);
+      }
 
       const sales = await storage.listSales(limit, offset, startDate, endDate, userId, customerId);
       res.json(sales);
