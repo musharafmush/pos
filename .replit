@@ -14,7 +14,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "App Recovery"
+runButton = "Deploy Production"
 
 [[workflows.workflow]]
 name = "Project"
@@ -273,3 +273,16 @@ args = "sleep 2"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Deploy Production"
+author = 43114682
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build:client"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run start:production"
