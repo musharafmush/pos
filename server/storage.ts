@@ -39,24 +39,14 @@ export const storage = {
     return user || null;
   },
 
-  async getUserByUsernameOrEmail(usernameOrEmail: string) {
-    try {
-      console.log('Looking up user with:', usernameOrEmail);
-
-      // Try both username and email lookup
-      const user = await db.query.users.findFirst({
-        where: or(
-          eq(users.username, usernameOrEmail),
-          eq(users.email, usernameOrEmail)
-        )
-      });
-
-      console.log('User lookup result:', user ? `Found user ID: ${user.id}` : 'No user found');
-      return user || null;
-    } catch (error) {
-      console.error('Error getting user by username/email:', error);
-      throw error;
-    }
+  async getUserByUsernameOrEmail(usernameOrEmail: string): Promise<User | null> {
+    const user = await db.query.users.findFirst({
+      where: or(
+        eq(users.username, usernameOrEmail),
+        eq(users.email, usernameOrEmail)
+      )
+    });
+    return user || null;
   },
 
   async getUserById(id: number): Promise<User | null> {
@@ -1003,8 +993,7 @@ export const storage = {
             item.quantity,
             item.unitPrice.toString(),
             (item.price || item.unitPrice).toString(),
-            ```text
-item.subtotal.toString(),
+            item.subtotal.toString(),
             (item.total || item.subtotal).toString()
           );
 
