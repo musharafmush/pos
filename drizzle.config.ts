@@ -1,8 +1,10 @@
+
 import { defineConfig } from "drizzle-kit";
 
-// For cPanel MySQL hosting
+let config;
+
 if (process.env.NODE_ENV === 'production' && process.env.MYSQL_HOST) {
-  export default defineConfig({
+  config = defineConfig({
     out: "./db/migrations",
     schema: "./shared/schema.ts",
     dialect: "mysql",
@@ -14,15 +16,16 @@ if (process.env.NODE_ENV === 'production' && process.env.MYSQL_HOST) {
     },
     verbose: true,
   });
+} else {
+  config = defineConfig({
+    out: "./db/migrations",
+    schema: "./shared/schema.ts",
+    dialect: "sqlite",
+    dbCredentials: {
+      url: "./pos-data.db",
+    },
+    verbose: true,
+  });
 }
 
-// Default SQLite configuration (recommended)
-export default defineConfig({
-  out: "./db/migrations",
-  schema: "./shared/schema.ts",
-  dialect: "sqlite",
-  dbCredentials: {
-    url: "./pos-data.db",
-  },
-  verbose: true,
-});
+export default config;
