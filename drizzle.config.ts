@@ -1,15 +1,28 @@
 import { defineConfig } from "drizzle-kit";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
+// For cPanel MySQL hosting
+if (process.env.NODE_ENV === 'production' && process.env.MYSQL_HOST) {
+  export default defineConfig({
+    out: "./db/migrations",
+    schema: "./shared/schema.ts",
+    dialect: "mysql",
+    dbCredentials: {
+      host: process.env.MYSQL_HOST,
+      user: process.env.MYSQL_USER,
+      password: process.env.MYSQL_PASSWORD,
+      database: process.env.MYSQL_DATABASE,
+    },
+    verbose: true,
+  });
 }
 
+// Default SQLite configuration (recommended)
 export default defineConfig({
   out: "./db/migrations",
   schema: "./shared/schema.ts",
-  dialect: "postgresql",
+  dialect: "sqlite",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: "./pos-data.db",
   },
   verbose: true,
 });
