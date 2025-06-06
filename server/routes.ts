@@ -67,7 +67,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     async (usernameOrEmail, password, done) => {
       try {
-        console.log('Login attempt with:', usernameOrEmail);
+        console.log('Passport strategy - Login attempt with:', usernameOrEmail);
+
+        if (!usernameOrEmail || !password) {
+          return done(null, false, { message: 'Username/email and password are required' });
+        }
 
         // Find user by either username or email
         const user = await storage.getUserByUsernameOrEmail(usernameOrEmail);
@@ -77,33 +81,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
         }
 
-        console.log('User found:', user.id, user.email);
+        console.log('User found:', user.id, user.username, user.email);
 
         // Check if user is active
         if (!user.active) {
+          console.log('User account is disabled:', user.id);
           return done(null, false, { message: 'Account is disabled. Please contact an administrator.' });
         }
 
         // Verify password
         try {
-          console.log('Attempting password verification');
+          console.log('Attempting password verification for user:', user.id);
           const isValidPassword = await bcrypt.compare(password, user.password);
           console.log('Password validation result:', isValidPassword);
 
           if (!isValidPassword) {
-            console.log('Password verification failed');
+            console.log('Password verification failed for user:', user.id);
             return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
           }
 
-          console.log('Authentication successful, user logged in');
+          console.log('Authentication successful for user:', user.id);
           return done(null, user);
-        } catch (error) {
-          console.error('Password verification error:', error);
+        } catch (passwordError) {
+          console.error('Password verification error:', passwordError);
           return done(null, false, { message: 'Authentication error. Please try again.' });
         }
       } catch (error) {
-        console.error('Login error:', error);
-        return done(error);
+        console.error('Login strategy error:', error);
+        return done(error, false, { message: 'Server error during authentication' });
       }
     }
   ));
@@ -123,17 +128,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication routes
   app.post('/api/auth/login', (req, res, next) => {
-    console.log('Login request received:', req.body.usernameOrEmail);
+    console.log('Login request received:', req.body);
+    
+    const { usernameOrEmail, password } = req.body;
+    
+    if (!usernameOrEmail || !password) {
+      return res.status(400).json({ 
+        message: 'Username/email and password are required' 
+      });
+    }
 
     passport.authenticate('local', (err: Error | null, user: any, info: { message: string } | undefined) => {
+      console.log('Passport authenticate result:', { err, user: user ? user.id : null, info });
+      
       if (err) {
         console.error('Login error:', err);
-        return res.status(500).json({ message: 'Internal server error during login' });
+        return res.status(500).json({ 
+          message: 'Internal server error during login',
+          error: err.message 
+        });
       }
 
       if (!user) {
         console.log('Authentication failed:', info?.message);
-        return res.status(401).json({ message: info?.message || 'Invalid username or password' });
+        return res.status(401).json({ 
+          message: info?.message || 'Invalid credentials. Please check your username/email and password.' 
+        });
       }
 
       console.log('Authentication successful for user:', user.id);
@@ -142,7 +162,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.login(user, (loginErr) => {
         if (loginErr) {
           console.error('Session login error:', loginErr);
-          return res.status(500).json({ message: 'Error establishing session' });
+          return res.status(500).json({ 
+            message: 'Error establishing session',
+            error: loginErr.message 
+          });
         }
 
         console.log('Session created successfully');
@@ -151,7 +174,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userResponse = { ...user };
         if (userResponse.password) delete userResponse.password;
 
-        return res.json({ user: userResponse });
+        return res.json({ 
+          user: userResponse,
+          message: 'Login successful'
+        });
       });
     })(req, res, next);
   });
