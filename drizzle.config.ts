@@ -7,10 +7,10 @@ if (process.env.NODE_ENV === 'production' && process.env.MYSQL_HOST) {
     schema: "./shared/schema.ts",
     dialect: "mysql",
     dbCredentials: {
-      host: process.env.MYSQL_HOST,
-      user: process.env.MYSQL_USER,
-      password: process.env.MYSQL_PASSWORD,
-      database: process.env.MYSQL_DATABASE,
+      host: "localhost",
+      user: "fastflyi_fast",
+      password: "mushu@123",
+      database: "fastflyi_poss",
     },
     verbose: true,
   });
