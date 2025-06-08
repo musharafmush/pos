@@ -1,0 +1,89 @@
+If your @sales-dashboard ➜ Recent Sales Transactions is not showing sales data, here’s a checklist to debug and fix it:
+
+✅ Step-by-Step Debug Checklist
+1. Check if Sales Data Exists
+Go to your database or sales entry table.
+
+Verify if data is being stored after each sale (@pos-enhanced).
+
+Run a manual query or console.log() the fetched data.
+
+js
+Copy
+Edit
+// Example for Node/Express + MongoDB
+const sales = await SalesModel.find().sort({ date: -1 }).limit(10);
+console.log(sales); // Should show recent sales
+2. Verify Backend API Route
+Ensure your backend API (GET /api/sales/recent or similar) is working.
+
+Test with:
+
+bash
+Copy
+Edit
+curl http://localhost:5000/api/sales/recent
+Or use Postman to verify the response is not empty and has correct data.
+
+3. Check Frontend API Call
+In your sales-dashboard component, confirm you are calling the correct API:
+
+js
+Copy
+Edit
+useEffect(() => {
+  fetch('/api/sales/recent')
+    .then(res => res.json())
+    .then(data => setSales(data))
+    .catch(err => console.error('Sales fetch error:', err));
+}, []);
+4. Confirm State is Set & Rendered
+Make sure the data is being set in state and rendered properly:
+
+js
+Copy
+Edit
+{sales.length > 0 ? (
+  sales.map((sale, index) => (
+    <tr key={index}>
+      <td>{sale.invoiceNumber}</td>
+      <td>{sale.customerName}</td>
+      <td>{new Date(sale.date).toLocaleString()}</td>
+      <td>{sale.totalAmount}</td>
+    </tr>
+  ))
+) : (
+  <tr><td colSpan="4">No sales found</td></tr>
+)}
+5. Look for Errors in Console / Network Tab
+Open browser dev tools → Console and Network.
+
+Check if:
+
+API call is made
+
+Response is 200
+
+Data format is valid JSON
+
+🛠️ Optional Fix: Sample Express API for Recent Sales
+js
+Copy
+Edit
+app.get('/api/sales/recent', async (req, res) => {
+  try {
+    const recentSales = await Sales.find().sort({ date: -1 }).limit(10);
+    res.json(recentSales);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch sales' });
+  }
+});
+If you share:
+
+Your frontend fetch code
+
+Backend route for sales
+
+Any error messages
+
+I’ll give you a direct fix.
