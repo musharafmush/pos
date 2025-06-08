@@ -1575,7 +1575,8 @@ export default function SalesDashboard() {
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    </TableBody>
+                    </TableHeader>
+                    <TableBody>
                       {salesData?.slice(0, 10).map((sale: any) => {
                         const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
                         const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
