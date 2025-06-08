@@ -595,26 +595,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/returns", async (req, res) => {
     try {
       const { search, limit = 50 } = req.query;
+      const { sqlite } = await import('@db');
 
       let query = `
-        SELECT r.*, s.orderNumber as saleOrderNumber, s.total as saleTotal,
+        SELECT r.*, s.order_number as saleOrderNumber, s.total as saleTotal,
                c.name as customerName, u.name as userName
         FROM returns r
-        LEFT JOIN sales s ON r.saleId = s.id
-        LEFT JOIN customers c ON s.customerId = c.id
-        LEFT JOIN users u ON r.userId = u.id
+        LEFT JOIN sales s ON r.sale_id = s.id
+        LEFT JOIN customers c ON s.customer_id = c.id
+        LEFT JOIN users u ON r.user_id = u.id
       `;
       const params: any[] = [];
 
       if (search) {
-        query += ` WHERE s.orderNumber LIKE ? OR c.name LIKE ?`;
+        query += ` WHERE s.order_number LIKE ? OR c.name LIKE ?`;
         params.push(`%${search}%`, `%${search}%`);
       }
 
-      query += ` ORDER BY r.createdAt DESC LIMIT ?`;
+      query += ` ORDER BY r.created_at DESC LIMIT ?`;
       params.push(parseInt(limit as string));
 
-      const returns = db.prepare(query).all(params);
+      const returns = sqlite.prepare(query).all(...params);
       res.json(returns);
     } catch (error) {
       console.error('Error fetching returns:', error);
@@ -625,40 +626,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/returns", async (req, res) => {
     try {
       const { saleId, items, refundMethod, totalRefund, reason, notes } = req.body;
-      const userId = req.user?.id || 1;
+      const userId = (req.user as any)?.id || 1;
+      const { sqlite } = await import('@db');
 
-      // Start transaction
-      const insertReturn = db.prepare(`
-        INSERT INTO returns (saleId, userId, totalRefund, refundMethod, reason, notes, status, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?, 'completed', ?)
-      `);
+      console.log('Processing return:', { saleId, items, refundMethod, totalRefund, reason });
 
-      const insertReturnItem = db.prepare(`
-        INSERT INTO return_items (returnId, productId, quantity, unitPrice, subtotal)
-        VALUES (?, ?, ?, ?, ?)
-      `);
-
-      const updateProductStock = db.prepare(`
-        UPDATE products SET stockQuantity = stockQuantity + ? WHERE id = ?
-      `);
-
-      const now = new Date().toISOString();
-      const result = insertReturn.run(saleId, userId, totalRefund, refundMethod, reason, notes || '', now);
-      const returnId = result.lastInsertRowid;
-
-      // Insert return items and update stock
-      for (const item of items) {
-        insertReturnItem.run(returnId, item.productId, item.quantity, item.unitPrice, item.subtotal);
-        updateProductStock.run(item.quantity, item.productId);
+      // Validate required fields
+      if (!saleId || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: 'Sale ID and items are required' });
       }
 
+      if (!totalRefund || parseFloat(totalRefund) <= 0) {
+        return res.status(400).json({ message: 'Valid refund amount is required' });
+      }
+
+      // Start transaction
+      const result = sqlite.transaction(() => {
+        // Insert the return record
+        const insertReturn = sqlite.prepare(`
+          INSERT INTO returns (sale_id, user_id, total_refund, refund_method, reason, notes, status, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, 'completed', CURRENT_TIMESTAMP)
+        `);
+
+        const returnResult = insertReturn.run(
+          saleId, 
+          userId, 
+          totalRefund.toString(), 
+          refundMethod || 'cash', 
+          reason || '', 
+          notes || ''
+        );
+
+        const returnId = returnResult.lastInsertRowid;
+
+        // Insert return items and update stock
+        const insertReturnItem = sqlite.prepare(`
+          INSERT INTO return_items (return_id, product_id, quantity, unit_price, subtotal, created_at)
+          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `);
+
+        const updateProductStock = sqlite.prepare(`
+          UPDATE products SET stock_quantity = COALESCE(stock_quantity, 0) + ? WHERE id = ?
+        `);
+
+        for (const item of items) {
+          // Insert return item
+          insertReturnItem.run(
+            returnId, 
+            item.productId, 
+            item.quantity, 
+            item.unitPrice.toString(), 
+            item.subtotal.toString()
+          );
+
+          // Update product stock (restore returned quantity)
+          const stockResult = updateProductStock.run(item.quantity, item.productId);
+          console.log(`📦 Restored stock for product ${item.productId}: +${item.quantity} (changes: ${stockResult.changes})`);
+        }
+
+        return returnId;
+      })();
+
+      console.log('✅ Return processed successfully with ID:', result);
+
       res.json({ 
-        id: returnId, 
-        message: 'Return processed successfully'
+        id: result, 
+        message: 'Return processed successfully',
+        returnId: result
       });
     } catch (error) {
-      console.error('Error processing return:', error);
-      res.status(500).json({ message: 'Failed to process return' });
+      console.error('💥 Error processing return:', error);
+      res.status(500).json({ 
+        message: 'Failed to process return',
+        error: error.message
+      });
     }
   });
 

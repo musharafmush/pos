@@ -83,7 +83,8 @@ export default function SaleReturn() {
       
       const response = await fetch(`/api/sales?${params}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch sales');
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch sales: ${errorText}`);
       }
       return response.json();
     },
@@ -106,23 +107,40 @@ export default function SaleReturn() {
   // Create return mutation
   const createReturnMutation = useMutation({
     mutationFn: async (returnData: any) => {
+      console.log('Sending return data:', returnData);
+      
       const response = await fetch('/api/returns', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(returnData),
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to process return');
+        const errorText = await response.text();
+        console.error('Return API error:', errorText);
+        
+        let errorMessage = 'Failed to process return';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log('Return processed successfully:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Return Processed",
-        description: "Sale return has been processed successfully",
+        title: "✅ Return Processed",
+        description: `Return #${data.returnId || data.id} has been processed successfully. Stock has been restored.`,
       });
       
       // Reset form
@@ -139,8 +157,9 @@ export default function SaleReturn() {
       queryClient.invalidateQueries({ queryKey: ['/api/returns'] });
     },
     onError: (error: Error) => {
+      console.error('Return mutation error:', error);
       toast({
-        title: "Return Failed",
+        title: "❌ Return Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -148,18 +167,20 @@ export default function SaleReturn() {
   });
 
   const handleSaleSelect = (sale: Sale) => {
+    console.log('Selected sale for return:', sale);
     setSelectedSale(sale);
     
     // Initialize return items from sale items
     const items: ReturnItem[] = sale.items?.map(item => ({
-      productId: item.productId,
-      productName: item.product.name,
-      maxQuantity: item.quantity,
+      productId: item.productId || item.product?.id,
+      productName: item.product?.name || item.productName || 'Unknown Product',
+      maxQuantity: item.quantity || 1,
       returnQuantity: 0,
-      unitPrice: parseFloat(item.unitPrice),
+      unitPrice: parseFloat(item.unitPrice || item.price || '0'),
       subtotal: 0,
     })) || [];
     
+    console.log('Initialized return items:', items);
     setReturnItems(items);
   };
 
