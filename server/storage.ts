@@ -1395,6 +1395,8 @@ export const storage = {
     try {
       console.log('📦 Storage: Listing returns with limit', limit, 'offset', offset, 'filters', filters);
 
+      const { sqlite } = await import('../db/index.js');
+
       let query = `
         SELECT 
           r.*,
@@ -1440,7 +1442,7 @@ export const storage = {
       query += ` ORDER BY r.created_at DESC LIMIT ? OFFSET ?`;
       params.push(limit, offset);
 
-      const returns = this.sqlite.prepare(query).all(...params);
+      const returns = sqlite.prepare(query).all(...params);
 
       // Get return items for each return
       const returnsWithItems = returns.map(returnRecord => {
@@ -1453,7 +1455,7 @@ export const storage = {
           WHERE ri.return_id = ?
         `;
 
-        const items = this.sqlite.prepare(itemsQuery).all(returnRecord.id);
+        const items = sqlite.prepare(itemsQuery).all(returnRecord.id);
 
         return {
           id: returnRecord.id,
