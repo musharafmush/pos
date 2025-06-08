@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { printReceipt as printReceiptUtil } from "@/components/pos/print-receipt";
 import {
   Search,
   ShoppingCart,
@@ -554,6 +555,18 @@ export default function POSEnhanced() {
         variant: "default",
       });
 
+      // Print receipt automatically
+      try {
+        handlePrintReceipt(saleResult);
+      } catch (printError) {
+        console.error("Print error:", printError);
+        toast({
+          title: "Print Warning",
+          description: "Sale completed but receipt printing failed. You can print manually.",
+          variant: "default",
+        });
+      }
+
       // Reset everything
       clearCart();
       setShowPaymentDialog(false);
@@ -678,85 +691,40 @@ export default function POSEnhanced() {
   });
 
   // Printing receipt functionality
-  const printReceipt = (receiptData: any) => {
-    const receiptContent = `
-      <html>
-      <head>
-        <title>Receipt</title>
-        <style>
-          body { font-family: monospace; }
-          .receipt { width: 280px; padding: 10px; }
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-          .line { border-bottom: 1px dashed #000; margin: 5px 0; }
-          .item-row { display: flex; justify-content: space-between; }
-          .item-row .item { flex: 2; }
-          .item-row .qty { flex: 1; text-align: center; }
-          .item-row .price { flex: 1; text-align: right; }
-          .footer { margin-top: 20px; }
-        </style>
-      </head>
-      <body>
-        <div class="receipt">
-          <div class="text-center">
-            <h2>Receipt</h2>
-            <p>Bill Number: ${receiptData.billNumber}</p>
-            <p>Date: ${receiptData.billDate}</p>
-          </div>
-          <div class="line"></div>
-          <div>
-            <p>Customer: ${receiptData.customerDetails.name}</p>
-            <p>Salesman: ${receiptData.salesMan}</p>
-          </div>
-          <div class="line"></div>
-          ${receiptData.items.map((item: any) => `
-            <div class="item-row">
-              <div class="item">${item.name}</div>
-              <div class="qty">${item.quantity} x ${item.price}</div>
-              <div class="price">${formatCurrency(item.total)}</div>
-            </div>
-          `).join('')}
-          <div class="line"></div>
-          <div class="text-right">
-            <p>Subtotal: ${formatCurrency(receiptData.subtotal)}</p>
-            <p>Discount: ${formatCurrency(receiptData.discount)}</p>
-            <p>Tax (${receiptData.taxRate}%): ${formatCurrency(receiptData.taxAmount)}</p>
-            <h3 style="margin-top: 10px;">Total: ${formatCurrency(receiptData.grandTotal)}</h3>
-          </div>
-          <div class="line"></div>
-          <div class="text-right footer">
-            <p>Amount Paid: ${formatCurrency(receiptData.amountPaid)}</p>
-            <p>Change Due: ${formatCurrency(receiptData.changeDue)}</p>
-            <p>Payment Method: ${receiptData.paymentMethod}</p>
-          </div>
-          <div class="line"></div>
-          <div class="text-center">
-            <p>Thank you!</p>
-          </div>
-        </div>
-        <script>
-          window.onload = function() {
-            window.print();
-            window.onafterprint = function() {
-              window.close();
-            }
-          }
-        </script>
-      </body>
-      </html>
-    `;
+  const handlePrintReceipt = (saleData: any) => {
+    const receiptData = {
+      billNumber: billNumber,
+      billDate: new Date().toLocaleDateString('en-IN'),
+      customerDetails: {
+        name: selectedCustomer?.name || "Walk-in Customer",
+        doorNo: "",
+        street: "",
+        address: "",
+        place: ""
+      },
+      salesMan: "Admin User",
+      items: cart.map(item => ({
+        id: item.id,
+        name: item.name,
+        sku: item.sku,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+        mrp: item.mrp
+      })),
+      subtotal: subtotal,
+      discount: discountAmount,
+      discountType: 'percentage' as const,
+      taxRate: taxRate,
+      taxAmount: taxAmount,
+      grandTotal: total,
+      amountPaid: parseFloat(amountPaid) || total,
+      changeDue: Math.max(0, (parseFloat(amountPaid) || total) - total),
+      paymentMethod: paymentMethod,
+      notes: `Bill: ${billNumber}`
+    };
 
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(receiptContent);
-      printWindow.document.close();
-    } else {
-      toast({
-        title: "Popup Blocked",
-        description: "Please allow popups to print the receipt.",
-        variant: "destructive",
-      });
-    }
+    printReceiptUtil(receiptData);
   };
 
   // Quick payment setup
@@ -1369,6 +1337,18 @@ export default function POSEnhanced() {
                 <Button
                   variant="outline"
                   className="w-full hover:bg-gray-50"
+                  onClick={() => {
+                    if (cart.length > 0) {
+                      handlePrintReceipt(null);
+                    } else {
+                      toast({
+                        title: "Empty Cart",
+                        description: "Please add items to cart before printing receipt",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={cart.length === 0}
                 >
                   <Receipt className="h-4 w-4 mr-2" />
                   Print Receipt
