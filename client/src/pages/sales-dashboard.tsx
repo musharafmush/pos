@@ -1938,144 +1938,124 @@ export default function SalesDashboard() {
           {/* Recent Transactions Tab */}
           <TabsContent value="transactions" className="space-y-6">
             {/* Header Section */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl font-bold text-gray-800">Recent Sales Transactions</CardTitle>
-                    <CardDescription className="text-gray-600">Latest sales activity with detailed billing information</CardDescription>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Export transactions
-                        const csvData = salesData?.map(sale => ({
-                          'Date': format(new Date(sale.createdAt || sale.created_at || new Date()), "yyyy-MM-dd"),
-                          'Invoice': sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`,
-                          'Customer': sale.customerName || sale.customer_name || "Walk-in Customer",
-                          'Total': sale.total || sale.totalAmount || sale.amount || 0,
-                          'Payment': sale.paymentMethod || sale.payment_method || "Cash",
-                          'Status': sale.status || "Completed"
-                        }));
-                        console.log('Exporting transactions:', csvData);
-                      }}
-                      className="text-green-600 hover:text-green-800 border-green-300 hover:bg-green-50"
-                    >
-                      📊 Export Data
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => refetchSales()}
-                      className="text-blue-600 hover:text-blue-800 border-blue-300 hover:bg-blue-50"
-                    >
-                      🔄 Refresh
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => window.open('/pos-enhanced', '_blank')}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      <ShoppingCartIcon className="h-4 w-4 mr-2" />
-                      New Transaction
-                    </Button>
-                  </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Recent Sales Transactions</h2>
+                  <p className="text-gray-600 mt-1">Latest sales activity with detailed billing information</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {/* Quick Stats - Matching Reference Design */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                  <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <ShoppingCartIcon className="h-8 w-8 text-blue-500" />
-                    </div>
-                    <div className="text-2xl font-bold text-gray-800">{salesData?.length || 0}</div>
-                    <div className="text-sm text-gray-600">Total Transactions</div>
-                  </div>
-                  
-                  <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <DollarSignIcon className="h-8 w-8 text-green-500" />
-                    </div>
-                    <div className="text-2xl font-bold text-gray-800">{formatCurrency(totalSalesAmount)}</div>
-                    <div className="text-sm text-gray-600">Total Revenue</div>
-                  </div>
-                  
-                  <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <TrendingUpIcon className="h-8 w-8 text-purple-500" />
-                    </div>
-                    <div className="text-2xl font-bold text-gray-800">{formatCurrency(averageOrderValue)}</div>
-                    <div className="text-sm text-gray-600">Average Order</div>
-                  </div>
-                  
-                  <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <CalendarIcon className="h-8 w-8 text-orange-500" />
-                    </div>
-                    <div className="text-2xl font-bold text-gray-800">
-                      {salesData?.filter((sale: any) => {
-                        const saleDate = new Date(sale.createdAt || sale.created_at || sale.date);
-                        const today = new Date();
-                        return saleDate.toDateString() === today.toDateString();
-                      }).length || 0}
-                    </div>
-                    <div className="text-sm text-gray-600">Today's Sales</div>
-                  </div>
+                <div className="flex items-center space-x-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Export transactions
+                      const csvData = salesData?.map(sale => ({
+                        'Date': format(new Date(sale.createdAt || sale.created_at || new Date()), "yyyy-MM-dd"),
+                        'Invoice': sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`,
+                        'Customer': sale.customerName || sale.customer_name || "Walk-in Customer",
+                        'Total': sale.total || sale.totalAmount || sale.amount || 0,
+                        'Payment': sale.paymentMethod || sale.payment_method || "Cash",
+                        'Status': sale.status || "Completed"
+                      }));
+                      console.log('Exporting transactions:', csvData);
+                    }}
+                    className="text-green-600 hover:text-green-800 border-green-300 hover:bg-green-50"
+                  >
+                    📊 Export Data
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchSales()}
+                    className="text-blue-600 hover:text-blue-800 border-blue-300 hover:bg-blue-50"
+                  >
+                    🔄 Refresh
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => window.open('/pos-enhanced', '_blank')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <ShoppingCartIcon className="h-4 w-4 mr-2" />
+                    New Transaction
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Transactions Table - Matching Reference Design */}
-            <Card>
+              {/* Quick Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-600">Total Transactions</p>
+                      <p className="text-2xl font-bold text-blue-800">{salesData?.length || 0}</p>
+                    </div>
+                    <ShoppingCartIcon className="h-8 w-8 text-blue-500" />
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-600">Total Revenue</p>
+                      <p className="text-2xl font-bold text-green-800">{formatCurrency(totalSalesAmount)}</p>
+                    </div>
+                    <DollarSignIcon className="h-8 w-8 text-green-500" />
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600">Average Order</p>
+                      <p className="text-2xl font-bold text-purple-800">{formatCurrency(averageOrderValue)}</p>
+                    </div>
+                    <TrendingUpIcon className="h-8 w-8 text-purple-500" />
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-orange-600">Today's Sales</p>
+                      <p className="text-2xl font-bold text-orange-800">
+                        {salesData?.filter((sale: any) => {
+                          const saleDate = new Date(sale.createdAt || sale.created_at || sale.date);
+                          const today = new Date();
+                          return saleDate.toDateString() === today.toDateString();
+                        }).length || 0}
+                      </p>
+                    </div>
+                    <CalendarIcon className="h-8 w-8 text-orange-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Transactions Table */}
+            <Card className="border-0 shadow-lg">
               <CardContent className="p-0">
-                {/* Show loading state */}
-                {salesLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center">
-                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-gray-600">Loading transactions...</p>
-                    </div>
-                  </div>
-                ) : !salesData || salesData.length === 0 ? (
-                  /* No Transactions State - Matching Reference Design */
-                  <div className="text-center py-16">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <ShoppingCartIcon className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">No Transactions Found</h3>
-                    <p className="text-gray-600 mb-6">Start making sales to see transaction history here</p>
-                    <Button
-                      onClick={() => window.open('/pos-enhanced', '_blank')}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
-                    >
-                      <ShoppingCartIcon className="h-4 w-4 mr-2" />
-                      Create First Transaction
-                    </Button>
-                  </div>
-                ) : (
-                  /* Transactions Table */
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader className="bg-gray-50">
-                        <TableRow className="border-b border-gray-200">
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6">Date & Time</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6">Invoice#</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6">Customer Details</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6">Items</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Subtotal</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Tax</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Discount</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Total</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6">Payment</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6">Status</TableHead>
-                          <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                      {salesData.map((sale: any, index: number) => {
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-gray-50">
+                      <TableRow className="border-b border-gray-200">
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Date & Time</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Invoice#</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Customer Details</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Items</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Subtotal</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Tax</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Discount</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Total</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Payment</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Status</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {salesData && salesData.length > 0 ? (
+                        salesData.map((sale: any, index: number) => {
                           const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
                           const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
                           const saleSubtotal = parseFloat(sale.subtotal || (sale.total - sale.tax - sale.discount) || sale.total || 0);
@@ -2242,24 +2222,43 @@ export default function SalesDashboard() {
                               </TableCell>
                             </TableRow>
                           );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={11} className="py-12">
+                            <div className="text-center">
+                              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <ShoppingCartIcon className="h-8 w-8 text-gray-400" />
+                              </div>
+                              <h3 className="text-lg font-semibold text-gray-800 mb-2">No Transactions Found</h3>
+                              <p className="text-gray-600 mb-4">Start making sales to see transaction history here</p>
+                              <Button
+                                onClick={() => window.open('/pos-enhanced', '_blank')}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <ShoppingCartIcon className="h-4 w-4 mr-2" />
+                                Create First Transaction
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
                 {/* Pagination Footer */}
                 {salesData && salesData.length > 0 && (
                   <div className="bg-gray-50 border-t border-gray-200 px-6 py-4">
                     <div className="flex items-center justify-between">
                       <div className="text-sm text-gray-600">
-                        Showing {Math.min(salesData.length, 50)} of {salesData.length} transactions
+                        Showing {Math.min(salesData.length, 10)} of {salesData.length} transactions
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={salesData.length <= 50}
+                          disabled={salesData.length <= 10}
                           className="text-gray-600"
                         >
                           Previous
@@ -2267,7 +2266,7 @@ export default function SalesDashboard() {
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={salesData.length <= 50}
+                          disabled={salesData.length <= 10}
                           className="text-gray-600"
                         >
                           Next
