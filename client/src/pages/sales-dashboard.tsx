@@ -164,7 +164,7 @@ export default function SalesDashboard() {
   });
 
   // Fetch detailed customer billing data with enhanced information
-  const { data: customerBillingData, isLoading: billingLoading } = useQuery({
+  const { data: customerBillingData, isLoading: billingLoading, refetch: refetchCustomerBilling } = useQuery({
     queryKey: ['/api/reports/customer-billing', timeRange],
     queryFn: async () => {
       try {
@@ -628,6 +628,143 @@ export default function SalesDashboard() {
     return acc;
   }, []) || [];
 
+  // Customer Billing CRUD Operations
+  const handleCreateCustomerBilling = async (customerData: any) => {
+    try {
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...customerData,
+          totalBilled: parseFloat(customerData.totalBilled || '0'),
+          orderCount: parseInt(customerData.orderCount || '0'),
+          averageOrderValue: parseFloat(customerData.averageOrderValue || '0'),
+          creditLimit: parseFloat(customerData.creditLimit || '0')
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create customer');
+      }
+
+      const result = await response.json();
+      console.log('Customer created successfully:', result);
+      // Refetch customer billing data
+      refetchCustomerBilling();
+      setIsCreateCustomerBillingDialogOpen(false);
+      resetCustomerBillingForm();
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      alert('Failed to create customer. Please try again.');
+    }
+  };
+
+  const handleUpdateCustomerBilling = async (customerId: number, customerData: any) => {
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...customerData,
+          totalBilled: parseFloat(customerData.totalBilled || '0'),
+          orderCount: parseInt(customerData.orderCount || '0'),
+          averageOrderValue: parseFloat(customerData.averageOrderValue || '0'),
+          creditLimit: parseFloat(customerData.creditLimit || '0')
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update customer');
+      }
+
+      const result = await response.json();
+      console.log('Customer updated successfully:', result);
+      // Refetch customer billing data
+      refetchCustomerBilling();
+      setIsEditCustomerBillingDialogOpen(false);
+      setSelectedCustomerBilling(null);
+      resetCustomerBillingForm();
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      alert('Failed to update customer. Please try again.');
+    }
+  };
+
+  const handleDeleteCustomerBilling = async (customerId: number) => {
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete customer');
+      }
+
+      console.log('Customer deleted successfully');
+      // Refetch customer billing data
+      refetchCustomerBilling();
+      setIsDeleteCustomerBillingDialogOpen(false);
+      setSelectedCustomerBilling(null);
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      alert('Failed to delete customer. Please try again.');
+    }
+  };
+
+  const resetCustomerBillingForm = () => {
+    setCustomerBillingForm({
+      customerName: '',
+      phone: '',
+      email: '',
+      address: '',
+      totalBilled: '',
+      orderCount: '',
+      averageOrderValue: '',
+      status: 'active',
+      paymentTerm: '',
+      creditLimit: '',
+      notes: ''
+    });
+  };
+
+  const openEditCustomerBillingDialog = (customer: any) => {
+    setSelectedCustomerBilling(customer);
+    setCustomerBillingForm({
+      customerName: customer.customerName || '',
+      phone: customer.phone || '',
+      email: customer.email || '',
+      address: customer.address || '',
+      totalBilled: customer.totalBilled?.toString() || '',
+      orderCount: customer.orderCount?.toString() || '',
+      averageOrderValue: customer.averageOrderValue?.toString() || '',
+      status: customer.status || 'active',
+      paymentTerm: customer.paymentTerm || '',
+      creditLimit: customer.creditLimit?.toString() || '',
+      notes: customer.notes || ''
+    });
+    setIsEditCustomerBillingDialogOpen(true);
+  };
+
+  const openDeleteCustomerBillingDialog = (customer: any) => {
+    setSelectedCustomerBilling(customer);
+    setIsDeleteCustomerBillingDialogOpen(true);
+  };
+
+  const openCreateCustomerBillingDialog = () => {
+    resetCustomerBillingForm();
+    setIsCreateCustomerBillingDialogOpen(true);
+  };
+
+  // Add refetch function for customer billing
+  const refetchCustomerBilling = () => {
+    // This will be implemented with the actual API call
+    window.location.reload(); // Temporary solution
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
@@ -890,10 +1027,7 @@ export default function SalesDashboard() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    // Create new customer billing record
-                    console.log('Create new customer billing record');
-                  }}
+                  onClick={openCreateCustomerBillingDialog}
                   className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
                 >
                   <UsersIcon className="h-4 w-4" />
@@ -1084,18 +1218,7 @@ export default function SalesDashboard() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => {
-                                        setSelectedSale(customer);
-                                        setEditForm({
-                                          orderNumber: `BILL-${Date.now()}`,
-                                          customerId: customer.customerId?.toString() || '',
-                                          customerName: customer.customerName || '',
-                                          total: customer.totalBilled || '0',
-                                          paymentMethod: 'cash',
-                                          status: 'completed'
-                                        });
-                                        setIsEditDialogOpen(true);
-                                      }}
+                                      onClick={() => openEditCustomerBillingDialog(customer)}
                                       className="text-green-600 hover:text-green-800"
                                     >
                                       Edit
@@ -1103,10 +1226,7 @@ export default function SalesDashboard() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => {
-                                        setSelectedSale(customer);
-                                        setIsDeleteDialogOpen(true);
-                                      }}
+                                      onClick={() => openDeleteCustomerBillingDialog(customer)}
                                       className="text-red-600 hover:text-red-800"
                                     >
                                       Delete
@@ -1395,7 +1515,7 @@ export default function SalesDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Payment Method Distribution</CardTitle>
-                  <CardDescription>Breakdown of payment methods used</CardDescription>
+                <CardDescription>Breakdown of payment methods used</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
@@ -2097,7 +2217,7 @@ export default function SalesDashboard() {
                      (selectedCustomerBilling.orderCount || 0) > 5 ? 'Frequent Buyer' : 'Regular Customer'}
                   </span>
                 </div>
-                
+
                 <div className="bg-green-50 p-4 rounded-lg border">
                   <h5 className="font-semibold text-green-800 mb-2">Purchase Frequency</h5>
                   <div className="text-sm">
@@ -2175,8 +2295,129 @@ export default function SalesDashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Customer Billing Details */}
+      <Dialog open={isEditCustomerBillingDialogOpen} onOpenChange={setIsEditCustomerBillingDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit Customer Billing Details</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+                <div>
+                    <Label htmlFor="customerName">Customer Name</Label>
+                    <Input
+                        id="customerName"
+                        value={customerBillingForm.customerName}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, customerName: e.target.value })}
+                        placeholder="Enter customer name"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                        id="phone"
+                        value={customerBillingForm.phone}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, phone: e.target.value })}
+                        placeholder="Enter phone number"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                        id="email"
+                        type="email"
+                        value={customerBillingForm.email}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, email: e.target.value })}
+                        placeholder="Enter email address"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                        id="address"
+                        value={customerBillingForm.address}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, address: e.target.value })}
+                        placeholder="Enter customer address"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="totalBilled">Total Billed</Label>
+                    <Input
+                        id="totalBilled"
+                        type="number"
+                        value={customerBillingForm.totalBilled}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, totalBilled: e.target.value })}
+                        placeholder="Enter total billed amount"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="orderCount">Order Count</Label>
+                    <Input
+                        id="orderCount"
+                        type="number"
+                        value={customerBillingForm.orderCount}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, orderCount: e.target.value })}
+                        placeholder="Enter order count"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="averageOrderValue">Average Order Value</Label>
+                    <Input
+                        id="averageOrderValue"
+                        type="number"
+                        value={customerBillingForm.averageOrderValue}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, averageOrderValue: e.target.value })}
+                        placeholder="Enter average order value"
+                    />
+                </div>
+                <div>
+                  <Label htmlFor="paymentTerm">Payment Term</Label>
+                  <Input
+                    id="paymentTerm"
+                    type="text"
+                    value={customerBillingForm.paymentTerm}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, paymentTerm: e.target.value })}
+                    placeholder="Enter Payment Term"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="creditLimit">Credit Limit</Label>
+                  <Input
+                    id="creditLimit"
+                    type="text"
+                    value={customerBillingForm.creditLimit}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, creditLimit: e.target.value })}
+                    placeholder="Enter Credit Limit"
+                  />
+                </div>
+                 <div>
+                  <Label htmlFor="notes">Notes</Label>
+                  <Input
+                    id="notes"
+                    type="text"
+                    value={customerBillingForm.notes}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, notes: e.target.value })}
+                    placeholder="Enter Notes"
+                  />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditCustomerBillingDialogOpen(false)}>
+                    Cancel
+                </Button>
+                <Button onClick={() => {
+                    if (selectedCustomerBilling) {
+                      handleUpdateCustomerBilling(selectedCustomerBilling.customerId, customerBillingForm);
+                    }
+                    setIsEditCustomerBillingDialogOpen(false);
+                }}>
+                    Update Customer
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog open={isDeleteCustomerBillingDialogOpen} onOpenChange={setIsDeleteCustomerBillingDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
@@ -2188,10 +2429,11 @@ export default function SalesDashboard() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => {
-                // Handle delete
-                console.log('Deleting customer billing:', selectedSale);
-                setIsDeleteDialogOpen(false);
-                setSelectedSale(null);
+                if (selectedCustomerBilling) {
+                  handleDeleteCustomerBilling(selectedCustomerBilling.customerId);
+                }
+                setIsDeleteCustomerBillingDialogOpen(false);
+                setSelectedCustomerBilling(null);
               }}
               className="bg-red-600 hover:bg-red-700"
             >
@@ -2200,6 +2442,124 @@ export default function SalesDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Create Customer Billing Dialog */}
+      <Dialog open={isCreateCustomerBillingDialogOpen} onOpenChange={setIsCreateCustomerBillingDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Create New Customer Billing</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+                <div>
+                    <Label htmlFor="customerName">Customer Name</Label>
+                    <Input
+                        id="customerName"
+                        value={customerBillingForm.customerName}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, customerName: e.target.value })}
+                        placeholder="Enter customer name"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                        id="phone"
+                        value={customerBillingForm.phone}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, phone: e.target.value })}
+                        placeholder="Enter phone number"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                        id="email"
+                        type="email"
+                        value={customerBillingForm.email}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, email: e.target.value })}
+                        placeholder="Enter email address"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                        id="address"
+                        value={customerBillingForm.address}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, address: e.target.value })}
+                        placeholder="Enter customer address"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="totalBilled">Total Billed</Label>
+                    <Input
+                        id="totalBilled"
+                        type="number"
+                        value={customerBillingForm.totalBilled}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, totalBilled: e.target.value })}
+                        placeholder="Enter total billed amount"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="orderCount">Order Count</Label>
+                    <Input
+                        id="orderCount"
+                        type="number"
+                        value={customerBillingForm.orderCount}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, orderCount: e.target.value })}
+                        placeholder="Enter order count"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="averageOrderValue">Average Order Value</Label>
+                    <Input
+                        id="averageOrderValue"
+                        type="number"
+                        value={customerBillingForm.averageOrderValue}
+                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, averageOrderValue: e.target.value })}
+                        placeholder="Enter average order value"
+                    />
+                </div>
+                <div>
+                  <Label htmlFor="paymentTerm">Payment Term</Label>
+                  <Input
+                    id="paymentTerm"
+                    type="text"
+                    value={customerBillingForm.paymentTerm}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, paymentTerm: e.target.value })}
+                    placeholder="Enter Payment Term"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="creditLimit">Credit Limit</Label>
+                  <Input
+                    id="creditLimit"
+                    type="text"
+                    value={customerBillingForm.creditLimit}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, creditLimit: e.target.value })}
+                    placeholder="Enter Credit Limit"
+                  />
+                </div>
+                 <div>
+                  <Label htmlFor="notes">Notes</Label>
+                  <Input
+                    id="notes"
+                    type="text"
+                    value={customerBillingForm.notes}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, notes: e.target.value })}
+                    placeholder="Enter Notes"
+                  />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateCustomerBillingDialogOpen(false)}>
+                    Cancel
+                </Button>
+                <Button onClick={() => {
+                    handleCreateCustomerBilling(customerBillingForm);
+                    setIsCreateCustomerBillingDialogOpen(false);
+                }}>
+                    Create Customer
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </DashboardLayout>
   );
