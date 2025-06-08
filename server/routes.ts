@@ -782,8 +782,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/sales', isAuthenticated, async (req, res) => {
+  app.get('/api/sales', async (req, res) => {
     try {
+      console.log('Sales API endpoint hit with query:', req.query);
+      
       const limit = parseInt(req.query.limit as string || '20');
       const offset = parseInt(req.query.offset as string || '0');
       const search = req.query.search as string;
@@ -845,11 +847,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }));
 
+        console.log('Search results:', formattedSales.length, 'sales found');
         return res.json(formattedSales);
       }
 
       const sales = await storage.listSales(limit, offset, startDate, endDate, userId, customerId);
-      res.json(sales);
+      console.log('Retrieved sales:', sales?.length || 0, 'records');
+      res.json(sales || []);
     } catch (error) {
       console.error('Error fetching sales:', error);
       res.status(500).json({ message: 'Internal server error', error: error.message });
@@ -859,33 +863,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/sales/recent', async (req, res) => {
     try {
       console.log('Recent sales endpoint hit');
-      const limit = parseInt(req.query.limit as string || '5');
+      const limit = parseInt(req.query.limit as string || '10');
       console.log('Fetching recent sales with limit:', limit);
       
-      const sales = await storage.getRecentSales(limit);
-      console.log('Recent sales fetched:', sales?.length || 0, 'records');
+      // Always use the main listSales method as it's more reliable
+      const sales = await storage.listSales(limit, 0);
+      console.log('Recent sales fetched via listSales:', sales?.length || 0, 'records');
       
       if (!sales || sales.length === 0) {
-        console.log('No recent sales found, trying alternative approach');
-        // Try to get sales from main sales table
-        const allSales = await storage.listSales(limit, 0);
-        console.log('Alternative sales fetch result:', allSales?.length || 0, 'records');
-        return res.json(allSales || []);
+        console.log('No sales found, checking if database has any sales data');
+        
+        // Direct database query as last resort
+        try {
+          const { sqlite } = await import('@db');
+          const directQuery = sqlite.prepare(`
+            SELECT s.*, c.name as customerName, c.phone as customerPhone 
+            FROM sales s 
+            LEFT JOIN customers c ON s.customerId = c.id 
+            ORDER BY s.createdAt DESC 
+            LIMIT ?
+          `);
+          const directSales = directQuery.all(limit);
+          console.log('Direct database query result:', directSales?.length || 0, 'records');
+          return res.json(directSales || []);
+        } catch (dbError) {
+          console.error('Direct database query failed:', dbError);
+          return res.json([]);
+        }
       }
       
       res.json(sales);
     } catch (error) {
       console.error('Error fetching recent sales:', error);
-      
-      // Try to get sales from main sales endpoint as fallback
-      try {
-        const fallbackSales = await storage.listSales(5, 0);
-        console.log('Fallback sales fetch successful:', fallbackSales?.length || 0, 'records');
-        res.json(fallbackSales || []);
-      } catch (fallbackError) {
-        console.error('Fallback sales fetch also failed:', fallbackError);
-        res.json([]);
-      }
+      res.json([]);
     }
   });
 

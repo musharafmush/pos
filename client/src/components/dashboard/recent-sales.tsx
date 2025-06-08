@@ -31,45 +31,61 @@ export function RecentSales({ className }: RecentSalesProps) {
       console.log('Fetching recent sales data...');
       
       try {
-        // First try the recent sales endpoint with credentials included
-        const response = await fetch('/api/sales/recent', { 
+        // Try the main sales endpoint first (more reliable)
+        const mainResponse = await fetch('/api/sales?limit=10', { 
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           }
         });
         
-        console.log('Recent sales response status:', response.status);
+        console.log('Main sales response status:', mainResponse.status);
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Recent sales data received:', data);
-          const salesArray = Array.isArray(data) ? data : 
-                           data.sales ? data.sales :
-                           data.data ? data.data : [];
-          console.log('Processed recent sales array:', salesArray);
-          return salesArray;
+        if (mainResponse.ok) {
+          const mainData = await mainResponse.json();
+          console.log('Main sales data received:', mainData);
+          
+          // Handle different response formats
+          let salesArray = [];
+          if (Array.isArray(mainData)) {
+            salesArray = mainData;
+          } else if (mainData && Array.isArray(mainData.sales)) {
+            salesArray = mainData.sales;
+          } else if (mainData && Array.isArray(mainData.data)) {
+            salesArray = mainData.data;
+          }
+          
+          console.log('Processed main sales array:', salesArray.length, 'items');
+          return salesArray.slice(0, 10);
         }
         
-        // If recent sales fails, try main sales endpoint
-        console.log('Recent sales failed, trying main sales endpoint...');
-        const fallbackResponse = await fetch('/api/sales?limit=10', { 
+        // Fallback to recent sales endpoint
+        console.log('Main sales failed, trying recent sales endpoint...');
+        const recentResponse = await fetch('/api/sales/recent', { 
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           }
         });
         
-        console.log('Fallback sales response status:', fallbackResponse.status);
+        console.log('Recent sales response status:', recentResponse.status);
         
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json();
-          console.log('Fallback sales data received:', fallbackData);
-          const salesArray = Array.isArray(fallbackData) ? fallbackData : 
-                           fallbackData.sales ? fallbackData.sales :
-                           fallbackData.data ? fallbackData.data : [];
-          console.log('Processed fallback sales array:', salesArray);
-          return salesArray.slice(0, 10);
+        if (recentResponse.ok) {
+          const recentData = await recentResponse.json();
+          console.log('Recent sales data received:', recentData);
+          
+          // Handle different response formats
+          let salesArray = [];
+          if (Array.isArray(recentData)) {
+            salesArray = recentData;
+          } else if (recentData && Array.isArray(recentData.sales)) {
+            salesArray = recentData.sales;
+          } else if (recentData && Array.isArray(recentData.data)) {
+            salesArray = recentData.data;
+          }
+          
+          console.log('Processed recent sales array:', salesArray.length, 'items');
+          return salesArray;
         }
         
         // If both fail, return empty array
@@ -78,26 +94,6 @@ export function RecentSales({ className }: RecentSalesProps) {
         
       } catch (err) {
         console.error('Error fetching recent sales:', err);
-        
-        // Last resort - try to get any sales data
-        try {
-          const lastResortResponse = await fetch('/api/sales', { 
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          });
-          
-          if (lastResortResponse.ok) {
-            const lastResortData = await lastResortResponse.json();
-            const salesArray = Array.isArray(lastResortData) ? lastResortData : [];
-            console.log('Last resort sales data:', salesArray);
-            return salesArray.slice(0, 10);
-          }
-        } catch (lastResortErr) {
-          console.error('Last resort fetch also failed:', lastResortErr);
-        }
-        
         return [];
       }
     },
@@ -106,7 +102,8 @@ export function RecentSales({ className }: RecentSalesProps) {
     refetchOnMount: true,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 1, // 1 minute
-    refetchInterval: 1000 * 60, // Refresh every minute
+    refetchInterval: 1000 * 60 * 5, // Refresh every 5 minutes
+    refetchIntervalInBackground: false,
   });
 
   return (
