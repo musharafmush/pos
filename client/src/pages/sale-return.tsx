@@ -170,15 +170,22 @@ export default function SaleReturn() {
     console.log('Selected sale for return:', sale);
     setSelectedSale(sale);
     
-    // Initialize return items from sale items
-    const items: ReturnItem[] = sale.items?.map(item => ({
-      productId: item.productId || item.product?.id,
-      productName: item.product?.name || item.productName || 'Unknown Product',
-      maxQuantity: item.quantity || 1,
-      returnQuantity: 0,
-      unitPrice: parseFloat(item.unitPrice || item.price || '0'),
-      subtotal: 0,
-    })) || [];
+    // Initialize return items from sale items with better data handling
+    const items: ReturnItem[] = sale.items?.map(item => {
+      const productId = item.productId || item.product?.id || 0;
+      const productName = item.product?.name || item.productName || `Product #${productId}` || 'Unknown Product';
+      const quantity = parseInt(item.quantity?.toString() || '1') || 1;
+      const unitPrice = parseFloat(item.unitPrice?.toString() || item.price?.toString() || '0') || 0;
+      
+      return {
+        productId,
+        productName,
+        maxQuantity: quantity,
+        returnQuantity: 0,
+        unitPrice,
+        subtotal: 0,
+      };
+    }) || [];
     
     console.log('Initialized return items:', items);
     setReturnItems(items);
@@ -376,7 +383,7 @@ export default function SaleReturn() {
                   </div>
                   <div>
                     <p className="font-medium">Customer:</p>
-                    <p className="text-muted-foreground">{saleDetails.customer?.name || 'Walk-in'}</p>
+                    <p className="text-muted-foreground">{saleDetails.customerName || 'Walk-in'}</p>
                   </div>
                   <div>
                     <p className="font-medium">Date:</p>
@@ -385,33 +392,45 @@ export default function SaleReturn() {
                     </p>
                   </div>
                 </div>
+                
+                <div className="text-sm">
+                  <p className="font-medium">Items Count:</p>
+                  <p className="text-muted-foreground">{saleDetails.items?.length || 0} items</p>
+                </div>
 
                 <div>
                   <h4 className="font-medium mb-2">Items to Return:</h4>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {returnItems.map((item) => (
-                      <div key={item.productId} className="flex items-center gap-2 p-2 border rounded">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{item.productName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Max: {item.maxQuantity} × {formatCurrency(item.unitPrice)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            max={item.maxQuantity}
-                            value={item.returnQuantity}
-                            onChange={(e) => updateReturnQuantity(item.productId, parseInt(e.target.value) || 0)}
-                            className="w-16 h-8"
-                          />
-                          <div className="text-sm font-medium w-20 text-right">
-                            {formatCurrency(item.subtotal)}
+                    {returnItems.length > 0 ? (
+                      returnItems.map((item) => (
+                        <div key={`${item.productId}-${item.productName}`} className="flex items-center gap-2 p-2 border rounded">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{item.productName || `Product #${item.productId}`}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Max: {item.maxQuantity} × {formatCurrency(item.unitPrice)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              max={item.maxQuantity}
+                              value={item.returnQuantity}
+                              onChange={(e) => updateReturnQuantity(item.productId, parseInt(e.target.value) || 0)}
+                              className="w-16 h-8"
+                            />
+                            <div className="text-sm font-medium w-20 text-right">
+                              {formatCurrency(item.subtotal)}
+                            </div>
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        <p className="text-sm">No items found for this sale</p>
+                        <p className="text-xs mt-1">Please select a different sale or check if the sale has items</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
 

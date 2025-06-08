@@ -777,7 +777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Direct SQLite transaction for reliable data saving
       const { sqlite } = await import('@db');
-      
+
       const result = sqlite.transaction(() => {
         try {
           // Insert the sale record
@@ -886,7 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/sales', async (req, res) => {
     try {
       console.log('📊 Sales API endpoint accessed with query:', req.query);
-      
+
       const limit = parseInt(req.query.limit as string || '20');
       const offset = parseInt(req.query.offset as string || '0');
       const search = req.query.search as string;
@@ -898,7 +898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try direct database query first
       try {
         const { sqlite } = await import('@db');
-        
+
         let query = `
           SELECT 
             s.*,
@@ -915,7 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           LEFT JOIN customers c ON s.customer_id = c.id
           LEFT JOIN users u ON s.user_id = u.id
         `;
-        
+
         const params = [];
 
         // Add search conditions
@@ -936,7 +936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           params.push(startDate.toISOString());
           whereAdded = true;
         }
-        
+
         if (endDate) {
           query += whereAdded ? ' AND' : ' WHERE';
           query += ' s.created_at <= ?';
@@ -965,7 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('📝 Query params:', params);
 
         const sales = sqlite.prepare(query).all(...params);
-        
+
         console.log(`✅ Direct query found ${sales.length} sales`);
 
         // Format the results
@@ -994,7 +994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       } catch (dbError) {
         console.error('❌ Direct database query failed:', dbError);
-        
+
         // Fallback to storage method
         try {
           const sales = await storage.listSales(limit, offset, startDate, endDate, userId, customerId);
@@ -1020,26 +1020,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 POS Enhanced - Recent sales endpoint accessed');
       const limit = parseInt(req.query.limit as string || '10');
-      
+
       // Direct database approach with proper column names
       const { sqlite } = await import('@db');
-      
+
       // First check if sales table exists and has data
       const tableCheck = sqlite.prepare(`
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name='sales'
       `).get();
-      
+
       if (!tableCheck) {
         console.log('❌ Sales table does not exist');
         return res.json([]);
       }
-      
+
       // Get total count first
       const countQuery = sqlite.prepare('SELECT COUNT(*) as count FROM sales');
       const totalCount = countQuery.get();
       console.log(`📊 Total sales in database: ${totalCount.count}`);
-      
+
       if (totalCount.count === 0) {
         console.log('📝 No sales data found - returning empty array');
         return res.json([]);
@@ -1073,9 +1073,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🔍 Executing enhanced sales query');
       const salesData = sqlite.prepare(query).all(limit);
-      
+
       console.log(`✅ Found ${salesData.length} recent sales with item counts`);
-      
+
       // Format the response with enhanced data
       const formattedSales = salesData.map(sale => ({
         id: sale.id,
@@ -1098,7 +1098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('📊 Returning formatted sales data:', formattedSales.length);
       res.json(formattedSales);
-      
+
     } catch (error) {
       console.error('💥 Error in POS Enhanced recent sales endpoint:', error);
       res.status(500).json({ 
@@ -1113,13 +1113,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sales/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const sale = await storage.getSaleById(parseInt(id));
-
-      if (!sale) {
+      const response = await storage.getSaleById(parseInt(id));
+      
+       if (!response) {
         return res.status(404).json({ message: 'Sale not found' });
       }
 
-      res.json(sale);
+      res.json(response);
     } catch (error) {
       console.error('Error fetching sale:', error);
       res.status(500).json({ message: 'Failed to fetch sale' });
@@ -1686,7 +1686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/sales/test', async (req, res) => {
     try {
       console.log('🧪 Sales test endpoint accessed');
-      
+
       const testResults = {
         timestamp: new Date().toISOString(),
         authentication: {
@@ -1697,24 +1697,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         apiTests: {},
         recommendations: []
       };
-      
+
       // Test 1: Database connection and table existence
       try {
         const { sqlite } = await import('@db');
-        
+
         // Check if sales table exists
         const tableCheck = sqlite.prepare(`
           SELECT name FROM sqlite_master 
           WHERE type='table' AND name='sales'
         `).get();
-        
+
         testResults.databaseTests.salesTableExists = !!tableCheck;
-        
+
         if (tableCheck) {
           // Count total sales
           const totalCount = sqlite.prepare('SELECT COUNT(*) as count FROM sales').get();
           testResults.databaseTests.totalSalesCount = totalCount.count;
-          
+
           // Get recent sales directly
           const recentSales = sqlite.prepare(`
             SELECT s.*, c.name as customerName 
@@ -1723,23 +1723,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ORDER BY s.createdAt DESC 
             LIMIT 5
           `).all();
-          
+
           testResults.databaseTests.recentSalesData = recentSales;
           testResults.databaseTests.recentSalesCount = recentSales.length;
-          
+
           // Check if sales were created today
           const today = new Date().toISOString().split('T')[0];
           const todaysSales = sqlite.prepare(`
             SELECT COUNT(*) as count FROM sales 
             WHERE DATE(createdAt) = ?
           `).get(today);
-          
+
           testResults.databaseTests.todaysSalesCount = todaysSales.count;
         }
       } catch (dbError) {
         testResults.databaseTests.error = dbError.message;
       }
-      
+
       // Test 2: Storage layer methods
       try {
         const storageResults = await storage.listSales(10, 0);
@@ -1754,27 +1754,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: storageError.message
         };
       }
-      
+
       // Generate recommendations
       if (testResults.databaseTests.totalSalesCount === 0) {
         testResults.recommendations.push('No sales data found - try creating a test sale via POS');
       }
-      
+
       if (!testResults.databaseTests.salesTableExists) {
         testResults.recommendations.push('Sales table missing - run database migration');
       }
-      
+
       if (!testResults.authentication.isAuthenticated) {
         testResults.recommendations.push('User not authenticated - may affect data access');
       }
-      
+
       if (testResults.databaseTests.totalSalesCount > 0 && testResults.apiTests.storageListSales?.count === 0) {
         testResults.recommendations.push('Data exists but storage layer not returning it - check storage.listSales method');
       }
-      
+
       console.log('🧪 Test results:', testResults);
       res.json(testResults);
-      
+
     } catch (error) {
       console.error('💥 Error in sales test endpoint:', error);
       res.status(500).json({ 
@@ -1789,18 +1789,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/sales/debug', async (req, res) => {
     try {
       console.log('Sales debug endpoint accessed');
-      
+
       // Check authentication status
       const authStatus = {
         isAuthenticated: req.isAuthenticated(),
         user: req.user ? { id: (req.user as any).id, name: (req.user as any).name } : null
       };
-      
+
       // Try different sales queries
       let salesCount = 0;
       let recentSalesCount = 0;
       let salesSample = null;
-      
+
       try {
         const allSales = await storage.listSales(100, 0);
         salesCount = allSales?.length || 0;
@@ -1808,14 +1808,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (err) {
         console.error('Error getting all sales:', err);
       }
-      
+
       try {
         const recentSales = await storage.getRecentSales(10);
         recentSalesCount = recentSales?.length || 0;
       } catch (err) {
         console.error('Error getting recent sales:', err);
       }
-      
+
       const debugInfo = {
         timestamp: new Date().toISOString(),
         authentication: authStatus,
@@ -1831,7 +1831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           '/api/dashboard/stats': 'Dashboard stats endpoint'
         }
       };
-      
+
       console.log('Debug info compiled:', debugInfo);
       res.json(debugInfo);
     } catch (error) {
