@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
 import Dashboard from "@/pages/dashboard";
 import POS from "@/pages/pos";
 import POSGofrugal from "@/pages/pos-gofrugal";
@@ -43,7 +44,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import Categories from "./pages/categories";
 import Brands from "./pages/brands";
 import AccountsDashboard from "./pages/accounts-dashboard";
-import { lazy } from "react";
+import SaleReturnsDashboard from "./pages/sale-returns-dashboard";
 
 function Router() {
   return (
@@ -80,6 +81,8 @@ function Router() {
       <ProtectedRoute path="/purchase-entry-professional" component={PurchaseEntryProfessional} />
       <ProtectedRoute path="/reports" component={Reports} />
       <ProtectedRoute path="/sales/return" component={SaleReturn} />
+      <ProtectedRoute path="/sale-return" component={SaleReturn} />
+      <ProtectedRoute path="/sale-returns-dashboard" component={SaleReturnsDashboard} />
       <ProtectedRoute path="/sales-dashboard" component={SalesDashboard} />
       <ProtectedRoute path="/users" component={Users} adminOnly />
       <ProtectedRoute path="/settings" component={Settings} />
@@ -92,9 +95,6 @@ function Router() {
       <Route path="/categories" component={Categories} />
       <ProtectedRoute path="/brands" component={Brands} />
       <ProtectedRoute path="/accounts-dashboard" component={AccountsDashboard} />
-      <Route path="/sale-return" component={lazy(() => import("./pages/sale-return"))} />
-      <Route path="/sale-returns-dashboard" component={lazy(() => import("./pages/sale-returns-dashboard"))} />
-      <Route path="/reports" component={lazy(() => import("./pages/reports"))} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -102,14 +102,16 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="pos-theme">
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router />
-          <Toaster />
-        </AuthProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light" storageKey="pos-theme">
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <Router />
+            <Toaster />
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
