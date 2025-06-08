@@ -544,14 +544,19 @@ export default function POSEnhanced() {
       }
 
       const saleResult = await response.json();
-      console.log("Sale completed successfully:", saleResult);
+      console.log("✅ POS Enhanced sale completed successfully:", saleResult);
+
+      // Verify the sale was saved
+      if (saleResult.saved !== false && saleResult.id) {
+        console.log(`💾 Sale saved to database with ID: ${saleResult.id}`);
+      }
 
       // Update payment tracking
       updatePaymentTracking(paymentMethod, paidAmount);
 
       toast({
-        title: "✅ Sale Completed!",
-        description: `Transaction successful for ${formatCurrency(total)}${paidAmount > total ? `. Change: ${formatCurrency(paidAmount - total)}` : ''}`,
+        title: "✅ Sale Completed & Saved!",
+        description: `Transaction ${saleResult.orderNumber || saleResult.billNumber} saved successfully for ${formatCurrency(total)}${paidAmount > total ? `. Change: ${formatCurrency(paidAmount - total)}` : ''}`,
         variant: "default",
       });
 

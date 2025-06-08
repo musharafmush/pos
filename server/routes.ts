@@ -665,7 +665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sales API
   app.post("/api/sales", async (req, res) => {
     try {
-      console.log("Processing sale request:", req.body);
+      console.log("📊 Processing POS Enhanced sale request:", req.body);
 
       const {
         customerId,
@@ -703,7 +703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate order number if not provided
-      const orderNumber = billNumber || `SALE-${Date.now()}`;
+      const orderNumber = billNumber || `POS-${Date.now()}`;
 
       // Safely handle customerId - ensure it's null if undefined/empty
       const safeCustomerId = customerId && parseInt(customerId.toString()) > 0 ? parseInt(customerId.toString()) : null;
@@ -726,56 +726,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
           productId,
           quantity,
           unitPrice,
-          price: unitPrice, // Add price field for database compatibility
+          price: unitPrice,
           subtotal: itemSubtotal,
-          total: itemSubtotal // Add total field for database compatibility
+          total: itemSubtotal
         };
       });
 
-      console.log("Validated sale items:", saleItems);
+      console.log("✅ Validated sale items:", saleItems);
 
-      // Use the createSaleWithItems method from storage
-      const saleData = {
-        orderNumber,
-        customerId: safeCustomerId,
-        userId,
-        total: parseFloat(total),
-        tax: parseFloat(tax || "0"),
-        discount: parseFloat(discount || "0"),
-        paymentMethod: paymentMethod || "cash",
-        status: status || "completed"
-      };
+      // Direct SQLite transaction for reliable data saving
+      const { sqlite } = await import('@db');
+      
+      const result = sqlite.transaction(() => {
+        try {
+          // Insert the sale record
+          const insertSale = sqlite.prepare(`
+            INSERT INTO sales (
+              order_number, customer_id, user_id, total, tax, discount, 
+              payment_method, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `);
 
-      console.log("Creating sale with data:", saleData);
+          const saleResult = insertSale.run(
+            orderNumber,
+            safeCustomerId,
+            userId,
+            parseFloat(total).toString(),
+            parseFloat(tax || "0").toString(),
+            parseFloat(discount || "0").toString(),
+            paymentMethod || "cash",
+            status || "completed"
+          );
 
-      // Create the sale using the correct storage method
-      const newSale = await storage.createSaleWithItems(saleData, saleItems);
+          const saleId = saleResult.lastInsertRowid;
+          console.log(`💾 Created sale record with ID: ${saleId}`);
+
+          // Insert sale items and update product stock
+          const insertSaleItem = sqlite.prepare(`
+            INSERT INTO sale_items (
+              sale_id, product_id, quantity, unit_price, price, subtotal, total
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          `);
+
+          const updateStock = sqlite.prepare(`
+            UPDATE products 
+            SET stock_quantity = COALESCE(stock_quantity, 0) - ?
+            WHERE id = ?
+          `);
+
+          for (const item of saleItems) {
+            // Insert sale item
+            insertSaleItem.run(
+              saleId,
+              item.productId,
+              item.quantity,
+              item.unitPrice.toString(),
+              item.price.toString(),
+              item.subtotal.toString(),
+              item.total.toString()
+            );
+
+            // Update product stock
+            const stockResult = updateStock.run(item.quantity, item.productId);
+            console.log(`📦 Updated stock for product ${item.productId}: -${item.quantity} (changes: ${stockResult.changes})`);
+          }
+
+          // Get the created sale for return
+          const getSale = sqlite.prepare('SELECT * FROM sales WHERE id = ?');
+          const newSale = getSale.get(saleId);
+
+          return {
+            ...newSale,
+            id: saleId,
+            createdAt: new Date()
+          };
+        } catch (transactionError) {
+          console.error("❌ Transaction failed:", transactionError);
+          throw transactionError;
+        }
+      })();
+
+      console.log("✅ Sale transaction completed successfully");
 
       // Return success response
       const responseData = {
-        id: newSale.id,
-        saleId: newSale.id,
+        id: result.id,
+        saleId: result.id,
         billNumber: orderNumber,
+        orderNumber: orderNumber,
         total: parseFloat(total),
         change: parseFloat(change || "0"),
         paymentMethod: paymentMethod || "cash",
         status: "completed",
         message: "Sale completed successfully",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        saved: true
       };
 
-      console.log("Sale completed successfully:", responseData);
+      console.log("📊 POS Enhanced sale saved successfully:", responseData);
       res.status(201).json(responseData);
 
     } catch (error) {
-      console.error("Error creating sale:", error);
+      console.error("💥 Error saving POS Enhanced sale:", error);
 
       // Return detailed error information
       const errorResponse = {
         error: "Transaction failed",
         message: error.message || "Internal server error occurred",
-        details: "Please check your connection and try again",
-        timestamp: new Date().toISOString()
+        details: "Failed to save sale data to database",
+        timestamp: new Date().toISOString(),
+        saved: false
       };
 
       res.status(500).json(errorResponse);
@@ -917,7 +977,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sales/recent', async (req, res) => {
     try {
-      console.log('🔄 Recent sales endpoint accessed');
+      console.log('🔄 POS Enhanced - Recent sales endpoint accessed');
       const limit = parseInt(req.query.limit as string || '10');
       
       // Direct database approach with proper column names
@@ -934,77 +994,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
       
-      // Get column info to use correct column names
-      const columns = sqlite.prepare('PRAGMA table_info(sales)').all();
-      const columnNames = columns.map(col => col.name);
-      console.log('📋 Sales table columns:', columnNames);
+      // Get total count first
+      const countQuery = sqlite.prepare('SELECT COUNT(*) as count FROM sales');
+      const totalCount = countQuery.get();
+      console.log(`📊 Total sales in database: ${totalCount.count}`);
       
-      // Build query with correct column names
-      const createdAtCol = columnNames.includes('created_at') ? 'created_at' : 
-                          columnNames.includes('createdAt') ? 'createdAt' : 'created_at';
-      const customerIdCol = columnNames.includes('customer_id') ? 'customer_id' : 
-                           columnNames.includes('customerId') ? 'customerId' : 'customer_id';
-      const orderNumberCol = columnNames.includes('order_number') ? 'order_number' : 
-                            columnNames.includes('orderNumber') ? 'orderNumber' : 'order_number';
-      const paymentMethodCol = columnNames.includes('payment_method') ? 'payment_method' : 
-                              columnNames.includes('paymentMethod') ? 'paymentMethod' : 'payment_method';
-      const userIdCol = columnNames.includes('user_id') ? 'user_id' : 
-                       columnNames.includes('userId') ? 'userId' : 'user_id';
+      if (totalCount.count === 0) {
+        console.log('📝 No sales data found - returning empty array');
+        return res.json([]);
+      }
 
       const query = `
         SELECT 
           s.id,
-          s.${orderNumberCol} as orderNumber,
-          s.${customerIdCol} as customerId,
-          s.${userIdCol} as userId,
+          s.order_number as orderNumber,
+          s.customer_id as customerId,
+          s.user_id as userId,
           s.total,
           s.tax,
           s.discount,
-          s.${paymentMethodCol} as paymentMethod,
+          s.payment_method as paymentMethod,
           s.status,
-          s.${createdAtCol} as createdAt,
+          s.created_at as createdAt,
           c.name as customerName,
           c.phone as customerPhone,
-          u.name as userName
+          u.name as userName,
+          COUNT(si.id) as itemCount
         FROM sales s
-        LEFT JOIN customers c ON s.${customerIdCol} = c.id
-        LEFT JOIN users u ON s.${userIdCol} = u.id
-        ORDER BY s.${createdAtCol} DESC
+        LEFT JOIN customers c ON s.customer_id = c.id
+        LEFT JOIN users u ON s.user_id = u.id
+        LEFT JOIN sale_items si ON s.id = si.sale_id
+        GROUP BY s.id, s.order_number, s.customer_id, s.user_id, s.total, s.tax, s.discount, 
+                 s.payment_method, s.status, s.created_at, c.name, c.phone, u.name
+        ORDER BY s.created_at DESC
         LIMIT ?
       `;
 
-      console.log('🔍 Executing query:', query);
+      console.log('🔍 Executing enhanced sales query');
       const salesData = sqlite.prepare(query).all(limit);
       
-      console.log(`✅ Found ${salesData.length} recent sales`);
+      console.log(`✅ Found ${salesData.length} recent sales with item counts`);
       
-      // Format the response
+      // Format the response with enhanced data
       const formattedSales = salesData.map(sale => ({
         id: sale.id,
-        orderNumber: sale.orderNumber || `SALE-${sale.id}`,
+        orderNumber: sale.orderNumber || `POS-${sale.id}`,
         customerId: sale.customerId,
         customerName: sale.customerName || 'Walk-in Customer',
         customerPhone: sale.customerPhone,
         userId: sale.userId,
-        userName: sale.userName,
+        userName: sale.userName || 'System User',
         total: parseFloat(sale.total || '0'),
         tax: parseFloat(sale.tax || '0'),
         discount: parseFloat(sale.discount || '0'),
         paymentMethod: sale.paymentMethod || 'cash',
         status: sale.status || 'completed',
         createdAt: sale.createdAt,
-        // Add mock items for display
-        items: [{ productName: 'Items', quantity: 1 }]
+        itemCount: sale.itemCount || 0,
+        source: 'POS Enhanced',
+        items: sale.itemCount > 0 ? [{ productName: `${sale.itemCount} items`, quantity: sale.itemCount }] : []
       }));
 
+      console.log('📊 Returning formatted sales data:', formattedSales.length);
       res.json(formattedSales);
       
     } catch (error) {
-      console.error('💥 Error in recent sales endpoint:', error);
+      console.error('💥 Error in POS Enhanced recent sales endpoint:', error);
       res.status(500).json({ 
         error: 'Failed to fetch recent sales',
         message: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        source: 'POS Enhanced API'
       });
     }
   });
