@@ -631,6 +631,7 @@ export default function SalesDashboard() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
+        <div>
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
@@ -1842,6 +1843,7 @@ export default function SalesDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </Card>
 
       {/* Create Sale Dialog */}
