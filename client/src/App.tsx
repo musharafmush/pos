@@ -43,6 +43,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import Categories from "./pages/categories";
 import Brands from "./pages/brands";
 import AccountsDashboard from "./pages/accounts-dashboard";
+import { lazy } from "react";
 
 function Router() {
   return (
@@ -91,6 +92,9 @@ function Router() {
       <Route path="/categories" component={Categories} />
       <ProtectedRoute path="/brands" component={Brands} />
       <ProtectedRoute path="/accounts-dashboard" component={AccountsDashboard} />
+      <Route path="/sale-return" component={lazy(() => import("./pages/sale-return"))} />
+      <Route path="/sale-returns-dashboard" component={lazy(() => import("./pages/sale-returns-dashboard"))} />
+      <Route path="/reports" component={lazy(() => import("./pages/reports"))} />
       <Route component={NotFound} />
     </Switch>
   );

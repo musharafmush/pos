@@ -598,14 +598,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('📦 Fetching returns data');
       
-      // Use storage method for returns
-      const returns = await storage.listReturns(50, 0);
+      const limit = parseInt(req.query.limit as string || '50');
+      const search = req.query.search as string;
+      const days = parseInt(req.query.days as string || '0');
+      const status = req.query.status as string;
+      
+      // Use storage method for returns with filters
+      const returns = await storage.listReturns(limit, 0, { search, days, status });
       console.log(`📦 Found ${returns.length} returns`);
       
       res.json(returns);
     } catch (error) {
       console.error('❌ Error fetching returns:', error);
       res.status(500).json({ error: 'Failed to fetch returns: ' + error.message });
+    }
+  });
+
+  // Returns statistics endpoint
+  app.get('/api/returns/stats', async (req, res) => {
+    try {
+      console.log('📊 Fetching returns statistics');
+      
+      const { sqlite } = await import('@db');
+      
+      // Get total returns and refund amount
+      const totalStats = sqlite.prepare(`
+        SELECT 
+          COUNT(*) as totalReturns,
+          COALESCE(SUM(CAST(total_refund AS REAL)), 0) as totalRefundAmount
+        FROM returns
+      `).get();
+      
+      // Get today's returns
+      const todayStats = sqlite.prepare(`
+        SELECT 
+          COUNT(*) as todayReturns,
+          COALESCE(SUM(CAST(total_refund AS REAL)), 0) as todayRefundAmount
+        FROM returns 
+        WHERE DATE(created_at) = DATE('now')
+      `).get();
+      
+      // Calculate return rate (returns vs sales)
+      const salesCount = sqlite.prepare(`
+        SELECT COUNT(*) as count FROM sales
+      `).get();
+      
+      const returnRate = salesCount.count > 0 ? 
+        (totalStats.totalReturns / salesCount.count) * 100 : 0;
+      
+      // Calculate average return value
+      const averageReturnValue = totalStats.totalReturns > 0 ? 
+        totalStats.totalRefundAmount / totalStats.totalReturns : 0;
+      
+      const stats = {
+        totalReturns: totalStats.totalReturns || 0,
+        totalRefundAmount: totalStats.totalRefundAmount || 0,
+        todayReturns: todayStats.todayReturns || 0,
+        todayRefundAmount: todayStats.todayRefundAmount || 0,
+        returnRate: returnRate,
+        averageReturnValue: averageReturnValue
+      };
+      
+      console.log('📊 Returns stats:', stats);
+      res.json(stats);
+      
+    } catch (error) {
+      console.error('❌ Error fetching returns stats:', error);
+      res.status(500).json({ error: 'Failed to fetch returns statistics: ' + error.message });
     }
   });
 

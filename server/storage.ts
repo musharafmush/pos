@@ -1391,51 +1391,101 @@ export const storage = {
     }
   },
 
-  async listReturns(limit?: number, offset?: number, startDate?: Date, endDate?: Date): Promise<any[]> {
+  async listReturns(limit: number = 50, offset: number = 0, filters?: { search?: string, days?: number, status?: string }): Promise<any[]> {
     try {
-      const { sqlite } = await import('../db/index.js');
+      console.log('📦 Storage: Listing returns with limit', limit, 'offset', offset, 'filters', filters);
 
       let query = `
-        SELECT r.*, s.order_number as sale_order_number, c.name as customer_name
+        SELECT 
+          r.*,
+          s.order_number,
+          c.name as customer_name,
+          u.name as user_name
         FROM returns r
         LEFT JOIN sales s ON r.sale_id = s.id
         LEFT JOIN customers c ON s.customer_id = c.id
-        WHERE 1=1
+        LEFT JOIN users u ON r.user_id = u.id
       `;
 
-      const params = [];
+      const params: any[] = [];
+      const conditions: string[] = [];
 
-      if (startDate) {
-        query += ' AND r.created_at >= ?';
-        params.push(startDate.toISOString());
+      // Add search filter
+      if (filters?.search) {
+        conditions.push(`(
+          LOWER(r.return_number) LIKE LOWER(?) OR
+          LOWER(s.order_number) LIKE LOWER(?) OR
+          LOWER(c.name) LIKE LOWER(?) OR
+          CAST(r.id AS TEXT) LIKE ?
+        )`);
+        const searchTerm = `%${filters.search}%`;
+        params.push(searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
-      if (endDate) {
-        query += ' AND r.created_at <= ?';
-        params.push(endDate.toISOString());
+      // Add date filter
+      if (filters?.days && filters.days > 0) {
+        conditions.push(`r.created_at >= datetime('now', '-${filters.days} days')`);
       }
 
-      query += ' ORDER BY r.created_at DESC';
-
-      if (limit) {
-        query += ' LIMIT ?';
-        params.push(limit);
+      // Add status filter
+      if (filters?.status && filters.status !== 'all') {
+        conditions.push(`r.status = ?`);
+        params.push(filters.status);
       }
 
-      if (offset) {
-        query += ' OFFSET ?';
-        params.push(offset);
+      if (conditions.length > 0) {
+        query += ` WHERE ${conditions.join(' AND ')}`;
       }
 
-      const getReturns = sqlite.prepare(query);
-      const returns = getReturns.all(...params);
+      query += ` ORDER BY r.created_at DESC LIMIT ? OFFSET ?`;
+      params.push(limit, offset);
 
-      return returns.map((returnRecord: any) => ({
-        ...returnRecord,
-        createdAt: new Date(returnRecord.created_at)
-      }));
+      const returns = this.sqlite.prepare(query).all(...params);
+
+      // Get return items for each return
+      const returnsWithItems = returns.map(returnRecord => {
+        const itemsQuery = `
+          SELECT 
+            ri.*,
+            p.name as product_name
+          FROM return_items ri
+          LEFT JOIN products p ON ri.product_id = p.id
+          WHERE ri.return_id = ?
+        `;
+
+        const items = this.sqlite.prepare(itemsQuery).all(returnRecord.id);
+
+        return {
+          id: returnRecord.id,
+          returnNumber: returnRecord.return_number,
+          saleId: returnRecord.sale_id,
+          orderNumber: returnRecord.order_number || `ORDER-${returnRecord.sale_id}`,
+          customerId: returnRecord.customer_id,
+          customerName: returnRecord.customer_name,
+          userId: returnRecord.user_id,
+          userName: returnRecord.user_name || 'System User',
+          refundMethod: returnRecord.refund_method,
+          totalRefund: returnRecord.total_refund,
+          reason: returnRecord.reason,
+          notes: returnRecord.notes,
+          status: returnRecord.status,
+          createdAt: returnRecord.created_at,
+          items: items.map(item => ({
+            id: item.id,
+            productId: item.product_id,
+            productName: item.product_name || `Product #${item.product_id}`,
+            quantity: item.quantity,
+            unitPrice: parseFloat(item.unit_price || '0'),
+            subtotal: parseFloat(item.subtotal || '0')
+          }))
+        };
+      });
+
+      console.log(`📦 Storage: Found ${returnsWithItems.length} returns`);
+      return returnsWithItems;
+
     } catch (error) {
-      console.error('Error listing returns:', error);
+      console.error('❌ Storage: Error listing returns:', error);
       throw error;
     }
   },
