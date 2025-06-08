@@ -598,58 +598,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('📦 Fetching returns data');
       
-      // Use direct SQLite query for better compatibility
-      const { sqlite } = await import('@db');
-      
-      // First ensure the returns table exists with proper schema
-      const createReturnsTable = `
-        CREATE TABLE IF NOT EXISTS returns (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          return_number TEXT NOT NULL UNIQUE,
-          sale_id INTEGER NOT NULL,
-          user_id INTEGER DEFAULT 1,
-          refund_method TEXT NOT NULL DEFAULT 'cash',
-          total_refund TEXT NOT NULL,
-          reason TEXT,
-          notes TEXT,
-          status TEXT NOT NULL DEFAULT 'completed',
-          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (sale_id) REFERENCES sales (id)
-        )
-      `;
-      
-      const createReturnItemsTable = `
-        CREATE TABLE IF NOT EXISTS return_items (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          return_id INTEGER NOT NULL,
-          product_id INTEGER NOT NULL,
-          quantity INTEGER NOT NULL,
-          unit_price TEXT NOT NULL,
-          subtotal TEXT NOT NULL,
-          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (return_id) REFERENCES returns (id),
-          FOREIGN KEY (product_id) REFERENCES products (id)
-        )
-      `;
-      
-      sqlite.exec(createReturnsTable);
-      sqlite.exec(createReturnItemsTable);
-      
-      console.log('✅ Returns tables verified/created');
-      
-      // Query returns with sales data
-      const returnsQuery = `
-        SELECT 
-          r.*,
-          s.order_number as saleOrderNumber,
-          c.name as customerName
-        FROM returns r
-        LEFT JOIN sales s ON r.sale_id = s.id
-        LEFT JOIN customers c ON s.customer_id = c.id
-        ORDER BY r.created_at DESC
-      `;
-      
-      const returns = sqlite.prepare(returnsQuery).all();
+      // Use storage method for returns
+      const returns = await storage.listReturns(50, 0);
       console.log(`📦 Found ${returns.length} returns`);
       
       res.json(returns);
@@ -674,90 +624,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Refund method, total refund amount, and reason are required' });
       }
 
-      // Use direct SQLite for reliable transaction handling
-      const { sqlite } = await import('@db');
-      
-      // Generate return number
-      const returnNumber = `RET-${Date.now()}`;
+      // Get user ID
       const userId = (req.user as any)?.id || 1;
       
-      console.log('🔄 Creating return with number:', returnNumber);
+      // Use storage method for creating return
+      const returnData = {
+        saleId: parseInt(saleId),
+        userId: userId,
+        refundMethod: refundMethod,
+        totalRefund: parseFloat(totalRefund),
+        reason: reason,
+        notes: notes || '',
+        status: 'completed'
+      };
 
-      // Start transaction
-      const result = sqlite.transaction(() => {
-        try {
-          // Insert return record
-          const insertReturn = sqlite.prepare(`
-            INSERT INTO returns (
-              return_number, sale_id, user_id, refund_method, 
-              total_refund, reason, notes, status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-          `);
-
-          const returnResult = insertReturn.run(
-            returnNumber,
-            saleId,
-            userId,
-            refundMethod,
-            totalRefund.toString(),
-            reason,
-            notes || null,
-            'completed'
-          );
-
-          const returnId = returnResult.lastInsertRowid;
-          console.log(`✅ Created return record with ID: ${returnId}`);
-
-          // Insert return items and update product stock
-          const insertReturnItem = sqlite.prepare(`
-            INSERT INTO return_items (
-              return_id, product_id, quantity, unit_price, subtotal
-            ) VALUES (?, ?, ?, ?, ?)
-          `);
-
-          const updateStock = sqlite.prepare(`
-            UPDATE products 
-            SET stock_quantity = COALESCE(stock_quantity, 0) + ?
-            WHERE id = ?
-          `);
-
-          for (const item of items) {
-            if (!item.productId || !item.quantity || item.quantity <= 0) {
-              throw new Error(`Invalid item data: productId=${item.productId}, quantity=${item.quantity}`);
-            }
-
-            // Insert return item
-            insertReturnItem.run(
-              returnId,
-              item.productId,
-              item.quantity,
-              (item.unitPrice || 0).toString(),
-              (item.subtotal || 0).toString()
-            );
-
-            // Update product stock (add back returned quantity)
-            const stockResult = updateStock.run(item.quantity, item.productId);
-            console.log(`📦 Updated stock for product ${item.productId}: +${item.quantity} (changes: ${stockResult.changes})`);
-          }
-
-          return {
-            id: returnId,
-            returnNumber: returnNumber,
-            saleId: saleId,
-            totalRefund: totalRefund
-          };
-        } catch (transactionError) {
-          console.error('❌ Transaction failed:', transactionError);
-          throw transactionError;
-        }
-      })();
-
+      const result = await storage.createReturn(returnData, items);
+      
       console.log('✅ Return processed successfully:', result);
       
       res.json({ 
         success: true, 
         returnId: result.id,
-        returnNumber: result.returnNumber,
+        returnNumber: result.return_number || `RET-${result.id}`,
         message: 'Return processed successfully'
       });
 

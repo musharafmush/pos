@@ -1251,16 +1251,51 @@ export const storage = {
     try {
       const { sqlite } = await import('../db/index.js');
 
+      // Ensure returns table exists with return_number column
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS returns (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          return_number TEXT NOT NULL UNIQUE,
+          sale_id INTEGER NOT NULL,
+          user_id INTEGER DEFAULT 1,
+          refund_method TEXT NOT NULL DEFAULT 'cash',
+          total_refund TEXT NOT NULL,
+          reason TEXT,
+          notes TEXT,
+          status TEXT NOT NULL DEFAULT 'completed',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (sale_id) REFERENCES sales (id)
+        )
+      `);
+
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS return_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          return_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          quantity INTEGER NOT NULL,
+          unit_price TEXT NOT NULL,
+          subtotal TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (return_id) REFERENCES returns (id),
+          FOREIGN KEY (product_id) REFERENCES products (id)
+        )
+      `);
+
       // Start transaction
       const result = sqlite.transaction(() => {
+        // Generate return number
+        const returnNumber = `RET-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
         // Insert the return record
         const insertReturn = sqlite.prepare(`
           INSERT INTO returns (
-            sale_id, user_id, refund_method, total_refund, reason, notes, status, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            return_number, sale_id, user_id, refund_method, total_refund, reason, notes, status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `);
 
         const returnResult = insertReturn.run(
+          returnNumber,
           returnData.saleId,
           returnData.userId,
           returnData.refundMethod || 'cash',
@@ -1291,8 +1326,8 @@ export const storage = {
             returnId,
             item.productId,
             item.quantity,
-            item.unitPrice.toString(),
-            item.subtotal.toString()
+            (item.unitPrice || 0).toString(),
+            (item.subtotal || 0).toString()
           );
 
           // Restore stock
@@ -1306,6 +1341,7 @@ export const storage = {
 
         return {
           ...newReturn,
+          return_number: returnNumber,
           createdAt: new Date(newReturn.created_at)
         };
       })();
