@@ -29,10 +29,20 @@ export function RecentSales({ className }: RecentSalesProps) {
     queryKey: ['/api/sales/recent'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/sales/recent');
+        // Get auth token from localStorage
+        const token = localStorage.getItem('token');
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await fetch('/api/sales/recent', { headers });
         if (!response.ok) {
           // Try fallback to main sales endpoint
-          const fallbackResponse = await fetch('/api/sales?limit=10');
+          const fallbackResponse = await fetch('/api/sales?limit=10', { headers });
           if (!fallbackResponse.ok) {
             console.warn('Both recent sales endpoints failed');
             return [];
@@ -52,7 +62,16 @@ export function RecentSales({ className }: RecentSalesProps) {
         console.warn('Recent sales fetch error:', err);
         // Try one more fallback
         try {
-          const fallbackResponse = await fetch('/api/sales?limit=10');
+          const token = localStorage.getItem('token');
+          const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+          };
+          
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
+
+          const fallbackResponse = await fetch('/api/sales?limit=10', { headers });
           if (fallbackResponse.ok) {
             const fallbackData = await fallbackResponse.json();
             const salesArray = Array.isArray(fallbackData) ? fallbackData : [];
