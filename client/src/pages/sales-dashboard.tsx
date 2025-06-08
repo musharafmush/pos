@@ -1844,7 +1844,6 @@ export default function SalesDashboard() {
           </TabsContent>
         </Tabs>
         </div>
-      </Card>
 
       {/* Create Sale Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
