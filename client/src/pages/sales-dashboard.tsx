@@ -1074,8 +1074,8 @@ export default function SalesDashboard() {
                                     size="sm"
                                     onClick={() => {
                                         console.log('View customer:', customer);
-                                        // Navigate to customer details or open modal
-                                        window.open(`/customers/${customer.customerId}`, '_blank');
+                                        setSelectedCustomerBilling(customer);
+                                        setIsViewCustomerBillingDialogOpen(true);
                                       }}
                                       className="text-blue-600 hover:text-blue-800"
                                     >
@@ -1952,6 +1952,224 @@ export default function SalesDashboard() {
               setIsEditDialogOpen(false);
             }}>
               Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Customer Billing Dialog */}
+      <Dialog open={isViewCustomerBillingDialogOpen} onOpenChange={setIsViewCustomerBillingDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Customer Billing Details</DialogTitle>
+          </DialogHeader>
+          {selectedCustomerBilling && (
+            <div className="space-y-6">
+              {/* Customer Info Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-4">
+                      {selectedCustomerBilling.customerName || "Walk-in Customer"}
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div><strong>Customer ID:</strong> {selectedCustomerBilling.customerId}</div>
+                      {selectedCustomerBilling.phone && (
+                        <div><strong>Phone:</strong> {selectedCustomerBilling.phone}</div>
+                      )}
+                      {selectedCustomerBilling.email && (
+                        <div><strong>Email:</strong> {selectedCustomerBilling.email}</div>
+                      )}
+                      {selectedCustomerBilling.address && (
+                        <div><strong>Address:</strong> {selectedCustomerBilling.address}</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded-lg border">
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatCurrency(parseFloat(selectedCustomerBilling.totalBilled || 0))}
+                      </div>
+                      <div className="text-sm text-gray-600">Total Billed</div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {selectedCustomerBilling.orderCount || 0}
+                      </div>
+                      <div className="text-sm text-gray-600">Total Orders</div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {formatCurrency(parseFloat(selectedCustomerBilling.averageOrderValue || 0))}
+                      </div>
+                      <div className="text-sm text-gray-600">Avg Order Value</div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border">
+                      <div className="text-sm font-bold text-orange-600">
+                        {selectedCustomerBilling.lastPurchaseDate 
+                          ? format(new Date(selectedCustomerBilling.lastPurchaseDate), "MMM dd, yyyy")
+                          : "Never"
+                        }
+                      </div>
+                      <div className="text-sm text-gray-600">Last Purchase</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Purchase History */}
+              <div>
+                <h4 className="text-lg font-semibold mb-4">Recent Purchase History</h4>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Order #</TableHead>
+                          <TableHead>Items</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                          <TableHead>Payment</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {customerTransactionHistory
+                          ?.filter((transaction: any) => 
+                            transaction.customerId === selectedCustomerBilling.customerId
+                          )
+                          ?.slice(0, 10)
+                          ?.map((transaction: any) => (
+                            <TableRow key={transaction.saleId}>
+                              <TableCell>
+                                {format(new Date(transaction.createdAt), "MMM dd, yyyy")}
+                              </TableCell>
+                              <TableCell className="font-mono text-sm">
+                                {transaction.orderNumber}
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <div>{transaction.itemCount} items</div>
+                                  <div className="text-gray-500 text-xs">
+                                    {transaction.productNames?.slice(0, 2).join(", ")}
+                                    {transaction.productNames?.length > 2 && "..."}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-semibold">
+                                {formatCurrency(parseFloat(transaction.total || 0))}
+                              </TableCell>
+                              <TableCell className="capitalize">
+                                {transaction.paymentMethod}
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  transaction.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {transaction.status}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          )) || (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-gray-500">
+                              No purchase history available
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Analytics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg border">
+                  <h5 className="font-semibold text-blue-800 mb-2">Customer Segment</h5>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    parseFloat(selectedCustomerBilling.totalBilled || 0) > 5000 ? 'bg-yellow-100 text-yellow-800' :
+                    (selectedCustomerBilling.orderCount || 0) > 5 ? 'bg-green-100 text-green-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {parseFloat(selectedCustomerBilling.totalBilled || 0) > 5000 ? 'VIP Customer' :
+                     (selectedCustomerBilling.orderCount || 0) > 5 ? 'Frequent Buyer' : 'Regular Customer'}
+                  </span>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg border">
+                  <h5 className="font-semibold text-green-800 mb-2">Purchase Frequency</h5>
+                  <div className="text-sm">
+                    {(selectedCustomerBilling.orderCount || 0) > 10 ? "Very High" : 
+                     (selectedCustomerBilling.orderCount || 0) > 5 ? "High" : 
+                     (selectedCustomerBilling.orderCount || 0) > 2 ? "Medium" : "Low"}
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 p-4 rounded-lg border">
+                  <h5 className="font-semibold text-purple-800 mb-2">Customer Since</h5>
+                  <div className="text-sm">
+                    {selectedCustomerBilling.firstPurchaseDate 
+                      ? format(new Date(selectedCustomerBilling.firstPurchaseDate), "MMM yyyy")
+                      : "N/A"
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    console.log('Generate statement for:', selectedCustomerBilling);
+                    // Generate and download customer statement
+                  }}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  📄 Generate Statement
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    console.log('Send reminder to:', selectedCustomerBilling);
+                    // Send payment reminder
+                  }}
+                  className="text-green-600 hover:text-green-800"
+                >
+                  📧 Send Reminder
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedCustomerBilling(selectedCustomerBilling);
+                    setCustomerBillingForm({
+                      customerName: selectedCustomerBilling.customerName || '',
+                      phone: selectedCustomerBilling.phone || '',
+                      email: selectedCustomerBilling.email || '',
+                      address: selectedCustomerBilling.address || '',
+                      totalBilled: selectedCustomerBilling.totalBilled || '',
+                      orderCount: selectedCustomerBilling.orderCount?.toString() || '',
+                      averageOrderValue: selectedCustomerBilling.averageOrderValue || '',
+                      status: 'active',
+                      paymentTerm: '',
+                      creditLimit: '',
+                      notes: ''
+                    });
+                    setIsViewCustomerBillingDialogOpen(false);
+                    setIsEditCustomerBillingDialogOpen(true);
+                  }}
+                  className="text-orange-600 hover:text-orange-800"
+                >
+                  ✏️ Edit Details
+                </Button>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewCustomerBillingDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
