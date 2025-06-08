@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js";
 import { initializeDatabase } from "../db/sqlite-migrate";
 
 const app = express();
@@ -58,11 +58,11 @@ app.use((req, res, next) => {
     // Add general error handler middleware
     app.use((err: any, req: any, res: any, next: any) => {
       console.error('❌ Express Error:', err);
-      
+
       if (res.headersSent) {
         return next(err);
       }
-      
+
       res.status(500).json({ 
         message: 'Internal server error',
         error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
@@ -89,13 +89,13 @@ app.use((req, res, next) => {
     // Handle server errors with better recovery
     server.on('error', (error: any) => {
       console.error('❌ Server error:', error);
-      
+
       // Don't crash on EADDRINUSE - just log it
       if (error.code === 'EADDRINUSE') {
         console.log('⚠️ Port 5000 is already in use, trying to kill existing process...');
         return;
       }
-      
+
       // For other errors, log but don't exit
       console.error('Server will continue running despite error');
     });

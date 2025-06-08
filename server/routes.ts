@@ -1,16 +1,16 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./storage.js";
 import { z } from "zod";
-import * as schema from "@shared/schema";
+import * as schema from "../shared/schema.js";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { db } from "@db";
+import { db } from "../db/index.js";
 import { eq, desc, sql } from "drizzle-orm";
-import { returns as returnTransactions, sales, returnItems, products } from "@db/schema";
+import { returns as returnTransactions, sales, returnItems, products } from "../shared/schema.js";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {

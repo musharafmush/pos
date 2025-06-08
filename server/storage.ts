@@ -1,4 +1,4 @@
-import { db } from "../db/sqlite-index";
+import { db } from "../db/index.js";
 import {
   users,
   products,
@@ -18,7 +18,7 @@ import {
   SaleItem,
   Purchase,
   PurchaseItem
-} from "@shared/schema";
+} from "../shared/schema.js";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -174,7 +174,7 @@ export const storage = {
   }): Promise<Product> {
     try {
       // Import SQLite database directly
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       const insertProduct = sqlite.prepare(`
         INSERT INTO products (
@@ -459,7 +459,7 @@ export const storage = {
       console.log('Sale items:', items);
 
       // Import SQLite database directly for raw SQL operations
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Start a transaction using SQLite directly
       const result = sqlite.transaction(() => {
@@ -633,7 +633,7 @@ export const storage = {
   ): Promise<Purchase> {
     try {
       // Import SQLite database directly for raw SQL operations
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Calculate total
       const total = items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
@@ -755,7 +755,7 @@ export const storage = {
 
   async getPurchaseById(id: number): Promise<any> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       const purchase = sqlite.prepare(`
         SELECT * FROM purchases WHERE id = ?
       `).get(id);
@@ -787,7 +787,7 @@ export const storage = {
   },
 
   async updatePurchase(id: number, data: any): Promise<any> {
-    const { sqlite } = await import('@db');
+    const { sqlite } = await import('../db/index.js');
     return new Promise((resolve, reject) => {
       const transaction = sqlite.transaction(() => {
         try {
@@ -946,7 +946,7 @@ export const storage = {
       console.log('Sale items:', items);
 
       // Import SQLite database directly for raw SQL operations
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Start a transaction using SQLite directly
       const result = sqlite.transaction(() => {
@@ -1059,7 +1059,7 @@ export const storage = {
 
   async getDailySalesData(days: number = 7): Promise<{ date: string; total: string; sales: number }[]> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       const salesData = [];
       const today = new Date();
 
@@ -1101,7 +1101,7 @@ export const storage = {
 
   async getTopSellingProducts(limit: number = 5, startDate?: Date, endDate?: Date): Promise<any[]> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       let dateFilter = '';
       const params = [];
@@ -1159,7 +1159,7 @@ export const storage = {
   // Update sale
   async updateSale(id: number, saleData: any): Promise<any> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Update the sale record
       const updateSale = sqlite.prepare(`
@@ -1206,7 +1206,7 @@ export const storage = {
   // Delete sale
   async deleteSale(id: number): Promise<boolean> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Start a transaction to delete sale and its items
       const result = sqlite.transaction(() => {
@@ -1249,7 +1249,7 @@ export const storage = {
   // Return management operations
   async createReturn(returnData: any, items: any[]): Promise<any> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Start transaction
       const result = sqlite.transaction(() => {
@@ -1319,7 +1319,7 @@ export const storage = {
 
   async getReturnById(id: number): Promise<any> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       const getReturn = sqlite.prepare(`
         SELECT r.*, s.order_number as sale_order_number
@@ -1357,7 +1357,7 @@ export const storage = {
 
   async listReturns(limit?: number, offset?: number, startDate?: Date, endDate?: Date): Promise<any[]> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       let query = `
         SELECT r.*, s.order_number as sale_order_number, c.name as customer_name
@@ -1406,7 +1406,7 @@ export const storage = {
 
   async getCustomerBillingData(startDate: Date): Promise<any[]> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       const query = sqlite.prepare(`
         SELECT
           c.id as customer_id,
@@ -1454,7 +1454,7 @@ export const storage = {
 
   async getCustomerTransactionHistory(startDate: Date): Promise<any[]> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       const query = sqlite.prepare(`
         SELECT
           s.id as sale_id,
@@ -1500,7 +1500,7 @@ export const storage = {
 
   async getCustomerDemographics(startDate: Date): Promise<any[]> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       const query = sqlite.prepare(`
         SELECT
           CASE 
@@ -1564,7 +1564,7 @@ export const storage = {
 
   async getPaymentAnalytics(startDate: Date): Promise<any[]> {
     try {
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       const query = sqlite.prepare(`
         SELECT
           payment_method,
