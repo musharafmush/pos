@@ -30,87 +30,69 @@ export function RecentSales({ className }: RecentSalesProps) {
     queryFn: async () => {
       console.log('🔄 Fetching recent sales data...');
       
-      // Create a comprehensive debugging function
-      const debugEndpoint = async (url: string, label: string) => {
+      try {
+        // First try the main sales endpoint with limit
+        const response = await fetch('/api/sales?limit=10', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        console.log('📊 Sales API Response:', {
+          status: response.status,
+          ok: response.ok,
+          statusText: response.statusText
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('📈 Sales data received:', {
+          type: Array.isArray(data) ? 'array' : typeof data,
+          length: Array.isArray(data) ? data.length : 'N/A',
+          sample: Array.isArray(data) ? data.slice(0, 2) : data
+        });
+
+        // Ensure we return an array
+        if (Array.isArray(data)) {
+          return data;
+        } else if (data && Array.isArray(data.sales)) {
+          return data.sales;
+        } else if (data && Array.isArray(data.data)) {
+          return data.data;
+        }
+
+        console.warn('⚠️ Unexpected data format, returning empty array');
+        return [];
+
+      } catch (error) {
+        console.error('❌ Error fetching sales:', error);
+        
+        // Fallback: try the recent sales endpoint
         try {
-          console.log(`📡 Testing ${label}: ${url}`);
-          const response = await fetch(url, { 
+          const fallbackResponse = await fetch('/api/sales/recent', {
+            method: 'GET',
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
             }
           });
-          
-          console.log(`📊 ${label} Response:`, {
-            status: response.status,
-            ok: response.ok,
-            headers: Object.fromEntries(response.headers.entries())
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log(`✅ ${label} Data:`, {
-              type: Array.isArray(data) ? 'array' : typeof data,
-              length: Array.isArray(data) ? data.length : 'N/A',
-              sample: Array.isArray(data) ? data.slice(0, 2) : data
-            });
-            return { success: true, data };
-          } else {
-            const errorText = await response.text();
-            console.log(`❌ ${label} Error:`, errorText);
-            return { success: false, error: errorText };
-          }
-        } catch (err) {
-          console.error(`💥 ${label} Exception:`, err);
-          return { success: false, error: err.message };
-        }
-      };
 
-      // Test multiple endpoints in order of preference
-      const endpoints = [
-        { url: '/api/sales?limit=10', label: 'Main Sales API' },
-        { url: '/api/sales/recent', label: 'Recent Sales API' },
-        { url: '/api/sales/debug', label: 'Debug API' }
-      ];
-
-      for (const endpoint of endpoints) {
-        const result = await debugEndpoint(endpoint.url, endpoint.label);
-        
-        if (result.success && result.data) {
-          let salesArray = [];
-          
-          // Handle different response formats
-          if (Array.isArray(result.data)) {
-            salesArray = result.data;
-          } else if (result.data && Array.isArray(result.data.sales)) {
-            salesArray = result.data.sales;
-          } else if (result.data && Array.isArray(result.data.data)) {
-            salesArray = result.data.data;
-          } else if (result.data && result.data.salesStats && Array.isArray(result.data.salesStats.sampleSales)) {
-            salesArray = result.data.salesStats.sampleSales;
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            return Array.isArray(fallbackData) ? fallbackData : [];
           }
-          
-          if (salesArray.length > 0) {
-            console.log(`🎉 Found ${salesArray.length} sales from ${endpoint.label}`);
-            return salesArray.slice(0, 10);
-          }
+        } catch (fallbackError) {
+          console.error('❌ Fallback also failed:', fallbackError);
         }
+
+        // If everything fails, return empty array
+        return [];
       }
-      
-      // If all endpoints fail, try to create sample data for testing
-      console.warn('⚠️ All endpoints failed, returning sample data for testing');
-      return [
-        {
-          id: 'sample-1',
-          orderNumber: 'DEMO-001',
-          customerName: 'Sample Customer',
-          total: 150.00,
-          createdAt: new Date().toISOString(),
-          paymentMethod: 'cash',
-          status: 'completed',
-          items: [{ productName: 'Sample Item', quantity: 2 }]
-        }
-      ];
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
