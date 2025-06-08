@@ -110,6 +110,10 @@ export default function SalesDashboard() {
     notes: ''
   });
 
+  // Sales Detail state
+  const [selectedSaleDetail, setSelectedSaleDetail] = useState<any>(null);
+  const [isViewSaleDetailDialogOpen, setIsViewSaleDetailDialogOpen] = useState(false);
+
   // Product CRUD state
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isEditProductDialogOpen, setIsEditProductDialogOpen] = useState(false);
@@ -759,6 +763,12 @@ export default function SalesDashboard() {
     setIsCreateCustomerBillingDialogOpen(true);
   };
 
+  // Sales Detail functions
+  const openViewSaleDetailDialog = (sale: any) => {
+    setSelectedSaleDetail(sale);
+    setIsViewSaleDetailDialogOpen(true);
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
@@ -1084,9 +1094,7 @@ export default function SalesDashboard() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
-                                    console.log('View sale details:', sale);
-                                  }}
+                                  onClick={() => openViewSaleDetailDialog(sale)}
                                   className="h-7 px-2 text-xs text-blue-600 hover:text-blue-800"
                                 >
                                   👁️ View
@@ -2033,10 +2041,7 @@ export default function SalesDashboard() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
-                                    // View detailed invoice
-                                    console.log('View invoice:', sale);
-                                  }}
+                                  onClick={() => openViewSaleDetailDialog(sale)}
                                   className="h-8 px-2 text-blue-600 hover:text-blue-800"
                                 >
                                   View
@@ -2294,6 +2299,318 @@ export default function SalesDashboard() {
               setIsEditDialogOpen(false);
             }}>
               Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sales Detail View Dialog */}
+      <Dialog open={isViewSaleDetailDialogOpen} onOpenChange={setIsViewSaleDetailDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+          <DialogHeader className="pb-6 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <ShoppingCartIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-bold text-gray-800">Sales Detail</DialogTitle>
+                <p className="text-sm text-gray-500 mt-1">Comprehensive sales transaction information</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {selectedSaleDetail && (
+            <div className="py-6 space-y-8">
+              {/* Sale Header Information */}
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg border">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Basic Sale Info */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Sale Information</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Invoice Number:</span>
+                        <span className="font-medium font-mono">{selectedSaleDetail.orderNumber || selectedSaleDetail.invoiceNumber || `INV-${selectedSaleDetail.id}`}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Sale ID:</span>
+                        <span className="font-medium">#{selectedSaleDetail.id}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Date & Time:</span>
+                        <span className="font-medium">
+                          {format(new Date(selectedSaleDetail.createdAt || selectedSaleDetail.created_at || new Date()), "MMM dd, yyyy hh:mm a")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Status:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          selectedSaleDetail.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          selectedSaleDetail.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          selectedSaleDetail.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {selectedSaleDetail.status || "Completed"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Customer Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Customer Details</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Name:</span>
+                        <span className="font-medium">{selectedSaleDetail.customerName || selectedSaleDetail.customer_name || "Walk-in Customer"}</span>
+                      </div>
+                      {selectedSaleDetail.customerPhone && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Phone:</span>
+                          <span className="font-medium">{selectedSaleDetail.customerPhone}</span>
+                        </div>
+                      )}
+                      {selectedSaleDetail.customerEmail && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Email:</span>
+                          <span className="font-medium text-blue-600">{selectedSaleDetail.customerEmail}</span>
+                        </div>
+                      )}
+                      {selectedSaleDetail.customerId && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Customer ID:</span>
+                          <span className="font-medium">#{selectedSaleDetail.customerId}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Payment Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Payment Details</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Payment Method:</span>
+                        <span className="font-medium capitalize bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {selectedSaleDetail.paymentMethod || selectedSaleDetail.payment_method || "Cash"}
+                        </span>
+                      </div>
+                      {selectedSaleDetail.paymentReference && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Reference:</span>
+                          <span className="font-medium font-mono">{selectedSaleDetail.paymentReference}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Amount:</span>
+                        <span className="font-bold text-lg text-green-600">
+                          {formatCurrency(parseFloat(selectedSaleDetail.total || selectedSaleDetail.totalAmount || selectedSaleDetail.amount || 0))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {formatCurrency(parseFloat(selectedSaleDetail.subtotal || selectedSaleDetail.total || 0))}
+                    </div>
+                    <div className="text-sm text-gray-600">Subtotal</div>
+                  </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {formatCurrency(parseFloat(selectedSaleDetail.tax || selectedSaleDetail.taxAmount || 0))}
+                    </div>
+                    <div className="text-sm text-gray-600">Tax</div>
+                  </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">
+                      {formatCurrency(parseFloat(selectedSaleDetail.discount || selectedSaleDetail.discountAmount || 0))}
+                    </div>
+                    <div className="text-sm text-gray-600">Discount</div>
+                  </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency(parseFloat(selectedSaleDetail.total || selectedSaleDetail.totalAmount || selectedSaleDetail.amount || 0))}
+                    </div>
+                    <div className="text-sm text-gray-600">Final Total</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Details */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Sale Items</h3>
+                <div className="bg-white rounded-lg border overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-gray-50">
+                      <TableRow>
+                        <TableHead className="font-semibold">#</TableHead>
+                        <TableHead className="font-semibold">Product Name</TableHead>
+                        <TableHead className="font-semibold">SKU</TableHead>
+                        <TableHead className="font-semibold text-right">Unit Price</TableHead>
+                        <TableHead className="font-semibold text-right">Quantity</TableHead>
+                        <TableHead className="font-semibold text-right">Subtotal</TableHead>
+                        <TableHead className="font-semibold text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedSaleDetail.items && selectedSaleDetail.items.length > 0 ? (
+                        selectedSaleDetail.items.map((item: any, index: number) => (
+                          <TableRow key={item.id || index} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{index + 1}</TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{item.productName || item.name || "Unknown Product"}</div>
+                                {item.description && (
+                                  <div className="text-xs text-gray-500">{item.description}</div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono text-sm">{item.sku || item.productSku || "N/A"}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(parseFloat(item.unitPrice || item.price || 0))}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
+                                {item.quantity || 0}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(parseFloat(item.subtotal || (item.unitPrice || item.price || 0) * (item.quantity || 0)))}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">
+                              {formatCurrency(parseFloat(item.total || item.subtotal || (item.unitPrice || item.price || 0) * (item.quantity || 0)))}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                            No items found for this sale
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+
+                  {/* Items Summary */}
+                  {selectedSaleDetail.items && selectedSaleDetail.items.length > 0 && (
+                    <div className="bg-gray-50 p-4 border-t">
+                      <div className="flex justify-between items-center">
+                        <div className="text-sm text-gray-600">
+                          <strong>Total Items:</strong> {selectedSaleDetail.items.length} | 
+                          <strong> Total Quantity:</strong> {selectedSaleDetail.items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)}
+                        </div>
+                        <div className="text-lg font-bold text-gray-800">
+                          Items Total: {formatCurrency(
+                            selectedSaleDetail.items.reduce((sum: number, item: any) => 
+                              sum + parseFloat(item.total || item.subtotal || (item.unitPrice || item.price || 0) * (item.quantity || 0)), 0
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Additional Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Sale Notes */}
+                <div className="bg-yellow-50 p-4 rounded-lg border">
+                  <h4 className="font-semibold text-gray-800 mb-3">Sale Notes</h4>
+                  <div className="text-sm text-gray-700">
+                    {selectedSaleDetail.notes || selectedSaleDetail.remarks || "No additional notes for this sale."}
+                  </div>
+                </div>
+
+                {/* Transaction Details */}
+                <div className="bg-blue-50 p-4 rounded-lg border">
+                  <h4 className="font-semibold text-gray-800 mb-3">Transaction Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Processed by:</span>
+                      <span className="font-medium">{selectedSaleDetail.userName || selectedSaleDetail.user?.name || "System"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Processing Time:</span>
+                      <span className="font-medium">
+                        {selectedSaleDetail.processingTime || "Instant"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Location:</span>
+                      <span className="font-medium">{selectedSaleDetail.location || "Main Store"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Device:</span>
+                      <span className="font-medium">{selectedSaleDetail.device || "POS Terminal"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+                <div className="text-xs text-gray-500">
+                  Last updated: {format(new Date(selectedSaleDetail.updatedAt || selectedSaleDetail.createdAt || new Date()), "MMM dd, yyyy hh:mm a")}
+                </div>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      window.print();
+                    }}
+                    className="text-green-600 hover:text-green-800"
+                  >
+                    🖨️ Print Receipt
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      console.log('Email receipt for sale:', selectedSaleDetail);
+                    }}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    📧 Email Receipt
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => openEditDialog(selectedSaleDetail)}
+                    className="text-orange-600 hover:text-orange-800"
+                  >
+                    ✏️ Edit Sale
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      console.log('Process return for sale:', selectedSaleDetail);
+                    }}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    🔄 Process Return
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="pt-6 border-t border-gray-200">
+            <Button variant="outline" onClick={() => setIsViewSaleDetailDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
