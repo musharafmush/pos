@@ -9,7 +9,16 @@ RewriteRule ^(.*)$ /index.html [L]
 
 # Handle API requests to Node.js
 RewriteCond %{REQUEST_URI} ^/api/
-RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
+RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]
+
+# Add error handling
+ErrorDocument 503 /503.html
+ErrorDocument 500 /500.html
+
+# Ensure proper MIME types
+AddType application/javascript .js
+AddType text/css .css
+AddType application/json .json
 
 # Cache static assets
 <IfModule mod_expires.c>

@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Temporarily Unavailable</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 50px 20px;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+        h1 { font-size: 3em; margin: 0 0 20px 0; }
+        h2 { color: #ffd700; margin: 0 0 20px 0; }
+        .status-code { font-size: 6em; margin: 0; opacity: 0.3; }
+        .retry-btn {
+            background: #ffd700;
+            color: #333;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        .retry-btn:hover { transform: scale(1.05); }
+        .loading {
+            margin: 20px 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status-code">503</div>
+        <h1>Service Temporarily Unavailable</h1>
+        <h2>POS System is Starting Up</h2>
+        <p>Our Point of Sale system is currently initializing. This usually takes just a few moments.</p>
+        <div class="loading">
+            <p>🔄 Starting services...</p>
+            <p>⏳ Please wait while we get everything ready</p>
+        </div>
+        <button class="retry-btn" onclick="window.location.reload()">Retry Now</button>
+        <p style="margin-top: 30px; font-size: 14px; opacity: 0.7;">
+            If this problem persists, please contact your system administrator.
+        </p>
+    </div>
+    
+    <script>
+        // Auto-refresh every 10 seconds
+        setTimeout(() => {
+            window.location.reload();
+        }, 10000);
+        
+        // Show countdown
+        let countdown = 10;
+        const countdownTimer = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                document.querySelector('.loading').innerHTML = 
+                    `<p>🔄 Starting services...</p><p>⏳ Auto-refresh in ${countdown} seconds</p>`;
+            } else {
+                clearInterval(countdownTimer);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

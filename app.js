@@ -126,45 +126,109 @@ app.use((err, req, res, next) => {
   res.status(500).json({ 
     message: 'Internal server error',
     error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions more gracefully
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
   console.error('Stack:', error.stack);
-  // Don't exit in production, just log the error
+  console.error('Process will continue running...');
+  // Don't exit - keep the server running
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise);
   console.error('Reason:', reason);
+  console.error('Process will continue running...');
 });
 
-// Start the server
+// Add graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Process terminated');
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Process terminated');
+  });
+});
+
+// Add pre-startup diagnostics
+console.log('🔍 Pre-startup diagnostics:');
+console.log('- Node.js version:', process.version);
+console.log('- Working directory:', process.cwd());
+console.log('- Platform:', process.platform);
+console.log('- Architecture:', process.arch);
+console.log('- Memory usage:', JSON.stringify(process.memoryUsage(), null, 2));
+
+// Test database connection if possible
+try {
+  const fs = require('fs');
+  const dbPath = path.join(__dirname, 'pos-data.db');
+  if (fs.existsSync(dbPath)) {
+    console.log('✅ Database file found at:', dbPath);
+  } else {
+    console.log('⚠️ Database file not found, will be created on first use');
+  }
+} catch (dbError) {
+  console.log('⚠️ Database check failed:', dbError.message);
+}
+
+// Start the server with better error handling
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('🎉 POS System successfully started!');
-  console.log(`🌐 Server running on port ${PORT}`);
+  console.log(`🌐 Server running on http://0.0.0.0:${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'production'}`);
+  console.log(`📂 Serving from: ${__dirname}`);
   console.log('✅ Ready to accept connections');
+  
+  // Log available routes
+  console.log('📋 Available routes:');
+  console.log('- GET /health - Health check');
+  console.log('- GET /api/test - API test');
+  console.log('- Static files from /dist or current directory');
 }).on('error', (error) => {
   console.error('❌ Server startup error:', error);
+  console.error('Error details:', {
+    code: error.code,
+    message: error.message,
+    stack: error.stack
+  });
   
   if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. Trying alternative ports...`);
-    // Try alternative ports
-    const altPorts = [3001, 3002, 8080, 8081];
-    for (const altPort of altPorts) {
-      try {
-        app.listen(altPort, '0.0.0.0', () => {
-          console.log(`🎉 Server started on alternative port ${altPort}`);
-        });
-        break;
-      } catch (altError) {
-        console.log(`Port ${altPort} also in use, trying next...`);
+    console.error(`❌ Port ${PORT} is already in use`);
+    console.error('💡 Try these solutions:');
+    console.error('1. Check if another process is using port', PORT);
+    console.error('2. Wait a few moments and try again');
+    console.error('3. Restart your hosting service');
+    
+    // Don't try alternative ports in production - this could cause issues
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔄 Trying alternative ports...');
+      const altPorts = [3001, 3002, 8080, 8081];
+      for (const altPort of altPorts) {
+        try {
+          const altServer = app.listen(altPort, '0.0.0.0', () => {
+            console.log(`🎉 Server started on alternative port ${altPort}`);
+          });
+          break;
+        } catch (altError) {
+          console.log(`❌ Port ${altPort} also in use, trying next...`);
+        }
       }
     }
+  } else if (error.code === 'EACCES') {
+    console.error(`❌ Permission denied for port ${PORT}`);
+    console.error('💡 Try running with appropriate permissions or use a different port');
+  } else {
+    console.error('❌ Unknown server error:', error.message);
   }
 });
 
