@@ -2291,122 +2291,300 @@ export default function SalesDashboard() {
 
       {/* Edit Customer Billing Details */}
       <Dialog open={isEditCustomerBillingDialogOpen} onOpenChange={setIsEditCustomerBillingDialogOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Edit Customer Billing Details</DialogTitle>
-            </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-6 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <UsersIcon className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-gray-800">Edit Customer Billing Details</DialogTitle>
+                <p className="text-sm text-gray-500 mt-1">Update customer information and billing preferences</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="py-6 space-y-8">
+            {/* Customer Basic Information */}
             <div className="space-y-4">
-                <div>
-                    <Label htmlFor="customerName">Customer Name</Label>
-                    <Input
-                        id="customerName"
-                        value={customerBillingForm.customerName}
-                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, customerName: e.target.value })}
-                        placeholder="Enter customer name"
-                    />
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-xs font-bold text-blue-600">1</span>
                 </div>
-                <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                        id="phone"
-                        value={customerBillingForm.phone}
-                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, phone: e.target.value })}
-                        placeholder="Enter phone number"
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        value={customerBillingForm.email}
-                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, email: e.target.value })}
-                        placeholder="Enter email address"
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                        id="address"
-                        value={customerBillingForm.address}
-                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, address: e.target.value })}
-                        placeholder="Enter customer address"
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="totalBilled">Total Billed</Label>
-                    <Input
-                        id="totalBilled"
-                        type="number"
-                        value={customerBillingForm.totalBilled}
-                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, totalBilled: e.target.value })}
-                        placeholder="Enter total billed amount"
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="orderCount">Order Count</Label>
-                    <Input
-                        id="orderCount"
-                        type="number"
-                        value={customerBillingForm.orderCount}
-                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, orderCount: e.target.value })}
-                        placeholder="Enter order count"
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="averageOrderValue">Average Order Value</Label>
-                    <Input
-                        id="averageOrderValue"
-                        type="number"
-                        value={customerBillingForm.averageOrderValue}
-                        onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, averageOrderValue: e.target.value })}
-                        placeholder="Enter average order value"
-                    />
-                </div>
-                <div>
-                  <Label htmlFor="paymentTerm">Payment Term</Label>
+                <h3 className="text-lg font-semibold text-gray-800">Basic Information</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 rounded-lg border">
+                <div className="space-y-2">
+                  <Label htmlFor="customerName" className="text-sm font-medium text-gray-700">
+                    Customer Name *
+                  </Label>
                   <Input
-                    id="paymentTerm"
-                    type="text"
-                    value={customerBillingForm.paymentTerm}
-                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, paymentTerm: e.target.value })}
-                    placeholder="Enter Payment Term"
+                    id="customerName"
+                    value={customerBillingForm.customerName}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, customerName: e.target.value })}
+                    placeholder="Enter full customer name"
+                    className="h-10 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="creditLimit">Credit Limit</Label>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                    Phone Number
+                  </Label>
                   <Input
-                    id="creditLimit"
-                    type="text"
-                    value={customerBillingForm.creditLimit}
-                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, creditLimit: e.target.value })}
-                    placeholder="Enter Credit Limit"
+                    id="phone"
+                    value={customerBillingForm.phone}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, phone: e.target.value })}
+                    placeholder="+91-XXXXXXXXXX"
+                    className="h-10 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                 <div>
-                  <Label htmlFor="notes">Notes</Label>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email Address
+                  </Label>
                   <Input
+                    id="email"
+                    type="email"
+                    value={customerBillingForm.email}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, email: e.target.value })}
+                    placeholder="customer@example.com"
+                    className="h-10 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="text-sm font-medium text-gray-700">
+                    Address
+                  </Label>
+                  <Input
+                    id="address"
+                    value={customerBillingForm.address}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, address: e.target.value })}
+                    placeholder="Complete customer address"
+                    className="h-10 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Billing Statistics */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                  <span className="text-xs font-bold text-green-600">2</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">Billing Statistics</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-green-50 p-4 rounded-lg border">
+                <div className="space-y-2">
+                  <Label htmlFor="totalBilled" className="text-sm font-medium text-gray-700">
+                    Total Billed Amount
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                    <Input
+                      id="totalBilled"
+                      type="number"
+                      value={customerBillingForm.totalBilled}
+                      onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, totalBilled: e.target.value })}
+                      placeholder="0.00"
+                      className="h-10 pl-8 bg-white border-gray-300 focus:border-green-500 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="orderCount" className="text-sm font-medium text-gray-700">
+                    Total Orders
+                  </Label>
+                  <Input
+                    id="orderCount"
+                    type="number"
+                    value={customerBillingForm.orderCount}
+                    onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, orderCount: e.target.value })}
+                    placeholder="0"
+                    className="h-10 bg-white border-gray-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="averageOrderValue" className="text-sm font-medium text-gray-700">
+                    Average Order Value
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                    <Input
+                      id="averageOrderValue"
+                      type="number"
+                      value={customerBillingForm.averageOrderValue}
+                      onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, averageOrderValue: e.target.value })}
+                      placeholder="0.00"
+                      className="h-10 pl-8 bg-white border-gray-300 focus:border-green-500 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment & Credit Terms */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span className="text-xs font-bold text-purple-600">3</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">Payment & Credit Terms</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-purple-50 p-4 rounded-lg border">
+                <div className="space-y-2">
+                  <Label htmlFor="paymentTerm" className="text-sm font-medium text-gray-700">
+                    Payment Terms
+                  </Label>
+                  <Select 
+                    value={customerBillingForm.paymentTerm} 
+                    onValueChange={(value) => setCustomerBillingForm({ ...customerBillingForm, paymentTerm: value })}
+                  >
+                    <SelectTrigger className="h-10 bg-white border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+                      <SelectValue placeholder="Select payment terms" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="immediate">Immediate Payment</SelectItem>
+                      <SelectItem value="net15">Net 15 Days</SelectItem>
+                      <SelectItem value="net30">Net 30 Days</SelectItem>
+                      <SelectItem value="net45">Net 45 Days</SelectItem>
+                      <SelectItem value="net60">Net 60 Days</SelectItem>
+                      <SelectItem value="custom">Custom Terms</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="creditLimit" className="text-sm font-medium text-gray-700">
+                    Credit Limit
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                    <Input
+                      id="creditLimit"
+                      type="number"
+                      value={customerBillingForm.creditLimit}
+                      onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, creditLimit: e.target.value })}
+                      placeholder="0.00"
+                      className="h-10 pl-8 bg-white border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="text-sm font-medium text-gray-700">
+                    Customer Status
+                  </Label>
+                  <Select 
+                    value={customerBillingForm.status} 
+                    onValueChange={(value) => setCustomerBillingForm({ ...customerBillingForm, status: value })}
+                  >
+                    <SelectTrigger className="h-10 bg-white border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="vip">VIP Customer</SelectItem>
+                      <SelectItem value="blocked">Blocked</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Notes */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <span className="text-xs font-bold text-yellow-600">4</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">Additional Information</h3>
+              </div>
+              
+              <div className="bg-yellow-50 p-4 rounded-lg border">
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-sm font-medium text-gray-700">
+                    Notes & Comments
+                  </Label>
+                  <textarea
                     id="notes"
-                    type="text"
                     value={customerBillingForm.notes}
                     onChange={(e) => setCustomerBillingForm({ ...customerBillingForm, notes: e.target.value })}
-                    placeholder="Enter Notes"
+                    placeholder="Add any special notes, preferences, or important information about this customer..."
+                    rows={4}
+                    className="w-full p-3 bg-white border border-gray-300 rounded-md focus:border-yellow-500 focus:ring-yellow-500 resize-none"
                   />
                 </div>
+              </div>
             </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditCustomerBillingDialogOpen(false)}>
-                    Cancel
+
+            {/* Customer Summary */}
+            {selectedCustomerBilling && (
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border">
+                <h4 className="font-semibold text-gray-800 mb-3">Current Customer Summary</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Customer ID:</span>
+                    <div className="font-medium">{selectedCustomerBilling.customerId}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Current Total:</span>
+                    <div className="font-medium text-green-600">{formatCurrency(parseFloat(selectedCustomerBilling.totalBilled || 0))}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Total Orders:</span>
+                    <div className="font-medium">{selectedCustomerBilling.orderCount || 0}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Last Purchase:</span>
+                    <div className="font-medium">
+                      {selectedCustomerBilling.lastPurchaseDate 
+                        ? format(new Date(selectedCustomerBilling.lastPurchaseDate), "MMM dd, yyyy")
+                        : "Never"
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="pt-6 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4">
+            <div className="flex items-center justify-between w-full">
+              <div className="text-xs text-gray-500">
+                Last updated: {new Date().toLocaleDateString()}
+              </div>
+              <div className="flex space-x-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditCustomerBillingDialogOpen(false)}
+                  className="px-6 border-gray-300 text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
                 </Button>
-                <Button onClick={() => {
+                <Button 
+                  onClick={() => {
                     if (selectedCustomerBilling) {
                       handleUpdateCustomerBilling(selectedCustomerBilling.customerId, customerBillingForm);
                     }
-                    setIsEditCustomerBillingDialogOpen(false);
-                }}>
-                    Update Customer
+                  }}
+                  className="px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                >
+                  <UsersIcon className="h-4 w-4 mr-2" />
+                  Update Customer Details
                 </Button>
-            </DialogFooter>
+              </div>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
