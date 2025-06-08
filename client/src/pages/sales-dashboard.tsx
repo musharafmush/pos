@@ -52,6 +52,7 @@ export default function SalesDashboard() {
   const [endDate, setEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const formatCurrency = useFormatCurrency();
 
+  // Customer Billing Details CRUD operations
   const [selectedSale, setSelectedSale] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -63,6 +64,26 @@ export default function SalesDashboard() {
     total: '',
     paymentMethod: 'cash',
     status: 'completed'
+  });
+
+  // Customer Billing CRUD state
+  const [selectedCustomerBilling, setSelectedCustomerBilling] = useState<any>(null);
+  const [isEditCustomerBillingDialogOpen, setIsEditCustomerBillingDialogOpen] = useState(false);
+  const [isDeleteCustomerBillingDialogOpen, setIsDeleteCustomerBillingDialogOpen] = useState(false);
+  const [isCreateCustomerBillingDialogOpen, setIsCreateCustomerBillingDialogOpen] = useState(false);
+  const [isViewCustomerBillingDialogOpen, setIsViewCustomerBillingDialogOpen] = useState(false);
+  const [customerBillingForm, setCustomerBillingForm] = useState({
+    customerName: '',
+    phone: '',
+    email: '',
+    address: '',
+    totalBilled: '',
+    orderCount: '',
+    averageOrderValue: '',
+    status: 'active',
+    paymentTerm: '',
+    creditLimit: '',
+    notes: ''
   });
 
   // Product CRUD state
@@ -848,7 +869,8 @@ export default function SalesDashboard() {
                     // Create new customer billing record
                     console.log('Create new customer billing record');
                   }}
-                  className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                  Adding Customer Billing CRUD operations by replacing the specified section with the new state variables and functions.```text
+className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
                 >
                   <UsersIcon className="h-4 w-4" />
                   Add Customer
@@ -1554,8 +1576,7 @@ export default function SalesDashboard() {
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                    </TableBody>
                       {salesData?.slice(0, 10).map((sale: any) => {
                         const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
                         const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
@@ -1827,7 +1848,7 @@ export default function SalesDashboard() {
                   <label className="block text-sm font-medium mb-2">Payment Method</label>
                   <Select
                     value={editForm.paymentMethod}
-                    onValueChange={(value) => setEditForm({...editForm, paymentMethod: value})}
+                    onChange={(value) => setEditForm({...editForm, paymentMethod: value})}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1844,7 +1865,7 @@ export default function SalesDashboard() {
                   <label className="block text-sm font-medium mb-2">Status</label>
                   <Select
                     value={editForm.status}
-                    onValueChange={(value) => setEditForm({...editForm, status: value})}
+                    onChange={(value) => setEditForm({...editForm, status: value})}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1914,7 +1935,7 @@ export default function SalesDashboard() {
                   <label className="block text-sm font-medium mb-2">Payment Method</label>
                   <Select
                     value={editForm.paymentMethod}
-                    onValueChange={(value) => setEditForm({...editForm, paymentMethod: value})}
+                    onChange={(value) => setEditForm({...editForm, paymentMethod: value})}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1931,7 +1952,7 @@ export default function SalesDashboard() {
                   <label className="block text-sm font-medium mb-2">Status</label>
                   <Select
                     value={editForm.status}
-                    onValueChange={(value) => setEditForm({...editForm, status: value})}
+                    onChange={(value) => setEditForm({...editForm, status: value})}
                   >
                     <SelectTrigger>
                       <SelectValue />
