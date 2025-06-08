@@ -9,6 +9,8 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { db } from "@db";
+import { eq, desc, sql } from "drizzle-orm";
+import { returns as returnTransactions, sales, returnItems, products } from "@db/schema";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -591,115 +593,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Returns routes
-  app.get("/api/returns", async (req, res) => {
+  // Returns API endpoints
+  app.get('/api/returns', async (req, res) => {
     try {
-      const { search, limit = 50 } = req.query;
-      const { sqlite } = await import('@db');
+      const returns = await db.select({
+        id: returnTransactions.id,
+        returnNumber: returnTransactions.returnNumber,
+        saleId: returnTransactions.saleId,
+        totalRefund: returnTransactions.totalRefund,
+        refundMethod: returnTransactions.refundMethod,
+        reason: returnTransactions.reason,
+        notes: returnTransactions.notes,
+        createdAt: returnTransactions.createdAt,
+        sale: {
+          orderNumber: sales.orderNumber,
+          customerName: sales.customerName
+        }
+      })
+      .from(returnTransactions)
+      .leftJoin(sales, eq(returnTransactions.saleId, sales.id))
+      .orderBy(desc(returnTransactions.createdAt));
 
-      let query = `
-        SELECT r.*, s.order_number as saleOrderNumber, s.total as saleTotal,
-               c.name as customerName, u.name as userName
-        FROM returns r
-        LEFT JOIN sales s ON r.sale_id = s.id
-        LEFT JOIN customers c ON s.customer_id = c.id
-        LEFT JOIN users u ON r.user_id = u.id
-      `;
-      const params: any[] = [];
-
-      if (search) {
-        query += ` WHERE s.order_number LIKE ? OR c.name LIKE ?`;
-        params.push(`%${search}%`, `%${search}%`);
-      }
-
-      query += ` ORDER BY r.created_at DESC LIMIT ?`;
-      params.push(parseInt(limit as string));
-
-      const returns = sqlite.prepare(query).all(...params);
       res.json(returns);
     } catch (error) {
       console.error('Error fetching returns:', error);
-      res.status(500).json({ message: 'Failed to fetch returns' });
+      res.status(500).json({ error: 'Failed to fetch returns' });
     }
   });
 
-  app.post("/api/returns", async (req, res) => {
+  app.post('/api/returns', async (req, res) => {
     try {
       const { saleId, items, refundMethod, totalRefund, reason, notes } = req.body;
-      const userId = (req.user as any)?.id || 1;
-      const { sqlite } = await import('@db');
 
-      console.log('Processing return:', { saleId, items, refundMethod, totalRefund, reason });
-
-      // Validate required fields
-      if (!saleId || !items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ message: 'Sale ID and items are required' });
+      if (!saleId || !items || !refundMethod || !totalRefund || !reason) {
+        return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      if (!totalRefund || parseFloat(totalRefund) <= 0) {
-        return res.status(400).json({ message: 'Valid refund amount is required' });
-      }
+      // Generate return number
+      const returnNumber = `RET-${Date.now()}`;
 
       // Start transaction
-      const result = sqlite.transaction(() => {
-        // Insert the return record
-        const insertReturn = sqlite.prepare(`
-          INSERT INTO returns (sale_id, user_id, total_refund, refund_method, reason, notes, status, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, 'completed', CURRENT_TIMESTAMP)
-        `);
+      const result = await db.transaction(async (tx) => {
+        // Create return transaction
+        const [returnTransaction] = await tx.insert(returnTransactions).values({
+          returnNumber,
+          saleId,
+          totalRefund: totalRefund.toString(),
+          refundMethod,
+          reason,
+          notes: notes || null,
+          createdAt: new Date().toISOString()
+        }).returning();
 
-        const returnResult = insertReturn.run(
-          saleId, 
-          userId, 
-          totalRefund.toString(), 
-          refundMethod || 'cash', 
-          reason || '', 
-          notes || ''
-        );
-
-        const returnId = returnResult.lastInsertRowid;
-
-        // Insert return items and update stock
-        const insertReturnItem = sqlite.prepare(`
-          INSERT INTO return_items (return_id, product_id, quantity, unit_price, subtotal, created_at)
-          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        `);
-
-        const updateProductStock = sqlite.prepare(`
-          UPDATE products SET stock_quantity = COALESCE(stock_quantity, 0) + ? WHERE id = ?
-        `);
-
+        // Create return items and update inventory
         for (const item of items) {
           // Insert return item
-          insertReturnItem.run(
-            returnId, 
-            item.productId, 
-            item.quantity, 
-            item.unitPrice.toString(), 
-            item.subtotal.toString()
-          );
+          await tx.insert(returnItems).values({
+            returnId: returnTransaction.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice.toString(),
+            subtotal: item.subtotal.toString()
+          });
 
-          // Update product stock (restore returned quantity)
-          const stockResult = updateProductStock.run(item.quantity, item.productId);
-          console.log(`📦 Restored stock for product ${item.productId}: +${item.quantity} (changes: ${stockResult.changes})`);
+          // Update product inventory (add back returned quantity)
+          await tx.update(products)
+            .set({
+              stock: sql`${products.stock} + ${item.quantity}`
+            })
+            .where(eq(products.id, item.productId));
         }
 
-        return returnId;
-      })();
+        return returnTransaction;
+      });
 
-      console.log('✅ Return processed successfully with ID:', result);
-
+      console.log('Return processed successfully:', result);
       res.json({ 
-        id: result, 
-        message: 'Return processed successfully',
-        returnId: result
+        success: true, 
+        returnId: result.id,
+        returnNumber: result.returnNumber,
+        message: 'Return processed successfully' 
       });
+
     } catch (error) {
-      console.error('💥 Error processing return:', error);
-      res.status(500).json({ 
-        message: 'Failed to process return',
-        error: error.message
-      });
+      console.error('Error processing return:', error);
+      res.status(500).json({ error: 'Failed to process return: ' + error.message });
     }
   });
 
@@ -1110,21 +1088,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/sales/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const response = await storage.getSaleById(parseInt(id));
-      
-       if (!response) {
-        return res.status(404).json({ message: 'Sale not found' });
-      }
+  app.get('/api/sales/:id', async (req, res) => {
+  try {
+    const saleId = parseInt(req.params.id);
 
-      res.json(response);
-    } catch (error) {
-      console.error('Error fetching sale:', error);
-      res.status(500).json({ message: 'Failed to fetch sale' });
+    const sale = await db.select()
+      .from(sales)
+      .leftJoin(customers, eq(sales.customerId, customers.id))
+      .leftJoin(users, eq(sales.userId, users.id))
+      .where(eq(sales.id, saleId))
+      .limit(1);
+
+    if (sale.length === 0) {
+      return res.status(404).json({ error: 'Sale not found' });
     }
-  });
+
+    const items = await db.select({
+      id: saleItems.id,
+      productId: saleItems.productId,
+      quantity: saleItems.quantity,
+      unitPrice: saleItems.unitPrice,
+      subtotal: saleItems.subtotal,
+      product: {
+        id: products.id,
+        name: products.name,
+        sku: products.sku,
+        price: products.price
+      }
+    })
+    .from(saleItems)
+    .leftJoin(products, eq(saleItems.productId, products.id))
+    .where(eq(saleItems.saleId, saleId));
+
+    const saleData = sale[0];
+    const result = {
+      id: saleData.sales.id,
+      orderNumber: saleData.sales.orderNumber,
+      customerId: saleData.sales.customerId,
+      userId: saleData.sales.userId,
+      total: saleData.sales.total,
+      tax: saleData.sales.tax,
+      discount: saleData.sales.discount,
+      paymentMethod: saleData.sales.paymentMethod,
+      status: saleData.sales.status,
+      createdAt: saleData.sales.createdAt,
+      customerName: saleData.customers?.name,
+      customer: saleData.customers ? {
+        id: saleData.customers.id,
+        name: saleData.customers.name,
+        phone: saleData.customers.phone
+      } : null,
+      user: {
+        id: saleData.users.id,
+        name: saleData.users.name
+      },
+      items: items
+    };
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching sale:', error);
+    res.status(500).json({ error: 'Failed to fetch sale' });
+  }
+});
 
   app.put('/api/sales/:id', isAuthenticated, async (req, res) => {
     try {

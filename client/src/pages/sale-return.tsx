@@ -104,6 +104,30 @@ export default function SaleReturn() {
     enabled: !!selectedSale?.id,
   });
 
+  // Update return items when sale details are loaded
+  useEffect(() => {
+    if (saleDetails?.items) {
+      const items: ReturnItem[] = saleDetails.items.map(item => {
+        const productId = item.productId || item.product?.id || 0;
+        const productName = item.product?.name || `Product #${productId}`;
+        const quantity = parseInt(item.quantity?.toString() || '1') || 1;
+        const unitPrice = parseFloat(item.unitPrice?.toString() || item.product?.price?.toString() || '0') || 0;
+        
+        return {
+          productId,
+          productName,
+          maxQuantity: quantity,
+          returnQuantity: 0,
+          unitPrice,
+          subtotal: 0,
+        };
+      });
+      
+      console.log('Setting return items from sale details:', items);
+      setReturnItems(items);
+    }
+  }, [saleDetails]);
+
   // Create return mutation
   const createReturnMutation = useMutation({
     mutationFn: async (returnData: any) => {
@@ -169,26 +193,6 @@ export default function SaleReturn() {
   const handleSaleSelect = (sale: Sale) => {
     console.log('Selected sale for return:', sale);
     setSelectedSale(sale);
-    
-    // Initialize return items from sale items with better data handling
-    const items: ReturnItem[] = sale.items?.map(item => {
-      const productId = item.productId || item.product?.id || 0;
-      const productName = item.product?.name || item.productName || `Product #${productId}` || 'Unknown Product';
-      const quantity = parseInt(item.quantity?.toString() || '1') || 1;
-      const unitPrice = parseFloat(item.unitPrice?.toString() || item.price?.toString() || '0') || 0;
-      
-      return {
-        productId,
-        productName,
-        maxQuantity: quantity,
-        returnQuantity: 0,
-        unitPrice,
-        subtotal: 0,
-      };
-    }) || [];
-    
-    console.log('Initialized return items:', items);
-    setReturnItems(items);
   };
 
   const updateReturnQuantity = (productId: number, quantity: number) => {
