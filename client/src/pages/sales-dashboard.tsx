@@ -1982,6 +1982,7 @@ export default function SalesDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </DashboardLayout>
   );
 }
