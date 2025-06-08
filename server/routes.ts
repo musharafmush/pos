@@ -862,19 +862,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sales/recent', async (req, res) => {
     try {
-      console.log('Recent sales endpoint hit');
+      console.log('🔄 Recent sales endpoint accessed');
       const limit = parseInt(req.query.limit as string || '10');
-      console.log('Fetching recent sales with limit:', limit);
+      console.log(`📊 Fetching recent sales with limit: ${limit}`);
       
-      // Always use the main listSales method as it's more reliable
-      const sales = await storage.listSales(limit, 0);
-      console.log('Recent sales fetched via listSales:', sales?.length || 0, 'records');
+      // Check authentication status
+      const authStatus = {
+        isAuthenticated: req.isAuthenticated(),
+        userId: req.user ? (req.user as any).id : null
+      };
+      console.log('🔐 Auth status:', authStatus);
       
-      if (!sales || sales.length === 0) {
-        console.log('No sales found, checking if database has any sales data');
-        
-        // Direct database query as last resort
+      // Try multiple approaches to get sales data
+      let salesData = null;
+      let dataSource = 'unknown';
+      
+      // Method 1: Use storage.listSales
+      try {
+        console.log('📍 Method 1: Using storage.listSales');
+        salesData = await storage.listSales(limit, 0);
+        if (salesData && salesData.length > 0) {
+          dataSource = 'storage.listSales';
+          console.log(`✅ Method 1 success: ${salesData.length} records`);
+        } else {
+          console.log('⚠️ Method 1: No data returned');
+        }
+      } catch (err) {
+        console.error('❌ Method 1 failed:', err);
+      }
+      
+      // Method 2: Direct database query if Method 1 failed
+      if (!salesData || salesData.length === 0) {
         try {
+          console.log('📍 Method 2: Direct database query');
           const { sqlite } = await import('@db');
           const directQuery = sqlite.prepare(`
             SELECT s.*, c.name as customerName, c.phone as customerPhone 
@@ -883,19 +903,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ORDER BY s.createdAt DESC 
             LIMIT ?
           `);
-          const directSales = directQuery.all(limit);
-          console.log('Direct database query result:', directSales?.length || 0, 'records');
-          return res.json(directSales || []);
+          salesData = directQuery.all(limit);
+          if (salesData && salesData.length > 0) {
+            dataSource = 'direct-query';
+            console.log(`✅ Method 2 success: ${salesData.length} records`);
+          } else {
+            console.log('⚠️ Method 2: No data returned');
+          }
         } catch (dbError) {
-          console.error('Direct database query failed:', dbError);
-          return res.json([]);
+          console.error('❌ Method 2 failed:', dbError);
         }
       }
       
-      res.json(sales);
+      // Method 3: Check if any sales exist at all
+      if (!salesData || salesData.length === 0) {
+        try {
+          console.log('📍 Method 3: Checking if any sales exist');
+          const { sqlite } = await import('@db');
+          const countQuery = sqlite.prepare('SELECT COUNT(*) as count FROM sales');
+          const countResult = countQuery.get();
+          console.log('📈 Total sales count in database:', countResult);
+          
+          if (countResult && countResult.count > 0) {
+            // Sales exist but queries are failing, return sample data
+            console.log('⚠️ Sales exist but queries failing, investigating...');
+            const sampleQuery = sqlite.prepare('SELECT * FROM sales LIMIT 3');
+            const sampleData = sampleQuery.all();
+            console.log('🔍 Sample sales data:', sampleData);
+          }
+        } catch (err) {
+          console.error('❌ Method 3 failed:', err);
+        }
+      }
+      
+      // Prepare response with debugging info
+      const response = {
+        data: salesData || [],
+        debug: {
+          dataSource,
+          recordCount: salesData ? salesData.length : 0,
+          authStatus,
+          timestamp: new Date().toISOString(),
+          methods: ['storage.listSales', 'direct-query', 'count-check']
+        }
+      };
+      
+      console.log(`🎯 Returning ${response.data.length} records from source: ${dataSource}`);
+      
+      // Return just the data array for compatibility, but log debug info
+      res.json(response.data);
+      
     } catch (error) {
-      console.error('Error fetching recent sales:', error);
-      res.json([]);
+      console.error('💥 Error in recent sales endpoint:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch recent sales',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
@@ -1471,7 +1535,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sales debug endpoint
+  // Comprehensive sales test endpoint
+  app.get('/api/sales/test', async (req, res) => {
+    try {
+      console.log('🧪 Sales test endpoint accessed');
+      
+      const testResults = {
+        timestamp: new Date().toISOString(),
+        authentication: {
+          isAuthenticated: req.isAuthenticated(),
+          user: req.user ? { id: (req.user as any).id, name: (req.user as any).name } : null
+        },
+        databaseTests: {},
+        apiTests: {},
+        recommendations: []
+      };
+      
+      // Test 1: Database connection and table existence
+      try {
+        const { sqlite } = await import('@db');
+        
+        // Check if sales table exists
+        const tableCheck = sqlite.prepare(`
+          SELECT name FROM sqlite_master 
+          WHERE type='table' AND name='sales'
+        `).get();
+        
+        testResults.databaseTests.salesTableExists = !!tableCheck;
+        
+        if (tableCheck) {
+          // Count total sales
+          const totalCount = sqlite.prepare('SELECT COUNT(*) as count FROM sales').get();
+          testResults.databaseTests.totalSalesCount = totalCount.count;
+          
+          // Get recent sales directly
+          const recentSales = sqlite.prepare(`
+            SELECT s.*, c.name as customerName 
+            FROM sales s 
+            LEFT JOIN customers c ON s.customerId = c.id 
+            ORDER BY s.createdAt DESC 
+            LIMIT 5
+          `).all();
+          
+          testResults.databaseTests.recentSalesData = recentSales;
+          testResults.databaseTests.recentSalesCount = recentSales.length;
+          
+          // Check if sales were created today
+          const today = new Date().toISOString().split('T')[0];
+          const todaysSales = sqlite.prepare(`
+            SELECT COUNT(*) as count FROM sales 
+            WHERE DATE(createdAt) = ?
+          `).get(today);
+          
+          testResults.databaseTests.todaysSalesCount = todaysSales.count;
+        }
+      } catch (dbError) {
+        testResults.databaseTests.error = dbError.message;
+      }
+      
+      // Test 2: Storage layer methods
+      try {
+        const storageResults = await storage.listSales(10, 0);
+        testResults.apiTests.storageListSales = {
+          success: true,
+          count: storageResults?.length || 0,
+          sample: storageResults?.slice(0, 2) || []
+        };
+      } catch (storageError) {
+        testResults.apiTests.storageListSales = {
+          success: false,
+          error: storageError.message
+        };
+      }
+      
+      // Generate recommendations
+      if (testResults.databaseTests.totalSalesCount === 0) {
+        testResults.recommendations.push('No sales data found - try creating a test sale via POS');
+      }
+      
+      if (!testResults.databaseTests.salesTableExists) {
+        testResults.recommendations.push('Sales table missing - run database migration');
+      }
+      
+      if (!testResults.authentication.isAuthenticated) {
+        testResults.recommendations.push('User not authenticated - may affect data access');
+      }
+      
+      if (testResults.databaseTests.totalSalesCount > 0 && testResults.apiTests.storageListSales?.count === 0) {
+        testResults.recommendations.push('Data exists but storage layer not returning it - check storage.listSales method');
+      }
+      
+      console.log('🧪 Test results:', testResults);
+      res.json(testResults);
+      
+    } catch (error) {
+      console.error('💥 Error in sales test endpoint:', error);
+      res.status(500).json({ 
+        error: 'Test endpoint failed',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Sales debug endpoint (kept for compatibility)
   app.get('/api/sales/debug', async (req, res) => {
     try {
       console.log('Sales debug endpoint accessed');
@@ -1513,6 +1680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endpoints: {
           '/api/sales': 'Main sales endpoint',
           '/api/sales/recent': 'Recent sales endpoint',
+          '/api/sales/test': 'Comprehensive test endpoint',
           '/api/dashboard/stats': 'Dashboard stats endpoint'
         }
       };
