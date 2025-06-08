@@ -857,7 +857,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         let query = `
           SELECT 
-            s.*,
+            s.id,
+            s.order_number,
+            s.customer_id,
+            s.user_id,
+            s.total,
+            s.tax,
+            s.discount,
+            s.payment_method,
+            s.status,
+            s.created_at,
             c.name as customerName, 
             c.phone as customerPhone, 
             u.name as userName,
@@ -874,14 +883,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const params = [];
 
-        // Add search conditions
+        // Add search conditions - make search more flexible
         if (search) {
           query += ` WHERE (
-            s.order_number LIKE ? OR
-            c.name LIKE ? OR
-            c.phone LIKE ?
+            LOWER(s.order_number) LIKE LOWER(?) OR
+            LOWER(c.name) LIKE LOWER(?) OR
+            c.phone LIKE ? OR
+            CAST(s.id AS TEXT) LIKE ?
           )`;
-          params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+          params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
         }
 
         // Add date filters
@@ -929,37 +939,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: sale.id,
           orderNumber: sale.order_number,
           customerId: sale.customer_id,
-          customerName: sale.customerName || 'Walk-in Customer',
-          customerPhone: sale.customerPhone,
           userId: sale.user_id,
-          userName: sale.userName,
           total: sale.total,
           tax: sale.tax,
           discount: sale.discount,
           paymentMethod: sale.payment_method,
           status: sale.status,
           createdAt: sale.created_at,
+          customer: sale.customerName ? {
+            id: sale.customer_id,
+            name: sale.customerName,
+            phone: sale.customerPhone
+          } : null,
+          user: {
+            id: sale.user_id,
+            name: sale.userName || 'System User'
+          },
           itemsSummary: sale.items_summary,
-          // Add mock items if none exist
-          items: sale.items_summary ? 
-            sale.items_summary.split(',').map(item => ({ productName: item.trim(), quantity: 1 })) :
-            [{ productName: 'Item', quantity: 1 }]
+          items: []
         }));
 
         return res.json(formattedSales);
 
       } catch (dbError) {
         console.error('❌ Direct database query failed:', dbError);
-
-        // Fallback to storage method
-        try {
-          const sales = await storage.listSales(limit, offset, startDate, endDate, userId, customerId);
-          console.log('✅ Storage method found:', sales?.length || 0, 'sales');
-          return res.json(sales || []);
-        } catch (storageError) {
-          console.error('❌ Storage method also failed:', storageError);
-          return res.json([]);
-        }
+        return res.json([]);
       }
 
     } catch (error) {
@@ -1067,68 +1071,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/sales/:id', async (req, res) => {
-  try {
-    const saleId = parseInt(req.params.id);
+    try {
+      const saleId = parseInt(req.params.id);
+      console.log('🔍 Fetching sale details for ID:', saleId);
 
-    const sale = await db.select()
-      .from(sales)
-      .leftJoin(customers, eq(sales.customerId, customers.id))
-      .leftJoin(users, eq(sales.userId, users.id))
-      .where(eq(sales.id, saleId))
-      .limit(1);
+      // Use direct SQLite query for better reliability
+      const { sqlite } = await import('@db');
 
-    if (sale.length === 0) {
-      return res.status(404).json({ error: 'Sale not found' });
-    }
+      // Get sale details
+      const saleQuery = sqlite.prepare(`
+        SELECT 
+          s.*,
+          c.name as customer_name,
+          c.phone as customer_phone,
+          c.email as customer_email,
+          u.name as user_name
+        FROM sales s
+        LEFT JOIN customers c ON s.customer_id = c.id
+        LEFT JOIN users u ON s.user_id = u.id
+        WHERE s.id = ?
+      `);
 
-    const items = await db.select({
-      id: saleItems.id,
-      productId: saleItems.productId,
-      quantity: saleItems.quantity,
-      unitPrice: saleItems.unitPrice,
-      subtotal: saleItems.subtotal,
-      product: {
-        id: products.id,
-        name: products.name,
-        sku: products.sku,
-        price: products.price
+      const sale = saleQuery.get(saleId);
+
+      if (!sale) {
+        return res.status(404).json({ error: 'Sale not found' });
       }
-    })
-    .from(saleItems)
-    .leftJoin(products, eq(saleItems.productId, products.id))
-    .where(eq(saleItems.saleId, saleId));
 
-    const saleData = sale[0];
-    const result = {
-      id: saleData.sales.id,
-      orderNumber: saleData.sales.orderNumber,
-      customerId: saleData.sales.customerId,
-      userId: saleData.sales.userId,
-      total: saleData.sales.total,
-      tax: saleData.sales.tax,
-      discount: saleData.sales.discount,
-      paymentMethod: saleData.sales.paymentMethod,
-      status: saleData.sales.status,
-      createdAt: saleData.sales.createdAt,
-      customerName: saleData.customers?.name,
-      customer: saleData.customers ? {
-        id: saleData.customers.id,
-        name: saleData.customers.name,
-        phone: saleData.customers.phone
-      } : null,
-      user: {
-        id: saleData.users.id,
-        name: saleData.users.name
-      },
-      items: items
-    };
+      // Get sale items
+      const itemsQuery = sqlite.prepare(`
+        SELECT 
+          si.*,
+          p.name as product_name,
+          p.sku as product_sku,
+          p.price as product_price
+        FROM sale_items si
+        LEFT JOIN products p ON si.product_id = p.id
+        WHERE si.sale_id = ?
+        ORDER BY si.id
+      `);
 
-    res.json(result);
-  } catch (error) {
-    console.error('Error fetching sale:', error);
-    res.status(500).json({ error: 'Failed to fetch sale' });
-  }
-});
+      const items = itemsQuery.all(saleId);
+
+      const result = {
+        id: sale.id,
+        orderNumber: sale.order_number,
+        customerId: sale.customer_id,
+        userId: sale.user_id,
+        total: sale.total,
+        tax: sale.tax,
+        discount: sale.discount,
+        paymentMethod: sale.payment_method,
+        status: sale.status,
+        createdAt: sale.created_at,
+        customerName: sale.customer_name,
+        customer: sale.customer_name ? {
+          id: sale.customer_id,
+          name: sale.customer_name,
+          phone: sale.customer_phone,
+          email: sale.customer_email
+        } : null,
+        user: {
+          id: sale.user_id,
+          name: sale.user_name || 'System User'
+        },
+        items: items.map(item => ({
+          id: item.id,
+          productId: item.product_id,
+          quantity: item.quantity,
+          unitPrice: item.unit_price || item.price,
+          subtotal: item.subtotal || item.total,
+          product: {
+            id: item.product_id,
+            name: item.product_name || `Product #${item.product_id}`,
+            sku: item.product_sku || '',
+            price: item.product_price || item.unit_price || item.price || '0'
+          }
+        }))
+      };
+
+      console.log('✅ Sale details found:', result);
+      res.json(result);
+    } catch (error) {
+      console.error('❌ Error fetching sale:', error);
+      res.status(500).json({ error: 'Failed to fetch sale details' });
+    }
+  });
 
   app.put('/api/sales/:id', isAuthenticated, async (req, res) => {
     try {

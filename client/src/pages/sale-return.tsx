@@ -75,36 +75,34 @@ export default function SaleReturn() {
   const { data: sales = [], isLoading: salesLoading } = useQuery<Sale[]>({
     queryKey: ['/api/sales', { search: searchTerm }],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (searchTerm) {
-        params.append('search', searchTerm);
+      if (!searchTerm || searchTerm.length < 3) {
+        return [];
       }
-      params.append('limit', '50');
+      
+      const params = new URLSearchParams();
+      params.append('search', searchTerm);
+      params.append('limit', '20');
       
       const response = await fetch(`/api/sales?${params}`);
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch sales: ${errorText}`);
+        throw new Error('Failed to fetch sales');
       }
       return response.json();
     },
     enabled: searchTerm.length >= 3,
   });
 
-  // Fetch sale details
+  // Fetch sale details when a sale is selected
   const { data: saleDetails, isLoading: saleLoading } = useQuery<Sale>({
     queryKey: ['/api/sales', selectedSale?.id],
     queryFn: async () => {
-      console.log('🔍 Fetching sale details for ID:', selectedSale?.id);
-      const response = await fetch(`/api/sales/${selectedSale?.id}`);
+      if (!selectedSale?.id) return null;
+      
+      const response = await fetch(`/api/sales/${selectedSale.id}`);
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Failed to fetch sale details:', errorText);
-        throw new Error(`Failed to fetch sale details: ${errorText}`);
+        throw new Error('Failed to fetch sale details');
       }
-      const data = await response.json();
-      console.log('✅ Sale details fetched:', data);
-      return data;
+      return response.json();
     },
     enabled: !!selectedSale?.id,
   });
@@ -112,47 +110,24 @@ export default function SaleReturn() {
   // Update return items when sale details are loaded
   useEffect(() => {
     if (saleDetails?.items && Array.isArray(saleDetails.items)) {
-      console.log('📦 Processing sale items for returns:', saleDetails.items);
-      
-      const items: ReturnItem[] = saleDetails.items.map((item, index) => {
-        // Handle different data structures from API
-        const productId = parseInt(item.productId?.toString() || item.product_id?.toString() || item.product?.id?.toString() || '0');
-        const productName = item.product?.name || item.productName || `Product #${productId}`;
+      const items: ReturnItem[] = saleDetails.items.map((item) => {
+        const productId = item.productId || item.product?.id || 0;
+        const productName = item.product?.name || `Product #${productId}`;
         const quantity = parseInt(item.quantity?.toString() || '1');
-        const unitPrice = parseFloat(
-          item.unitPrice?.toString() || 
-          item.unit_price?.toString() || 
-          item.price?.toString() || 
-          item.product?.price?.toString() || 
-          '0'
-        );
-        
-        if (productId === 0 || isNaN(productId)) {
-          console.warn(`⚠️ Invalid productId for item ${index}:`, item);
-        }
-        
-        if (isNaN(quantity) || quantity <= 0) {
-          console.warn(`⚠️ Invalid quantity for item ${index}:`, item);
-        }
-        
-        if (isNaN(unitPrice) || unitPrice < 0) {
-          console.warn(`⚠️ Invalid unitPrice for item ${index}:`, item);
-        }
+        const unitPrice = parseFloat(item.unitPrice?.toString() || item.product?.price?.toString() || '0');
         
         return {
-          productId: productId || 0,
-          productName: productName || `Item ${index + 1}`,
-          maxQuantity: Math.max(1, quantity || 1),
+          productId,
+          productName,
+          maxQuantity: quantity,
           returnQuantity: 0,
-          unitPrice: Math.max(0, unitPrice || 0),
+          unitPrice,
           subtotal: 0,
         };
-      }).filter(item => item.productId > 0); // Filter out invalid items
+      });
       
-      console.log('✅ Processed return items:', items);
       setReturnItems(items);
     } else {
-      console.warn('⚠️ No valid items found in sale details:', saleDetails);
       setReturnItems([]);
     }
   }, [saleDetails]);
@@ -160,40 +135,25 @@ export default function SaleReturn() {
   // Create return mutation
   const createReturnMutation = useMutation({
     mutationFn: async (returnData: any) => {
-      console.log('Sending return data:', returnData);
-      
       const response = await fetch('/api/returns', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
         },
         body: JSON.stringify(returnData),
       });
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Return API error:', errorText);
-        
-        let errorMessage = 'Failed to process return';
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (e) {
-          errorMessage = errorText || errorMessage;
-        }
-        
-        throw new Error(errorMessage);
+        throw new Error(errorText || 'Failed to process return');
       }
       
-      const result = await response.json();
-      console.log('Return processed successfully:', result);
-      return result;
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
         title: "✅ Return Processed Successfully",
-        description: `Return #${data.returnId || data.id} has been processed. Stock has been restored to inventory.`,
+        description: `Return has been processed successfully. Stock has been restored.`,
       });
       
       // Reset form
@@ -210,7 +170,6 @@ export default function SaleReturn() {
       queryClient.invalidateQueries({ queryKey: ['/api/returns'] });
     },
     onError: (error: Error) => {
-      console.error('Return mutation error:', error);
       toast({
         title: "❌ Return Processing Failed",
         description: error.message,
@@ -220,7 +179,6 @@ export default function SaleReturn() {
   });
 
   const handleSaleSelect = (sale: Sale) => {
-    console.log('Selected sale for return:', sale);
     setSelectedSale(sale);
   };
 
@@ -281,19 +239,6 @@ export default function SaleReturn() {
     createReturnMutation.mutate(returnData);
   };
 
-  const getPaymentMethodIcon = (method: string) => {
-    switch (method.toLowerCase()) {
-      case 'cash':
-        return <Banknote className="h-4 w-4" />;
-      case 'card':
-      case 'credit_card':
-      case 'debit_card':
-        return <CreditCard className="h-4 w-4" />;
-      default:
-        return <DollarSign className="h-4 w-4" />;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="container mx-auto p-6 space-y-6">
@@ -324,109 +269,108 @@ export default function SaleReturn() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Search Sales Section */}
-          <Card className="shadow-lg border-0 bg-white">
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-3">
-                <Search className="h-6 w-6" />
-                Find Sale Transaction
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="search" className="text-sm font-medium text-gray-700">
-                  Search by Order Number, Customer Name, or Phone
-                </Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="search"
-                    placeholder="Enter order number, customer name, or phone..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                {searchTerm.length > 0 && searchTerm.length < 3 && (
-                  <p className="text-xs text-gray-500">Type at least 3 characters to search</p>
-                )}
+        {/* Find Sale Transaction Section */}
+        <Card className="shadow-lg border-0 bg-white">
+          <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+            <CardTitle className="flex items-center gap-3">
+              <Search className="h-6 w-6" />
+              Find Sale Transaction
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="search" className="text-sm font-medium text-gray-700">
+                Search by Order Number, Customer Name, or Phone
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="search"
+                  placeholder="Enter order number, customer name, or phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                />
               </div>
-
-              {salesLoading && (
-                <div className="text-center py-8">
-                  <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-3 text-blue-600" />
-                  <p className="text-gray-600">Searching sales transactions...</p>
-                </div>
+              {searchTerm.length > 0 && searchTerm.length < 3 && (
+                <p className="text-xs text-gray-500">Type at least 3 characters to search</p>
               )}
+            </div>
 
-              {searchTerm.length >= 3 && sales.length > 0 && (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  <h4 className="font-medium text-gray-700 flex items-center gap-2">
-                    <ShoppingCart className="h-4 w-4" />
-                    Search Results ({sales.length})
-                  </h4>
-                  {sales.map((sale) => (
-                    <Card
-                      key={sale.id}
-                      className={`cursor-pointer transition-all duration-200 hover:shadow-md border ${
-                        selectedSale?.id === sale.id 
-                          ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50' 
-                          : 'border-gray-200 hover:border-blue-300'
-                      }`}
-                      onClick={() => handleSaleSelect(sale)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold text-gray-800">#{sale.orderNumber}</p>
-                              <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
-                                {sale.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600">
-                              {sale.customer?.name || 'Walk-in Customer'}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(sale.createdAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
+            {salesLoading && (
+              <div className="text-center py-8">
+                <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-3 text-blue-600" />
+                <p className="text-gray-600">Searching sales transactions...</p>
+              </div>
+            )}
+
+            {searchTerm.length >= 3 && sales.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-700 flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  Search Results ({sales.length})
+                </h4>
+                {sales.map((sale) => (
+                  <Card
+                    key={sale.id}
+                    className={`cursor-pointer transition-all duration-200 hover:shadow-md border ${
+                      selectedSale?.id === sale.id 
+                        ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50' 
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                    onClick={() => handleSaleSelect(sale)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-800">#{sale.orderNumber}</p>
+                            <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                              {sale.status}
+                            </Badge>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-lg text-gray-800">
-                              {formatCurrency(parseFloat(sale.total))}
-                            </p>
-                            <div className="flex items-center gap-1 mt-1 justify-end">
-                              {getPaymentMethodIcon(sale.paymentMethod)}
-                              <span className="text-xs capitalize text-gray-600">
-                                {sale.paymentMethod}
-                              </span>
-                            </div>
+                          <p className="text-sm text-gray-600">
+                            {sale.customer?.name || 'Walk-in Customer'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(sale.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-lg text-gray-800">
+                            {formatCurrency(parseFloat(sale.total))}
+                          </p>
+                          <div className="flex items-center gap-1 mt-1 justify-end">
+                            <span className="text-xs capitalize text-gray-600">
+                              {sale.paymentMethod}
+                            </span>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
 
-              {searchTerm.length >= 3 && !salesLoading && sales.length === 0 && (
-                <div className="text-center py-12">
-                  <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-500 font-medium">No sales found</p>
-                  <p className="text-sm text-gray-400">Try a different search term</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            {searchTerm.length >= 3 && !salesLoading && sales.length === 0 && (
+              <div className="text-center py-12">
+                <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">No sales found</p>
+                <p className="text-sm text-gray-400">Try a different search term</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Return Details Section */}
+        {/* Return Processing Details Section */}
+        {selectedSale && (
           <Card className="shadow-lg border-0 bg-white">
             <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-3">
@@ -435,13 +379,7 @@ export default function SaleReturn() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {!selectedSale ? (
-                <div className="text-center py-16">
-                  <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 font-medium text-lg">Select a sale to process return</p>
-                  <p className="text-sm text-gray-400 mt-2">Search and select a transaction from the left panel</p>
-                </div>
-              ) : saleLoading ? (
+              {saleLoading ? (
                 <div className="text-center py-16">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-3 text-indigo-600" />
                   <p className="text-gray-600">Loading sale details...</p>
@@ -465,7 +403,7 @@ export default function SaleReturn() {
                       </div>
                       <div>
                         <p className="font-medium text-gray-600">Customer:</p>
-                        <p className="text-gray-800">{saleDetails.customerName || 'Walk-in Customer'}</p>
+                        <p className="text-gray-800">{saleDetails.customer?.name || 'Walk-in Customer'}</p>
                       </div>
                       <div>
                         <p className="font-medium text-gray-600">Date:</p>
@@ -488,12 +426,12 @@ export default function SaleReturn() {
                     </h4>
                     <div className="space-y-3 max-h-64 overflow-y-auto">
                       {returnItems.length > 0 ? (
-                        returnItems.map((item) => (
-                          <div key={`${item.productId}-${item.productName}`} 
+                        returnItems.map((item, index) => (
+                          <div key={`${item.productId}-${index}`} 
                                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                             <div className="flex-1">
                               <p className="font-medium text-sm text-gray-800">
-                                {item.productName || `Product #${item.productId}`}
+                                {item.productName}
                               </p>
                               <p className="text-xs text-gray-500">
                                 Available: {item.maxQuantity} × {formatCurrency(item.unitPrice)}
@@ -524,7 +462,6 @@ export default function SaleReturn() {
                         <div className="text-center py-8 text-gray-500">
                           <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                           <p className="text-sm">No items found for this sale</p>
-                          <p className="text-xs mt-1">Please select a different sale</p>
                         </div>
                       )}
                     </div>
@@ -556,7 +493,7 @@ export default function SaleReturn() {
               ) : null}
             </CardContent>
           </Card>
-        </div>
+        )}
 
         {/* Return Processing Dialog */}
         <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
