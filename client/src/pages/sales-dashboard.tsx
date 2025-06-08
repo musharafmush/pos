@@ -814,6 +814,48 @@ export default function SalesDashboard() {
 
           {/* Customer Billing Tab */}
           <TabsContent value="customer-billing" className="space-y-6">
+            {/* Header with Actions */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">Customer Billing Details</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Comprehensive billing information for all customers</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Export customer billing data
+                    const csvData = customerBillingData?.map(customer => ({
+                      'Customer Name': customer.customerName || 'Walk-in Customer',
+                      'Phone': customer.phone || '',
+                      'Email': customer.email || '',
+                      'Total Billed': customer.totalBilled || '0',
+                      'Order Count': customer.orderCount || 0,
+                      'Average Order Value': customer.averageOrderValue || '0',
+                      'Last Purchase': customer.lastPurchaseDate ? format(new Date(customer.lastPurchaseDate), "yyyy-MM-dd") : 'Never'
+                    }));
+                    console.log('Exporting customer billing data:', csvData);
+                  }}
+                  className="flex items-center space-x-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                >
+                  📊 Export Data
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Create new customer billing record
+                    console.log('Create new customer billing record');
+                  }}
+                  className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                >
+                  <UsersIcon className="h-4 w-4" />
+                  Add Customer
+                </Button>
+              </div>
+            </div>
+
             {/* Billing Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
@@ -864,8 +906,7 @@ export default function SalesDashboard() {
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row```text
- items-center justify-between space-y-0 pb-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
                   <ShoppingCartIcon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -2002,7 +2043,7 @@ export default function SalesDashboard() {
                   <label className="block text-sm font-medium mb-2">Category *</label>
                   <Select
                     value={productForm.categoryId}
-                    onValueChange={(value) => setProductForm({...productForm, categoryId: value})}
+                    onChange={(value) => setProductForm({...productForm, categoryId: value})}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -2130,7 +2171,7 @@ export default function SalesDashboard() {
                   <label className="block text-sm font-medium mb-2">Category *</label>
                   <Select
                     value={productForm.categoryId}
-                    onValueChange={(value) => setProductForm({...productForm, categoryId: value})}
+                    onChange={(value) => setProductForm({...productForm, categoryId: value})}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
