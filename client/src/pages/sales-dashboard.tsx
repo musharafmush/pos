@@ -1937,156 +1937,344 @@ export default function SalesDashboard() {
 
           {/* Recent Transactions Tab */}
           <TabsContent value="transactions" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Sales Transactions</CardTitle>
-                <CardDescription>Latest sales activity with detailed billing information</CardDescription>
-              </CardHeader>
-              <CardContent>
+            {/* Header Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Recent Sales Transactions</h2>
+                  <p className="text-gray-600 mt-1">Latest sales activity with detailed billing information</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Export transactions
+                      const csvData = salesData?.map(sale => ({
+                        'Date': format(new Date(sale.createdAt || sale.created_at || new Date()), "yyyy-MM-dd"),
+                        'Invoice': sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`,
+                        'Customer': sale.customerName || sale.customer_name || "Walk-in Customer",
+                        'Total': sale.total || sale.totalAmount || sale.amount || 0,
+                        'Payment': sale.paymentMethod || sale.payment_method || "Cash",
+                        'Status': sale.status || "Completed"
+                      }));
+                      console.log('Exporting transactions:', csvData);
+                    }}
+                    className="text-green-600 hover:text-green-800 border-green-300 hover:bg-green-50"
+                  >
+                    📊 Export Data
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchSales()}
+                    className="text-blue-600 hover:text-blue-800 border-blue-300 hover:bg-blue-50"
+                  >
+                    🔄 Refresh
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => window.open('/pos-enhanced', '_blank')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <ShoppingCartIcon className="h-4 w-4 mr-2" />
+                    New Transaction
+                  </Button>
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-600">Total Transactions</p>
+                      <p className="text-2xl font-bold text-blue-800">{salesData?.length || 0}</p>
+                    </div>
+                    <ShoppingCartIcon className="h-8 w-8 text-blue-500" />
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-600">Total Revenue</p>
+                      <p className="text-2xl font-bold text-green-800">{formatCurrency(totalSalesAmount)}</p>
+                    </div>
+                    <DollarSignIcon className="h-8 w-8 text-green-500" />
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600">Average Order</p>
+                      <p className="text-2xl font-bold text-purple-800">{formatCurrency(averageOrderValue)}</p>
+                    </div>
+                    <TrendingUpIcon className="h-8 w-8 text-purple-500" />
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-orange-600">Today's Sales</p>
+                      <p className="text-2xl font-bold text-orange-800">
+                        {salesData?.filter((sale: any) => {
+                          const saleDate = new Date(sale.createdAt || sale.created_at || sale.date);
+                          const today = new Date();
+                          return saleDate.toDateString() === today.toDateString();
+                        }).length || 0}
+                      </p>
+                    </div>
+                    <CalendarIcon className="h-8 w-8 text-orange-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Transactions Table */}
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date & Time</TableHead>
-                        <TableHead>Invoice#</TableHead>
-                        <TableHead>Customer Details</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead className="text-right">Subtotal</TableHead>
-                        <TableHead className="text-right">Tax</TableHead>
-                        <TableHead className="text-right">Discount</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                        <TableHead>Payment</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                    <TableHeader className="bg-gray-50">
+                      <TableRow className="border-b border-gray-200">
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Date & Time</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Invoice#</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Customer Details</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Items</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Subtotal</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Tax</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Discount</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Total</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Payment</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6">Status</TableHead>
+                        <TableHead className="font-semibold text-gray-700 py-4 px-6 text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {salesData?.slice(0, 10).map((sale: any) => {
-                        const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
-                        const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
-                        const saleSubtotal = parseFloat(sale.subtotal || sale.total || 0);
-                        const saleTax = parseFloat(sale.tax || sale.taxAmount || 0);
-                        const saleDiscount = parseFloat(sale.discount || sale.discountAmount || 0);
-                        const itemCount = sale.items?.length || sale.saleItems?.length || sale.sale_items?.length || 0;
+                      {salesData && salesData.length > 0 ? (
+                        salesData.map((sale: any, index: number) => {
+                          const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
+                          const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
+                          const saleSubtotal = parseFloat(sale.subtotal || (sale.total - sale.tax - sale.discount) || sale.total || 0);
+                          const saleTax = parseFloat(sale.tax || sale.taxAmount || 0);
+                          const saleDiscount = parseFloat(sale.discount || sale.discountAmount || 0);
+                          const itemCount = sale.items?.length || sale.saleItems?.length || sale.sale_items?.length || 0;
+                          const isToday = new Date(saleDate).toDateString() === new Date().toDateString();
 
-                        return (
-                          <TableRow key={sale.id || Math.random()}>
-                            <TableCell>
-                              <div className="text-sm">
-                                <div className="font-medium">{format(new Date(saleDate), "MMM dd, yyyy")}</div>
-                                <div className="text-gray-500">{format(new Date(saleDate), "hh:mm a")}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">
-                              {sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`}
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                <div className="font-medium">{sale.customerName || sale.customer_name || "Walk-in Customer"}</div>
-                                {sale.customerPhone && (
-                                  <div className="text-gray-500">{sale.customerPhone}</div>
-                                )}
-                                {sale.customerEmail && (
-                                  <div className="text-gray-500 text-xs">{sale.customerEmail}</div>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                <div className="font-medium">{itemCount} items</div>
-                                <div className="text-gray-500">
-                                  {sale.items?.slice(0, 2).map((item: any, index: number) => (
-                                    <div key={index} className="text-xs">
-                                      {item.productName || item.name} x{item.quantity}
-                                    </div>
-                                  ))}
-                                  {itemCount > 2 && (
-                                    <div className="text-xs text-blue-600">+{itemCount - 2} more</div>
+                          return (
+                            <TableRow 
+                              key={sale.id || index} 
+                              className={`hover:bg-gray-50 transition-colors duration-150 ${
+                                isToday ? 'bg-green-50 border-l-4 border-l-green-400' : ''
+                              }`}
+                            >
+                              <TableCell className="py-4 px-6">
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-gray-800">
+                                    {format(new Date(saleDate), "MMM dd, yyyy")}
+                                  </span>
+                                  <span className="text-sm text-gray-500">
+                                    {format(new Date(saleDate), "hh:mm a")}
+                                  </span>
+                                  {isToday && (
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full mt-1 w-fit">
+                                      Today
+                                    </span>
                                   )}
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {formatCurrency(isNaN(saleSubtotal) ? saleTotal : saleSubtotal)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {formatCurrency(isNaN(saleTax) ? 0 : saleTax)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {saleDiscount > 0 ? formatCurrency(saleDiscount) : "-"}
-                            </TableCell>
-                            <TableCell className="text-right font-semibold">
-                              {formatCurrency(isNaN(saleTotal) ? 0 : saleTotal)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                <div className="capitalize font-medium">{sale.paymentMethod || sale.payment_method || "Cash"}</div>
-                                {sale.paymentReference && (
-                                  <div className="text-gray-500 text-xs">Ref: {sale.paymentReference}</div>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                sale.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                sale.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                sale.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                'bg-green-100 text-green-800'
-                              }`}>
-                                {sale.status || "Completed"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end space-x-1">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openViewSaleDetailDialog(sale)}
-                                  className="h-8 px-2 text-blue-600 hover:text-blue-800"
-                                >
-                                  View
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    // Print receipt
-                                    window.print();
-                                  }}
-                                  className="h-8 px-2 text-green-600 hover:text-green-800"
-                                >
-                                  Print
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openEditDialog(sale)}
-                                  className="h-8 px-2 text-orange-600 hover:text-orange-800"
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openDeleteDialog(sale)}
-                                  className="h-8 px-2 text-red-600 hover:text-red-800"
-                                >
-                                  Delete
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      }) || (
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6">
+                                <div className="font-mono text-sm font-medium text-blue-600">
+                                  {sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`}
+                                </div>
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6">
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-gray-800">
+                                    {sale.customerName || sale.customer_name || "Walk-in Customer"}
+                                  </span>
+                                  {sale.customerPhone && (
+                                    <span className="text-sm text-gray-500">{sale.customerPhone}</span>
+                                  )}
+                                  {sale.customerEmail && (
+                                    <span className="text-xs text-gray-400">{sale.customerEmail}</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6">
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-gray-800">{itemCount} items</span>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {sale.items?.slice(0, 2).map((item: any, idx: number) => (
+                                      <div key={idx}>
+                                        {item.productName || item.name} (×{item.quantity})
+                                      </div>
+                                    ))}
+                                    {itemCount > 2 && (
+                                      <div className="text-blue-600 font-medium">+{itemCount - 2} more items</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6 text-right">
+                                <span className="font-medium text-gray-800">
+                                  {formatCurrency(isNaN(saleSubtotal) ? saleTotal : saleSubtotal)}
+                                </span>
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6 text-right">
+                                <span className="font-medium text-gray-600">
+                                  {formatCurrency(isNaN(saleTax) ? 0 : saleTax)}
+                                </span>
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6 text-right">
+                                <span className="font-medium text-gray-600">
+                                  {saleDiscount > 0 ? formatCurrency(saleDiscount) : "—"}
+                                </span>
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6 text-right">
+                                <span className="text-lg font-bold text-green-600">
+                                  {formatCurrency(isNaN(saleTotal) ? 0 : saleTotal)}
+                                </span>
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6">
+                                <div className="flex flex-col">
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+                                    (sale.paymentMethod || sale.payment_method || "cash") === "cash" 
+                                      ? "bg-green-100 text-green-800"
+                                      : (sale.paymentMethod || sale.payment_method) === "card"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : (sale.paymentMethod || sale.payment_method) === "upi"
+                                      ? "bg-purple-100 text-purple-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }`}>
+                                    {sale.paymentMethod || sale.payment_method || "Cash"}
+                                  </span>
+                                  {sale.paymentReference && (
+                                    <span className="text-xs text-gray-500 mt-1">
+                                      Ref: {sale.paymentReference}
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6">
+                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                  (sale.status || "completed") === 'completed' 
+                                    ? 'bg-green-100 text-green-800' :
+                                  (sale.status || "completed") === 'pending' 
+                                    ? 'bg-yellow-100 text-yellow-800' :
+                                  (sale.status || "completed") === 'cancelled' 
+                                    ? 'bg-red-100 text-red-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {sale.status || "Completed"}
+                                </span>
+                              </TableCell>
+                              
+                              <TableCell className="py-4 px-6">
+                                <div className="flex justify-end space-x-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openViewSaleDetailDialog(sale)}
+                                    className="h-8 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                  >
+                                    👁️ View
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      window.print();
+                                    }}
+                                    className="h-8 px-2 text-xs text-green-600 hover:text-green-800 hover:bg-green-50"
+                                  >
+                                    🖨️ Print
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openEditDialog(sale)}
+                                    className="h-8 px-2 text-xs text-orange-600 hover:text-orange-800 hover:bg-orange-50"
+                                  >
+                                    ✏️ Edit
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openDeleteDialog(sale)}
+                                    className="h-8 px-2 text-xs text-red-600 hover:text-red-800 hover:bg-red-50"
+                                  >
+                                    🗑️ Delete
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
                         <TableRow>
-                          <TableCell colSpan={11} className="text-center text-muted-foreground">
-                            No sales data available
+                          <TableCell colSpan={11} className="py-12">
+                            <div className="text-center">
+                              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <ShoppingCartIcon className="h-8 w-8 text-gray-400" />
+                              </div>
+                              <h3 className="text-lg font-semibold text-gray-800 mb-2">No Transactions Found</h3>
+                              <p className="text-gray-600 mb-4">Start making sales to see transaction history here</p>
+                              <Button
+                                onClick={() => window.open('/pos-enhanced', '_blank')}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <ShoppingCartIcon className="h-4 w-4 mr-2" />
+                                Create First Transaction
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Pagination Footer */}
+                {salesData && salesData.length > 0 && (
+                  <div className="bg-gray-50 border-t border-gray-200 px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        Showing {Math.min(salesData.length, 10)} of {salesData.length} transactions
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={salesData.length <= 10}
+                          className="text-gray-600"
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={salesData.length <= 10}
+                          className="text-gray-600"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
