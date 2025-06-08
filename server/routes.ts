@@ -869,61 +869,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/sales/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const sale = db.prepare(`
-      SELECT s.*, c.name as customerName, c.phone as customerPhone, u.name as userName
-      FROM sales s
-      LEFT JOIN customers c ON s.customerId = c.id
-      LEFT JOIN users u ON s.userId = u.id
-      WHERE s.id = ?
-    `).get(id);
+    try {
+      const { id } = req.params;
+      const sale = await storage.getSaleById(parseInt(id));
 
-    if (!sale) {
-      return res.status(404).json({ message: 'Sale not found' });
+      if (!sale) {
+        return res.status(404).json({ message: 'Sale not found' });
+      }
+
+      res.json(sale);
+    } catch (error) {
+      console.error('Error fetching sale:', error);
+      res.status(500).json({ message: 'Failed to fetch sale' });
     }
-
-    // Get sale items
-    const items = db.prepare(`
-      SELECT si.*, p.name as productName, p.sku, p.price as productPrice
-      FROM sale_items si
-      LEFT JOIN products p ON si.productId = p.id
-      WHERE si.saleId = ?
-    `).all(id);
-
-    // Format the sale data to match the expected structure
-    const formattedSale = {
-      ...sale,
-      customer: sale.customerName ? {
-        id: sale.customerId,
-        name: sale.customerName,
-        phone: sale.customerPhone
-      } : null,
-      user: {
-        id: sale.userId,
-        name: sale.userName
-      },
-      items: items.map(item => ({
-        id: item.id,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unit_price || item.price || '0',
-        subtotal: item.subtotal || '0',
-        product: {
-          id: item.productId,
-          name: item.productName,
-          sku: item.sku,
-          price: item.productPrice
-        }
-      }))
-    };
-
-    res.json(formattedSale);
-  } catch (error) {
-    console.error('Error fetching sale:', error);
-    res.status(500).json({ message: 'Failed to fetch sale' });
-  }
-});
+  });
 
   app.put('/api/sales/:id', isAuthenticated, async (req, res) => {
     try {

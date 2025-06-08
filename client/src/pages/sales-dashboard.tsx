@@ -3,9 +3,33 @@ import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Table, 
   TableBody, 
@@ -1048,35 +1072,44 @@ export default function SalesDashboard() {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => {
-                                      // View customer details logic
-                                      console.log('View customer:', customer);
-                                    }}
-                                    className="h-8 px-2 text-blue-600 hover:text-blue-800"
-                                  >
-                                    View
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      // Generate billing statement logic
-                                      console.log('Generate statement for:', customer);
-                                    }}
-                                    className="h-8 px-2 text-green-600 hover:text-green-800"
-                                  >
-                                    Statement
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      // Send reminder logic
-                                      console.log('Send reminder to:', customer);
-                                    }}
-                                    className="h-8 px-2 text-orange-600 hover:text-orange-800"
-                                  >
-                                    Remind
-                                  </Button>
+                                        console.log('View customer:', customer);
+                                        // Navigate to customer details or open modal
+                                        window.open(`/customers/${customer.customerId}`, '_blank');
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800"
+                                    >
+                                      View
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedSale(customer);
+                                        setEditForm({
+                                          orderNumber: `BILL-${Date.now()}`,
+                                          customerId: customer.customerId?.toString() || '',
+                                          customerName: customer.customerName || '',
+                                          total: customer.totalBilled || '0',
+                                          paymentMethod: 'cash',
+                                          status: 'completed'
+                                        });
+                                        setIsEditDialogOpen(true);
+                                      }}
+                                      className="text-green-600 hover:text-green-800"
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedSale(customer);
+                                        setIsDeleteDialogOpen(true);
+                                      }}
+                                      className="text-red-600 hover:text-red-800"
+                                    >
+                                      Delete
+                                    </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -1810,501 +1843,143 @@ export default function SalesDashboard() {
           </TabsContent>
         </Tabs>
 
-        {/* Create Sale Dialog */}
-        {isCreateDialogOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Create New Sale</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Order Number</label>
-                  <Input
-                    type="text"
-                    value={editForm.orderNumber}
-                    onChange={(e) => setEditForm({...editForm, orderNumber: e.target.value})}
-                    placeholder="Auto-generated if empty"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Customer Name</label>
-                  <Input
-                    type="text"
-                    value={editForm.customerName}
-                    onChange={(e) => setEditForm({...editForm, customerName: e.target.value})}
-                    placeholder="Walk-in Customer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Total Amount</label>
-                  <Input
-                    type="number"
-                    value={editForm.total}
-                    onChange={(e) => setEditForm({...editForm, total: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Payment Method</label>
-                  <Select
-                    value={editForm.paymentMethod}
-                    onChange={(value) => setEditForm({...editForm, paymentMethod: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="card">Card</SelectItem>
-                      <SelectItem value="upi">UPI</SelectItem>
-                      <SelectItem value="credit">Credit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Status</label>
-                  <Select
-                    value={editForm.status}
-                    onChange={(value) => setEditForm({...editForm, status: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleCreateSale({
-                    ...editForm,
-                    items: [], // Empty items for now - you can extend this
-                    orderNumber: editForm.orderNumber || `SALE-${Date.now()}`
-                  })}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Create Sale
-                </Button>
-              </div>
+      {/* Create Sale Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Sale</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="customerName">Customer Name</Label>
+              <Input
+                id="customerName"
+                value={editForm.customerName}
+                onChange={(e) => setEditForm({ ...editForm, customerName: e.target.value })}
+                placeholder="Enter customer name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="total">Total Amount</Label>
+              <Input
+                id="total"
+                type="number"
+                value={editForm.total}
+                onChange={(e) => setEditForm({ ...editForm, total: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="paymentMethod">Payment Method</Label>
+              <Select value={editForm.paymentMethod} onValueChange={(value) => setEditForm({ ...editForm, paymentMethod: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="upi">UPI</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              // Handle create sale
+              console.log('Creating sale:', editForm);
+              setIsCreateDialogOpen(false);
+            }}>
+              Create Sale
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Edit Sale Dialog */}
-        {isEditDialogOpen && selectedSale && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Edit Sale</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Order Number</label>
-                  <Input
-                    type="text"
-                    value={editForm.orderNumber}
-                    onChange={(e) => setEditForm({...editForm, orderNumber: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Customer Name</label>
-                  <Input
-                    type="text"
-                    value={editForm.customerName}
-                    onChange={(e) => setEditForm({...editForm, customerName: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Total Amount</label>
-                  <Input
-                    type="number"
-                    value={editForm.total}
-                    onChange={(e) => setEditForm({...editForm, total: e.target.value})}
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Payment Method</label>
-                  <Select
-                    value={editForm.paymentMethod}
-                    onChange={(value) => setEditForm({...editForm, paymentMethod: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="card">Card</SelectItem>
-                      <SelectItem value="upi">UPI</SelectItem>
-                      <SelectItem value="credit">Credit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Status</label>
-                  <Select
-                    value={editForm.status}
-                    onChange={(value) => setEditForm({...editForm, status: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditDialogOpen(false);
-                    setSelectedSale(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleUpdateSale(selectedSale.id, editForm)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Update Sale
-                </Button>
-              </div>
+      {/* Edit Sale Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Customer Billing</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editCustomerName">Customer Name</Label>
+              <Input
+                id="editCustomerName"
+                value={editForm.customerName}
+                onChange={(e) => setEditForm({ ...editForm, customerName: e.target.value })}
+                placeholder="Enter customer name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editTotal">Total Amount</Label>
+              <Input
+                id="editTotal"
+                type="number"
+                value={editForm.total}
+                onChange={(e) => setEditForm({ ...editForm, total: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editPaymentMethod">Payment Method</Label>
+              <Select value={editForm.paymentMethod} onValueChange={(value) => setEditForm({ ...editForm, paymentMethod: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="upi">UPI</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              // Handle update sale
+              console.log('Updating sale:', editForm);
+              setIsEditDialogOpen(false);
+            }}>
+              Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        {isDeleteDialogOpen && selectedSale && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Delete Sale</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to delete sale #{selectedSale.orderNumber || selectedSale.id}? 
-                This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDeleteDialogOpen(false);
-                    setSelectedSale(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleDeleteSale(selectedSale.id)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Delete Sale
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Create Product Dialog */}
-        {isCreateProductDialogOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Product Name *</label>
-                  <Input
-                    type="text"
-                    value={productForm.name}
-                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
-                    placeholder="Enter product name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">SKU *</label>
-                  <Input
-                    type="text"
-                    value={productForm.sku}
-                    onChange={(e) => setProductForm({...productForm, sku: e.target.value})}
-                    placeholder="Enter SKU"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Selling Price *</label>
-                  <Input
-                    type="number"
-                    value={productForm.price}
-                    onChange={(e) => setProductForm({...productForm, price: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Cost Price</label>
-                  <Input
-                    type="number"
-                    value={productForm.cost}
-                    onChange={(e) => setProductForm({...productForm, cost: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Category *</label>
-                  <Select
-                    value={productForm.categoryId}
-                    onChange={(value) => setProductForm({...productForm, categoryId: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories?.map((category: any) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Stock Quantity</label>
-                  <Input
-                    type="number"
-                    value={productForm.stockQuantity}
-                    onChange={(e) => setProductForm({...productForm, stockQuantity: e.target.value})}
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Alert Threshold</label>
-                  <Input
-                    type="number"
-                    value={productForm.alertThreshold}
-                    onChange={(e) => setProductForm({...productForm, alertThreshold: e.target.value})}
-                    placeholder="5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Barcode</label>
-                  <Input
-                    type="text"
-                    value={productForm.barcode}
-                    onChange={(e) => setProductForm({...productForm, barcode: e.target.value})}
-                    placeholder="Enter barcode"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Description</label>
-                  <Input
-                    type="text"
-                    value={productForm.description}
-                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-                    placeholder="Product description"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={productForm.active}
-                      onChange={(e) => setProductForm({...productForm, active: e.target.checked})}
-                      className="rounded"
-                    />
-                    <span className="text-sm font-medium">Active Product</span>
-                  </label>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsCreateProductDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleCreateProduct(productForm)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Create Product
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Product Dialog */}
-        {isEditProductDialogOpen && selectedProduct && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Edit Product</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Product Name *</label>
-                  <Input
-                    type="text"
-                    value={productForm.name}
-                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
-                    placeholder="Enter product name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">SKU *</label>
-                  <Input
-                    type="text"
-                    value={productForm.sku}
-                    onChange={(e) => setProductForm({...productForm, sku: e.target.value})}
-                    placeholder="Enter SKU"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Selling Price *</label>
-                  <Input
-                    type="number"
-                    value={productForm.price}
-                    onChange={(e) => setProductForm({...productForm, price: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Cost Price</label>
-                  <Input
-                    type="number"
-                    value={productForm.cost}
-                    onChange={(e) => setProductForm({...productForm, cost: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Category *</label>
-                  <Select
-                    value={productForm.categoryId}
-                    onChange={(value) => setProductForm({...productForm, categoryId: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories?.map((category: any) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Stock Quantity</label>
-                  <Input
-                    type="number"
-                    value={productForm.stockQuantity}
-                    onChange={(e) => setProductForm({...productForm, stockQuantity: e.target.value})}
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Alert Threshold</label>
-                  <Input
-                    type="number"
-                    value={productForm.alertThreshold}
-                    onChange={(e) => setProductForm({...productForm, alertThreshold: e.target.value})}
-                    placeholder="5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Barcode</label>
-                  <Input
-                    type="text"
-                    value={productForm.barcode}
-                    onChange={(e) => setProductForm({...productForm, barcode: e.target.value})}
-                    placeholder="Enter barcode"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Description</label>
-                  <Input
-                    type="text"
-                    value={productForm.description}
-                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-                    placeholder="Product description"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={productForm.active}
-                      onChange={(e) => setProductForm({...productForm, active: e.target.checked})}
-                      className="rounded"
-                    />
-                    <span className="text-sm font-medium">Active Product</span>
-                  </label>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditProductDialogOpen(false);
-                    setSelectedProduct(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleUpdateProduct(selectedProduct.id, productForm)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Update Product
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Product Confirmation Dialog */}
-        {isDeleteProductDialogOpen && selectedProduct && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Delete Product</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to delete "{selectedProduct.name}"? 
-                This action cannot be undone and may affect existing sales records.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDeleteProductDialogOpen(false);
-                    setSelectedProduct(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleDeleteProduct(selectedProduct.id)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Delete Product
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this customer's billing records? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                // Handle delete
+                console.log('Deleting customer billing:', selectedSale);
+                setIsDeleteDialogOpen(false);
+                setSelectedSale(null);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
