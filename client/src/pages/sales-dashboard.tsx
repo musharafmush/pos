@@ -869,8 +869,7 @@ export default function SalesDashboard() {
                     // Create new customer billing record
                     console.log('Create new customer billing record');
                   }}
-                  Adding Customer Billing CRUD operations by replacing the specified section with the new state variables and functions.```text
-className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                  className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
                 >
                   <UsersIcon className="h-4 w-4" />
                   Add Customer
