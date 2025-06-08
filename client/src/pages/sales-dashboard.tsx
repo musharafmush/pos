@@ -1937,100 +1937,118 @@ export default function SalesDashboard() {
 
           {/* Recent Transactions Tab */}
           <TabsContent value="transactions" className="space-y-6">
-            {/* Header Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Recent Sales Transactions</h2>
-                  <p className="text-gray-600 mt-1">Latest sales activity with detailed billing information</p>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // Export transactions
-                      const csvData = salesData?.map(sale => ({
-                        'Date': format(new Date(sale.createdAt || sale.created_at || new Date()), "yyyy-MM-dd"),
-                        'Invoice': sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`,
-                        'Customer': sale.customerName || sale.customer_name || "Walk-in Customer",
-                        'Total': sale.total || sale.totalAmount || sale.amount || 0,
-                        'Payment': sale.paymentMethod || sale.payment_method || "Cash",
-                        'Status': sale.status || "Completed"
-                      }));
-                      console.log('Exporting transactions:', csvData);
-                    }}
-                    className="text-green-600 hover:text-green-800 border-green-300 hover:bg-green-50"
-                  >
-                    📊 Export Data
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => refetchSales()}
-                    className="text-blue-600 hover:text-blue-800 border-blue-300 hover:bg-blue-50"
-                  >
-                    🔄 Refresh
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => window.open('/pos-enhanced', '_blank')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <ShoppingCartIcon className="h-4 w-4 mr-2" />
-                    New Transaction
-                  </Button>
-                </div>
+            {/* Header with Title and Actions */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Recent Sales Transactions</h2>
+                <p className="text-gray-600 mt-1">Latest sales activity with detailed billing information</p>
               </div>
+              <div className="flex items-center space-x-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Export transactions
+                    const csvData = salesData?.map(sale => ({
+                      'Date': format(new Date(sale.createdAt || sale.created_at || new Date()), "yyyy-MM-dd"),
+                      'Invoice': sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`,
+                      'Customer': sale.customerName || sale.customer_name || "Walk-in Customer",
+                      'Total': sale.total || sale.totalAmount || sale.amount || 0,
+                      'Payment': sale.paymentMethod || sale.payment_method || "Cash",
+                      'Status': sale.status || "Completed"
+                    }));
+                    console.log('Exporting transactions:', csvData);
+                  }}
+                  className="text-green-600 hover:text-green-800 border-green-300 hover:bg-green-50"
+                >
+                  📊 Export Data
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchSales()}
+                  className="text-blue-600 hover:text-blue-800 border-blue-300 hover:bg-blue-50"
+                >
+                  🔄 Refresh
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => window.open('/pos-enhanced', '_blank')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <ShoppingCartIcon className="h-4 w-4 mr-2" />
+                  New Transaction
+                </Button>
+              </div>
+            </div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border">
+            {/* Transaction Summary Cards - Matching Reference Image */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-blue-600">Total Transactions</p>
-                      <p className="text-2xl font-bold text-blue-800">{salesData?.length || 0}</p>
+                      <p className="text-sm font-medium text-blue-700">Total Transactions</p>
+                      <p className="text-3xl font-bold text-blue-900">{salesData?.length || 0}</p>
+                      <p className="text-xs text-blue-600 mt-1">Sales transactions</p>
                     </div>
-                    <ShoppingCartIcon className="h-8 w-8 text-blue-500" />
-                  </div>
-                </div>
-                
-                <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-600">Total Revenue</p>
-                      <p className="text-2xl font-bold text-green-800">{formatCurrency(totalSalesAmount)}</p>
+                    <div className="w-12 h-12 bg-blue-200 rounded-lg flex items-center justify-center">
+                      <ShoppingCartIcon className="h-6 w-6 text-blue-700" />
                     </div>
-                    <DollarSignIcon className="h-8 w-8 text-green-500" />
                   </div>
-                </div>
-                
-                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border">
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-purple-600">Average Order</p>
-                      <p className="text-2xl font-bold text-purple-800">{formatCurrency(averageOrderValue)}</p>
+                      <p className="text-sm font-medium text-green-700">Total Revenue</p>
+                      <p className="text-3xl font-bold text-green-900">{formatCurrency(totalSalesAmount)}</p>
+                      <p className="text-xs text-green-600 mt-1">Total earnings</p>
                     </div>
-                    <TrendingUpIcon className="h-8 w-8 text-purple-500" />
+                    <div className="w-12 h-12 bg-green-200 rounded-lg flex items-center justify-center">
+                      <DollarSignIcon className="h-6 w-6 text-green-700" />
+                    </div>
                   </div>
-                </div>
-                
-                <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border">
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-orange-600">Today's Sales</p>
-                      <p className="text-2xl font-bold text-orange-800">
+                      <p className="text-sm font-medium text-purple-700">Average Order</p>
+                      <p className="text-3xl font-bold text-purple-900">{formatCurrency(averageOrderValue)}</p>
+                      <p className="text-xs text-purple-600 mt-1">Per transaction</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-200 rounded-lg flex items-center justify-center">
+                      <TrendingUpIcon className="h-6 w-6 text-purple-700" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-orange-700">Today's Sales</p>
+                      <p className="text-3xl font-bold text-orange-900">
                         {salesData?.filter((sale: any) => {
                           const saleDate = new Date(sale.createdAt || sale.created_at || sale.date);
                           const today = new Date();
                           return saleDate.toDateString() === today.toDateString();
                         }).length || 0}
                       </p>
+                      <p className="text-xs text-orange-600 mt-1">Sales today</p>
                     </div>
-                    <CalendarIcon className="h-8 w-8 text-orange-500" />
+                    <div className="w-12 h-12 bg-orange-200 rounded-lg flex items-center justify-center">
+                      <CalendarIcon className="h-6 w-6 text-orange-700" />
+                    </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Transactions Table */}
