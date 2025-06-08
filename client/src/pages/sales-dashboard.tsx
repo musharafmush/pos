@@ -759,12 +759,6 @@ export default function SalesDashboard() {
     setIsCreateCustomerBillingDialogOpen(true);
   };
 
-  // Add refetch function for customer billing
-  const refetchCustomerBilling = () => {
-    // This will be implemented with the actual API call
-    window.location.reload(); // Temporary solution
-  };
-
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
