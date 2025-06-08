@@ -95,36 +95,65 @@ export default function SaleReturn() {
   const { data: saleDetails, isLoading: saleLoading } = useQuery<Sale>({
     queryKey: ['/api/sales', selectedSale?.id],
     queryFn: async () => {
+      console.log('🔍 Fetching sale details for ID:', selectedSale?.id);
       const response = await fetch(`/api/sales/${selectedSale?.id}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch sale details');
+        const errorText = await response.text();
+        console.error('❌ Failed to fetch sale details:', errorText);
+        throw new Error(`Failed to fetch sale details: ${errorText}`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log('✅ Sale details fetched:', data);
+      return data;
     },
     enabled: !!selectedSale?.id,
   });
 
   // Update return items when sale details are loaded
   useEffect(() => {
-    if (saleDetails?.items) {
-      const items: ReturnItem[] = saleDetails.items.map(item => {
-        const productId = item.productId || item.product?.id || 0;
-        const productName = item.product?.name || `Product #${productId}`;
-        const quantity = parseInt(item.quantity?.toString() || '1') || 1;
-        const unitPrice = parseFloat(item.unitPrice?.toString() || item.product?.price?.toString() || '0') || 0;
+    if (saleDetails?.items && Array.isArray(saleDetails.items)) {
+      console.log('📦 Processing sale items for returns:', saleDetails.items);
+      
+      const items: ReturnItem[] = saleDetails.items.map((item, index) => {
+        // Handle different data structures from API
+        const productId = parseInt(item.productId?.toString() || item.product_id?.toString() || item.product?.id?.toString() || '0');
+        const productName = item.product?.name || item.productName || `Product #${productId}`;
+        const quantity = parseInt(item.quantity?.toString() || '1');
+        const unitPrice = parseFloat(
+          item.unitPrice?.toString() || 
+          item.unit_price?.toString() || 
+          item.price?.toString() || 
+          item.product?.price?.toString() || 
+          '0'
+        );
+        
+        if (productId === 0 || isNaN(productId)) {
+          console.warn(`⚠️ Invalid productId for item ${index}:`, item);
+        }
+        
+        if (isNaN(quantity) || quantity <= 0) {
+          console.warn(`⚠️ Invalid quantity for item ${index}:`, item);
+        }
+        
+        if (isNaN(unitPrice) || unitPrice < 0) {
+          console.warn(`⚠️ Invalid unitPrice for item ${index}:`, item);
+        }
         
         return {
-          productId,
-          productName,
-          maxQuantity: quantity,
+          productId: productId || 0,
+          productName: productName || `Item ${index + 1}`,
+          maxQuantity: Math.max(1, quantity || 1),
           returnQuantity: 0,
-          unitPrice,
+          unitPrice: Math.max(0, unitPrice || 0),
           subtotal: 0,
         };
-      });
+      }).filter(item => item.productId > 0); // Filter out invalid items
       
-      console.log('Setting return items from sale details:', items);
+      console.log('✅ Processed return items:', items);
       setReturnItems(items);
+    } else {
+      console.warn('⚠️ No valid items found in sale details:', saleDetails);
+      setReturnItems([]);
     }
   }, [saleDetails]);
 

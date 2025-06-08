@@ -343,6 +343,7 @@ export type PurchaseItem = z.infer<typeof purchaseItemSelectSchema>;
 // Returns table
 export const returns = pgTable('returns', {
   id: serial('id').primaryKey(),
+  returnNumber: text('return_number').notNull().unique(),
   saleId: integer('sale_id').references(() => sales.id).notNull(),
   userId: integer('user_id').references(() => users.id).notNull(),
   refundMethod: text('refund_method').notNull().default('cash'),

@@ -596,88 +596,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Returns API endpoints
   app.get('/api/returns', async (req, res) => {
     try {
-      const returns = await db.select({
-        id: returnTransactions.id,
-        returnNumber: returnTransactions.returnNumber,
-        saleId: returnTransactions.saleId,
-        totalRefund: returnTransactions.totalRefund,
-        refundMethod: returnTransactions.refundMethod,
-        reason: returnTransactions.reason,
-        notes: returnTransactions.notes,
-        createdAt: returnTransactions.createdAt,
-        sale: {
-          orderNumber: sales.orderNumber,
-          customerName: sales.customerName
-        }
-      })
-      .from(returnTransactions)
-      .leftJoin(sales, eq(returnTransactions.saleId, sales.id))
-      .orderBy(desc(returnTransactions.createdAt));
-
+      console.log('📦 Fetching returns data');
+      
+      // Use direct SQLite query for better compatibility
+      const { sqlite } = await import('@db');
+      
+      // First ensure the returns table exists with proper schema
+      const createReturnsTable = `
+        CREATE TABLE IF NOT EXISTS returns (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          return_number TEXT NOT NULL UNIQUE,
+          sale_id INTEGER NOT NULL,
+          user_id INTEGER DEFAULT 1,
+          refund_method TEXT NOT NULL DEFAULT 'cash',
+          total_refund TEXT NOT NULL,
+          reason TEXT,
+          notes TEXT,
+          status TEXT NOT NULL DEFAULT 'completed',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (sale_id) REFERENCES sales (id)
+        )
+      `;
+      
+      const createReturnItemsTable = `
+        CREATE TABLE IF NOT EXISTS return_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          return_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          quantity INTEGER NOT NULL,
+          unit_price TEXT NOT NULL,
+          subtotal TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (return_id) REFERENCES returns (id),
+          FOREIGN KEY (product_id) REFERENCES products (id)
+        )
+      `;
+      
+      sqlite.exec(createReturnsTable);
+      sqlite.exec(createReturnItemsTable);
+      
+      console.log('✅ Returns tables verified/created');
+      
+      // Query returns with sales data
+      const returnsQuery = `
+        SELECT 
+          r.*,
+          s.order_number as saleOrderNumber,
+          c.name as customerName
+        FROM returns r
+        LEFT JOIN sales s ON r.sale_id = s.id
+        LEFT JOIN customers c ON s.customer_id = c.id
+        ORDER BY r.created_at DESC
+      `;
+      
+      const returns = sqlite.prepare(returnsQuery).all();
+      console.log(`📦 Found ${returns.length} returns`);
+      
       res.json(returns);
     } catch (error) {
-      console.error('Error fetching returns:', error);
-      res.status(500).json({ error: 'Failed to fetch returns' });
+      console.error('❌ Error fetching returns:', error);
+      res.status(500).json({ error: 'Failed to fetch returns: ' + error.message });
     }
   });
 
   app.post('/api/returns', async (req, res) => {
     try {
+      console.log('🔄 Processing return request:', req.body);
+      
       const { saleId, items, refundMethod, totalRefund, reason, notes } = req.body;
 
-      if (!saleId || !items || !refundMethod || !totalRefund || !reason) {
-        return res.status(400).json({ error: 'Missing required fields' });
+      // Validate required fields
+      if (!saleId || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'Sale ID and items are required' });
       }
 
+      if (!refundMethod || !totalRefund || !reason) {
+        return res.status(400).json({ error: 'Refund method, total refund amount, and reason are required' });
+      }
+
+      // Use direct SQLite for reliable transaction handling
+      const { sqlite } = await import('@db');
+      
       // Generate return number
       const returnNumber = `RET-${Date.now()}`;
+      const userId = (req.user as any)?.id || 1;
+      
+      console.log('🔄 Creating return with number:', returnNumber);
 
       // Start transaction
-      const result = await db.transaction(async (tx) => {
-        // Create return transaction
-        const [returnTransaction] = await tx.insert(returnTransactions).values({
-          returnNumber,
-          saleId,
-          totalRefund: totalRefund.toString(),
-          refundMethod,
-          reason,
-          notes: notes || null,
-          createdAt: new Date().toISOString()
-        }).returning();
+      const result = sqlite.transaction(() => {
+        try {
+          // Insert return record
+          const insertReturn = sqlite.prepare(`
+            INSERT INTO returns (
+              return_number, sale_id, user_id, refund_method, 
+              total_refund, reason, notes, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `);
 
-        // Create return items and update inventory
-        for (const item of items) {
-          // Insert return item
-          await tx.insert(returnItems).values({
-            returnId: returnTransaction.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice.toString(),
-            subtotal: item.subtotal.toString()
-          });
+          const returnResult = insertReturn.run(
+            returnNumber,
+            saleId,
+            userId,
+            refundMethod,
+            totalRefund.toString(),
+            reason,
+            notes || null,
+            'completed'
+          );
 
-          // Update product inventory (add back returned quantity)
-          await tx.update(products)
-            .set({
-              stock: sql`${products.stock} + ${item.quantity}`
-            })
-            .where(eq(products.id, item.productId));
+          const returnId = returnResult.lastInsertRowid;
+          console.log(`✅ Created return record with ID: ${returnId}`);
+
+          // Insert return items and update product stock
+          const insertReturnItem = sqlite.prepare(`
+            INSERT INTO return_items (
+              return_id, product_id, quantity, unit_price, subtotal
+            ) VALUES (?, ?, ?, ?, ?)
+          `);
+
+          const updateStock = sqlite.prepare(`
+            UPDATE products 
+            SET stock_quantity = COALESCE(stock_quantity, 0) + ?
+            WHERE id = ?
+          `);
+
+          for (const item of items) {
+            if (!item.productId || !item.quantity || item.quantity <= 0) {
+              throw new Error(`Invalid item data: productId=${item.productId}, quantity=${item.quantity}`);
+            }
+
+            // Insert return item
+            insertReturnItem.run(
+              returnId,
+              item.productId,
+              item.quantity,
+              (item.unitPrice || 0).toString(),
+              (item.subtotal || 0).toString()
+            );
+
+            // Update product stock (add back returned quantity)
+            const stockResult = updateStock.run(item.quantity, item.productId);
+            console.log(`📦 Updated stock for product ${item.productId}: +${item.quantity} (changes: ${stockResult.changes})`);
+          }
+
+          return {
+            id: returnId,
+            returnNumber: returnNumber,
+            saleId: saleId,
+            totalRefund: totalRefund
+          };
+        } catch (transactionError) {
+          console.error('❌ Transaction failed:', transactionError);
+          throw transactionError;
         }
+      })();
 
-        return returnTransaction;
-      });
-
-      console.log('Return processed successfully:', result);
+      console.log('✅ Return processed successfully:', result);
+      
       res.json({ 
         success: true, 
         returnId: result.id,
         returnNumber: result.returnNumber,
-        message: 'Return processed successfully' 
+        message: 'Return processed successfully'
       });
 
     } catch (error) {
-      console.error('Error processing return:', error);
-      res.status(500).json({ error: 'Failed to process return: ' + error.message });
+      console.error('❌ Error processing return:', error);
+      res.status(500).json({ 
+        error: 'Failed to process return',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
