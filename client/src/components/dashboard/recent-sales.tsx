@@ -28,67 +28,85 @@ export function RecentSales({ className }: RecentSalesProps) {
   const { data: recentSales, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/sales/recent'],
     queryFn: async () => {
+      console.log('Fetching recent sales data...');
+      
       try {
-        // Get auth token from localStorage
-        const token = localStorage.getItem('token');
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json',
-        };
-        
-        if (token) {
-          headers.Authorization = `Bearer ${token}`;
-        }
-
-        const response = await fetch('/api/sales/recent', { headers });
-        if (!response.ok) {
-          // Try fallback to main sales endpoint
-          const fallbackResponse = await fetch('/api/sales?limit=10', { headers });
-          if (!fallbackResponse.ok) {
-            console.warn('Both recent sales endpoints failed');
-            return [];
+        // First try the recent sales endpoint with credentials included
+        const response = await fetch('/api/sales/recent', { 
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
           }
+        });
+        
+        console.log('Recent sales response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Recent sales data received:', data);
+          const salesArray = Array.isArray(data) ? data : 
+                           data.sales ? data.sales :
+                           data.data ? data.data : [];
+          console.log('Processed recent sales array:', salesArray);
+          return salesArray;
+        }
+        
+        // If recent sales fails, try main sales endpoint
+        console.log('Recent sales failed, trying main sales endpoint...');
+        const fallbackResponse = await fetch('/api/sales?limit=10', { 
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        console.log('Fallback sales response status:', fallbackResponse.status);
+        
+        if (fallbackResponse.ok) {
           const fallbackData = await fallbackResponse.json();
+          console.log('Fallback sales data received:', fallbackData);
           const salesArray = Array.isArray(fallbackData) ? fallbackData : 
                            fallbackData.sales ? fallbackData.sales :
                            fallbackData.data ? fallbackData.data : [];
-          return salesArray.slice(0, 10); // Limit to 10 recent sales
+          console.log('Processed fallback sales array:', salesArray);
+          return salesArray.slice(0, 10);
         }
-        const data = await response.json();
-        const salesArray = Array.isArray(data) ? data : 
-                         data.sales ? data.sales :
-                         data.data ? data.data : [];
-        return salesArray;
+        
+        // If both fail, return empty array
+        console.warn('Both sales endpoints failed');
+        return [];
+        
       } catch (err) {
-        console.warn('Recent sales fetch error:', err);
-        // Try one more fallback
+        console.error('Error fetching recent sales:', err);
+        
+        // Last resort - try to get any sales data
         try {
-          const token = localStorage.getItem('token');
-          const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-          };
+          const lastResortResponse = await fetch('/api/sales', { 
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
           
-          if (token) {
-            headers.Authorization = `Bearer ${token}`;
-          }
-
-          const fallbackResponse = await fetch('/api/sales?limit=10', { headers });
-          if (fallbackResponse.ok) {
-            const fallbackData = await fallbackResponse.json();
-            const salesArray = Array.isArray(fallbackData) ? fallbackData : [];
+          if (lastResortResponse.ok) {
+            const lastResortData = await lastResortResponse.json();
+            const salesArray = Array.isArray(lastResortData) ? lastResortData : [];
+            console.log('Last resort sales data:', salesArray);
             return salesArray.slice(0, 10);
           }
-        } catch (fallbackErr) {
-          console.warn('Fallback sales fetch also failed:', fallbackErr);
+        } catch (lastResortErr) {
+          console.error('Last resort fetch also failed:', lastResortErr);
         }
+        
         return [];
       }
     },
-    retry: 1,
-    retryDelay: 1000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     refetchOnMount: true,
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    refetchInterval: 1000 * 30, // Refresh every 30 seconds
+    staleTime: 1000 * 60 * 1, // 1 minute
+    refetchInterval: 1000 * 60, // Refresh every minute
   });
 
   return (

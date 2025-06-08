@@ -858,13 +858,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sales/recent', async (req, res) => {
     try {
+      console.log('Recent sales endpoint hit');
       const limit = parseInt(req.query.limit as string || '5');
+      console.log('Fetching recent sales with limit:', limit);
+      
       const sales = await storage.getRecentSales(limit);
-      res.json(sales || []);
+      console.log('Recent sales fetched:', sales?.length || 0, 'records');
+      
+      if (!sales || sales.length === 0) {
+        console.log('No recent sales found, trying alternative approach');
+        // Try to get sales from main sales table
+        const allSales = await storage.listSales(limit, 0);
+        console.log('Alternative sales fetch result:', allSales?.length || 0, 'records');
+        return res.json(allSales || []);
+      }
+      
+      res.json(sales);
     } catch (error) {
       console.error('Error fetching recent sales:', error);
-      // Return empty array instead of error to prevent client-side refresh
-      res.json([]);
+      
+      // Try to get sales from main sales endpoint as fallback
+      try {
+        const fallbackSales = await storage.listSales(5, 0);
+        console.log('Fallback sales fetch successful:', fallbackSales?.length || 0, 'records');
+        res.json(fallbackSales || []);
+      } catch (fallbackError) {
+        console.error('Fallback sales fetch also failed:', fallbackError);
+        res.json([]);
+      }
     }
   });
 
@@ -1437,6 +1458,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching payment analytics:', error);
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Sales debug endpoint
+  app.get('/api/sales/debug', async (req, res) => {
+    try {
+      console.log('Sales debug endpoint accessed');
+      
+      // Check authentication status
+      const authStatus = {
+        isAuthenticated: req.isAuthenticated(),
+        user: req.user ? { id: (req.user as any).id, name: (req.user as any).name } : null
+      };
+      
+      // Try different sales queries
+      let salesCount = 0;
+      let recentSalesCount = 0;
+      let salesSample = null;
+      
+      try {
+        const allSales = await storage.listSales(100, 0);
+        salesCount = allSales?.length || 0;
+        salesSample = allSales?.slice(0, 2) || [];
+      } catch (err) {
+        console.error('Error getting all sales:', err);
+      }
+      
+      try {
+        const recentSales = await storage.getRecentSales(10);
+        recentSalesCount = recentSales?.length || 0;
+      } catch (err) {
+        console.error('Error getting recent sales:', err);
+      }
+      
+      const debugInfo = {
+        timestamp: new Date().toISOString(),
+        authentication: authStatus,
+        salesStats: {
+          totalSalesCount: salesCount,
+          recentSalesCount: recentSalesCount,
+          sampleSales: salesSample
+        },
+        endpoints: {
+          '/api/sales': 'Main sales endpoint',
+          '/api/sales/recent': 'Recent sales endpoint',
+          '/api/dashboard/stats': 'Dashboard stats endpoint'
+        }
+      };
+      
+      console.log('Debug info compiled:', debugInfo);
+      res.json(debugInfo);
+    } catch (error) {
+      console.error('Error in sales debug endpoint:', error);
+      res.status(500).json({ error: error.message });
     }
   });
 
