@@ -14,23 +14,45 @@ export function RecentSales({ className }: RecentSalesProps) {
       try {
         const response = await fetch('/api/sales/recent');
         if (!response.ok) {
-          if (response.status === 500) {
-            // Return empty array for server errors to prevent refresh
+          // Try fallback to main sales endpoint
+          const fallbackResponse = await fetch('/api/sales?limit=10');
+          if (!fallbackResponse.ok) {
+            console.warn('Both recent sales endpoints failed');
             return [];
           }
-          throw new Error('Failed to fetch recent sales');
+          const fallbackData = await fallbackResponse.json();
+          const salesArray = Array.isArray(fallbackData) ? fallbackData : 
+                           fallbackData.sales ? fallbackData.sales :
+                           fallbackData.data ? fallbackData.data : [];
+          return salesArray.slice(0, 10); // Limit to 10 recent sales
         }
         const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        const salesArray = Array.isArray(data) ? data : 
+                         data.sales ? data.sales :
+                         data.data ? data.data : [];
+        return salesArray;
       } catch (err) {
         console.warn('Recent sales fetch error:', err);
+        // Try one more fallback
+        try {
+          const fallbackResponse = await fetch('/api/sales?limit=10');
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            const salesArray = Array.isArray(fallbackData) ? fallbackData : [];
+            return salesArray.slice(0, 10);
+          }
+        } catch (fallbackErr) {
+          console.warn('Fallback sales fetch also failed:', fallbackErr);
+        }
         return [];
       }
     },
-    retry: false,
-    refetchOnMount: false,
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    refetchInterval: 1000 * 30, // Refresh every 30 seconds
   });
 
   return (

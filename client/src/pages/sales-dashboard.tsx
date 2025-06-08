@@ -69,6 +69,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFormatCurrency } from "@/lib/currency";
+import { SalesDataDebug } from "./sales-dashboard-debug";
 
 export default function SalesDashboard() {
   const [timeRange, setTimeRange] = useState<string>("7");
@@ -141,30 +142,52 @@ export default function SalesDashboard() {
         const response = await fetch('/api/sales?limit=100&include=customer,items,billing');
         if (!response.ok) {
           console.error('Sales API response not ok:', response.status, response.statusText);
+          // Return empty array for 404 or server errors to prevent constant retries
+          if (response.status === 404 || response.status >= 500) {
+            return [];
+          }
           throw new Error(`Failed to fetch sales: ${response.status}`);
         }
         const data = await response.json();
         console.log('Sales data received:', data);
 
-        // Handle different response formats
+        // Handle different response formats and ensure proper data structure
+        let salesArray = [];
         if (Array.isArray(data)) {
-          return data;
+          salesArray = data;
         } else if (data && Array.isArray(data.sales)) {
-          return data.sales;
+          salesArray = data.sales;
         } else if (data && data.data && Array.isArray(data.data)) {
-          return data.data;
+          salesArray = data.data;
+        } else if (data && typeof data === 'object') {
+          // If it's a single sale object, wrap it in an array
+          salesArray = [data];
         } else {
           console.warn('Unexpected sales data format:', data);
           return [];
         }
+
+        // Ensure each sale has required properties
+        return salesArray.map((sale: any) => ({
+          ...sale,
+          id: sale.id || sale.saleId || Math.random(),
+          total: parseFloat(sale.total || sale.totalAmount || sale.amount || 0),
+          createdAt: sale.createdAt || sale.created_at || sale.date || new Date().toISOString(),
+          customerName: sale.customerName || sale.customer_name || sale.customer?.name || "Walk-in Customer",
+          orderNumber: sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`,
+          paymentMethod: sale.paymentMethod || sale.payment_method || "cash",
+          status: sale.status || "completed",
+          items: sale.items || sale.saleItems || sale.sale_items || []
+        }));
       } catch (error) {
         console.error('Error fetching sales data:', error);
         return [];
       }
     },
-    retry: 2,
-    retryDelay: 1000,
-    refetchInterval: 10000 // Refresh every 10 seconds for live data
+    retry: 1,
+    retryDelay: 2000,
+    refetchInterval: 15000, // Refresh every 15 seconds for live data
+    staleTime: 5000 // Consider data stale after 5 seconds
   });
 
   // Fetch detailed customer billing data with enhanced information
@@ -774,6 +797,9 @@ export default function SalesDashboard() {
       <div className="max-w-7xl mx-auto">
         <div>
         <div className="mb-6">
+          {/* Debug Section - Remove this after fixing the issue */}
+          <SalesDataDebug />
+          
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Sales Dashboard</h2>
@@ -2073,10 +2099,12 @@ export default function SalesDashboard() {
                     </TableHeader>
                     <TableBody>
                       {salesData && salesData.length > 0 ? (
-                        salesData.map((sale: any, index: number) => {
+                        salesData
+                          .sort((a: any, b: any) => new Date(b.createdAt || b.created_at || b.date).getTime() - new Date(a.createdAt || a.created_at || a.date).getTime())
+                          .map((sale: any, index: number) => {
                           const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
                           const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
-                          const saleSubtotal = parseFloat(sale.subtotal || (sale.total - sale.tax - sale.discount) || sale.total || 0);
+                          const saleSubtotal = parseFloat(sale.subtotal || (sale.total - (sale.tax || 0) - (sale.discount || 0)) || sale.total || 0);
                           const saleTax = parseFloat(sale.tax || sale.taxAmount || 0);
                           const saleDiscount = parseFloat(sale.discount || sale.discountAmount || 0);
                           const itemCount = sale.items?.length || sale.saleItems?.length || sale.sale_items?.length || 0;
