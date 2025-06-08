@@ -926,6 +926,234 @@ export default function SalesDashboard() {
               </Select>
             </div>
 
+            {/* Recent Sales Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <ShoppingCartIcon className="h-5 w-5 text-blue-600" />
+                      Recent Sales
+                    </CardTitle>
+                    <CardDescription>Latest sales transactions with live updates</CardDescription>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-2 py-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></div>
+                      Live
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => refetchSales()}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      🔄 Refresh
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {salesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600">Loading recent sales...</p>
+                    </div>
+                  </div>
+                ) : salesData && salesData.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">{salesData.length}</div>
+                        <div className="text-xs text-gray-600">Total Sales</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">{formatCurrency(totalSalesAmount)}</div>
+                        <div className="text-xs text-gray-600">Total Revenue</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">{formatCurrency(averageOrderValue)}</div>
+                        <div className="text-xs text-gray-600">Avg Order Value</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-orange-600">
+                          {salesData.filter((sale: any) => {
+                            const saleDate = new Date(sale.createdAt || sale.created_at || sale.date);
+                            const today = new Date();
+                            return saleDate.toDateString() === today.toDateString();
+                          }).length}
+                        </div>
+                        <div className="text-xs text-gray-600">Today's Sales</div>
+                      </div>
+                    </div>
+
+                    {/* Recent Sales List */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-md font-semibold text-gray-800">Latest Transactions</h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open('/pos-enhanced', '_blank')}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          📱 New Sale
+                        </Button>
+                      </div>
+                      
+                      <div className="max-h-96 overflow-y-auto space-y-2">
+                        {salesData.slice(0, 10).map((sale: any) => {
+                          const saleDate = sale.createdAt || sale.created_at || sale.date || new Date().toISOString();
+                          const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
+                          const itemCount = sale.items?.length || sale.saleItems?.length || sale.sale_items?.length || 0;
+                          const timeAgo = format(new Date(saleDate), "MMM dd, hh:mm a");
+                          const isToday = new Date(saleDate).toDateString() === new Date().toDateString();
+
+                          return (
+                            <div key={sale.id} className={`p-4 rounded-lg border hover:shadow-md transition-all duration-200 ${
+                              isToday ? 'bg-green-50 border-green-200' : 'bg-white hover:bg-gray-50'
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                    isToday ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+                                  }`}>
+                                    <ShoppingCartIcon className="h-5 w-5" />
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center space-x-2">
+                                      <span className="font-semibold text-gray-800">
+                                        {sale.orderNumber || sale.invoiceNumber || `#${sale.id}`}
+                                      </span>
+                                      {isToday && (
+                                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs">
+                                          Today
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                      <span className="font-medium">{sale.customerName || sale.customer_name || "Walk-in Customer"}</span>
+                                      {sale.customerPhone && <span> • {sale.customerPhone}</span>}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {itemCount} {itemCount === 1 ? 'item' : 'items'} • {timeAgo}
+                                      {sale.paymentMethod && <span> • {sale.paymentMethod.toUpperCase()}</span>}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="text-right">
+                                  <div className="text-lg font-bold text-gray-800">
+                                    {formatCurrency(isNaN(saleTotal) ? 0 : saleTotal)}
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      sale.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                      sale.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      sale.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                      'bg-green-100 text-green-800'
+                                    }`}>
+                                      {sale.status || "Completed"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Sale Items Preview */}
+                              {sale.items && sale.items.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <div className="text-xs text-gray-600">
+                                    <span className="font-medium">Items: </span>
+                                    {sale.items.slice(0, 3).map((item: any, index: number) => (
+                                      <span key={index}>
+                                        {item.productName || item.name} ({item.quantity}x)
+                                        {index < Math.min(sale.items.length, 3) - 1 && ", "}
+                                      </span>
+                                    ))}
+                                    {sale.items.length > 3 && (
+                                      <span className="text-blue-600 font-medium"> +{sale.items.length - 3} more</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Action Buttons */}
+                              <div className="mt-3 flex justify-end space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    console.log('View sale details:', sale);
+                                  }}
+                                  className="h-7 px-2 text-xs text-blue-600 hover:text-blue-800"
+                                >
+                                  👁️ View
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    window.print();
+                                  }}
+                                  className="h-7 px-2 text-xs text-green-600 hover:text-green-800"
+                                >
+                                  🖨️ Print
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditDialog(sale)}
+                                  className="h-7 px-2 text-xs text-orange-600 hover:text-orange-800"
+                                >
+                                  ✏️ Edit
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {salesData.length > 10 && (
+                        <div className="text-center pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              // Switch to transactions tab to see all sales
+                              const tabsList = document.querySelector('[role="tablist"]');
+                              const transactionsTab = document.querySelector('[value="transactions"]');
+                              if (transactionsTab) {
+                                (transactionsTab as HTMLElement).click();
+                              }
+                            }}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            View All {salesData.length} Sales →
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <ShoppingCartIcon className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No Sales Yet</h3>
+                    <p className="text-gray-600 mb-4">Start making sales to see them appear here</p>
+                    <Button
+                      onClick={() => window.open('/pos-enhanced', '_blank')}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <ShoppingCartIcon className="h-4 w-4 mr-2" />
+                      Make First Sale
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Sales Trend Chart */}
               <Card>
