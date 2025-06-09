@@ -172,6 +172,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         { href: "/settings/business", icon: <SettingsIcon className="h-5 w-5" />, label: "Business Settings" },
         { href: "/settings/currency", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 0 0 1 0 7H6"/></svg>, label: "Currency Settings" }
       ]
+    },
+    // Adding Profit Management here as a new navigation group
+    {
+      id: "profit",
+      items: [{ href: "/profit-management", icon: <BarChart4Icon className="h-5 w-5" />, label: "Profit Management" }]
     }
   ];
 

@@ -45,6 +45,7 @@ import Categories from "./pages/categories";
 import Brands from "./pages/brands";
 import AccountsDashboard from "./pages/accounts-dashboard";
 import SaleReturnsDashboard from "./pages/sale-returns-dashboard";
+import { lazy } from "react";
 
 function Router() {
   return (
@@ -84,6 +85,7 @@ function Router() {
       <ProtectedRoute path="/sale-return" component={SaleReturn} />
       <ProtectedRoute path="/sale-returns-dashboard" component={SaleReturnsDashboard} />
       <ProtectedRoute path="/sales-dashboard" component={SalesDashboard} />
+      <ProtectedRoute path="/profit-management" component={lazy(() => import("./pages/profit-management"))} />
       <ProtectedRoute path="/users" component={Users} adminOnly />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/suppliers" component={Suppliers} />
