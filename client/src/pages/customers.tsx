@@ -139,7 +139,19 @@ export default function Customers() {
   const createCustomerMutation = useMutation({
     mutationFn: async (data: CustomerFormValues) => {
       console.log("Submitting customer data:", data);
-      const res = await apiRequest("POST", "/api/customers", data);
+      
+      // Map form fields to API expected format
+      const customerPayload = {
+        name: data.name,
+        email: data.email || null,
+        phone: data.phone || null,
+        address: data.address || null,
+        taxNumber: data.taxNumber || null,
+        creditLimit: data.creditLimit || "0",
+        businessName: data.businessName || null,
+      };
+
+      const res = await apiRequest("POST", "/api/customers", customerPayload);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: "Unknown error" }));

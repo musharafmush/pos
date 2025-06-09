@@ -1513,7 +1513,7 @@ app.post("/api/customers", async (req, res) => {
       return res.status(400).json({ error: "Customer name is required" });
     }
 
-    // Prepare customer data with proper field mapping
+    // Prepare customer data with proper field mapping for SQLite
     const customerData = {
       name: name.trim(),
       email: email && email.trim() !== "" ? email.trim() : null,
@@ -1526,19 +1526,35 @@ app.post("/api/customers", async (req, res) => {
 
     console.log("Creating customer with processed data:", customerData);
 
-    try {
-      // Use the storage method to create customer
-      const customer = await storage.createCustomer(customerData);
-      
-      console.log("Customer created successfully:", customer);
-      res.status(201).json({
-        ...customer,
-        message: "Customer created successfully"
-      });
-    } catch (storageError) {
-      console.error("Storage error:", storageError);
-      throw storageError;
-    }
+    // Use direct SQLite insertion to avoid schema mapping issues
+    const { sqlite } = await import('../db/index.js');
+
+    const insertCustomer = sqlite.prepare(`
+      INSERT INTO customers (
+        name, email, phone, address, tax_id, credit_limit, business_name, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    const result = insertCustomer.run(
+      customerData.name,
+      customerData.email,
+      customerData.phone,
+      customerData.address,
+      customerData.taxId,
+      customerData.creditLimit || 0,
+      customerData.businessName
+    );
+
+    // Get the created customer
+    const getCustomer = sqlite.prepare('SELECT * FROM customers WHERE id = ?');
+    const newCustomer = getCustomer.get(result.lastInsertRowid);
+
+    console.log("Customer created successfully:", newCustomer);
+    res.status(201).json({
+      ...newCustomer,
+      message: "Customer created successfully"
+    });
+
   } catch (error) {
     console.error("Error creating customer:", error);
     res.status(500).json({ 
