@@ -233,21 +233,23 @@ export default function PrintLabels() {
 
     const labelStyle = getThermalLabelStyle();
 
-    const manualLabelContent = Array(copies).fill(null).map((_, index) => `
+    // Create all manual labels first
+    const allManualLabels = Array(copies).fill(null).map((_, index) => `
       <div class="thermal-label" style="
         width: ${labelStyle.width};
         min-height: ${labelStyle.height};
         padding: ${labelStyle.padding};
-        margin: ${labelStyle.margin};
+        margin: 0;
         border: 1px solid #333;
         background: white;
         font-family: 'Courier New', monospace;
         font-size: ${labelStyle.fontSize};
         line-height: 1.1;
-        display: ${labelStyle.display};
+        display: inline-block;
         page-break-inside: avoid;
         box-sizing: border-box;
-        ${labelSize === 'thermal-strip' ? 'vertical-align: top;' : ''}
+        vertical-align: top;
+        flex-shrink: 0;
       ">
         <!-- Header with timestamp -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">
@@ -310,6 +312,28 @@ export default function PrintLabels() {
           ${index + 1}/${copies}
         </div>
       </div>
+    `);
+
+    // Group manual labels into rows based on labelsPerRow setting
+    const manualLabelRows = [];
+    for (let i = 0; i < allManualLabels.length; i += labelsPerRow) {
+      manualLabelRows.push(allManualLabels.slice(i, i + labelsPerRow));
+    }
+
+    // Create manual label content with proper grid layout
+    const manualLabelContent = manualLabelRows.map((row, rowIndex) => `
+      <div class="label-row" style="
+        display: flex;
+        flex-wrap: nowrap;
+        gap: ${marginLeft}px;
+        margin-bottom: ${marginTop}px;
+        justify-content: flex-start;
+        align-items: flex-start;
+        page-break-inside: avoid;
+        ${rowIndex > 0 && rowIndex % labelsPerColumn === 0 ? 'page-break-before: always;' : ''}
+      ">
+        ${row.join('')}
+      </div>
     `).join('');
 
     // Open print window
@@ -318,35 +342,65 @@ export default function PrintLabels() {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Manual Thermal Label</title>
+            <title>Manual Labels (${labelsPerRow}x${labelsPerColumn} Grid)</title>
             <style>
-              body {
+              * {
                 margin: 0;
-                padding: ${labelSize === 'thermal-strip' ? '4px' : '8px'};
+                padding: 0;
+                box-sizing: border-box;
+              }
+              
+              body {
+                margin: ${marginTop}px ${marginLeft}px;
+                padding: 0;
                 font-family: 'Courier New', monospace;
                 background: #f0f0f0;
-                ${labelSize === 'thermal-strip' ? 'line-height: 1.1;' : ''}
+                line-height: 1.1;
               }
+              
               .thermal-label {
                 background: white !important;
                 break-inside: avoid;
-                ${labelSize === 'thermal-strip' ? 'display: inline-block; vertical-align: top; width: 180px !important;' : ''}
+                flex-shrink: 0;
               }
+              
+              .label-row {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                gap: ${marginLeft}px !important;
+                margin-bottom: ${marginTop}px !important;
+                page-break-inside: avoid !important;
+              }
+              
               @media print {
                 body { 
-                  margin: 0; 
-                  padding: ${labelSize === 'thermal-strip' ? '1px' : '2px'}; 
+                  margin: ${marginTop}px ${marginLeft}px !important;
+                  padding: 0 !important;
                   background: white;
                 }
+                
                 .thermal-label { 
-                  margin: ${labelSize === 'thermal-strip' ? '1px' : '2px'} !important; 
-                  page-break-inside: avoid;
-                  break-inside: avoid;
-                  ${labelSize === 'thermal-strip' ? 'display: inline-block !important; vertical-align: top !important;' : ''}
+                  break-inside: avoid !important;
+                  page-break-inside: avoid !important;
+                  flex-shrink: 0 !important;
                 }
+                
+                .label-row {
+                  display: flex !important;
+                  flex-wrap: nowrap !important;
+                  gap: ${marginLeft}px !important;
+                  margin-bottom: ${marginTop}px !important;
+                  page-break-inside: avoid !important;
+                }
+                
                 @page {
-                  margin: ${labelSize === 'thermal-strip' ? '0.1in' : '0.25in'};
-                  size: ${labelSize === 'thermal-strip' ? '4in 6in' : 'auto'};
+                  margin: 0;
+                  size: ${paperSize === 'A4' ? 'A4' : paperSize === 'A5' ? 'A5' : paperSize === 'Letter' ? 'Letter' : 'auto'} ${printOrientation};
+                }
+                
+                /* Ensure page breaks after specified number of rows */
+                .label-row:nth-child(${labelsPerColumn}n+${labelsPerColumn+1}) {
+                  page-break-before: always;
                 }
               }
             </style>
@@ -560,22 +614,48 @@ export default function PrintLabels() {
       selectedProducts.includes(p.id)
     );
 
-    // Create print content with professional templates
-    const printContent = selectedProductsData.map((product: Product) => {
-      return Array(copies).fill(null).map((_, index) => 
+    // Create all labels first
+    const allLabels = selectedProductsData.flatMap((product: Product) => 
+      Array(copies).fill(null).map((_, index) => 
         generateLabelTemplate(product, index)
-      ).join('');
-    }).join('');
+      )
+    );
+
+    // Group labels into rows based on labelsPerRow setting
+    const labelRows = [];
+    for (let i = 0; i < allLabels.length; i += labelsPerRow) {
+      labelRows.push(allLabels.slice(i, i + labelsPerRow));
+    }
+
+    // Create print content with proper grid layout
+    const printContent = labelRows.map((row, rowIndex) => `
+      <div class="label-row" style="
+        display: flex;
+        flex-wrap: nowrap;
+        gap: ${marginLeft}px;
+        margin-bottom: ${marginTop}px;
+        justify-content: flex-start;
+        align-items: flex-start;
+        page-break-inside: avoid;
+        ${rowIndex > 0 && rowIndex % labelsPerColumn === 0 ? 'page-break-before: always;' : ''}
+      ">
+        ${row.join('')}
+      </div>
+    `).join('');
 
     const dims = getLabelDimensions();
 
-    // Open print window with enhanced styling
+    // Calculate page dimensions based on label layout
+    const pageWidth = labelsPerRow * (parseInt(dims.pxWidth) + marginLeft * 2);
+    const pageHeight = labelsPerColumn * (parseInt(dims.pxHeight) + marginTop * 2);
+
+    // Open print window with enhanced styling and proper grid layout
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Professional Product Labels</title>
+            <title>Professional Product Labels (${labelsPerRow}x${labelsPerColumn} Grid)</title>
             <style>
               * {
                 margin: 0;
@@ -584,11 +664,12 @@ export default function PrintLabels() {
               }
               
               body {
-                margin: 0;
-                padding: ${labelSize.includes('thermal') ? '2mm' : '5mm'};
+                margin: ${marginTop}px ${marginLeft}px;
+                padding: 0;
                 font-family: ${fontFamily}, sans-serif;
                 background: #f8f9fa;
                 line-height: 1;
+                min-width: ${pageWidth}px;
               }
               
               .product-label {
@@ -597,33 +678,48 @@ export default function PrintLabels() {
                 page-break-inside: avoid;
                 border-radius: 2px;
                 overflow: hidden;
+                flex-shrink: 0;
+              }
+              
+              .label-row {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                gap: ${marginLeft}px !important;
+                margin-bottom: ${marginTop}px !important;
+                page-break-inside: avoid !important;
               }
               
               .labels-container {
                 display: flex;
-                flex-wrap: wrap;
-                gap: 2px;
-                justify-content: flex-start;
-                align-items: flex-start;
+                flex-direction: column;
+                gap: 0;
               }
               
               @media print {
                 body { 
-                  margin: 0; 
-                  padding: ${labelSize.includes('thermal') ? '1mm' : '2mm'}; 
+                  margin: ${marginTop}px ${marginLeft}px !important;
+                  padding: 0 !important;
                   background: white;
                   -webkit-print-color-adjust: exact;
                   print-color-adjust: exact;
                 }
                 
                 .product-label { 
-                  margin: 1px !important;
                   break-inside: avoid !important;
+                  page-break-inside: avoid !important;
+                  flex-shrink: 0 !important;
+                }
+                
+                .label-row {
+                  display: flex !important;
+                  flex-wrap: nowrap !important;
+                  gap: ${marginLeft}px !important;
+                  margin-bottom: ${marginTop}px !important;
                   page-break-inside: avoid !important;
                 }
                 
                 @page {
-                  margin: ${paperSize === 'thermal' ? '2mm' : '5mm'};
+                  margin: 0;
                   size: ${paperSize === 'A4' ? 'A4' : paperSize === 'A5' ? 'A5' : paperSize === 'Letter' ? 'Letter' : 'auto'} ${printOrientation};
                   -webkit-print-color-adjust: exact;
                   print-color-adjust: exact;
@@ -649,6 +745,11 @@ export default function PrintLabels() {
               
               .price-focus-template {
                 box-shadow: 0 2px 4px rgba(231,76,60,0.2);
+              }
+
+              /* Ensure labels per row are respected */
+              .label-row:nth-child(${labelsPerColumn}n+${labelsPerColumn+1}) {
+                page-break-before: always;
               }
             </style>
           </head>
