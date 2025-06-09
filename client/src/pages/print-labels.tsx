@@ -320,21 +320,25 @@ export default function PrintLabels() {
       manualLabelRows.push(allManualLabels.slice(i, i + labelsPerRow));
     }
 
-    // Create manual label content with proper grid layout
-    const manualLabelContent = manualLabelRows.map((row, rowIndex) => `
-      <div class="label-row" style="
-        display: flex;
-        flex-wrap: nowrap;
-        gap: ${marginLeft}px;
-        margin-bottom: ${marginTop}px;
-        justify-content: flex-start;
-        align-items: flex-start;
-        page-break-inside: avoid;
-        ${rowIndex > 0 && rowIndex % labelsPerColumn === 0 ? 'page-break-before: always;' : ''}
-      ">
-        ${row.join('')}
-      </div>
-    `).join('');
+    // Create manual label content with proper grid layout and page breaks
+    const manualLabelContent = manualLabelRows.map((row, rowIndex) => {
+      const shouldPageBreak = rowIndex > 0 && rowIndex % labelsPerColumn === 0;
+      return `
+        <div class="label-row" style="
+          display: flex;
+          flex-wrap: nowrap;
+          gap: ${marginLeft}px;
+          margin-bottom: ${marginTop}px;
+          justify-content: flex-start;
+          align-items: flex-start;
+          page-break-inside: avoid;
+          ${shouldPageBreak ? 'page-break-before: always;' : ''}
+        ">
+          ${row.join('')}
+          ${row.length < labelsPerRow ? Array(labelsPerRow - row.length).fill('<div style="width: 180px; height: 60px; margin: 2px;"></div>').join('') : ''}
+        </div>
+      `;
+    }).join('');
 
     // Open print window
     const printWindow = window.open('', '_blank');
@@ -627,21 +631,25 @@ export default function PrintLabels() {
       labelRows.push(allLabels.slice(i, i + labelsPerRow));
     }
 
-    // Create print content with proper grid layout
-    const printContent = labelRows.map((row, rowIndex) => `
-      <div class="label-row" style="
-        display: flex;
-        flex-wrap: nowrap;
-        gap: ${marginLeft}px;
-        margin-bottom: ${marginTop}px;
-        justify-content: flex-start;
-        align-items: flex-start;
-        page-break-inside: avoid;
-        ${rowIndex > 0 && rowIndex % labelsPerColumn === 0 ? 'page-break-before: always;' : ''}
-      ">
-        ${row.join('')}
-      </div>
-    `).join('');
+    // Create print content with proper grid layout and page breaks
+    const printContent = labelRows.map((row, rowIndex) => {
+      const shouldPageBreak = rowIndex > 0 && rowIndex % labelsPerColumn === 0;
+      return `
+        <div class="label-row" style="
+          display: flex;
+          flex-wrap: nowrap;
+          gap: ${marginLeft}px;
+          margin-bottom: ${marginTop}px;
+          justify-content: flex-start;
+          align-items: flex-start;
+          page-break-inside: avoid;
+          ${shouldPageBreak ? 'page-break-before: always;' : ''}
+        ">
+          ${row.join('')}
+          ${row.length < labelsPerRow ? Array(labelsPerRow - row.length).fill('<div style="width: ' + getLabelDimensions().pxWidth + '; height: ' + getLabelDimensions().pxHeight + ';"></div>').join('') : ''}
+        </div>
+      `;
+    }).join('');
 
     const dims = getLabelDimensions();
 
@@ -917,23 +925,37 @@ export default function PrintLabels() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-sm">Per Row</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={labelsPerRow}
-                      onChange={(e) => setLabelsPerRow(parseInt(e.target.value) || 1)}
-                    />
+                    <Select value={labelsPerRow.toString()} onValueChange={(value) => setLabelsPerRow(parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 per row</SelectItem>
+                        <SelectItem value="2">2 per row</SelectItem>
+                        <SelectItem value="3">3 per row</SelectItem>
+                        <SelectItem value="4">4 per row</SelectItem>
+                        <SelectItem value="5">5 per row</SelectItem>
+                        <SelectItem value="6">6 per row</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label className="text-sm">Per Column</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={labelsPerColumn}
-                      onChange={(e) => setLabelsPerColumn(parseInt(e.target.value) || 1)}
-                    />
+                    <Select value={labelsPerColumn.toString()} onValueChange={(value) => setLabelsPerColumn(parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 per column</SelectItem>
+                        <SelectItem value="2">2 per column</SelectItem>
+                        <SelectItem value="3">3 per column</SelectItem>
+                        <SelectItem value="4">4 per column</SelectItem>
+                        <SelectItem value="5">5 per column</SelectItem>
+                        <SelectItem value="6">6 per column</SelectItem>
+                        <SelectItem value="8">8 per column</SelectItem>
+                        <SelectItem value="10">10 per column</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -1210,31 +1232,75 @@ export default function PrintLabels() {
               {/* Preview */}
               <div className="pt-4 border-t">
                 <h4 className="text-sm font-medium mb-3">Label Preview</h4>
-                <div 
-                  className="border-2 border-dashed border-gray-300 p-2 rounded-lg text-center"
-                  style={{
-                    height: labelSize === 'mini' ? '80px' :
-                            labelSize === 'small' ? '96px' :
-                            labelSize === 'medium' ? '112px' :
-                            labelSize === 'large' ? '128px' :
-                            labelSize === 'xlarge' ? '144px' :
-                            labelSize === 'custom' ? `${Math.max(60, parseInt(customLabelSize.height) / 2)}px` :
-                            '112px',
-                    width: labelSize === 'custom' ? `${Math.max(100, parseInt(customLabelSize.width) / 2)}px` : 'auto'
-                  }}
-                >
-                  <div className="text-xs font-semibold">Sample Product</div>
-                  <div className="text-xs text-gray-500">SKU: SP001</div>
-                  <div className="flex justify-between text-xs mt-1">
-                    {includePrice && <span className="font-bold text-blue-600">₹99.99</span>}
-                    {includeMrp && <span className="text-gray-600">MRP: ₹120</span>}
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-600">
+                    Layout: {labelsPerRow} × {labelsPerColumn} (Row × Column)
                   </div>
-                  {includeExpiryDate && <div className="text-xs text-orange-600 mt-1">Exp: 12/2025</div>}
-                  {includeBarcode && (
-                    <div className="text-xs font-mono mt-1 bg-gray-100 px-1 rounded">
-                      ||||||||||||
+                  <div 
+                    className="border-2 border-dashed border-gray-300 p-3 rounded-lg bg-white"
+                    style={{
+                      minHeight: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <div 
+                      className="border border-gray-400 bg-white p-2 text-center shadow-sm"
+                      style={{
+                        width: labelSize === 'mini' ? '120px' :
+                               labelSize === 'small' ? '140px' :
+                               labelSize === 'standard' ? '160px' :
+                               labelSize === 'medium' ? '180px' :
+                               labelSize === 'large' ? '200px' :
+                               labelSize === 'xlarge' ? '220px' :
+                               labelSize === 'thermal-58mm' ? '120px' :
+                               labelSize === 'thermal-80mm' ? '150px' :
+                               labelSize === 'custom' ? `${Math.min(200, parseInt(customLabelSize.width) / 2)}px` :
+                               '160px',
+                        height: labelSize === 'mini' ? '60px' :
+                                labelSize === 'small' ? '75px' :
+                                labelSize === 'standard' ? '90px' :
+                                labelSize === 'medium' ? '100px' :
+                                labelSize === 'large' ? '110px' :
+                                labelSize === 'xlarge' ? '120px' :
+                                labelSize === 'thermal-58mm' ? '80px' :
+                                labelSize === 'thermal-80mm' ? '100px' :
+                                labelSize === 'custom' ? `${Math.min(120, parseInt(customLabelSize.height) / 2)}px` :
+                                '90px',
+                        fontSize: '10px',
+                        lineHeight: '1.1',
+                        fontFamily: fontFamily,
+                        backgroundColor: backgroundColor,
+                        color: textColor,
+                        borderWidth: labelBorder ? `${borderWidth}px` : '0px',
+                        borderStyle: borderStyle
+                      }}
+                    >
+                      {includeCompanyLogo && <div className="text-xs font-bold mb-1">LOGO</div>}
+                      <div className="font-semibold text-xs">Sample Product</div>
+                      <div className="text-xs text-gray-500">SKU: SP001</div>
+                      {includeDescription && <div className="text-xs text-gray-400">Product desc...</div>}
+                      <div className="flex justify-between text-xs mt-1">
+                        {includePrice && <span className="font-bold text-blue-600">₹99.99</span>}
+                        {includeMrp && <span className="text-gray-600 line-through">₹120</span>}
+                      </div>
+                      {includeExpiryDate && <div className="text-xs text-orange-600">Exp: 12/25</div>}
+                      {includeQrCode && <div className="text-xs">█▀▀█</div>}
+                      {includeBarcode && (
+                        <div className="mt-1">
+                          <div className="text-xs font-mono bg-gray-100 px-1">SP001000001</div>
+                          <div className="text-xs">||||||||||||</div>
+                        </div>
+                      )}
+                      {includeCustomText && customText && (
+                        <div className="text-xs italic mt-1">{customText.substring(0, 15)}...</div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                  <div className="text-xs text-gray-500 text-center">
+                    Preview shows actual label size and selected elements
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -1714,32 +1780,79 @@ export default function PrintLabels() {
               {/* Live Preview */}
               <div className="pt-2">
                 <Label className="text-sm font-medium mb-2 block">Live Preview</Label>
-                <div 
-                  className="border-2 border-dashed border-gray-300 p-2 rounded-lg text-center bg-white"
-                  style={{
-                    height: labelSize === 'mini' ? '64px' :
-                            labelSize === 'small' ? '80px' :
-                            labelSize === 'medium' ? '96px' :
-                            labelSize === 'large' ? '112px' :
-                            labelSize === 'xlarge' ? '128px' :
-                            labelSize === 'custom' ? `${Math.max(60, parseInt(customLabelSize.height) / 2)}px` :
-                            '96px',
-                    width: labelSize === 'custom' ? `${Math.max(100, parseInt(customLabelSize.width) / 2)}px` : 'auto',
-                    fontSize: labelSize === 'mini' || labelSize === 'small' ? '12px' :
-                             labelSize === 'medium' || labelSize === 'large' ? '14px' :
-                             labelSize === 'xlarge' ? '16px' :
-                             labelSize === 'custom' ? `${Math.max(10, Math.min(16, parseInt(customLabelSize.width) / 20))}px` :
-                             '12px'
-                  }}
-                >
-                  <div className="font-semibold">{manualLabel.productName || 'Product Name'}</div>
-                  {manualLabel.sku && <div className="text-gray-500">SKU: {manualLabel.sku}</div>}
-                  <div className="flex justify-between text-xs mt-1">
-                    {includePrice && manualLabel.price && <span className="font-bold text-blue-600">₹{manualLabel.price}</span>}
-                    {includeMrp && manualLabel.mrp && <span className="text-gray-600">MRP: ₹{manualLabel.mrp}</span>}
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-600">
+                    Layout: {labelsPerRow} × {labelsPerColumn} grid, {copies} copies
                   </div>
-                  {includeExpiryDate && manualLabel.expiryDate && <div className="text-orange-600 text-xs">Exp: {manualLabel.expiryDate}</div>}
-                  {includeBarcode && <div className="text-xs font-mono mt-1 bg-gray-100 px-1">||||||||||||</div>}
+                  <div 
+                    className="border-2 border-dashed border-gray-300 p-3 rounded-lg bg-gray-50 flex items-center justify-center"
+                    style={{ minHeight: '120px' }}
+                  >
+                    <div 
+                      className="border border-gray-400 bg-white p-2 text-center shadow-sm"
+                      style={{
+                        width: labelSize === 'mini' ? '100px' :
+                               labelSize === 'small' ? '120px' :
+                               labelSize === 'standard' ? '140px' :
+                               labelSize === 'medium' ? '160px' :
+                               labelSize === 'large' ? '180px' :
+                               labelSize === 'xlarge' ? '200px' :
+                               labelSize === 'thermal-strip' ? '120px' :
+                               labelSize === 'thermal-roll' ? '140px' :
+                               labelSize === 'custom' ? `${Math.min(180, parseInt(customLabelSize.width) / 2)}px` :
+                               '140px',
+                        height: labelSize === 'mini' ? '50px' :
+                                labelSize === 'small' ? '65px' :
+                                labelSize === 'standard' ? '80px' :
+                                labelSize === 'medium' ? '90px' :
+                                labelSize === 'large' ? '100px' :
+                                labelSize === 'xlarge' ? '110px' :
+                                labelSize === 'thermal-strip' ? '40px' :
+                                labelSize === 'thermal-roll' ? '55px' :
+                                labelSize === 'custom' ? `${Math.min(100, parseInt(customLabelSize.height) / 2)}px` :
+                                '80px',
+                        fontSize: '9px',
+                        lineHeight: '1.1',
+                        fontFamily: fontFamily,
+                        backgroundColor: backgroundColor,
+                        color: textColor,
+                        borderWidth: labelBorder ? `${borderWidth}px` : '0px',
+                        borderStyle: borderStyle
+                      }}
+                    >
+                      <div className="font-semibold text-xs truncate">
+                        {manualLabel.productName || 'Product Name'}
+                      </div>
+                      {manualLabel.sku && (
+                        <div className="text-xs text-gray-500 truncate">SKU: {manualLabel.sku}</div>
+                      )}
+                      {includeDescription && manualLabel.description && (
+                        <div className="text-xs text-gray-400 truncate">{manualLabel.description.substring(0, 20)}...</div>
+                      )}
+                      <div className="flex justify-between text-xs mt-1">
+                        {includePrice && manualLabel.price && (
+                          <span className="font-bold text-blue-600">₹{manualLabel.price}</span>
+                        )}
+                        {includeMrp && manualLabel.mrp && (
+                          <span className="text-gray-600 line-through text-xs">₹{manualLabel.mrp}</span>
+                        )}
+                      </div>
+                      {includeExpiryDate && manualLabel.expiryDate && (
+                        <div className="text-orange-600 text-xs">Exp: {manualLabel.expiryDate}</div>
+                      )}
+                      {includeBarcode && (
+                        <div className="mt-1">
+                          <div className="text-xs font-mono bg-gray-100 px-1">
+                            {manualLabel.barcode || manualLabel.sku || '000000000000'}
+                          </div>
+                          <div className="text-xs">||||||||||||</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 text-center">
+                    Preview updates as you type
+                  </div>
                 </div>
               </div>
             </div>
