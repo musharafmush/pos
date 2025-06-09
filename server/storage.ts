@@ -381,22 +381,42 @@ export const storage = {
     email?: string;
     phone?: string;
     address?: string;
+    taxId?: string;
+    creditLimit?: number;
+    businessName?: string;
   }): Promise<Customer> {
     try {
       console.log('Storage: Creating customer with data:', customer);
 
-      const customerWithDefaults = {
-        ...customer,
-        createdAt: new Date().toISOString(),
-        creditLimit: customer.creditLimit || 0
-      };
+      // Import SQLite database directly for reliable creation
+      const { sqlite } = await import('../db/index.js');
 
-      const [newCustomer] = await db.insert(customers)
-        .values(customerWithDefaults)
-        .returning();
+      // Insert customer using raw SQL
+      const insertCustomer = sqlite.prepare(`
+        INSERT INTO customers (
+          name, email, phone, address, tax_id, credit_limit, business_name, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertCustomer.run(
+        customer.name,
+        customer.email || null,
+        customer.phone || null,
+        customer.address || null,
+        customer.taxId || null,
+        customer.creditLimit || 0,
+        customer.businessName || null
+      );
+
+      // Get the created customer
+      const getCustomer = sqlite.prepare('SELECT * FROM customers WHERE id = ?');
+      const newCustomer = getCustomer.get(result.lastInsertRowid);
 
       console.log('Storage: Customer created successfully:', newCustomer);
-      return newCustomer;
+      return {
+        ...newCustomer,
+        createdAt: new Date(newCustomer.created_at)
+      };
     } catch (error) {
       console.error('Storage: Error creating customer:', error);
       throw new Error(`Failed to create customer: ${error.message}`);

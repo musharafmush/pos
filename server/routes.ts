@@ -1513,7 +1513,7 @@ app.post("/api/customers", async (req, res) => {
       return res.status(400).json({ error: "Customer name is required" });
     }
 
-    // Use storage method for creating customer
+    // Prepare customer data with proper field mapping
     const customerData = {
       name: name.trim(),
       email: email && email.trim() !== "" ? email.trim() : null,
@@ -1526,11 +1526,19 @@ app.post("/api/customers", async (req, res) => {
 
     console.log("Creating customer with processed data:", customerData);
 
-    // Use the storage method to create customer
-    const customer = await storage.createCustomer(customerData);
-
-    console.log("Customer created successfully:", customer);
-    res.status(201).json(customer);
+    try {
+      // Use the storage method to create customer
+      const customer = await storage.createCustomer(customerData);
+      
+      console.log("Customer created successfully:", customer);
+      res.status(201).json({
+        ...customer,
+        message: "Customer created successfully"
+      });
+    } catch (storageError) {
+      console.error("Storage error:", storageError);
+      throw storageError;
+    }
   } catch (error) {
     console.error("Error creating customer:", error);
     res.status(500).json({ 

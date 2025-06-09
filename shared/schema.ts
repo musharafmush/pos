@@ -60,6 +60,9 @@ export const customers = pgTable('customers', {
   email: text('email'),
   phone: text('phone'),
   address: text('address'),
+  taxId: text('tax_id'),
+  creditLimit: decimal('credit_limit', { precision: 10, scale: 2 }).default('0'),
+  businessName: text('business_name'),
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
@@ -251,7 +254,10 @@ export const customerInsertSchema = createInsertSchema(customers, {
   name: (schema) => schema.min(2, "Name must be at least 2 characters"),
   email: (schema) => schema.email("Must provide a valid email").optional().or(z.literal('')),
   phone: (schema) => schema.optional(),
-  address: (schema) => schema.optional()
+  address: (schema) => schema.optional(),
+  taxId: (schema) => schema.optional(),
+  creditLimit: (schema) => z.union([z.string(), z.number()]).transform(val => parseFloat(val.toString()) || 0).optional(),
+  businessName: (schema) => schema.optional()
 });
 export type CustomerInsert = z.infer<typeof customerInsertSchema>;
 export const customerSelectSchema = createSelectSchema(customers);
