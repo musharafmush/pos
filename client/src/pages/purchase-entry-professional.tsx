@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2 } from "lucide-react";
+import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive } from "lucide-react";
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
@@ -112,6 +112,10 @@ export default function PurchaseEntryProfessional() {
     freightCharges: 0,
     grandTotal: 0
   });
+
+  // Hold Purchase functionality
+  const [heldPurchases, setHeldPurchases] = useState<any[]>([]);
+  const [showHeldPurchases, setShowHeldPurchases] = useState(false);
 
   // Modal state for Add Item
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
@@ -223,6 +227,110 @@ export default function PurchaseEntryProfessional() {
 
   // Loading state for save button
   const [isSaving, setIsSaving] = useState(false);
+
+  // Hold Purchase functions
+  const holdPurchase = () => {
+    const currentFormData = form.getValues();
+    
+    // Validate that at least supplier is selected
+    if (!currentFormData.supplierId || currentFormData.supplierId === 0) {
+      toast({
+        variant: "destructive",
+        title: "Cannot Hold Purchase",
+        description: "Please select a supplier before holding the purchase order.",
+      });
+      return;
+    }
+
+    const holdId = `HOLD-${Date.now().toString().slice(-8)}`;
+    const heldPurchase = {
+      id: holdId,
+      timestamp: new Date(),
+      supplier: suppliers.find(s => s.id === currentFormData.supplierId),
+      orderNumber: currentFormData.orderNumber,
+      formData: currentFormData,
+      summary: summary,
+      itemsCount: currentFormData.items.filter(item => item.productId && item.productId > 0).length
+    };
+
+    setHeldPurchases(prev => [...prev, heldPurchase]);
+    
+    // Reset form for new purchase
+    const newOrderNumber = `PO-${Date.now().toString().slice(-8)}`;
+    form.reset({
+      orderNumber: newOrderNumber,
+      orderDate: today,
+      expectedDate: "",
+      paymentTerms: "Net 30",
+      paymentMethod: "Credit",
+      status: "Pending",
+      taxCalculationMethod: "exclusive",
+      freightAmount: 0,
+      surchargeAmount: 0,
+      packingCharges: 0,
+      otherCharges: 0,
+      additionalDiscount: 0,
+      invoiceNumber: "",
+      invoiceDate: "",
+      invoiceAmount: 0,
+      lrNumber: "",
+      remarks: "",
+      internalNotes: "",
+      items: [
+        {
+          productId: 0,
+          code: "",
+          description: "",
+          quantity: 1,
+          receivedQty: 0,
+          freeQty: 0,
+          unitCost: 0,
+          sellingPrice: 0,
+          mrp: 0,
+          hsnCode: "",
+          taxPercentage: 18,
+          discountAmount: 0,
+          discountPercent: 0,
+          expiryDate: "",
+          batchNumber: "",
+          netCost: 0,
+          roiPercent: 0,
+          grossProfitPercent: 0,
+          netAmount: 0,
+          cashPercent: 0,
+          cashAmount: 0,
+          location: "",
+          unit: "PCS",
+        }
+      ],
+    });
+
+    toast({
+      title: "Purchase Order Held! 📋",
+      description: `Purchase order ${heldPurchase.orderNumber} has been held and can be recalled later.`,
+    });
+  };
+
+  const recallHeldPurchase = (heldPurchase: any) => {
+    form.reset(heldPurchase.formData);
+    
+    // Remove from held purchases
+    setHeldPurchases(prev => prev.filter(p => p.id !== heldPurchase.id));
+    setShowHeldPurchases(false);
+
+    toast({
+      title: "Purchase Order Recalled! 📋",
+      description: `Purchase order ${heldPurchase.orderNumber} has been recalled successfully.`,
+    });
+  };
+
+  const deleteHeldPurchase = (holdId: string) => {
+    setHeldPurchases(prev => prev.filter(p => p.id !== holdId));
+    toast({
+      title: "Held Purchase Deleted",
+      description: `Held purchase order has been deleted.`,
+    });
+  };
 
   // Watch for changes in items array and additional charges to recalculate totals
   const watchedItems = useWatch({
@@ -957,6 +1065,24 @@ export default function PurchaseEntryProfessional() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowHeldPurchases(true)}
+              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+            >
+              <List className="mr-2 h-4 w-4" />
+              Held ({heldPurchases.length})
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={holdPurchase}
+              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+            >
+              <Archive className="mr-2 h-4 w-4" />
+              Hold
+            </Button>
             <Button 
               variant="outline" 
               size="sm"
@@ -2240,6 +2366,92 @@ export default function PurchaseEntryProfessional() {
               </Button>
               <Button onClick={saveModalItem}>
                 {editingItemIndex !== null ? 'Update Item' : 'Add Item'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Held Purchases Dialog */}
+        <Dialog open={showHeldPurchases} onOpenChange={setShowHeldPurchases}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <Archive className="h-6 w-6 text-purple-600" />
+                Held Purchase Orders ({heldPurchases.length})
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {heldPurchases.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">No Held Purchase Orders</h3>
+                  <p className="text-gray-500">Hold a purchase order to save it for later completion</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {heldPurchases.map((heldPurchase) => (
+                    <Card key={heldPurchase.id} className="p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4 mb-2">
+                            <h4 className="font-semibold text-gray-900">{heldPurchase.orderNumber}</h4>
+                            <Badge variant="outline" className="text-xs">
+                              {heldPurchase.itemsCount} items
+                            </Badge>
+                            <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700">
+                              Held
+                            </Badge>
+                          </div>
+
+                          <div className="text-sm text-gray-600 mb-2">
+                            <div>Supplier: {heldPurchase.supplier?.name || "Not selected"}</div>
+                            <div>Held at: {heldPurchase.timestamp.toLocaleString()}</div>
+                            <div>Status: {heldPurchase.formData.status || "Pending"}</div>
+                          </div>
+
+                          <div className="text-sm text-gray-500">
+                            Expected Date: {heldPurchase.formData.expectedDate || "Not set"}
+                          </div>
+                        </div>
+
+                        <div className="text-right ml-4">
+                          <div className="text-2xl font-bold text-blue-600 mb-2">
+                            {formatCurrency(heldPurchase.summary.grandTotal)}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => recallHeldPurchase(heldPurchase)}
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Recall
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteHeldPurchase(heldPurchase.id)}
+                              className="text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowHeldPurchases(false)}
+              >
+                Close
               </Button>
             </div>
           </DialogContent>
