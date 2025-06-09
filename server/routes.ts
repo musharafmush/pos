@@ -1529,21 +1529,64 @@ app.post("/api/customers", async (req, res) => {
     // Use direct SQLite insertion to avoid schema mapping issues
     const { sqlite } = await import('../db/index.js');
 
-    const insertCustomer = sqlite.prepare(`
-      INSERT INTO customers (
-        name, email, phone, address, tax_id, credit_limit, business_name, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `);
+    // First, check what columns exist in the customers table
+    const tableInfo = sqlite.prepare("PRAGMA table_info(customers)").all();
+    const columnNames = tableInfo.map(col => col.name);
+    console.log("Available columns in customers table:", columnNames);
 
-    const result = insertCustomer.run(
-      customerData.name,
-      customerData.email,
-      customerData.phone,
-      customerData.address,
-      customerData.taxId,
-      customerData.creditLimit || 0,
-      customerData.businessName
-    );
+    // Create columns list and values list based on what exists
+    let columns = ['name', 'created_at'];
+    let placeholders = ['?', 'CURRENT_TIMESTAMP'];
+    let values = [customerData.name];
+
+    // Add optional columns only if they exist in the table
+    if (columnNames.includes('email')) {
+      columns.push('email');
+      placeholders.push('?');
+      values.push(customerData.email);
+    }
+
+    if (columnNames.includes('phone')) {
+      columns.push('phone');
+      placeholders.push('?');
+      values.push(customerData.phone);
+    }
+
+    if (columnNames.includes('address')) {
+      columns.push('address');
+      placeholders.push('?');
+      values.push(customerData.address);
+    }
+
+    if (columnNames.includes('tax_id')) {
+      columns.push('tax_id');
+      placeholders.push('?');
+      values.push(customerData.taxId);
+    }
+
+    if (columnNames.includes('credit_limit')) {
+      columns.push('credit_limit');
+      placeholders.push('?');
+      values.push(customerData.creditLimit || 0);
+    }
+
+    if (columnNames.includes('business_name')) {
+      columns.push('business_name');
+      placeholders.push('?');
+      values.push(customerData.businessName);
+    }
+
+    // Build the dynamic query
+    const insertQuery = `
+      INSERT INTO customers (${columns.join(', ')}) 
+      VALUES (${placeholders.join(', ')})
+    `;
+
+    console.log("Dynamic insert query:", insertQuery);
+    console.log("Values to insert:", values);
+
+    const insertCustomer = sqlite.prepare(insertQuery);
+    const result = insertCustomer.run(...values);
 
     // Get the created customer
     const getCustomer = sqlite.prepare('SELECT * FROM customers WHERE id = ?');
