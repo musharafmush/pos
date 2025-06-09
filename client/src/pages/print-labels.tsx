@@ -35,6 +35,9 @@ export default function PrintLabels() {
   const [includeDescription, setIncludeDescription] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [copies, setCopies] = useState(1);
+  const [isManualLabelDialogOpen, setIsManualLabelDialogOpen] = useState(false);
+  const [labelsPerRow, setLabelsPerRow] = useState("2");
+  const [labelsPerColumn, setLabelsPerColumn] = useState("5");
 
   // Fetch products
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -97,39 +100,46 @@ export default function PrintLabels() {
       selectedProducts.includes(p.id)
     );
 
-    // Create print content
+    // Create print content with proper grid layout
+    const is40mmLabel = labelSize === 'small';
+    const labelWidth = labelSize === 'small' ? '40mm' : labelSize === 'large' ? '60mm' : '50mm';
+    const labelHeight = labelSize === 'small' ? '25mm' : labelSize === 'large' ? '35mm' : '30mm';
+    
     const printContent = selectedProductsData.map((product: Product) => {
       return Array(copies).fill(null).map((_, index) => `
-        <div class="label ${labelSize}" style="
-          border: 2px solid #333;
-          padding: 12px;
-          margin: 8px;
-          width: ${labelSize === 'small' ? '200px' : labelSize === 'large' ? '300px' : '250px'};
-          height: ${labelSize === 'small' ? '120px' : labelSize === 'large' ? '180px' : '150px'};
+        <div class="product-label" style="
+          width: ${labelWidth};
+          height: ${labelHeight};
+          border: 1px solid #333;
+          padding: 2mm;
+          margin: 1mm;
           display: inline-block;
           font-family: Arial, sans-serif;
           background: white;
           page-break-inside: avoid;
+          box-sizing: border-box;
+          vertical-align: top;
+          ${is40mmLabel ? 'border-radius: 0px;' : 'border-radius: 2px;'}
         ">
-          <div style="font-weight: bold; font-size: ${labelSize === 'small' ? '14px' : '16px'}; margin-bottom: 8px;">
-            ${product.name}
+          <div style="font-weight: bold; font-size: ${labelSize === 'small' ? '8px' : '10px'}; margin-bottom: 1mm; line-height: 1.2;">
+            ${product.name.length > 25 ? product.name.substring(0, 25) + '...' : product.name}
           </div>
-          <div style="font-size: 12px; color: #666; margin-bottom: 4px;">
+          <div style="font-size: ${labelSize === 'small' ? '6px' : '8px'}; color: #666; margin-bottom: 1mm;">
             SKU: ${product.sku}
           </div>
           ${includeDescription && product.description ? 
-            `<div style="font-size: 10px; color: #888; margin-bottom: 8px;">
-              ${product.description.substring(0, 50)}...
+            `<div style="font-size: ${labelSize === 'small' ? '6px' : '7px'}; color: #888; margin-bottom: 1mm; line-height: 1.1;">
+              ${product.description.substring(0, 30)}...
             </div>` : ''
           }
           ${includePrice ? 
-            `<div style="font-size: ${labelSize === 'small' ? '16px' : '18px'}; font-weight: bold; color: #2563eb; margin-bottom: 8px;">
+            `<div style="font-size: ${labelSize === 'small' ? '9px' : '11px'}; font-weight: bold; color: #2563eb; margin-bottom: 1mm;">
               ₹${Number(product.price).toFixed(2)}
             </div>` : ''
           }
           ${includeBarcode ? 
-            `<div style="text-align: center; margin-top: 8px;">
-              <div style="font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 2px; border: 1px solid #ccc; padding: 4px; background: #f9f9f9;">
+            `<div style="text-align: center; margin-top: 1mm;">
+              <div style="font-family: 'Courier New', monospace; font-size: ${labelSize === 'small' ? '5px' : '6px'}; letter-spacing: 0.5px; border: 0.5px solid #ccc; padding: 0.5mm; background: #f9f9f9;">
                 ${generateBarcode(product.sku)}
               </div>
             </div>` : ''
@@ -146,19 +156,41 @@ export default function PrintLabels() {
           <head>
             <title>Product Labels</title>
             <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
               body {
                 margin: 0;
-                padding: 20px;
+                padding: 5mm;
                 font-family: Arial, sans-serif;
+                line-height: 1;
+              }
+              .product-label {
+                background: white !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
+                ${is40mmLabel ? 'border-radius: 0px;' : 'border-radius: 2px;'}
               }
               @media print {
-                body { margin: 0; padding: 10px; }
-                .label { margin: 4px !important; }
+                body { 
+                  margin: 0; 
+                  padding: 2mm; 
+                  font-size: 12px;
+                }
+                .product-label { 
+                  margin: 0.5mm !important; 
+                  break-inside: avoid;
+                  page-break-inside: avoid;
+                }
+                @page { 
+                  margin: 5mm; 
+                  size: A4;
+                }
               }
             </style>
           </head>
           <body>
-            ${printContent}
+            <div style="display: flex; flex-wrap: wrap; align-content: flex-start;">
+              ${printContent}
+            </div>
           </body>
         </html>
       `);
@@ -424,6 +456,64 @@ export default function PrintLabels() {
             <Button onClick={executePrint} className="bg-blue-600 hover:bg-blue-700">
               <PrinterIcon className="h-4 w-4 mr-2" />
               Print Labels
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Label Creation Dialog */}
+      <Dialog open={isManualLabelDialogOpen} onOpenChange={setIsManualLabelDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TagIcon className="h-5 w-5 text-blue-600" />
+              Manual Label Creation
+            </DialogTitle>
+            <DialogDescription>
+              Create custom labels with manual input
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Labels Per Row</Label>
+                <Select value={labelsPerRow} onValueChange={setLabelsPerRow}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 label per row</SelectItem>
+                    <SelectItem value="2">2 labels per row</SelectItem>
+                    <SelectItem value="3">3 labels per row</SelectItem>
+                    <SelectItem value="4">4 labels per row</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Rows Per Page</Label>
+                <Select value={labelsPerColumn} onValueChange={setLabelsPerColumn}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2">2 rows per page</SelectItem>
+                    <SelectItem value="5">5 rows per page</SelectItem>
+                    <SelectItem value="10">10 rows per page</SelectItem>
+                    <SelectItem value="15">15 rows per page</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManualLabelDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => setIsManualLabelDialogOpen(false)} className="bg-blue-600 hover:bg-blue-700">
+              Create Labels
             </Button>
           </DialogFooter>
         </DialogContent>
