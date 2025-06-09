@@ -1306,11 +1306,11 @@ export default function POSEnhanced() {
                 </CardContent>
               </Card>
 
-              {/* Net Amount */}
+              {/* Net Amount Payable */}
               <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl mb-6 shadow-lg">
                 <div className="text-center">
-                  <div className="text-sm font-medium opacity-90">Net Amount Payable</div>
-                  <div className="text-4xl font-bold mt-2">{formatCurrency(total)}</div>
+                  <div className="text-sm font-medium opacity-90 mb-2">Net Amount Payable</div>
+                  <div className="text-4xl font-bold">{formatCurrency(total)}</div>
                 </div>
               </div>
 
