@@ -1122,7 +1122,6 @@ export default function POSEnhanced() {
                           </div>
 
                           <div className="flex items-center space-x-4">
-                            ```python
                             <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
                               <Button
                                 variant="ghost"
