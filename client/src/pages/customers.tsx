@@ -138,10 +138,18 @@ export default function Customers() {
   // Create customer mutation
   const createCustomerMutation = useMutation({
     mutationFn: async (data: CustomerFormValues) => {
+      console.log("Submitting customer data:", data);
       const res = await apiRequest("POST", "/api/customers", data);
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || errorData.details || `HTTP ${res.status}: ${res.statusText}`);
+      }
+      
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Customer created successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
         title: "Customer created",
@@ -151,9 +159,10 @@ export default function Customers() {
       setIsAddDialogOpen(false);
     },
     onError: (error: any) => {
+      console.error("Customer creation error:", error);
       toast({
         title: "Error creating customer",
-        description: error.message || "There was an error creating the customer.",
+        description: error.message || "There was an error creating the customer. Please try again.",
         variant: "destructive",
       });
     }

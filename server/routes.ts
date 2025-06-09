@@ -597,16 +597,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/returns', async (req, res) => {
     try {
       console.log('📦 Fetching returns data');
-      
+
       const limit = parseInt(req.query.limit as string || '50');
       const search = req.query.search as string;
       const days = parseInt(req.query.days as string || '0');
       const status = req.query.status as string;
-      
+
       // Use storage method for returns with filters
       const returns = await storage.listReturns(limit, 0, { search, days, status });
       console.log(`📦 Found ${returns.length} returns`);
-      
+
       res.json(returns);
     } catch (error) {
       console.error('❌ Error fetching returns:', error);
@@ -618,9 +618,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/returns/stats', async (req, res) => {
     try {
       console.log('📊 Fetching returns statistics');
-      
+
       const { sqlite } = await import('@db');
-      
+
       // Get total returns and refund amount
       const totalStats = sqlite.prepare(`
         SELECT 
@@ -628,7 +628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           COALESCE(SUM(CAST(total_refund AS REAL)), 0) as totalRefundAmount
         FROM returns
       `).get();
-      
+
       // Get today's returns
       const todayStats = sqlite.prepare(`
         SELECT 
@@ -637,19 +637,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         FROM returns 
         WHERE DATE(created_at) = DATE('now')
       `).get();
-      
+
       // Calculate return rate (returns vs sales)
       const salesCount = sqlite.prepare(`
         SELECT COUNT(*) as count FROM sales
       `).get();
-      
+
       const returnRate = salesCount.count > 0 ? 
         (totalStats.totalReturns / salesCount.count) * 100 : 0;
-      
+
       // Calculate average return value
       const averageReturnValue = totalStats.totalReturns > 0 ? 
         totalStats.totalRefundAmount / totalStats.totalReturns : 0;
-      
+
       const stats = {
         totalReturns: totalStats.totalReturns || 0,
         totalRefundAmount: totalStats.totalRefundAmount || 0,
@@ -658,10 +658,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         returnRate: returnRate,
         averageReturnValue: averageReturnValue
       };
-      
+
       console.log('📊 Returns stats:', stats);
       res.json(stats);
-      
+
     } catch (error) {
       console.error('❌ Error fetching returns stats:', error);
       res.status(500).json({ error: 'Failed to fetch returns statistics: ' + error.message });
@@ -671,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/returns', async (req, res) => {
     try {
       console.log('🔄 Processing return request:', req.body);
-      
+
       const { saleId, items, refundMethod, totalRefund, reason, notes } = req.body;
 
       // Validate required fields
@@ -685,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get user ID
       const userId = (req.user as any)?.id || 1;
-      
+
       // Use storage method for creating return
       const returnData = {
         saleId: parseInt(saleId),
@@ -698,9 +698,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const result = await storage.createReturn(returnData, items);
-      
+
       console.log('✅ Return processed successfully:', result);
-      
+
       res.json({ 
         success: true, 
         returnId: result.id,
@@ -929,7 +929,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             c.name as customerName, 
             c.phone as customerPhone, 
             u.name as userName,
-            (
+            ```text
+(
               SELECT GROUP_CONCAT(p.name || ' (x' || si.quantity || ')')
               FROM sale_items si 
               LEFT JOIN products p ON si.product_id = p.id 
@@ -1501,19 +1502,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/customers', isAuthenticated, async (req, res) => {
-    try {
-      const customerData = schema.customerInsertSchema.parse(req.body);
-      const customer = await storage.createCustomer(customerData);
-      res.status(201).json(customer);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ errors: error.errors });
-      }
-      console.error('Error creating customer:', error);
-      res.status(500).json({ message: 'Internal server error' });
+  // Create customer
+app.post("/api/customers", async (req, res) => {
+  try {
+    const { name, email, phone, address, taxNumber, creditLimit, businessName } = req.body;
+
+    // Validate required fields
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ error: "Customer name is required" });
     }
-  });
+
+    // Prepare customer data
+    const customerData = {
+      name: name.trim(),
+      email: email && email.trim() !== "" ? email.trim() : null,
+      phone: phone && phone.trim() !== "" ? phone.trim() : null,
+      address: address && address.trim() !== "" ? address.trim() : null,
+      taxId: taxNumber && taxNumber.trim() !== "" ? taxNumber.trim() : null,
+      creditLimit: creditLimit && !isNaN(parseFloat(creditLimit)) ? parseFloat(creditLimit) : 0,
+      businessName: businessName && businessName.trim() !== "" ? businessName.trim() : null,
+      createdAt: new Date().toISOString(),
+    };
+
+    console.log("Creating customer with data:", customerData);
+
+    const customer = await db.insert(customers).values(customerData).returning();
+
+    console.log("Customer created successfully:", customer[0]);
+    res.json(customer[0]);
+  } catch (error) {
+    console.error("Error creating customer:", error);
+    res.status(500).json({ 
+      error: "Failed to create customer", 
+      details: error.message 
+    });
+  }
+});
 
   app.put('/api/customers/:id', isAuthenticated, async (req, res) => {
     try {
