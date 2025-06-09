@@ -113,11 +113,11 @@ export default function PrintLabels() {
     // Search filter
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // Category filter
     const matchesCategory = selectedCategory === "all" || 
                            product.categoryId === parseInt(selectedCategory);
-    
+
     // Stock filter
     let matchesStock = true;
     if (stockFilter === "in-stock") {
@@ -127,11 +127,11 @@ export default function PrintLabels() {
     } else if (stockFilter === "out-of-stock") {
       matchesStock = product.stockQuantity === 0;
     }
-    
+
     // Price filter
     const matchesPrice = (!priceRange.min || product.price >= parseFloat(priceRange.min)) &&
                         (!priceRange.max || product.price <= parseFloat(priceRange.max));
-    
+
     return matchesSearch && matchesCategory && matchesStock && matchesPrice;
   });
 
@@ -354,7 +354,7 @@ export default function PrintLabels() {
                 padding: 0;
                 box-sizing: border-box;
               }
-              
+
               body {
                 margin: ${marginTop}px ${marginLeft}px;
                 padding: 0;
@@ -362,13 +362,13 @@ export default function PrintLabels() {
                 background: #f0f0f0;
                 line-height: 1.1;
               }
-              
+
               .thermal-label {
                 background: white !important;
                 break-inside: avoid;
                 flex-shrink: 0;
               }
-              
+
               .label-row {
                 display: flex !important;
                 flex-wrap: nowrap !important;
@@ -376,20 +376,20 @@ export default function PrintLabels() {
                 margin-bottom: ${marginTop}px !important;
                 page-break-inside: avoid !important;
               }
-              
+
               @media print {
                 body { 
                   margin: ${marginTop}px ${marginLeft}px !important;
                   padding: 0 !important;
                   background: white;
                 }
-                
+
                 .thermal-label { 
                   break-inside: avoid !important;
                   page-break-inside: avoid !important;
                   flex-shrink: 0 !important;
                 }
-                
+
                 .label-row {
                   display: flex !important;
                   flex-wrap: nowrap !important;
@@ -397,24 +397,24 @@ export default function PrintLabels() {
                   margin-bottom: ${marginTop}px !important;
                   page-break-inside: avoid !important;
                 }
-                
+
                 @page {
                   margin: 0;
                   size: ${paperSize === 'A4' ? 'A4' : paperSize === 'A5' ? 'A5' : paperSize === 'Letter' ? 'Letter' : 'auto'} ${printOrientation};
                 }
-                
+
                 /* Ensure page breaks after specified number of rows */
                 .label-row:nth-child(${labelsPerColumn}n+1):not(:first-child) {
                   page-break-before: always;
                 }
-                
+
                 /* Ensure labels per row are respected */
                 .label-row {
                   display: flex !important;
                   flex-wrap: nowrap !important;
                   max-width: 100% !important;
                 }
-                
+
                 .thermal-label {
                   flex: 0 0 auto !important;
                   max-width: none !important;
@@ -491,7 +491,7 @@ export default function PrintLabels() {
           vertical-align: top;
         ">
           ${includeCompanyLogo ? `<div style="text-align: center; margin-bottom: 3px; font-size: 8px; font-weight: bold;">COMPANY LOGO</div>` : ''}
-          
+
           <div style="font-weight: bold; font-size: ${Math.max(10, parseInt(fontSize) + 2)}px; text-align: center; margin-bottom: 3px; word-wrap: break-word;">
             ${product.name.length > 25 ? product.name.substring(0, 25) + '...' : product.name}
           </div>
@@ -539,7 +539,7 @@ export default function PrintLabels() {
           </div>
         </div>
       `,
-      
+
       minimal: `
         <div class="product-label minimal-template" style="
           width: ${dims.pxWidth};
@@ -685,7 +685,7 @@ export default function PrintLabels() {
                 padding: 0;
                 box-sizing: border-box;
               }
-              
+
               body {
                 margin: ${marginTop}px ${marginLeft}px;
                 padding: 0;
@@ -694,7 +694,7 @@ export default function PrintLabels() {
                 line-height: 1;
                 min-width: ${pageWidth}px;
               }
-              
+
               .product-label {
                 background: white !important;
                 break-inside: avoid;
@@ -703,7 +703,7 @@ export default function PrintLabels() {
                 overflow: hidden;
                 flex-shrink: 0;
               }
-              
+
               .label-row {
                 display: flex !important;
                 flex-wrap: nowrap !important;
@@ -711,13 +711,13 @@ export default function PrintLabels() {
                 margin-bottom: ${marginTop}px !important;
                 page-break-inside: avoid !important;
               }
-              
+
               .labels-container {
                 display: flex;
                 flex-direction: column;
                 gap: 0;
               }
-              
+
               @media print {
                 body { 
                   margin: ${Math.max(5, marginTop)}px ${Math.max(5, marginLeft)}px !important;
@@ -726,14 +726,14 @@ export default function PrintLabels() {
                   -webkit-print-color-adjust: exact;
                   print-color-adjust: exact;
                 }
-                
+
                 .product-label { 
                   break-inside: avoid !important;
                   page-break-inside: avoid !important;
                   flex-shrink: 0 !important;
                   margin: 1px !important;
                 }
-                
+
                 .label-row {
                   display: flex !important;
                   flex-wrap: nowrap !important;
@@ -743,26 +743,26 @@ export default function PrintLabels() {
                   justify-content: flex-start !important;
                   align-items: flex-start !important;
                 }
-                
+
                 @page {
                   margin: 5mm;
                   size: ${paperSize === 'A4' ? 'A4' : paperSize === 'A5' ? 'A5' : paperSize === 'Letter' ? 'Letter' : 'auto'} ${printOrientation};
                   -webkit-print-color-adjust: exact;
                   print-color-adjust: exact;
                 }
-                
+
                 /* Ensure page breaks after specified number of rows */
                 .label-row:nth-child(${labelsPerColumn}n+1):not(:first-child) {
                   page-break-before: always !important;
                 }
-                
+
                 /* Force grid layout */
                 .labels-container {
                   display: flex !important;
                   flex-direction: column !important;
                   gap: 0 !important;
                 }
-                
+
                 ${labelSize.includes('thermal') ? `
                   .product-label {
                     width: ${dims.width} !important;
@@ -770,33 +770,34 @@ export default function PrintLabels() {
                   }
                 ` : ''}
               }
-              
+
               /* Professional styling enhancements */
               .standard-template {
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
               }
-              
+
               .minimal-template {
                 border-radius: 4px;
                 box-shadow: 0 1px 2px rgba(0,0,0,0.05);
               }
-              
+
               .price-focus-template {
-                box-shadow: 0 2px 4px rgba(231,76,60,0.2);
+                box-shadow: 0```text
+ 2px 4px rgba(231,76,60,0.2);
               }
 
               /* Ensure page breaks after specified number of rows */
               .label-row:nth-child(${labelsPerColumn}n+1):not(:first-child) {
                 page-break-before: always;
               }
-              
+
               /* Ensure labels per row are respected */
               .label-row {
                 display: flex !important;
                 flex-wrap: nowrap !important;
                 max-width: 100% !important;
               }
-              
+
               .product-label {
                 flex: 0 0 auto !important;
                 max-width: none !important;
@@ -811,7 +812,7 @@ export default function PrintLabels() {
         </html>
       `);
       printWindow.document.close();
-      
+
       // Add a small delay before printing to ensure all styles are loaded
       setTimeout(() => {
         printWindow.print();
@@ -918,23 +919,25 @@ export default function PrintLabels() {
                     <SelectValue placeholder="Select size" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mini">Mini (1.5" x 1")</SelectItem>
-                    <SelectItem value="small">Small (2" x 1.2")</SelectItem>
-                    <SelectItem value="standard">Standard (2.5" x 1.5")</SelectItem>
-                    <SelectItem value="medium">Medium (2.8" x 1.6")</SelectItem>
-                    <SelectItem value="large">Large (3" x 1.8")</SelectItem>
-                    <SelectItem value="xlarge">Extra Large (3.5" x 2")</SelectItem>
-                    <SelectItem value="thermal-58mm">Thermal 58mm</SelectItem>
-                    <SelectItem value="thermal-80mm">Thermal 80mm</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
+                      <SelectItem value="mini">Mini (1.5" x 1")</SelectItem>
+                      <SelectItem value="small">Small (2" x 1.2")</SelectItem>
+                      <SelectItem value="standard">Standard (2.5" x 1.5")</SelectItem>
+                      <SelectItem value="medium">Medium (2.8" x 1.6")</SelectItem>
+                      <SelectItem value="large">Large (3" x 1.8")</SelectItem>
+                      <SelectItem value="xlarge">Extra Large (3.5" x 2")</SelectItem>
+                      <SelectItem value="thermal-58mm">Thermal 58mm</SelectItem>
+                      <SelectItem value="thermal-80mm">Thermal 80mm</SelectItem>
+                      <SelectItem value="40mm">40mm x 40mm Square</SelectItem>
+                      <SelectItem value="80x40mm">80mm x 40mm (2 columns)</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
                 </Select>
               </div>
 
               {/* Paper Settings */}
               <div className="space-y-4">
                 <h4 className="text-sm font-medium border-b pb-2">Paper & Layout</h4>
-                
+
                 <div className="space-y-2">
                   <Label className="text-sm">Paper Size</Label>
                   <Select value={paperSize} onValueChange={setPaperSize}>
@@ -1051,7 +1054,7 @@ export default function PrintLabels() {
                         />
                         <Label htmlFor="include-barcode" className="text-sm">Barcode</Label>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2">
                         <Checkbox 
                           id="include-qr"
@@ -1187,7 +1190,7 @@ export default function PrintLabels() {
                         <Label htmlFor="include-custom" className="text-sm">Custom Text</Label>
                       </div>
                     </div>
-                    
+
                     {includeCustomText && (
                       <Input
                         placeholder="Enter custom text"
@@ -1203,7 +1206,7 @@ export default function PrintLabels() {
               {/* Styling Options */}
               <div className="space-y-4">
                 <h4 className="text-sm font-medium border-b pb-2">Styling & Format</h4>
-                
+
                 <div className="space-y-2">
                   <Label className="text-sm">Font Family</Label>
                   <Select value={fontFamily} onValueChange={setFontFamily}>
@@ -1612,8 +1615,7 @@ export default function PrintLabels() {
               Print Labels
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </DialogContent>      </Dialog>
 
       {/* Manual Label Creation Dialog */}
       <Dialog open={isManualLabelDialogOpen} onOpenChange={setIsManualLabelDialogOpen}>
