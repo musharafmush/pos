@@ -157,14 +157,14 @@ export default function PrintLabels() {
           height: ${finalLabelHeight};
           border: 1px solid #333;
           padding: 2mm;
-          margin: 1mm;
+          margin: 0;
           display: inline-block;
           font-family: Arial, sans-serif;
           background: white;
           page-break-inside: avoid;
           box-sizing: border-box;
           vertical-align: top;
-          border-radius: 2px;
+          border-radius: 0;
         ">
           <div style="font-weight: bold; font-size: ${finalFontSize}; margin-bottom: 1mm; line-height: 1.2; color: #000;">
             ${(product.name || 'Unnamed Product').length > 25 ? (product.name || 'Unnamed Product').substring(0, 25) + '...' : (product.name || 'Unnamed Product')}
@@ -230,7 +230,7 @@ export default function PrintLabels() {
               * { margin: 0; padding: 0; box-sizing: border-box; }
               body {
                 margin: 0;
-                padding: 5mm;
+                padding: 0;
                 font-family: Arial, sans-serif;
                 line-height: 1;
                 background: white;
@@ -241,37 +241,47 @@ export default function PrintLabels() {
                 background: white !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
-                border-radius: 2px;
+                border-radius: 0;
                 color: #000;
+                margin: 0 !important;
+                padding: 2mm;
               }
               .labels-container {
+                margin: 0;
+                padding: 0;
                 ${useCustomConfig ? 
                   `display: grid;
                    grid-template-columns: repeat(${totalCols}, 1fr);
                    grid-template-rows: repeat(${totalRows}, 1fr);
-                   gap: 1mm;
+                   gap: 0;
                    width: ${sheetWidth}mm; 
                    height: ${sheetHeight}mm;` : 
-                  'display: flex; flex-wrap: wrap; align-content: flex-start;'
+                  'display: flex; flex-wrap: wrap; align-content: flex-start; gap: 0;'
                 }
               }
               @media print {
+                * { margin: 0 !important; padding: 0 !important; }
                 body { 
-                  margin: 0; 
-                  padding: 2mm; 
+                  margin: 0 !important; 
+                  padding: 0 !important; 
                   font-size: 12px;
                   background: white;
                   color: #000;
                 }
                 .product-label { 
-                  margin: 0.5mm !important; 
+                  margin: 0 !important; 
+                  padding: 2mm !important;
                   break-inside: avoid;
                   page-break-inside: avoid;
                   background: white !important;
                   color: #000 !important;
                 }
+                .labels-container {
+                  margin: 0 !important;
+                  padding: 0 !important;
+                }
                 @page { 
-                  margin: 5mm; 
+                  margin: 0; 
                   size: ${useCustomConfig ? `${sheetWidth}mm ${sheetHeight}mm` : 'A4'};
                   background: white;
                 }
@@ -279,11 +289,11 @@ export default function PrintLabels() {
               @media screen {
                 body {
                   background: #f0f0f0;
-                  padding: 20px;
+                  padding: 5px;
                 }
                 .labels-container {
                   background: white;
-                  padding: 10px;
+                  padding: 2px;
                   border: 1px solid #ccc;
                 }
               }
