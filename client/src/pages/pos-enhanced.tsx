@@ -79,6 +79,7 @@ export default function POSEnhanced() {
   const [amountPaid, setAmountPaid] = useState("");
   const [discount, setDiscount] = useState(0);
   const [taxRate, setTaxRate] = useState(18);
+  const [taxMethod, setTaxMethod] = useState<'exclusive' | 'inclusive'>('exclusive');
   const [isProcessing, setIsProcessing] = useState(false);
   const [billNumber, setBillNumber] = useState(`POS${Date.now()}`);
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
@@ -264,12 +265,24 @@ export default function POSEnhanced() {
     }
   };
 
-  // Calculate totals
+  // Calculate totals based on tax method
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
   const discountAmount = (subtotal * discount) / 100;
-  const taxableAmount = subtotal - discountAmount;
-  const taxAmount = (taxableAmount * taxRate) / 100;
-  const total = taxableAmount + taxAmount;
+  
+  let taxableAmount, taxAmount, total;
+  
+  if (taxMethod === 'inclusive') {
+    // Tax is already included in the price
+    const grossAmount = subtotal - discountAmount;
+    taxableAmount = grossAmount / (1 + (taxRate / 100));
+    taxAmount = grossAmount - taxableAmount;
+    total = grossAmount;
+  } else {
+    // Tax exclusive (current behavior)
+    taxableAmount = subtotal - discountAmount;
+    taxAmount = (taxableAmount * taxRate) / 100;
+    total = taxableAmount + taxAmount;
+  }
 
   // Register opening
   const handleOpenRegister = () => {
@@ -508,6 +521,7 @@ export default function POSEnhanced() {
         discountPercent: discount,
         tax: taxAmount.toFixed(2),
         taxRate: taxRate,
+        taxMethod: taxMethod,
         total: total.toFixed(2),
         paymentMethod,
         amountPaid: paidAmount.toFixed(2),
@@ -1276,6 +1290,34 @@ export default function POSEnhanced() {
                   <Separator />
 
                   <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Tax Method:</span>
+                    <Select value={taxMethod} onValueChange={(value: 'exclusive' | 'inclusive') => setTaxMethod(value)}>
+                      <SelectTrigger className="w-32 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="exclusive">Tax Exclusive</SelectItem>
+                        <SelectItem value="inclusive">Tax Inclusive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Tax Rate:</span>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        value={taxRate}
+                        onChange={(e) => setTaxRate(Number(e.target.value))}
+                        className="w-16 h-8 text-center"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="text-sm text-gray-500">%</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600">Discount:</span>
                     <div className="flex items-center space-x-2">
                       <Input
@@ -1294,7 +1336,19 @@ export default function POSEnhanced() {
                     <div className="flex justify-between text-red-600">
                       <span>Discount Amount:</span>
                       <span>-{formatCurrency(discountAmount)}</span>
-                                        </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between text-blue-600">
+                    <span>Tax Amount ({taxRate}%):</span>
+                    <span>{formatCurrency(taxAmount)}</span>
+                  </div>
+
+                  {taxMethod === 'inclusive' && (
+                    <div className="flex justify-between text-gray-500 text-sm">
+                      <span>Taxable Amount:</span>
+                      <span>{formatCurrency(taxableAmount)}</span>
+                    </div>
                   )}
 
 
