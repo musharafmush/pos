@@ -149,46 +149,81 @@ export default function PrintLabels() {
       hour12: true
     });
 
+    const getThermalLabelStyle = () => {
+      if (labelSize === 'thermal-strip') {
+        return {
+          width: '180px',
+          height: '60px',
+          fontSize: '8px',
+          padding: '4px',
+          margin: '2px',
+          display: 'inline-block',
+          verticalAlign: 'top'
+        };
+      } else if (labelSize === 'thermal-roll') {
+        return {
+          width: '200px',
+          height: '80px',
+          fontSize: '9px',
+          padding: '6px',
+          margin: '3px',
+          display: 'block'
+        };
+      } else {
+        return {
+          width: '250px',
+          height: '150px',
+          fontSize: '12px',
+          padding: '8px',
+          margin: '4px',
+          display: 'inline-block'
+        };
+      }
+    };
+
+    const labelStyle = getThermalLabelStyle();
+
     const manualLabelContent = Array(copies).fill(null).map((_, index) => `
       <div class="thermal-label" style="
-        width: 250px;
-        min-height: 150px;
-        padding: 8px;
-        margin: 4px;
-        border: 1px dashed #999;
+        width: ${labelStyle.width};
+        min-height: ${labelStyle.height};
+        padding: ${labelStyle.padding};
+        margin: ${labelStyle.margin};
+        border: 1px solid #333;
         background: white;
         font-family: 'Courier New', monospace;
-        font-size: 12px;
-        line-height: 1.2;
-        display: inline-block;
+        font-size: ${labelStyle.fontSize};
+        line-height: 1.1;
+        display: ${labelStyle.display};
         page-break-inside: avoid;
         box-sizing: border-box;
+        ${labelSize === 'thermal-strip' ? 'vertical-align: top;' : ''}
       ">
         <!-- Header with timestamp -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">
           <div style="font-size: 10px; color: #666;">${currentDateTime}</div>
           <div style="font-size: 11px; font-weight: bold;">Manual Label</div>
         </div>
-        
+
         <!-- Product Name -->
         <div style="font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 6px; border: 1px solid #333; padding: 4px;">
           ${manualLabel.productName}
         </div>
-        
+
         <!-- SKU -->
         ${manualLabel.sku ? 
           `<div style="font-size: 10px; text-align: center; margin-bottom: 4px;">
             SKU: ${manualLabel.sku}
           </div>` : ''
         }
-        
+
         <!-- Description -->
         ${includeDescription && manualLabel.description ? 
           `<div style="font-size: 9px; text-align: center; margin-bottom: 4px; color: #555;">
             ${manualLabel.description.substring(0, 40)}${manualLabel.description.length > 40 ? '...' : ''}
           </div>` : ''
         }
-        
+
         <!-- Price Section -->
         <div style="margin: 6px 0; text-align: center;">
           ${includePrice && manualLabel.price ? 
@@ -202,14 +237,14 @@ export default function PrintLabels() {
             </div>` : ''
           }
         </div>
-        
+
         <!-- Expiry Date -->
         ${includeExpiryDate && manualLabel.expiryDate ? 
           `<div style="font-size: 10px; text-align: center; margin: 4px 0; color: #d97706;">
             Exp: ${manualLabel.expiryDate}
           </div>` : ''
         }
-        
+
         <!-- Barcode -->
         ${includeBarcode && (manualLabel.barcode || manualLabel.sku) ? 
           `<div style="text-align: center; margin-top: 6px; border-top: 1px solid #ddd; padding-top: 4px;">
@@ -219,7 +254,7 @@ export default function PrintLabels() {
             <div style="font-size: 8px; margin-top: 2px;">||||||||||||||||||||||||</div>
           </div>` : ''
         }
-        
+
         <!-- Footer -->
         <div style="text-align: center; font-size: 8px; color: #999; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 2px;">
           ${index + 1}/${copies}
@@ -237,28 +272,31 @@ export default function PrintLabels() {
             <style>
               body {
                 margin: 0;
-                padding: 8px;
+                padding: ${labelSize === 'thermal-strip' ? '4px' : '8px'};
                 font-family: 'Courier New', monospace;
                 background: #f0f0f0;
+                ${labelSize === 'thermal-strip' ? 'line-height: 1.1;' : ''}
               }
               .thermal-label {
                 background: white !important;
                 break-inside: avoid;
+                ${labelSize === 'thermal-strip' ? 'display: inline-block; vertical-align: top; width: 180px !important;' : ''}
               }
               @media print {
                 body { 
                   margin: 0; 
-                  padding: 2px; 
+                  padding: ${labelSize === 'thermal-strip' ? '1px' : '2px'}; 
                   background: white;
                 }
                 .thermal-label { 
-                  margin: 2px !important; 
+                  margin: ${labelSize === 'thermal-strip' ? '1px' : '2px'} !important; 
                   page-break-inside: avoid;
                   break-inside: avoid;
+                  ${labelSize === 'thermal-strip' ? 'display: inline-block !important; vertical-align: top !important;' : ''}
                 }
                 @page {
-                  margin: 0.25in;
-                  size: auto;
+                  margin: ${labelSize === 'thermal-strip' ? '0.1in' : '0.25in'};
+                  size: ${labelSize === 'thermal-strip' ? '4in 6in' : 'auto'};
                 }
               }
             </style>
@@ -316,24 +354,24 @@ export default function PrintLabels() {
             <div style="font-size: 10px; color: #666;">${currentDateTime}</div>
             <div style="font-size: 11px; font-weight: bold;">Product Label</div>
           </div>
-          
+
           <!-- Product Name -->
           <div style="font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 6px; border: 1px solid #333; padding: 4px;">
             ${product.name}
           </div>
-          
+
           <!-- SKU -->
           <div style="font-size: 10px; text-align: center; margin-bottom: 4px;">
             SKU: ${product.sku}
           </div>
-          
+
           <!-- Description -->
           ${includeDescription && product.description ? 
             `<div style="font-size: 9px; text-align: center; margin-bottom: 4px; color: #555;">
               ${product.description.substring(0, 40)}${product.description.length > 40 ? '...' : ''}
             </div>` : ''
           }
-          
+
           <!-- Price Section -->
           <div style="margin: 6px 0; text-align: center;">
             ${includePrice ? 
@@ -347,14 +385,14 @@ export default function PrintLabels() {
               </div>` : ''
             }
           </div>
-          
+
           <!-- Expiry Date -->
           ${includeExpiryDate ? 
             `<div style="font-size: 10px; text-align: center; margin: 4px 0; color: #d97706;">
               Exp: Best Before Date
             </div>` : ''
           }
-          
+
           <!-- Barcode -->
           ${includeBarcode ? 
             `<div style="text-align: center; margin-top: 6px; border-top: 1px solid #ddd; padding-top: 4px;">
@@ -364,7 +402,7 @@ export default function PrintLabels() {
               <div style="font-size: 8px; margin-top: 2px;">||||||||||||||||||||||||</div>
             </div>` : ''
           }
-          
+
           <!-- Footer -->
           <div style="text-align: center; font-size: 8px; color: #999; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 2px;">
             ${index + 1}/${copies}
@@ -845,6 +883,12 @@ export default function PrintLabels() {
                   <div className="flex items-center justify-between w-full">
                     <span>40mm x 40mm Label</span>
                     <span className="text-xs text-gray-500 ml-4">(40mm x 40mm)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="thermal-strip">
+                  <div className="flex items-center justify-between w-full">
+                    <span>Thermal Strip Label</span>
+                    <span className="text-xs text-gray-500 ml-4">(1 Row, 2 Column)</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="custom">Custom</SelectItem>
