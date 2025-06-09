@@ -1302,10 +1302,7 @@ export default function POSEnhanced() {
                     <span>{formatCurrency(taxableAmount)}</span>
                   </div>
 
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">GST ({taxRate}%):</span>
-                    <span>{formatCurrency(taxAmount)}</span>
-                  </div>
+                  
                 </CardContent>
               </Card>
 
