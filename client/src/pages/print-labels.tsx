@@ -165,6 +165,7 @@ export default function PrintLabels() {
           box-sizing: border-box;
           vertical-align: top;
           border-radius: 0;
+          position: relative;
         ">
           <div style="font-weight: bold; font-size: ${finalFontSize}; margin-bottom: 1mm; line-height: 1.2; color: #000;">
             ${(product.name || 'Unnamed Product').length > 25 ? (product.name || 'Unnamed Product').substring(0, 25) + '...' : (product.name || 'Unnamed Product')}
@@ -224,7 +225,7 @@ export default function PrintLabels() {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Product Labels - ${new Date().toLocaleDateString()}</title>
+            <title>Product Labels</title>
             <meta charset="UTF-8">
             <style>
               * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -245,6 +246,7 @@ export default function PrintLabels() {
                 color: #000;
                 margin: 0 !important;
                 padding: 2mm;
+                position: relative;
               }
               .labels-container {
                 margin: 0;
@@ -260,30 +262,50 @@ export default function PrintLabels() {
                 }
               }
               @media print {
-                * { margin: 0 !important; padding: 0 !important; }
-                body { 
+                * { 
+                  margin: 0 !important; 
+                  padding: 0 !important; 
+                  -webkit-print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                }
+                html, body { 
+                  width: 100% !important;
+                  height: 100% !important;
                   margin: 0 !important; 
                   padding: 0 !important; 
                   font-size: 12px;
-                  background: white;
-                  color: #000;
+                  background: white !important;
+                  color: #000 !important;
+                  overflow: hidden !important;
                 }
                 .product-label { 
                   margin: 0 !important; 
                   padding: 2mm !important;
-                  break-inside: avoid;
-                  page-break-inside: avoid;
+                  break-inside: avoid !important;
+                  page-break-inside: avoid !important;
                   background: white !important;
                   color: #000 !important;
+                  position: relative !important;
                 }
                 .labels-container {
                   margin: 0 !important;
                   padding: 0 !important;
+                  width: 100% !important;
+                  height: 100% !important;
                 }
                 @page { 
-                  margin: 0; 
+                  margin: 0 !important; 
                   size: ${useCustomConfig ? `${sheetWidth}mm ${sheetHeight}mm` : 'A4'};
-                  background: white;
+                  background: white !important;
+                }
+                /* Hide browser UI elements */
+                body::before,
+                body::after {
+                  display: none !important;
+                }
+                /* Remove any default browser headers/footers */
+                header, footer, nav, .no-print {
+                  display: none !important;
                 }
               }
               @media screen {
@@ -296,6 +318,10 @@ export default function PrintLabels() {
                   padding: 2px;
                   border: 1px solid #ccc;
                 }
+              }
+              /* Hide any unwanted elements */
+              .timestamp, .page-info, .about-blank {
+                display: none !important;
               }
             </style>
           </head>
@@ -312,8 +338,15 @@ export default function PrintLabels() {
       printWindow.document.write(htmlContent);
       printWindow.document.close();
       
+      // Hide browser chrome and prevent unwanted elements
+      printWindow.document.title = '';
+      
       // Wait for content to load then print
       printWindow.onload = function() {
+        // Remove any remaining unwanted elements
+        const unwantedElements = printWindow.document.querySelectorAll('.timestamp, .page-info, .about-blank');
+        unwantedElements.forEach(el => el.remove());
+        
         setTimeout(() => {
           printWindow.focus();
           printWindow.print();
@@ -324,7 +357,7 @@ export default function PrintLabels() {
               printWindow.close();
             }, 1000);
           };
-        }, 100);
+        }, 200);
       };
       
       // Fallback if onload doesn't fire
@@ -333,7 +366,7 @@ export default function PrintLabels() {
           printWindow.focus();
           printWindow.print();
         }
-      }, 1000);
+      }, 1500);
       
     } else {
       toast({
