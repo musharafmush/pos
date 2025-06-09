@@ -2119,51 +2119,60 @@ app.post("/api/customers", async (req, res) => {
   // Profit analysis endpoint
   app.get("/api/reports/profit-analysis", async (req, res) => {
     try {
+      console.log('🔍 Profit analysis endpoint accessed');
       const { days = '30', filter = 'all', category = 'all' } = req.query;
       const daysPeriod = parseInt(days as string, 10);
 
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - daysPeriod);
 
-      // Get sales data with product details for profit calculation
-      const salesWithProducts = await db
-        .select({
-          saleId: sales.id,
-          saleDate: sales.createdAt,
-          saleTotal: sales.total,
-          productId: products.id,
-          productName: products.name,
-          productSku: products.sku,
-          productCategory: products.category,
-          salePrice: sql<number>`COALESCE(${saleItems.unitPrice}, ${products.sellingPrice})`,
-          costPrice: products.costPrice,
-          quantity: sql<number>`COALESCE(${saleItems.quantity}, 1)`,
-          itemTotal: sql<number>`COALESCE(${saleItems.subtotal}, ${products.sellingPrice})`
-        })
-        .from(sales)
-        .leftJoin(saleItems, eq(sales.id, saleItems.saleId))
-        .leftJoin(products, eq(saleItems.productId, products.id))
-        .where(gte(sales.createdAt, startDate.toISOString()));
+      // Use direct SQLite queries for reliable data access
+      const { sqlite } = await import('@db');
 
-      // Calculate overview metrics
+      // Get sales data with product details and costs
+      const salesQuery = sqlite.prepare(`
+        SELECT 
+          s.id as sale_id,
+          DATE(s.created_at) as sale_date,
+          s.total as sale_total,
+          si.product_id,
+          si.quantity,
+          si.unit_price,
+          si.subtotal,
+          p.name as product_name,
+          p.sku as product_sku,
+          p.cost as product_cost,
+          c.name as category_name
+        FROM sales s
+        INNER JOIN sale_items si ON s.id = si.sale_id
+        INNER JOIN products p ON si.product_id = p.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE s.created_at >= ?
+        ORDER BY s.created_at DESC
+      `);
+
+      const salesData = salesQuery.all(startDate.toISOString());
+      console.log(`📊 Found ${salesData.length} sale items for profit analysis`);
+
+      // Calculate metrics from real data
       let totalRevenue = 0;
       let totalCost = 0;
       const dailyData: Record<string, { revenue: number; cost: number; profit: number }> = {};
       const productProfits: Record<string, any> = {};
       const categoryProfits: Record<string, any> = {};
 
-      salesWithProducts.forEach(item => {
-        if (!item.productId) return;
-
-        const revenue = Number(item.itemTotal) || 0;
-        const cost = (Number(item.costPrice) || 0) * (Number(item.quantity) || 1);
+      salesData.forEach((item: any) => {
+        const revenue = parseFloat(item.subtotal || '0');
+        const unitCost = parseFloat(item.product_cost || '0');
+        const quantity = parseInt(item.quantity || '1');
+        const cost = unitCost * quantity;
         const profit = revenue - cost;
 
         totalRevenue += revenue;
         totalCost += cost;
 
         // Daily trends
-        const date = item.saleDate.split(' ')[0];
+        const date = item.sale_date;
         if (!dailyData[date]) {
           dailyData[date] = { revenue: 0, cost: 0, profit: 0 };
         }
@@ -2172,13 +2181,13 @@ app.post("/api/customers", async (req, res) => {
         dailyData[date].profit += profit;
 
         // Product profitability
-        const productKey = item.productId.toString();
+        const productKey = item.product_id.toString();
         if (!productProfits[productKey]) {
           productProfits[productKey] = {
-            id: item.productId,
-            name: item.productName,
-            sku: item.productSku,
-            category: item.productCategory || 'Uncategorized',
+            id: item.product_id,
+            name: item.product_name,
+            sku: item.product_sku,
+            category: item.category_name || 'Uncategorized',
             unitsSold: 0,
             revenue: 0,
             cost: 0,
@@ -2187,13 +2196,13 @@ app.post("/api/customers", async (req, res) => {
             trend: 'stable'
           };
         }
-        productProfits[productKey].unitsSold += Number(item.quantity) || 1;
+        productProfits[productKey].unitsSold += quantity;
         productProfits[productKey].revenue += revenue;
         productProfits[productKey].cost += cost;
         productProfits[productKey].profit += profit;
 
         // Category profitability
-        const categoryKey = item.productCategory || 'Uncategorized';
+        const categoryKey = item.category_name || 'Uncategorized';
         if (!categoryProfits[categoryKey]) {
           categoryProfits[categoryKey] = {
             name: categoryKey,
@@ -2209,6 +2218,10 @@ app.post("/api/customers", async (req, res) => {
       // Calculate margins
       Object.values(productProfits).forEach((product: any) => {
         product.margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
+        // Determine trend based on margin
+        if (product.margin > 25) product.trend = 'up';
+        else if (product.margin < 15) product.trend = 'down';
+        else product.trend = 'stable';
       });
 
       Object.values(categoryProfits).forEach((category: any) => {
@@ -2216,18 +2229,42 @@ app.post("/api/customers", async (req, res) => {
       });
 
       const grossProfit = totalRevenue - totalCost;
-      const netProfit = grossProfit * 0.9; // Assuming 10% operating expenses
+      const netProfit = grossProfit * 0.85; // Assuming 15% operating expenses
       const profitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
 
-      // Convert daily data to array
-      const trends = Object.entries(dailyData)
-        .map(([date, data]) => ({
-          date,
-          revenue: data.revenue,
-          cost: data.cost,
-          profit: data.profit
-        }))
-        .sort((a, b) => a.date.localeCompare(b.date));
+      // Calculate growth rate from previous period
+      const previousPeriodStart = new Date(startDate);
+      previousPeriodStart.setDate(previousPeriodStart.getDate() - daysPeriod);
+      
+      const previousSalesQuery = sqlite.prepare(`
+        SELECT COALESCE(SUM(CAST(si.subtotal AS REAL)), 0) as previous_revenue
+        FROM sales s
+        INNER JOIN sale_items si ON s.id = si.sale_id
+        WHERE s.created_at >= ? AND s.created_at < ?
+      `);
+      
+      const previousRevenue = previousSalesQuery.get(
+        previousPeriodStart.toISOString(),
+        startDate.toISOString()
+      )?.previous_revenue || 0;
+
+      const growthRate = previousRevenue > 0 ? 
+        ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0;
+
+      // Convert daily data to array and fill missing days
+      const trends = [];
+      for (let i = daysPeriod - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        trends.push({
+          date: dateStr,
+          revenue: dailyData[dateStr]?.revenue || 0,
+          cost: dailyData[dateStr]?.cost || 0,
+          profit: dailyData[dateStr]?.profit || 0
+        });
+      }
 
       // Get top products by profit
       const topProducts = Object.values(productProfits)
@@ -2237,31 +2274,44 @@ app.post("/api/customers", async (req, res) => {
       // Get low profit products
       const lowProfitProducts = Object.values(productProfits)
         .filter((product: any) => product.margin < 15)
+        .sort((a: any, b: any) => a.margin - b.margin)
         .slice(0, 5)
         .map((product: any) => ({
           id: product.id,
           name: product.name,
           margin: product.margin,
-          trend: 'down',
-          action: product.margin < 5 ? 'Review pricing' : 'Optimize cost'
+          trend: product.trend,
+          action: product.margin < 5 ? 'Review pricing' : 
+                  product.margin < 10 ? 'Optimize cost' : 'Check supplier'
         }));
 
-      res.json({
+      const response = {
         overview: {
-          totalRevenue,
-          totalCost,
-          grossProfit,
-          netProfit,
-          profitMargin,
-          growthRate: 12.5 // Mock growth rate
+          totalRevenue: Math.round(totalRevenue * 100) / 100,
+          totalCost: Math.round(totalCost * 100) / 100,
+          grossProfit: Math.round(grossProfit * 100) / 100,
+          netProfit: Math.round(netProfit * 100) / 100,
+          profitMargin: Math.round(profitMargin * 100) / 100,
+          growthRate: Math.round(growthRate * 100) / 100
         },
         trends,
         productProfitability: topProducts,
         categoryProfits: Object.values(categoryProfits),
         lowProfitProducts
+      };
+
+      console.log('📈 Profit analysis response:', {
+        totalRevenue: response.overview.totalRevenue,
+        totalCost: response.overview.totalCost,
+        grossProfit: response.overview.grossProfit,
+        profitMargin: response.overview.profitMargin,
+        trendsCount: response.trends.length,
+        productsCount: response.productProfitability.length
       });
+
+      res.json(response);
     } catch (error) {
-      console.error("Error fetching profit analysis:", error);
+      console.error("❌ Error fetching profit analysis:", error);
       res.status(500).json({ error: "Failed to fetch profit analysis" });
     }
   });

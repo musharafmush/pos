@@ -64,113 +64,20 @@ export default function ProfitManagement() {
   const formatCurrency = useFormatCurrency();
 
   // Fetch profit data
-  const { data: profitData, isLoading: profitLoading, error } = useQuery({
+  const { data: profitData, isLoading: profitLoading, error, refetch } = useQuery({
     queryKey: ['/api/reports/profit-analysis', timeRange, profitFilter, categoryFilter],
     queryFn: async () => {
-      try {
-        const response = await fetch(`/api/reports/profit-analysis?days=${timeRange}&filter=${profitFilter}&category=${categoryFilter}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch profit data');
-        }
-        return await response.json();
-      } catch (error) {
-        console.warn('Using mock data for profit analysis:', error);
-        // Mock data for development
-        return {
-          overview: {
-            totalRevenue: 125000,
-            totalCost: 87500,
-            grossProfit: 37500,
-            netProfit: 32500,
-            profitMargin: 26.0,
-            growthRate: 12.5
-          },
-          trends: [
-            { date: "2025-01-01", revenue: 4500, cost: 3200, profit: 1300 },
-            { date: "2025-01-02", revenue: 5200, cost: 3650, profit: 1550 },
-            { date: "2025-01-03", revenue: 4800, cost: 3400, profit: 1400 },
-            { date: "2025-01-04", revenue: 5500, cost: 3850, profit: 1650 },
-            { date: "2025-01-05", revenue: 6200, cost: 4300, profit: 1900 },
-            { date: "2025-01-06", revenue: 5800, cost: 4100, profit: 1700 },
-            { date: "2025-01-07", revenue: 6500, cost: 4550, profit: 1950 }
-          ],
-          productProfitability: [
-            { 
-              id: 1, 
-              name: "Rice 1kg", 
-              sku: "RICE001",
-              category: "Groceries",
-              unitsSold: 150, 
-              revenue: 15000, 
-              cost: 10500, 
-              profit: 4500, 
-              margin: 30.0,
-              trend: "up"
-            },
-            { 
-              id: 2, 
-              name: "Cooking Oil 1L", 
-              sku: "OIL001",
-              category: "Groceries",
-              unitsSold: 85, 
-              revenue: 12750, 
-              cost: 9350, 
-              profit: 3400, 
-              margin: 26.7,
-              trend: "up"
-            },
-            { 
-              id: 3, 
-              name: "Sugar 1kg", 
-              sku: "SUGAR001",
-              category: "Groceries",
-              unitsSold: 120, 
-              revenue: 6000, 
-              cost: 4800, 
-              profit: 1200, 
-              margin: 20.0,
-              trend: "down"
-            },
-            { 
-              id: 4, 
-              name: "Tea Powder 250g", 
-              sku: "TEA001",
-              category: "Beverages",
-              unitsSold: 95, 
-              revenue: 9500, 
-              cost: 6650, 
-              profit: 2850, 
-              margin: 30.0,
-              trend: "stable"
-            },
-            { 
-              id: 5, 
-              name: "Wheat Flour 1kg", 
-              sku: "FLOUR001",
-              category: "Groceries",
-              unitsSold: 200, 
-              revenue: 8000, 
-              cost: 6400, 
-              profit: 1600, 
-              margin: 20.0,
-              trend: "up"
-            }
-          ],
-          categoryProfits: [
-            { name: "Groceries", profit: 28500, margin: 24.5, revenue: 116300 },
-            { name: "Beverages", profit: 5200, margin: 32.1, revenue: 16200 },
-            { name: "Personal Care", profit: 2800, margin: 28.0, revenue: 10000 },
-            { name: "Household", profit: 1500, margin: 18.5, revenue: 8100 }
-          ],
-          lowProfitProducts: [
-            { id: 6, name: "Soap Bar", margin: 8.5, trend: "down", action: "Review pricing" },
-            { id: 7, name: "Toothpaste", margin: 12.0, trend: "stable", action: "Optimize cost" },
-            { id: 8, name: "Shampoo", margin: 15.2, trend: "down", action: "Check supplier" }
-          ]
-        };
+      console.log('🔍 Fetching profit data...');
+      const response = await fetch(`/api/reports/profit-analysis?days=${timeRange}&filter=${profitFilter}&category=${categoryFilter}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      return response.json();
-    }
+      const data = await response.json();
+      console.log('📊 Profit data received:', data);
+      return data;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+    staleTime: 10000, // Consider data stale after 10 seconds
   });
 
   // Calculate metrics
@@ -231,6 +138,10 @@ export default function ProfitManagement() {
               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
                 <TrendingUpIcon className="w-3 h-3 mr-1" />
                 +{growthRate.toFixed(1)}% Growth
+              </Badge>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
+                Real-time Data
               </Badge>
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
@@ -381,9 +292,14 @@ export default function ProfitManagement() {
           </div>
 
           <div className="flex items-end">
-            <Button variant="outline" className="w-full">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh Data
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => refetch()}
+              disabled={profitLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${profitLoading ? 'animate-spin' : ''}`} />
+              {profitLoading ? 'Refreshing...' : 'Refresh Data'}
             </Button>
           </div>
         </div>
