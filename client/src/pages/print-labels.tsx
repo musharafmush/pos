@@ -303,23 +303,38 @@ export default function PrintLabels() {
             <div class="labels-container">
               ${printContent}
             </div>
-            <script>
-              window.onload = function() {
-                // Auto-print after a short delay to ensure content is loaded
-                setTimeout(function() {
-                  window.print();
-                }, 500);
-              };
-            </script>
           </body>
         </html>
       `;
       
+      // Write content and ensure it's properly loaded
+      printWindow.document.open();
       printWindow.document.write(htmlContent);
       printWindow.document.close();
       
-      // Focus the print window
-      printWindow.focus();
+      // Wait for content to load then print
+      printWindow.onload = function() {
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+          
+          // Optional: Close window after printing
+          printWindow.onafterprint = function() {
+            setTimeout(() => {
+              printWindow.close();
+            }, 1000);
+          };
+        }, 100);
+      };
+      
+      // Fallback if onload doesn't fire
+      setTimeout(() => {
+        if (printWindow && !printWindow.closed) {
+          printWindow.focus();
+          printWindow.print();
+        }
+      }, 1000);
+      
     } else {
       toast({
         title: "Print window blocked",
