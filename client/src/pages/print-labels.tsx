@@ -236,82 +236,93 @@ export default function PrintLabels() {
     // Create all manual labels first
     const allManualLabels = Array(copies).fill(null).map((_, index) => `
       <div class="thermal-label" style="
-        width: ${labelStyle.width};
-        min-height: ${labelStyle.height};
-        padding: ${labelStyle.padding};
-        margin: 0;
-        border: 1px solid #333;
-        background: white;
-        font-family: 'Courier New', monospace;
-        font-size: ${labelStyle.fontSize};
-        line-height: 1.1;
-        display: inline-block;
-        page-break-inside: avoid;
-        box-sizing: border-box;
-        vertical-align: top;
-        flex-shrink: 0;
-      ">
-        <!-- Header with timestamp -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">
-          <div style="font-size: 10px; color: #666;">${currentDateTime}</div>
-          <div style="font-size: 11px; font-weight: bold;">Manual Label</div>
-        </div>
+          width: 40mm;
+          height: 40mm;
+          padding: 1.5mm;
+          margin: 0;
+          border: 2px solid #000;
+          background: white;
+          font-family: Arial, sans-serif;
+          font-size: 10px;
+          line-height: 1.2;
+          display: inline-block;
+          page-break-inside: avoid;
+          box-sizing: border-box;
+          vertical-align: top;
+          flex-shrink: 0;
+          position: relative;
+        ">
+          <!-- Product Name - Bold and Prominent -->
+          <div style="
+            font-weight: bold; 
+            font-size: 11px; 
+            text-align: center; 
+            margin-bottom: 2mm; 
+            line-height: 1.1; 
+            word-wrap: break-word;
+            text-transform: uppercase;
+          ">
+            ${manualLabel.productName.length > 18 ? manualLabel.productName.substring(0, 18) : manualLabel.productName}
+          </div>
 
-        <!-- Product Name -->
-        <div style="font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 6px; border: 1px solid #333; padding: 4px;">
-          ${manualLabel.productName}
-        </div>
+          <!-- Barcode Section -->
+          ${includeBarcode && (manualLabel.barcode || manualLabel.sku) ? 
+            `<div style="text-align: center; margin: 2mm 0;">
+              <div style="
+                font-size: 18px; 
+                font-family: 'Courier New', monospace; 
+                letter-spacing: -1px; 
+                line-height: 0.8;
+                margin-bottom: 1mm;
+              ">||||||||||||||||||||||||||||||||||||||||</div>
+              <div style="
+                font-family: 'Courier New', monospace; 
+                font-size: 6px; 
+                text-align: center;
+                letter-spacing: 1px;
+                margin-bottom: 1mm;
+              ">
+                ${manualLabel.barcode || manualLabel.sku?.padEnd(12, '0').substring(0, 12) || '000000000000'}
+              </div>
+            </div>` : ''
+          }
 
-        <!-- SKU -->
-        ${manualLabel.sku ? 
-          `<div style="font-size: 10px; text-align: center; margin-bottom: 4px;">
-            SKU: ${manualLabel.sku}
-          </div>` : ''
-        }
+          <!-- Serial Number -->
+          <div style="
+            font-size: 14px; 
+            font-weight: bold; 
+            text-align: center; 
+            margin: 2mm 0;
+          ">
+            ${index + 1}
+          </div>
 
-        <!-- Description -->
-        ${includeDescription && manualLabel.description ? 
-          `<div style="font-size: 9px; text-align: center; margin-bottom: 4px; color: #555;">
-            ${manualLabel.description.substring(0, 40)}${manualLabel.description.length > 40 ? '...' : ''}
-          </div>` : ''
-        }
-
-        <!-- Price Section -->
-        <div style="margin: 6px 0; text-align: center;">
+          <!-- Price Section -->
           ${includePrice && manualLabel.price ? 
-            `<div style="font-size: 16px; font-weight: bold; border: 2px solid #000; padding: 4px; margin: 2px 0;">
-              PRICE: ₹${Number(manualLabel.price).toFixed(2)}
+            `<div style="
+              font-size: 12px; 
+              font-weight: bold; 
+              text-align: center;
+              margin: 1mm 0;
+            ">
+              ₹ ${Number(manualLabel.price).toFixed(2)}
             </div>` : ''
           }
-          ${includeMrp && manualLabel.mrp ? 
-            `<div style="font-size: 12px; margin: 2px 0;">
-              MRP: ₹${Number(manualLabel.mrp).toFixed(2)}
-            </div>` : ''
-          }
+
+          <!-- Store Name at Bottom -->
+          <div style="
+            font-size: 9px; 
+            font-weight: bold; 
+            text-align: center; 
+            position: absolute;
+            bottom: 1mm;
+            left: 1.5mm;
+            right: 1.5mm;
+            text-transform: uppercase;
+          ">
+            M MART
+          </div>
         </div>
-
-        <!-- Expiry Date -->
-        ${includeExpiryDate && manualLabel.expiryDate ? 
-          `<div style="font-size: 10px; text-align: center; margin: 4px 0; color: #d97706;">
-            Exp: ${manualLabel.expiryDate}
-          </div>` : ''
-        }
-
-        <!-- Barcode -->
-        ${includeBarcode && (manualLabel.barcode || manualLabel.sku) ? 
-          `<div style="text-align: center; margin-top: 6px; border-top: 1px solid #ddd; padding-top: 4px;">
-            <div style="font-family: 'Courier New', monospace; font-size: 8px; letter-spacing: 1px; background: #f8f8f8; padding: 2px; border: 1px solid #ccc;">
-              ${manualLabel.barcode || manualLabel.sku?.padEnd(12, '0').substring(0, 12) || '000000000000'}
-            </div>
-            <div style="font-size: 8px; margin-top: 2px;">||||||||||||||||||||||||</div>
-          </div>` : ''
-        }
-
-        <!-- Footer -->
-        <div style="text-align: center; font-size: 8px; color: #999; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 2px;">
-          ${index + 1}/${copies}
-        </div>
-      </div>
     `);
 
     // Group manual labels into rows based on labelsPerRow setting
@@ -733,7 +744,7 @@ export default function PrintLabels() {
     // Special handling for 40x40mm labels (2 per row on 80mm paper)
     const is40mmLabel = labelSize === '40x40mm' || labelSize === '80x40mm';
     const actualLabelsPerRow = is40mmLabel ? 2 : labelsPerRow;
-    
+
     // Open print window with enhanced styling and proper grid layout
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -758,8 +769,8 @@ export default function PrintLabels() {
               }
 
               .product-label {
-                background: white !important;
-                break-inside: avoid;
+                background: white !important;```text
+break-inside: avoid;
                 page-break-inside: avoid;
                 ${is40mmLabel ? 'border-radius: 0px;' : 'border-radius: 2px;'}
                 overflow: hidden;
@@ -889,13 +900,13 @@ export default function PrintLabels() {
                   text-align: center !important;
                   line-height: 1 !important;
                 }
-                
+
                 .product-label .sku {
                   font-size: 5px !important;
                   text-align: center !important;
                   margin-bottom: 1mm !important;
                 }
-                
+
                 .product-label .price {
                   font-size: 9px !important;
                   font-weight: bold !important;
@@ -904,14 +915,14 @@ export default function PrintLabels() {
                   padding: 1mm !important;
                   margin: 1mm 0 !important;
                 }
-                
+
                 .product-label .barcode {
                   font-size: 4px !important;
                   text-align: center !important;
                   font-family: 'Courier New', monospace !important;
                   margin-top: 1mm !important;
                 }
-                
+
                 .product-label .barcode-lines {
                   font-size: 4px !important;
                   text-align: center !important;
