@@ -252,53 +252,57 @@ export default function PrintLabels() {
           flex-shrink: 0;
           position: relative;
         ">
-          <!-- Product Name - Bold and Prominent (like MUNTHIRI FULL 50G) -->
+          <!-- Product Name - Bold and Prominent (like BATAM) -->
           <div style="
             font-weight: bold; 
-            font-size: 10px; 
+            font-size: 12px; 
             text-align: center; 
             margin-bottom: 2mm; 
             line-height: 1; 
             word-wrap: break-word;
             text-transform: uppercase;
             font-family: Arial, sans-serif;
+            letter-spacing: 1px;
           ">
-            ${manualLabel.productName.length > 20 ? manualLabel.productName.substring(0, 20) : manualLabel.productName}
+            ${manualLabel.productName.length > 15 ? manualLabel.productName.substring(0, 15) : manualLabel.productName}
           </div>
 
-          <!-- Barcode Section - Exactly like reference image -->
+          <!-- Barcode Section - Exactly like reference image with vertical lines -->
           ${includeBarcode && (manualLabel.barcode || manualLabel.sku) ? 
-            `<div style="text-align: center; margin: 2mm 0 1mm 0;">
+            `<div style="text-align: center; margin: 3mm 0 2mm 0;">
               <div style="
-                font-size: 16px; 
+                font-size: 14px; 
                 font-family: 'Courier New', monospace; 
-                letter-spacing: 0px; 
+                letter-spacing: 1px; 
                 line-height: 1;
-                margin-bottom: 0.5mm;
-                font-weight: bold;
-              ">|||||||||||||||||||||||||||||||||||</div>
+                margin-bottom: 1mm;
+                font-weight: normal;
+                color: #000;
+              ">| | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | |</div>
             </div>` : ''
           }
 
-          <!-- Serial Number (like the "1" in reference) -->
+          <!-- Serial Number (like the "1" or "2" in reference) -->
           <div style="
-            font-size: 16px; 
+            font-size: 24px; 
             font-weight: bold; 
             text-align: center; 
-            margin: 2mm 0;
+            margin: 3mm 0;
             font-family: Arial, sans-serif;
+            line-height: 1;
           ">
             ${index + 1}
           </div>
 
-          <!-- Price Section (like ₹ 55.00) -->
+          <!-- Price Section (like ₹ 1000.00) -->
           ${includePrice && manualLabel.price ? 
             `<div style="
-              font-size: 14px; 
+              font-size: 16px; 
               font-weight: bold; 
               text-align: center;
-              margin: 1mm 0 2mm 0;
+              margin: 3mm 0 4mm 0;
               font-family: Arial, sans-serif;
+              line-height: 1;
             ">
               ₹ ${Number(manualLabel.price).toFixed(2)}
             </div>` : ''
@@ -306,7 +310,7 @@ export default function PrintLabels() {
 
           <!-- Store Name at Bottom (M MART) -->
           <div style="
-            font-size: 11px; 
+            font-size: 12px; 
             font-weight: bold; 
             text-align: center; 
             position: absolute;
@@ -315,6 +319,7 @@ export default function PrintLabels() {
             right: 2mm;
             text-transform: uppercase;
             font-family: Arial, sans-serif;
+            letter-spacing: 1px;
           ">
             M MART
           </div>
@@ -481,7 +486,7 @@ export default function PrintLabels() {
       hour12: true
     });
 
-    // Special template for 40x40mm labels
+    // Special template for 40x40mm labels - exactly matching reference image
     if (is40mmLabel) {
       return `
         <div class="thermal-label" style="
@@ -501,53 +506,57 @@ export default function PrintLabels() {
           flex-shrink: 0;
           position: relative;
         ">
-          <!-- Product Name - Bold and Prominent (like MUNTHIRI FULL 50G) -->
+          <!-- Product Name - Bold and Prominent (like BATAM) -->
           <div style="
             font-weight: bold; 
-            font-size: 10px; 
+            font-size: 12px; 
             text-align: center; 
             margin-bottom: 2mm; 
             line-height: 1; 
             word-wrap: break-word;
             text-transform: uppercase;
             font-family: Arial, sans-serif;
+            letter-spacing: 1px;
           ">
-            ${product.name.length > 20 ? product.name.substring(0, 20) : product.name}
+            ${product.name.length > 15 ? product.name.substring(0, 15) : product.name}
           </div>
 
-          <!-- Barcode Section - Exactly like reference image -->
+          <!-- Barcode Section - Exactly like reference image with vertical lines -->
           ${includeBarcode && (product.barcode || product.sku) ? 
-            `<div style="text-align: center; margin: 2mm 0 1mm 0;">
+            `<div style="text-align: center; margin: 3mm 0 2mm 0;">
               <div style="
-                font-size: 16px; 
+                font-size: 14px; 
                 font-family: 'Courier New', monospace; 
-                letter-spacing: 0px; 
+                letter-spacing: 1px; 
                 line-height: 1;
-                margin-bottom: 0.5mm;
-                font-weight: bold;
-              ">|||||||||||||||||||||||||||||||||||</div>
+                margin-bottom: 1mm;
+                font-weight: normal;
+                color: #000;
+              ">| | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | |</div>
             </div>` : ''
           }
 
-          <!-- Serial Number (like the "1" in reference) -->
+          <!-- Serial Number (like the "1" or "2" in reference) -->
           <div style="
-            font-size: 16px; 
+            font-size: 24px; 
             font-weight: bold; 
             text-align: center; 
-            margin: 2mm 0;
+            margin: 3mm 0;
             font-family: Arial, sans-serif;
+            line-height: 1;
           ">
             ${copyIndex + 1}
           </div>
 
-          <!-- Price Section (like ₹ 55.00) -->
+          <!-- Price Section (like ₹ 1000.00) -->
           ${includePrice && product.price ? 
             `<div style="
-              font-size: 14px; 
+              font-size: 16px; 
               font-weight: bold; 
               text-align: center;
-              margin: 1mm 0 2mm 0;
+              margin: 3mm 0 4mm 0;
               font-family: Arial, sans-serif;
+              line-height: 1;
             ">
               ₹ ${Number(product.price).toFixed(2)}
             </div>` : ''
@@ -555,7 +564,7 @@ export default function PrintLabels() {
 
           <!-- Store Name at Bottom (M MART) -->
           <div style="
-            font-size: 11px; 
+            font-size: 12px; 
             font-weight: bold; 
             text-align: center; 
             position: absolute;
@@ -564,6 +573,7 @@ export default function PrintLabels() {
             right: 2mm;
             text-transform: uppercase;
             font-family: Arial, sans-serif;
+            letter-spacing: 1px;
           ">
             M MART
           </div>
@@ -796,7 +806,7 @@ export default function PrintLabels() {
                 font-family: ${fontFamily}, sans-serif;
                 background: ${is40mmLabel ? 'white' : '#f8f9fa'};
                 line-height: 1;
-                ${is40mmLabel ? 'width: 80mm;' : `min-width: ${pageWidth}px;`}
+                ${is40mmLabel ? 'width: 84mm; max-width: 84mm;' : `min-width: ${pageWidth}px;`}
               }
 
               .product-label {
@@ -820,10 +830,10 @@ export default function PrintLabels() {
               .label-row {
                 display: flex !important;
                 flex-wrap: nowrap !important;
-                gap: ${is40mmLabel ? '0mm' : marginLeft + 'px'} !important;
-                margin-bottom: ${is40mmLabel ? '0mm' : marginTop + 'px'} !important;
+                gap: ${is40mmLabel ? '2mm' : marginLeft + 'px'} !important;
+                margin-bottom: ${is40mmLabel ? '2mm' : marginTop + 'px'} !important;
                 page-break-inside: avoid !important;
-                ${is40mmLabel ? 'width: 80mm; justify-content: space-between;' : ''}
+                ${is40mmLabel ? 'width: 84mm; justify-content: flex-start; align-items: flex-start;' : ''}
               }
 
               .labels-container {
