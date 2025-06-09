@@ -652,15 +652,16 @@ export default function PrintLabels() {
         <div class="label-row" style="
           display: flex;
           flex-wrap: nowrap;
-          gap: ${marginLeft}px;
-          margin-bottom: ${marginTop}px;
+          gap: ${Math.max(2, marginLeft)}px;
+          margin-bottom: ${Math.max(2, marginTop)}px;
           justify-content: flex-start;
           align-items: flex-start;
           page-break-inside: avoid;
+          min-height: ${dims.pxHeight};
           ${shouldPageBreak ? 'page-break-before: always;' : ''}
         ">
           ${row.join('')}
-          ${row.length < labelsPerRow ? Array(labelsPerRow - row.length).fill(`<div style="width: ${dims.pxWidth}; height: ${dims.pxHeight}; margin: 2px;"></div>`).join('') : ''}
+          ${row.length < labelsPerRow ? Array(labelsPerRow - row.length).fill(`<div style="width: ${dims.pxWidth}; height: ${dims.pxHeight}; margin: 2px; visibility: hidden;"></div>`).join('') : ''}
         </div>
       `;
     }).join('');
@@ -719,7 +720,7 @@ export default function PrintLabels() {
               
               @media print {
                 body { 
-                  margin: ${marginTop}px ${marginLeft}px !important;
+                  margin: ${Math.max(5, marginTop)}px ${Math.max(5, marginLeft)}px !important;
                   padding: 0 !important;
                   background: white;
                   -webkit-print-color-adjust: exact;
@@ -730,21 +731,36 @@ export default function PrintLabels() {
                   break-inside: avoid !important;
                   page-break-inside: avoid !important;
                   flex-shrink: 0 !important;
+                  margin: 1px !important;
                 }
                 
                 .label-row {
                   display: flex !important;
                   flex-wrap: nowrap !important;
-                  gap: ${marginLeft}px !important;
-                  margin-bottom: ${marginTop}px !important;
+                  gap: ${Math.max(2, marginLeft)}px !important;
+                  margin-bottom: ${Math.max(2, marginTop)}px !important;
                   page-break-inside: avoid !important;
+                  justify-content: flex-start !important;
+                  align-items: flex-start !important;
                 }
                 
                 @page {
-                  margin: 0;
+                  margin: 5mm;
                   size: ${paperSize === 'A4' ? 'A4' : paperSize === 'A5' ? 'A5' : paperSize === 'Letter' ? 'Letter' : 'auto'} ${printOrientation};
                   -webkit-print-color-adjust: exact;
                   print-color-adjust: exact;
+                }
+                
+                /* Ensure page breaks after specified number of rows */
+                .label-row:nth-child(${labelsPerColumn}n+1):not(:first-child) {
+                  page-break-before: always !important;
+                }
+                
+                /* Force grid layout */
+                .labels-container {
+                  display: flex !important;
+                  flex-direction: column !important;
+                  gap: 0 !important;
                 }
                 
                 ${labelSize.includes('thermal') ? `
@@ -950,36 +966,43 @@ export default function PrintLabels() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label className="text-sm">Per Row</Label>
-                    <Select value={labelsPerRow.toString()} onValueChange={(value) => setLabelsPerRow(parseInt(value))}>
+                    <Label className="text-sm">Labels Per Row</Label>
+                    <Select value={labelsPerRow.toString()} onValueChange={(value) => {
+                      const newValue = parseInt(value);
+                      console.log('Setting labels per row to:', newValue);
+                      setLabelsPerRow(newValue);
+                    }}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select rows" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">1 per row</SelectItem>
-                        <SelectItem value="2">2 per row</SelectItem>
-                        <SelectItem value="3">3 per row</SelectItem>
-                        <SelectItem value="4">4 per row</SelectItem>
-                        <SelectItem value="5">5 per row</SelectItem>
-                        <SelectItem value="6">6 per row</SelectItem>
+                        <SelectItem value="1">1 label per row</SelectItem>
+                        <SelectItem value="2">2 labels per row</SelectItem>
+                        <SelectItem value="3">3 labels per row</SelectItem>
+                        <SelectItem value="4">4 labels per row</SelectItem>
+                        <SelectItem value="5">5 labels per row</SelectItem>
+                        <SelectItem value="6">6 labels per row</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm">Per Column</Label>
-                    <Select value={labelsPerColumn.toString()} onValueChange={(value) => setLabelsPerColumn(parseInt(value))}>
+                    <Label className="text-sm">Rows Per Page</Label>
+                    <Select value={labelsPerColumn.toString()} onValueChange={(value) => {
+                      const newValue = parseInt(value);
+                      console.log('Setting rows per page to:', newValue);
+                      setLabelsPerColumn(newValue);
+                    }}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select rows" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">1 per column</SelectItem>
-                        <SelectItem value="2">2 per column</SelectItem>
-                        <SelectItem value="3">3 per column</SelectItem>
-                        <SelectItem value="4">4 per column</SelectItem>
-                        <SelectItem value="5">5 per column</SelectItem>
-                        <SelectItem value="6">6 per column</SelectItem>
-                        <SelectItem value="8">8 per column</SelectItem>
-                        <SelectItem value="10">10 per column</SelectItem>
+                        <SelectItem value="2">2 rows per page</SelectItem>
+                        <SelectItem value="3">3 rows per page</SelectItem>
+                        <SelectItem value="4">4 rows per page</SelectItem>
+                        <SelectItem value="5">5 rows per page</SelectItem>
+                        <SelectItem value="6">6 rows per page</SelectItem>
+                        <SelectItem value="8">8 rows per page</SelectItem>
+                        <SelectItem value="10">10 rows per page</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1259,91 +1282,100 @@ export default function PrintLabels() {
               <div className="pt-4 border-t">
                 <h4 className="text-sm font-medium mb-3">Label Preview</h4>
                 <div className="space-y-2">
-                  <div className="text-xs text-gray-600">
-                    Layout: {labelsPerRow} × {labelsPerColumn} (Row × Column)
+                  <div className="text-xs text-gray-600 font-medium">
+                    Layout: {labelsPerRow} labels × {labelsPerColumn} rows per page = {labelsPerRow * labelsPerColumn} labels per page
                   </div>
                   <div 
                     className="border-2 border-dashed border-gray-300 p-3 rounded-lg bg-white overflow-x-auto"
                     style={{
-                      minHeight: '120px',
+                      minHeight: '180px',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: `${marginTop}px`
+                      gap: `${Math.max(5, marginTop)}px`
                     }}
                   >
-                    {/* Show grid layout preview */}
-                    {Array.from({ length: Math.min(2, labelsPerColumn) }, (_, rowIndex) => (
+                    {/* Show actual grid layout preview */}
+                    {Array.from({ length: Math.min(3, labelsPerColumn) }, (_, rowIndex) => (
                       <div key={rowIndex} style={{
                         display: 'flex',
-                        gap: `${marginLeft}px`,
+                        gap: `${Math.max(5, marginLeft)}px`,
                         justifyContent: 'flex-start',
-                        alignItems: 'flex-start'
+                        alignItems: 'flex-start',
+                        flexWrap: 'nowrap'
                       }}>
-                        {Array.from({ length: labelsPerRow }, (_, colIndex) => (
-                          <div 
-                            key={colIndex}
-                            className="border border-gray-400 bg-white p-2 text-center shadow-sm flex-shrink-0"
-                            style={{
-                              width: labelSize === 'mini' ? '120px' :
-                                     labelSize === 'small' ? '140px' :
-                                     labelSize === 'standard' ? '160px' :
-                                     labelSize === 'medium' ? '180px' :
-                                     labelSize === 'large' ? '200px' :
-                                     labelSize === 'xlarge' ? '220px' :
-                                     labelSize === 'thermal-58mm' ? '120px' :
-                                     labelSize === 'thermal-80mm' ? '150px' :
-                                     labelSize === 'custom' ? `${Math.min(200, parseInt(customLabelSize.width) / 2)}px` :
-                                     '160px',
-                              height: labelSize === 'mini' ? '60px' :
-                                      labelSize === 'small' ? '75px' :
-                                      labelSize === 'standard' ? '90px' :
-                                      labelSize === 'medium' ? '100px' :
-                                      labelSize === 'large' ? '110px' :
-                                      labelSize === 'xlarge' ? '120px' :
-                                      labelSize === 'thermal-58mm' ? '80px' :
-                                      labelSize === 'thermal-80mm' ? '100px' :
-                                      labelSize === 'custom' ? `${Math.min(120, parseInt(customLabelSize.height) / 2)}px` :
-                                      '90px',
-                              fontSize: '10px',
-                              lineHeight: '1.1',
-                              fontFamily: fontFamily,
-                              backgroundColor: backgroundColor,
-                              color: textColor,
-                              borderWidth: labelBorder ? `${borderWidth}px` : '0px',
-                              borderStyle: borderStyle
-                            }}
-                          >
-                            {includeCompanyLogo && <div className="text-xs font-bold mb-1">LOGO</div>}
-                            <div className="font-semibold text-xs">Sample Product</div>
-                            <div className="text-xs text-gray-500">SKU: SP001</div>
-                            {includeDescription && <div className="text-xs text-gray-400">Product desc...</div>}
-                            <div className="flex justify-between text-xs mt-1">
-                              {includePrice && <span className="font-bold text-blue-600">₹99.99</span>}
-                              {includeMrp && <span className="text-gray-600 line-through">₹120</span>}
-                            </div>
-                            {includeExpiryDate && <div className="text-xs text-orange-600">Exp: 12/25</div>}
-                            {includeQrCode && <div className="text-xs">█▀▀█</div>}
-                            {includeBarcode && (
-                              <div className="mt-1">
-                                <div className="text-xs font-mono bg-gray-100 px-1">SP001000001</div>
-                                <div className="text-xs">||||||||||||</div>
+                        {Array.from({ length: labelsPerRow }, (_, colIndex) => {
+                          const labelIndex = rowIndex * labelsPerRow + colIndex + 1;
+                          return (
+                            <div 
+                              key={colIndex}
+                              className="border border-yellow-400 bg-yellow-100 p-2 text-center shadow-sm flex-shrink-0 relative"
+                              style={{
+                                width: labelSize === 'mini' ? '100px' :
+                                       labelSize === 'small' ? '120px' :
+                                       labelSize === 'standard' ? '140px' :
+                                       labelSize === 'medium' ? '160px' :
+                                       labelSize === 'large' ? '180px' :
+                                       labelSize === 'xlarge' ? '200px' :
+                                       labelSize === 'thermal-58mm' ? '110px' :
+                                       labelSize === 'thermal-80mm' ? '130px' :
+                                       labelSize === 'custom' ? `${Math.min(180, parseInt(customLabelSize.width) / 2)}px` :
+                                       '140px',
+                                height: labelSize === 'mini' ? '50px' :
+                                        labelSize === 'small' ? '65px' :
+                                        labelSize === 'standard' ? '80px' :
+                                        labelSize === 'medium' ? '90px' :
+                                        labelSize === 'large' ? '100px' :
+                                        labelSize === 'xlarge' ? '110px' :
+                                        labelSize === 'thermal-58mm' ? '70px' :
+                                        labelSize === 'thermal-80mm' ? '85px' :
+                                        labelSize === 'custom' ? `${Math.min(100, parseInt(customLabelSize.height) / 2)}px` :
+                                        '80px',
+                                fontSize: '9px',
+                                lineHeight: '1.1',
+                                fontFamily: fontFamily,
+                                backgroundColor: '#fef3c7',
+                                color: '#92400e',
+                                borderWidth: labelBorder ? `${borderWidth}px` : '1px',
+                                borderStyle: borderStyle,
+                                borderColor: '#f59e0b'
+                              }}
+                            >
+                              <div className="absolute top-1 right-1 text-xs font-bold opacity-50">
+                                {labelIndex}
                               </div>
-                            )}
-                            {includeCustomText && customText && (
-                              <div className="text-xs italic mt-1">{customText.substring(0, 15)}...</div>
-                            )}
-                          </div>
-                        ))}
+                              {includeCompanyLogo && <div className="text-xs font-bold mb-1">LOGO</div>}
+                              <div className="font-semibold text-xs truncate">Sample Product</div>
+                              <div className="text-xs opacity-70 truncate">SKU: SP001</div>
+                              {includeDescription && <div className="text-xs opacity-60 truncate">Product desc...</div>}
+                              <div className="flex justify-center text-xs mt-1">
+                                {includePrice && <span className="font-bold text-red-600">₹29.00</span>}
+                                {includeMrp && includePrice && <span className="text-gray-600 line-through ml-1 text-xs">₹35</span>}
+                              </div>
+                              {includeExpiryDate && <div className="text-xs text-orange-600">Exp: 12/25</div>}
+                              {includeQrCode && <div className="text-xs">█▀▀█</div>}
+                              {includeBarcode && (
+                                <div className="mt-1">
+                                  <div className="text-xs font-mono bg-white px-1 border">SP001000001</div>
+                                  <div className="text-xs">||||||||||||</div>
+                                </div>
+                              )}
+                              {includeCustomText && customText && (
+                                <div className="text-xs italic mt-1 truncate">{customText.substring(0, 12)}...</div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     ))}
-                    {labelsPerColumn > 2 && (
-                      <div className="text-xs text-gray-500 text-center">
-                        ... and {labelsPerColumn - 2} more rows
+                    {labelsPerColumn > 3 && (
+                      <div className="text-xs text-gray-500 text-center italic">
+                        ... and {labelsPerColumn - 3} more rows (total {labelsPerRow * labelsPerColumn} labels per page)
                       </div>
                     )}
                   </div>
                   <div className="text-xs text-gray-500 text-center">
-                    Preview shows {labelsPerRow} × {labelsPerColumn} grid layout with actual margins
+                    <div>Preview: {labelsPerRow} labels per row, {labelsPerColumn} rows per page</div>
+                    <div>Yellow background simulates the real label appearance from your image</div>
                   </div>
                 </div>
               </div>
