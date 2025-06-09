@@ -782,8 +782,7 @@ export default function PrintLabels() {
               }
 
               .price-focus-template {
-                box-shadow: 0```text
- 2px 4px rgba(231,76,60,0.2);
+                box-shadow: 0 2px 4px rgba(231,76,60,0.2);
               }
 
               /* Ensure page breaks after specified number of rows */
