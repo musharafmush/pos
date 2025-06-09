@@ -1297,12 +1297,8 @@ export default function POSEnhanced() {
                                         </div>
                   )}
 
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Taxable Amount:</span>
-                    <span>{formatCurrency(taxableAmount)}</span>
-                  </div>
 
-                  
+
                 </CardContent>
               </Card>
 
