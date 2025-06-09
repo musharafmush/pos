@@ -22,7 +22,7 @@ interface Product {
   sku: string;
   price: number;
   description?: string;
-  category?: string;
+  category?: string | { id: number; name: string; description?: string; createdAt?: string };
 }
 
 export default function PrintLabels() {
@@ -362,7 +362,7 @@ export default function PrintLabels() {
                             <Badge variant="secondary">{product.sku}</Badge>
                           </TableCell>
                           <TableCell>₹{Number(product.price).toFixed(2)}</TableCell>
-                          <TableCell>{product.category || 'Uncategorized'}</TableCell>
+                          <TableCell>{typeof product.category === 'object' ? product.category?.name || 'Uncategorized' : product.category || 'Uncategorized'}</TableCell>
                         </TableRow>
                       ))
                     )}
