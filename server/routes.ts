@@ -1478,7 +1478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/customers', async (req, res) => {
     try {
       console.log('Fetching customers from database...');
-      
+
       // Try storage method first
       try {
         const customers = await storage.listCustomers();
@@ -1491,7 +1491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fallback to direct SQLite query
       const { sqlite } = await import('../db/index.js');
-      
+
       // Check if customers table exists
       const tableCheck = sqlite.prepare(`
         SELECT name FROM sqlite_master 
@@ -1529,7 +1529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Executing customers query:', query);
       const customers = sqlite.prepare(query).all();
-      
+
       console.log(`Found ${customers.length} customers`);
       res.json(customers);
     } catch (error) {
@@ -1854,6 +1854,7 @@ app.post("/api/customers", async (req, res) => {
       const topProducts = await storage.getTopSellingProducts(limit, startDate);
       res.json(topProducts);
     } catch (error) {
+      Adding profit analysis API endpoint to provide detailed profit insights.```text
       console.error('Error fetching top selling products:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
@@ -2074,6 +2075,194 @@ app.post("/api/customers", async (req, res) => {
     } catch (error) {
       console.error('Error in sales debug endpoint:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Reports routes
+  app.get("/api/reports/sales-overview", async (req, res) => {
+    try {
+      const { period = '30' } = req.query;
+      const days = parseInt(period as string, 10);
+
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const salesData = await db
+        .select({
+          date: sql<string>`DATE(${sales.createdAt})`,
+          total: sql<number>`SUM(${sales.total})`,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(sales)
+        .where(gte(sales.createdAt, startDate.toISOString()))
+        .groupBy(sql`DATE(${sales.createdAt})`)
+        .orderBy(sql`DATE(${sales.createdAt})`);
+
+      const totalSales = await db
+        .select({
+          total: sql<number>`SUM(${sales.total})`,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(sales)
+        .where(gte(sales.createdAt, startDate.toISOString()));
+
+      res.json({
+        salesData,
+        summary: totalSales[0] || { total: 0, count: 0 }
+      });
+    } catch (error) {
+      console.error("Error fetching sales overview:", error);
+      res.status(500).json({ error: "Failed to fetch sales overview" });
+    }
+  });
+
+  // Profit analysis endpoint
+  app.get("/api/reports/profit-analysis", async (req, res) => {
+    try {
+      const { days = '30', filter = 'all', category = 'all' } = req.query;
+      const daysPeriod = parseInt(days as string, 10);
+
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysPeriod);
+
+      // Get sales data with product details for profit calculation
+      const salesWithProducts = await db
+        .select({
+          saleId: sales.id,
+          saleDate: sales.createdAt,
+          saleTotal: sales.total,
+          productId: products.id,
+          productName: products.name,
+          productSku: products.sku,
+          productCategory: products.category,
+          salePrice: sql<number>`COALESCE(${saleItems.unitPrice}, ${products.sellingPrice})`,
+          costPrice: products.costPrice,
+          quantity: sql<number>`COALESCE(${saleItems.quantity}, 1)`,
+          itemTotal: sql<number>`COALESCE(${saleItems.subtotal}, ${products.sellingPrice})`
+        })
+        .from(sales)
+        .leftJoin(saleItems, eq(sales.id, saleItems.saleId))
+        .leftJoin(products, eq(saleItems.productId, products.id))
+        .where(gte(sales.createdAt, startDate.toISOString()));
+
+      // Calculate overview metrics
+      let totalRevenue = 0;
+      let totalCost = 0;
+      const dailyData: Record<string, { revenue: number; cost: number; profit: number }> = {};
+      const productProfits: Record<string, any> = {};
+      const categoryProfits: Record<string, any> = {};
+
+      salesWithProducts.forEach(item => {
+        if (!item.productId) return;
+
+        const revenue = Number(item.itemTotal) || 0;
+        const cost = (Number(item.costPrice) || 0) * (Number(item.quantity) || 1);
+        const profit = revenue - cost;
+
+        totalRevenue += revenue;
+        totalCost += cost;
+
+        // Daily trends
+        const date = item.saleDate.split(' ')[0];
+        if (!dailyData[date]) {
+          dailyData[date] = { revenue: 0, cost: 0, profit: 0 };
+        }
+        dailyData[date].revenue += revenue;
+        dailyData[date].cost += cost;
+        dailyData[date].profit += profit;
+
+        // Product profitability
+        const productKey = item.productId.toString();
+        if (!productProfits[productKey]) {
+          productProfits[productKey] = {
+            id: item.productId,
+            name: item.productName,
+            sku: item.productSku,
+            category: item.productCategory || 'Uncategorized',
+            unitsSold: 0,
+            revenue: 0,
+            cost: 0,
+            profit: 0,
+            margin: 0,
+            trend: 'stable'
+          };
+        }
+        productProfits[productKey].unitsSold += Number(item.quantity) || 1;
+        productProfits[productKey].revenue += revenue;
+        productProfits[productKey].cost += cost;
+        productProfits[productKey].profit += profit;
+
+        // Category profitability
+        const categoryKey = item.productCategory || 'Uncategorized';
+        if (!categoryProfits[categoryKey]) {
+          categoryProfits[categoryKey] = {
+            name: categoryKey,
+            revenue: 0,
+            profit: 0,
+            margin: 0
+          };
+        }
+        categoryProfits[categoryKey].revenue += revenue;
+        categoryProfits[categoryKey].profit += profit;
+      });
+
+      // Calculate margins
+      Object.values(productProfits).forEach((product: any) => {
+        product.margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
+      });
+
+      Object.values(categoryProfits).forEach((category: any) => {
+        category.margin = category.revenue > 0 ? (category.profit / category.revenue) * 100 : 0;
+      });
+
+      const grossProfit = totalRevenue - totalCost;
+      const netProfit = grossProfit * 0.9; // Assuming 10% operating expenses
+      const profitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+
+      // Convert daily data to array
+      const trends = Object.entries(dailyData)
+        .map(([date, data]) => ({
+          date,
+          revenue: data.revenue,
+          cost: data.cost,
+          profit: data.profit
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // Get top products by profit
+      const topProducts = Object.values(productProfits)
+        .sort((a: any, b: any) => b.profit - a.profit)
+        .slice(0, 10);
+
+      // Get low profit products
+      const lowProfitProducts = Object.values(productProfits)
+        .filter((product: any) => product.margin < 15)
+        .slice(0, 5)
+        .map((product: any) => ({
+          id: product.id,
+          name: product.name,
+          margin: product.margin,
+          trend: 'down',
+          action: product.margin < 5 ? 'Review pricing' : 'Optimize cost'
+        }));
+
+      res.json({
+        overview: {
+          totalRevenue,
+          totalCost,
+          grossProfit,
+          netProfit,
+          profitMargin,
+          growthRate: 12.5 // Mock growth rate
+        },
+        trends,
+        productProfitability: topProducts,
+        categoryProfits: Object.values(categoryProfits),
+        lowProfitProducts
+      });
+    } catch (error) {
+      console.error("Error fetching profit analysis:", error);
+      res.status(500).json({ error: "Failed to fetch profit analysis" });
     }
   });
 
