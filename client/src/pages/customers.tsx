@@ -140,12 +140,12 @@ export default function Customers() {
     mutationFn: async (data: CustomerFormValues) => {
       console.log("Submitting customer data:", data);
       const res = await apiRequest("POST", "/api/customers", data);
-      
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.error || errorData.details || `HTTP ${res.status}: ${res.statusText}`);
       }
-      
+
       return await res.json();
     },
     onSuccess: (data) => {
