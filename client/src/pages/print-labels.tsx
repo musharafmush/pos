@@ -175,7 +175,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
-          labelSize === '40mm' ? '12px' :
+          labelSize === '40mm' ? '10px' :
           labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; margin-bottom: 8px;">
@@ -200,7 +200,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
-          labelSize === '40mm' ? '12px' :
+          labelSize === '40mm' ? '10px' :
           labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; font-weight: bold; color: #2563eb;">
@@ -306,7 +306,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
-          labelSize === '40mm' ? '12px' :
+          labelSize === '40mm' ? '10px' :
           labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; margin-bottom: 8px;">
@@ -329,7 +329,7 @@ export default function PrintLabels() {
           labelSize === 'medium' ? '18px' :
           labelSize === 'large' ? '20px' :
           labelSize === 'xlarge' ? '22px' :
-          labelSize === '40mm' ? '12px' :
+          labelSize === '40mm' ? '10px' :
           labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
           '16px'
         }; font-weight: bold; color: #2563eb;">
