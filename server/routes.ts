@@ -1854,7 +1854,7 @@ app.post("/api/customers", async (req, res) => {
       const topProducts = await storage.getTopSellingProducts(limit, startDate);
       res.json(topProducts);
     } catch (error) {
-      Adding profit analysis API endpoint to provide detailed profit insights.```text
+      // Adding profit analysis API endpoint to provide detailed profit insights.
       console.error('Error fetching top selling products:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
