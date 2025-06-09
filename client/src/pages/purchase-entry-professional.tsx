@@ -60,6 +60,7 @@ const purchaseSchema = z.object({
   shippingAddress: z.string().optional(),
   billingAddress: z.string().optional(),
   shippingMethod: z.string().optional(),
+  taxCalculationMethod: z.string().optional(),
   freightAmount: z.number().min(0, "Freight amount cannot be negative").optional(),
   surchargeAmount: z.number().min(0, "Surcharge amount cannot be negative").optional(),
   packingCharges: z.number().min(0, "Packing charges cannot be negative").optional(),
@@ -151,6 +152,7 @@ export default function PurchaseEntryProfessional() {
       paymentTerms: "Net 30",
       paymentMethod: "Credit",
       status: "Pending",
+      taxCalculationMethod: "exclusive",
       freightAmount: 0,
       surchargeAmount: 0,
       packingCharges: 0,
@@ -332,6 +334,7 @@ export default function PurchaseEntryProfessional() {
         paymentTerms: existingPurchase.paymentTerms || "Net 30",
         paymentMethod: existingPurchase.paymentType || existingPurchase.paymentMethod || "Credit",
         status: existingPurchase.status || "Pending",
+        taxCalculationMethod: existingPurchase.taxCalculationMethod || "exclusive",
         freightAmount: Number(existingPurchase.freightAmount || existingPurchase.freight_amount) || 0,
         surchargeAmount: Number(existingPurchase.surchargeAmount || existingPurchase.surcharge_amount) || 0,
         packingCharges: Number(existingPurchase.packingCharge || existingPurchase.packing_charge) || 0,
@@ -370,6 +373,7 @@ export default function PurchaseEntryProfessional() {
   // Calculate totals when items or additional charges change
   useEffect(() => {
     const items = form.getValues("items") || [];
+    const taxCalculationMethod = form.getValues("taxCalculationMethod") || "exclusive";
 
     let totalItems = 0;
     let totalQuantity = 0;
@@ -386,15 +390,41 @@ export default function PurchaseEntryProfessional() {
         totalQuantity += receivedQty;
 
         const itemCost = (item.unitCost || 0) * receivedQty;
-        subtotal += itemCost;
-
-        // Calculate discount
         const discount = item.discountAmount || 0;
-        totalDiscount += discount;
+        const taxPercentage = item.taxPercentage || 0;
 
-        // Calculate tax (GST)
-        const taxableAmount = itemCost - discount;
-        const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
+        let tax = 0;
+        let taxableAmount = 0;
+
+        // Calculate tax based on selected method
+        switch (taxCalculationMethod) {
+          case "inclusive":
+            // Tax is included in the unit cost
+            taxableAmount = itemCost - discount;
+            const baseAmount = taxableAmount / (1 + (taxPercentage / 100));
+            tax = taxableAmount - baseAmount;
+            subtotal += baseAmount;
+            break;
+          
+          case "compound":
+            // Tax on tax calculation
+            taxableAmount = itemCost - discount;
+            const primaryTax = (taxableAmount * (taxPercentage / 100));
+            const compoundTax = (primaryTax * (taxPercentage / 100));
+            tax = primaryTax + compoundTax;
+            subtotal += itemCost;
+            break;
+          
+          case "exclusive":
+          default:
+            // Standard tax exclusive calculation
+            taxableAmount = itemCost - discount;
+            tax = (taxableAmount * taxPercentage) / 100;
+            subtotal += itemCost;
+            break;
+        }
+
+        totalDiscount += discount;
         totalTax += tax;
       }
     });
@@ -414,15 +444,40 @@ export default function PurchaseEntryProfessional() {
         const receivedQty = Number(item.receivedQty) || 0;
         const itemCost = (item.unitCost || 0) * receivedQty;
         const discount = item.discountAmount || 0;
-        const taxableAmount = itemCost - discount;
-        const tax = (taxableAmount * (item.taxPercentage || 0)) / 100;
+        const taxPercentage = item.taxPercentage || 0;
+
+        let tax = 0;
+        let taxableAmount = 0;
+        let baseAmount = itemCost;
+
+        // Calculate tax and amounts based on selected method
+        switch (taxCalculationMethod) {
+          case "inclusive":
+            taxableAmount = itemCost - discount;
+            baseAmount = taxableAmount / (1 + (taxPercentage / 100));
+            tax = taxableAmount - baseAmount;
+            break;
+          
+          case "compound":
+            taxableAmount = itemCost - discount;
+            const primaryTax = (taxableAmount * (taxPercentage / 100));
+            const compoundTax = (primaryTax * (taxPercentage / 100));
+            tax = primaryTax + compoundTax;
+            break;
+          
+          case "exclusive":
+          default:
+            taxableAmount = itemCost - discount;
+            tax = (taxableAmount * taxPercentage) / 100;
+            break;
+        }
 
         // Calculate net amount with additional charges distributed proportionally
         let netAmount = taxableAmount + tax;
 
         // Distribute additional charges proportionally if there are charges and subtotal
         if (totalAdditionalCharges > 0 && subtotal > 0) {
-          const itemProportion = itemCost / subtotal;
+          const itemProportion = baseAmount / subtotal;
           const itemAdditionalCharges = totalAdditionalCharges * itemProportion;
           netAmount += itemAdditionalCharges;
         }
@@ -815,6 +870,7 @@ export default function PurchaseEntryProfessional() {
         paymentMethod: data.paymentMethod || "Credit",
         paymentTerms: data.paymentTerms || "Net 30",
         status: data.status || "Pending",
+        taxCalculationMethod: data.taxCalculationMethod || "exclusive",
 
         // Invoice details
         invoiceNumber: data.invoiceNumber || "",
@@ -1027,6 +1083,23 @@ export default function PurchaseEntryProfessional() {
                           <SelectItem value="Cheque">Cheque</SelectItem>
                           <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                           <SelectItem value="UPI">UPI</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="taxCalculationMethod">Tax Calculation Method</Label>
+                      <Select 
+                        onValueChange={(value) => form.setValue("taxCalculationMethod", value)}
+                        value={form.watch("taxCalculationMethod") || "exclusive"}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tax calculation method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="exclusive">Tax Exclusive (Add tax to base amount)</SelectItem>
+                          <SelectItem value="inclusive">Tax Inclusive (Tax included in base amount)</SelectItem>
+                          <SelectItem value="compound">Compound Tax (Tax on tax)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1733,6 +1806,19 @@ export default function PurchaseEntryProfessional() {
                           <div className="flex justify-between">
                             <span className="text-gray-600">Payment Terms:</span>
                             <span className="font-medium">{form.watch("paymentTerms") || "Net 30"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Tax Calculation:</span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                              {(() => {
+                                const method = form.watch("taxCalculationMethod") || "exclusive";
+                                switch (method) {
+                                  case "inclusive": return "Tax Inclusive";
+                                  case "compound": return "Compound Tax";
+                                  default: return "Tax Exclusive";
+                                }
+                              })()}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Status:</span>
