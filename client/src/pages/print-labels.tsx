@@ -449,6 +449,8 @@ export default function PrintLabels() {
       'xlarge': { width: '3.5in', height: '2in', pxWidth: '336px', pxHeight: '192px' },
       'thermal-58mm': { width: '58mm', height: '40mm', pxWidth: '220px', pxHeight: '151px' },
       'thermal-80mm': { width: '80mm', height: '50mm', pxWidth: '302px', pxHeight: '189px' },
+      '40x40mm': { width: '40mm', height: '40mm', pxWidth: '151px', pxHeight: '151px' },
+      '80x40mm': { width: '40mm', height: '40mm', pxWidth: '151px', pxHeight: '151px' },
       'custom': { 
         width: `${customLabelSize.width}px`, 
         height: `${customLabelSize.height}px`, 
@@ -462,6 +464,7 @@ export default function PrintLabels() {
   // Generate professional label template
   const generateLabelTemplate = (product: Product, copyIndex: number) => {
     const dims = getLabelDimensions();
+    const is40mmLabel = labelSize === '40x40mm' || labelSize === '80x40mm';
     const currentDateTime = new Date().toLocaleString('en-IN', {
       day: '2-digit',
       month: '2-digit',
@@ -471,7 +474,62 @@ export default function PrintLabels() {
       hour12: true
     });
 
-    // Template variations
+    // Special template for 40x40mm labels
+    if (is40mmLabel) {
+      return `
+        <div class="product-label standard-template" style="
+          width: 40mm;
+          height: 40mm;
+          padding: 2mm;
+          margin: 0;
+          border: 1px solid #333;
+          background: white;
+          color: black;
+          font-family: Arial, sans-serif;
+          font-size: 8px;
+          line-height: 1.1;
+          display: inline-block;
+          page-break-inside: avoid;
+          box-sizing: border-box;
+          vertical-align: top;
+        ">
+          <div class="product-name" style="font-weight: bold; font-size: 7px; text-align: center; margin-bottom: 1mm; line-height: 1; word-wrap: break-word;">
+            ${product.name.length > 20 ? product.name.substring(0, 20) + '...' : product.name}
+          </div>
+
+          <div class="sku" style="font-size: 5px; text-align: center; margin-bottom: 1mm;">
+            ${product.sku}
+          </div>
+
+          ${includePrice ? 
+            `<div class="price" style="font-size: 9px; font-weight: bold; text-align: center; border: 1px solid #000; padding: 1mm; margin: 1mm 0;">
+              ₹${Number(product.price).toFixed(2)}
+            </div>` : ''
+          }
+
+          ${includeMrp && product.mrp ? 
+            `<div style="font-size: 5px; text-align: center; text-decoration: line-through; color: #666; margin: 0.5mm 0;">
+              MRP: ₹${Number(product.mrp).toFixed(2)}
+            </div>` : ''
+          }
+
+          ${includeBarcode ? 
+            `<div style="text-align: center; margin-top: 1mm;">
+              <div class="barcode" style="font-family: 'Courier New', monospace; font-size: 4px; background: #f8f8f8; padding: 0.5mm; border: 1px solid #ccc;">
+                ${generateBarcode(product.sku)}
+              </div>
+              <div class="barcode-lines" style="font-size: 4px; margin-top: 0.5mm; letter-spacing: 0px;">||||||||||||||||</div>
+            </div>` : ''
+          }
+
+          <div style="font-size: 4px; text-align: center; color: #999; margin-top: 1mm;">
+            ${copyIndex + 1}/${copies}
+          </div>
+        </div>
+      `;
+    }
+
+    // Template variations for other sizes
     const templates = {
       standard: `
         <div class="product-label standard-template" style="
@@ -672,13 +730,17 @@ export default function PrintLabels() {
     const pageWidth = labelsPerRow * (parseInt(dims.pxWidth) + marginLeft * 2);
     const pageHeight = labelsPerColumn * (parseInt(dims.pxHeight) + marginTop * 2);
 
+    // Special handling for 40x40mm labels (2 per row on 80mm paper)
+    const is40mmLabel = labelSize === '40x40mm' || labelSize === '80x40mm';
+    const actualLabelsPerRow = is40mmLabel ? 2 : labelsPerRow;
+    
     // Open print window with enhanced styling and proper grid layout
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Professional Product Labels (${labelsPerRow}x${labelsPerColumn} Grid)</title>
+            <title>${is40mmLabel ? '40x40mm Labels (2 per row on 80mm paper)' : `Professional Product Labels (${labelsPerRow}x${labelsPerColumn} Grid)`}</title>
             <style>
               * {
                 margin: 0;
@@ -687,66 +749,86 @@ export default function PrintLabels() {
               }
 
               body {
-                margin: ${marginTop}px ${marginLeft}px;
+                margin: ${is40mmLabel ? '2mm' : marginTop + 'px'} ${is40mmLabel ? '2mm' : marginLeft + 'px'};
                 padding: 0;
                 font-family: ${fontFamily}, sans-serif;
-                background: #f8f9fa;
+                background: ${is40mmLabel ? 'white' : '#f8f9fa'};
                 line-height: 1;
-                min-width: ${pageWidth}px;
+                ${is40mmLabel ? 'width: 80mm;' : `min-width: ${pageWidth}px;`}
               }
 
               .product-label {
                 background: white !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
-                border-radius: 2px;
+                ${is40mmLabel ? 'border-radius: 0px;' : 'border-radius: 2px;'}
                 overflow: hidden;
                 flex-shrink: 0;
+                ${is40mmLabel ? `
+                  width: 40mm !important;
+                  height: 40mm !important;
+                  border: 1px solid #333 !important;
+                  margin: 0 !important;
+                  padding: 2mm !important;
+                  font-size: 8px !important;
+                  line-height: 1.1 !important;
+                ` : ''}
               }
 
               .label-row {
                 display: flex !important;
                 flex-wrap: nowrap !important;
-                gap: ${marginLeft}px !important;
-                margin-bottom: ${marginTop}px !important;
+                gap: ${is40mmLabel ? '0mm' : marginLeft + 'px'} !important;
+                margin-bottom: ${is40mmLabel ? '0mm' : marginTop + 'px'} !important;
                 page-break-inside: avoid !important;
+                ${is40mmLabel ? 'width: 80mm; justify-content: space-between;' : ''}
               }
 
               .labels-container {
                 display: flex;
                 flex-direction: column;
                 gap: 0;
+                ${is40mmLabel ? 'width: 80mm;' : ''}
               }
 
               @media print {
                 body { 
-                  margin: ${Math.max(5, marginTop)}px ${Math.max(5, marginLeft)}px !important;
+                  margin: ${is40mmLabel ? '2mm !important' : Math.max(5, marginTop) + 'px ' + Math.max(5, marginLeft) + 'px !important'};
                   padding: 0 !important;
                   background: white;
                   -webkit-print-color-adjust: exact;
                   print-color-adjust: exact;
+                  ${is40mmLabel ? 'width: 80mm !important;' : ''}
                 }
 
                 .product-label { 
                   break-inside: avoid !important;
                   page-break-inside: avoid !important;
                   flex-shrink: 0 !important;
-                  margin: 1px !important;
+                  ${is40mmLabel ? `
+                    width: 40mm !important;
+                    height: 40mm !important;
+                    margin: 0 !important;
+                    padding: 2mm !important;
+                    border: 1px solid #333 !important;
+                    font-size: 8px !important;
+                  ` : 'margin: 1px !important;'}
                 }
 
                 .label-row {
                   display: flex !important;
                   flex-wrap: nowrap !important;
-                  gap: ${Math.max(2, marginLeft)}px !important;
-                  margin-bottom: ${Math.max(2, marginTop)}px !important;
+                  gap: ${is40mmLabel ? '0mm' : Math.max(2, marginLeft) + 'px'} !important;
+                  margin-bottom: ${is40mmLabel ? '0mm' : Math.max(2, marginTop) + 'px'} !important;
                   page-break-inside: avoid !important;
-                  justify-content: flex-start !important;
+                  justify-content: ${is40mmLabel ? 'space-between' : 'flex-start'} !important;
                   align-items: flex-start !important;
+                  ${is40mmLabel ? 'width: 80mm !important;' : ''}
                 }
 
                 @page {
-                  margin: 5mm;
-                  size: ${paperSize === 'A4' ? 'A4' : paperSize === 'A5' ? 'A5' : paperSize === 'Letter' ? 'Letter' : 'auto'} ${printOrientation};
+                  margin: ${is40mmLabel ? '2mm' : '5mm'};
+                  size: ${is40mmLabel ? '80mm auto' : (paperSize === 'A4' ? 'A4' : paperSize === 'A5' ? 'A5' : paperSize === 'Letter' ? 'Letter' : 'auto')} ${printOrientation};
                   -webkit-print-color-adjust: exact;
                   print-color-adjust: exact;
                 }
@@ -761,9 +843,10 @@ export default function PrintLabels() {
                   display: flex !important;
                   flex-direction: column !important;
                   gap: 0 !important;
+                  ${is40mmLabel ? 'width: 80mm !important;' : ''}
                 }
 
-                ${labelSize.includes('thermal') ? `
+                ${labelSize.includes('thermal') || is40mmLabel ? `
                   .product-label {
                     width: ${dims.width} !important;
                     height: ${dims.height} !important;
@@ -773,21 +856,16 @@ export default function PrintLabels() {
 
               /* Professional styling enhancements */
               .standard-template {
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                box-shadow: ${is40mmLabel ? 'none' : '0 1px 3px rgba(0,0,0,0.1)'};
               }
 
               .minimal-template {
-                border-radius: 4px;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                border-radius: ${is40mmLabel ? '0px' : '4px'};
+                box-shadow: ${is40mmLabel ? 'none' : '0 1px 2px rgba(0,0,0,0.05)'};
               }
 
               .price-focus-template {
-                box-shadow: 0 2px 4px rgba(231,76,60,0.2);
-              }
-
-              /* Ensure page breaks after specified number of rows */
-              .label-row:nth-child(${labelsPerColumn}n+1):not(:first-child) {
-                page-break-before: always;
+                box-shadow: ${is40mmLabel ? 'none' : '0 2px 4px rgba(231,76,60,0.2)'};
               }
 
               /* Ensure labels per row are respected */
@@ -801,6 +879,45 @@ export default function PrintLabels() {
                 flex: 0 0 auto !important;
                 max-width: none !important;
               }
+
+              /* Special 40mm label styles */
+              ${is40mmLabel ? `
+                .product-label .product-name {
+                  font-size: 7px !important;
+                  font-weight: bold !important;
+                  margin-bottom: 1mm !important;
+                  text-align: center !important;
+                  line-height: 1 !important;
+                }
+                
+                .product-label .sku {
+                  font-size: 5px !important;
+                  text-align: center !important;
+                  margin-bottom: 1mm !important;
+                }
+                
+                .product-label .price {
+                  font-size: 9px !important;
+                  font-weight: bold !important;
+                  text-align: center !important;
+                  border: 1px solid #000 !important;
+                  padding: 1mm !important;
+                  margin: 1mm 0 !important;
+                }
+                
+                .product-label .barcode {
+                  font-size: 4px !important;
+                  text-align: center !important;
+                  font-family: 'Courier New', monospace !important;
+                  margin-top: 1mm !important;
+                }
+                
+                .product-label .barcode-lines {
+                  font-size: 4px !important;
+                  text-align: center !important;
+                  letter-spacing: 0px !important;
+                }
+              ` : ''}
             </style>
           </head>
           <body>
@@ -926,8 +1043,8 @@ export default function PrintLabels() {
                       <SelectItem value="xlarge">Extra Large (3.5" x 2")</SelectItem>
                       <SelectItem value="thermal-58mm">Thermal 58mm</SelectItem>
                       <SelectItem value="thermal-80mm">Thermal 80mm</SelectItem>
-                      <SelectItem value="40mm">40mm x 40mm Square</SelectItem>
-                      <SelectItem value="80x40mm">80mm x 40mm (2 columns)</SelectItem>
+                      <SelectItem value="40x40mm">40x40mm Square</SelectItem>
+                      <SelectItem value="80x40mm">80mm x 40mm (2 per row)</SelectItem>
                       <SelectItem value="custom">Custom</SelectItem>
                     </SelectContent>
                 </Select>
@@ -1320,6 +1437,8 @@ export default function PrintLabels() {
                                        labelSize === 'xlarge' ? '200px' :
                                        labelSize === 'thermal-58mm' ? '110px' :
                                        labelSize === 'thermal-80mm' ? '130px' :
+                                       labelSize === '40x40mm' ? '100px' :
+                                       labelSize === '80x40mm' ? '100px' :
                                        labelSize === 'custom' ? `${Math.min(180, parseInt(customLabelSize.width) / 2)}px` :
                                        '140px',
                                 height: labelSize === 'mini' ? '50px' :
@@ -1330,6 +1449,8 @@ export default function PrintLabels() {
                                         labelSize === 'xlarge' ? '110px' :
                                         labelSize === 'thermal-58mm' ? '70px' :
                                         labelSize === 'thermal-80mm' ? '85px' :
+                                        labelSize === '40x40mm' ? '100px' :
+                                        labelSize === '80x40mm' ? '100px' :
                                         labelSize === 'custom' ? `${Math.min(100, parseInt(customLabelSize.height) / 2)}px` :
                                         '80px',
                                 fontSize: '9px',
