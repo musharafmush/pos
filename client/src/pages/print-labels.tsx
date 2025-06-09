@@ -140,91 +140,90 @@ export default function PrintLabels() {
       return;
     }
 
+    const currentDateTime = new Date().toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
     const manualLabelContent = Array(copies).fill(null).map((_, index) => `
-      <div class="label ${labelSize}" style="
-        border: 2px solid #333;
-        padding: 12px;
-        margin: 8px;
-        width: ${
-          labelSize === 'mini' ? '150px' :
-          labelSize === 'small' ? '200px' :
-          labelSize === 'medium' ? '280px' :
-          labelSize === 'large' ? '300px' :
-          labelSize === 'xlarge' ? '350px' :
-          labelSize === 'custom' ? `${customLabelSize.width}px` :
-          '250px'
-        };
-        height: ${
-          labelSize === 'mini' ? '100px' :
-          labelSize === 'small' ? '120px' :
-          labelSize === 'medium' ? '160px' :
-          labelSize === 'large' ? '180px' :
-          labelSize === 'xlarge' ? '200px' :
-          labelSize === 'custom' ? `${customLabelSize.height}px` :
-          '150px'
-        };
-        display: inline-block;
-        font-family: Arial, sans-serif;
+      <div class="thermal-label" style="
+        width: 250px;
+        min-height: 150px;
+        padding: 8px;
+        margin: 4px;
+        border: 1px dashed #999;
         background: white;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        line-height: 1.2;
+        display: inline-block;
         page-break-inside: avoid;
+        box-sizing: border-box;
       ">
-        <div style="font-weight: bold; 
-        font-size: ${
-          labelSize === 'mini' ? '12px' :
-          labelSize === 'small' ? '14px' :
-          labelSize === 'medium' ? '18px' :
-          labelSize === 'large' ? '20px' :
-          labelSize === 'xlarge' ? '22px' :
-          labelSize === '40mm' ? '10px' :
-          labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
-          '16px'
-        }; margin-bottom: 8px;">
+        <!-- Header with timestamp -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">
+          <div style="font-size: 10px; color: #666;">${currentDateTime}</div>
+          <div style="font-size: 11px; font-weight: bold;">Manual Label</div>
+        </div>
+        
+        <!-- Product Name -->
+        <div style="font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 6px; border: 1px solid #333; padding: 4px;">
           ${manualLabel.productName}
         </div>
+        
+        <!-- SKU -->
         ${manualLabel.sku ? 
-          `<div style="font-size: 12px; color: #666; margin-bottom: 4px;">
+          `<div style="font-size: 10px; text-align: center; margin-bottom: 4px;">
             SKU: ${manualLabel.sku}
           </div>` : ''
         }
+        
+        <!-- Description -->
         ${includeDescription && manualLabel.description ? 
-          `<div style="font-size: 10px; color: #888; margin-bottom: 4px;">
-            ${manualLabel.description.substring(0, 50)}...
+          `<div style="font-size: 9px; text-align: center; margin-bottom: 4px; color: #555;">
+            ${manualLabel.description.substring(0, 40)}${manualLabel.description.length > 40 ? '...' : ''}
           </div>` : ''
         }
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        
+        <!-- Price Section -->
+        <div style="margin: 6px 0; text-align: center;">
           ${includePrice && manualLabel.price ? 
-            `<div style="
-            font-size: ${
-          labelSize === 'mini' ? '12px' :
-          labelSize === 'small' ? '14px' :
-          labelSize === 'medium' ? '18px' :
-          labelSize === 'large' ? '20px' :
-          labelSize === 'xlarge' ? '22px' :
-          labelSize === '40mm' ? '10px' :
-          labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
-          '16px'
-        }; font-weight: bold; color: #2563eb;">
-              Price: ₹${Number(manualLabel.price).toFixed(2)}
+            `<div style="font-size: 16px; font-weight: bold; border: 2px solid #000; padding: 4px; margin: 2px 0;">
+              PRICE: ₹${Number(manualLabel.price).toFixed(2)}
             </div>` : ''
           }
           ${includeMrp && manualLabel.mrp ? 
-            `<div style="font-size: 12px; color: #666;">
+            `<div style="font-size: 12px; margin: 2px 0;">
               MRP: ₹${Number(manualLabel.mrp).toFixed(2)}
             </div>` : ''
           }
         </div>
+        
+        <!-- Expiry Date -->
         ${includeExpiryDate && manualLabel.expiryDate ? 
-          `<div style="font-size: 10px; color: #d97706; margin-bottom: 4px;">
+          `<div style="font-size: 10px; text-align: center; margin: 4px 0; color: #d97706;">
             Exp: ${manualLabel.expiryDate}
           </div>` : ''
         }
-        ${includeBarcode && manualLabel.barcode ? 
-          `<div style="text-align: center; margin-top: 8px;">
-            <div style="font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 2px; border: 1px solid #ccc; padding: 4px; background: #f9f9f9;">
-              ${manualLabel.barcode}
+        
+        <!-- Barcode -->
+        ${includeBarcode && (manualLabel.barcode || manualLabel.sku) ? 
+          `<div style="text-align: center; margin-top: 6px; border-top: 1px solid #ddd; padding-top: 4px;">
+            <div style="font-family: 'Courier New', monospace; font-size: 8px; letter-spacing: 1px; background: #f8f8f8; padding: 2px; border: 1px solid #ccc;">
+              ${manualLabel.barcode || manualLabel.sku?.padEnd(12, '0').substring(0, 12) || '000000000000'}
             </div>
+            <div style="font-size: 8px; margin-top: 2px;">||||||||||||||||||||||||</div>
           </div>` : ''
         }
+        
+        <!-- Footer -->
+        <div style="text-align: center; font-size: 8px; color: #999; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 2px;">
+          ${index + 1}/${copies}
+        </div>
       </div>
     `).join('');
 
@@ -234,16 +233,33 @@ export default function PrintLabels() {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Manual Label</title>
+            <title>Manual Thermal Label</title>
             <style>
               body {
                 margin: 0;
-                padding: 20px;
-                font-family: Arial, sans-serif;
+                padding: 8px;
+                font-family: 'Courier New', monospace;
+                background: #f0f0f0;
+              }
+              .thermal-label {
+                background: white !important;
+                break-inside: avoid;
               }
               @media print {
-                body { margin: 0; padding: 10px; }
-                .label { margin: 4px !important; }
+                body { 
+                  margin: 0; 
+                  padding: 2px; 
+                  background: white;
+                }
+                .thermal-label { 
+                  margin: 2px !important; 
+                  page-break-inside: avoid;
+                  break-inside: avoid;
+                }
+                @page {
+                  margin: 0.25in;
+                  size: auto;
+                }
               }
             </style>
           </head>
@@ -269,91 +285,90 @@ export default function PrintLabels() {
       selectedProducts.includes(p.id)
     );
 
+    const currentDateTime = new Date().toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
     // Create print content
     const printContent = selectedProductsData.map((product: Product) => {
       return Array(copies).fill(null).map((_, index) => `
-        <div class="label ${labelSize}" style="
-          border: 2px solid #333;
-          padding: 12px;
-          margin: 8px;
-          width: ${
-            labelSize === 'mini' ? '150px' :
-            labelSize === 'small' ? '200px' :
-            labelSize === 'medium' ? '280px' :
-            labelSize === 'large' ? '300px' :
-            labelSize === 'xlarge' ? '350px' :
-            labelSize === 'custom' ? `${customLabelSize.width}px` :
-            '250px'
-          };
-          height: ${
-            labelSize === 'mini' ? '100px' :
-            labelSize === 'small' ? '120px' :
-            labelSize === 'medium' ? '160px' :
-            labelSize === 'large' ? '180px' :
-            labelSize === 'xlarge' ? '200px' :
-            labelSize === 'custom' ? `${customLabelSize.height}px` :
-            '150px'
-          };
-          display: inline-block;
-          font-family: Arial, sans-serif;
+        <div class="thermal-label" style="
+          width: 250px;
+          min-height: 150px;
+          padding: 8px;
+          margin: 4px;
+          border: 1px dashed #999;
           background: white;
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          line-height: 1.2;
+          display: inline-block;
           page-break-inside: avoid;
+          box-sizing: border-box;
         ">
-          <div style="font-weight: bold; 
-          font-size: ${
-          labelSize === 'mini' ? '12px' :
-          labelSize === 'small' ? '14px' :
-          labelSize === 'medium' ? '18px' :
-          labelSize === 'large' ? '20px' :
-          labelSize === 'xlarge' ? '22px' :
-          labelSize === '40mm' ? '10px' :
-          labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
-          '16px'
-        }; margin-bottom: 8px;">
+          <!-- Header with timestamp -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">
+            <div style="font-size: 10px; color: #666;">${currentDateTime}</div>
+            <div style="font-size: 11px; font-weight: bold;">Product Label</div>
+          </div>
+          
+          <!-- Product Name -->
+          <div style="font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 6px; border: 1px solid #333; padding: 4px;">
             ${product.name}
           </div>
-          <div style="font-size: 12px; color: #666; margin-bottom: 4px;">
+          
+          <!-- SKU -->
+          <div style="font-size: 10px; text-align: center; margin-bottom: 4px;">
             SKU: ${product.sku}
           </div>
+          
+          <!-- Description -->
           ${includeDescription && product.description ? 
-            `<div style="font-size: 10px; color: #888; margin-bottom: 4px;">
-              ${product.description.substring(0, 50)}...
+            `<div style="font-size: 9px; text-align: center; margin-bottom: 4px; color: #555;">
+              ${product.description.substring(0, 40)}${product.description.length > 40 ? '...' : ''}
             </div>` : ''
           }
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          
+          <!-- Price Section -->
+          <div style="margin: 6px 0; text-align: center;">
             ${includePrice ? 
-              `<div style="
-              font-size: ${
-          labelSize === 'mini' ? '12px' :
-          labelSize === 'small' ? '14px' :
-          labelSize === 'medium' ? '18px' :
-          labelSize === 'large' ? '20px' :
-          labelSize === 'xlarge' ? '22px' :
-          labelSize === '40mm' ? '10px' :
-          labelSize === 'custom' ? `${Math.max(12, Math.min(24, parseInt(customLabelSize.width) / 15))}px` :
-          '16px'
-        }; font-weight: bold; color: #2563eb;">
-                Price: ₹${Number(product.price).toFixed(2)}
+              `<div style="font-size: 16px; font-weight: bold; border: 2px solid #000; padding: 4px; margin: 2px 0;">
+                PRICE: ₹${Number(product.price).toFixed(2)}
               </div>` : ''
             }
             ${includeMrp && product.mrp ? 
-              `<div style="font-size: 12px; color: #666;">
+              `<div style="font-size: 12px; margin: 2px 0;">
                 MRP: ₹${Number(product.mrp).toFixed(2)}
               </div>` : ''
             }
           </div>
+          
+          <!-- Expiry Date -->
           ${includeExpiryDate ? 
-            `<div style="font-size: 10px; color: #d97706; margin-bottom: 4px;">
+            `<div style="font-size: 10px; text-align: center; margin: 4px 0; color: #d97706;">
               Exp: Best Before Date
             </div>` : ''
           }
+          
+          <!-- Barcode -->
           ${includeBarcode ? 
-            `<div style="text-align: center; margin-top: 8px;">
-              <div style="font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 2px; border: 1px solid #ccc; padding: 4px; background: #f9f9f9;">
+            `<div style="text-align: center; margin-top: 6px; border-top: 1px solid #ddd; padding-top: 4px;">
+              <div style="font-family: 'Courier New', monospace; font-size: 8px; letter-spacing: 1px; background: #f8f8f8; padding: 2px; border: 1px solid #ccc;">
                 ${generateBarcode(product.sku)}
               </div>
+              <div style="font-size: 8px; margin-top: 2px;">||||||||||||||||||||||||</div>
             </div>` : ''
           }
+          
+          <!-- Footer -->
+          <div style="text-align: center; font-size: 8px; color: #999; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 2px;">
+            ${index + 1}/${copies}
+          </div>
         </div>
       `).join('');
     }).join('');
@@ -364,16 +379,33 @@ export default function PrintLabels() {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Product Labels</title>
+            <title>Thermal Labels</title>
             <style>
               body {
                 margin: 0;
-                padding: 20px;
-                font-family: Arial, sans-serif;
+                padding: 8px;
+                font-family: 'Courier New', monospace;
+                background: #f0f0f0;
+              }
+              .thermal-label {
+                background: white !important;
+                break-inside: avoid;
               }
               @media print {
-                body { margin: 0; padding: 10px; }
-                .label { margin: 4px !important; }
+                body { 
+                  margin: 0; 
+                  padding: 2px; 
+                  background: white;
+                }
+                .thermal-label { 
+                  margin: 2px !important; 
+                  page-break-inside: avoid;
+                  break-inside: avoid;
+                }
+                @page {
+                  margin: 0.25in;
+                  size: auto;
+                }
               }
             </style>
           </head>
