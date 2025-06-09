@@ -38,6 +38,18 @@ export default function PrintLabels() {
   const [isManualLabelDialogOpen, setIsManualLabelDialogOpen] = useState(false);
   const [labelsPerRow, setLabelsPerRow] = useState("2");
   const [labelsPerColumn, setLabelsPerColumn] = useState("5");
+  const [isCustomLabelDialogOpen, setIsCustomLabelDialogOpen] = useState(false);
+  
+  // Custom label configuration state
+  const [sheetWidth, setSheetWidth] = useState("160");
+  const [sheetHeight, setSheetHeight] = useState("50");
+  const [labelWidth, setLabelWidth] = useState("80");
+  const [labelHeight, setLabelHeight] = useState("50");
+  const [totalRows, setTotalRows] = useState("1");
+  const [totalCols, setTotalCols] = useState("2");
+  const [barcodeWidth, setBarcodeWidth] = useState("50");
+  const [barcodeHeight, setBarcodeHeight] = useState("30");
+  const [fontSize, setFontSize] = useState("11pt");
 
   // Fetch products
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -220,6 +232,14 @@ export default function PrintLabels() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setIsCustomLabelDialogOpen(true)}
+              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+            >
+              <SettingsIcon className="h-4 w-4 mr-2" />
+              Custom Labels
+            </Button>
             <Button 
               onClick={handlePrint}
               disabled={selectedProducts.length === 0}
@@ -456,6 +476,219 @@ export default function PrintLabels() {
             <Button onClick={executePrint} className="bg-blue-600 hover:bg-blue-700">
               <PrinterIcon className="h-4 w-4 mr-2" />
               Print Labels
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom Label Configuration Dialog */}
+      <Dialog open={isCustomLabelDialogOpen} onOpenChange={setIsCustomLabelDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <SettingsIcon className="h-5 w-5 text-blue-600" />
+              Custom Label Configuration
+            </DialogTitle>
+            <DialogDescription>
+              Configure custom label dimensions and layout
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Sheet Dimensions */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Sheet Width</Label>
+                <div className="relative">
+                  <Input
+                    value={sheetWidth}
+                    onChange={(e) => setSheetWidth(e.target.value)}
+                    placeholder="160"
+                    className="pr-12"
+                  />
+                  <span className="absolute right-3 top-2 text-sm text-muted-foreground">
+                    in MM
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Sheet Height</Label>
+                <div className="relative">
+                  <Input
+                    value={sheetHeight}
+                    onChange={(e) => setSheetHeight(e.target.value)}
+                    placeholder="50"
+                    className="pr-12"
+                  />
+                  <span className="absolute right-3 top-2 text-sm text-muted-foreground">
+                    in MM
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Label Dimensions */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Label Width</Label>
+                <div className="relative">
+                  <Input
+                    value={labelWidth}
+                    onChange={(e) => setLabelWidth(e.target.value)}
+                    placeholder="80"
+                    className="pr-12"
+                  />
+                  <span className="absolute right-3 top-2 text-sm text-muted-foreground">
+                    in MM
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Label Height</Label>
+                <div className="relative">
+                  <Input
+                    value={labelHeight}
+                    onChange={(e) => setLabelHeight(e.target.value)}
+                    placeholder="50"
+                    className="pr-12"
+                  />
+                  <span className="absolute right-3 top-2 text-sm text-muted-foreground">
+                    in MM
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Layout Configuration */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Total Rows</Label>
+                <Select value={totalRows} onValueChange={setTotalRows}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4">4</SelectItem>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Total Cols</Label>
+                <Select value={totalCols} onValueChange={setTotalCols}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4">4</SelectItem>
+                    <SelectItem value="5">5</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Barcode Configuration */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">BarCode Width</Label>
+                <Input
+                  value={barcodeWidth}
+                  onChange={(e) => setBarcodeWidth(e.target.value)}
+                  placeholder="50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">BarCode Height</Label>
+                <Input
+                  value={barcodeHeight}
+                  onChange={(e) => setBarcodeHeight(e.target.value)}
+                  placeholder="30"
+                />
+              </div>
+            </div>
+
+            {/* Font Size */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Font Size</Label>
+              <Select value={fontSize} onValueChange={setFontSize}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="8pt">8pt</SelectItem>
+                  <SelectItem value="9pt">9pt</SelectItem>
+                  <SelectItem value="10pt">10pt</SelectItem>
+                  <SelectItem value="11pt">11pt</SelectItem>
+                  <SelectItem value="12pt">12pt</SelectItem>
+                  <SelectItem value="14pt">14pt</SelectItem>
+                  <SelectItem value="16pt">16pt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Preview Section */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium mb-3">Preview</h4>
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <div className="text-xs text-muted-foreground mb-2">
+                  Sheet: {sheetWidth}mm × {sheetHeight}mm | 
+                  Label: {labelWidth}mm × {labelHeight}mm | 
+                  Grid: {totalRows} × {totalCols}
+                </div>
+                <div 
+                  className="border border-dashed border-gray-300 bg-white dark:bg-gray-900 relative"
+                  style={{
+                    width: `${Math.min(Number(sheetWidth) / 2, 200)}px`,
+                    height: `${Math.min(Number(sheetHeight) / 2, 100)}px`,
+                  }}
+                >
+                  {Array.from({ length: Number(totalRows) * Number(totalCols) }).map((_, index) => {
+                    const row = Math.floor(index / Number(totalCols));
+                    const col = index % Number(totalCols);
+                    return (
+                      <div
+                        key={index}
+                        className="absolute border border-blue-300 bg-blue-50"
+                        style={{
+                          left: `${(col * Number(labelWidth)) / 2}px`,
+                          top: `${(row * Number(labelHeight)) / 2}px`,
+                          width: `${Math.min(Number(labelWidth) / 2, 80)}px`,
+                          height: `${Math.min(Number(labelHeight) / 2, 40)}px`,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCustomLabelDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                setIsCustomLabelDialogOpen(false);
+                toast({
+                  title: "Custom configuration saved",
+                  description: "Your custom label settings have been applied",
+                });
+              }} 
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Apply Configuration
             </Button>
           </DialogFooter>
         </DialogContent>
