@@ -53,10 +53,39 @@ export default function PrintLabels() {
   const [includeMrp, setIncludeMrp] = useState(false);
   const [includeDescription, setIncludeDescription] = useState(false);
   const [includeExpiryDate, setIncludeExpiryDate] = useState(false);
+  const [includeCategory, setIncludeCategory] = useState(false);
+  const [includeBrand, setIncludeBrand] = useState(false);
+  const [includeSupplier, setIncludeSupplier] = useState(false);
+  const [includeManufactureDate, setIncludeManufactureDate] = useState(false);
+  const [includeBatchNumber, setIncludeBatchNumber] = useState(false);
+  const [includeStockQuantity, setIncludeStockQuantity] = useState(false);
+  const [includeQrCode, setIncludeQrCode] = useState(false);
+  const [includeCompanyLogo, setIncludeCompanyLogo] = useState(false);
+  const [includeCustomText, setIncludeCustomText] = useState(false);
+  const [customText, setCustomText] = useState("");
+  const [labelTemplate, setLabelTemplate] = useState("standard");
+  const [printOrientation, setPrintOrientation] = useState("portrait");
+  const [paperSize, setPaperSize] = useState("A4");
+  const [labelsPerRow, setLabelsPerRow] = useState(2);
+  const [labelsPerColumn, setLabelsPerColumn] = useState(3);
+  const [marginTop, setMarginTop] = useState(10);
+  const [marginLeft, setMarginLeft] = useState(10);
+  const [fontSize, setFontSize] = useState("12");
+  const [fontFamily, setFontFamily] = useState("Arial");
+  const [labelBorder, setLabelBorder] = useState(true);
+  const [borderStyle, setBorderStyle] = useState("solid");
+  const [borderWidth, setBorderWidth] = useState("1");
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [textColor, setTextColor] = useState("#000000");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [isManualLabelDialogOpen, setIsManualLabelDialogOpen] = useState(false);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [isBulkPrintDialogOpen, setIsBulkPrintDialogOpen] = useState(false);
   const [copies, setCopies] = useState(1);
   const [customLabelSize, setCustomLabelSize] = useState({ width: "250", height: "150" });
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
+  const [stockFilter, setStockFilter] = useState("all");
 
   // Manual label creation state
   const [manualLabel, setManualLabel] = useState({
@@ -80,10 +109,31 @@ export default function PrintLabels() {
   });
 
   // Filter products
-  const filteredProducts = products.filter((product: Product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter((product: Product) => {
+    // Search filter
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Category filter
+    const matchesCategory = selectedCategory === "all" || 
+                           product.categoryId === parseInt(selectedCategory);
+    
+    // Stock filter
+    let matchesStock = true;
+    if (stockFilter === "in-stock") {
+      matchesStock = product.stockQuantity > 0;
+    } else if (stockFilter === "low-stock") {
+      matchesStock = product.stockQuantity < 10 && product.stockQuantity > 0;
+    } else if (stockFilter === "out-of-stock") {
+      matchesStock = product.stockQuantity === 0;
+    }
+    
+    // Price filter
+    const matchesPrice = (!priceRange.min || product.price >= parseFloat(priceRange.min)) &&
+                        (!priceRange.max || product.price <= parseFloat(priceRange.max));
+    
+    return matchesSearch && matchesCategory && matchesStock && matchesPrice;
+  });
 
   // Handle product selection
   const handleProductSelect = (productId: number, checked: boolean) => {
@@ -477,7 +527,7 @@ export default function PrintLabels() {
               Generate and print professional product labels with barcodes
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               onClick={createManualLabel}
               variant="outline"
@@ -485,6 +535,22 @@ export default function PrintLabels() {
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Manual Label
+            </Button>
+            <Button 
+              onClick={() => setIsTemplateDialogOpen(true)}
+              variant="outline"
+              className="border-purple-600 text-purple-600 hover:bg-purple-50"
+            >
+              <SettingsIcon className="h-4 w-4 mr-2" />
+              Templates
+            </Button>
+            <Button 
+              onClick={() => setIsBulkPrintDialogOpen(true)}
+              variant="outline"
+              className="border-orange-600 text-orange-600 hover:bg-orange-50"
+            >
+              <Package2Icon className="h-4 w-4 mr-2" />
+              Bulk Print
             </Button>
             <Button 
               onClick={handlePrint}
@@ -510,6 +576,28 @@ export default function PrintLabels() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Label Template */}
+              <div className="space-y-2">
+                <Label htmlFor="label-template" className="text-sm font-medium">Label Template</Label>
+                <Select value={labelTemplate} onValueChange={setLabelTemplate}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Standard Layout</SelectItem>
+                    <SelectItem value="minimal">Minimal Design</SelectItem>
+                    <SelectItem value="detailed">Detailed Information</SelectItem>
+                    <SelectItem value="price-focus">Price Focused</SelectItem>
+                    <SelectItem value="barcode-focus">Barcode Focused</SelectItem>
+                    <SelectItem value="retail-modern">Modern Retail</SelectItem>
+                    <SelectItem value="wholesale">Wholesale Format</SelectItem>
+                    <SelectItem value="pharmacy">Pharmacy Style</SelectItem>
+                    <SelectItem value="grocery">Grocery Store</SelectItem>
+                    <SelectItem value="electronics">Electronics</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Label Size */}
               <div className="space-y-2">
                 <Label htmlFor="label-size" className="text-sm font-medium">Label Size</Label>
@@ -524,9 +612,68 @@ export default function PrintLabels() {
                     <SelectItem value="medium">Medium (2.8" x 1.6")</SelectItem>
                     <SelectItem value="large">Large (3" x 1.8")</SelectItem>
                     <SelectItem value="xlarge">Extra Large (3.5" x 2")</SelectItem>
+                    <SelectItem value="thermal-58mm">Thermal 58mm</SelectItem>
+                    <SelectItem value="thermal-80mm">Thermal 80mm</SelectItem>
                     <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Paper Settings */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium border-b pb-2">Paper & Layout</h4>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm">Paper Size</Label>
+                  <Select value={paperSize} onValueChange={setPaperSize}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A4">A4 (210 x 297 mm)</SelectItem>
+                      <SelectItem value="A5">A5 (148 x 210 mm)</SelectItem>
+                      <SelectItem value="Letter">Letter (8.5 x 11 in)</SelectItem>
+                      <SelectItem value="Legal">Legal (8.5 x 14 in)</SelectItem>
+                      <SelectItem value="thermal">Thermal Roll</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm">Orientation</Label>
+                  <Select value={printOrientation} onValueChange={setPrintOrientation}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="portrait">Portrait</SelectItem>
+                      <SelectItem value="landscape">Landscape</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-sm">Per Row</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={labelsPerRow}
+                      onChange={(e) => setLabelsPerRow(parseInt(e.target.value) || 1)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Per Column</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={labelsPerColumn}
+                      onChange={(e) => setLabelsPerColumn(parseInt(e.target.value) || 1)}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Custom Label Size Input */}
@@ -556,51 +703,231 @@ export default function PrintLabels() {
 
               {/* Include Options */}
               <div className="space-y-4">
-                <h4 className="text-sm font-medium">Include on Label</h4>
+                <h4 className="text-sm font-medium border-b pb-2">Include on Label</h4>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="include-barcode"
-                    checked={includeBarcode}
-                    onCheckedChange={setIncludeBarcode}
-                  />
-                  <Label htmlFor="include-barcode" className="text-sm">Barcode</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Essential Information */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-blue-600">Essential Info</Label>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-barcode"
+                          checked={includeBarcode}
+                          onCheckedChange={setIncludeBarcode}
+                        />
+                        <Label htmlFor="include-barcode" className="text-sm">Barcode</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-qr"
+                          checked={includeQrCode}
+                          onCheckedChange={setIncludeQrCode}
+                        />
+                        <Label htmlFor="include-qr" className="text-sm">QR Code</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-price"
+                          checked={includePrice}
+                          onCheckedChange={setIncludePrice}
+                        />
+                        <Label htmlFor="include-price" className="text-sm">Selling Price</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-mrp"
+                          checked={includeMrp}
+                          onCheckedChange={setIncludeMrp}
+                        />
+                        <Label htmlFor="include-mrp" className="text-sm">MRP</Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Product Details */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-green-600">Product Details</Label>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-description"
+                          checked={includeDescription}
+                          onCheckedChange={setIncludeDescription}
+                        />
+                        <Label htmlFor="include-description" className="text-sm">Description</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-category"
+                          checked={includeCategory}
+                          onCheckedChange={setIncludeCategory}
+                        />
+                        <Label htmlFor="include-category" className="text-sm">Category</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-brand"
+                          checked={includeBrand}
+                          onCheckedChange={setIncludeBrand}
+                        />
+                        <Label htmlFor="include-brand" className="text-sm">Brand</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-supplier"
+                          checked={includeSupplier}
+                          onCheckedChange={setIncludeSupplier}
+                        />
+                        <Label htmlFor="include-supplier" className="text-sm">Supplier</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-stock"
+                          checked={includeStockQuantity}
+                          onCheckedChange={setIncludeStockQuantity}
+                        />
+                        <Label htmlFor="include-stock" className="text-sm">Stock Qty</Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dates & Batch */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-orange-600">Dates & Batch</Label>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-expiry"
+                          checked={includeExpiryDate}
+                          onCheckedChange={setIncludeExpiryDate}
+                        />
+                        <Label htmlFor="include-expiry" className="text-sm">Expiry Date</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-manufacture"
+                          checked={includeManufactureDate}
+                          onCheckedChange={setIncludeManufactureDate}
+                        />
+                        <Label htmlFor="include-manufacture" className="text-sm">Mfg. Date</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-batch"
+                          checked={includeBatchNumber}
+                          onCheckedChange={setIncludeBatchNumber}
+                        />
+                        <Label htmlFor="include-batch" className="text-sm">Batch No.</Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Branding & Custom */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-purple-600">Branding</Label>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-logo"
+                          checked={includeCompanyLogo}
+                          onCheckedChange={setIncludeCompanyLogo}
+                        />
+                        <Label htmlFor="include-logo" className="text-sm">Company Logo</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="include-custom"
+                          checked={includeCustomText}
+                          onCheckedChange={setIncludeCustomText}
+                        />
+                        <Label htmlFor="include-custom" className="text-sm">Custom Text</Label>
+                      </div>
+                    </div>
+                    
+                    {includeCustomText && (
+                      <Input
+                        placeholder="Enter custom text"
+                        value={customText}
+                        onChange={(e) => setCustomText(e.target.value)}
+                        className="text-sm"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Styling Options */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium border-b pb-2">Styling & Format</h4>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm">Font Family</Label>
+                  <Select value={fontFamily} onValueChange={setFontFamily}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Arial">Arial</SelectItem>
+                      <SelectItem value="Helvetica">Helvetica</SelectItem>
+                      <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                      <SelectItem value="Courier New">Courier New</SelectItem>
+                      <SelectItem value="Verdana">Verdana</SelectItem>
+                      <SelectItem value="Calibri">Calibri</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-sm">Font Size</Label>
+                    <Select value={fontSize} onValueChange={setFontSize}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="8">8px</SelectItem>
+                        <SelectItem value="10">10px</SelectItem>
+                        <SelectItem value="12">12px</SelectItem>
+                        <SelectItem value="14">14px</SelectItem>
+                        <SelectItem value="16">16px</SelectItem>
+                        <SelectItem value="18">18px</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Border Width</Label>
+                    <Select value={borderWidth} onValueChange={setBorderWidth}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">None</SelectItem>
+                        <SelectItem value="1">1px</SelectItem>
+                        <SelectItem value="2">2px</SelectItem>
+                        <SelectItem value="3">3px</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <Checkbox 
-                    id="include-price"
-                    checked={includePrice}
-                    onCheckedChange={setIncludePrice}
+                    id="label-border"
+                    checked={labelBorder}
+                    onCheckedChange={setLabelBorder}
                   />
-                  <Label htmlFor="include-price" className="text-sm">Price</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="include-mrp"
-                    checked={includeMrp}
-                    onCheckedChange={setIncludeMrp}
-                  />
-                  <Label htmlFor="include-mrp" className="text-sm">MRP</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="include-description"
-                    checked={includeDescription}
-                    onCheckedChange={setIncludeDescription}
-                  />
-                  <Label htmlFor="include-description" className="text-sm">Description</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="include-expiry"
-                    checked={includeExpiryDate}
-                    onCheckedChange={setIncludeExpiryDate}
-                  />
-                  <Label htmlFor="include-expiry" className="text-sm">Expiry Date</Label>
+                  <Label htmlFor="label-border" className="text-sm">Show Border</Label>
                 </div>
               </div>
 
@@ -611,7 +938,7 @@ export default function PrintLabels() {
                   id="copies"
                   type="number"
                   min="1"
-                  max="10"
+                  max="100"
                   value={copies}
                   onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
                   className="w-20"
@@ -654,7 +981,7 @@ export default function PrintLabels() {
           {/* Products Table */}
           <Card className="lg:col-span-3">
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-4">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Package2Icon className="h-5 w-5" />
@@ -672,6 +999,86 @@ export default function PrintLabels() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-8"
                   />
+                </div>
+              </div>
+
+              {/* Advanced Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div>
+                  <Label className="text-sm font-medium">Category Filter</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map((category: any) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Stock Filter</Label>
+                  <Select value={stockFilter} onValueChange={setStockFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Stock Levels</SelectItem>
+                      <SelectItem value="in-stock">In Stock (>0)</SelectItem>
+                      <SelectItem value="low-stock">Low Stock (<10)</SelectItem>
+                      <SelectItem value="out-of-stock">Out of Stock (0)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Price Range (₹)</Label>
+                  <div className="flex gap-1">
+                    <Input
+                      type="number"
+                      placeholder="Min"
+                      value={priceRange.min}
+                      onChange={(e) => setPriceRange({...priceRange, min: e.target.value})}
+                      className="text-sm"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      value={priceRange.max}
+                      onChange={(e) => setPriceRange({...priceRange, max: e.target.value})}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCategory("all");
+                      setStockFilter("all");
+                      setPriceRange({min: "", max: ""});
+                      setSearchTerm("");
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const filteredIds = filteredProducts.map((p: Product) => p.id);
+                      setSelectedProducts(filteredIds);
+                    }}
+                  >
+                    Select Filtered
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -1083,6 +1490,131 @@ export default function PrintLabels() {
             <Button onClick={executeManualPrint} className="bg-green-600 hover:bg-green-700">
               <PrinterIcon className="h-4 w-4 mr-2" />
               Print Manual Label
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Manager Dialog */}
+      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <SettingsIcon className="h-5 w-5 text-purple-600" />
+              Label Templates
+            </DialogTitle>
+            <DialogDescription>
+              Manage and customize your label templates
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-3 gap-4">
+            {/* Template previews */}
+            {[
+              { id: 'standard', name: 'Standard Layout', desc: 'Basic product info with barcode' },
+              { id: 'minimal', name: 'Minimal Design', desc: 'Clean and simple' },
+              { id: 'detailed', name: 'Detailed Information', desc: 'All product details' },
+              { id: 'price-focus', name: 'Price Focused', desc: 'Emphasizes pricing' },
+              { id: 'retail-modern', name: 'Modern Retail', desc: 'Contemporary design' },
+              { id: 'pharmacy', name: 'Pharmacy Style', desc: 'Medical/pharmacy format' }
+            ].map((template) => (
+              <div 
+                key={template.id}
+                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  labelTemplate === template.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setLabelTemplate(template.id)}
+              >
+                <div className="text-sm font-semibold">{template.name}</div>
+                <div className="text-xs text-gray-500 mt-1">{template.desc}</div>
+                <div className="mt-3 bg-white border border-gray-300 rounded p-2 text-xs">
+                  <div className="font-bold">Sample Product</div>
+                  <div>SKU: SP001</div>
+                  {template.id.includes('price') && <div className="text-blue-600 font-bold">₹99.99</div>}
+                  {template.id.includes('detailed') && <div className="text-gray-500">Category: Electronics</div>}
+                  <div className="text-center mt-1">||||||||||||</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Print Dialog */}
+      <Dialog open={isBulkPrintDialogOpen} onOpenChange={setIsBulkPrintDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package2Icon className="h-5 w-5 text-orange-600" />
+              Bulk Print Options
+            </DialogTitle>
+            <DialogDescription>
+              Print labels for multiple categories or all products
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col"
+                onClick={() => {
+                  setSelectedProducts(products.map((p: Product) => p.id));
+                  setIsBulkPrintDialogOpen(false);
+                }}
+              >
+                <Package2Icon className="h-6 w-6 mb-2" />
+                <span>All Products</span>
+                <span className="text-xs text-gray-500">{products.length} items</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col"
+                onClick={() => {
+                  const lowStockProducts = products.filter((p: Product) => p.stockQuantity < 10);
+                  setSelectedProducts(lowStockProducts.map((p: Product) => p.id));
+                  setIsBulkPrintDialogOpen(false);
+                }}
+              >
+                <BarChart3Icon className="h-6 w-6 mb-2" />
+                <span>Low Stock Items</span>
+                <span className="text-xs text-gray-500">
+                  {products.filter((p: Product) => p.stockQuantity < 10).length} items
+                </span>
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Select by Category</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {categories.map((category: any) => (
+                  <Button
+                    key={category.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const categoryProducts = products.filter((p: Product) => p.categoryId === category.id);
+                      setSelectedProducts(categoryProducts.map((p: Product) => p.id));
+                      setIsBulkPrintDialogOpen(false);
+                    }}
+                  >
+                    {category.name} ({products.filter((p: Product) => p.categoryId === category.id).length})
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBulkPrintDialogOpen(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
