@@ -769,8 +769,8 @@ export default function PrintLabels() {
               }
 
               .product-label {
-                background: white !important;```text
-break-inside: avoid;
+                background: white !important;
+                break-inside: avoid;
                 page-break-inside: avoid;
                 ${is40mmLabel ? 'border-radius: 0px;' : 'border-radius: 2px;'}
                 overflow: hidden;
