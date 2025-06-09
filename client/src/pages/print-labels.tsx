@@ -323,6 +323,7 @@ export default function PrintLabels() {
     // Create manual label content with proper grid layout and page breaks
     const manualLabelContent = manualLabelRows.map((row, rowIndex) => {
       const shouldPageBreak = rowIndex > 0 && rowIndex % labelsPerColumn === 0;
+      const labelDims = getThermalLabelStyle();
       return `
         <div class="label-row" style="
           display: flex;
@@ -335,7 +336,7 @@ export default function PrintLabels() {
           ${shouldPageBreak ? 'page-break-before: always;' : ''}
         ">
           ${row.join('')}
-          ${row.length < labelsPerRow ? Array(labelsPerRow - row.length).fill('<div style="width: 180px; height: 60px; margin: 2px;"></div>').join('') : ''}
+          ${row.length < labelsPerRow ? Array(labelsPerRow - row.length).fill(`<div style="width: ${labelDims.width}; height: ${labelDims.height}; margin: 2px;"></div>`).join('') : ''}
         </div>
       `;
     }).join('');
@@ -403,8 +404,20 @@ export default function PrintLabels() {
                 }
                 
                 /* Ensure page breaks after specified number of rows */
-                .label-row:nth-child(${labelsPerColumn}n+${labelsPerColumn+1}) {
+                .label-row:nth-child(${labelsPerColumn}n+1):not(:first-child) {
                   page-break-before: always;
+                }
+                
+                /* Ensure labels per row are respected */
+                .label-row {
+                  display: flex !important;
+                  flex-wrap: nowrap !important;
+                  max-width: 100% !important;
+                }
+                
+                .thermal-label {
+                  flex: 0 0 auto !important;
+                  max-width: none !important;
                 }
               }
             </style>
@@ -634,6 +647,7 @@ export default function PrintLabels() {
     // Create print content with proper grid layout and page breaks
     const printContent = labelRows.map((row, rowIndex) => {
       const shouldPageBreak = rowIndex > 0 && rowIndex % labelsPerColumn === 0;
+      const dims = getLabelDimensions();
       return `
         <div class="label-row" style="
           display: flex;
@@ -646,7 +660,7 @@ export default function PrintLabels() {
           ${shouldPageBreak ? 'page-break-before: always;' : ''}
         ">
           ${row.join('')}
-          ${row.length < labelsPerRow ? Array(labelsPerRow - row.length).fill('<div style="width: ' + getLabelDimensions().pxWidth + '; height: ' + getLabelDimensions().pxHeight + ';"></div>').join('') : ''}
+          ${row.length < labelsPerRow ? Array(labelsPerRow - row.length).fill(`<div style="width: ${dims.pxWidth}; height: ${dims.pxHeight}; margin: 2px;"></div>`).join('') : ''}
         </div>
       `;
     }).join('');
@@ -755,9 +769,21 @@ export default function PrintLabels() {
                 box-shadow: 0 2px 4px rgba(231,76,60,0.2);
               }
 
-              /* Ensure labels per row are respected */
-              .label-row:nth-child(${labelsPerColumn}n+${labelsPerColumn+1}) {
+              /* Ensure page breaks after specified number of rows */
+              .label-row:nth-child(${labelsPerColumn}n+1):not(:first-child) {
                 page-break-before: always;
+              }
+              
+              /* Ensure labels per row are respected */
+              .label-row {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                max-width: 100% !important;
+              }
+              
+              .product-label {
+                flex: 0 0 auto !important;
+                max-width: none !important;
               }
             </style>
           </head>
@@ -1237,69 +1263,87 @@ export default function PrintLabels() {
                     Layout: {labelsPerRow} × {labelsPerColumn} (Row × Column)
                   </div>
                   <div 
-                    className="border-2 border-dashed border-gray-300 p-3 rounded-lg bg-white"
+                    className="border-2 border-dashed border-gray-300 p-3 rounded-lg bg-white overflow-x-auto"
                     style={{
                       minHeight: '120px',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
+                      flexDirection: 'column',
+                      gap: `${marginTop}px`
                     }}
                   >
-                    <div 
-                      className="border border-gray-400 bg-white p-2 text-center shadow-sm"
-                      style={{
-                        width: labelSize === 'mini' ? '120px' :
-                               labelSize === 'small' ? '140px' :
-                               labelSize === 'standard' ? '160px' :
-                               labelSize === 'medium' ? '180px' :
-                               labelSize === 'large' ? '200px' :
-                               labelSize === 'xlarge' ? '220px' :
-                               labelSize === 'thermal-58mm' ? '120px' :
-                               labelSize === 'thermal-80mm' ? '150px' :
-                               labelSize === 'custom' ? `${Math.min(200, parseInt(customLabelSize.width) / 2)}px` :
-                               '160px',
-                        height: labelSize === 'mini' ? '60px' :
-                                labelSize === 'small' ? '75px' :
-                                labelSize === 'standard' ? '90px' :
-                                labelSize === 'medium' ? '100px' :
-                                labelSize === 'large' ? '110px' :
-                                labelSize === 'xlarge' ? '120px' :
-                                labelSize === 'thermal-58mm' ? '80px' :
-                                labelSize === 'thermal-80mm' ? '100px' :
-                                labelSize === 'custom' ? `${Math.min(120, parseInt(customLabelSize.height) / 2)}px` :
-                                '90px',
-                        fontSize: '10px',
-                        lineHeight: '1.1',
-                        fontFamily: fontFamily,
-                        backgroundColor: backgroundColor,
-                        color: textColor,
-                        borderWidth: labelBorder ? `${borderWidth}px` : '0px',
-                        borderStyle: borderStyle
-                      }}
-                    >
-                      {includeCompanyLogo && <div className="text-xs font-bold mb-1">LOGO</div>}
-                      <div className="font-semibold text-xs">Sample Product</div>
-                      <div className="text-xs text-gray-500">SKU: SP001</div>
-                      {includeDescription && <div className="text-xs text-gray-400">Product desc...</div>}
-                      <div className="flex justify-between text-xs mt-1">
-                        {includePrice && <span className="font-bold text-blue-600">₹99.99</span>}
-                        {includeMrp && <span className="text-gray-600 line-through">₹120</span>}
+                    {/* Show grid layout preview */}
+                    {Array.from({ length: Math.min(2, labelsPerColumn) }, (_, rowIndex) => (
+                      <div key={rowIndex} style={{
+                        display: 'flex',
+                        gap: `${marginLeft}px`,
+                        justifyContent: 'flex-start',
+                        alignItems: 'flex-start'
+                      }}>
+                        {Array.from({ length: labelsPerRow }, (_, colIndex) => (
+                          <div 
+                            key={colIndex}
+                            className="border border-gray-400 bg-white p-2 text-center shadow-sm flex-shrink-0"
+                            style={{
+                              width: labelSize === 'mini' ? '120px' :
+                                     labelSize === 'small' ? '140px' :
+                                     labelSize === 'standard' ? '160px' :
+                                     labelSize === 'medium' ? '180px' :
+                                     labelSize === 'large' ? '200px' :
+                                     labelSize === 'xlarge' ? '220px' :
+                                     labelSize === 'thermal-58mm' ? '120px' :
+                                     labelSize === 'thermal-80mm' ? '150px' :
+                                     labelSize === 'custom' ? `${Math.min(200, parseInt(customLabelSize.width) / 2)}px` :
+                                     '160px',
+                              height: labelSize === 'mini' ? '60px' :
+                                      labelSize === 'small' ? '75px' :
+                                      labelSize === 'standard' ? '90px' :
+                                      labelSize === 'medium' ? '100px' :
+                                      labelSize === 'large' ? '110px' :
+                                      labelSize === 'xlarge' ? '120px' :
+                                      labelSize === 'thermal-58mm' ? '80px' :
+                                      labelSize === 'thermal-80mm' ? '100px' :
+                                      labelSize === 'custom' ? `${Math.min(120, parseInt(customLabelSize.height) / 2)}px` :
+                                      '90px',
+                              fontSize: '10px',
+                              lineHeight: '1.1',
+                              fontFamily: fontFamily,
+                              backgroundColor: backgroundColor,
+                              color: textColor,
+                              borderWidth: labelBorder ? `${borderWidth}px` : '0px',
+                              borderStyle: borderStyle
+                            }}
+                          >
+                            {includeCompanyLogo && <div className="text-xs font-bold mb-1">LOGO</div>}
+                            <div className="font-semibold text-xs">Sample Product</div>
+                            <div className="text-xs text-gray-500">SKU: SP001</div>
+                            {includeDescription && <div className="text-xs text-gray-400">Product desc...</div>}
+                            <div className="flex justify-between text-xs mt-1">
+                              {includePrice && <span className="font-bold text-blue-600">₹99.99</span>}
+                              {includeMrp && <span className="text-gray-600 line-through">₹120</span>}
+                            </div>
+                            {includeExpiryDate && <div className="text-xs text-orange-600">Exp: 12/25</div>}
+                            {includeQrCode && <div className="text-xs">█▀▀█</div>}
+                            {includeBarcode && (
+                              <div className="mt-1">
+                                <div className="text-xs font-mono bg-gray-100 px-1">SP001000001</div>
+                                <div className="text-xs">||||||||||||</div>
+                              </div>
+                            )}
+                            {includeCustomText && customText && (
+                              <div className="text-xs italic mt-1">{customText.substring(0, 15)}...</div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      {includeExpiryDate && <div className="text-xs text-orange-600">Exp: 12/25</div>}
-                      {includeQrCode && <div className="text-xs">█▀▀█</div>}
-                      {includeBarcode && (
-                        <div className="mt-1">
-                          <div className="text-xs font-mono bg-gray-100 px-1">SP001000001</div>
-                          <div className="text-xs">||||||||||||</div>
-                        </div>
-                      )}
-                      {includeCustomText && customText && (
-                        <div className="text-xs italic mt-1">{customText.substring(0, 15)}...</div>
-                      )}
-                    </div>
+                    ))}
+                    {labelsPerColumn > 2 && (
+                      <div className="text-xs text-gray-500 text-center">
+                        ... and {labelsPerColumn - 2} more rows
+                      </div>
+                    )}
                   </div>
                   <div className="text-xs text-gray-500 text-center">
-                    Preview shows actual label size and selected elements
+                    Preview shows {labelsPerRow} × {labelsPerColumn} grid layout with actual margins
                   </div>
                 </div>
               </div>
