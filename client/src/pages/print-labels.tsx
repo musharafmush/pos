@@ -235,16 +235,16 @@ export default function PrintLabels() {
 
     // Create all manual labels first
     const allManualLabels = Array(copies).fill(null).map((_, index) => `
-      <div class="thermal-label" style="
+        <div class="thermal-label" style="
           width: 40mm;
           height: 40mm;
-          padding: 1.5mm;
+          padding: 2mm;
           margin: 0;
           border: 2px solid #000;
           background: white;
           font-family: Arial, sans-serif;
           font-size: 10px;
-          line-height: 1.2;
+          line-height: 1.1;
           display: inline-block;
           page-break-inside: avoid;
           box-sizing: border-box;
@@ -252,73 +252,69 @@ export default function PrintLabels() {
           flex-shrink: 0;
           position: relative;
         ">
-          <!-- Product Name - Bold and Prominent -->
+          <!-- Product Name - Bold and Prominent (like MUNTHIRI FULL 50G) -->
           <div style="
             font-weight: bold; 
-            font-size: 11px; 
+            font-size: 10px; 
             text-align: center; 
             margin-bottom: 2mm; 
-            line-height: 1.1; 
+            line-height: 1; 
             word-wrap: break-word;
             text-transform: uppercase;
+            font-family: Arial, sans-serif;
           ">
-            ${manualLabel.productName.length > 18 ? manualLabel.productName.substring(0, 18) : manualLabel.productName}
+            ${manualLabel.productName.length > 20 ? manualLabel.productName.substring(0, 20) : manualLabel.productName}
           </div>
 
-          <!-- Barcode Section -->
+          <!-- Barcode Section - Exactly like reference image -->
           ${includeBarcode && (manualLabel.barcode || manualLabel.sku) ? 
-            `<div style="text-align: center; margin: 2mm 0;">
+            `<div style="text-align: center; margin: 2mm 0 1mm 0;">
               <div style="
-                font-size: 18px; 
+                font-size: 16px; 
                 font-family: 'Courier New', monospace; 
-                letter-spacing: -1px; 
-                line-height: 0.8;
-                margin-bottom: 1mm;
-              ">||||||||||||||||||||||||||||||||||||||||</div>
-              <div style="
-                font-family: 'Courier New', monospace; 
-                font-size: 6px; 
-                text-align: center;
-                letter-spacing: 1px;
-                margin-bottom: 1mm;
-              ">
-                ${manualLabel.barcode || manualLabel.sku?.padEnd(12, '0').substring(0, 12) || '000000000000'}
-              </div>
+                letter-spacing: 0px; 
+                line-height: 1;
+                margin-bottom: 0.5mm;
+                font-weight: bold;
+              ">|||||||||||||||||||||||||||||||||||</div>
             </div>` : ''
           }
 
-          <!-- Serial Number -->
+          <!-- Serial Number (like the "1" in reference) -->
           <div style="
-            font-size: 14px; 
+            font-size: 16px; 
             font-weight: bold; 
             text-align: center; 
             margin: 2mm 0;
+            font-family: Arial, sans-serif;
           ">
             ${index + 1}
           </div>
 
-          <!-- Price Section -->
+          <!-- Price Section (like ₹ 55.00) -->
           ${includePrice && manualLabel.price ? 
             `<div style="
-              font-size: 12px; 
+              font-size: 14px; 
               font-weight: bold; 
               text-align: center;
-              margin: 1mm 0;
+              margin: 1mm 0 2mm 0;
+              font-family: Arial, sans-serif;
             ">
               ₹ ${Number(manualLabel.price).toFixed(2)}
             </div>` : ''
           }
 
-          <!-- Store Name at Bottom -->
+          <!-- Store Name at Bottom (M MART) -->
           <div style="
-            font-size: 9px; 
+            font-size: 11px; 
             font-weight: bold; 
             text-align: center; 
             position: absolute;
-            bottom: 1mm;
-            left: 1.5mm;
-            right: 1.5mm;
+            bottom: 2mm;
+            left: 2mm;
+            right: 2mm;
             text-transform: uppercase;
+            font-family: Arial, sans-serif;
           ">
             M MART
           </div>
@@ -488,53 +484,88 @@ export default function PrintLabels() {
     // Special template for 40x40mm labels
     if (is40mmLabel) {
       return `
-        <div class="product-label standard-template" style="
+        <div class="thermal-label" style="
           width: 40mm;
           height: 40mm;
           padding: 2mm;
           margin: 0;
-          border: 1px solid #333;
+          border: 2px solid #000;
           background: white;
-          color: black;
           font-family: Arial, sans-serif;
-          font-size: 8px;
+          font-size: 10px;
           line-height: 1.1;
           display: inline-block;
           page-break-inside: avoid;
           box-sizing: border-box;
           vertical-align: top;
+          flex-shrink: 0;
+          position: relative;
         ">
-          <div class="product-name" style="font-weight: bold; font-size: 7px; text-align: center; margin-bottom: 1mm; line-height: 1; word-wrap: break-word;">
-            ${product.name.length > 20 ? product.name.substring(0, 20) + '...' : product.name}
+          <!-- Product Name - Bold and Prominent (like MUNTHIRI FULL 50G) -->
+          <div style="
+            font-weight: bold; 
+            font-size: 10px; 
+            text-align: center; 
+            margin-bottom: 2mm; 
+            line-height: 1; 
+            word-wrap: break-word;
+            text-transform: uppercase;
+            font-family: Arial, sans-serif;
+          ">
+            ${product.name.length > 20 ? product.name.substring(0, 20) : product.name}
           </div>
 
-          <div class="sku" style="font-size: 5px; text-align: center; margin-bottom: 1mm;">
-            ${product.sku}
+          <!-- Barcode Section - Exactly like reference image -->
+          ${includeBarcode && (product.barcode || product.sku) ? 
+            `<div style="text-align: center; margin: 2mm 0 1mm 0;">
+              <div style="
+                font-size: 16px; 
+                font-family: 'Courier New', monospace; 
+                letter-spacing: 0px; 
+                line-height: 1;
+                margin-bottom: 0.5mm;
+                font-weight: bold;
+              ">|||||||||||||||||||||||||||||||||||</div>
+            </div>` : ''
+          }
+
+          <!-- Serial Number (like the "1" in reference) -->
+          <div style="
+            font-size: 16px; 
+            font-weight: bold; 
+            text-align: center; 
+            margin: 2mm 0;
+            font-family: Arial, sans-serif;
+          ">
+            ${copyIndex + 1}
           </div>
 
-          ${includePrice ? 
-            `<div class="price" style="font-size: 9px; font-weight: bold; text-align: center; border: 1px solid #000; padding: 1mm; margin: 1mm 0;">
-              ₹${Number(product.price).toFixed(2)}
+          <!-- Price Section (like ₹ 55.00) -->
+          ${includePrice && product.price ? 
+            `<div style="
+              font-size: 14px; 
+              font-weight: bold; 
+              text-align: center;
+              margin: 1mm 0 2mm 0;
+              font-family: Arial, sans-serif;
+            ">
+              ₹ ${Number(product.price).toFixed(2)}
             </div>` : ''
           }
 
-          ${includeMrp && product.mrp ? 
-            `<div style="font-size: 5px; text-align: center; text-decoration: line-through; color: #666; margin: 0.5mm 0;">
-              MRP: ₹${Number(product.mrp).toFixed(2)}
-            </div>` : ''
-          }
-
-          ${includeBarcode ? 
-            `<div style="text-align: center; margin-top: 1mm;">
-              <div class="barcode" style="font-family: 'Courier New', monospace; font-size: 4px; background: #f8f8f8; padding: 0.5mm; border: 1px solid #ccc;">
-                ${generateBarcode(product.sku)}
-              </div>
-              <div class="barcode-lines" style="font-size: 4px; margin-top: 0.5mm; letter-spacing: 0px;">||||||||||||||||</div>
-            </div>` : ''
-          }
-
-          <div style="font-size: 4px; text-align: center; color: #999; margin-top: 1mm;">
-            ${copyIndex + 1}/${copies}
+          <!-- Store Name at Bottom (M MART) -->
+          <div style="
+            font-size: 11px; 
+            font-weight: bold; 
+            text-align: center; 
+            position: absolute;
+            bottom: 2mm;
+            left: 2mm;
+            right: 2mm;
+            text-transform: uppercase;
+            font-family: Arial, sans-serif;
+          ">
+            M MART
           </div>
         </div>
       `;
