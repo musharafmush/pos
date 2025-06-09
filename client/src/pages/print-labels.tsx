@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,27 @@ export default function PrintLabels() {
   const [barcodeWidth, setBarcodeWidth] = useState("50");
   const [barcodeHeight, setBarcodeHeight] = useState("30");
   const [fontSize, setFontSize] = useState("11pt");
+
+  // Load saved custom configuration on mount
+  React.useEffect(() => {
+    const savedConfig = localStorage.getItem('customLabelConfig');
+    if (savedConfig) {
+      try {
+        const config = JSON.parse(savedConfig);
+        setSheetWidth(config.sheetWidth || "160");
+        setSheetHeight(config.sheetHeight || "50");
+        setLabelWidth(config.labelWidth || "80");
+        setLabelHeight(config.labelHeight || "50");
+        setTotalRows(config.totalRows || "1");
+        setTotalCols(config.totalCols || "2");
+        setBarcodeWidth(config.barcodeWidth || "50");
+        setBarcodeHeight(config.barcodeHeight || "30");
+        setFontSize(config.fontSize || "11pt");
+      } catch (error) {
+        console.error('Failed to load saved label configuration:', error);
+      }
+    }
+  }, []);
 
   // Fetch products
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -112,16 +133,19 @@ export default function PrintLabels() {
       selectedProducts.includes(p.id)
     );
 
-    // Create print content with proper grid layout
-    const is40mmLabel = labelSize === 'small';
-    const labelWidth = labelSize === 'small' ? '40mm' : labelSize === 'large' ? '60mm' : '50mm';
-    const labelHeight = labelSize === 'small' ? '25mm' : labelSize === 'large' ? '35mm' : '30mm';
+    // Use custom dimensions if configured, otherwise use preset sizes
+    const useCustomConfig = sheetWidth && sheetHeight && labelWidth && labelHeight;
+    const finalLabelWidth = useCustomConfig ? `${labelWidth}mm` : (labelSize === 'small' ? '40mm' : labelSize === 'large' ? '60mm' : '50mm');
+    const finalLabelHeight = useCustomConfig ? `${labelHeight}mm` : (labelSize === 'small' ? '25mm' : labelSize === 'large' ? '35mm' : '30mm');
+    const finalFontSize = fontSize.replace('pt', 'px');
+    const finalBarcodeWidth = useCustomConfig ? `${barcodeWidth}px` : '60px';
+    const finalBarcodeHeight = useCustomConfig ? `${barcodeHeight}px` : '20px';
     
     const printContent = selectedProductsData.map((product: Product) => {
       return Array(copies).fill(null).map((_, index) => `
         <div class="product-label" style="
-          width: ${labelWidth};
-          height: ${labelHeight};
+          width: ${finalLabelWidth};
+          height: ${finalLabelHeight};
           border: 1px solid #333;
           padding: 2mm;
           margin: 1mm;
@@ -131,27 +155,40 @@ export default function PrintLabels() {
           page-break-inside: avoid;
           box-sizing: border-box;
           vertical-align: top;
-          ${is40mmLabel ? 'border-radius: 0px;' : 'border-radius: 2px;'}
+          border-radius: 2px;
         ">
-          <div style="font-weight: bold; font-size: ${labelSize === 'small' ? '8px' : '10px'}; margin-bottom: 1mm; line-height: 1.2;">
+          <div style="font-weight: bold; font-size: ${finalFontSize}; margin-bottom: 1mm; line-height: 1.2;">
             ${product.name.length > 25 ? product.name.substring(0, 25) + '...' : product.name}
           </div>
-          <div style="font-size: ${labelSize === 'small' ? '6px' : '8px'}; color: #666; margin-bottom: 1mm;">
+          <div style="font-size: ${parseInt(finalFontSize) - 2}px; color: #666; margin-bottom: 1mm;">
             SKU: ${product.sku}
           </div>
           ${includeDescription && product.description ? 
-            `<div style="font-size: ${labelSize === 'small' ? '6px' : '7px'}; color: #888; margin-bottom: 1mm; line-height: 1.1;">
+            `<div style="font-size: ${parseInt(finalFontSize) - 3}px; color: #888; margin-bottom: 1mm; line-height: 1.1;">
               ${product.description.substring(0, 30)}...
             </div>` : ''
           }
           ${includePrice ? 
-            `<div style="font-size: ${labelSize === 'small' ? '9px' : '11px'}; font-weight: bold; color: #2563eb; margin-bottom: 1mm;">
+            `<div style="font-size: ${parseInt(finalFontSize) + 1}px; font-weight: bold; color: #2563eb; margin-bottom: 1mm;">
               ₹${Number(product.price).toFixed(2)}
             </div>` : ''
           }
           ${includeBarcode ? 
             `<div style="text-align: center; margin-top: 1mm;">
-              <div style="font-family: 'Courier New', monospace; font-size: ${labelSize === 'small' ? '5px' : '6px'}; letter-spacing: 0.5px; border: 0.5px solid #ccc; padding: 0.5mm; background: #f9f9f9;">
+              <div style="
+                font-family: 'Courier New', monospace; 
+                font-size: ${parseInt(finalFontSize) - 4}px; 
+                letter-spacing: 0.5px; 
+                border: 0.5px solid #ccc; 
+                padding: 0.5mm; 
+                background: #f9f9f9;
+                width: ${finalBarcodeWidth};
+                height: ${finalBarcodeHeight};
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto;
+              ">
                 ${generateBarcode(product.sku)}
               </div>
             </div>` : ''
@@ -163,6 +200,9 @@ export default function PrintLabels() {
     // Open print window
     const printWindow = window.open('', '_blank');
     if (printWindow) {
+      const pageWidth = useCustomConfig ? `${sheetWidth}mm` : 'A4';
+      const pageHeight = useCustomConfig ? `${sheetHeight}mm` : 'auto';
+      
       printWindow.document.write(`
         <html>
           <head>
@@ -174,12 +214,20 @@ export default function PrintLabels() {
                 padding: 5mm;
                 font-family: Arial, sans-serif;
                 line-height: 1;
+                ${useCustomConfig ? `width: ${sheetWidth}mm; height: ${sheetHeight}mm;` : ''}
               }
               .product-label {
                 background: white !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
-                ${is40mmLabel ? 'border-radius: 0px;' : 'border-radius: 2px;'}
+                border-radius: 2px;
+              }
+              .labels-container {
+                display: grid;
+                grid-template-columns: repeat(${useCustomConfig ? totalCols : 'auto-fit'}, 1fr);
+                grid-template-rows: repeat(${useCustomConfig ? totalRows : 'auto-fit'}, 1fr);
+                gap: 1mm;
+                ${useCustomConfig ? `width: ${sheetWidth}mm; height: ${sheetHeight}mm;` : 'display: flex; flex-wrap: wrap; align-content: flex-start;'}
               }
               @media print {
                 body { 
@@ -194,13 +242,13 @@ export default function PrintLabels() {
                 }
                 @page { 
                   margin: 5mm; 
-                  size: A4;
+                  size: ${useCustomConfig ? `${sheetWidth}mm ${sheetHeight}mm` : 'A4'};
                 }
               }
             </style>
           </head>
           <body>
-            <div style="display: flex; flex-wrap: wrap; align-content: flex-start;">
+            <div class="labels-container">
               ${printContent}
             </div>
           </body>
@@ -680,15 +728,29 @@ export default function PrintLabels() {
             </Button>
             <Button 
               onClick={() => {
+                // Save custom configuration to localStorage
+                const customConfig = {
+                  sheetWidth,
+                  sheetHeight,
+                  labelWidth,
+                  labelHeight,
+                  totalRows,
+                  totalCols,
+                  barcodeWidth,
+                  barcodeHeight,
+                  fontSize
+                };
+                localStorage.setItem('customLabelConfig', JSON.stringify(customConfig));
+                
                 setIsCustomLabelDialogOpen(false);
                 toast({
                   title: "Custom configuration saved",
-                  description: "Your custom label settings have been applied",
+                  description: "Your custom label settings have been applied and saved",
                 });
               }} 
               className="bg-blue-600 hover:bg-blue-700"
             >
-              Apply Configuration
+              Apply & Save Configuration
             </Button>
           </DialogFooter>
         </DialogContent>
