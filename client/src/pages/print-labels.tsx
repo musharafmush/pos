@@ -133,6 +133,15 @@ export default function PrintLabels() {
       selectedProducts.includes(p.id)
     );
 
+    if (selectedProductsData.length === 0) {
+      toast({
+        title: "No products found",
+        description: "Selected products could not be found",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Use custom dimensions if configured, otherwise use preset sizes
     const useCustomConfig = sheetWidth && sheetHeight && labelWidth && labelHeight;
     const finalLabelWidth = useCustomConfig ? `${labelWidth}mm` : (labelSize === 'small' ? '40mm' : labelSize === 'large' ? '60mm' : '50mm');
@@ -157,11 +166,11 @@ export default function PrintLabels() {
           vertical-align: top;
           border-radius: 2px;
         ">
-          <div style="font-weight: bold; font-size: ${finalFontSize}; margin-bottom: 1mm; line-height: 1.2;">
-            ${product.name.length > 25 ? product.name.substring(0, 25) + '...' : product.name}
+          <div style="font-weight: bold; font-size: ${finalFontSize}; margin-bottom: 1mm; line-height: 1.2; color: #000;">
+            ${(product.name || 'Unnamed Product').length > 25 ? (product.name || 'Unnamed Product').substring(0, 25) + '...' : (product.name || 'Unnamed Product')}
           </div>
           <div style="font-size: ${parseInt(finalFontSize) - 2}px; color: #666; margin-bottom: 1mm;">
-            SKU: ${product.sku}
+            SKU: ${product.sku || 'N/A'}
           </div>
           ${includeDescription && product.description ? 
             `<div style="font-size: ${parseInt(finalFontSize) - 3}px; color: #888; margin-bottom: 1mm; line-height: 1.1;">
@@ -170,7 +179,7 @@ export default function PrintLabels() {
           }
           ${includePrice ? 
             `<div style="font-size: ${parseInt(finalFontSize) + 1}px; font-weight: bold; color: #2563eb; margin-bottom: 1mm;">
-              ₹${Number(product.price).toFixed(2)}
+              ₹${Number(product.price || 0).toFixed(2)}
             </div>` : ''
           }
           ${includeBarcode ? 
@@ -188,8 +197,9 @@ export default function PrintLabels() {
                 align-items: center;
                 justify-content: center;
                 margin: 0 auto;
+                color: #000;
               ">
-                ${generateBarcode(product.sku)}
+                ${generateBarcode(product.sku || '')}
               </div>
             </div>` : ''
           }
@@ -197,16 +207,25 @@ export default function PrintLabels() {
       `).join('');
     }).join('');
 
+    // Create a temporary div to validate content
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = printContent;
+    
+    console.log('Products to print:', selectedProductsData);
+    console.log('Generated print content length:', printContent.length);
+
     // Open print window
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (printWindow) {
       const pageWidth = useCustomConfig ? `${sheetWidth}mm` : 'A4';
       const pageHeight = useCustomConfig ? `${sheetHeight}mm` : 'auto';
       
-      printWindow.document.write(`
+      const htmlContent = `
+        <!DOCTYPE html>
         <html>
           <head>
-            <title>Product Labels</title>
+            <title>Product Labels - ${new Date().toLocaleDateString()}</title>
+            <meta charset="UTF-8">
             <style>
               * { margin: 0; padding: 0; box-sizing: border-box; }
               body {
@@ -214,6 +233,8 @@ export default function PrintLabels() {
                 padding: 5mm;
                 font-family: Arial, sans-serif;
                 line-height: 1;
+                background: white;
+                color: #000;
                 ${useCustomConfig ? `width: ${sheetWidth}mm; height: ${sheetHeight}mm;` : ''}
               }
               .product-label {
@@ -221,28 +242,49 @@ export default function PrintLabels() {
                 break-inside: avoid;
                 page-break-inside: avoid;
                 border-radius: 2px;
+                color: #000;
               }
               .labels-container {
-                display: grid;
-                grid-template-columns: repeat(${useCustomConfig ? totalCols : 'auto-fit'}, 1fr);
-                grid-template-rows: repeat(${useCustomConfig ? totalRows : 'auto-fit'}, 1fr);
-                gap: 1mm;
-                ${useCustomConfig ? `width: ${sheetWidth}mm; height: ${sheetHeight}mm;` : 'display: flex; flex-wrap: wrap; align-content: flex-start;'}
+                ${useCustomConfig ? 
+                  `display: grid;
+                   grid-template-columns: repeat(${totalCols}, 1fr);
+                   grid-template-rows: repeat(${totalRows}, 1fr);
+                   gap: 1mm;
+                   width: ${sheetWidth}mm; 
+                   height: ${sheetHeight}mm;` : 
+                  'display: flex; flex-wrap: wrap; align-content: flex-start;'
+                }
               }
               @media print {
                 body { 
                   margin: 0; 
                   padding: 2mm; 
                   font-size: 12px;
+                  background: white;
+                  color: #000;
                 }
                 .product-label { 
                   margin: 0.5mm !important; 
                   break-inside: avoid;
                   page-break-inside: avoid;
+                  background: white !important;
+                  color: #000 !important;
                 }
                 @page { 
                   margin: 5mm; 
                   size: ${useCustomConfig ? `${sheetWidth}mm ${sheetHeight}mm` : 'A4'};
+                  background: white;
+                }
+              }
+              @media screen {
+                body {
+                  background: #f0f0f0;
+                  padding: 20px;
+                }
+                .labels-container {
+                  background: white;
+                  padding: 10px;
+                  border: 1px solid #ccc;
                 }
               }
             </style>
@@ -251,11 +293,29 @@ export default function PrintLabels() {
             <div class="labels-container">
               ${printContent}
             </div>
+            <script>
+              window.onload = function() {
+                // Auto-print after a short delay to ensure content is loaded
+                setTimeout(function() {
+                  window.print();
+                }, 500);
+              };
+            </script>
           </body>
         </html>
-      `);
+      `;
+      
+      printWindow.document.write(htmlContent);
       printWindow.document.close();
-      printWindow.print();
+      
+      // Focus the print window
+      printWindow.focus();
+    } else {
+      toast({
+        title: "Print window blocked",
+        description: "Please allow popups for this site to print labels",
+        variant: "destructive",
+      });
     }
 
     setIsPrintDialogOpen(false);
