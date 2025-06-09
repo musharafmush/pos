@@ -176,7 +176,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     // Adding Profit Management here as a new navigation group
     {
       id: "profit",
-      items: [{ href: "/profit-management", icon: <BarChart4Icon className="h-5 w-5" />, label: "Profit Management" }]
+      items: [{ href: "/profit-management", icon: <Calculator className="h-5 w-5" />, label: "Profit Management" }]
     }
   ];
 

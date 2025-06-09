@@ -34,7 +34,7 @@ import {
   AreaChart,
   Area
 } from "recharts";
-import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { 
   DollarSignIcon, 
   TrendingUpIcon, 
@@ -64,11 +64,17 @@ export default function ProfitManagement() {
   const formatCurrency = useFormatCurrency();
 
   // Fetch profit data
-  const { data: profitData, isLoading: profitLoading } = useQuery({
+  const { data: profitData, isLoading: profitLoading, error } = useQuery({
     queryKey: ['/api/reports/profit-analysis', timeRange, profitFilter, categoryFilter],
     queryFn: async () => {
-      const response = await fetch(`/api/reports/profit-analysis?days=${timeRange}&filter=${profitFilter}&category=${categoryFilter}`);
-      if (!response.ok) {
+      try {
+        const response = await fetch(`/api/reports/profit-analysis?days=${timeRange}&filter=${profitFilter}&category=${categoryFilter}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch profit data');
+        }
+        return await response.json();
+      } catch (error) {
+        console.warn('Using mock data for profit analysis:', error);
         // Mock data for development
         return {
           overview: {
@@ -177,6 +183,36 @@ export default function ProfitManagement() {
 
   // Chart colors
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+  if (profitLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading profit analysis...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-gray-600 mb-4">Failed to load profit data</p>
+            <Button onClick={() => window.location.reload()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
