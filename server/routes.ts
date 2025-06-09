@@ -10,7 +10,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { db } from "../db/index.js";
 import { eq, desc, sql } from "drizzle-orm";
-import { returns as returnTransactions, sales, returnItems, products } from "../shared/schema.js";
+import { returns as returnTransactions, sales, returnItems, products, customers } from "../shared/schema.js";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -1506,12 +1506,14 @@ app.post("/api/customers", async (req, res) => {
   try {
     const { name, email, phone, address, taxNumber, creditLimit, businessName } = req.body;
 
+    console.log("Customer creation request received:", req.body);
+
     // Validate required fields
     if (!name || name.trim() === "") {
       return res.status(400).json({ error: "Customer name is required" });
     }
 
-    // Prepare customer data
+    // Use storage method for creating customer
     const customerData = {
       name: name.trim(),
       email: email && email.trim() !== "" ? email.trim() : null,
@@ -1520,15 +1522,15 @@ app.post("/api/customers", async (req, res) => {
       taxId: taxNumber && taxNumber.trim() !== "" ? taxNumber.trim() : null,
       creditLimit: creditLimit && !isNaN(parseFloat(creditLimit)) ? parseFloat(creditLimit) : 0,
       businessName: businessName && businessName.trim() !== "" ? businessName.trim() : null,
-      createdAt: new Date().toISOString(),
     };
 
-    console.log("Creating customer with data:", customerData);
+    console.log("Creating customer with processed data:", customerData);
 
-    const customer = await db.insert(customers).values(customerData).returning();
+    // Use the storage method to create customer
+    const customer = await storage.createCustomer(customerData);
 
-    console.log("Customer created successfully:", customer[0]);
-    res.json(customer[0]);
+    console.log("Customer created successfully:", customer);
+    res.status(201).json(customer);
   } catch (error) {
     console.error("Error creating customer:", error);
     res.status(500).json({ 

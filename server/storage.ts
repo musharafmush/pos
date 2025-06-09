@@ -383,11 +383,23 @@ export const storage = {
     address?: string;
   }): Promise<Customer> {
     try {
-      const [newCustomer] = await db.insert(customers).values(customer).returning();
+      console.log('Storage: Creating customer with data:', customer);
+
+      const customerWithDefaults = {
+        ...customer,
+        createdAt: new Date().toISOString(),
+        creditLimit: customer.creditLimit || 0
+      };
+
+      const [newCustomer] = await db.insert(customers)
+        .values(customerWithDefaults)
+        .returning();
+
+      console.log('Storage: Customer created successfully:', newCustomer);
       return newCustomer;
     } catch (error) {
-      console.error('Error creating customer:', error);
-      throw error;
+      console.error('Storage: Error creating customer:', error);
+      throw new Error(`Failed to create customer: ${error.message}`);
     }
   },
 
