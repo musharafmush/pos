@@ -225,41 +225,60 @@ export default function PrintLabels() {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Product Labels</title>
+            <title></title>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body {
-                margin: 0;
-                padding: 0;
-                font-family: Arial, sans-serif;
-                line-height: 1;
-                background: white;
-                color: #000;
-                ${useCustomConfig ? `width: ${sheetWidth}mm; height: ${sheetHeight}mm;` : ''}
+              * { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                box-sizing: border-box !important; 
+              }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                font-family: Arial, sans-serif !important;
+                line-height: 1 !important;
+                background: white !important;
+                color: #000 !important;
+                width: 100% !important;
+                height: 100% !important;
+                overflow: hidden !important;
+                ${useCustomConfig ? `width: ${sheetWidth}mm !important; height: ${sheetHeight}mm !important;` : ''}
               }
               .product-label {
                 background: white !important;
-                break-inside: avoid;
-                page-break-inside: avoid;
-                border-radius: 0;
-                color: #000;
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+                border-radius: 0 !important;
+                color: #000 !important;
                 margin: 0 !important;
-                padding: 2mm;
-                position: relative;
+                padding: 2mm !important;
+                position: relative !important;
+                display: inline-block !important;
+                vertical-align: top !important;
               }
               .labels-container {
-                margin: 0;
-                padding: 0;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
                 ${useCustomConfig ? 
-                  `display: grid;
-                   grid-template-columns: repeat(${totalCols}, 1fr);
-                   grid-template-rows: repeat(${totalRows}, 1fr);
-                   gap: 0;
-                   width: ${sheetWidth}mm; 
-                   height: ${sheetHeight}mm;` : 
-                  'display: flex; flex-wrap: wrap; align-content: flex-start; gap: 0;'
+                  `display: grid !important;
+                   grid-template-columns: repeat(${totalCols}, 1fr) !important;
+                   grid-template-rows: repeat(${totalRows}, 1fr) !important;
+                   gap: 0 !important;
+                   width: ${sheetWidth}mm !important; 
+                   height: ${sheetHeight}mm !important;` : 
+                  'display: flex !important; flex-wrap: wrap !important; align-content: flex-start !important; gap: 0 !important;'
                 }
+              }
+              @page { 
+                margin: 0 !important; 
+                padding: 0 !important;
+                size: ${useCustomConfig ? `${sheetWidth}mm ${sheetHeight}mm` : 'A4'} !important;
+                background: white !important;
+                border: none !important;
               }
               @media print {
                 * { 
@@ -267,16 +286,18 @@ export default function PrintLabels() {
                   padding: 0 !important; 
                   -webkit-print-color-adjust: exact !important;
                   color-adjust: exact !important;
+                  print-color-adjust: exact !important;
                 }
                 html, body { 
                   width: 100% !important;
                   height: 100% !important;
                   margin: 0 !important; 
                   padding: 0 !important; 
-                  font-size: 12px;
+                  font-size: 12px !important;
                   background: white !important;
                   color: #000 !important;
                   overflow: hidden !important;
+                  border: none !important;
                 }
                 .product-label { 
                   margin: 0 !important; 
@@ -286,42 +307,47 @@ export default function PrintLabels() {
                   background: white !important;
                   color: #000 !important;
                   position: relative !important;
+                  border-radius: 0 !important;
                 }
                 .labels-container {
                   margin: 0 !important;
                   padding: 0 !important;
                   width: 100% !important;
                   height: 100% !important;
+                  border: none !important;
                 }
-                @page { 
-                  margin: 0 !important; 
-                  size: ${useCustomConfig ? `${sheetWidth}mm ${sheetHeight}mm` : 'A4'};
-                  background: white !important;
+                /* Hide all unwanted browser elements */
+                @page {
+                  margin: 0 !important;
+                  padding: 0 !important;
                 }
-                /* Hide browser UI elements */
                 body::before,
-                body::after {
+                body::after,
+                html::before,
+                html::after {
                   display: none !important;
+                  content: "" !important;
                 }
-                /* Remove any default browser headers/footers */
-                header, footer, nav, .no-print {
+                header, footer, nav, .no-print, .timestamp, .page-info, .about-blank {
+                  display: none !important;
+                  visibility: hidden !important;
+                }
+                /* Remove any default browser chrome */
+                div[style*="position: absolute"], 
+                div[style*="position: fixed"],
+                span[style*="position: absolute"],
+                span[style*="position: fixed"] {
                   display: none !important;
                 }
               }
-              @media screen {
-                body {
-                  background: #f0f0f0;
-                  padding: 5px;
-                }
-                .labels-container {
-                  background: white;
-                  padding: 2px;
-                  border: 1px solid #ccc;
-                }
-              }
-              /* Hide any unwanted elements */
-              .timestamp, .page-info, .about-blank {
+              /* Hide any unwanted elements completely */
+              .timestamp, .page-info, .about-blank, .chrome-element {
                 display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                height: 0 !important;
+                width: 0 !important;
+                overflow: hidden !important;
               }
             </style>
           </head>
@@ -329,6 +355,58 @@ export default function PrintLabels() {
             <div class="labels-container">
               ${printContent}
             </div>
+            <script>
+              // Remove any dynamic browser elements
+              document.addEventListener('DOMContentLoaded', function() {
+                // Remove title to prevent "about:blank" text
+                document.title = '';
+                
+                // Remove any elements that might contain unwanted text
+                const unwantedSelectors = [
+                  '.timestamp', '.page-info', '.about-blank', '.chrome-element',
+                  '[class*="chrome"]', '[class*="browser"]', '[id*="chrome"]',
+                  'div[style*="position: absolute"]', 'div[style*="position: fixed"]'
+                ];
+                
+                unwantedSelectors.forEach(selector => {
+                  const elements = document.querySelectorAll(selector);
+                  elements.forEach(el => el.remove());
+                });
+                
+                // Clean up any text nodes that might contain unwanted content
+                const walker = document.createTreeWalker(
+                  document.body,
+                  NodeFilter.SHOW_TEXT,
+                  null,
+                  false
+                );
+                
+                const textNodes = [];
+                let node;
+                while (node = walker.nextNode()) {
+                  textNodes.push(node);
+                }
+                
+                textNodes.forEach(textNode => {
+                  const text = textNode.textContent.toLowerCase();
+                  if (text.includes('about:blank') || 
+                      text.includes('post record') || 
+                      text.includes('my post') ||
+                      text.includes('note') ||
+                      /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(text) ||
+                      /\d{1,2}:\d{2}\s*(am|pm)/i.test(text)) {
+                    textNode.remove();
+                  }
+                });
+              });
+              
+              // Trigger print after cleanup
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 500);
+              };
+            </script>
           </body>
         </html>
       `;
@@ -338,35 +416,15 @@ export default function PrintLabels() {
       printWindow.document.write(htmlContent);
       printWindow.document.close();
       
-      // Hide browser chrome and prevent unwanted elements
+      // Set empty title to prevent "about:blank" display
       printWindow.document.title = '';
       
-      // Wait for content to load then print
-      printWindow.onload = function() {
-        // Remove any remaining unwanted elements
-        const unwantedElements = printWindow.document.querySelectorAll('.timestamp, .page-info, .about-blank');
-        unwantedElements.forEach(el => el.remove());
-        
+      // Handle print completion
+      printWindow.onafterprint = function() {
         setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-          
-          // Optional: Close window after printing
-          printWindow.onafterprint = function() {
-            setTimeout(() => {
-              printWindow.close();
-            }, 1000);
-          };
-        }, 200);
+          printWindow.close();
+        }, 1000);
       };
-      
-      // Fallback if onload doesn't fire
-      setTimeout(() => {
-        if (printWindow && !printWindow.closed) {
-          printWindow.focus();
-          printWindow.print();
-        }
-      }, 1500);
       
     } else {
       toast({
