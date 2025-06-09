@@ -367,12 +367,30 @@ export default function PrintLabels() {
     });
   };
 
-  // Execute print
-  const executePrint = () => {
-    const selectedProductsData = products.filter((p: Product) => 
-      selectedProducts.includes(p.id)
-    );
+  // Get label dimensions based on size
+  const getLabelDimensions = () => {
+    const dimensions = {
+      'mini': { width: '1.5in', height: '1in', pxWidth: '144px', pxHeight: '96px' },
+      'small': { width: '2in', height: '1.2in', pxWidth: '192px', pxHeight: '115px' },
+      'standard': { width: '2.5in', height: '1.5in', pxWidth: '240px', pxHeight: '144px' },
+      'medium': { width: '2.8in', height: '1.6in', pxWidth: '269px', pxHeight: '154px' },
+      'large': { width: '3in', height: '1.8in', pxWidth: '288px', pxHeight: '173px' },
+      'xlarge': { width: '3.5in', height: '2in', pxWidth: '336px', pxHeight: '192px' },
+      'thermal-58mm': { width: '58mm', height: '40mm', pxWidth: '220px', pxHeight: '151px' },
+      'thermal-80mm': { width: '80mm', height: '50mm', pxWidth: '302px', pxHeight: '189px' },
+      'custom': { 
+        width: `${customLabelSize.width}px`, 
+        height: `${customLabelSize.height}px`, 
+        pxWidth: `${customLabelSize.width}px`, 
+        pxHeight: `${customLabelSize.height}px` 
+      }
+    };
+    return dimensions[labelSize as keyof typeof dimensions] || dimensions.standard;
+  };
 
+  // Generate professional label template
+  const generateLabelTemplate = (product: Product, copyIndex: number) => {
+    const dims = getLabelDimensions();
     const currentDateTime = new Date().toLocaleString('en-IN', {
       day: '2-digit',
       month: '2-digit',
@@ -382,134 +400,277 @@ export default function PrintLabels() {
       hour12: true
     });
 
-    // Create print content
-    const printContent = selectedProductsData.map((product: Product) => {
-      return Array(copies).fill(null).map((_, index) => `
-        <div class="thermal-label" style="
-          width: 250px;
-          min-height: 150px;
-          padding: 8px;
-          margin: 4px;
-          border: 1px dashed #999;
-          background: white;
-          font-family: 'Courier New', monospace;
-          font-size: 12px;
-          line-height: 1.2;
+    // Template variations
+    const templates = {
+      standard: `
+        <div class="product-label standard-template" style="
+          width: ${dims.pxWidth};
+          height: ${dims.pxHeight};
+          padding: 6px;
+          margin: 2px;
+          border: ${labelBorder ? `${borderWidth}px ${borderStyle} #333` : 'none'};
+          background: ${backgroundColor};
+          color: ${textColor};
+          font-family: ${fontFamily}, sans-serif;
+          font-size: ${fontSize}px;
+          line-height: 1.1;
           display: inline-block;
           page-break-inside: avoid;
           box-sizing: border-box;
+          vertical-align: top;
         ">
-          <!-- Header with timestamp -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">
-            <div style="font-size: 10px; color: #666;">${currentDateTime}</div>
-            <div style="font-size: 11px; font-weight: bold;">Product Label</div>
+          ${includeCompanyLogo ? `<div style="text-align: center; margin-bottom: 3px; font-size: 8px; font-weight: bold;">COMPANY LOGO</div>` : ''}
+          
+          <div style="font-weight: bold; font-size: ${Math.max(10, parseInt(fontSize) + 2)}px; text-align: center; margin-bottom: 3px; word-wrap: break-word;">
+            ${product.name.length > 25 ? product.name.substring(0, 25) + '...' : product.name}
           </div>
 
-          <!-- Product Name -->
-          <div style="font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 6px; border: 1px solid #333; padding: 4px;">
-            ${product.name}
-          </div>
-
-          <!-- SKU -->
-          <div style="font-size: 10px; text-align: center; margin-bottom: 4px;">
+          <div style="font-size: ${Math.max(8, parseInt(fontSize) - 2)}px; text-align: center; margin-bottom: 2px;">
             SKU: ${product.sku}
           </div>
 
-          <!-- Description -->
           ${includeDescription && product.description ? 
-            `<div style="font-size: 9px; text-align: center; margin-bottom: 4px; color: #555;">
-              ${product.description.substring(0, 40)}${product.description.length > 40 ? '...' : ''}
+            `<div style="font-size: ${Math.max(7, parseInt(fontSize) - 3)}px; text-align: center; margin-bottom: 2px; color: #666;">
+              ${product.description.substring(0, 30)}${product.description.length > 30 ? '...' : ''}
             </div>` : ''
           }
 
-          <!-- Price Section -->
-          <div style="margin: 6px 0; text-align: center;">
+          <div style="text-align: center; margin: 3px 0;">
             ${includePrice ? 
-              `<div style="font-size: 16px; font-weight: bold; border: 2px solid #000; padding: 4px; margin: 2px 0;">
-                PRICE: ₹${Number(product.price).toFixed(2)}
+              `<div style="font-size: ${Math.max(12, parseInt(fontSize) + 4)}px; font-weight: bold; border: 1px solid #000; padding: 2px; margin: 1px 0;">
+                ₹${Number(product.price).toFixed(2)}
               </div>` : ''
             }
             ${includeMrp && product.mrp ? 
-              `<div style="font-size: 12px; margin: 2px 0;">
+              `<div style="font-size: ${Math.max(8, parseInt(fontSize) - 1)}px; text-decoration: line-through; color: #999;">
                 MRP: ₹${Number(product.mrp).toFixed(2)}
               </div>` : ''
             }
           </div>
 
-          <!-- Expiry Date -->
-          ${includeExpiryDate ? 
-            `<div style="font-size: 10px; text-align: center; margin: 4px 0; color: #d97706;">
-              Exp: Best Before Date
-            </div>` : ''
-          }
-
-          <!-- Barcode -->
           ${includeBarcode ? 
-            `<div style="text-align: center; margin-top: 6px; border-top: 1px solid #ddd; padding-top: 4px;">
-              <div style="font-family: 'Courier New', monospace; font-size: 8px; letter-spacing: 1px; background: #f8f8f8; padding: 2px; border: 1px solid #ccc;">
+            `<div style="text-align: center; margin-top: 3px;">
+              <div style="font-family: 'Courier New', monospace; font-size: 6px; letter-spacing: 0.5px; background: #f8f8f8; padding: 1px; border: 1px solid #ccc;">
                 ${generateBarcode(product.sku)}
               </div>
-              <div style="font-size: 8px; margin-top: 2px;">||||||||||||||||||||||||</div>
+              <div style="font-size: 6px; margin-top: 1px;">||||||||||||||||||||||||</div>
             </div>` : ''
           }
 
-          <!-- Footer -->
-          <div style="text-align: center; font-size: 8px; color: #999; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 2px;">
-            ${index + 1}/${copies}
+          ${includeCustomText && customText ? 
+            `<div style="font-size: ${Math.max(7, parseInt(fontSize) - 3)}px; text-align: center; margin-top: 2px; font-style: italic;">
+              ${customText}
+            </div>` : ''
+          }
+
+          <div style="font-size: 6px; text-align: center; color: #999; margin-top: 2px;">
+            ${copyIndex + 1}/${copies} | ${currentDateTime}
           </div>
         </div>
-      `).join('');
+      `,
+      
+      minimal: `
+        <div class="product-label minimal-template" style="
+          width: ${dims.pxWidth};
+          height: ${dims.pxHeight};
+          padding: 4px;
+          margin: 2px;
+          border: ${labelBorder ? `${borderWidth}px ${borderStyle} #ddd` : 'none'};
+          background: ${backgroundColor};
+          color: ${textColor};
+          font-family: ${fontFamily}, sans-serif;
+          font-size: ${fontSize}px;
+          display: inline-block;
+          page-break-inside: avoid;
+          box-sizing: border-box;
+          vertical-align: top;
+        ">
+          <div style="font-weight: bold; font-size: ${Math.max(11, parseInt(fontSize) + 3)}px; text-align: center; margin-bottom: 4px;">
+            ${product.name.length > 20 ? product.name.substring(0, 20) + '...' : product.name}
+          </div>
+
+          ${includePrice ? 
+            `<div style="font-size: ${Math.max(14, parseInt(fontSize) + 6)}px; font-weight: bold; text-align: center; margin: 4px 0;">
+              ₹${Number(product.price).toFixed(2)}
+            </div>` : ''
+          }
+
+          ${includeBarcode ? 
+            `<div style="text-align: center; margin-top: 4px;">
+              <div style="font-family: 'Courier New', monospace; font-size: 7px; background: #f0f0f0; padding: 2px;">
+                ${generateBarcode(product.sku)}
+              </div>
+            </div>` : ''
+          }
+        </div>
+      `,
+
+      'price-focus': `
+        <div class="product-label price-focus-template" style="
+          width: ${dims.pxWidth};
+          height: ${dims.pxHeight};
+          padding: 4px;
+          margin: 2px;
+          border: ${labelBorder ? `${borderWidth}px ${borderStyle} #e74c3c` : 'none'};
+          background: ${backgroundColor};
+          color: ${textColor};
+          font-family: ${fontFamily}, sans-serif;
+          font-size: ${fontSize}px;
+          display: inline-block;
+          page-break-inside: avoid;
+          box-sizing: border-box;
+          vertical-align: top;
+        ">
+          <div style="font-weight: bold; font-size: ${Math.max(9, parseInt(fontSize))}px; text-align: center; margin-bottom: 2px;">
+            ${product.name.length > 22 ? product.name.substring(0, 22) + '...' : product.name}
+          </div>
+
+          <div style="background: #e74c3c; color: white; text-align: center; padding: 4px; margin: 2px 0; border-radius: 2px;">
+            <div style="font-size: ${Math.max(16, parseInt(fontSize) + 8)}px; font-weight: bold;">
+              ₹${Number(product.price).toFixed(2)}
+            </div>
+            ${includeMrp && product.mrp ? 
+              `<div style="font-size: ${Math.max(8, parseInt(fontSize) - 2)}px; text-decoration: line-through; opacity: 0.8;">
+                MRP: ₹${Number(product.mrp).toFixed(2)}
+              </div>` : ''
+            }
+          </div>
+
+          <div style="font-size: ${Math.max(7, parseInt(fontSize) - 3)}px; text-align: center;">
+            SKU: ${product.sku}
+          </div>
+
+          ${includeBarcode ? 
+            `<div style="text-align: center; margin-top: 2px;">
+              <div style="font-family: 'Courier New', monospace; font-size: 6px; background: #f8f8f8; padding: 1px;">
+                ${generateBarcode(product.sku)}
+              </div>
+            </div>` : ''
+          }
+        </div>
+      `
+    };
+
+    return templates[labelTemplate as keyof typeof templates] || templates.standard;
+  };
+
+  // Execute print
+  const executePrint = () => {
+    const selectedProductsData = products.filter((p: Product) => 
+      selectedProducts.includes(p.id)
+    );
+
+    // Create print content with professional templates
+    const printContent = selectedProductsData.map((product: Product) => {
+      return Array(copies).fill(null).map((_, index) => 
+        generateLabelTemplate(product, index)
+      ).join('');
     }).join('');
 
-    // Open print window
+    const dims = getLabelDimensions();
+
+    // Open print window with enhanced styling
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Thermal Labels</title>
+            <title>Professional Product Labels</title>
             <style>
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              
               body {
                 margin: 0;
-                padding: 8px;
-                font-family: 'Courier New', monospace;
-                background: #f0f0f0;
+                padding: ${labelSize.includes('thermal') ? '2mm' : '5mm'};
+                font-family: ${fontFamily}, sans-serif;
+                background: #f8f9fa;
+                line-height: 1;
               }
-              .thermal-label {
+              
+              .product-label {
                 background: white !important;
                 break-inside: avoid;
+                page-break-inside: avoid;
+                border-radius: 2px;
+                overflow: hidden;
               }
+              
+              .labels-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 2px;
+                justify-content: flex-start;
+                align-items: flex-start;
+              }
+              
               @media print {
                 body { 
                   margin: 0; 
-                  padding: 2px; 
+                  padding: ${labelSize.includes('thermal') ? '1mm' : '2mm'}; 
                   background: white;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
                 }
-                .thermal-label { 
-                  margin: 2px !important; 
-                  page-break-inside: avoid;
-                  break-inside: avoid;
+                
+                .product-label { 
+                  margin: 1px !important;
+                  break-inside: avoid !important;
+                  page-break-inside: avoid !important;
                 }
+                
                 @page {
-                  margin: 0.25in;
-                  size: auto;
+                  margin: ${paperSize === 'thermal' ? '2mm' : '5mm'};
+                  size: ${paperSize === 'A4' ? 'A4' : paperSize === 'A5' ? 'A5' : paperSize === 'Letter' ? 'Letter' : 'auto'} ${printOrientation};
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
                 }
+                
+                ${labelSize.includes('thermal') ? `
+                  .product-label {
+                    width: ${dims.width} !important;
+                    height: ${dims.height} !important;
+                  }
+                ` : ''}
+              }
+              
+              /* Professional styling enhancements */
+              .standard-template {
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              }
+              
+              .minimal-template {
+                border-radius: 4px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+              }
+              
+              .price-focus-template {
+                box-shadow: 0 2px 4px rgba(231,76,60,0.2);
               }
             </style>
           </head>
           <body>
-            ${printContent}
+            <div class="labels-container">
+              ${printContent}
+            </div>
           </body>
         </html>
       `);
       printWindow.document.close();
-      printWindow.print();
+      
+      // Add a small delay before printing to ensure all styles are loaded
+      setTimeout(() => {
+        printWindow.print();
+      }, 100);
     }
 
     setIsPrintDialogOpen(false);
     toast({
-      title: "Labels sent to printer",
-      description: `${selectedProducts.length * copies} labels prepared for printing`,
+      title: "Professional labels sent to printer",
+      description: `${selectedProducts.length * copies} high-quality labels prepared for printing`,
     });
   };
 
