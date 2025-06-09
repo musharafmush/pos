@@ -1030,7 +1030,7 @@ export default function PrintLabels() {
                     <SelectContent>
                       <SelectItem value="all">All Stock Levels</SelectItem>
                       <SelectItem value="in-stock">In Stock (>0)</SelectItem>
-                      <SelectItem value="low-stock">Low Stock (<10)</SelectItem>
+                      <SelectItem value="low-stock">Low Stock (&lt;10)</SelectItem>
                       <SelectItem value="out-of-stock">Out of Stock (0)</SelectItem>
                     </SelectContent>
                   </Select>
