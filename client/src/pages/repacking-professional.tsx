@@ -187,11 +187,19 @@ export default function RepackingProfessional() {
         throw new Error(`Insufficient stock. Product "${bulkProduct.name}" has only ${bulkProduct.stockQuantity} units available.`);
       }
 
-      // Validate product is at least 1kg
-      const productWeight = parseFloat(bulkProduct.weight || "0");
+      // Validate product weight and calculate repack ratio
+      const productWeight = parseFloat(bulkProduct.weight || "1");
       const weightUnit = bulkProduct.weightUnit?.toLowerCase() || "kg";
-      if (productWeight < 1 || weightUnit !== "kg") {
-        throw new Error("Quick repack only works with 1kg or larger bulk products");
+      let totalWeightInGrams = productWeight;
+      
+      if (weightUnit === "kg") {
+        totalWeightInGrams = productWeight * 1000;
+      } else if (weightUnit === "g") {
+        totalWeightInGrams = productWeight;
+      }
+      
+      if (totalWeightInGrams < 250) {
+        throw new Error("Quick repack requires products with at least 250g total weight");
       }
 
       const timestamp = Date.now();
@@ -202,9 +210,10 @@ export default function RepackingProfessional() {
         ? bulkProduct.name.replace('BULK', '250g Pack') 
         : `${bulkProduct.name} (250g Pack)`;
 
-      // Calculate pricing based on bulk cost
-      const bulkCostPerKg = parseFloat(bulkProduct.cost || "0");
-      const costPer250g = (bulkCostPerKg / 4).toFixed(2); // 1kg = 4 x 250g
+      // Calculate repack quantities and pricing
+      const repacksFromBulk = Math.floor(totalWeightInGrams / 250); // How many 250g packs from one bulk unit
+      const bulkCost = parseFloat(bulkProduct.cost || "0");
+      const costPer250g = (bulkCost / repacksFromBulk).toFixed(2);
       const sellingPricePer250g = (parseFloat(costPer250g) * 1.3).toFixed(2); // 30% markup
       const mrpPer250g = (parseFloat(costPer250g) * 1.5).toFixed(2); // 50% markup
 
@@ -218,7 +227,7 @@ export default function RepackingProfessional() {
         weight: "250",
         weightUnit: "g",
         categoryId: bulkProduct.categoryId || 1,
-        stockQuantity: 4, // 4 packs from 1kg
+        stockQuantity: repacksFromBulk, // Dynamic quantity based on bulk size
         alertThreshold: 5,
         barcode: `${timestamp}${Math.floor(Math.random() * 1000)}`, // Auto-generate barcode
         active: true,
@@ -252,7 +261,7 @@ export default function RepackingProfessional() {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Success",
-        description: "1kg bulk converted to 4 x 250g packs successfully!",
+        description: `${productWeight}${weightUnit} bulk converted to ${repacksFromBulk} x 250g packs successfully!`,
       });
     },
     onError: (error: Error) => {
@@ -554,13 +563,31 @@ export default function RepackingProfessional() {
                 {bulkProducts.filter(product => {
                   const weight = parseFloat(product.weight || "0");
                   const unit = product.weightUnit?.toLowerCase() || "kg";
-                  return weight >= 1 && unit === "kg" && product.stockQuantity > 0;
+                  const isBulkByName = product.name.toLowerCase().includes('bulk') || 
+                                     product.name.toLowerCase().includes('bag') ||
+                                     product.name.toLowerCase().includes('container') ||
+                                     product.name.toLowerCase().includes('daal');
+                  const isBulkByWeight = (weight >= 0.5 && unit === "kg") || (weight >= 500 && unit === "g");
+                  const hasStock = product.stockQuantity > 0;
+                  
+                  return (isBulkByName || isBulkByWeight) && hasStock;
                 }).slice(0, 6).map((product) => {
-                  const costPer250g = (parseFloat(product.cost || "0") / 4).toFixed(2);
+                  const productWeight = parseFloat(product.weight || "1");
+                  const weightUnit = product.weightUnit?.toLowerCase() || "kg";
+                  let totalWeightInGrams = productWeight;
+                  
+                  if (weightUnit === "kg") {
+                    totalWeightInGrams = productWeight * 1000;
+                  } else if (weightUnit === "g") {
+                    totalWeightInGrams = productWeight;
+                  }
+                  
+                  const repacksFromBulk = Math.floor(totalWeightInGrams / 250);
+                  const costPer250g = (parseFloat(product.cost || "0") / repacksFromBulk).toFixed(2);
                   const sellingPricePer250g = (parseFloat(costPer250g) * 1.3).toFixed(2);
                   const mrpPer250g = (parseFloat(costPer250g) * 1.5).toFixed(2);
                   const profitPer250g = (parseFloat(sellingPricePer250g) - parseFloat(costPer250g)).toFixed(2);
-                  const totalValue = (parseFloat(sellingPricePer250g) * 4).toFixed(2);
+                  const totalValue = (parseFloat(sellingPricePer250g) * repacksFromBulk).toFixed(2);
 
                   return (
                     <div key={product.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg transition-all duration-200 hover:border-green-300">
@@ -570,17 +597,17 @@ export default function RepackingProfessional() {
                             {product.name}
                           </div>
                           <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            1kg
+                            {product.weight}{product.weightUnit}
                           </div>
                         </div>
 
                         <div className="text-xs text-gray-500 space-y-1">
                           <div>Stock: {product.stockQuantity} units | Cost: ₹{product.cost}/kg</div>
                           <div className="text-green-600 font-medium">
-                            Creates: 4 packs × 250g @ ₹{sellingPricePer250g}
+                            Creates: {repacksFromBulk} packs × 250g @ ₹{sellingPricePer250g}
                           </div>
                           <div className="text-blue-600">
-                            Total Value: ₹{totalValue} | Profit: ₹{(parseFloat(profitPer250g) * 4).toFixed(2)}
+                            Total Value: ₹{totalValue} | Profit: ₹{(parseFloat(profitPer250g) * repacksFromBulk).toFixed(2)}
                           </div>
                         </div>
 
@@ -610,7 +637,7 @@ export default function RepackingProfessional() {
                           {quickRepackMutation.isPending ? (
                             <>⏳ Processing...</>
                           ) : (
-                            <>🧃 Repack 1kg → 4×250g</>
+                            <>🧃 Repack {product.weight}{product.weightUnit} → {repacksFromBulk}×250g</>
                           )}
                         </Button>
                       </div>
@@ -621,14 +648,21 @@ export default function RepackingProfessional() {
               {bulkProducts.filter(product => {
                 const weight = parseFloat(product.weight || "0");
                 const unit = product.weightUnit?.toLowerCase() || "kg";
-                return weight >= 1 && unit === "kg" && product.stockQuantity > 0;
+                const isBulkByName = product.name.toLowerCase().includes('bulk') || 
+                                   product.name.toLowerCase().includes('bag') ||
+                                   product.name.toLowerCase().includes('container') ||
+                                   product.name.toLowerCase().includes('daal');
+                const isBulkByWeight = (weight >= 0.5 && unit === "kg") || (weight >= 500 && unit === "g");
+                const hasStock = product.stockQuantity > 0;
+                
+                return (isBulkByName || isBulkByWeight) && hasStock;
               }).length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <PackageIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="font-medium">No 1kg+ bulk products available for repacking</p>
-                  <p className="text-sm">Add bulk products (1kg or larger) to inventory to enable quick repacking</p>
+                  <p className="font-medium">No bulk products available for repacking</p>
+                  <p className="text-sm">Add bulk products (500g or larger) to inventory to enable quick repacking</p>
                   <div className="mt-4 text-xs bg-blue-50 text-blue-700 p-3 rounded">
-                    💡 Tip: Products with weight 1kg or more will appear here automatically
+                    💡 Tip: Products with names containing 'bulk', 'bag', 'container', 'daal' or weight ≥500g will appear here automatically
                   </div>
                 </div>
               )}
