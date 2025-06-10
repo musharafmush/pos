@@ -187,10 +187,11 @@ export default function RepackingProfessional() {
         throw new Error(`Insufficient stock. Product "${bulkProduct.name}" has only ${bulkProduct.stockQuantity} units available.`);
       }
 
-      // Validate product is actually 1kg
+      // Validate product is at least 1kg
       const productWeight = parseFloat(bulkProduct.weight || "0");
-      if (productWeight !== 1 || bulkProduct.weightUnit !== "kg") {
-        throw new Error("Quick repack only works with 1kg bulk products");
+      const weightUnit = bulkProduct.weightUnit?.toLowerCase() || "kg";
+      if (productWeight < 1 || weightUnit !== "kg") {
+        throw new Error("Quick repack only works with 1kg or larger bulk products");
       }
 
       const timestamp = Date.now();
@@ -550,9 +551,11 @@ export default function RepackingProfessional() {
               <p className="text-sm text-green-700 mb-4">Convert 1kg bulk products into 4 packs of 250g each with auto-generated pricing and barcodes.</p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {bulkProducts.filter(product => 
-                  product.weight === "1" && product.weightUnit === "kg" && product.stockQuantity > 0
-                ).slice(0, 6).map((product) => {
+                {bulkProducts.filter(product => {
+                  const weight = parseFloat(product.weight || "0");
+                  const unit = product.weightUnit?.toLowerCase() || "kg";
+                  return weight >= 1 && unit === "kg" && product.stockQuantity > 0;
+                }).slice(0, 6).map((product) => {
                   const costPer250g = (parseFloat(product.cost || "0") / 4).toFixed(2);
                   const sellingPricePer250g = (parseFloat(costPer250g) * 1.3).toFixed(2);
                   const mrpPer250g = (parseFloat(costPer250g) * 1.5).toFixed(2);
@@ -615,15 +618,17 @@ export default function RepackingProfessional() {
                   );
                 })}</div>
 
-              {bulkProducts.filter(product => 
-                product.weight === "1" && product.weightUnit === "kg" && product.stockQuantity > 0
-              ).length === 0 && (
+              {bulkProducts.filter(product => {
+                const weight = parseFloat(product.weight || "0");
+                const unit = product.weightUnit?.toLowerCase() || "kg";
+                return weight >= 1 && unit === "kg" && product.stockQuantity > 0;
+              }).length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <PackageIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="font-medium">No 1kg bulk products available for repacking</p>
-                  <p className="text-sm">Add 1kg bulk products to inventory to enable quick repacking</p>
+                  <p className="font-medium">No 1kg+ bulk products available for repacking</p>
+                  <p className="text-sm">Add bulk products (1kg or larger) to inventory to enable quick repacking</p>
                   <div className="mt-4 text-xs bg-blue-50 text-blue-700 p-3 rounded">
-                    💡 Tip: Products with weight "1" and unit "kg" will appear here automatically
+                    💡 Tip: Products with weight 1kg or more will appear here automatically
                   </div>
                 </div>
               )}
