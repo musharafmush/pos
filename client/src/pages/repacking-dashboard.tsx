@@ -342,13 +342,17 @@ export default function RepackingDashboard() {
                       <TableCell>
                         <div>
                           <div className="font-medium">{activity.sourceProduct.name}</div>
-                          <div className="text-sm text-gray-500">{activity.sourceProduct.sku}</div>
+                          <div className="text-sm text-gray-500 font-mono max-w-[100px] truncate" title={activity.sourceProduct.sku}>
+                            {activity.sourceProduct.sku.length > 12 ? `${activity.sourceProduct.sku.substring(0, 12)}...` : activity.sourceProduct.sku}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{activity.targetProduct.name}</div>
-                          <div className="text-sm text-gray-500">{activity.targetProduct.sku}</div>
+                          <div className="text-sm text-gray-500 font-mono max-w-[100px] truncate" title={activity.targetProduct.sku}>
+                            {activity.targetProduct.sku.length > 12 ? `${activity.targetProduct.sku.substring(0, 12)}...` : activity.targetProduct.sku}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>

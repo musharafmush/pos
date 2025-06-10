@@ -248,14 +248,14 @@ export default function RepackingDashboardProfessional() {
 
   const handleStartRepack = (product: Product) => {
     setSelectedBulkProduct(product);
-    
+
     // Auto-generate target product details
     const timestamp = Date.now();
     const targetName = product.name.includes('BULK') 
       ? product.name.replace('BULK', '250g Pack') 
       : `${product.name} (250g Pack)`;
     const targetSku = `${product.sku}-REPACK-250G-${timestamp}`;
-    
+
     setRepackFormData({
       sourceQuantity: "1",
       targetQuantity: "8",
@@ -266,7 +266,7 @@ export default function RepackingDashboardProfessional() {
       costPrice: product.cost,
       mrp: (parseFloat(product.price) * 1.5).toFixed(2)
     });
-    
+
     setIsRepackDialogOpen(true);
   };
 
@@ -362,7 +362,7 @@ export default function RepackingDashboardProfessional() {
   const filteredRepackedProducts = repackedProducts.filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === "all" || 
                          (statusFilter === "active" && product.active) ||
                          (statusFilter === "inactive" && !product.active);
@@ -576,12 +576,16 @@ export default function RepackingDashboardProfessional() {
                       </TableRow>
                     ) : (
                       filteredRepackedProducts.map((product: Product) => (
+                        
                         <TableRow key={product.id}>
                           <TableCell>
-                            <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                              {product.sku}
-                            </code>
+                            <div className="font-mono text-sm max-w-[120px]">
+                              <div className="truncate" title={product.sku}>
+                                {product.sku.length > 15 ? `${product.sku.substring(0, 15)}...` : product.sku}
+                              </div>
+                            </div>
                           </TableCell>
+                          
                           <TableCell>
                             <div>
                               <p className="font-medium">{product.name}</p>
@@ -1128,7 +1132,7 @@ export default function RepackingDashboardProfessional() {
                 Create smaller units from bulk product: {selectedBulkProduct?.name}
               </DialogDescription>
             </DialogHeader>
-            
+
             {selectedBulkProduct && (
               <div className="space-y-6">
                 {/* Source Product Info */}
