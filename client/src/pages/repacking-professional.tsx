@@ -127,12 +127,13 @@ export default function RepackingProfessional() {
 
   const form = useForm<RepackingFormValues>({
     resolver: zodResolver(repackingFormSchema),
+    mode: "onChange",
     defaultValues: {
       issueDate: formattedDate,
       issueNo: "",
       repackNo: "",
       bulkProductId: 0,
-      repackQuantity: 6, // Default to 6 as shown in image
+      repackQuantity: 6,
       unitWeight: 250,
       costPrice: 0,
       sellingPrice: 100,
@@ -143,7 +144,9 @@ export default function RepackingProfessional() {
   // Auto-select first bulk product on mount
   useEffect(() => {
     if (bulkProducts.length > 0 && form.getValues("bulkProductId") === 0) {
-      form.setValue("bulkProductId", bulkProducts[0].id);
+      const firstProduct = bulkProducts[0];
+      form.setValue("bulkProductId", firstProduct.id);
+      setSelectedProduct(firstProduct);
     }
   }, [bulkProducts, form]);
 
@@ -157,16 +160,21 @@ export default function RepackingProfessional() {
       const product = products.find((p: Product) => p.id === bulkProductId);
       if (product) {
         setSelectedProduct(product);
-        // Calculate cost per gram from bulk item
+        // Calculate cost per gram from bulk item with safety checks
+        const bulkWeight = parseFloat(product.weight || "1");
         const bulkWeightInGrams = product.weightUnit === 'kg' ? 
-          parseFloat(product.weight || "1") * 1000 : 
-          parseFloat(product.weight || "1000");
-        const costPerGram = parseFloat(product.cost || "0") / bulkWeightInGrams;
+          bulkWeight * 1000 : 
+          bulkWeight || 1000;
+        
+        const productCost = parseFloat(product.cost || "0");
+        const costPerGram = bulkWeightInGrams > 0 ? productCost / bulkWeightInGrams : 0;
         const newUnitCost = costPerGram * unitWeight;
         
-        form.setValue("costPrice", Math.round(newUnitCost * 100) / 100);
-        form.setValue("sellingPrice", Math.round(newUnitCost * 1.3 * 100) / 100); // 30% markup
-        form.setValue("mrp", Math.round(newUnitCost * 1.5 * 100) / 100); // 50% markup
+        if (newUnitCost > 0) {
+          form.setValue("costPrice", Math.round(newUnitCost * 100) / 100);
+          form.setValue("sellingPrice", Math.round(newUnitCost * 1.3 * 100) / 100);
+          form.setValue("mrp", Math.round(newUnitCost * 1.5 * 100) / 100);
+        }
       }
     }
   }, [bulkProductId, products, form, unitWeight]);
@@ -178,6 +186,12 @@ export default function RepackingProfessional() {
       
       if (bulkProduct.stockQuantity < 1) {
         throw new Error(`Insufficient stock. Product "${bulkProduct.name}" has only ${bulkProduct.stockQuantity} units available.`);
+      }
+
+      // Validate product is actually 1kg
+      const productWeight = parseFloat(bulkProduct.weight || "0");
+      if (productWeight !== 1 || bulkProduct.weightUnit !== "kg") {
+        throw new Error("Quick repack only works with 1kg bulk products");
       }
       
       const timestamp = Date.now();
@@ -335,6 +349,8 @@ export default function RepackingProfessional() {
   });
 
   const onSubmit = (data: RepackingFormValues) => {
+    console.log("Form submitted with data:", data);
+    
     if (!selectedProduct) {
       toast({
         title: "Error",
@@ -372,26 +388,44 @@ export default function RepackingProfessional() {
       return;
     }
 
+    // Check stock availability
+    const bulkWeight = parseFloat(selectedProduct.weight || "1");
+    const bulkWeightInGrams = selectedProduct.weightUnit === 'kg' ? 
+      bulkWeight * 1000 : bulkWeight || 1000;
+    const totalRepackWeight = data.unitWeight * data.repackQuantity;
+    const bulkUnitsNeeded = Math.ceil(totalRepackWeight / bulkWeightInGrams);
+    
+    if (selectedProduct.stockQuantity < bulkUnitsNeeded) {
+      toast({
+        title: "Error",
+        description: `Insufficient stock. Need ${bulkUnitsNeeded} units but only ${selectedProduct.stockQuantity} available.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (data.sellingPrice < data.costPrice) {
       toast({
         title: "Warning",
         description: "Selling price is less than cost price. This will result in a loss.",
-        variant: "destructive",
       });
     }
 
+    console.log("Submitting repack mutation...");
     repackingMutation.mutate(data);
   };
 
   const currentStock = selectedProduct?.stockQuantity || 0;
   const packedQuantity = repackQuantity;
   
-  // Calculate how many bulk units are needed for this repack
+  // Calculate how many bulk units are needed for this repack with safety checks
+  const bulkWeight = parseFloat(selectedProduct?.weight || "1");
   const bulkWeightInGrams = selectedProduct?.weightUnit === 'kg' ? 
-    parseFloat(selectedProduct?.weight || "1") * 1000 : 
-    parseFloat(selectedProduct?.weight || "1000");
+    bulkWeight * 1000 : 
+    bulkWeight || 1000;
+  
   const totalRepackWeight = unitWeight * repackQuantity;
-  const bulkUnitsNeeded = Math.ceil(totalRepackWeight / bulkWeightInGrams);
+  const bulkUnitsNeeded = bulkWeightInGrams > 0 ? Math.ceil(totalRepackWeight / bulkWeightInGrams) : 1;
   
   const availableForPack = Math.max(0, currentStock - bulkUnitsNeeded);
 
@@ -476,7 +510,10 @@ export default function RepackingProfessional() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm font-medium text-gray-700">Select Bulk Product</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={bulkProducts.length > 0 ? bulkProducts[0]?.id.toString() : ""}>
+                        <Select 
+                          onValueChange={(value) => field.onChange(parseInt(value))} 
+                          value={field.value ? field.value.toString() : ""}
+                        >
                           <FormControl>
                             <SelectTrigger className="h-9 bg-yellow-50 border-gray-300">
                               <SelectValue placeholder="Select bulk product" />
