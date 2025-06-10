@@ -579,9 +579,9 @@ export default function RepackingDashboardProfessional() {
                         
                         <TableRow key={product.id}>
                           <TableCell>
-                            <div className="font-mono text-xs max-w-[100px]">
+                            <div className="font-mono text-xs max-w-[60px]">
                               <div className="truncate" title={product.sku}>
-                                {product.sku.length > 12 ? `${product.sku.substring(0, 12)}...` : product.sku}
+                                {product.sku.length > 5 ? `${product.sku.substring(0, 5)}...` : product.sku}
                               </div>
                             </div>
                           </TableCell>
