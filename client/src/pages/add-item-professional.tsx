@@ -146,7 +146,7 @@ export default function AddItemProfessional() {
     // Get all existing products to find the highest item code number
     const existingProducts = allProducts || [];
     let maxNumber = 0;
-    
+
     // Extract numbers from existing item codes
     existingProducts.forEach((product: any) => {
       if (product.sku && product.sku.startsWith('ITM')) {
@@ -157,7 +157,7 @@ export default function AddItemProfessional() {
         }
       }
     });
-    
+
     // Generate next sequential number
     const nextNumber = (maxNumber + 1).toString().padStart(6, '0');
     return `ITM${nextNumber}`;
@@ -314,12 +314,12 @@ export default function AddItemProfessional() {
       };
 
       const res = await apiRequest("POST", "/api/products", productData);
-      
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Failed to create product");
       }
-      
+
       return await res.json();
     },
     onSuccess: (data) => {
@@ -385,7 +385,7 @@ export default function AddItemProfessional() {
         stockQuantity: "0",
         active: true,
       });
-      
+
       toast({
         title: "Success! 🎉", 
         description: `Product "${data.name}" created successfully with SKU: ${data.sku}`,
@@ -500,7 +500,7 @@ export default function AddItemProfessional() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit((data) => {
                 console.log("Form submission data:", data);
-                
+
                 // Additional validation for repackaging
                 if (data.itemPreparationsStatus === "Repackage") {
                   if (!data.bulkItemName) {
@@ -520,7 +520,7 @@ export default function AddItemProfessional() {
                     return;
                   }
                 }
-                
+
                 createProductMutation.mutate(data);
               })} className="space-y-6">
 
@@ -865,7 +865,7 @@ export default function AddItemProfessional() {
                                       const hsnValue = e.target.value;
                                       field.onChange(hsnValue);
 
-                                      // Auto-suggest GST code based on HSN
+                                                                            // Auto-suggest GST code based on HSN
                                       let suggestedGst = "";
                                       if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
                                         suggestedGst = "GST 0%";
@@ -1542,48 +1542,62 @@ export default function AddItemProfessional() {
                                                 <SelectValue placeholder="Select bulk item to repackage" />
                                               </SelectTrigger>
                                               <SelectContent className="max-h-80 overflow-y-auto">
-                                                {/* Show message if no bulk items found */}
-                                                {bulkItems.length === 0 && (
-                                                  <div className="p-4 text-center text-gray-500">
-                                                    <p className="text-sm">No bulk items found in inventory.</p>
-                                                    <p className="text-xs mt-1">Add bulk items first to enable repackaging.</p>
-                                                  </div>
-                                                )}
+                                          {/* Bulk items as shown in the reference image */}
+                                          <SelectItem value="Rice 1kg (500g Pack)">
+                                            Rice 1kg (500g Pack) - SKU: ITM670689059-REPACK-500G-174867443241†
+                                          </SelectItem>
+                                          <SelectItem value="Rice 1kg (Repackcd 100g)">
+                                            Rice 1kg (Repackcd 100g) - SKU: ITM670689059-REPACK-174652265274†
+                                          </SelectItem>
+                                          <SelectItem value="Rice 1kg">
+                                            Rice 1kg - SKU: ITM670689059†
+                                          </SelectItem>
+                                          <SelectItem value="100G">
+                                            100G - Small quantity bulk item
+                                          </SelectItem>
+                                          <SelectItem value="AJINOMOTO BULK">
+                                            AJINOMOTO BULK - Seasoning bulk pack
+                                          </SelectItem>
+                                          <SelectItem value="Rice - 25kg Bag">
+                                            Rice - 25kg Bag - Standard rice bulk pack
+                                          </SelectItem>
+                                          <SelectItem value="Wheat - 50kg Bag">
+                                            Wheat - 50kg Bag - Wheat bulk pack
+                                          </SelectItem>
+                                          <SelectItem value="Dal - 25kg Bag">
+                                            Dal - 25kg Bag - Lentils bulk pack
+                                          </SelectItem>
+                                          <SelectItem value="Sugar - 50kg Bag">
+                                            Sugar - 50kg Bag - Sugar bulk pack
+                                          </SelectItem>
+                                          <SelectItem value="Oil - 15 Ltr Container">
+                                            Oil - 15 Ltr Container - Cooking oil bulk
+                                          </SelectItem>
 
-                                                {/* Sample bulk items as shown in the reference image */}
-                                                <SelectItem value="Rice 1kg (500g Pack)">
-                                                  Rice 1kg (500g Pack) - SKU: ITM670689059-REPACK-500G-174867443241†
-                                                </SelectItem>
-                                                <SelectItem value="Rice 1kg (Repackcd 100g)">
-                                                  Rice 1kg (Repackcd 100g) - SKU: ITM670689059-REPACK-174652265274†
-                                                </SelectItem>
-                                                <SelectItem value="Rice 1kg">
-                                                  Rice 1kg - SKU: ITM670689059†
-                                                </SelectItem>
-                                                <SelectItem value="100G">100G - Small quantity bulk item</SelectItem>
-                                                <SelectItem value="AJINOMOTO BULK">AJINOMOTO BULK - Seasoning bulk pack</SelectItem>
-                                                <SelectItem value="Rice - 25kg Bag">Rice - 25kg Bag - Standard rice bulk pack</SelectItem>
-                                                <SelectItem value="Wheat - 50kg Bag">Wheat - 50kg Bag - Wheat bulk pack</SelectItem>
-                                                <SelectItem value="Dal - 25kg Bag">Dal - 25kg Bag - Lentils bulk pack</SelectItem>
-                                                <SelectItem value="Sugar - 50kg Bag">Sugar - 50kg Bag - Sugar bulk pack</SelectItem>
-                                                <SelectItem value="Oil - 15 Ltr Container">Oil - 15 Ltr Container - Cooking oil bulk</SelectItem>
-                                                
-                                                {/* Dynamic bulk items from database */}
-                                                {bulkItems.map((product: any) => (
-                                                  <SelectItem key={`bulk-${product.id}`} value={product.name}>
-                                                    {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity} • Weight: {product.weight}{product.weightUnit}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                          </FormControl>
-                                          <div className="text-xs text-red-500 mt-1">
-                                            Bulk Item Name is required for repackaging
-                                          </div>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
+                                          {/* Dynamic bulk items from database */}
+                                          {allProducts && allProducts.length > 0 && allProducts.map((product: any) => (
+                                            <SelectItem key={`product-${product.id}`} value={product.name}>
+                                              {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity} • Weight: {product.weight || 0}{product.weightUnit || 'kg'}
+                                            </SelectItem>
+                                          ))}
+
+                                          {/* Show message if no items available */}
+                                          {(!allProducts || allProducts.length === 0) && (
+                                            <div className="p-4 text-center text-gray-500">
+                                              <p className="text-sm">No bulk items found in inventory.</p>
+                                              <p className="text-xs mt-1">Add bulk items first to enable repackaging.</p>
+                                            </div>
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <div className="text-xs text-red-500 mt-1">
+                                      Bulk Item Name is required for repackaging
+                                    </div>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
                                   </div>
 
                                   {/* Right Side - Bulk Item Details */}
@@ -1593,7 +1607,7 @@ export default function AddItemProfessional() {
                                         <div className="bg-blue-500 text-white text-center py-2 font-semibold text-sm">
                                           Bulk Item Details
                                         </div>
-                                        
+
                                         <div className="p-4 space-y-3 text-sm">
                                           <div className="grid grid-cols-2 gap-2">
                                             <span className="font-medium text-gray-700">Bulk Code:</span>
