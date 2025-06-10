@@ -160,6 +160,68 @@ export default function RepackingProfessional() {
     }
   }, [bulkProductId, products, form, unitWeight]);
 
+  // Quick Repack: 1kg to 4x250g conversion
+  const quickRepackMutation = useMutation({
+    mutationFn: async (bulkProduct: Product) => {
+      if (!bulkProduct) throw new Error("No bulk product selected");
+      
+      const timestamp = Date.now();
+      const repackedSku = `${bulkProduct.sku}-REPACK-250G-${timestamp}`;
+
+      // Auto-generate product name for 250g packs
+      const repackedName = bulkProduct.name.includes('BULK') 
+        ? bulkProduct.name.replace('BULK', '250g Pack') 
+        : `${bulkProduct.name} (250g Pack)`;
+
+      // Calculate pricing based on bulk cost
+      const bulkCostPerKg = parseFloat(bulkProduct.cost || "0");
+      const costPer250g = (bulkCostPerKg / 4).toFixed(2); // 1kg = 4 x 250g
+      const sellingPricePer250g = (parseFloat(costPer250g) * 1.3).toFixed(2); // 30% markup
+      const mrpPer250g = (parseFloat(costPer250g) * 1.5).toFixed(2); // 50% markup
+
+      const repackedProduct = {
+        name: repackedName,
+        description: `Repacked from bulk item: ${bulkProduct.name}. Original weight: ${bulkProduct.weight}${bulkProduct.weightUnit}`,
+        sku: repackedSku,
+        price: sellingPricePer250g,
+        mrp: mrpPer250g,
+        cost: costPer250g,
+        weight: "250",
+        weightUnit: "g",
+        categoryId: bulkProduct.categoryId || 1,
+        stockQuantity: 4, // 4 packs from 1kg
+        alertThreshold: 5,
+        barcode: `${timestamp}${Math.floor(Math.random() * 1000)}`, // Auto-generate barcode
+        active: true,
+      };
+
+      const response = await apiRequest("POST", "/api/products", repackedProduct);
+
+      // Reduce bulk stock by 1 unit (1kg used)
+      const newBulkStock = Math.max(0, bulkProduct.stockQuantity - 1);
+
+      await apiRequest("PATCH", `/api/products/${bulkProduct.id}`, {
+        stockQuantity: newBulkStock,
+      });
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Success",
+        description: "1kg bulk converted to 4 x 250g packs successfully!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const repackingMutation = useMutation({
     mutationFn: async (data: RepackingFormValues) => {
       if (!selectedProduct) throw new Error("No bulk product selected");
@@ -362,6 +424,58 @@ export default function RepackingProfessional() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Quick Repack Section */}
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-6">
+              <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                <PackageIcon className="w-5 h-5 mr-2" />
+                Quick Bulk to Repack Conversion
+              </h3>
+              <p className="text-sm text-green-700 mb-4">Convert 1kg bulk products into 4 packs of 250g each with auto-generated pricing and barcodes.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {bulkProducts.filter(product => 
+                  product.weight === "1" && product.weightUnit === "kg" && product.stockQuantity > 0
+                ).slice(0, 6).map((product) => {
+                  const costPer250g = (parseFloat(product.cost || "0") / 4).toFixed(2);
+                  const sellingPricePer250g = (parseFloat(costPer250g) * 1.3).toFixed(2);
+                  
+                  return (
+                    <div key={product.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+                      <div className="flex flex-col space-y-2">
+                        <div className="font-medium text-sm text-gray-900 truncate" title={product.name}>
+                          {product.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Stock: {product.stockQuantity} | Cost: ₹{product.cost}/kg
+                        </div>
+                        <div className="text-xs text-green-600">
+                          Will create: 4 x 250g @ ₹{sellingPricePer250g} each
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => quickRepackMutation.mutate(product)}
+                          disabled={quickRepackMutation.isPending}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white text-xs py-1 h-8"
+                        >
+                          🧃 Repack 1kg to 250g x 4
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {bulkProducts.filter(product => 
+                product.weight === "1" && product.weightUnit === "kg" && product.stockQuantity > 0
+              ).length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <PackageIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p>No 1kg bulk products available for repacking</p>
+                  <p className="text-sm">Add 1kg bulk products to inventory first</p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-4 gap-6">
