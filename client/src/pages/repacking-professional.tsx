@@ -257,8 +257,20 @@ export default function RepackingProfessional() {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data, bulkProduct) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      const productWeight = parseFloat(bulkProduct.weight || "1");
+      const weightUnit = bulkProduct.weightUnit?.toLowerCase() || "kg";
+      let totalWeightInGrams = productWeight;
+      
+      if (weightUnit === "kg") {
+        totalWeightInGrams = productWeight * 1000;
+      } else if (weightUnit === "g") {
+        totalWeightInGrams = productWeight;
+      }
+      
+      const repacksFromBulk = Math.floor(totalWeightInGrams / 250);
+      
       toast({
         title: "Success",
         description: `${productWeight}${weightUnit} bulk converted to ${repacksFromBulk} x 250g packs successfully!`,
@@ -557,21 +569,38 @@ export default function RepackingProfessional() {
                 <PackageIcon className="w-5 h-5 mr-2" />
                 Quick Bulk to Repack Conversion
               </h3>
-              <p className="text-sm text-green-700 mb-4">Convert 1kg bulk products into 4 packs of 250g each with auto-generated pricing and barcodes.</p>
+              <p className="text-sm text-green-700 mb-4">Convert bulk products into multiple smaller packs with auto-generated pricing and barcodes.</p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {bulkProducts.filter(product => {
+              {(() => {
+                const availableBulkProducts = bulkProducts.filter(product => {
                   const weight = parseFloat(product.weight || "0");
                   const unit = product.weightUnit?.toLowerCase() || "kg";
                   const isBulkByName = product.name.toLowerCase().includes('bulk') || 
                                      product.name.toLowerCase().includes('bag') ||
                                      product.name.toLowerCase().includes('container') ||
                                      product.name.toLowerCase().includes('daal');
-                  const isBulkByWeight = (weight >= 0.5 && unit === "kg") || (weight >= 500 && unit === "g");
+                  const isBulkByWeight = (weight >= 0.25 && unit === "kg") || (weight >= 250 && unit === "g");
                   const hasStock = product.stockQuantity > 0;
                   
                   return (isBulkByName || isBulkByWeight) && hasStock;
-                }).slice(0, 6).map((product) => {
+                });
+
+                if (availableBulkProducts.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      <PackageIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="font-medium">No bulk products available for repacking</p>
+                      <p className="text-sm">Add bulk products (250g or larger) to inventory to enable quick repacking</p>
+                      <div className="mt-4 text-xs bg-blue-50 text-blue-700 p-3 rounded">
+                        💡 Tip: Products with names containing 'bulk', 'bag', 'container', 'daal' or weight ≥250g will appear here automatically
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {availableBulkProducts.slice(0, 6).map((product) => {
                   const productWeight = parseFloat(product.weight || "1");
                   const weightUnit = product.weightUnit?.toLowerCase() || "kg";
                   let totalWeightInGrams = productWeight;
@@ -643,29 +672,10 @@ export default function RepackingProfessional() {
                       </div>
                     </div>
                   );
-                })}</div>
-
-              {bulkProducts.filter(product => {
-                const weight = parseFloat(product.weight || "0");
-                const unit = product.weightUnit?.toLowerCase() || "kg";
-                const isBulkByName = product.name.toLowerCase().includes('bulk') || 
-                                   product.name.toLowerCase().includes('bag') ||
-                                   product.name.toLowerCase().includes('container') ||
-                                   product.name.toLowerCase().includes('daal');
-                const isBulkByWeight = (weight >= 0.5 && unit === "kg") || (weight >= 500 && unit === "g");
-                const hasStock = product.stockQuantity > 0;
-                
-                return (isBulkByName || isBulkByWeight) && hasStock;
-              }).length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <PackageIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="font-medium">No bulk products available for repacking</p>
-                  <p className="text-sm">Add bulk products (500g or larger) to inventory to enable quick repacking</p>
-                  <div className="mt-4 text-xs bg-blue-50 text-blue-700 p-3 rounded">
-                    💡 Tip: Products with names containing 'bulk', 'bag', 'container', 'daal' or weight ≥500g will appear here automatically
+                })}
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             <div className="grid grid-cols-4 gap-6">
@@ -674,98 +684,101 @@ export default function RepackingProfessional() {
                 <div className="bg-white border border-gray-300 rounded">
                   {/* Table Header */}
                   <div className="bg-blue-500 text-white rounded-t">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-blue-400 hover:bg-blue-500">
-                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400 w-20">Code</TableHead>
-                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400">Item Name</TableHead>
-                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400 w-20">Qty</TableHead>
-                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400 w-24">Cost</TableHead>
-                          <TableHead className="text-white font-semibold text-center py-3 border-r border-blue-400 w-24">Selling</TableHead>
-                          <TableHead className="text-white font-semibold text-center py-3 w-24">MRP</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                    </Table>
+                    <div className="grid grid-cols-12 gap-2 p-3 font-semibold text-center text-sm">
+                      <div className="col-span-2 border-r border-blue-400">Code</div>
+                      <div className="col-span-4 border-r border-blue-400">Item Name</div>
+                      <div className="col-span-1 border-r border-blue-400">Qty</div>
+                      <div className="col-span-2 border-r border-blue-400">Cost</div>
+                      <div className="col-span-2 border-r border-blue-400">Selling</div>
+                      <div className="col-span-1">MRP</div>
+                    </div>
                   </div>
 
                   {/* Table Content */}
                   <div className="min-h-96 bg-white">
-                    <Table>
-                      <TableBody>
-                        <TableRow className="border-b border-gray-200 hover:bg-gray-50">
-                          <TableCell className="font-mono text-center py-3 border-r border-gray-200 text-sm bg-gray-50 w-20">
-                            {productCode}
-                          </TableCell>
-                          <TableCell className="text-left py-3 border-r border-gray-200 text-sm px-3">
-                            {unitWeight}G {selectedProduct ? selectedProduct.name.replace('BULK', '').trim() : 'daal'} SUNBRAND
-                          </TableCell>
-                          <TableCell className="text-center py-3 border-r border-gray-200 w-20">
-                            <FormField
-                              control={form.control}
-                              name="repackQuantity"
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  step="1"
-                                  value={field.value || 6}
-                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 6)}
-                                  className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                />
-                              )}
+                    <div className="grid grid-cols-12 gap-2 p-3 border-b border-gray-200 hover:bg-gray-50 items-center">
+                      <div className="col-span-2 font-mono text-center text-sm bg-gray-50 p-2 rounded border-r border-gray-200">
+                        {productCode}
+                      </div>
+                      <div className="col-span-4 text-left text-sm px-3 border-r border-gray-200">
+                        {unitWeight}G {selectedProduct ? selectedProduct.name.replace('BULK', '').replace('bulk', '').trim() : 'daal'} SUNBRAND
+                      </div>
+                      <div className="col-span-1 text-center border-r border-gray-200">
+                        <FormField
+                          control={form.control}
+                          name="repackQuantity"
+                          render={({ field }) => (
+                            <Input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={field.value || 6}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 6)}
+                              className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             />
-                          </TableCell>
-                          <TableCell className="text-center py-3 border-r border-gray-200 w-24">
-                            <FormField
-                              control={form.control}
-                              name="costPrice"
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={field.value || 0}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                  className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                />
-                              )}
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-2 text-center border-r border-gray-200">
+                        <FormField
+                          control={form.control}
+                          name="costPrice"
+                          render={({ field }) => (
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={field.value || 0}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             />
-                          </TableCell>
-                          <TableCell className="text-center py-3 border-r border-gray-200 w-24">
-                            <FormField
-                              control={form.control}
-                              name="sellingPrice"
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={field.value || 100}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 100)}
-                                  className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                />
-                              )}
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-2 text-center border-r border-gray-200">
+                        <FormField
+                          control={form.control}
+                          name="sellingPrice"
+                          render={({ field }) => (
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={field.value || 100}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 100)}
+                              className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             />
-                          </TableCell>
-                          <TableCell className="text-center py-3 w-24">
-                            <FormField
-                              control={form.control}
-                              name="mrp"
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={field.value || 150}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 150)}
-                                  className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                />
-                              )}
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-1 text-center">
+                        <FormField
+                          control={form.control}
+                          name="mrp"
+                          render={({ field }) => (
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={field.value || 150}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 150)}
+                              className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             />
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
+                          )}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Empty state when no product selected */}
+                    {!selectedProduct && (
+                      <div className="flex items-center justify-center h-64 text-gray-500">
+                        <div className="text-center">
+                          <PackageIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                          <p className="text-lg font-medium mb-2">Select a bulk product to start repacking</p>
+                          <p className="text-sm">Choose from the dropdown above to configure your repack settings</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
