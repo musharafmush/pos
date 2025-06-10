@@ -49,13 +49,6 @@ const repackingFormSchema = z.object({
 
 type RepackingFormValues = z.infer<typeof repackingFormSchema>;
 
-interface RepackEntry {
-  id: string;
-  name: string;
-  percentage: number;
-  amount: number;
-}
-
 // Generate date options for dropdown (last 30 days + next 7 days)
 const generateDateOptions = () => {
   const dates = [];
@@ -83,9 +76,8 @@ const generateDateOptions = () => {
 export default function RepackingProfessional() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [repackEntries, setRepackEntries] = useState<RepackEntry[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [useLatestSell, setUseLatestSell] = useState(false);
+  const [productCode, setProductCode] = useState<string>("15022");
 
   // Generate today's date in DD/MM/YYYY format
   const today = new Date();
@@ -109,10 +101,12 @@ export default function RepackingProfessional() {
     const aIsBulk = a.name.toLowerCase().includes('bulk') || 
                    a.name.toLowerCase().includes('bag') ||
                    a.name.toLowerCase().includes('container') ||
+                   a.name.toLowerCase().includes('daal') ||
                    (parseFloat(a.weight || "0") >= 1 && a.weightUnit === 'kg');
     const bIsBulk = b.name.toLowerCase().includes('bulk') || 
                    b.name.toLowerCase().includes('bag') ||
                    b.name.toLowerCase().includes('container') ||
+                   b.name.toLowerCase().includes('daal') ||
                    (parseFloat(b.weight || "0") >= 1 && b.weightUnit === 'kg');
 
     if (aIsBulk && !bIsBulk) return -1;
@@ -130,8 +124,8 @@ export default function RepackingProfessional() {
       repackQuantity: 8,
       unitWeight: 250,
       costPrice: 0,
-      sellingPrice: 0,
-      mrp: 0,
+      sellingPrice: 100,
+      mrp: 150,
     },
   });
 
@@ -146,8 +140,8 @@ export default function RepackingProfessional() {
       if (product) {
         setSelectedProduct(product);
         form.setValue("costPrice", parseFloat(product.cost) || 0);
-        form.setValue("sellingPrice", parseFloat(product.price) || 0);
-        form.setValue("mrp", parseFloat(product.mrp) || 0);
+        form.setValue("sellingPrice", parseFloat(product.price) || 100);
+        form.setValue("mrp", parseFloat(product.mrp) || 150);
       }
     }
   }, [bulkProductId, products, form]);
@@ -208,7 +202,6 @@ export default function RepackingProfessional() {
       });
       form.reset();
       setSelectedProduct(null);
-      setRepackEntries([]);
     },
     onError: (error: Error) => {
       toast({
@@ -320,7 +313,7 @@ export default function RepackingProfessional() {
                         <Select onValueChange={(value) => field.onChange(parseInt(value))}>
                           <FormControl>
                             <SelectTrigger className="h-9 bg-yellow-50 border-gray-300">
-                              <SelectValue placeholder="ITTN244971391 - rice" />
+                              <SelectValue placeholder={bulkProducts.length > 0 ? `${bulkProducts[0]?.sku || 'ITM000001'} - ${bulkProducts[0]?.name || 'daal'}` : "Select bulk product"} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-h-60 overflow-y-auto">
@@ -368,79 +361,77 @@ export default function RepackingProfessional() {
 
                   {/* Table Content */}
                   <div className="min-h-96 bg-white">
-                    {selectedProduct && (
-                      <Table>
-                        <TableBody>
-                          <TableRow className="border-b border-gray-200 hover:bg-gray-50">
-                            <TableCell className="font-mono text-center py-3 border-r border-gray-200 text-sm bg-gray-50 w-20">
-                              15022
-                            </TableCell>
-                            <TableCell className="text-left py-3 border-r border-gray-200 text-sm px-3">
-                              {unitWeight}G {selectedProduct.name.replace('BULK', '').trim()} SUNBRAND
-                            </TableCell>
-                            <TableCell className="text-center py-3 border-r border-gray-200 w-20">
-                              <FormField
-                                control={form.control}
-                                name="repackQuantity"
-                                render={({ field }) => (
-                                  <Input
-                                    type="number"
-                                    {...field}
-                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                                    className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  />
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell className="text-center py-3 border-r border-gray-200 w-24">
-                              <FormField
-                                control={form.control}
-                                name="costPrice"
-                                render={({ field }) => (
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    {...field}
-                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                    className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  />
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell className="text-center py-3 border-r border-gray-200 w-24">
-                              <FormField
-                                control={form.control}
-                                name="sellingPrice"
-                                render={({ field }) => (
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    {...field}
-                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                    className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  />
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell className="text-center py-3 w-24">
-                              <FormField
-                                control={form.control}
-                                name="mrp"
-                                render={({ field }) => (
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    {...field}
-                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                    className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  />
-                                )}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    )}
+                    <Table>
+                      <TableBody>
+                        <TableRow className="border-b border-gray-200 hover:bg-gray-50">
+                          <TableCell className="font-mono text-center py-3 border-r border-gray-200 text-sm bg-gray-50 w-20">
+                            {productCode}
+                          </TableCell>
+                          <TableCell className="text-left py-3 border-r border-gray-200 text-sm px-3">
+                            {unitWeight}G {selectedProduct ? selectedProduct.name.replace('BULK', '').trim() : 'daal'} SUNBRAND
+                          </TableCell>
+                          <TableCell className="text-center py-3 border-r border-gray-200 w-20">
+                            <FormField
+                              control={form.control}
+                              name="repackQuantity"
+                              render={({ field }) => (
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 8)}
+                                  className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center py-3 border-r border-gray-200 w-24">
+                            <FormField
+                              control={form.control}
+                              name="costPrice"
+                              render={({ field }) => (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                  className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center py-3 border-r border-gray-200 w-24">
+                            <FormField
+                              control={form.control}
+                              name="sellingPrice"
+                              render={({ field }) => (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 100)}
+                                  className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center py-3 w-24">
+                            <FormField
+                              control={form.control}
+                              name="mrp"
+                              render={({ field }) => (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 150)}
+                                  className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                              )}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               </div>
@@ -452,114 +443,83 @@ export default function RepackingProfessional() {
                     Bulk Item Details
                   </div>
 
-                  {selectedProduct && (
-                    <div className="p-4 space-y-4 text-sm">
-                      <div className="space-y-3">
-                        <div>
-                          <span className="text-gray-600 text-xs">Bulk Code</span>
-                          <div className="bg-gray-100 px-3 py-2 rounded text-center font-mono text-sm mt-1">
-                            13254
+                  <div className="p-4 space-y-4 text-sm">
+                    <div className="space-y-3">
+                      <div>
+                        <span className="text-gray-600 text-xs">Bulk Code</span>
+                        <div className="bg-gray-100 px-3 py-2 rounded text-center font-mono text-sm mt-1">
+                          13254
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-gray-600 text-xs">Bulk Item</span>
+                        <div className="bg-gray-100 px-3 py-2 rounded text-center text-sm mt-1">
+                          {selectedProduct ? selectedProduct.name.toUpperCase() : 'DAAL'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-gray-600 text-xs">Weight</span>
+                        <div className="bg-gray-100 px-3 py-2 rounded text-center mt-1">
+                          <FormField
+                            control={form.control}
+                            name="unitWeight"
+                            render={({ field }) => (
+                              <Input
+                                type="number"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 250)}
+                                className="w-16 h-6 text-center border-none bg-transparent text-sm p-0"
+                              />
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-gray-600 text-xs">Cost</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="bg-gray-100 px-2 py-1 rounded text-xs">
+                            {selectedProduct ? formatCurrency(parseFloat(selectedProduct.cost)) : '₹90'}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                          >
+                            Latest sel
+                          </Button>
+                          <span className="bg-yellow-200 px-2 py-1 rounded text-xs">
+                            110.00
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Stock Information */}
+                      <div className="grid grid-cols-3 gap-1 pt-3 border-t">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 mb-1">Current Stock</div>
+                          <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
+                            {currentStock.toFixed(2)}
                           </div>
                         </div>
-
-                        <div>
-                          <span className="text-gray-600 text-xs">Bulk Item</span>
-                          <div className="bg-gray-100 px-3 py-2 rounded text-center text-sm mt-1">
-                            {selectedProduct.name.toUpperCase()}
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 mb-1">Packed</div>
+                          <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
+                            {packedQuantity.toFixed(2)}
                           </div>
                         </div>
-
-                        <div>
-                          <span className="text-gray-600 text-xs">Weight</span>
-                          <div className="bg-gray-100 px-3 py-2 rounded text-center mt-1">
-                            <FormField
-                              control={form.control}
-                              name="unitWeight"
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                  className="w-16 h-6 text-center border-none bg-transparent text-sm p-0"
-                                />
-                              )}
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <span className="text-gray-600 text-xs">Cost</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="bg-gray-100 px-2 py-1 rounded text-xs">
-                              {formatCurrency(parseFloat(selectedProduct.cost))}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-6 px-2 text-xs"
-                              onClick={() => setUseLatestSell(!useLatestSell)}
-                            >
-                              Latest sel
-                            </Button>
-                            <span className="bg-yellow-200 px-2 py-1 rounded text-xs">
-                              110.00
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Stock Information */}
-                        <div className="grid grid-cols-3 gap-1 pt-3 border-t">
-                          <div className="text-center">
-                            <div className="text-xs text-gray-600 mb-1">Current Stock</div>
-                            <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
-                              {currentStock.toFixed(2)}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-xs text-gray-600 mb-1">Packed</div>
-                            <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
-                              {packedQuantity.toFixed(2)}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-xs text-gray-600 mb-1">Avail for pack</div>
-                            <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
-                              {availableForPack.toFixed(2)}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Additional Table */}
-                        <div className="pt-3 border-t">
-                          <div className="bg-blue-500 text-white rounded-t">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="text-white font-semibold text-xs text-center py-2 h-8">Name</TableHead>
-                                  <TableHead className="text-white font-semibold text-xs text-center py-2 h-8">Perc %</TableHead>
-                                  <TableHead className="text-white font-semibold text-xs text-center py-2 h-8">Amount</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                            </Table>
-                          </div>
-                          <div className="bg-white border border-t-0 rounded-b min-h-20">
-                            <Table>
-                              <TableBody>
-                                {repackEntries.length === 0 && (
-                                  <TableRow>
-                                    <TableCell colSpan={3} className="text-center text-gray-400 py-6 text-xs">
-                                      No additional entries
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </TableBody>
-                            </Table>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 mb-1">Avail for pack</div>
+                          <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
+                            {availableForPack.toFixed(2)}
                           </div>
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -613,7 +573,7 @@ export default function RepackingProfessional() {
                   </Button>
                   <Button 
                     type="submit" 
-                    disabled={repackingMutation.isPending || !selectedProduct}
+                    disabled={repackingMutation.isPending}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     <SaveIcon className="w-4 h-4 mr-2" />
