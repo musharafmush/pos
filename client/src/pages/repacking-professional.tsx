@@ -120,14 +120,21 @@ export default function RepackingProfessional() {
       issueDate: formattedDate,
       issueNo: "",
       repackNo: "",
-      bulkProductId: 0,
-      repackQuantity: 8,
+      bulkProductId: bulkProducts.length > 0 ? bulkProducts[0].id : 0,
+      repackQuantity: 6, // Default to 6 as shown in image
       unitWeight: 250,
       costPrice: 0,
       sellingPrice: 100,
       mrp: 150,
     },
   });
+
+  // Auto-select first bulk product on mount
+  useEffect(() => {
+    if (bulkProducts.length > 0 && form.getValues("bulkProductId") === 0) {
+      form.setValue("bulkProductId", bulkProducts[0].id);
+    }
+  }, [bulkProducts, form]);
 
   // Watch for bulk product changes
   const bulkProductId = form.watch("bulkProductId");
@@ -139,32 +146,41 @@ export default function RepackingProfessional() {
       const product = products.find((p: Product) => p.id === bulkProductId);
       if (product) {
         setSelectedProduct(product);
-        form.setValue("costPrice", parseFloat(product.cost) || 0);
-        form.setValue("sellingPrice", parseFloat(product.price) || 100);
-        form.setValue("mrp", parseFloat(product.mrp) || 150);
+        // Calculate cost per gram from bulk item
+        const bulkWeightInGrams = product.weightUnit === 'kg' ? 
+          parseFloat(product.weight || "1") * 1000 : 
+          parseFloat(product.weight || "1000");
+        const costPerGram = parseFloat(product.cost || "0") / bulkWeightInGrams;
+        const newUnitCost = costPerGram * unitWeight;
+        
+        form.setValue("costPrice", Math.round(newUnitCost * 100) / 100);
+        form.setValue("sellingPrice", Math.round(newUnitCost * 1.3 * 100) / 100); // 30% markup
+        form.setValue("mrp", Math.round(newUnitCost * 1.5 * 100) / 100); // 50% markup
       }
     }
-  }, [bulkProductId, products, form]);
+  }, [bulkProductId, products, form, unitWeight]);
 
   const repackingMutation = useMutation({
     mutationFn: async (data: RepackingFormValues) => {
+      if (!selectedProduct) throw new Error("No bulk product selected");
+      
       const timestamp = Date.now();
-      const repackedSku = `${selectedProduct?.sku}-REPACK-${data.unitWeight}G-${timestamp}`;
+      const repackedSku = `${selectedProduct.sku}-REPACK-${data.unitWeight}G-${timestamp}`;
 
-      const repackedName = selectedProduct?.name.includes('BULK') 
+      const repackedName = selectedProduct.name.includes('BULK') 
         ? selectedProduct.name.replace('BULK', `${data.unitWeight}g`) 
-        : `${selectedProduct?.name} (${data.unitWeight}g Pack)`;
+        : `${selectedProduct.name} (${data.unitWeight}g Pack)`;
 
       const repackedProduct = {
         name: repackedName,
-        description: `Repacked from bulk item: ${selectedProduct?.name}. Original weight: ${selectedProduct?.weight}${selectedProduct?.weightUnit}`,
+        description: `Repacked from bulk item: ${selectedProduct.name}. Original weight: ${selectedProduct.weight}${selectedProduct.weightUnit}`,
         sku: repackedSku,
         price: data.sellingPrice.toString(),
         mrp: data.mrp.toString(),
         cost: data.costPrice.toString(),
         weight: data.unitWeight.toString(),
         weightUnit: "g",
-        categoryId: selectedProduct?.categoryId || 1,
+        categoryId: selectedProduct.categoryId || 1,
         stockQuantity: data.repackQuantity,
         alertThreshold: 5,
         barcode: "",
@@ -173,24 +189,25 @@ export default function RepackingProfessional() {
 
       const response = await apiRequest("POST", "/api/products", repackedProduct);
 
-      if (selectedProduct) {
-        const productWeight = parseFloat(selectedProduct.weight) || 0;
-        const productWeightUnit = selectedProduct.weightUnit || 'g';
+      // Calculate bulk stock reduction
+      const productWeight = parseFloat(selectedProduct.weight) || 1;
+      const productWeightUnit = selectedProduct.weightUnit || 'kg';
 
-        let productWeightInGrams = productWeight;
-        if (productWeightUnit === 'kg') {
-          productWeightInGrams = productWeight * 1000;
-        }
-
-        const totalRepackedWeight = data.unitWeight * data.repackQuantity;
-        const bulkUnitsUsed = totalRepackedWeight / productWeightInGrams;
-
-        const newBulkStock = Math.max(0, selectedProduct.stockQuantity - Math.ceil(bulkUnitsUsed));
-
-        await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
-          stockQuantity: Math.floor(newBulkStock),
-        });
+      let productWeightInGrams = productWeight;
+      if (productWeightUnit === 'kg') {
+        productWeightInGrams = productWeight * 1000;
       }
+
+      // Total weight needed for all repacked units
+      const totalRepackedWeight = data.unitWeight * data.repackQuantity;
+      // How many bulk units are needed
+      const bulkUnitsUsed = Math.ceil(totalRepackedWeight / productWeightInGrams);
+
+      const newBulkStock = Math.max(0, selectedProduct.stockQuantity - bulkUnitsUsed);
+
+      await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
+        stockQuantity: newBulkStock,
+      });
 
       return response.json();
     },
@@ -227,7 +244,15 @@ export default function RepackingProfessional() {
 
   const currentStock = selectedProduct?.stockQuantity || 0;
   const packedQuantity = repackQuantity;
-  const availableForPack = Math.max(0, currentStock - packedQuantity);
+  
+  // Calculate how many bulk units are needed for this repack
+  const bulkWeightInGrams = selectedProduct?.weightUnit === 'kg' ? 
+    parseFloat(selectedProduct?.weight || "1") * 1000 : 
+    parseFloat(selectedProduct?.weight || "1000");
+  const totalRepackWeight = unitWeight * repackQuantity;
+  const bulkUnitsNeeded = Math.ceil(totalRepackWeight / bulkWeightInGrams);
+  
+  const availableForPack = Math.max(0, currentStock - bulkUnitsNeeded);
 
   return (
     <DashboardLayout>
@@ -310,10 +335,10 @@ export default function RepackingProfessional() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm font-medium text-gray-700">Select Bulk Product</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))}>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={bulkProducts.length > 0 ? bulkProducts[0]?.id.toString() : ""}>
                           <FormControl>
                             <SelectTrigger className="h-9 bg-yellow-50 border-gray-300">
-                              <SelectValue placeholder={bulkProducts.length > 0 ? `${bulkProducts[0]?.sku || 'ITM000001'} - ${bulkProducts[0]?.name || 'daal'}` : "Select bulk product"} />
+                              <SelectValue placeholder="Select bulk product" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-h-60 overflow-y-auto">
@@ -502,19 +527,19 @@ export default function RepackingProfessional() {
                         <div className="text-center">
                           <div className="text-xs text-gray-600 mb-1">Current Stock</div>
                           <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
-                            {currentStock.toFixed(2)}
+                            {currentStock}
                           </div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-600 mb-1">Packed</div>
                           <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
-                            {packedQuantity.toFixed(2)}
+                            {bulkUnitsNeeded}
                           </div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-600 mb-1">Avail for pack</div>
                           <div className="bg-gray-100 px-1 py-2 rounded text-xs font-mono">
-                            {availableForPack.toFixed(2)}
+                            {availableForPack}
                           </div>
                         </div>
                       </div>
