@@ -120,7 +120,7 @@ export default function RepackingProfessional() {
       issueDate: formattedDate,
       issueNo: "",
       repackNo: "",
-      bulkProductId: bulkProducts.length > 0 ? bulkProducts[0].id : 0,
+      bulkProductId: 0,
       repackQuantity: 6, // Default to 6 as shown in image
       unitWeight: 250,
       costPrice: 0,
@@ -402,8 +402,10 @@ export default function RepackingProfessional() {
                               render={({ field }) => (
                                 <Input
                                   type="number"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 8)}
+                                  min="1"
+                                  step="1"
+                                  value={field.value || 6}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 6)}
                                   className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                 />
                               )}
@@ -417,7 +419,8 @@ export default function RepackingProfessional() {
                                 <Input
                                   type="number"
                                   step="0.01"
-                                  {...field}
+                                  min="0"
+                                  value={field.value || 0}
                                   onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                                   className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                 />
@@ -432,7 +435,8 @@ export default function RepackingProfessional() {
                                 <Input
                                   type="number"
                                   step="0.01"
-                                  {...field}
+                                  min="0"
+                                  value={field.value || 100}
                                   onChange={(e) => field.onChange(parseFloat(e.target.value) || 100)}
                                   className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                 />
@@ -447,7 +451,8 @@ export default function RepackingProfessional() {
                                 <Input
                                   type="number"
                                   step="0.01"
-                                  {...field}
+                                  min="0"
+                                  value={field.value || 150}
                                   onChange={(e) => field.onChange(parseFloat(e.target.value) || 150)}
                                   className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                 />
@@ -493,9 +498,11 @@ export default function RepackingProfessional() {
                             render={({ field }) => (
                               <Input
                                 type="number"
-                                {...field}
+                                min="1"
+                                step="1"
+                                value={field.value || 250}
                                 onChange={(e) => field.onChange(parseFloat(e.target.value) || 250)}
-                                className="w-16 h-6 text-center border-none bg-transparent text-sm p-0"
+                                className="w-16 h-6 text-center border-none bg-transparent text-sm p-0 font-medium"
                               />
                             )}
                           />
