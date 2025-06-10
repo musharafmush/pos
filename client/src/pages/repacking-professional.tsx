@@ -191,13 +191,13 @@ export default function RepackingProfessional() {
       const productWeight = parseFloat(bulkProduct.weight || "1");
       const weightUnit = bulkProduct.weightUnit?.toLowerCase() || "kg";
       let totalWeightInGrams = productWeight;
-      
+
       if (weightUnit === "kg") {
         totalWeightInGrams = productWeight * 1000;
       } else if (weightUnit === "g") {
         totalWeightInGrams = productWeight;
       }
-      
+
       if (totalWeightInGrams < 250) {
         throw new Error("Quick repack requires products with at least 250g total weight");
       }
@@ -262,15 +262,15 @@ export default function RepackingProfessional() {
       const productWeight = parseFloat(bulkProduct.weight || "1");
       const weightUnit = bulkProduct.weightUnit?.toLowerCase() || "kg";
       let totalWeightInGrams = productWeight;
-      
+
       if (weightUnit === "kg") {
         totalWeightInGrams = productWeight * 1000;
       } else if (weightUnit === "g") {
         totalWeightInGrams = productWeight;
       }
-      
+
       const repacksFromBulk = Math.floor(totalWeightInGrams / 250);
-      
+
       toast({
         title: "Success",
         description: `${productWeight}${weightUnit} bulk converted to ${repacksFromBulk} x 250g packs successfully!`,
@@ -581,7 +581,7 @@ export default function RepackingProfessional() {
                                      product.name.toLowerCase().includes('daal');
                   const isBulkByWeight = (weight >= 0.25 && unit === "kg") || (weight >= 250 && unit === "g");
                   const hasStock = product.stockQuantity > 0;
-                  
+
                   return (isBulkByName || isBulkByWeight) && hasStock;
                 });
 
@@ -604,13 +604,13 @@ export default function RepackingProfessional() {
                   const productWeight = parseFloat(product.weight || "1");
                   const weightUnit = product.weightUnit?.toLowerCase() || "kg";
                   let totalWeightInGrams = productWeight;
-                  
+
                   if (weightUnit === "kg") {
                     totalWeightInGrams = productWeight * 1000;
                   } else if (weightUnit === "g") {
                     totalWeightInGrams = productWeight;
                   }
-                  
+
                   const repacksFromBulk = Math.floor(totalWeightInGrams / 250);
                   const costPer250g = (parseFloat(product.cost || "0") / repacksFromBulk).toFixed(2);
                   const sellingPricePer250g = (parseFloat(costPer250g) * 1.3).toFixed(2);
@@ -746,7 +746,7 @@ export default function RepackingProfessional() {
                               min="0"
                               value={field.value || 100}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 100)}
-                              className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              className="w-full h-7 text-center border border-gray-300 text-sm bg-white focus:border-blue-500 focus:ring-1 focus<previous_generation>:ring-blue-500"
                             />
                           )}
                         />
@@ -768,7 +768,7 @@ export default function RepackingProfessional() {
                         />
                       </div>
                     </div>
-                    
+
                     {/* Empty state when no product selected */}
                     {!selectedProduct && (
                       <div className="flex items-center justify-center h-64 text-gray-500">
@@ -800,8 +800,8 @@ export default function RepackingProfessional() {
                       </div>
 
                       <div>
-                                                <span className="text-gray-600 text-xs">Bulk Item</span>
-                        <div className="bg-gray-100 px-3 py-2 rounded text-center text-sm mt-1">
+                        <span className="text-gray-600 text-xs">Bulk Item</span>
+                        <div className="bg-gray-100 px-3 py-2 rounded text-center text-sm mt-1 font-medium">
                           {selectedProduct ? selectedProduct.name.toUpperCase() : 'DAAL'}
                         </div>
                       </div>
@@ -809,20 +809,9 @@ export default function RepackingProfessional() {
                       <div>
                         <span className="text-gray-600 text-xs">Weight</span>
                         <div className="bg-gray-100 px-3 py-2 rounded text-center mt-1">
-                          <FormField
-                            control={form.control}
-                            name="unitWeight"
-                            render={({ field }) => (
-                              <Input
-                                type="number"
-                                min="1"
-                                step="1"
-                                value={field.value || 250}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 250)}
-                                className="w-16 h-6 text-center border-none bg-transparent text-sm p-0 font-medium"
-                              />
-                            )}
-                          />
+                          <span className="text-sm font-medium">
+                            {unitWeight || 500}
+                          </span>
                         </div>
                       </div>
 
