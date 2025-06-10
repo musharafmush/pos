@@ -709,41 +709,68 @@ export default function POSEnhanced() {
     minute: '2-digit' 
   });
 
-  // Printing receipt functionality
+  // Enhanced receipt printing functionality
   const handlePrintReceipt = (saleData: any) => {
-    const receiptData = {
-      billNumber: billNumber,
-      billDate: new Date().toLocaleDateString('en-IN'),
-      customerDetails: {
-        name: selectedCustomer?.name || "Walk-in Customer",
-        doorNo: "",
-        street: "",
-        address: "",
-        place: ""
-      },
-      salesMan: "Admin User",
-      items: cart.map(item => ({
-        id: item.id,
-        name: item.name,
-        sku: item.sku,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.total,
-        mrp: item.mrp
-      })),
-      subtotal: subtotal,
-      discount: discountAmount,
-      discountType: 'percentage' as const,
-      taxRate: taxRate,
-      taxAmount: taxAmount,
-      grandTotal: total,
-      amountPaid: parseFloat(amountPaid) || total,
-      changeDue: Math.max(0, (parseFloat(amountPaid) || total) - total),
-      paymentMethod: paymentMethod,
-      notes: `Bill: ${billNumber}`
-    };
+    // Validate cart data before printing
+    if (cart.length === 0) {
+      toast({
+        title: "Print Error",
+        description: "No items in cart to print receipt",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    printReceiptUtil(receiptData);
+    try {
+      const receiptData = {
+        billNumber: billNumber,
+        billDate: new Date().toLocaleDateString('en-IN'),
+        customerDetails: {
+          name: selectedCustomer?.name || "Walk-in Customer",
+          doorNo: selectedCustomer?.phone ? `Ph: ${selectedCustomer.phone}` : "",
+          street: "",
+          address: "",
+          place: ""
+        },
+        salesMan: "Admin User",
+        items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          sku: item.sku,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total,
+          mrp: item.mrp || parseFloat(item.price)
+        })),
+        subtotal: subtotal,
+        discount: discountAmount,
+        discountType: 'percentage' as const,
+        taxRate: taxRate,
+        taxAmount: taxAmount,
+        grandTotal: total,
+        amountPaid: parseFloat(amountPaid) || total,
+        changeDue: Math.max(0, (parseFloat(amountPaid) || total) - total),
+        paymentMethod: paymentMethod.toUpperCase(),
+        notes: `Bill: ${billNumber} | Terminal: POS-Enhanced`
+      };
+
+      console.log("📄 Printing receipt with data:", receiptData);
+      printReceiptUtil(receiptData);
+
+      toast({
+        title: "✅ Receipt Sent to Printer",
+        description: `Receipt ${billNumber} sent successfully`,
+        variant: "default",
+      });
+
+    } catch (error) {
+      console.error("Receipt printing error:", error);
+      toast({
+        title: "❌ Print Failed",
+        description: "Failed to generate receipt. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Quick payment setup

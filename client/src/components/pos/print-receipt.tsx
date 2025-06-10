@@ -249,33 +249,88 @@ export const PrintReceipt: React.FC<PrintReceiptProps> = ({ data }) => {
   );
 };
 
-// Print function
+// Enhanced Print function with better error handling
 export const printReceipt = (data: PrintReceiptData) => {
-  const printWindow = window.open('', '_blank', 'width=300,height=600');
+  // Validate data before printing
+  if (!data || !data.items || data.items.length === 0) {
+    console.error("Invalid receipt data:", data);
+    alert('Cannot print receipt: No items found');
+    return;
+  }
+
+  const printWindow = window.open('', '_blank', 'width=400,height=700,scrollbars=yes,resizable=yes');
 
   if (!printWindow) {
     alert('Please allow popups to print the receipt');
     return;
   }
 
+  // Add loading indicator
+  printWindow.document.write(`
+    <html>
+      <head><title>Loading Receipt...</title></head>
+      <body style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p>Generating receipt...</p>
+        <style>
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+
+  // Generate the complete receipt HTML with enhanced styling
   const receiptHtml = `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Receipt - ${data.billNumber}</title>
         <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
           body { 
             margin: 0; 
-            padding: 0; 
+            padding: 15px; 
             font-family: 'Courier New', monospace;
+            background: white;
+            color: black;
+            line-height: 1.4;
           }
+          
           @media print {
             body { 
               width: 80mm; 
               margin: 0;
               padding: 10px;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
-            .no-print { display: none !important; }
+            .no-print { 
+              display: none !important; 
+            }
+            @page {
+              margin: 0;
+              size: 80mm auto;
+            }
+          }
+          
+          @media screen {
+            body {
+              max-width: 300px;
+              margin: 0 auto;
+              background: #f5f5f5;
+              padding: 20px;
+            }
           }
           .print-receipt {
             width: 80mm;
@@ -498,25 +553,73 @@ export const printReceipt = (data: PrintReceiptData) => {
           </div>
         </div>
 
-        <div class="no-print" style="text-align: center; margin: 20px; padding: 20px;">
-          <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
-            Print Receipt
+        <div class="no-print" style="text-align: center; margin: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+          <div style="margin-bottom: 15px; color: #28a745; font-weight: bold;">
+            📄 Receipt Generated Successfully!
+          </div>
+          <button onclick="window.print()" style="padding: 12px 24px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            🖨️ Print Receipt
           </button>
-          <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">
-            Close
+          <button onclick="window.close()" style="padding: 12px 24px; font-size: 16px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            ❌ Close
           </button>
+          <div style="margin-top: 15px; font-size: 12px; color: #666;">
+            Receipt #${data.billNumber} | ${new Date().toLocaleString('en-IN')}
+          </div>
         </div>
 
         <script>
-          // Auto print after a short delay
-          setTimeout(() => {
-            window.print();
-          }, 500);
+          console.log('📄 Receipt loaded successfully');
+          console.log('Receipt data:', ${JSON.stringify(data)});
+          
+          // Enhanced auto-print functionality
+          window.addEventListener('load', function() {
+            setTimeout(() => {
+              console.log('🖨️ Auto-printing receipt...');
+              window.print();
+            }, 1000);
+          });
+          
+          // Handle print completion
+          window.addEventListener('afterprint', function() {
+            console.log('✅ Print completed');
+          });
+          
+          // Handle print cancellation
+          window.addEventListener('beforeprint', function() {
+            console.log('🖨️ Print dialog opened');
+          });
         </script>
       </body>
     </html>
   `;
 
-  printWindow.document.write(receiptHtml);
-  printWindow.document.close();
+  // Clear loading content and write the actual receipt
+  setTimeout(() => {
+    try {
+      printWindow.document.open();
+      printWindow.document.write(receiptHtml);
+      printWindow.document.close();
+      
+      console.log("✅ Receipt HTML written to print window");
+      
+      // Focus the print window
+      printWindow.focus();
+      
+    } catch (error) {
+      console.error("❌ Error writing receipt to print window:", error);
+      printWindow.document.write(`
+        <html>
+          <body style="padding: 20px; font-family: Arial, sans-serif; text-align: center;">
+            <h3 style="color: #dc3545;">⚠️ Print Error</h3>
+            <p>Unable to generate receipt. Please try again.</p>
+            <button onclick="window.close()" style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Close
+            </button>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  }, 500);
 };
