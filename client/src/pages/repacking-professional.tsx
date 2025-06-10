@@ -77,12 +77,23 @@ export default function RepackingProfessional() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [productCode, setProductCode] = useState<string>("15022");
+  const [productCode, setProductCode] = useState<string>("");
 
   // Generate today's date in DD/MM/YYYY format
   const today = new Date();
   const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
   const dateOptions = generateDateOptions();
+
+  // Generate product code based on selected product
+  useEffect(() => {
+    if (selectedProduct) {
+      const baseCode = selectedProduct.sku.replace(/[^0-9]/g, '').slice(0, 4) || "1000";
+      const timestamp = Date.now().toString().slice(-4);
+      setProductCode(`${baseCode}${timestamp}`);
+    } else {
+      setProductCode("15022");
+    }
+  }, [selectedProduct]);
 
   // Fetch products for bulk selection
   const { data: products = [] } = useQuery({
@@ -165,6 +176,10 @@ export default function RepackingProfessional() {
     mutationFn: async (bulkProduct: Product) => {
       if (!bulkProduct) throw new Error("No bulk product selected");
       
+      if (bulkProduct.stockQuantity < 1) {
+        throw new Error(`Insufficient stock. Product "${bulkProduct.name}" has only ${bulkProduct.stockQuantity} units available.`);
+      }
+      
       const timestamp = Date.now();
       const repackedSku = `${bulkProduct.sku}-REPACK-250G-${timestamp}`;
 
@@ -195,16 +210,29 @@ export default function RepackingProfessional() {
         active: true,
       };
 
-      const response = await apiRequest("POST", "/api/products", repackedProduct);
+      try {
+        const response = await apiRequest("POST", "/api/products", repackedProduct);
+        
+        if (!response.ok) {
+          const errorData = await response.text();
+          throw new Error(`Failed to create repacked product: ${errorData}`);
+        }
 
-      // Reduce bulk stock by 1 unit (1kg used)
-      const newBulkStock = Math.max(0, bulkProduct.stockQuantity - 1);
+        // Reduce bulk stock by 1 unit (1kg used)
+        const newBulkStock = Math.max(0, bulkProduct.stockQuantity - 1);
+        const updateResponse = await apiRequest("PATCH", `/api/products/${bulkProduct.id}`, {
+          stockQuantity: newBulkStock,
+        });
 
-      await apiRequest("PATCH", `/api/products/${bulkProduct.id}`, {
-        stockQuantity: newBulkStock,
-      });
+        if (!updateResponse.ok) {
+          throw new Error("Failed to update bulk product stock");
+        }
 
-      return response.json();
+        return response.json();
+      } catch (error) {
+        console.error('Quick repack error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -226,6 +254,21 @@ export default function RepackingProfessional() {
     mutationFn: async (data: RepackingFormValues) => {
       if (!selectedProduct) throw new Error("No bulk product selected");
       
+      // Validate sufficient stock
+      const productWeight = parseFloat(selectedProduct.weight) || 1;
+      const productWeightUnit = selectedProduct.weightUnit || 'kg';
+      let productWeightInGrams = productWeight;
+      if (productWeightUnit === 'kg') {
+        productWeightInGrams = productWeight * 1000;
+      }
+      
+      const totalRepackedWeight = data.unitWeight * data.repackQuantity;
+      const bulkUnitsNeeded = Math.ceil(totalRepackedWeight / productWeightInGrams);
+      
+      if (selectedProduct.stockQuantity < bulkUnitsNeeded) {
+        throw new Error(`Insufficient stock. Need ${bulkUnitsNeeded} units but only ${selectedProduct.stockQuantity} available.`);
+      }
+      
       const timestamp = Date.now();
       const repackedSku = `${selectedProduct.sku}-REPACK-${data.unitWeight}G-${timestamp}`;
 
@@ -245,33 +288,33 @@ export default function RepackingProfessional() {
         categoryId: selectedProduct.categoryId || 1,
         stockQuantity: data.repackQuantity,
         alertThreshold: 5,
-        barcode: "",
+        barcode: `${timestamp}${Math.floor(Math.random() * 1000)}`,
         active: true,
       };
 
-      const response = await apiRequest("POST", "/api/products", repackedProduct);
+      try {
+        const response = await apiRequest("POST", "/api/products", repackedProduct);
+        
+        if (!response.ok) {
+          const errorData = await response.text();
+          throw new Error(`Failed to create repacked product: ${errorData}`);
+        }
 
-      // Calculate bulk stock reduction
-      const productWeight = parseFloat(selectedProduct.weight) || 1;
-      const productWeightUnit = selectedProduct.weightUnit || 'kg';
+        // Update bulk stock
+        const newBulkStock = Math.max(0, selectedProduct.stockQuantity - bulkUnitsNeeded);
+        const updateResponse = await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
+          stockQuantity: newBulkStock,
+        });
 
-      let productWeightInGrams = productWeight;
-      if (productWeightUnit === 'kg') {
-        productWeightInGrams = productWeight * 1000;
+        if (!updateResponse.ok) {
+          throw new Error("Failed to update bulk product stock");
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error('Repacking error:', error);
+        throw error;
       }
-
-      // Total weight needed for all repacked units
-      const totalRepackedWeight = data.unitWeight * data.repackQuantity;
-      // How many bulk units are needed
-      const bulkUnitsUsed = Math.ceil(totalRepackedWeight / productWeightInGrams);
-
-      const newBulkStock = Math.max(0, selectedProduct.stockQuantity - bulkUnitsUsed);
-
-      await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
-        stockQuantity: newBulkStock,
-      });
-
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -299,6 +342,42 @@ export default function RepackingProfessional() {
         variant: "destructive",
       });
       return;
+    }
+
+    // Additional validation
+    if (data.repackQuantity < 1) {
+      toast({
+        title: "Error",
+        description: "Repack quantity must be at least 1",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (data.unitWeight < 1) {
+      toast({
+        title: "Error",
+        description: "Unit weight must be at least 1 gram",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (data.costPrice < 0 || data.sellingPrice < 0 || data.mrp < 0) {
+      toast({
+        title: "Error",
+        description: "Prices cannot be negative",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (data.sellingPrice < data.costPrice) {
+      toast({
+        title: "Warning",
+        description: "Selling price is less than cost price. This will result in a loss.",
+        variant: "destructive",
+      });
     }
 
     repackingMutation.mutate(data);
