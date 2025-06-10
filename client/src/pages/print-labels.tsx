@@ -1,220 +1,218 @@
-
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { PrinterIcon, TagIcon, SearchIcon, SettingsIcon, PackageIcon, ShipIcon, AnchorIcon, WavesIcon, CompassIcon, MapIcon } from "lucide-react";
+import { 
+  TagIcon, 
+  PrinterIcon, 
+  SettingsIcon, 
+  SearchIcon, 
+  Package2Icon,
+  BarChart3Icon,
+  QrCodeIcon,
+  FilterIcon,
+  DownloadIcon,
+  RefreshCwIcon,
+  CopyIcon,
+  ScanIcon,
+  GridIcon,
+  ListIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+  RotateCcwIcon,
+  SaveIcon,
+  UploadIcon,
+  Eye,
+  FileTextIcon,
+  ImageIcon,
+  StarIcon,
+  ClockIcon,
+  TrendingUpIcon
+} from "lucide-react";
 
 interface Product {
   id: number;
   name: string;
   sku: string;
-  price: number;
+  price: string;
+  cost?: string;
   description?: string;
-  category?: string | { id: number; name: string; description?: string; createdAt?: string };
-  weight?: number;
-  dimensions?: string;
-  origin?: string;
-  destination?: string;
-  vessel?: string;
-  container?: string;
-  hazmat?: boolean;
-  temperature?: string;
+  barcode?: string;
+  category?: { name: string };
+  stockQuantity?: number;
+  mrp?: string;
+  weight?: string;
+  weightUnit?: string;
+  hsnCode?: string;
+  gstCode?: string;
+  active?: boolean;
 }
 
-interface MaritimeLabel {
+interface LabelTemplate {
   id: string;
-  type: 'shipping' | 'container' | 'hazmat' | 'temperature' | 'marine_equipment' | 'navigation';
-  title: string;
-  description: string;
-  icon: React.ComponentType<any>;
-  fields: string[];
+  name: string;
+  width: number;
+  height: number;
+  fontSize: number;
+  includeBarcode: boolean;
+  includePrice: boolean;
+  includeDescription: boolean;
+  includeMRP: boolean;
+  includeWeight: boolean;
+  includeHSN: boolean;
+  barcodePosition: 'top' | 'bottom' | 'left' | 'right';
+  borderStyle: 'solid' | 'dashed' | 'dotted' | 'none';
+  borderWidth: number;
+  backgroundColor: string;
+  textColor: string;
+  customCSS?: string;
 }
 
-const maritimeLabelTypes: MaritimeLabel[] = [
+const defaultTemplates: LabelTemplate[] = [
   {
-    id: 'shipping',
-    type: 'shipping',
-    title: 'Shipping Labels',
-    description: 'Ocean freight and cargo labels',
-    icon: ShipIcon,
-    fields: ['origin', 'destination', 'vessel', 'container', 'weight', 'dimensions']
+    id: 'retail-standard',
+    name: 'Retail Standard',
+    width: 80,
+    height: 50,
+    fontSize: 12,
+    includeBarcode: true,
+    includePrice: true,
+    includeDescription: false,
+    includeMRP: true,
+    includeWeight: false,
+    includeHSN: false,
+    barcodePosition: 'bottom',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    backgroundColor: '#ffffff',
+    textColor: '#000000'
   },
   {
-    id: 'container',
-    type: 'container',
-    title: 'Container Labels',
-    description: 'ISO container identification',
-    icon: PackageIcon,
-    fields: ['container', 'weight', 'dimensions', 'seal_number', 'cargo_type']
+    id: 'grocery-compact',
+    name: 'Grocery Compact',
+    width: 60,
+    height: 40,
+    fontSize: 10,
+    includeBarcode: true,
+    includePrice: true,
+    includeDescription: false,
+    includeMRP: true,
+    includeWeight: true,
+    includeHSN: false,
+    barcodePosition: 'bottom',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    backgroundColor: '#ffffff',
+    textColor: '#000000'
   },
   {
-    id: 'hazmat',
-    type: 'hazmat',
-    title: 'Hazmat Labels',
-    description: 'Dangerous goods maritime transport',
-    icon: WavesIcon,
-    fields: ['hazmat_class', 'un_number', 'proper_shipping_name', 'packing_group']
-  },
-  {
-    id: 'temperature',
-    type: 'temperature',
-    title: 'Temperature Control',
-    description: 'Reefer and temperature-sensitive cargo',
-    icon: CompassIcon,
-    fields: ['temperature', 'humidity', 'ventilation', 'monitoring']
-  },
-  {
-    id: 'marine_equipment',
-    type: 'marine_equipment',
-    title: 'Marine Equipment',
-    description: 'Ship equipment and parts',
-    icon: AnchorIcon,
-    fields: ['equipment_type', 'certification', 'inspection_date', 'serial_number']
-  },
-  {
-    id: 'navigation',
-    type: 'navigation',
-    title: 'Navigation Labels',
-    description: 'Chart and navigation equipment',
-    icon: MapIcon,
-    fields: ['chart_number', 'edition', 'correction_date', 'scale']
+    id: 'wholesale-detailed',
+    name: 'Wholesale Detailed',
+    width: 100,
+    height: 70,
+    fontSize: 14,
+    includeBarcode: true,
+    includePrice: true,
+    includeDescription: true,
+    includeMRP: true,
+    includeWeight: true,
+    includeHSN: true,
+    barcodePosition: 'bottom',
+    borderStyle: 'solid',
+    borderWidth: 2,
+    backgroundColor: '#ffffff',
+    textColor: '#000000'
   }
 ];
 
 export default function PrintLabels() {
   const { toast } = useToast();
+
+  // Basic state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
-  const [labelSize, setLabelSize] = useState("standard");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showOnlySelected, setShowOnlySelected] = useState(false);
+
+  // Label configuration
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('retail-standard');
+  const [customTemplate, setCustomTemplate] = useState<LabelTemplate | null>(null);
+  const [copies, setCopies] = useState(1);
+  const [labelsPerRow, setLabelsPerRow] = useState(2);
+  const [labelsPerPage, setLabelsPerPage] = useState(10);
+
+  // Advanced options
   const [includeBarcode, setIncludeBarcode] = useState(true);
   const [includePrice, setIncludePrice] = useState(true);
   const [includeDescription, setIncludeDescription] = useState(false);
+  const [includeMRP, setIncludeMRP] = useState(true);
+  const [includeWeight, setIncludeWeight] = useState(false);
+  const [includeHSN, setIncludeHSN] = useState(false);
+  const [includeDateCode, setIncludeDateCode] = useState(false);
+  const [includeBatch, setIncludeBatch] = useState(false);
+  const [includeExpiry, setIncludeExpiry] = useState(false);
+
+  // Custom fields
+  const [customText, setCustomText] = useState("");
+  const [customLogo, setCustomLogo] = useState("");
+  const [watermark, setWatermark] = useState("");
+
+  // Print settings
+  const [paperSize, setPaperSize] = useState("A4");
+  const [orientation, setOrientation] = useState("portrait");
+  const [margin, setMargin] = useState(5);
+  const [quality, setQuality] = useState("high");
+
+  // Dialog states
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [copies, setCopies] = useState(1);
-  const [isManualLabelDialogOpen, setIsManualLabelDialogOpen] = useState(false);
-  const [labelsPerRow, setLabelsPerRow] = useState("2");
-  const [labelsPerColumn, setLabelsPerColumn] = useState("5");
-  const [isCustomLabelDialogOpen, setIsCustomLabelDialogOpen] = useState(false);
-  const [isMaritimeLabelDialogOpen, setIsMaritimeLabelDialogOpen] = useState(false);
-  const [selectedMaritimeType, setSelectedMaritimeType] = useState<string>("");
-  
-  // Ocean/Maritime specific states
-  const [includeOrigin, setIncludeOrigin] = useState(true);
-  const [includeDestination, setIncludeDestination] = useState(true);
-  const [includeVessel, setIncludeVessel] = useState(false);
-  const [includeContainer, setIncludeContainer] = useState(false);
-  const [includeWeight, setIncludeWeight] = useState(true);
-  const [includeDimensions, setIncludeDimensions] = useState(false);
-  const [includeTemperature, setIncludeTemperature] = useState(false);
-  const [includeHazmat, setIncludeHazmat] = useState(false);
-  const [maritimeFilter, setMaritimeFilter] = useState("all");
-  
-  // Custom label configuration state
-  const [sheetWidth, setSheetWidth] = useState("160");
-  const [sheetHeight, setSheetHeight] = useState("50");
-  const [labelWidth, setLabelWidth] = useState("80");
-  const [labelHeight, setLabelHeight] = useState("50");
-  const [totalRows, setTotalRows] = useState("1");
-  const [totalCols, setTotalCols] = useState("2");
-  const [barcodeWidth, setBarcodeWidth] = useState("50");
-  const [barcodeHeight, setBarcodeHeight] = useState("30");
-  const [fontSize, setFontSize] = useState("11pt");
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [isBulkEditDialogOpen, setIsBulkEditDialogOpen] = useState(false);
 
-  // Maritime label form data
-  const [maritimeFormData, setMaritimeFormData] = useState({
-    origin: '',
-    destination: '',
-    vessel: '',
-    container: '',
-    weight: '',
-    dimensions: '',
-    temperature: '',
-    hazmat_class: '',
-    un_number: '',
-    proper_shipping_name: '',
-    packing_group: '',
-    equipment_type: '',
-    certification: '',
-    inspection_date: '',
-    serial_number: '',
-    chart_number: '',
-    edition: '',
-    correction_date: '',
-    scale: '',
-    seal_number: '',
-    cargo_type: '',
-    humidity: '',
-    ventilation: '',
-    monitoring: ''
-  });
+  // Preview state
+  const [previewZoom, setPreviewZoom] = useState(100);
 
-  // Load saved custom configuration on mount
-  React.useEffect(() => {
-    const savedConfig = localStorage.getItem('customLabelConfig');
-    if (savedConfig) {
-      try {
-        const config = JSON.parse(savedConfig);
-        setSheetWidth(config.sheetWidth || "160");
-        setSheetHeight(config.sheetHeight || "50");
-        setLabelWidth(config.labelWidth || "80");
-        setLabelHeight(config.labelHeight || "50");
-        setTotalRows(config.totalRows || "1");
-        setTotalCols(config.totalCols || "2");
-        setBarcodeWidth(config.barcodeWidth || "50");
-        setBarcodeHeight(config.barcodeHeight || "30");
-        setFontSize(config.fontSize || "11pt");
-      } catch (error) {
-        console.error('Failed to load saved label configuration:', error);
-      }
-    }
-  }, []);
-
-  // Fetch products
-  const { data: products = [], isLoading: isLoadingProducts } = useQuery({
+  // Fetch data
+  const { data: products = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
     queryKey: ['/api/products'],
   });
 
-  // Fetch categories for filtering
   const { data: categories = [] } = useQuery({
     queryKey: ['/api/categories'],
   });
 
-  // Filter products with maritime criteria
+  // Filter and sort products
   const filteredProducts = products.filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (maritimeFilter === "all") return matchesSearch;
-    
-    const categoryName = typeof product.category === 'object' ? 
-      product.category?.name?.toLowerCase() : 
-      product.category?.toLowerCase();
-    
-    switch (maritimeFilter) {
-      case "marine":
-        return matchesSearch && (categoryName?.includes('marine') || categoryName?.includes('ocean') || categoryName?.includes('ship'));
-      case "shipping":
-        return matchesSearch && (categoryName?.includes('shipping') || categoryName?.includes('freight') || categoryName?.includes('cargo'));
-      case "navigation":
-        return matchesSearch && (categoryName?.includes('navigation') || categoryName?.includes('chart') || categoryName?.includes('compass'));
-      case "safety":
-        return matchesSearch && (categoryName?.includes('safety') || categoryName?.includes('emergency') || categoryName?.includes('life'));
-      default:
-        return matchesSearch;
-    }
+                         product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesCategory = selectedCategory === "all" || 
+                           (product.category && product.category.name === selectedCategory);
+
+    const matchesSelection = !showOnlySelected || selectedProducts.includes(product.id);
+
+    return matchesSearch && matchesCategory && matchesSelection;
   });
+
+  // Get current template
+  const getCurrentTemplate = (): LabelTemplate => {
+    if (customTemplate) return customTemplate;
+    return defaultTemplates.find(t => t.id === selectedTemplate) || defaultTemplates[0];
+  };
 
   // Handle product selection
   const handleProductSelect = (productId: number, checked: boolean) => {
@@ -225,34 +223,154 @@ export default function PrintLabels() {
     }
   };
 
-  // Handle select all
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedProducts(filteredProducts.map((p: Product) => p.id));
-    } else {
-      setSelectedProducts([]);
-    }
+  const handleSelectAll = () => {
+    const visibleProductIds = filteredProducts.map((p: Product) => p.id);
+    setSelectedProducts(visibleProductIds);
   };
 
-  // Generate barcode (simple implementation)
-  const generateBarcode = (sku: string) => {
-    const barcodePattern = sku.padEnd(12, '0').substring(0, 12);
-    return barcodePattern;
+  const handleDeselectAll = () => {
+    setSelectedProducts([]);
   };
 
-  // Generate maritime container number
-  const generateContainerNumber = () => {
-    const prefix = "OCLU";
-    const sequence = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    const checkDigit = Math.floor(Math.random() * 10);
-    return `${prefix}${sequence}${checkDigit}`;
+  // Generate barcode
+  const generateBarcode = (text: string, width: number = 100, height: number = 30) => {
+    return `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <g>
+          ${Array.from({ length: 50 }, (_, i) => 
+            `<rect x="${i * 2}" y="5" width="1" height="${height - 10}" fill="${i % 2 === 0 ? '#000' : '#fff'}"/>`
+          ).join('')}
+        </g>
+        <text x="${width/2}" y="${height - 2}" font-family="Arial" font-size="8" text-anchor="middle" fill="#000">${text}</text>
+      </svg>
+    `;
   };
 
-  // Generate IMO number
-  const generateIMONumber = () => {
-    const prefix = "IMO";
-    const number = Math.floor(Math.random() * 1000000).toString().padStart(7, '0');
-    return `${prefix}${number}`;
+  // Generate QR code
+  const generateQRCode = (text: string, size: number = 50) => {
+    return `
+      <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="${size}" height="${size}" fill="#fff"/>
+        ${Array.from({ length: 10 }, (_, row) =>
+          Array.from({ length: 10 }, (_, col) => {
+            const shouldFill = (row + col) % 2 === 0;
+            return shouldFill ? 
+              `<rect x="${col * (size/10)}" y="${row * (size/10)}" width="${size/10}" height="${size/10}" fill="#000"/>` : 
+              '';
+          }).join('')
+        ).join('')}
+        <text x="${size/2}" y="${size + 12}" font-family="Arial" font-size="6" text-anchor="middle" fill="#000">${text}</text>
+      </svg>
+    `;
+  };
+
+  // Generate label HTML
+  const generateLabelHTML = (product: Product, template: LabelTemplate) => {
+    const {
+      width, height, fontSize, includeBarcode, includePrice, includeDescription,
+      includeMRP, includeWeight, includeHSN, barcodePosition, borderStyle,
+      borderWidth, backgroundColor, textColor
+    } = template;
+
+    const borderCSS = borderStyle !== 'none' ? 
+      `border: ${borderWidth}px ${borderStyle} #333;` : '';
+
+    const barcodeHTML = includeBarcode ? 
+      generateBarcode(product.barcode || product.sku, width * 0.8, 20) : '';
+
+    const qrCodeHTML = includeBarcode && barcodePosition === 'left' ? 
+      generateQRCode(product.sku, 30) : '';
+
+    return `
+      <div class="product-label" style="
+        width: ${width}mm;
+        height: ${height}mm;
+        ${borderCSS}
+        padding: 2mm;
+        margin: 1mm;
+        display: inline-block;
+        font-family: Arial, sans-serif;
+        background: ${backgroundColor};
+        color: ${textColor};
+        page-break-inside: avoid;
+        box-sizing: border-box;
+        vertical-align: top;
+        position: relative;
+        font-size: ${fontSize}px;
+        line-height: 1.2;
+      ">
+        ${customLogo ? `<img src="${customLogo}" style="width: 20mm; height: auto; margin-bottom: 1mm;" />` : ''}
+
+        <div style="font-weight: bold; margin-bottom: 1mm; overflow: hidden; text-overflow: ellipsis;">
+          ${product.name}
+        </div>
+
+        <div style="font-size: ${fontSize * 0.8}px; color: #666; margin-bottom: 1mm;">
+          SKU: ${product.sku}
+        </div>
+
+        ${includeDescription && product.description ? 
+          `<div style="font-size: ${fontSize * 0.7}px; color: #888; margin-bottom: 1mm; overflow: hidden; text-overflow: ellipsis;">
+            ${product.description.substring(0, 60)}${product.description.length > 60 ? '...' : ''}
+          </div>` : ''
+        }
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1mm;">
+          ${includePrice ? 
+            `<div style="font-size: ${fontSize * 1.1}px; font-weight: bold; color: #2563eb;">
+              ₹${Number(product.price).toFixed(2)}
+            </div>` : ''
+          }
+          ${includeMRP && product.mrp && product.mrp !== product.price ? 
+            `<div style="font-size: ${fontSize * 0.8}px; color: #666; text-decoration: line-through;">
+              MRP: ₹${Number(product.mrp).toFixed(2)}
+            </div>` : ''
+          }
+        </div>
+
+        ${includeWeight && product.weight ? 
+          `<div style="font-size: ${fontSize * 0.8}px; color: #666; margin-bottom: 1mm;">
+            Weight: ${product.weight} ${product.weightUnit || 'kg'}
+          </div>` : ''
+        }
+
+        ${includeHSN && product.hsnCode ? 
+          `<div style="font-size: ${fontSize * 0.7}px; color: #666; margin-bottom: 1mm;">
+            HSN: ${product.hsnCode}
+          </div>` : ''
+        }
+
+        ${includeDateCode ? 
+          `<div style="font-size: ${fontSize * 0.7}px; color: #666; margin-bottom: 1mm;">
+            Date: ${new Date().toLocaleDateString('en-IN')}
+          </div>` : ''
+        }
+
+        ${customText ? 
+          `<div style="font-size: ${fontSize * 0.8}px; color: #666; margin-bottom: 1mm;">
+            ${customText}
+          </div>` : ''
+        }
+
+        ${barcodePosition === 'bottom' && barcodeHTML ? 
+          `<div style="text-align: center; margin-top: auto;">
+            ${barcodeHTML}
+          </div>` : ''
+        }
+
+        ${barcodePosition === 'left' && qrCodeHTML ? 
+          `<div style="position: absolute; top: 2mm; right: 2mm;">
+            ${qrCodeHTML}
+          </div>` : ''
+        }
+
+        ${watermark ? 
+          `<div style="position: absolute; bottom: 1mm; right: 1mm; font-size: 6px; color: #ccc; transform: rotate(-45deg);">
+            ${watermark}
+          </div>` : ''
+        }
+      </div>
+    `;
   };
 
   // Handle print
@@ -260,7 +378,7 @@ export default function PrintLabels() {
     if (selectedProducts.length === 0) {
       toast({
         title: "No products selected",
-        description: "Please select at least one product to print labels",
+        description: "Please select at least one product to print labels.",
         variant: "destructive",
       });
       return;
@@ -268,311 +386,56 @@ export default function PrintLabels() {
     setIsPrintDialogOpen(true);
   };
 
-  // Execute print with maritime enhancements
   const executePrint = () => {
     const selectedProductsData = products.filter((p: Product) => 
       selectedProducts.includes(p.id)
     );
 
-    if (selectedProductsData.length === 0) {
-      toast({
-        title: "No products found",
-        description: "Selected products could not be found",
-        variant: "destructive",
-      });
-      return;
-    }
+    const template = getCurrentTemplate();
 
-    const useCustomConfig = sheetWidth && sheetHeight && labelWidth && labelHeight;
-    const finalLabelWidth = useCustomConfig ? `${labelWidth}mm` : (labelSize === 'small' ? '40mm' : labelSize === 'large' ? '60mm' : '50mm');
-    const finalLabelHeight = useCustomConfig ? `${labelHeight}mm` : (labelSize === 'small' ? '25mm' : labelSize === 'large' ? '35mm' : '30mm');
-    const finalFontSize = fontSize.replace('pt', 'px');
-    const finalBarcodeWidth = useCustomConfig ? `${barcodeWidth}px` : '60px';
-    const finalBarcodeHeight = useCustomConfig ? `${barcodeHeight}px` : '20px';
-    
     const printContent = selectedProductsData.map((product: Product) => {
-      return Array(copies).fill(null).map((_, index) => `
-        <div class="product-label ocean-label" style="
-          width: ${finalLabelWidth};
-          height: ${finalLabelHeight};
-          border: 2px solid #1e40af;
-          padding: 2mm;
-          margin: 0;
-          display: inline-block;
-          font-family: 'Arial', sans-serif;
-          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-          page-break-inside: avoid;
-          box-sizing: border-box;
-          vertical-align: top;
-          border-radius: 3px;
-          position: relative;
-          box-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
-        ">
-          <!-- Ocean Header -->
-          <div style="
-            background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
-            color: white;
-            padding: 1mm;
-            margin: -2mm -2mm 1mm -2mm;
-            font-size: ${parseInt(finalFontSize) - 2}px;
-            font-weight: bold;
-            text-align: center;
-            border-radius: 3px 3px 0 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-          ">
-            🌊 MARITIME CARGO LABEL 🚢
-          </div>
-          
-          <!-- Product Info -->
-          <div style="font-weight: bold; font-size: ${finalFontSize}; margin-bottom: 1mm; line-height: 1.2; color: #1e40af;">
-            ${(product.name || 'Unnamed Product').length > 25 ? (product.name || 'Unnamed Product').substring(0, 25) + '...' : (product.name || 'Unnamed Product')}
-          </div>
-          
-          <div style="font-size: ${parseInt(finalFontSize) - 2}px; color: #374151; margin-bottom: 1mm;">
-            SKU: ${product.sku || 'N/A'}
-          </div>
-          
-          ${includeDescription && product.description ? 
-            `<div style="font-size: ${parseInt(finalFontSize) - 3}px; color: #6b7280; margin-bottom: 1mm; line-height: 1.1;">
-              ${product.description.substring(0, 30)}...
-            </div>` : ''
-          }
-          
-          ${includePrice ? 
-            `<div style="font-size: ${parseInt(finalFontSize) + 1}px; font-weight: bold; color: #059669; margin-bottom: 1mm;">
-              ₹${Number(product.price || 0).toFixed(2)}
-            </div>` : ''
-          }
-          
-          <!-- Maritime Information Grid -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1mm; font-size: ${parseInt(finalFontSize) - 3}px; margin-bottom: 1mm;">
-            ${includeOrigin ? 
-              `<div style="background: #fef3c7; padding: 0.5mm; border-radius: 2px; border-left: 2px solid #f59e0b;">
-                <strong>🏭 FROM:</strong><br>
-                ${maritimeFormData.origin || 'Mumbai Port'}
-              </div>` : ''
-            }
-            
-            ${includeDestination ? 
-              `<div style="background: #dcfce7; padding: 0.5mm; border-radius: 2px; border-left: 2px solid #16a34a;">
-                <strong>🎯 TO:</strong><br>
-                ${maritimeFormData.destination || 'Singapore Port'}
-              </div>` : ''
-            }
-            
-            ${includeVessel ? 
-              `<div style="background: #dbeafe; padding: 0.5mm; border-radius: 2px; border-left: 2px solid #2563eb;">
-                <strong>🚢 VESSEL:</strong><br>
-                ${maritimeFormData.vessel || 'MV Ocean Explorer'}
-              </div>` : ''
-            }
-            
-            ${includeContainer ? 
-              `<div style="background: #f3e8ff; padding: 0.5mm; border-radius: 2px; border-left: 2px solid #9333ea;">
-                <strong>📦 CONTAINER:</strong><br>
-                ${maritimeFormData.container || generateContainerNumber()}
-              </div>` : ''
-            }
-            
-            ${includeWeight ? 
-              `<div style="background: #fecaca; padding: 0.5mm; border-radius: 2px; border-left: 2px solid #dc2626;">
-                <strong>⚖️ WEIGHT:</strong><br>
-                ${maritimeFormData.weight || (product.weight ? `${product.weight}kg` : '25.5kg')}
-              </div>` : ''
-            }
-            
-            ${includeDimensions ? 
-              `<div style="background: #fed7aa; padding: 0.5mm; border-radius: 2px; border-left: 2px solid #ea580c;">
-                <strong>📏 DIM:</strong><br>
-                ${maritimeFormData.dimensions || product.dimensions || '120x80x60cm'}
-              </div>` : ''
-            }
-            
-            ${includeTemperature ? 
-              `<div style="background: #bfdbfe; padding: 0.5mm; border-radius: 2px; border-left: 2px solid #3b82f6;">
-                <strong>🌡️ TEMP:</strong><br>
-                ${maritimeFormData.temperature || '-18°C'}
-              </div>` : ''
-            }
-            
-            ${includeHazmat && product.hazmat ? 
-              `<div style="background: #fef2f2; padding: 0.5mm; border-radius: 2px; border-left: 2px solid #ef4444; color: #dc2626;">
-                <strong>⚠️ HAZMAT:</strong><br>
-                Class ${maritimeFormData.hazmat_class || '3'}
-              </div>` : ''
-            }
-          </div>
-          
-          <!-- Maritime Codes Section -->
-          <div style="background: #f8fafc; border: 1px dashed #64748b; padding: 1mm; margin-bottom: 1mm; border-radius: 2px;">
-            <div style="font-size: ${parseInt(finalFontSize) - 4}px; color: #475569; display: grid; grid-template-columns: 1fr 1fr; gap: 1mm;">
-              <div>
-                <strong>IMO:</strong> ${generateIMONumber()}
-              </div>
-              <div>
-                <strong>MMSI:</strong> ${Math.floor(Math.random() * 1000000000).toString().padStart(9, '0')}
-              </div>
-              <div>
-                <strong>B/L:</strong> ${product.sku}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}
-              </div>
-              <div style="color: #059669;">
-                <strong>📅 ${new Date().toLocaleDateString()}</strong>
-              </div>
-            </div>
-          </div>
-          
-          ${includeBarcode ? 
-            `<div style="text-align: center; margin-top: 1mm;">
-              <div style="
-                font-family: 'Courier New', monospace; 
-                font-size: ${parseInt(finalFontSize) - 4}px; 
-                letter-spacing: 0.5px; 
-                border: 1px solid #1e40af; 
-                padding: 0.5mm; 
-                background: #f8fafc;
-                width: ${finalBarcodeWidth};
-                height: ${finalBarcodeHeight};
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto;
-                color: #1e40af;
-                font-weight: bold;
-              ">
-                ${generateBarcode(product.sku || '')}
-              </div>
-            </div>` : ''
-          }
-          
-          <!-- Ocean Footer -->
-          <div style="
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
-            color: white;
-            padding: 0.5mm;
-            font-size: ${parseInt(finalFontSize) - 5}px;
-            text-align: center;
-            border-radius: 0 0 3px 3px;
-            margin: 0 -2mm -2mm -2mm;
-          ">
-            🌊 OCEANOGRAPHIC CARGO SYSTEM 🌊
-          </div>
-        </div>
-      `).join('');
+      return Array(copies).fill(null).map(() => 
+        generateLabelHTML(product, template)
+      ).join('');
     }).join('');
 
-    // Create print window with maritime styling
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    const printWindow = window.open('', '_blank');
     if (printWindow) {
-      const pageWidth = useCustomConfig ? `${sheetWidth}mm` : 'A4';
-      const pageHeight = useCustomConfig ? `${sheetHeight}mm` : 'auto';
-      
       const htmlContent = `
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Maritime Cargo Labels</title>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Product Labels - ${new Date().toLocaleDateString()}</title>
             <style>
-              * { 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                box-sizing: border-box !important; 
+              @page { 
+                size: ${paperSize} ${orientation};
+                margin: ${margin}mm;
               }
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                font-family: 'Arial', sans-serif !important;
-                line-height: 1 !important;
-                background: #f0f9ff !important;
-                color: #1e40af !important;
-                width: 100% !important;
-                height: 100% !important;
-                overflow: hidden !important;
-                ${useCustomConfig ? `width: ${sheetWidth}mm !important; height: ${sheetHeight}mm !important;` : ''}
-              }
-              .ocean-label {
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
-                break-inside: avoid !important;
-                page-break-inside: avoid !important;
-                border-radius: 3px !important;
-                color: #1e40af !important;
-                margin: 0 !important;
-                padding: 2mm !important;
-                position: relative !important;
-                display: inline-block !important;
-                vertical-align: top !important;
-                border: 2px solid #1e40af !important;
-                box-shadow: 0 2px 4px rgba(30, 64, 175, 0.1) !important;
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+                background: white;
               }
               .labels-container {
-                margin: 0 !important;
-                padding: 5mm !important;
-                width: 100% !important;
-                height: 100% !important;
-                background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%) !important;
-                ${useCustomConfig ? 
-                  `display: grid !important;
-                   grid-template-columns: repeat(${totalCols}, 1fr) !important;
-                   grid-template-rows: repeat(${totalRows}, 1fr) !important;
-                   gap: 2mm !important;
-                   width: ${sheetWidth}mm !important; 
-                   height: ${sheetHeight}mm !important;` : 
-                  'display: flex !important; flex-wrap: wrap !important; align-content: flex-start !important; gap: 2mm !important;'
-                }
+                display: grid;
+                grid-template-columns: repeat(${labelsPerRow}, 1fr);
+                gap: 2mm;
+                width: 100%;
               }
-              @page { 
-                margin: 0 !important; 
-                padding: 0 !important;
-                size: ${useCustomConfig ? `${sheetWidth}mm ${sheetHeight}mm` : 'A4'} !important;
-                background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%) !important;
-                border: none !important;
+              .product-label {
+                break-inside: avoid;
               }
               @media print {
-                * { 
-                  margin: 0 !important; 
-                  padding: 0 !important; 
-                  -webkit-print-color-adjust: exact !important;
-                  color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                }
-                html, body { 
-                  width: 100% !important;
-                  height: 100% !important;
-                  margin: 0 !important; 
-                  padding: 0 !important; 
-                  font-size: 12px !important;
-                  background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%) !important;
-                  color: #1e40af !important;
-                  overflow: hidden !important;
-                  border: none !important;
-                }
-                .ocean-label { 
-                  margin: 0 !important; 
-                  padding: 2mm !important;
-                  break-inside: avoid !important;
-                  page-break-inside: avoid !important;
-                  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
-                  color: #1e40af !important;
-                  position: relative !important;
-                  border-radius: 3px !important;
-                  border: 2px solid #1e40af !important;
-                  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.1) !important;
+                body { 
+                  margin: 0; 
+                  padding: 0;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
                 }
                 .labels-container {
-                  margin: 0 !important;
-                  padding: 5mm !important;
-                  width: 100% !important;
-                  height: 100% !important;
-                  border: none !important;
-                  background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%) !important;
+                  margin: 0;
+                  padding: 0;
                 }
               }
             </style>
@@ -582,870 +445,808 @@ export default function PrintLabels() {
               ${printContent}
             </div>
             <script>
-              document.title = 'Maritime Cargo Labels';
               window.onload = function() {
                 setTimeout(function() {
                   window.print();
+                  setTimeout(function() {
+                    window.close();
+                  }, 1000);
                 }, 500);
-              };
-              window.onafterprint = function() {
-                setTimeout(() => {
-                  window.close();
-                }, 1000);
               };
             </script>
           </body>
         </html>
       `;
-      
+
       printWindow.document.open();
       printWindow.document.write(htmlContent);
       printWindow.document.close();
-      
-    } else {
-      toast({
-        title: "Print window blocked",
-        description: "Please allow popups for this site to print labels",
-        variant: "destructive",
-      });
     }
 
     setIsPrintDialogOpen(false);
     toast({
-      title: "Maritime labels sent to printer",
-      description: `${selectedProducts.length * copies} ocean cargo labels prepared for printing`,
+      title: "Labels sent to printer",
+      description: `${selectedProducts.length * copies} labels prepared for printing`,
     });
   };
 
-  // Create maritime label
-  const createMaritimeLabel = () => {
-    if (!selectedMaritimeType) {
-      toast({
-        title: "No label type selected",
-        description: "Please select a maritime label type",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Handle preview
+  const handlePreview = () => {
+    setIsPreviewDialogOpen(true);
+  };
 
-    const labelType = maritimeLabelTypes.find(t => t.id === selectedMaritimeType);
-    if (!labelType) return;
+  // Save template
+  const saveTemplate = () => {
+    const template: LabelTemplate = {
+      id: `custom-${Date.now()}`,
+      name: `Custom Template ${Date.now()}`,
+      width: 80,
+      height: 50,
+      fontSize: 12,
+      includeBarcode,
+      includePrice,
+      includeDescription,
+      includeMRP,
+      includeWeight,
+      includeHSN,
+      barcodePosition: 'bottom',
+      borderStyle: 'solid',
+      borderWidth: 1,
+      backgroundColor: '#ffffff',
+      textColor: '#000000'
+    };
 
-    // Here you would typically create the maritime label
-    // For now, we'll just show a success message
+    setCustomTemplate(template);
     toast({
-      title: "Maritime label created",
-      description: `${labelType.title} has been created successfully`,
+      title: "Template saved",
+      description: "Your custom template has been saved.",
     });
-    
-    setIsMaritimeLabelDialogOpen(false);
-    setSelectedMaritimeType("");
-    setMaritimeFormData({
-      origin: '',
-      destination: '',
-      vessel: '',
-      container: '',
-      weight: '',
-      dimensions: '',
-      temperature: '',
-      hazmat_class: '',
-      un_number: '',
-      proper_shipping_name: '',
-      packing_group: '',
-      equipment_type: '',
-      certification: '',
-      inspection_date: '',
-      serial_number: '',
-      chart_number: '',
-      edition: '',
-      correction_date: '',
-      scale: '',
-      seal_number: '',
-      cargo_type: '',
-      humidity: '',
-      ventilation: '',
-      monitoring: ''
-    });
+  };
+
+  // Export labels data
+  const exportLabelsData = () => {
+    const selectedProductsData = products.filter((p: Product) => 
+      selectedProducts.includes(p.id)
+    );
+
+    const csvContent = selectedProductsData.map((product: Product) => 
+      `"${product.name}","${product.sku}","${product.price}","${product.barcode || ''}"`
+    ).join('\n');
+
+    const blob = new Blob([`Name,SKU,Price,Barcode\n${csvContent}`], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `labels-data-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        {/* Enhanced Header with Ocean Theme */}
-        <div className="flex justify-between items-center">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <WavesIcon className="h-8 w-8 text-blue-600" />
-                <ShipIcon className="h-6 w-6 text-blue-500" />
-              </div>
-              Maritime Label & Cargo System
+              <TagIcon className="h-8 w-8 text-blue-600" />
+              Professional Label Printing
             </h1>
-            <p className="text-muted-foreground">
-              🌊 Professional oceanographic cargo labels with maritime compliance 🚢
+            <p className="text-muted-foreground mt-1">
+              Advanced label printing with customizable templates and professional features
             </p>
           </div>
-          <div className="flex gap-2">
+
+          <div className="flex flex-wrap gap-2">
             <Button 
               variant="outline"
-              onClick={() => setIsMaritimeLabelDialogOpen(true)}
-              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              onClick={() => setIsTemplateDialogOpen(true)}
+              className="border-purple-600 text-purple-600 hover:bg-purple-50"
             >
-              <ShipIcon className="h-4 w-4 mr-2" />
-              Maritime Labels
+              <SettingsIcon className="h-4 w-4 mr-2" />
+              Templates
             </Button>
             <Button 
               variant="outline"
-              onClick={() => setIsCustomLabelDialogOpen(true)}
-              className="border-teal-600 text-teal-600 hover:bg-teal-50"
+              onClick={handlePreview}
+              disabled={selectedProducts.length === 0}
+              className="border-green-600 text-green-600 hover:bg-green-50"
             >
-              <SettingsIcon className="h-4 w-4 mr-2" />
-              Custom Labels
+              <Eye className="h-4 w-4 mr-2" />
+              Preview
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={exportLabelsData}
+              disabled={selectedProducts.length === 0}
+              className="border-orange-600 text-orange-600 hover:bg-orange-50"
+            >
+              <DownloadIcon className="h-4 w-4 mr-2" />
+              Export
             </Button>
             <Button 
               onClick={handlePrint}
               disabled={selectedProducts.length === 0}
-              className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               <PrinterIcon className="h-4 w-4 mr-2" />
-              Print Ocean Labels ({selectedProducts.length})
+              Print Labels ({selectedProducts.length})
             </Button>
           </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Package2Icon className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Products</p>
+                  <p className="text-xl font-bold">{filteredProducts.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <TagIcon className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Selected</p>
+                  <p className="text-xl font-bold">{selectedProducts.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <PrinterIcon className="h-5 w-5 text-purple-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Labels to Print</p>
+                  <p className="text-xl font-bold">{selectedProducts.length * copies}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <StarIcon className="h-5 w-5 text-orange-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Template</p>
+                  <p className="text-xl font-bold text-sm">
+                    {getCurrentTemplate().name}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Enhanced Settings Panel with Maritime Options */}
-          <Card className="lg:col-span-1 border-blue-200 bg-gradient-to-br from-blue-50 to-teal-50">
+          {/* Settings Panel */}
+          <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CompassIcon className="h-5 w-5 text-blue-600" />
-                Maritime Settings
+                <SettingsIcon className="h-5 w-5" />
+                Label Configuration
               </CardTitle>
               <CardDescription>
-                Configure ocean cargo label settings
+                Customize your label settings
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Maritime Filter */}
-              <div className="space-y-2">
-                <Label htmlFor="maritime-filter" className="text-sm font-medium">Product Category</Label>
-                <Select value={maritimeFilter} onValueChange={setMaritimeFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">🌊 All Products</SelectItem>
-                    <SelectItem value="marine">🚢 Marine Equipment</SelectItem>
-                    <SelectItem value="shipping">📦 Shipping & Cargo</SelectItem>
-                    <SelectItem value="navigation">🧭 Navigation Equipment</SelectItem>
-                    <SelectItem value="safety">🦺 Maritime Safety</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="basic">Basic</TabsTrigger>
+                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                  <TabsTrigger value="design">Design</TabsTrigger>
+                </TabsList>
 
-              {/* Label Size */}
-              <div className="space-y-2">
-                <Label htmlFor="label-size" className="text-sm font-medium">Label Size</Label>
-                <Select value={labelSize} onValueChange={setLabelSize}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="small">🏷️ Small (2" x 1.2")</SelectItem>
-                    <SelectItem value="standard">🏷️ Standard (2.5" x 1.5")</SelectItem>
-                    <SelectItem value="large">🏷️ Large (3" x 1.8")</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <TabsContent value="basic" className="space-y-4">
+                  {/* Template Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Template</Label>
+                    <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {defaultTemplates.map(template => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
+                        {customTemplate && (
+                          <SelectItem value="custom">Custom Template</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {/* Copies */}
-              <div className="space-y-2">
-                <Label htmlFor="copies" className="text-sm font-medium">Copies per Product</Label>
-                <Select value={copies.toString()} onValueChange={(value) => setCopies(Number(value))}>
-                  <SelectTrigger>
-                    <SelectValue />
+                  {/* Copies */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Copies per Product</Label>
+                    <Select value={copies.toString()} onValueChange={(value) => setCopies(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 10, 20, 50, 100].map(num => (
+                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Layout */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Labels per Row</Label>
+                    <Select value={labelsPerRow.toString()} onValueChange={(value) => setLabelsPerRow(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 6].map(num => (
+                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Basic Elements */}
+                  <Separator />
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium">Include Elements</h4>
+
+                    {[
+                      { key: 'barcode', label: 'Barcode/QR', state: includeBarcode, setState: setIncludeBarcode, icon: QrCodeIcon },
+                      { key: 'price', label: 'Price', state: includePrice, setState: setIncludePrice, icon: BarChart3Icon },
+                      { key: 'description', label: 'Description', state: includeDescription, setState: setIncludeDescription, icon: FileTextIcon },
+                      { key: 'mrp', label: 'MRP', state: includeMRP, setState: setIncludeMRP, icon: TrendingUpIcon },
+                    ].map(item => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={item.key} className="flex items-center space-x-2">
+                          <Switch
+                            id={item.key}
+                            checked={item.state}
+                            onCheckedChange={item.setState}
+                          />
+                          <Label htmlFor={item.key} className="text-sm flex items-center gap-2">
+                            <Icon className="h-3 w-3" />
+                            {item.label}
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="advanced" className="space-y-4">
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium">Advanced Elements</h4>
+
+                    {[
+                      { key: 'weight', label: 'Weight/Unit', state: includeWeight, setState: setIncludeWeight },
+                      { key: 'hsn', label: 'HSN Code', state: includeHSN, setState: setIncludeHSN },
+                      { key: 'date', label: 'Date Code', state: includeDateCode, setState: setIncludeDateCode },
+                      { key: 'batch', label: 'Batch Number', state: includeBatch, setState: setIncludeBatch },
+                      { key: 'expiry', label: 'Expiry Date', state: includeExpiry, setState: setIncludeExpiry },
+                    ].map(item => (
+                      <div key={item.key} className="flex items-center space-x-2">
+                        <Switch
+                          id={item.key}
+                          checked={item.state}
+                          onCheckedChange={item.setState}
+                        />
+                        <Label htmlFor={item.key} className="text-sm">
+                          {item.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Custom Text */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Custom Text</Label>
+                    <Textarea
+                      placeholder="Add custom text to labels..."
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+
+                  {/* Watermark */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Watermark</Label>
+                    <Input
+                      placeholder="Watermark text..."
+                      value={watermark}
+                      onChange={(e) => setWatermark(e.target.value)}
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="design" className="space-y-4">
+                  {/* Paper Settings */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Paper Size</Label>
+                    <Select value={paperSize} onValueChange={setPaperSize}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A4">A4</SelectItem>
+                        <SelectItem value="A5">A5</SelectItem>
+                        <SelectItem value="Letter">Letter</SelectItem>
+                        <SelectItem value="Legal">Legal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Orientation</Label>
+                    <Select value={orientation} onValueChange={setOrientation}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="portrait">Portrait</SelectItem>
+                        <SelectItem value="landscape">Landscape</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Page Margin (mm)</Label>
+                    <Input
+                      type="number"
+                      value={margin}
+                      onChange={(e) => setMargin(Number(e.target.value))}
+                      min="0"
+                      max="50"
+                    />
+                  </div>
+
+                  {/* Quality */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Print Quality</Label>
+                    <Select value={quality} onValueChange={setQuality}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="high">High Quality</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Separator />
+
+                  {/* Actions */}
+                  <div className="space-y-2">
+                    <Button onClick={saveTemplate} className="w-full" variant="outline">
+                      <SaveIcon className="h-4 w-4 mr-2" />
+                      Save as Template
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Products Panel */}
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package2Icon className="h-5 w-5" />
+                    Product Selection
+                  </CardTitle>
+                  <CardDescription>
+                    Choose products for label printing
+                  </CardDescription>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                  >
+                    {viewMode === 'grid' ? <ListIcon className="h-4 w-4" /> : <GridIcon className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectAll}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDeselectAll}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              {/* Filters */}
+              <div className="flex flex-col sm:flex-row gap-4"><div className="relative flex-1">
+                  <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search products by name, SKU, or barcode..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Filter by category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 4, 5, 10, 20, 50].map(num => (
-                      <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category: any) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <Separator />
-
-              {/* Standard Label Content Options */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium">📋 Standard Information</h4>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-barcode"
-                    checked={includeBarcode}
-                    onCheckedChange={setIncludeBarcode}
-                  />
-                  <Label htmlFor="include-barcode" className="text-sm">
-                    📊 Barcode
-                  </Label>
-                </div>
 
                 <div className="flex items-center space-x-2">
                   <Switch
-                    id="include-price"
-                    checked={includePrice}
-                    onCheckedChange={setIncludePrice}
+                    id="show-selected"
+                    checked={showOnlySelected}
+                    onCheckedChange={setShowOnlySelected}
                   />
-                  <Label htmlFor="include-price" className="text-sm">
-                    💰 Price
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-description"
-                    checked={includeDescription}
-                    onCheckedChange={setIncludeDescription}
-                  />
-                  <Label htmlFor="include-description" className="text-sm">
-                    📝 Description
+                  <Label htmlFor="show-selected" className="text-sm whitespace-nowrap">
+                    Show Selected Only
                   </Label>
                 </div>
               </div>
 
-              <Separator className="bg-blue-200" />
-
-              {/* Maritime-Specific Options */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium text-blue-700">🌊 Maritime Information</h4>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-origin"
-                    checked={includeOrigin}
-                    onCheckedChange={setIncludeOrigin}
-                  />
-                  <Label htmlFor="include-origin" className="text-sm">
-                    🏭 Origin Port
-                  </Label>
+              {/* Selected Products Summary */}
+              {selectedProducts.length > 0 && (
+                <div className="flex flex-wrap gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    {selectedProducts.length} products selected
+                  </Badge>
+                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    {selectedProducts.length * copies} labels to print
+                  </Badge>
+                  {selectedTemplate && (
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                      {getCurrentTemplate().name} template
+                    </Badge>
+                  )}
                 </div>
+              )}
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-destination"
-                    checked={includeDestination}
-                    onCheckedChange={setIncludeDestination}
-                  />
-                  <Label htmlFor="include-destination" className="text-sm">
-                    🎯 Destination Port
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-vessel"
-                    checked={includeVessel}
-                    onCheckedChange={setIncludeVessel}
-                  />
-                  <Label htmlFor="include-vessel" className="text-sm">
-                    🚢 Vessel Information
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-container"
-                    checked={includeContainer}
-                    onCheckedChange={setIncludeContainer}
-                  />
-                  <Label htmlFor="include-container" className="text-sm">
-                    📦 Container Number
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-weight"
-                    checked={includeWeight}
-                    onCheckedChange={setIncludeWeight}
-                  />
-                  <Label htmlFor="include-weight" className="text-sm">
-                    ⚖️ Cargo Weight
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-dimensions"
-                    checked={includeDimensions}
-                    onCheckedChange={setIncludeDimensions}
-                  />
-                  <Label htmlFor="include-dimensions" className="text-sm">
-                    📏 Dimensions
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-temperature"
-                    checked={includeTemperature}
-                    onCheckedChange={setIncludeTemperature}
-                  />
-                  <Label htmlFor="include-temperature" className="text-sm">
-                    🌡️ Temperature Control
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="include-hazmat"
-                    checked={includeHazmat}
-                    onCheckedChange={setIncludeHazmat}
-                  />
-                  <Label htmlFor="include-hazmat" className="text-sm">
-                    ⚠️ Hazmat Classification
-                  </Label>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Enhanced Products Selection */}
-          <Card className="lg:col-span-3 border-teal-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AnchorIcon className="h-5 w-5 text-teal-600" />
-                Marine Cargo Selection
-              </CardTitle>
-              <CardDescription>
-                Choose products for maritime label printing
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Search */}
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="relative flex-1">
-                  <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search marine products by name or SKU..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-
-              {/* Select All */}
-              <div className="flex items-center space-x-2 mb-4">
-                <Checkbox
-                  id="select-all"
-                  checked={selectedProducts.length === filteredProducts.length && filteredProducts.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-                <Label htmlFor="select-all" className="text-sm font-medium">
-                  🌊 Select All Maritime Cargo ({filteredProducts.length} products)
-                </Label>
-              </div>
-
-              {/* Products Table */}
-              <div className="border rounded-lg border-blue-200">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gradient-to-r from-blue-50 to-teal-50">
-                      <TableHead className="w-12">Select</TableHead>
-                      <TableHead>🚢 Product Name</TableHead>
-                      <TableHead>📋 SKU</TableHead>
-                      <TableHead>💰 Price</TableHead>
-                      <TableHead>🏷️ Category</TableHead>
-                      <TableHead>🌊 Maritime Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoadingProducts ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
-                          🌊 Loading maritime cargo...
-                        </TableCell>
-                      </TableRow>
-                    ) : filteredProducts.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
-                          🚢 No maritime products found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredProducts.map((product: Product) => (
-                        <TableRow key={product.id} className="hover:bg-blue-50">
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedProducts.includes(product.id)}
-                              onCheckedChange={(checked) => 
-                                handleProductSelect(product.id, checked as boolean)
-                              }
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">{product.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">{product.sku}</Badge>
-                          </TableCell>
-                          <TableCell>₹{Number(product.price).toFixed(2)}</TableCell>
-                          <TableCell>{typeof product.category === 'object' ? product.category?.name || 'Uncategorized' : product.category || 'Uncategorized'}</TableCell>
-                          <TableCell>
-                            <Badge className="bg-gradient-to-r from-blue-500 to-teal-500 text-white">
-                              🌊 Sea Worthy
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Enhanced Print Confirmation Dialog */}
-      <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] border-blue-200">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <PrinterIcon className="h-5 w-5 text-blue-600" />
-                <WavesIcon className="h-4 w-4 text-teal-500" />
-              </div>
-              Maritime Label Print Confirmation
-            </DialogTitle>
-            <DialogDescription>
-              🌊 Review your ocean cargo label settings before printing 🚢
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-br from-blue-50 to-teal-50 rounded-lg border border-blue-200">
-              <div>
-                <label className="text-sm font-medium text-blue-700">🚢 Products Selected</label>
-                <p className="text-lg font-bold text-blue-900">{selectedProducts.length}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-blue-700">🏷️ Total Labels</label>
-                <p className="text-lg font-bold text-blue-900">{selectedProducts.length * copies}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-blue-700">📏 Label Size</label>
-                <p className="text-sm text-blue-800 capitalize">{labelSize}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-blue-700">📋 Copies Each</label>
-                <p className="text-sm text-blue-800">{copies}</p>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-blue-700">🌊 Maritime Features Included:</label>
-              <div className="flex gap-2 flex-wrap">
-                {includeBarcode && <Badge className="bg-blue-100 text-blue-800 border-blue-300">📊 Barcode</Badge>}
-                {includePrice && <Badge className="bg-green-100 text-green-800 border-green-300">💰 Price</Badge>}
-                {includeDescription && <Badge className="bg-purple-100 text-purple-800 border-purple-300">📝 Description</Badge>}
-                {includeOrigin && <Badge className="bg-orange-100 text-orange-800 border-orange-300">🏭 Origin Port</Badge>}
-                {includeDestination && <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300">🎯 Destination Port</Badge>}
-                {includeVessel && <Badge className="bg-cyan-100 text-cyan-800 border-cyan-300">🚢 Vessel Info</Badge>}
-                {includeContainer && <Badge className="bg-violet-100 text-violet-800 border-violet-300">📦 Container</Badge>}
-                {includeWeight && <Badge className="bg-red-100 text-red-800 border-red-300">⚖️ Weight</Badge>}
-                {includeDimensions && <Badge className="bg-amber-100 text-amber-800 border-amber-300">📏 Dimensions</Badge>}
-                {includeTemperature && <Badge className="bg-blue-100 text-blue-800 border-blue-300">🌡️ Temperature</Badge>}
-                {includeHazmat && <Badge className="bg-red-100 text-red-800 border-red-300">⚠️ Hazmat</Badge>}
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPrintDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={executePrint} className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700">
-              <PrinterIcon className="h-4 w-4 mr-2" />
-              🌊 Print Maritime Labels 🚢
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Maritime Label Creation Dialog */}
-      <Dialog open={isMaritimeLabelDialogOpen} onOpenChange={setIsMaritimeLabelDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto border-blue-200">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShipIcon className="h-5 w-5 text-blue-600" />
-              🌊 Maritime Label Creator 🚢
-            </DialogTitle>
-            <DialogDescription>
-              Create specialized maritime and oceanographic labels
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Maritime Label Types */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-blue-700">Select Maritime Label Type</Label>
-              <div className="grid grid-cols-2 gap-3">
-                {maritimeLabelTypes.map((labelType) => {
-                  const IconComponent = labelType.icon;
-                  return (
-                    <div
-                      key={labelType.id}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedMaritimeType === labelType.id
-                          ? 'border-blue-500 bg-blue-50 shadow-md'
-                          : 'border-gray-200 hover:border-blue-300 hover:bg-blue-25'
-                      }`}
-                      onClick={() => setSelectedMaritimeType(labelType.id)}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <IconComponent className={`h-5 w-5 ${selectedMaritimeType === labelType.id ? 'text-blue-600' : 'text-gray-500'}`} />
-                        <h4 className={`font-medium ${selectedMaritimeType === labelType.id ? 'text-blue-900' : 'text-gray-700'}`}>
-                          {labelType.title}
-                        </h4>
-                      </div>
-                      <p className={`text-sm ${selectedMaritimeType === labelType.id ? 'text-blue-700' : 'text-gray-600'}`}>
-                        {labelType.description}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Dynamic Form Fields */}
-            {selectedMaritimeType && (
-              <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-medium text-blue-900">
-                  Configure {maritimeLabelTypes.find(t => t.id === selectedMaritimeType)?.title}
-                </h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  {maritimeLabelTypes.find(t => t.id === selectedMaritimeType)?.fields.map((field) => (
-                    <div key={field} className="space-y-2">
-                      <Label className="text-sm font-medium capitalize">
-                        {field.replace('_', ' ')}
-                      </Label>
-                      <Input
-                        value={maritimeFormData[field as keyof typeof maritimeFormData] || ''}
-                        onChange={(e) => setMaritimeFormData(prev => ({
-                          ...prev,
-                          [field]: e.target.value
-                        }))}
-                        placeholder={`Enter ${field.replace('_', ' ')}`}
-                      />
-                    </div>
+              {/* Products Grid/List */}
+              {isLoadingProducts ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Card key={i} className="animate-pulse">
+                      <CardContent className="p-4">
+                        <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded"></div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className={
+                  viewMode === 'grid' 
+                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" 
+                    : "space-y-2"
+                }>
+                  {filteredProducts.map((product: Product) => {
+                    const isSelected = selectedProducts.includes(product.id);
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMaritimeLabelDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={createMaritimeLabel}
-              disabled={!selectedMaritimeType}
-              className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700"
-            >
-              <ShipIcon className="h-4 w-4 mr-2" />
-              🌊 Create Maritime Label 🚢
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                    if (viewMode === 'list') {
+                      return (
+                        <div
+                          key={product.id}
+                          className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                          }`}
+                          onClick={() => handleProductSelect(product.id, !isSelected)}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={() => {}}
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium">{product.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              SKU: {product.sku} • ₹{Number(product.price).toFixed(2)}
+                              {product.stockQuantity !== undefined && (
+                                <span className="ml-2">Stock: {product.stockQuantity}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
 
-      {/* Custom Label Configuration Dialog (Enhanced) */}
-      <Dialog open={isCustomLabelDialogOpen} onOpenChange={setIsCustomLabelDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto border-teal-200">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <SettingsIcon className="h-5 w-5 text-teal-600" />
-              🌊 Custom Maritime Label Configuration 🚢
-            </DialogTitle>
-            <DialogDescription>
-              Configure custom dimensions and layout for oceanographic labels
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Sheet Dimensions */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">📄 Sheet Width</Label>
-                <div className="relative">
-                  <Input
-                    value={sheetWidth}
-                    onChange={(e) => setSheetWidth(e.target.value)}
-                    placeholder="160"
-                    className="pr-12"
-                  />
-                  <span className="absolute right-3 top-2 text-sm text-muted-foreground">
-                    mm
-                  </span>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">📄 Sheet Height</Label>
-                <div className="relative">
-                  <Input
-                    value={sheetHeight}
-                    onChange={(e) => setSheetHeight(e.target.value)}
-                    placeholder="50"
-                    className="pr-12"
-                  />
-                  <span className="absolute right-3 top-2 text-sm text-muted-foreground">
-                    mm
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Label Dimensions */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">🏷️ Label Width</Label>
-                <div className="relative">
-                  <Input
-                    value={labelWidth}
-                    onChange={(e) => setLabelWidth(e.target.value)}
-                    placeholder="80"
-                    className="pr-12"
-                  />
-                  <span className="absolute right-3 top-2 text-sm text-muted-foreground">
-                    mm
-                  </span>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">🏷️ Label Height</Label>
-                <div className="relative">
-                  <Input
-                    value={labelHeight}
-                    onChange={(e) => setLabelHeight(e.target.value)}
-                    placeholder="50"
-                    className="pr-12"
-                  />
-                  <span className="absolute right-3 top-2 text-sm text-muted-foreground">
-                    mm
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Layout Configuration */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">📊 Total Rows</Label>
-                <Select value={totalRows} onValueChange={setTotalRows}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 Row</SelectItem>
-                    <SelectItem value="2">2 Rows</SelectItem>
-                    <SelectItem value="3">3 Rows</SelectItem>
-                    <SelectItem value="4">4 Rows</SelectItem>
-                    <SelectItem value="5">5 Rows</SelectItem>
-                    <SelectItem value="10">10 Rows</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">📊 Total Columns</Label>
-                <Select value={totalCols} onValueChange={setTotalCols}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 Column</SelectItem>
-                    <SelectItem value="2">2 Columns</SelectItem>
-                    <SelectItem value="3">3 Columns</SelectItem>
-                    <SelectItem value="4">4 Columns</SelectItem>
-                    <SelectItem value="5">5 Columns</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Barcode Configuration */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">📊 BarCode Width</Label>
-                <Input
-                  value={barcodeWidth}
-                  onChange={(e) => setBarcodeWidth(e.target.value)}
-                  placeholder="50"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">📊 BarCode Height</Label>
-                <Input
-                  value={barcodeHeight}
-                  onChange={(e) => setBarcodeHeight(e.target.value)}
-                  placeholder="30"
-                />
-              </div>
-            </div>
-
-            {/* Font Size */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">🔤 Font Size</Label>
-              <Select value={fontSize} onValueChange={setFontSize}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="8pt">8pt</SelectItem>
-                  <SelectItem value="9pt">9pt</SelectItem>
-                  <SelectItem value="10pt">10pt</SelectItem>
-                  <SelectItem value="11pt">11pt</SelectItem>
-                  <SelectItem value="12pt">12pt</SelectItem>
-                  <SelectItem value="14pt">14pt</SelectItem>
-                  <SelectItem value="16pt">16pt</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Enhanced Preview Section */}
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-medium mb-3 text-blue-700">🌊 Maritime Label Preview</h4>
-              <div className="bg-gradient-to-br from-blue-50 to-teal-50 p-4 rounded-lg border border-blue-200">
-                <div className="text-xs text-blue-600 mb-2">
-                  🚢 Sheet: {sheetWidth}mm × {sheetHeight}mm | 
-                  🏷️ Label: {labelWidth}mm × {labelHeight}mm | 
-                  📊 Grid: {totalRows} × {totalCols}
-                </div>
-                <div 
-                  className="border-2 border-dashed border-blue-300 bg-white relative shadow-sm"
-                  style={{
-                    width: `${Math.min(Number(sheetWidth) / 2, 200)}px`,
-                    height: `${Math.min(Number(sheetHeight) / 2, 100)}px`,
-                  }}
-                >
-                  {Array.from({ length: Number(totalRows) * Number(totalCols) }).map((_, index) => {
-                    const row = Math.floor(index / Number(totalCols));
-                    const col = index % Number(totalCols);
                     return (
-                      <div
-                        key={index}
-                        className="absolute border border-blue-400 bg-gradient-to-br from-blue-100 to-teal-100 flex items-center justify-center text-xs text-blue-700"
-                        style={{
-                          left: `${(col * Number(labelWidth)) / 2}px`,
-                          top: `${(row * Number(labelHeight)) / 2}px`,
-                          width: `${Math.min(Number(labelWidth) / 2, 80)}px`,
-                          height: `${Math.min(Number(labelHeight) / 2, 40)}px`,
-                        }}
+                      <Card
+                        key={product.id}
+                        className={`cursor-pointer transition-all duration-200 ${
+                          isSelected 
+                            ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' 
+                            : 'hover:shadow-md'
+                        }`}
+                        onClick={() => handleProductSelect(product.id, !isSelected)}
                       >
-                        🌊
-                      </div>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                />
+                                <h3 className="font-medium text-sm line-clamp-2">
+                                  {product.name}
+                                </h3>
+                              </div>
+
+                              <div className="space-y-1 text-xs text-muted-foreground">
+                                <p>SKU: {product.sku}</p>
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-blue-600">
+                                    ₹{Number(product.price).toFixed(2)}
+                                  </span>
+                                  {product.stockQuantity !== undefined && (
+                                    <Badge variant={product.stockQuantity > 10 ? "secondary" : "destructive"}>
+                                      Stock: {product.stockQuantity}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {product.category && (
+                                <Badge variant="outline" className="mt-2">
+                                  {product.category.name}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
                   })}
                 </div>
+              )}
+
+              {!isLoadingProducts && filteredProducts.length === 0 && (
+                <div className="text-center py-12">
+                  <Package2Icon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Try adjusting your search or filter criteria.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Print Dialog */}
+        <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <PrinterIcon className="h-5 w-5" />
+                Print Labels Configuration
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Products Selected</Label>
+                  <div className="p-3 bg-gray-50 rounded border">
+                    {selectedProducts.length} products
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Total Labels</Label>
+                  <div className="p-3 bg-gray-50 rounded border">
+                    {selectedProducts.length * copies} labels
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Template</Label>
+                  <div className="p-3 bg-gray-50 rounded border">
+                    {getCurrentTemplate().name}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Paper Size</Label>
+                  <div className="p-3 bg-gray-50 rounded border">
+                    {paperSize} ({orientation})
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Label Elements</Label>
+                <div className="flex flex-wrap gap-2">
+                  {includeBarcode && <Badge>Barcode</Badge>}
+                  {includePrice && <Badge>Price</Badge>}
+                  {includeDescription && <Badge>Description</Badge>}
+                  {includeMRP && <Badge>MRP</Badge>}
+                  {includeWeight && <Badge>Weight</Badge>}
+                  {includeHSN && <Badge>HSN Code</Badge>}
+                </div>
               </div>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCustomLabelDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                const customConfig = {
-                  sheetWidth,
-                  sheetHeight,
-                  labelWidth,
-                  labelHeight,
-                  totalRows,
-                  totalCols,
-                  barcodeWidth,
-                  barcodeHeight,
-                  fontSize
-                };
-                localStorage.setItem('customLabelConfig', JSON.stringify(customConfig));
-                
-                setIsCustomLabelDialogOpen(false);
-                toast({
-                  title: "🌊 Maritime configuration saved",
-                  description: "Your custom ocean label settings have been applied and saved 🚢",
-                });
-              }} 
-              className="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700"
-            >
-              🌊 Apply & Save Maritime Config 🚢
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPrintDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={executePrint} className="bg-blue-600 hover:bg-blue-700">
+                <PrinterIcon className="h-4 w-4 mr-2" />
+                Print Labels
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-      {/* Manual Label Creation Dialog (Enhanced) */}
-      <Dialog open={isManualLabelDialogOpen} onOpenChange={setIsManualLabelDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] border-blue-200">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <TagIcon className="h-5 w-5 text-blue-600" />
-              🌊 Manual Maritime Label Creation 🚢
-            </DialogTitle>
-            <DialogDescription>
-              Create custom oceanographic labels with manual input
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>🏷️ Labels Per Row</Label>
-                <Select value={labelsPerRow} onValueChange={setLabelsPerRow}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 label per row</SelectItem>
-                    <SelectItem value="2">2 labels per row</SelectItem>
-                    <SelectItem value="3">3 labels per row</SelectItem>
-                    <SelectItem value="4">4 labels per row</SelectItem>
-                  </SelectContent>
-                </Select>
+        {/* Preview Dialog */}
+        <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Label Preview
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPreviewZoom(Math.max(50, previewZoom - 25))}
+                  >
+                    <ZoomOutIcon className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm">{previewZoom}%</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPreviewZoom(Math.min(200, previewZoom + 25))}
+                  >
+                    <ZoomInIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewZoom(100)}
+                >
+                  <RotateCcwIcon className="h-4 w-4" />
+                  Reset
+                </Button>
               </div>
-              
-              <div className="space-y-2">
-                <Label>📄 Rows Per Page</Label>
-                <Select value={labelsPerColumn} onValueChange={setLabelsPerColumn}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2">2 rows per page</SelectItem>
-                    <SelectItem value="5">5 rows per page</SelectItem>
-                    <SelectItem value="10">10 rows per page</SelectItem>
-                    <SelectItem value="15">15 rows per page</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              <div 
+                className="border rounded-lg p-4 bg-white overflow-auto"
+                style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: 'top left' }}
+              >
+                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${labelsPerRow}, 1fr)` }}>
+                  {products
+                    .filter((p: Product) => selectedProducts.includes(p.id))
+                    .slice(0, 6)
+                    .map((product: Product) => (
+                      <div 
+                        key={product.id}
+                        dangerouslySetInnerHTML={{ 
+                          __html: generateLabelHTML(product, getCurrentTemplate()) 
+                        }}
+                      />
+                    ))}
+                </div>
+
+                {selectedProducts.length > 6 && (
+                  <div className="text-center text-sm text-muted-foreground mt-4">
+                    ... and {selectedProducts.length - 6} more products
+                  </div>
+                )}
               </div>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsManualLabelDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => setIsManualLabelDialogOpen(false)} className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700">
-              🌊 Create Maritime Labels 🚢
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPreviewDialogOpen(false)}>
+                Close
+              </Button>
+              <Button onClick={() => {
+                setIsPreviewDialogOpen(false);
+                handlePrint();
+              }}>
+                <PrinterIcon className="h-4 w-4 mr-2" />
+                Print These Labels
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Template Dialog */}
+        <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <SettingsIcon className="h-5 w-5" />
+                Label Templates
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {defaultTemplates.map(template => (
+                <Card 
+                  key={template.id}
+                  className={`cursor-pointer transition-all ${
+                    selectedTemplate === template.id ? 'ring-2 ring-blue-500' : ''
+                  }`}
+                  onClick={() => setSelectedTemplate(template.id)}
+                >
+                  <CardContent className="p-4">
+                    <h3 className="font-medium mb-2">{template.name}</h3>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>{template.width}mm × {template.height}mm</p>
+                      <div className="flex flex-wrap gap-1">
+                        {template.includeBarcode && <Badge variant="outline" className="text-xs">Barcode</Badge>}
+                        {template.includePrice && <Badge variant="outline" className="text-xs">Price</Badge>}
+                        {template.includeMRP && <Badge variant="outline" className="text-xs">MRP</Badge>}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
+                Close
+              </Button>
+              <Button onClick={() => setIsTemplateDialogOpen(false)}>
+                Apply Template
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </DashboardLayout>
   );
 }
