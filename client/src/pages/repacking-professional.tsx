@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,7 +52,7 @@ type RepackingFormValues = z.infer<typeof repackingFormSchema>;
 const generateDateOptions = () => {
   const dates = [];
   const today = new Date();
-  
+
   // Add past 30 days
   for (let i = 30; i >= 0; i--) {
     const date = new Date(today);
@@ -61,7 +60,7 @@ const generateDateOptions = () => {
     const formatted = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
     dates.push(formatted);
   }
-  
+
   // Add next 7 days
   for (let i = 1; i <= 7; i++) {
     const date = new Date(today);
@@ -69,7 +68,7 @@ const generateDateOptions = () => {
     const formatted = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
     dates.push(formatted);
   }
-  
+
   return dates;
 };
 
@@ -165,11 +164,11 @@ export default function RepackingProfessional() {
         const bulkWeightInGrams = product.weightUnit === 'kg' ? 
           bulkWeight * 1000 : 
           bulkWeight || 1000;
-        
+
         const productCost = parseFloat(product.cost || "0");
         const costPerGram = bulkWeightInGrams > 0 ? productCost / bulkWeightInGrams : 0;
         const newUnitCost = costPerGram * unitWeight;
-        
+
         if (newUnitCost > 0) {
           form.setValue("costPrice", Math.round(newUnitCost * 100) / 100);
           form.setValue("sellingPrice", Math.round(newUnitCost * 1.3 * 100) / 100);
@@ -183,7 +182,7 @@ export default function RepackingProfessional() {
   const quickRepackMutation = useMutation({
     mutationFn: async (bulkProduct: Product) => {
       if (!bulkProduct) throw new Error("No bulk product selected");
-      
+
       if (bulkProduct.stockQuantity < 1) {
         throw new Error(`Insufficient stock. Product "${bulkProduct.name}" has only ${bulkProduct.stockQuantity} units available.`);
       }
@@ -193,7 +192,7 @@ export default function RepackingProfessional() {
       if (productWeight !== 1 || bulkProduct.weightUnit !== "kg") {
         throw new Error("Quick repack only works with 1kg bulk products");
       }
-      
+
       const timestamp = Date.now();
       const repackedSku = `${bulkProduct.sku}-REPACK-250G-${timestamp}`;
 
@@ -226,7 +225,7 @@ export default function RepackingProfessional() {
 
       try {
         const response = await apiRequest("POST", "/api/products", repackedProduct);
-        
+
         if (!response.ok) {
           const errorData = await response.text();
           throw new Error(`Failed to create repacked product: ${errorData}`);
@@ -267,7 +266,7 @@ export default function RepackingProfessional() {
   const repackingMutation = useMutation({
     mutationFn: async (data: RepackingFormValues) => {
       if (!selectedProduct) throw new Error("No bulk product selected");
-      
+
       // Validate sufficient stock
       const productWeight = parseFloat(selectedProduct.weight) || 1;
       const productWeightUnit = selectedProduct.weightUnit || 'kg';
@@ -275,14 +274,14 @@ export default function RepackingProfessional() {
       if (productWeightUnit === 'kg') {
         productWeightInGrams = productWeight * 1000;
       }
-      
+
       const totalRepackedWeight = data.unitWeight * data.repackQuantity;
       const bulkUnitsNeeded = Math.ceil(totalRepackedWeight / productWeightInGrams);
-      
+
       if (selectedProduct.stockQuantity < bulkUnitsNeeded) {
         throw new Error(`Insufficient stock. Need ${bulkUnitsNeeded} units but only ${selectedProduct.stockQuantity} available.`);
       }
-      
+
       const timestamp = Date.now();
       const repackedSku = `${selectedProduct.sku}-REPACK-${data.unitWeight}G-${timestamp}`;
 
@@ -308,7 +307,7 @@ export default function RepackingProfessional() {
 
       try {
         const response = await apiRequest("POST", "/api/products", repackedProduct);
-        
+
         if (!response.ok) {
           const errorData = await response.text();
           throw new Error(`Failed to create repacked product: ${errorData}`);
@@ -350,7 +349,7 @@ export default function RepackingProfessional() {
 
   const onSubmit = (data: RepackingFormValues) => {
     console.log("Form submitted with data:", data);
-    
+
     if (!selectedProduct) {
       toast({
         title: "Error",
@@ -394,7 +393,7 @@ export default function RepackingProfessional() {
       bulkWeight * 1000 : bulkWeight || 1000;
     const totalRepackWeight = data.unitWeight * data.repackQuantity;
     const bulkUnitsNeeded = Math.ceil(totalRepackWeight / bulkWeightInGrams);
-    
+
     if (selectedProduct.stockQuantity < bulkUnitsNeeded) {
       toast({
         title: "Error",
@@ -417,16 +416,16 @@ export default function RepackingProfessional() {
 
   const currentStock = selectedProduct?.stockQuantity || 0;
   const packedQuantity = repackQuantity;
-  
+
   // Calculate how many bulk units are needed for this repack with safety checks
   const bulkWeight = parseFloat(selectedProduct?.weight || "1");
   const bulkWeightInGrams = selectedProduct?.weightUnit === 'kg' ? 
     bulkWeight * 1000 : 
     bulkWeight || 1000;
-  
+
   const totalRepackWeight = unitWeight * repackQuantity;
   const bulkUnitsNeeded = bulkWeightInGrams > 0 ? Math.ceil(totalRepackWeight / bulkWeightInGrams) : 1;
-  
+
   const availableForPack = Math.max(0, currentStock - bulkUnitsNeeded);
 
   return (
@@ -549,47 +548,83 @@ export default function RepackingProfessional() {
                 Quick Bulk to Repack Conversion
               </h3>
               <p className="text-sm text-green-700 mb-4">Convert 1kg bulk products into 4 packs of 250g each with auto-generated pricing and barcodes.</p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {bulkProducts.filter(product => 
                   product.weight === "1" && product.weightUnit === "kg" && product.stockQuantity > 0
                 ).slice(0, 6).map((product) => {
                   const costPer250g = (parseFloat(product.cost || "0") / 4).toFixed(2);
                   const sellingPricePer250g = (parseFloat(costPer250g) * 1.3).toFixed(2);
-                  
+                  const mrpPer250g = (parseFloat(costPer250g) * 1.5).toFixed(2);
+                  const profitPer250g = (parseFloat(sellingPricePer250g) - parseFloat(costPer250g)).toFixed(2);
+                  const totalValue = (parseFloat(sellingPricePer250g) * 4).toFixed(2);
+
                   return (
-                    <div key={product.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+                    <div key={product.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg transition-all duration-200 hover:border-green-300">
                       <div className="flex flex-col space-y-2">
-                        <div className="font-medium text-sm text-gray-900 truncate" title={product.name}>
-                          {product.name}
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium text-sm text-gray-900 truncate" title={product.name}>
+                            {product.name}
+                          </div>
+                          <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            1kg
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Stock: {product.stockQuantity} | Cost: ₹{product.cost}/kg
+
+                        <div className="text-xs text-gray-500 space-y-1">
+                          <div>Stock: {product.stockQuantity} units | Cost: ₹{product.cost}/kg</div>
+                          <div className="text-green-600 font-medium">
+                            Creates: 4 packs × 250g @ ₹{sellingPricePer250g}
+                          </div>
+                          <div className="text-blue-600">
+                            Total Value: ₹{totalValue} | Profit: ₹{(parseFloat(profitPer250g) * 4).toFixed(2)}
+                          </div>
                         </div>
-                        <div className="text-xs text-green-600">
-                          Will create: 4 x 250g @ ₹{sellingPricePer250g} each
+
+                        <div className="bg-gray-50 p-2 rounded text-xs">
+                          <div className="grid grid-cols-3 gap-1 text-center">
+                            <div>
+                              <div className="text-gray-500">Cost</div>
+                              <div className="font-semibold">₹{costPer250g}</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-500">Selling</div>
+                              <div className="font-semibold text-green-600">₹{sellingPricePer250g}</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-500">MRP</div>
+                              <div className="font-semibold text-blue-600">₹{mrpPer250g}</div>
+                            </div>
+                          </div>
                         </div>
+
                         <Button
                           size="sm"
                           onClick={() => quickRepackMutation.mutate(product)}
-                          disabled={quickRepackMutation.isPending}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white text-xs py-1 h-8"
+                          disabled={quickRepackMutation.isPending || product.stockQuantity < 1}
+                          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-xs py-1 h-9 font-medium shadow-sm"
                         >
-                          🧃 Repack 1kg to 250g x 4
+                          {quickRepackMutation.isPending ? (
+                            <>⏳ Processing...</>
+                          ) : (
+                            <>🧃 Repack 1kg → 4×250g</>
+                          )}
                         </Button>
                       </div>
                     </div>
                   );
-                })}
-              </div>
-              
+                })}</div>
+
               {bulkProducts.filter(product => 
                 product.weight === "1" && product.weightUnit === "kg" && product.stockQuantity > 0
               ).length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <PackageIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p>No 1kg bulk products available for repacking</p>
-                  <p className="text-sm">Add 1kg bulk products to inventory first</p>
+                  <p className="font-medium">No 1kg bulk products available for repacking</p>
+                  <p className="text-sm">Add 1kg bulk products to inventory to enable quick repacking</p>
+                  <div className="mt-4 text-xs bg-blue-50 text-blue-700 p-3 rounded">
+                    💡 Tip: Products with weight "1" and unit "kg" will appear here automatically
+                  </div>
                 </div>
               )}
             </div>
@@ -713,7 +748,7 @@ export default function RepackingProfessional() {
                       </div>
 
                       <div>
-                        <span className="text-gray-600 text-xs">Bulk Item</span>
+                                                <span className="text-gray-600 text-xs">Bulk Item</span>
                         <div className="bg-gray-100 px-3 py-2 rounded text-center text-sm mt-1">
                           {selectedProduct ? selectedProduct.name.toUpperCase() : 'DAAL'}
                         </div>
