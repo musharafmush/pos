@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -207,6 +206,19 @@ export default function EditOptions() {
     });
   };
 
+  const updateBusinessSetting = (key: string, value: string) => {
+    setBusinessSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+    const updateReceiptSetting = (key: string, value: any) => {
+        setReceiptSettings(prev => ({ ...prev, [key]: value }));
+    };
+
+  const updatePOSSetting = (key: string, value: any) => {
+    setPOSSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -279,7 +291,7 @@ export default function EditOptions() {
                     <Input
                       id="businessName"
                       value={businessSettings.businessName}
-                      onChange={(e) => setBusinessSettings({...businessSettings, businessName: e.target.value})}
+                      onChange={(e) => updateBusinessSetting('businessName', e.target.value)}
                       placeholder="Enter business name"
                     />
                   </div>
@@ -288,7 +300,7 @@ export default function EditOptions() {
                     <Input
                       id="gstNumber"
                       value={businessSettings.gstNumber}
-                      onChange={(e) => setBusinessSettings({...businessSettings, gstNumber: e.target.value})}
+                      onChange={(e) => updateBusinessSetting('gstNumber', e.target.value)}
                       placeholder="Enter GST number"
                     />
                   </div>
@@ -299,7 +311,7 @@ export default function EditOptions() {
                   <Textarea
                     id="address"
                     value={businessSettings.address}
-                    onChange={(e) => setBusinessSettings({...businessSettings, address: e.target.value})}
+                    onChange={(e) => updateBusinessSetting('address', e.target.value)}
                     placeholder="Enter complete business address"
                     rows={3}
                   />
@@ -311,7 +323,7 @@ export default function EditOptions() {
                     <Input
                       id="phone"
                       value={businessSettings.phone}
-                      onChange={(e) => setBusinessSettings({...businessSettings, phone: e.target.value})}
+                      onChange={(e) => updateBusinessSetting('phone', e.target.value)}
                       placeholder="+91-XXXXXXXXXX"
                     />
                   </div>
@@ -321,13 +333,13 @@ export default function EditOptions() {
                       id="email"
                       type="email"
                       value={businessSettings.email}
-                      onChange={(e) => setBusinessSettings({...businessSettings, email: e.target.value})}
+                      onChange={(e) => updateBusinessSetting('email', e.target.value)}
                       placeholder="business@email.com"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="currency">Currency</Label>
-                    <Select value={businessSettings.currency} onValueChange={(value) => setBusinessSettings({...businessSettings, currency: value})}>
+                    <Select value={businessSettings.currency} onValueChange={(value) => updateBusinessSetting('currency', value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -378,7 +390,7 @@ export default function EditOptions() {
                       <Input
                         id="storeName"
                         value={businessSettings.businessName}
-                        onChange={(e) => setBusinessSettings({...businessSettings, businessName: e.target.value})}
+                        onChange={(e) => updateBusinessSetting('businessName', e.target.value)}
                         placeholder="Store name at top"
                       />
                     </div>
@@ -388,7 +400,7 @@ export default function EditOptions() {
                         <Switch
                           id="showGSTHeader"
                           checked={receiptSettings.showGST}
-                          onCheckedChange={(checked) => setReceiptSettings({...receiptSettings, showGST: checked})}
+                          onCheckedChange={(checked) => updateReceiptSetting('showGST', checked)}
                         />
                         <span className="text-sm">Show below address</span>
                       </div>
@@ -396,7 +408,7 @@ export default function EditOptions() {
                   </div>
                   <div className="mt-4 space-y-2">
                     <Label htmlFor="headerAlignment">Header Alignment</Label>
-                    <Select value={receiptSettings.receiptWidth} onValueChange={(value) => setReceiptSettings({...receiptSettings, receiptWidth: value})}>
+                    <Select value={receiptSettings.receiptWidth} onValueChange={(value) => updateReceiptSetting('receiptWidth', value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -467,7 +479,7 @@ export default function EditOptions() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="currencyFormat">Currency Display</Label>
-                      <Select value={businessSettings.currency} onValueChange={(value) => setBusinessSettings({...businessSettings, currency: value})}>
+                      <Select value={businessSettings.currency} onValueChange={(value) => updateBusinessSetting('currency', value)}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -534,7 +546,7 @@ export default function EditOptions() {
                       <Textarea
                         id="additionalFooter"
                         value={receiptSettings.footerText}
-                        onChange={(e) => setReceiptSettings({...receiptSettings, footerText: e.target.value})}
+                        onChange={(e) => updateReceiptSetting('footerText', e.target.value)}
                         placeholder="Visit again soon&#10;Customer Care: support@store.com"
                         rows={3}
                       />
@@ -551,7 +563,7 @@ export default function EditOptions() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="receiptWidth">Receipt Width</Label>
-                      <Select value={receiptSettings.receiptWidth} onValueChange={(value) => setReceiptSettings({...receiptSettings, receiptWidth: value})}>
+                      <Select value={receiptSettings.receiptWidth} onValueChange={(value) => updateReceiptSetting('receiptWidth', value)}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -583,7 +595,7 @@ export default function EditOptions() {
                         min="1"
                         max="5"
                         value={receiptSettings.copies}
-                        onChange={(e) => setReceiptSettings({...receiptSettings, copies: parseInt(e.target.value)})}
+                        onChange={(e) => updateReceiptSetting('copies', parseInt(e.target.value))}
                       />
                     </div>
                   </div>
@@ -621,7 +633,7 @@ export default function EditOptions() {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="taxCalculation">Tax Calculation Method</Label>
-                    <Select value={posSettings.taxCalculation} onValueChange={(value) => setPOSSettings({...posSettings, taxCalculation: value})}>
+                    <Select value={posSettings.taxCalculation} onValueChange={(value) => updatePOSSetting('taxCalculation', value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -634,7 +646,7 @@ export default function EditOptions() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="roundingMethod">Rounding Method</Label>
-                    <Select value={posSettings.roundingMethod} onValueChange={(value) => setPOSSettings({...posSettings, roundingMethod: value})}>
+                    <Select value={posSettings.roundingMethod} onValueChange={(value) => updatePOSSetting('roundingMethod', value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -650,7 +662,7 @@ export default function EditOptions() {
 
                 <div className="space-y-2">
                   <Label htmlFor="defaultPayment">Default Payment Method</Label>
-                  <Select value={posSettings.defaultPaymentMethod} onValueChange={(value) => setPOSSettings({...posSettings, defaultPaymentMethod: value})}>
+                  <Select value={posSettings.defaultPaymentMethod} onValueChange={(value) => updatePOSSetting('defaultPaymentMethod', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -672,7 +684,7 @@ export default function EditOptions() {
                     <Switch
                       id="quickSale"
                       checked={posSettings.quickSaleMode}
-                      onCheckedChange={(checked) => setPOSSettings({...posSettings, quickSaleMode: checked})}
+                      onCheckedChange={(checked) => updatePOSSetting('quickSaleMode', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -683,7 +695,7 @@ export default function EditOptions() {
                     <Switch
                       id="barcode"
                       checked={posSettings.barcodeScanning}
-                      onCheckedChange={(checked) => setPOSSettings({...posSettings, barcodeScanning: checked})}
+                      onCheckedChange={(checked) => updatePOSSetting('barcodeScanning', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -694,7 +706,7 @@ export default function EditOptions() {
                     <Switch
                       id="customerRequired"
                       checked={posSettings.customerRequired}
-                      onCheckedChange={(checked) => setPOSSettings({...posSettings, customerRequired: checked})}
+                      onCheckedChange={(checked) => updatePOSSetting('customerRequired', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -705,7 +717,7 @@ export default function EditOptions() {
                     <Switch
                       id="discount"
                       checked={posSettings.discountEnabled}
-                      onCheckedChange={(checked) => setPOSSettings({...posSettings, discountEnabled: checked})}
+                      onCheckedChange={(checked) => updatePOSSetting('discountEnabled', checked)}
                     />
                   </div>
                 </div>
