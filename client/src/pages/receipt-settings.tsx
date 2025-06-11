@@ -45,7 +45,17 @@ export default function ReceiptSettings() {
     returnPolicy: '7 days return policy. Terms apply.',
     language: 'english',
     currencySymbol: '₹',
-    thermalOptimized: true
+    thermalOptimized: true,
+    printDensity: 'medium',
+    autoCut: true,
+    lineSpacing: 'tight',
+    characterEncoding: 'utf8',
+    charactersPerLine: 48,
+    marginLeft: 2,
+    marginRight: 2,
+    logoHeight: 50,
+    website: 'www.mmart.com',
+    returnPolicyText: '7 days return policy with original receipt'
   });
 
   useEffect(() => {
@@ -289,6 +299,28 @@ export default function ReceiptSettings() {
                         rows={3}
                       />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="website">Website (Optional)</Label>
+                        <Input 
+                          id="website" 
+                          value={settings.website || ''}
+                          onChange={(e) => setSettings(prev => ({ ...prev, website: e.target.value }))}
+                          placeholder="www.yourbusiness.com"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="returnPolicyText">Return Policy Text</Label>
+                        <Input 
+                          id="returnPolicyText" 
+                          value={settings.returnPolicyText || ''}
+                          onChange={(e) => setSettings(prev => ({ ...prev, returnPolicyText: e.target.value }))}
+                          placeholder="7 days return policy with receipt"
+                        />
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -306,16 +338,19 @@ export default function ReceiptSettings() {
                         <Label htmlFor="paperWidth">Paper Width</Label>
                         <Select 
                           value={settings.paperWidth} 
-                          onValueChange={(value: any) => setSettings(prev => ({ ...prev, paperWidth: value }))}
+                          onValueChange={(value: any) => {
+                            const charsPerLine = value === 'thermal58' ? 32 : value === 'thermal80' ? 48 : 80;
+                            setSettings(prev => ({ ...prev, paperWidth: value, charactersPerLine: charsPerLine }));
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="thermal58">58mm Thermal (Small)</SelectItem>
-                            <SelectItem value="thermal80">80mm Thermal (Standard)</SelectItem>
-                            <SelectItem value="thermal112">112mm Thermal (Wide)</SelectItem>
-                            <SelectItem value="a4">A4 Paper (210mm)</SelectItem>
+                            <SelectItem value="thermal58">58mm Thermal (32 chars)</SelectItem>
+                            <SelectItem value="thermal80">80mm Thermal (48 chars)</SelectItem>
+                            <SelectItem value="thermal112">112mm Thermal (64 chars)</SelectItem>
+                            <SelectItem value="a4">A4 Paper (80 chars)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -330,9 +365,9 @@ export default function ReceiptSettings() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="small">Small</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="large">Large</SelectItem>
+                            <SelectItem value="small">Small (Compact)</SelectItem>
+                            <SelectItem value="medium">Medium (Standard)</SelectItem>
+                            <SelectItem value="large">Large (Bold)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -349,7 +384,7 @@ export default function ReceiptSettings() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="courier">Courier (Monospace)</SelectItem>
+                            <SelectItem value="courier">Courier New (Monospace)</SelectItem>
                             <SelectItem value="arial">Arial (Sans-serif)</SelectItem>
                             <SelectItem value="impact">Impact (Bold)</SelectItem>
                           </SelectContent>
@@ -357,7 +392,7 @@ export default function ReceiptSettings() {
                       </div>
                       
                       <div>
-                        <Label htmlFor="headerStyle">Header Style</Label>
+                        <Label htmlFor="headerStyle">Header Alignment</Label>
                         <Select 
                           value={settings.headerStyle} 
                           onValueChange={(value: any) => setSettings(prev => ({ ...prev, headerStyle: value }))}
@@ -366,11 +401,137 @@ export default function ReceiptSettings() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="centered">Centered</SelectItem>
-                            <SelectItem value="left">Left Aligned</SelectItem>
-                            <SelectItem value="justified">Justified</SelectItem>
+                            <SelectItem value="centered">Centered Header</SelectItem>
+                            <SelectItem value="left">Left Aligned Header</SelectItem>
+                            <SelectItem value="justified">Justified Header</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                    </div>
+
+                    {/* Thermal Printer Specific Settings */}
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-medium mb-3">🖨️ Thermal Printer Settings</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="printDensity">Print Density</Label>
+                          <Select 
+                            value={settings.printDensity || 'medium'} 
+                            onValueChange={(value: any) => setSettings(prev => ({ ...prev, printDensity: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low (Light)</SelectItem>
+                              <SelectItem value="medium">Medium (Standard)</SelectItem>
+                              <SelectItem value="high">High (Dark)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="lineSpacing">Line Spacing</Label>
+                          <Select 
+                            value={settings.lineSpacing || 'tight'} 
+                            onValueChange={(value: any) => setSettings(prev => ({ ...prev, lineSpacing: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="tight">Tight (Compact)</SelectItem>
+                              <SelectItem value="normal">Normal (Standard)</SelectItem>
+                              <SelectItem value="loose">Loose (Spaced)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="characterEncoding">Character Encoding</Label>
+                          <Select 
+                            value={settings.characterEncoding || 'utf8'} 
+                            onValueChange={(value: any) => setSettings(prev => ({ ...prev, characterEncoding: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="utf8">UTF-8 (Unicode ₹)</SelectItem>
+                              <SelectItem value="cp437">CP437 (Extended ASCII)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="charactersPerLine">Characters Per Line</Label>
+                          <Input 
+                            id="charactersPerLine" 
+                            type="number"
+                            min="20"
+                            max="80"
+                            value={settings.charactersPerLine || 48}
+                            onChange={(e) => setSettings(prev => ({ ...prev, charactersPerLine: parseInt(e.target.value) || 48 }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="autoCut">Auto Cut Paper</Label>
+                          <Switch 
+                            id="autoCut" 
+                            checked={settings.autoCut !== false}
+                            onCheckedChange={(checked) => setSettings(prev => ({ ...prev, autoCut: checked }))}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="thermalOptimized">Thermal Optimized</Label>
+                          <Switch 
+                            id="thermalOptimized" 
+                            checked={settings.thermalOptimized !== false}
+                            onCheckedChange={(checked) => setSettings(prev => ({ ...prev, thermalOptimized: checked }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4 mt-4">
+                        <div>
+                          <Label htmlFor="marginLeft">Left Margin (mm)</Label>
+                          <Input 
+                            id="marginLeft" 
+                            type="number"
+                            min="0"
+                            max="10"
+                            value={settings.marginLeft || 2}
+                            onChange={(e) => setSettings(prev => ({ ...prev, marginLeft: parseInt(e.target.value) || 2 }))}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="marginRight">Right Margin (mm)</Label>
+                          <Input 
+                            id="marginRight" 
+                            type="number"
+                            min="0"
+                            max="10"
+                            value={settings.marginRight || 2}
+                            onChange={(e) => setSettings(prev => ({ ...prev, marginRight: parseInt(e.target.value) || 2 }))}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="logoHeight">Logo Height (px)</Label>
+                          <Input 
+                            id="logoHeight" 
+                            type="number"
+                            min="30"
+                            max="100"
+                            value={settings.logoHeight || 50}
+                            onChange={(e) => setSettings(prev => ({ ...prev, logoHeight: parseInt(e.target.value) || 50 }))}
+                          />
+                        </div>
                       </div>
                     </div>
                   </CardContent>

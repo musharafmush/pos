@@ -115,7 +115,8 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     showReturnPolicy: false,
     returnPolicy: '7 days return policy. Terms apply.',
     language: 'english',
-    currencySymbol: '₹'
+    currencySymbol: '₹',
+    thermalOptimized: false
   };
 
   const receiptSettings = {
@@ -268,7 +269,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             <span>GST (0%):</span>
             <span>₹0</span>
           </div>
-          
+
           <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 2mm 0;">
             <span>GRAND TOTAL:</span>
             <span>₹${Number(sale.total).toFixed(0)}</span>
@@ -665,7 +666,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                     minute: '2-digit'
                 })}</span>
             </div>
-            
+
         </div>
 
         <!-- Customer Details -->
@@ -834,20 +835,58 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     printWindow.onload = () => {
       setTimeout(() => {
         try {
-          if (receiptSettings.autoPrint) {
-            printWindow.print();
+          // Add thermal printer optimization
+          if (receiptSettings.thermalOptimized) {
+            const style = printWindow.document.createElement('style');
+            style.textContent = `
+              @media print {
+                body { 
+                  -webkit-print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+                .no-break { page-break-inside: avoid !important; }
+                .grand-total { 
+                  font-weight: bold !important; 
+                  font-size: ${fonts.total} !important;
+                }
+              }
+            `;
+            printWindow.document.head.appendChild(style);
           }
 
-          // Don't close immediately to allow user to see preview
           if (receiptSettings.autoPrint) {
-            setTimeout(() => printWindow.close(), 2000);
+            // Set print settings for thermal printers
+            if (window.navigator.userAgent.includes('Chrome')) {
+              // Chrome-specific thermal printer settings
+              const printSettings = {
+                shouldPrintBackgrounds: true,
+                shouldPrintSelectionOnly: false
+              };
+              printWindow.print(printSettings);
+            } else {
+              printWindow.print();
+            }
           }
-        } catch (error) {
-          console.error('Print error:', error);
-          printWindow.close();
-        }
-      }, 800);
-    };
+
+          // Auto-close after successful print for thermal printers
+          if (receiptSettings.autoPrint && receiptSettings.thermalOptimized) {            setTimeout(() => {
+                      try {
+                        printWindow.close();
+                      } catch (e) {
+                        console.log('Window already closed');
+                      }
+                    }, 1500);
+                  } else if (receiptSettings.autoPrint) {
+                    setTimeout(() => printWindow.close(), 3000);
+                  }
+                } catch (error) {
+                  console.error('Print error:', error);
+                  alert('Print failed. Please check your printer connection and try again.');
+                  printWindow.close();
+                }
+              }, receiptSettings.thermalOptimized ? 500 : 800);
+            };
   } catch (error) {
     console.error('Receipt generation error:', error);
     printWindow.close();
