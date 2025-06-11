@@ -893,9 +893,294 @@ export default function EditOptions() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="inclusive">Tax Inclusive</SelectItem>
-                        <SelectItem value="exclusive">Tax Exclusive</SelectItem>
-                        <SelectItem value="compound">Compound Tax</SelectItem>
+                        <SelectItem value="exclusive">Tax Exclusive</SelectItem>                        <SelectItem value="compound">Compound Tax</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-
+                  <div className="space-y-2">
+                    <Label htmlFor="roundingMethod">Rounding Method</Label>
+                    <Select value={posSettings.roundingMethod} onValueChange={(value) => updatePOSSetting('roundingMethod', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="round">Round to Nearest</SelectItem>
+                        <SelectItem value="floor">Round Down</SelectItem>
+                        <SelectItem value="ceil">Round Up</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultPayment">Default Payment Method</Label>
+                    <Select value={posSettings.defaultPaymentMethod} onValueChange={(value) => updatePOSSetting('defaultPaymentMethod', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
+                        <SelectItem value="cheque">Cheque</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="quickSale">Quick Sale Mode</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Skip customer selection for faster transactions
+                      </p>
+                    </div>
+                    <Switch
+                      id="quickSale"
+                      checked={posSettings.quickSaleMode}
+                      onCheckedChange={(checked) => updatePOSSetting('quickSaleMode', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="barcode">Barcode Scanning</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Enable barcode scanner support
+                      </p>
+                    </div>
+                    <Switch
+                      id="barcode"
+                      checked={posSettings.barcodeScanning}
+                      onCheckedChange={(checked) => updatePOSSetting('barcodeScanning', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="customerRequired">Customer Required</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Force customer selection for all sales
+                      </p>
+                    </div>
+                    <Switch
+                      id="customerRequired"
+                      checked={posSettings.customerRequired}
+                      onCheckedChange={(checked) => updatePOSSetting('customerRequired', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="discountEnabled">Discount Enabled</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Allow discounts on items and bills
+                      </p>
+                    </div>
+                    <Switch
+                      id="discountEnabled"
+                      checked={posSettings.discountEnabled}
+                      onCheckedChange={(checked) => updatePOSSetting('discountEnabled', checked)}
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex justify-end">
+                  <Button onClick={handleSavePOSSettings}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save POS Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Printer Settings */}
+          <TabsContent value="printer" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Printer className="h-5 w-5" />
+                  Printer Configuration
+                </CardTitle>
+                <CardDescription>
+                  Configure thermal printer settings for receipts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="printerType">Printer Type</Label>
+                    <Select value={receiptSettings.printerType} onValueChange={(value) => updateReceiptSetting('printerType', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="thermal">Thermal Printer</SelectItem>
+                        <SelectItem value="inkjet">Inkjet Printer</SelectItem>
+                        <SelectItem value="laser">Laser Printer</SelectItem>
+                        <SelectItem value="dot-matrix">Dot Matrix Printer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="copies">Number of Copies</Label>
+                    <Select value={receiptSettings.copies.toString()} onValueChange={(value) => updateReceiptSetting('copies', parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Copy</SelectItem>
+                        <SelectItem value="2">2 Copies</SelectItem>
+                        <SelectItem value="3">3 Copies</SelectItem>
+                        <SelectItem value="4">4 Copies</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveReceiptSettings}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Printer Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Payment Settings */}
+          <TabsContent value="payment" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Payment Methods
+                </CardTitle>
+                <CardDescription>
+                  Configure available payment methods for POS
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div>
+                        <h4 className="font-medium">Cash Payment</h4>
+                        <p className="text-sm text-muted-foreground">Traditional cash transactions</p>
+                      </div>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <div>
+                        <h4 className="font-medium">Card Payment</h4>
+                        <p className="text-sm text-muted-foreground">Credit/Debit card transactions</p>
+                      </div>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                      <div>
+                        <h4 className="font-medium">UPI Payment</h4>
+                        <p className="text-sm text-muted-foreground">Digital UPI transactions</p>
+                      </div>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                      <div>
+                        <h4 className="font-medium">Bank Transfer</h4>
+                        <p className="text-sm text-muted-foreground">Direct bank transfers</p>
+                      </div>
+                    </div>
+                    <Switch />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex justify-end">
+                  <Button>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Payment Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Advanced Settings */}
+          <TabsContent value="advanced" className="space-y-6">
+            {showAdvanced && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Advanced Configuration
+                  </CardTitle>
+                  <CardDescription>
+                    Advanced settings for experienced users
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="timezone">Timezone</Label>
+                      <Select value={businessSettings.timezone} onValueChange={(value) => updateBusinessSetting('timezone', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Asia/Kolkata">Asia/Kolkata (IST)</SelectItem>
+                          <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
+                          <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
+                          <SelectItem value="Asia/Dubai">Asia/Dubai (GST)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="logo">Business Logo URL</Label>
+                      <Input
+                        id="logo"
+                        value={businessSettings.logo}
+                        onChange={(e) => updateBusinessSetting('logo', e.target.value)}
+                        placeholder="https://example.com/logo.png"
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex justify-between">
+                    <Button variant="destructive" onClick={resetToDefaults}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Factory Reset
+                    </Button>
+                    <Button onClick={handleSaveBusinessSettings}>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Advanced Settings
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardLayout>
+  );
+}
