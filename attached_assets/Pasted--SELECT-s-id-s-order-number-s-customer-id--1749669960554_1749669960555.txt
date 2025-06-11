@@ -1,0 +1,90 @@
+          SELECT 
+            s.id,
+            s.order_number,
+            s.customer_id,
+            s.user_id,
+            s.total,
+            s.tax,
+            s.discount,
+            s.payment_method,
+            s.status,
+            s.created_at,
+            c.name as customerName, 
+            c.phone as customerPhone, 
+            u.name as userName,
+            (
+              SELECT GROUP_CONCAT(p.name || ' (x' || si.quantity || ')')
+              FROM sale_items si 
+              LEFT JOIN products p ON si.product_id = p.id 
+              WHERE si.sale_id = s.id
+            ) as items_summary
+          FROM sales s
+          LEFT JOIN customers c ON s.customer_id = c.id
+          LEFT JOIN users u ON s.user_id = u.id
+         ORDER BY s.created_at DESC LIMIT ? OFFSET ?
+📝 Query params: [ 10, 0 ]
+✅ Direct query found 10 sales
+7:25:08 PM [express] GET /api/sales 304 in 5ms :: [{"id":53,"orderNumber":"POS1749667128473","custom…
+7:25:08 PM [express] GET /api/settings/currency 200 in 4ms
+7:25:08 PM [express] GET /api/products/low-stock 304 in 4ms :: [{"id":20,"name":"rice","description"…
+7:25:08 PM [express] GET /api/dashboard/top-products 200 in 4ms
+7:25:08 PM [express] GET /api/dashboard/stats 304 in 2ms :: {"totalProducts":13,"todaysSales":0,"tod…
+🔧 Fetching receipt settings
+❌ Error fetching receipt settings: SqliteError: Cannot add a column with non-constant default
+    at <anonymous> (/home/runner/workspace/server/routes.ts:2128:105) {
+  code: 'SQLITE_ERROR'
+}
+7:25:13 PM [express] GET /api/settings/receipt 500 in 12ms :: {"error":"Failed to fetch receipt sett…
+🔧 Fetching receipt settings
+❌ Error fetching receipt settings: SqliteError: Cannot add a column with non-constant default
+    at <anonymous> (/home/runner/workspace/server/routes.ts:2128:105) {
+  code: 'SQLITE_ERROR'
+}
+7:25:13 PM [express] GET /api/settings/receipt 500 in 3ms :: {"error":"Failed to fetch receipt setti…
+💾 Saving receipt settings: {
+  businessName: 'M MART',
+  address: '123 Business Street, City, State',
+  phone: '+91-9876543210',
+  email: 'contact@mmart.com',
+  gstNumber: '33GSPDB3311F1ZZ',
+  logo: '',
+  timezone: 'Asia/Kolkata',
+  currency: 'INR',
+  receiptWidth: '80mm',
+  showLogo: true,
+  showGST: true,
+  footerText: 'Thank you for shopping with us!',
+  headerText: 'Welcome to M MART',
+  printerType: 'thermal',
+  copies: 1,
+  businessAddress: '123 Business Street, City, State',
+  phoneNumber: '+91-9876543210',
+  taxId: '33GSPDB3311F1ZZ',
+  receiptFooter: 'Thank you for shopping with us!',
+  paperWidth: '80mm',
+  showCustomerDetails: true,
+  showItemSKU: true,
+  showMRP: true,
+  showSavings: true,
+  headerStyle: 'centered',
+  boldTotals: true,
+  separatorStyle: 'solid',
+  showTermsConditions: false,
+  termsConditions: '',
+  showReturnPolicy: false,
+  returnPolicy: '',
+  language: 'english',
+  currencySymbol: '₹',
+  thermalOptimized: true,
+  fontSize: 'medium',
+  fontFamily: 'courier',
+  showBarcode: false,
+  showQRCode: false,
+  headerBackground: true,
+  autoPrint: true
+}
+❌ Error saving receipt settings: SqliteError: Cannot add a column with non-constant default
+    at <anonymous> (/home/runner/workspace/server/routes.ts:2209:105) {
+  code: 'SQLITE_ERROR'
+}
+7:25:17 PM [express] POST /api/settings/receipt 500 in 4ms :: {"error":"Failed to save receipt setti…
