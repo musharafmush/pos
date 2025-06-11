@@ -123,6 +123,31 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     ...customization
   };
 
+  // Paper configurations
+  const paperConfigs = {
+    thermal58: { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
+    thermal80: { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
+    '80mm': { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
+    '58mm': { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
+    '112mm': { width: '108mm', maxWidth: '104mm', fontSize: '12px' },
+    a4: { width: '210mm', maxWidth: '200mm', fontSize: '12px' }
+  };
+
+  // Font configurations
+  const fontSizes = {
+    small: { base: '9px', header: '14px', total: '11px' },
+    medium: { base: '11px', header: '16px', total: '12px' },
+    large: { base: '13px', header: '18px', total: '14px' }
+  };
+
+  const fonts = fontSizes[receiptSettings.fontSize];
+
+  // Font family options
+  const fontFamilies = {
+    courier: "'Courier New', 'Consolas', 'Lucida Console', monospace",
+    arial: "'Arial', 'Helvetica', sans-serif",
+    impact: "'Impact', 'Arial Black', sans-serif"
+  };
 
   const receiptHtml = generateReceiptHTML({
         orderNumber: data.billNumber,
@@ -285,31 +310,6 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     }
   }, 5000);
 };
-
-  const paperConfigs = {
-    thermal58: { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
-    thermal80: { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
-    '80mm': { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
-    '58mm': { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
-    '112mm': { width: '108mm', maxWidth: '104mm', fontSize: '12px' },
-    a4: { width: '210mm', maxWidth: '200mm', fontSize: '12px' }
-  };
-
-  // Font configurations
-  const fontSizes = {
-    small: { base: '9px', header: '14px', total: '11px' },
-    medium: { base: '11px', header: '16px', total: '12px' },
-    large: { base: '13px', header: '18px', total: '14px' }
-  };
-
-  const fonts = fontSizes[receiptSettings.fontSize];
-
-  // Font family options
-  const fontFamilies = {
-    courier: "'Courier New', 'Consolas', 'Lucida Console', monospace",
-    arial: "'Arial', 'Helvetica', sans-serif",
-    impact: "'Impact', 'Arial Black', sans-serif"
-  };
 
   const generateReceiptHTML = (sale: any, settings: any) => {
     const date = new Date(sale.createdAt);
