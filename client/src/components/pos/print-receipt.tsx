@@ -70,61 +70,63 @@ export const printReceipt = (data: ReceiptData) => {
 
         body {
             font-family: 'Courier New', 'monospace', sans-serif;
-            font-size: 10px;
-            line-height: 1.3;
+            font-size: 9px;
+            line-height: 1.2;
             color: #000;
             background: #fff;
-            padding: 8px;
+            padding: 4px;
             max-width: 280px;
             margin: 0 auto;
             word-wrap: break-word;
+            overflow: hidden;
         }
 
         .receipt-container {
             width: 100%;
-            padding: 6px;
+            padding: 4px;
             background: #fff;
-            border: 1px solid #ddd;
+            border: none;
+            page-break-inside: avoid;
         }
 
         .header {
             text-align: center;
             border-bottom: 1px dashed #000;
-            padding-bottom: 8px;
-            margin-bottom: 8px;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
         }
 
         .business-name {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 3px;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
         }
 
         .business-tagline {
-            font-size: 8px;
+            font-size: 7px;
             font-style: italic;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             color: #666;
         }
 
         .business-details {
-            font-size: 8px;
-            line-height: 1.2;
+            font-size: 7px;
+            line-height: 1.1;
             color: #444;
         }
 
         .bill-info {
-            margin: 6px 0;
-            font-size: 9px;
-            padding: 3px 0;
+            margin: 3px 0;
+            font-size: 8px;
+            padding: 2px 0;
         }
 
         .bill-info-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .bill-info-row span:first-child {
@@ -133,30 +135,30 @@ export const printReceipt = (data: ReceiptData) => {
 
         .separator {
             border-top: 1px dashed #000;
-            margin: 5px 0;
+            margin: 3px 0;
         }
 
         .customer-section {
-            margin: 4px 0;
-            font-size: 8px;
-            padding: 2px 0;
+            margin: 2px 0;
+            font-size: 7px;
+            padding: 1px 0;
         }
 
         .section-title {
             font-weight: bold;
             color: #2c5aa0;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .items-section {
-            margin: 8px 0;
+            margin: 4px 0;
         }
 
         .items-header {
             display: flex;
             font-weight: bold;
-            padding: 3px 0;
-            font-size: 8px;
+            padding: 2px 0;
+            font-size: 7px;
             text-transform: uppercase;
             border-bottom: 1px solid #000;
         }
@@ -167,107 +169,120 @@ export const printReceipt = (data: ReceiptData) => {
         .item-amt-col { flex: 1.2; text-align: right; }
 
         .item-row {
-            margin: 3px 0;
-            font-size: 9px;
+            margin: 2px 0;
+            font-size: 8px;
             border-bottom: 1px dotted #ccc;
-            padding-bottom: 3px;
+            padding-bottom: 2px;
         }
 
         .item-main {
             display: flex;
-            padding: 2px 0;
+            padding: 1px 0;
             align-items: center;
         }
 
         .item-details {
-            font-size: 7px;
+            font-size: 6px;
             color: #666;
-            margin: 2px 0;
+            margin: 1px 0;
             font-style: italic;
         }
 
         .item-mrp {
-            font-size: 7px;
+            font-size: 6px;
             color: #28a745;
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         .totals-section {
-            margin-top: 8px;
-            padding: 3px 0;
-            font-size: 9px;
+            margin-top: 4px;
+            padding: 2px 0;
+            font-size: 8px;
         }
 
         .total-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 2px;
-            padding: 1px 0;
+            margin-bottom: 1px;
+            padding: 0;
         }
 
         .grand-total {
             font-weight: bold;
-            font-size: 11px;
+            font-size: 9px;
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
-            padding: 4px;
-            margin: 4px 0;
+            padding: 2px;
+            margin: 2px 0;
             text-align: center;
         }
 
         .payment-section {
-            margin: 6px 0;
-            font-size: 9px;
-            padding: 3px 0;
+            margin: 3px 0;
+            font-size: 8px;
+            padding: 2px 0;
         }
 
         .footer {
             text-align: center;
-            margin-top: 8px;
+            margin-top: 4px;
             border-top: 1px dashed #000;
-            padding-top: 6px;
-            font-size: 8px;
+            padding-top: 3px;
+            font-size: 7px;
         }
 
         .footer-note {
-            margin: 2px 0;
+            margin: 1px 0;
             color: #666;
         }
 
         .system-info {
-            font-size: 7px;
+            font-size: 6px;
             color: #999;
-            margin-top: 3px;
+            margin-top: 1px;
         }
 
         .thank-you {
             font-weight: bold;
             color: #000;
-            font-size: 9px;
-            margin-bottom: 3px;
+            font-size: 8px;
+            margin-bottom: 2px;
         }
 
         @media print {
+            @page {
+                size: 80mm auto;
+                margin: 2mm;
+            }
             body {
-                padding: 2mm;
+                padding: 0;
                 margin: 0;
-                max-width: 80mm;
-                font-size: 9px;
+                max-width: 76mm;
+                font-size: 8px;
+                line-height: 1.1;
             }
             .receipt-container {
-                width: 80mm;
+                width: 76mm;
                 max-width: none;
-                padding: 3mm;
+                padding: 2mm;
                 border: none;
+                page-break-inside: avoid;
             }
             .header, .footer, .separator {
                 border-color: #000 !important;
+                page-break-inside: avoid;
             }
             .business-name {
-                font-size: 16px;
+                font-size: 12px;
             }
             .items-header, .total-row {
-                font-size: 10px;
+                font-size: 8px;
+            }
+            .items-section {
+                page-break-inside: avoid;
+            }
+            .footer {
+                page-break-before: avoid;
             }
         }
     </style>
