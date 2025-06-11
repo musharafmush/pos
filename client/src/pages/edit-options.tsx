@@ -376,8 +376,8 @@ export default function EditOptions() {
         .catch(error => {
           console.error("Failed to load print-receipt module", error);
           toast({
-            title: "❌ Preview Failed",
-            description: "Could not generate receipt preview. Check console for errors.",
+            title: "❌ Preview Failed", 
+            description: `Receipt preview error: ${error.message || 'Module loading failed'}. Please refresh the page and try again.`,
             variant: "destructive"
           });
         });

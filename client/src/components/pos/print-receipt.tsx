@@ -85,53 +85,54 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
   printContainer.style.left = '-9999px';
   document.body.appendChild(printContainer);
 
-  const savedSettings = localStorage.getItem('receiptSettings');
-  const defaultSettings: ReceiptCustomization = {
-    businessName: 'M MART',
-    businessAddress: '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD,\nSAMUTHIRAM VILLAGE,\nTIRUVANNAMALAI-606603',
-    phoneNumber: '+91-9876543210',
-    email: 'info@mmart.com',
-    taxId: '33QIWPS9348F1Z2',
-    receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com',
-    showLogo: false,
-    autoPrint: true,
-    paperWidth: 'thermal80',
-    fontSize: 'medium',
-    fontFamily: 'courier',
-    headerStyle: 'centered',
-    showCustomerDetails: true,
-    showItemSKU: true,
-    showMRP: true,
-    showSavings: true,
-    showBarcode: false,
-    showQRCode: false,
-    headerBackground: true,
-    boldTotals: true,
-    separatorStyle: 'solid',
-    showTermsConditions: false,
-    termsConditions: 'All sales are final. No returns without receipt.',
-    showReturnPolicy: false,
-    returnPolicy: '7 days return policy. Terms apply.',
-    language: 'english',
-    currencySymbol: '₹',
-    thermalOptimized: true
-  };
+  try {
+    const savedSettings = localStorage.getItem('receiptSettings');
+    const defaultSettings: ReceiptCustomization = {
+      businessName: 'M MART',
+      businessAddress: '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD,\nSAMUTHIRAM VILLAGE,\nTIRUVANNAMALAI-606603',
+      phoneNumber: '+91-9876543210',
+      email: 'info@mmart.com',
+      taxId: '33QIWPS9348F1Z2',
+      receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com',
+      showLogo: false,
+      autoPrint: true,
+      paperWidth: 'thermal80',
+      fontSize: 'medium',
+      fontFamily: 'courier',
+      headerStyle: 'centered',
+      showCustomerDetails: true,
+      showItemSKU: true,
+      showMRP: true,
+      showSavings: true,
+      showBarcode: false,
+      showQRCode: false,
+      headerBackground: true,
+      boldTotals: true,
+      separatorStyle: 'solid',
+      showTermsConditions: false,
+      termsConditions: 'All sales are final. No returns without receipt.',
+      showReturnPolicy: false,
+      returnPolicy: '7 days return policy. Terms apply.',
+      language: 'english',
+      currencySymbol: '₹',
+      thermalOptimized: true
+    };
 
-  const receiptSettings = {
-    ...defaultSettings,
-    ...(savedSettings ? JSON.parse(savedSettings) : {}),
-    ...customization
-  };
+    const receiptSettings = {
+      ...defaultSettings,
+      ...(savedSettings ? JSON.parse(savedSettings) : {}),
+      ...customization
+    };
 
   // Paper configurations
-  const paperConfigs = {
-    thermal58: { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
-    thermal80: { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
-    '80mm': { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
-    '58mm': { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
-    '112mm': { width: '108mm', maxWidth: '104mm', fontSize: '12px' },
-    a4: { width: '210mm', maxWidth: '200mm', fontSize: '12px' }
-  };
+    const paperConfigs = {
+      thermal58: { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
+      thermal80: { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
+      '80mm': { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
+      '58mm': { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
+      '112mm': { width: '108mm', maxWidth: '104mm', fontSize: '12px' },
+      a4: { width: '210mm', maxWidth: '200mm', fontSize: '12px' }
+    };
 
   // Font configurations
   const fontSizes = {
@@ -140,7 +141,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     large: { base: '13px', header: '18px', total: '14px' }
   };
 
-  const fonts = fontSizes[receiptSettings.fontSize];
+  const fonts = fontSizes[receiptSettings?.fontSize || 'medium'];
 
   // Font family options
   const fontFamilies = {
@@ -304,11 +305,23 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
   printWindow.document.close();
 
   // Cleanup
-  setTimeout(() => {
-    if (printContainer.parentNode) {
+    setTimeout(() => {
+      if (printContainer.parentNode) {
+        document.body.removeChild(printContainer);
+      }
+    }, 5000);
+
+  } catch (error) {
+    console.error('❌ Error in printReceipt:', error);
+    
+    // Show user-friendly error message
+    alert(`Receipt preview failed: ${error.message || 'Unknown error'}. Please check console for details.`);
+    
+    // Cleanup
+    if (printContainer && printContainer.parentNode) {
       document.body.removeChild(printContainer);
     }
-  }, 5000);
+  }
 };
 
   const generateReceiptHTML = (sale: any, settings: any) => {
