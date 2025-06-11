@@ -46,6 +46,7 @@ import Brands from "./pages/brands";
 import AccountsDashboard from "./pages/accounts-dashboard";
 import SaleReturnsDashboard from "./pages/sale-returns-dashboard";
 import ProfitManagement from "./pages/profit-management";
+import EditOptions from "./pages/edit-options";
 
 function Router() {
   return (
@@ -97,6 +98,7 @@ function Router() {
       <Route path="/categories" component={Categories} />
       <ProtectedRoute path="/brands" component={Brands} />
       <ProtectedRoute path="/accounts-dashboard" component={AccountsDashboard} />
+      <ProtectedRoute path="/edit-options" component={EditOptions} />
       <Route component={NotFound} />
     </Switch>
   );
