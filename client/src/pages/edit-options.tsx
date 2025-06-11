@@ -205,20 +205,27 @@ export default function EditOptions() {
   };
 
   const previewReceipt = () => {
-    // Save current settings first
+    // Save current settings first to ensure preview uses latest settings
     const combinedSettings = {
-      ...businessSettings,
-      ...receiptSettings,
-      // Map the fields properly for receipt printing
+      businessName: businessSettings.businessName,
       businessAddress: businessSettings.address,
+      phoneNumber: businessSettings.phone,
+      email: businessSettings.email,
       taxId: businessSettings.gstNumber,
       receiptFooter: receiptSettings.footerText,
+      showLogo: receiptSettings.showLogo,
+      autoPrint: false, // Don't auto-print for preview
       paperWidth: receiptSettings.receiptWidth,
+      fontSize: 'medium' as const,
+      fontFamily: 'courier' as const,
+      headerStyle: 'centered' as const,
       showCustomerDetails: true,
       showItemSKU: true,
       showMRP: true,
       showSavings: true,
-      headerStyle: 'centered' as const,
+      showBarcode: false,
+      showQRCode: false,
+      headerBackground: true,
       boldTotals: true,
       separatorStyle: 'solid' as const,
       showTermsConditions: false,
@@ -227,22 +234,20 @@ export default function EditOptions() {
       returnPolicy: '',
       language: 'english' as const,
       currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
-      thermalOptimized: true,
-      fontSize: 'medium' as const,
-      fontFamily: 'courier' as const,
-      showBarcode: false,
-      showQRCode: false,
-      headerBackground: true,
-      autoPrint: false
+      thermalOptimized: true
     };
 
-    // Save settings to localStorage
+    // Save to localStorage for receipt system
     localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
 
-    // Create test receipt data
+    // Create comprehensive test receipt data
     const testReceiptData = {
-      billNumber: `PREVIEW${Date.now()}`,
-      billDate: new Date().toLocaleDateString('en-IN'),
+      billNumber: `PREVIEW-${Date.now().toString().slice(-6)}`,
+      billDate: new Date().toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      }),
       customerDetails: {
         name: 'Walk-in Customer',
         doorNo: '+91-9876543210'
@@ -251,8 +256,8 @@ export default function EditOptions() {
       items: [
         {
           id: 1,
-          name: 'Sample Product',
-          sku: 'ITM264973991-SAMPLE',
+          name: 'Premium Rice (5kg)',
+          sku: 'ITM264973991-RICE-5KG',
           quantity: 2,
           price: '125.00',
           total: 250.00,
@@ -260,34 +265,58 @@ export default function EditOptions() {
         },
         {
           id: 2,
-          name: 'Test Item',
-          sku: 'ITM264973992-TEST',
+          name: 'Cooking Oil (1L)',
+          sku: 'ITM264973992-OIL-1L',
           quantity: 1,
           price: '75.00',
           total: 75.00,
           mrp: 85.00
+        },
+        {
+          id: 3,
+          name: 'Sugar (1kg)',
+          sku: 'ITM264973993-SUGAR-1KG',
+          quantity: 3,
+          price: '45.00',
+          total: 135.00,
+          mrp: 50.00
         }
       ],
-      subtotal: 325.00,
+      subtotal: 460.00,
       discount: 25.00,
       discountType: 'fixed' as const,
       taxRate: 0,
       taxAmount: 0,
-      grandTotal: 300.00,
-      amountPaid: 300.00,
+      grandTotal: 435.00,
+      amountPaid: 435.00,
       changeDue: 0,
       paymentMethod: 'CASH',
-      notes: 'Preview receipt from POS Bill Edit settings'
+      notes: 'Preview receipt from POS Bill Edit settings - Sample data for testing'
     };
 
-    // Import and use print function with current settings
+    // Dynamic import and execute print receipt
     import('@/components/pos/print-receipt').then(({ printReceipt }) => {
-      printReceipt(testReceiptData, combinedSettings);
-    });
-
-    toast({
-      title: "Receipt Preview Generated",
-      description: "Opening receipt preview with your current settings"
+      try {
+        printReceipt(testReceiptData, combinedSettings);
+        toast({
+          title: "✅ Receipt Preview Generated",
+          description: "Preview window opened with your current settings"
+        });
+      } catch (error) {
+        console.error('Preview error:', error);
+        toast({
+          title: "❌ Preview Error",
+          description: "Failed to generate preview. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }).catch(error => {
+      console.error('Import error:', error);
+      toast({
+        title: "❌ Module Load Error", 
+        description: "Failed to load receipt module. Please refresh the page.",
+        variant: "destructive"
+      });
     });
   };
 
@@ -689,10 +718,29 @@ export default function EditOptions() {
                 <Separator />
 
                 <div className="flex justify-between">
-                  <Button variant="outline" onClick={previewReceipt}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview Receipt
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={previewReceipt}
+                      className="bg-blue-50 hover:bg-blue-100 border-blue-200"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Preview Receipt
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        // Save settings first, then preview
+                        handleSaveReceiptSettings();
+                        setTimeout(() => previewReceipt(), 500);
+                      }}
+                      className="bg-green-50 hover:bg-green-100 border-green-200"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      <Eye className="h-4 w-4 mr-1" />
+                      Save & Preview
+                    </Button>
+                  </div>
                   <Button onClick={handleSaveReceiptSettings}>
                     <Save className="h-4 w-4 mr-2" />
                     Save Receipt Settings
