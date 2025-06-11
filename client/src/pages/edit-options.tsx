@@ -696,37 +696,63 @@ export default function EditOptions() {
                         <Eye className="h-4 w-4 mr-2" />
                         Preview Receipt
                       </Button>
-                    </div>
-                    <Button 
-                      onClick={async () => {
-                        try {
-                          await handleSaveReceiptSettings();
-                          setTimeout(() => {
-                            previewReceipt();
-                            toast({
-                              title: "✅ Settings Saved & Preview Generated",
-                              description: "Your bill receipt settings have been saved to database and preview opened"
-                            });
-                          }, 500);
-                        } catch (error) {
-                          console.error('Error in save and preview:', error);
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          // Reset preview to show updated settings
+                          const event = new Event('receiptSettingsChanged');
+                          window.dispatchEvent(event);
                           toast({
-                            title: "❌ Error",
-                            description: "Failed to save settings. Please try again.",
-                            variant: "destructive"
+                            title: "🔄 Preview Updated",
+                            description: "Live preview refreshed with current settings"
                           });
-                        }
-                      }}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Receipt Settings
-                    </Button>
+                        }}
+                        className="text-gray-600"
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refresh Preview
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={handleSaveReceiptSettings}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Settings
+                      </Button>
+                      <Button 
+                        onClick={async () => {
+                          try {
+                            await handleSaveReceiptSettings();
+                            setTimeout(() => {
+                              previewReceipt();
+                              toast({
+                                title: "✅ Settings Saved & Preview Generated",
+                                description: "Your bill receipt settings have been saved to database and preview opened"
+                              });
+                            }, 500);
+                          } catch (error) {
+                            console.error('Error in save and preview:', error);
+                            toast({
+                              title: "❌ Error",
+                              description: "Failed to save settings. Please try again.",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save & Preview
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Live Preview Panel */}
-              <Card className="h-fit">
+              <Card className="h-fit sticky top-4">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Eye className="h-5 w-5" />
@@ -740,13 +766,23 @@ export default function EditOptions() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-white border-2 border-gray-200 rounded-lg p-4 shadow-sm">
-                    <div className="font-mono text-xs leading-relaxed max-w-xs mx-auto bg-white border border-gray-300 p-3">
+                  <div className="bg-white border-2 border-gray-200 rounded-lg p-4 shadow-sm overflow-hidden">
+                    <div 
+                      className={`font-mono text-xs leading-relaxed bg-white border border-gray-300 p-3 mx-auto ${
+                        receiptSettings.receiptWidth === '58mm' ? 'max-w-[200px]' :
+                        receiptSettings.receiptWidth === '80mm' ? 'max-w-[280px]' : 'max-w-[340px]'
+                      }`}
+                      style={{
+                        fontSize: receiptSettings.receiptWidth === '58mm' ? '10px' : '12px'
+                      }}
+                    >
                       {/* Receipt Header - Matching actual format */}
                       <div className="text-center mb-3">
                         <div className="font-bold text-lg mb-1">{businessSettings.businessName.toUpperCase()}</div>
                         <div className="text-xs text-gray-600 mb-1">Professional Retail Solution</div>
-                        <div className="text-xs font-bold text-red-600 mb-1">GST NO: {businessSettings.gstNumber}</div>
+                        {receiptSettings.showGST && (
+                          <div className="text-xs font-bold text-red-600 mb-1">GST NO: {businessSettings.gstNumber}</div>
+                        )}
                         <div className="text-xs whitespace-pre-line mb-1">{businessSettings.address}</div>
                         <div className="text-xs">Tel: {businessSettings.phone}</div>
                       </div>
@@ -791,18 +827,18 @@ export default function EditOptions() {
                       {/* Items Header */}
                       <div className="text-xs mb-1">
                         <div className="flex">
-                          <div className="w-24">Item</div>
+                          <div className="flex-1">Item</div>
                           <div className="w-8 text-center">Qty</div>
                           <div className="w-12 text-right">Rate</div>
                           <div className="w-12 text-right">Amt</div>
                         </div>
                       </div>
 
-                      {/* Sample Items - Matching exact format */}
+                      {/* Sample Items - Responsive to paper width */}
                       <div className="text-xs space-y-1 mb-2">
                         <div>
                           <div className="flex">
-                            <div className="w-24">Premium Rice (5kg)</div>
+                            <div className="flex-1">Premium Rice (5kg)</div>
                             <div className="w-8 text-center">2</div>
                             <div className="w-12 text-right">₹125</div>
                             <div className="w-12 text-right">₹250</div>
@@ -813,7 +849,7 @@ export default function EditOptions() {
 
                         <div>
                           <div className="flex">
-                            <div className="w-24">Cooking Oil (1L)</div>
+                            <div className="flex-1">Cooking Oil (1L)</div>
                             <div className="w-8 text-center">1</div>
                             <div className="w-12 text-right">₹75</div>
                             <div className="w-12 text-right">₹75</div>
@@ -824,7 +860,7 @@ export default function EditOptions() {
 
                         <div>
                           <div className="flex">
-                            <div className="w-24">Sugar (1kg)</div>
+                            <div className="flex-1">Sugar (1kg)</div>
                             <div className="w-8 text-center">3</div>
                             <div className="w-12 text-right">₹45</div>
                             <div className="w-12 text-right">₹135</div>
@@ -863,6 +899,14 @@ export default function EditOptions() {
                           <div>Receipt: PREVIEW-123456 | Terminal: POS-Enhanced</div>
                           <div>✨ Powered by Awesome Shop POS ✨</div>
                         </div>
+                      </div>
+                    </div>
+                    
+                    {/* Preview Controls */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex justify-between items-center text-xs text-gray-500">
+                        <span>Preview Mode: {receiptSettings.receiptWidth}</span>
+                        <span>Auto-updates with changes</span>
                       </div>
                     </div>
                   </div>
