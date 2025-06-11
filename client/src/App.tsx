@@ -46,7 +46,9 @@ import Brands from "./pages/brands";
 import AccountsDashboard from "./pages/accounts-dashboard";
 import SaleReturnsDashboard from "./pages/sale-returns-dashboard";
 import ProfitManagement from "./pages/profit-management";
-import EditOptions from "./pages/edit-options";
+import ReceiptSettings from "@/pages/receipt-settings";
+import PrinterReceiptEditor from "@/pages/printer-receipt-editor";
+import EditOptions from "@/pages/edit-options";
 
 function Router() {
   return (
