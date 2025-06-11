@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -77,6 +77,32 @@ export default function EditOptions() {
     currency: 'INR'
   });
 
+  // Load saved settings on component mount
+  useEffect(() => {
+    try {
+      const savedBusiness = localStorage.getItem('businessSettings');
+      const savedReceipt = localStorage.getItem('receiptConfig');
+      const savedPOS = localStorage.getItem('posSettings');
+
+      if (savedBusiness) {
+        const parsed = JSON.parse(savedBusiness);
+        setBusinessSettings(prev => ({ ...prev, ...parsed }));
+      }
+
+      if (savedReceipt) {
+        const parsed = JSON.parse(savedReceipt);
+        setReceiptSettings(prev => ({ ...prev, ...parsed }));
+      }
+
+      if (savedPOS) {
+        const parsed = JSON.parse(savedPOS);
+        setPOSSettings(prev => ({ ...prev, ...parsed }));
+      }
+    } catch (error) {
+      console.error('Error loading saved settings:', error);
+    }
+  }, []);
+
   const [receiptSettings, setReceiptSettings] = useState<ReceiptSettings>({
     receiptWidth: '80mm',
     showLogo: true,
@@ -109,10 +135,47 @@ export default function EditOptions() {
   };
 
   const handleSaveReceiptSettings = () => {
-    localStorage.setItem('receiptSettings', JSON.stringify(receiptSettings));
+    // Combine business and receipt settings for complete receipt configuration
+    const combinedSettings = {
+      ...businessSettings,
+      ...receiptSettings,
+      // Map fields properly for receipt system
+      businessAddress: businessSettings.address,
+      taxId: businessSettings.gstNumber,
+      receiptFooter: receiptSettings.footerText,
+      paperWidth: receiptSettings.receiptWidth,
+      showCustomerDetails: true,
+      showItemSKU: true,
+      showMRP: true,
+      showSavings: true,
+      headerStyle: 'centered' as const,
+      boldTotals: true,
+      separatorStyle: 'solid' as const,
+      showTermsConditions: false,
+      termsConditions: '',
+      showReturnPolicy: false,
+      returnPolicy: '',
+      language: 'english' as const,
+      currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
+      thermalOptimized: true,
+      fontSize: 'medium' as const,
+      fontFamily: 'courier' as const,
+      showBarcode: false,
+      showQRCode: false,
+      headerBackground: true,
+      autoPrint: true
+    };
+
+    // Save to localStorage for receipt printing
+    localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
+    
+    // Also save individual settings
+    localStorage.setItem('businessSettings', JSON.stringify(businessSettings));
+    localStorage.setItem('receiptConfig', JSON.stringify(receiptSettings));
+    
     toast({
-      title: "Receipt Settings Saved",
-      description: "Your receipt format has been updated successfully."
+      title: "✅ Receipt Settings Saved",
+      description: "Your bill receipt format has been updated and will be used for all future receipts."
     });
   };
 
@@ -142,67 +205,89 @@ export default function EditOptions() {
   };
 
   const previewReceipt = () => {
-    // Create test receipt data using current settings
+    // Save current settings first
+    const combinedSettings = {
+      ...businessSettings,
+      ...receiptSettings,
+      // Map the fields properly for receipt printing
+      businessAddress: businessSettings.address,
+      taxId: businessSettings.gstNumber,
+      receiptFooter: receiptSettings.footerText,
+      paperWidth: receiptSettings.receiptWidth,
+      showCustomerDetails: true,
+      showItemSKU: true,
+      showMRP: true,
+      showSavings: true,
+      headerStyle: 'centered' as const,
+      boldTotals: true,
+      separatorStyle: 'solid' as const,
+      showTermsConditions: false,
+      termsConditions: '',
+      showReturnPolicy: false,
+      returnPolicy: '',
+      language: 'english' as const,
+      currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
+      thermalOptimized: true,
+      fontSize: 'medium' as const,
+      fontFamily: 'courier' as const,
+      showBarcode: false,
+      showQRCode: false,
+      headerBackground: true,
+      autoPrint: false
+    };
+
+    // Save settings to localStorage
+    localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
+
+    // Create test receipt data
     const testReceiptData = {
-      billNumber: `POS${Date.now()}`,
+      billNumber: `PREVIEW${Date.now()}`,
       billDate: new Date().toLocaleDateString('en-IN'),
       customerDetails: {
-        name: 'Test Customer',
+        name: 'Walk-in Customer',
         doorNo: '+91-9876543210'
       },
       salesMan: 'Admin User',
       items: [
         {
           id: 1,
-          name: 'Sample Product 1',
-          sku: 'SKU001',
+          name: 'Sample Product',
+          sku: 'ITM264973991-SAMPLE',
           quantity: 2,
           price: '125.00',
           total: 250.00,
           mrp: 150.00
+        },
+        {
+          id: 2,
+          name: 'Test Item',
+          sku: 'ITM264973992-TEST',
+          quantity: 1,
+          price: '75.00',
+          total: 75.00,
+          mrp: 85.00
         }
       ],
-      subtotal: 250.00,
+      subtotal: 325.00,
       discount: 25.00,
       discountType: 'fixed' as const,
-      taxRate: 18,
-      taxAmount: 40.50,
-      grandTotal: 265.50,
+      taxRate: 0,
+      taxAmount: 0,
+      grandTotal: 300.00,
       amountPaid: 300.00,
-      changeDue: 34.50,
+      changeDue: 0,
       paymentMethod: 'CASH',
-      notes: 'Test receipt from POS Bill Edit settings'
+      notes: 'Preview receipt from POS Bill Edit settings'
     };
 
-    // Use current settings for receipt customization
-    const customization = {
-      businessName: businessSettings.businessName,
-      businessAddress: businessSettings.address,
-      phoneNumber: businessSettings.phone,
-      email: businessSettings.email,
-      taxId: businessSettings.gstNumber,
-      receiptFooter: receiptSettings.footerText,
-      showLogo: receiptSettings.showLogo,
-      showGST: receiptSettings.showGST,
-      paperWidth: receiptSettings.receiptWidth as 'thermal58' | 'thermal80' | 'thermal112',
-      headerStyle: 'centered' as const,
-      showCustomerDetails: true,
-      showItemSKU: true,
-      showMRP: true,
-      showSavings: true,
-      boldTotals: true,
-      currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
-      autoPrint: false // Don't auto-print preview
-    };
-
-    // Import and use print function
+    // Import and use print function with current settings
     import('@/components/pos/print-receipt').then(({ printReceipt }) => {
-      printReceipt(testReceiptData, customization);
+      printReceipt(testReceiptData, combinedSettings);
     });
 
     toast({
-      title: "Receipt Preview",
-      description: "Opening receipt preview with current settings"
+      title: "Receipt Preview Generated",
+      description: "Opening receipt preview with your current settings"
     });
   };
 
