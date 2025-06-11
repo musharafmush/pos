@@ -331,56 +331,38 @@ export default function EditOptions() {
       localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
 
       const testReceiptData = {
-        billNumber: `PREVIEW-${Date.now().toString().slice(-6)}`,
-        billDate: new Date().toLocaleDateString('en-IN', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }),
-        customerDetails: {
-          name: 'Preview Customer',
-          doorNo: '+91-9876543210'
-        },
-        salesMan: 'Admin User',
+        orderNumber: `PREVIEW-123456`,
+        createdAt: new Date().toISOString(),
+        user: { name: 'Admin User' },
+        customer: { name: 'Preview Customer' },
         items: [
           {
-            id: 1,
-            name: 'Premium Rice (5kg)',
-            sku: 'ITM264973991-RICE-5KG',
+            productName: 'Premium Rice (5kg)',
+            productSku: 'ITM264973991',
             quantity: 2,
-            price: '125.00',
-            total: 250.00,
-            mrp: 150.00
+            unitPrice: 125,
+            subtotal: 250
           },
           {
-            id: 2,
-            name: 'Cooking Oil (1L)',
-            sku: 'ITM264973992-OIL-1L',
+            productName: 'Cooking Oil (1L)',
+            productSku: 'ITM264973992',
             quantity: 1,
-            price: '75.00',
-            total: 75.00,
-            mrp: 85.00
+            unitPrice: 75,
+            subtotal: 75
           },
           {
-            id: 3,
-            name: 'Sugar (1kg)',
-            sku: 'ITM264973993-SUGAR-1KG',
+            productName: 'Sugar (1kg)',
+            productSku: 'ITM264973993',
             quantity: 3,
-            price: '45.00',
-            total: 135.00,
-            mrp: 50.00
+            unitPrice: 45,
+            subtotal: 135
           }
         ],
-        subtotal: 460.00,
-        discount: 25.00,
-        discountType: 'fixed' as const,
-        taxRate: 0,
+        total: 460,
+        discount: 0,
+        tax: 0,
         taxAmount: 0,
-        grandTotal: 435.00,
-        amountPaid: 435.00,
-        changeDue: 0,
-        paymentMethod: 'CASH',
-        notes: `Preview from POS Bill Edit - ${new Date().toLocaleString('en-IN')}`
+        paymentMethod: 'CASH'
       };
 
       import('@/components/pos/print-receipt')
@@ -901,7 +883,7 @@ export default function EditOptions() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Preview Controls */}
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="flex justify-between items-center text-xs text-gray-500">
@@ -921,7 +903,7 @@ export default function EditOptions() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calculator className="h-5 w-5" />
-                  POS Behavior Settings
+POS Behavior Settings
                 </CardTitle>
                 <CardDescription>
                   Configure how your POS system behaves during transactions
