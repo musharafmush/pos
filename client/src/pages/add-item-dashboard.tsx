@@ -341,7 +341,7 @@ export default function AddItemDashboard() {
       stockQuantity: parseInt(editForm.stockQuantity) || 0,
       alertThreshold: parseInt(editForm.alertThreshold) || 5,
       barcode: editForm.barcode?.trim() || null,
-      weight: editForm.weight?.trim() || null,
+      weight: editForm.weight ? (typeof editForm.weight === 'string' ? editForm.weight.trim() : editForm.weight.toString()) : null,
       weightUnit: editForm.weightUnit || null,
       categoryId: parseInt(editForm.categoryId),
       active: editForm.active,
