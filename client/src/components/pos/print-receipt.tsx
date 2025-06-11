@@ -70,202 +70,237 @@ export const printReceipt = (data: ReceiptData) => {
         }
 
         @page {
-            size: A4;
-            margin: 20mm;
+            size: 80mm 297mm;
+            margin: 5mm 2mm;
         }
 
         body {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
+            font-family: 'Courier New', 'Consolas', 'Lucida Console', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1.3;
             color: #000;
             background: #fff;
-            width: 100%;
-            max-width: 170mm;
+            width: 76mm;
             margin: 0 auto;
-            padding: 10mm;
+            padding: 2mm;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .receipt-container {
-            width: 100%;
-            max-width: 150mm;
+            width: 72mm;
             margin: 0 auto;
+            text-align: left;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 2px dashed #000;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #000;
         }
 
         .business-name {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            letter-spacing: 1px;
         }
 
         .business-tagline {
-            font-size: 12px;
-            margin-bottom: 6px;
+            font-size: 10px;
+            margin-bottom: 3px;
             font-style: italic;
         }
 
         .gst-line {
-            font-size: 12px;
+            font-size: 10px;
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .business-address {
-            font-size: 11px;
-            line-height: 1.3;
-            margin-bottom: 6px;
+            font-size: 9px;
+            line-height: 1.2;
+            margin-bottom: 3px;
         }
 
         .contact-info {
-            font-size: 12px;
-            margin-bottom: 6px;
+            font-size: 10px;
+            margin-bottom: 3px;
         }
 
         .bill-details {
-            margin: 8px 0;
-            font-size: 12px;
+            margin: 4px 0;
+            font-size: 10px;
         }
 
         .bill-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 3px;
+            margin-bottom: 1px;
+            padding: 0 1px;
         }
 
         .separator {
-            border-top: 2px dashed #000;
-            margin: 8px 0;
+            border-top: 1px solid #000;
+            margin: 4px 0;
         }
 
         .customer-info {
-            font-size: 12px;
-            margin: 6px 0;
+            font-size: 10px;
+            margin: 3px 0;
         }
 
         .items-table {
             width: 100%;
-            font-size: 12px;
-            margin: 8px 0;
+            font-size: 10px;
+            margin: 4px 0;
         }
 
         .items-header {
-            border-bottom: 2px solid #000;
-            padding: 4px 0;
+            border-bottom: 1px solid #000;
+            padding: 2px 0;
             font-weight: bold;
             display: flex;
             text-transform: uppercase;
+            background: #f0f0f0;
         }
 
-        .col-item { flex: 3; }
-        .col-qty { flex: 1; text-align: center; }
-        .col-rate { flex: 1.5; text-align: right; }
-        .col-amount { flex: 1.5; text-align: right; }
+        .col-item { 
+            flex: 2.5; 
+            padding-left: 1px;
+        }
+        .col-qty { 
+            flex: 0.8; 
+            text-align: center; 
+        }
+        .col-rate { 
+            flex: 1.2; 
+            text-align: right; 
+            padding-right: 2px;
+        }
+        .col-amount { 
+            flex: 1.2; 
+            text-align: right; 
+            padding-right: 1px;
+        }
 
         .item-row {
-            padding: 4px 0;
-            border-bottom: 1px dotted #ccc;
-            margin: 3px 0;
+            padding: 2px 0;
+            border-bottom: 1px dotted #999;
+            margin: 1px 0;
         }
 
         .item-main {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
         }
 
         .item-name {
-            font-weight: 500;
-            font-size: 12px;
+            font-weight: bold;
+            font-size: 10px;
+            line-height: 1.1;
         }
 
         .item-sku {
-            font-size: 10px;
-            color: #666;
-            margin-top: 2px;
+            font-size: 8px;
+            color: #555;
+            margin-top: 1px;
         }
 
         .mrp-save {
-            font-size: 10px;
-            color: #28a745;
-            margin-top: 2px;
+            font-size: 8px;
+            color: #006600;
+            margin-top: 1px;
         }
 
         .totals {
-            margin-top: 8px;
-            font-size: 12px;
+            margin-top: 4px;
+            font-size: 10px;
         }
 
         .total-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 3px;
+            margin-bottom: 1px;
+            padding: 0 1px;
         }
 
         .grand-total {
-            border-top: 2px solid #000;
-            border-bottom: 2px solid #000;
-            padding: 6px 0;
-            margin: 6px 0;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 3px 1px;
+            margin: 3px 0;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 12px;
             display: flex;
             justify-content: space-between;
+            background: #f0f0f0;
         }
 
         .payment-info {
-            margin: 8px 0;
-            font-size: 12px;
+            margin: 4px 0;
+            font-size: 10px;
         }
 
         .footer {
             text-align: center;
-            margin-top: 12px;
-            border-top: 2px dashed #000;
-            padding-top: 8px;
-            font-size: 10px;
+            margin-top: 6px;
+            border-top: 1px solid #000;
+            padding-top: 4px;
+            font-size: 9px;
         }
 
         .footer-line {
-            margin: 3px 0;
+            margin: 1px 0;
+            line-height: 1.1;
         }
 
         .system-info {
-            font-size: 9px;
-            color: #666;
-            margin-top: 6px;
+            font-size: 8px;
+            color: #555;
+            margin-top: 3px;
         }
 
         .thank-you {
             font-weight: bold;
-            font-size: 12px;
-            margin-bottom: 6px;
+            font-size: 10px;
+            margin-bottom: 3px;
         }
 
         @media print {
+            @page {
+                size: 80mm 297mm;
+                margin: 2mm;
+            }
+            
             body {
-                width: 100%;
-                max-width: 170mm;
-                font-size: 12px;
+                width: 76mm;
+                font-size: 11px;
                 margin: 0;
-                padding: 10mm;
+                padding: 1mm;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
             }
             
             .receipt-container {
-                max-width: 150mm;
+                width: 74mm;
+                margin: 0;
             }
             
             .business-name {
-                font-size: 20px;
+                font-size: 16px;
             }
             
             .grand-total {
-                font-size: 16px;
+                font-size: 12px;
+                background: #f0f0f0 !important;
+            }
+            
+            .items-header {
+                background: #f0f0f0 !important;
             }
         }
     </style>
