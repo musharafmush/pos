@@ -437,6 +437,10 @@ export default function PrintLabels() {
                   margin: 0;
                   padding: 0;
                 }
+                @page {
+                    size: ${paperSize === '3.15inch' ? '80mm 80mm' : `${paperSize} ${orientation}`};
+                    margin: ${margin}mm;
+                }
               }
             </style>
           </head>
@@ -789,6 +793,7 @@ export default function PrintLabels() {
                         <SelectItem value="A5">A5</SelectItem>
                         <SelectItem value="Letter">Letter</SelectItem>
                         <SelectItem value="Legal">Legal</SelectItem>
+                        <SelectItem value="3.15inch">3.15inch</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
