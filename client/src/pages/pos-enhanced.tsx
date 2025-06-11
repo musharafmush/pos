@@ -82,7 +82,7 @@ export default function POSEnhanced() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
   const [discount, setDiscount] = useState(0);
-  
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [billNumber, setBillNumber] = useState(`POS${Date.now()}`);
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
@@ -138,6 +138,13 @@ export default function POSEnhanced() {
   const [cashReason, setCashReason] = useState("");
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [withdrawalNote, setWithdrawalNote] = useState("");
+
+  // Add billDetails state
+  const [billDetails, setBillDetails] = useState({
+    billNumber: `POS${Date.now()}`,
+    billDate: new Date().toISOString().split('T')[0],
+    billTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -857,6 +864,21 @@ export default function POSEnhanced() {
     });
   };
 
+  // Initialize bill number and update bill details when bill number changes
+  useEffect(() => {
+    setBillNumber(`POS${Date.now()}`);
+  }, []);
+
+  // Update bill details when bill number changes
+  useEffect(() => {
+    setBillDetails(prev => ({
+      ...prev,
+      billNumber: billNumber,
+      billDate: new Date().toISOString().split('T')[0],
+      billTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+    }));
+  }, [billNumber]);
+
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900">
@@ -1322,7 +1344,7 @@ export default function POSEnhanced() {
                     <span className="font-semibold">{formatCurrency(subtotal)}</span>
                   </div>
 
-                  
+
 
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Discount:</span>
@@ -2128,7 +2150,7 @@ export default function POSEnhanced() {
                       onChange={(e) => setReceiptSettings(prev => ({ ...prev, businessName: e.target.value }))}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="address">Business Address</Label>
                     <Textarea 
@@ -2139,7 +2161,7 @@ export default function POSEnhanced() {
                       rows={3}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input 
@@ -2149,7 +2171,7 @@ export default function POSEnhanced() {
                       onChange={(e) => setReceiptSettings(prev => ({ ...prev, phone: e.target.value }))}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="taxId">Tax ID / GST Number</Label>
                     <Input 
@@ -2159,7 +2181,7 @@ export default function POSEnhanced() {
                       onChange={(e) => setReceiptSettings(prev => ({ ...prev, taxId: e.target.value }))}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="receiptFooter">Receipt Footer</Label>
                     <Textarea 
@@ -2170,7 +2192,7 @@ export default function POSEnhanced() {
                       rows={2}
                     />
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="showLogo">Show Logo on Receipt</Label>
@@ -2180,7 +2202,7 @@ export default function POSEnhanced() {
                         onCheckedChange={(checked) => setReceiptSettings(prev => ({ ...prev, showLogo: checked }))}
                       />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <Label htmlFor="printAutomatically">Auto Print After Sale</Label>
                       <Switch 
@@ -2190,7 +2212,7 @@ export default function POSEnhanced() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="printerSelect">Default Printer</Label>
                     <Select 
