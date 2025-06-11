@@ -930,7 +930,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             c.phone as customerPhone, 
             u.name as userName,
             (
-              SELECT GROUP_CONCAT(p.name || ' (x' || si.quantity || ')')
+              SELECT GROUP_CONCAT```python
+(p.name || ' (x' || si.quantity || ')')
               FROM sale_items si 
               LEFT JOIN products p ON si.product_id = p.id 
               WHERE si.sale_id = s.id
@@ -1924,9 +1925,9 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/settings/business', async (req, res) => {
     try {
       console.log('🏢 Fetching business settings');
-      
+
       const { sqlite } = await import('@db');
-      
+
       // Get business-related settings
       const businessKeys = [
         'businessName', 'address', 'phone', 'email', 'gstNumber', 'logo', 
@@ -1961,7 +1962,7 @@ app.post("/api/customers", async (req, res) => {
 
       const finalSettings = { ...defaultSettings, ...settings };
       console.log('🏢 Business settings retrieved');
-      
+
       res.json(finalSettings);
     } catch (error) {
       console.error('❌ Error fetching business settings:', error);
@@ -1972,16 +1973,16 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/settings/business', async (req, res) => {
     try {
       console.log('💾 Saving business settings:', req.body);
-      
+
       const { sqlite } = await import('@db');
-      
+
       // Ensure settings table exists
       sqlite.prepare(`
         CREATE TABLE IF NOT EXISTS settings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           key TEXT NOT NULL UNIQUE,
           value TEXT NOT NULL,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          updated_at DATETIME
         )
       `).run();
 
@@ -2022,9 +2023,9 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/settings/pos', async (req, res) => {
     try {
       console.log('🛒 Fetching POS settings');
-      
+
       const { sqlite } = await import('@db');
-      
+
       const posKeys = [
         'quickSaleMode', 'barcodeScanning', 'customerRequired', 'discountEnabled',
         'taxCalculation', 'roundingMethod', 'defaultPaymentMethod'
@@ -2056,7 +2057,7 @@ app.post("/api/customers", async (req, res) => {
 
       const finalSettings = { ...defaultSettings, ...settings };
       console.log('🛒 POS settings retrieved');
-      
+
       res.json(finalSettings);
     } catch (error) {
       console.error('❌ Error fetching POS settings:', error);
@@ -2067,9 +2068,9 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/settings/pos', async (req, res) => {
     try {
       console.log('💾 Saving POS settings:', req.body);
-      
+
       const { sqlite } = await import('@db');
-      
+
       const upsertSetting = sqlite.prepare(`
         INSERT INTO settings (key, value, updated_at) 
         VALUES (?, ?, CURRENT_TIMESTAMP)
@@ -2107,25 +2108,27 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/settings/receipt', async (req, res) => {
     try {
       console.log('🔧 Fetching receipt settings');
-      
+
       const { sqlite } = await import('@db');
-      
+
       // Ensure settings table exists with proper schema
       sqlite.prepare(`
         CREATE TABLE IF NOT EXISTS settings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           key TEXT NOT NULL UNIQUE,
           value TEXT NOT NULL,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          updated_at DATETIME
         )
       `).run();
 
       // Check if updated_at column exists, add if missing
       const tableInfo = sqlite.prepare("PRAGMA table_info(settings)").all();
       const hasUpdatedAt = tableInfo.some((col: any) => col.name === 'updated_at');
-      
+
       if (!hasUpdatedAt) {
-        sqlite.prepare('ALTER TABLE settings ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP').run();
+        // Add column without default, then update existing records
+        sqlite.prepare('ALTER TABLE settings ADD COLUMN updated_at DATETIME').run();
+        sqlite.prepare('UPDATE settings SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL').run();
         console.log('Added updated_at column to settings table');
       }
 
@@ -2177,7 +2180,7 @@ app.post("/api/customers", async (req, res) => {
 
       const finalSettings = { ...defaultSettings, ...settings };
       console.log('📄 Receipt settings retrieved:', Object.keys(finalSettings));
-      
+
       res.json(finalSettings);
     } catch (error) {
       console.error('❌ Error fetching receipt settings:', error);
@@ -2188,25 +2191,27 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/settings/receipt', async (req, res) => {
     try {
       console.log('💾 Saving receipt settings:', req.body);
-      
+
       const { sqlite } = await import('@db');
-      
+
       // Ensure settings table exists with proper schema
       sqlite.prepare(`
         CREATE TABLE IF NOT EXISTS settings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           key TEXT NOT NULL UNIQUE,
           value TEXT NOT NULL,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          updated_at DATETIME
         )
       `).run();
 
       // Check if updated_at column exists, add if missing
       const tableInfo = sqlite.prepare("PRAGMA table_info(settings)").all();
       const hasUpdatedAt = tableInfo.some((col: any) => col.name === 'updated_at');
-      
+
       if (!hasUpdatedAt) {
-        sqlite.prepare('ALTER TABLE settings ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP').run();
+        // Add column without default, then update existing records
+        sqlite.prepare('ALTER TABLE settings ADD COLUMN updated_at DATETIME').run();
+        sqlite.prepare('UPDATE settings SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL').run();
         console.log('Added updated_at column to settings table');
       }
 
@@ -2560,14 +2565,14 @@ app.post("/api/customers", async (req, res) => {
       // Calculate growth rate from previous period
       const previousPeriodStart = new Date(startDate);
       previousPeriodStart.setDate(previousPeriodStart.getDate() - daysPeriod);
-      
+
       const previousSalesQuery = sqlite.prepare(`
         SELECT COALESCE(SUM(CAST(si.subtotal AS REAL)), 0) as previous_revenue
         FROM sales s
         INNER JOIN sale_items si ON s.id = si.sale_id
         WHERE s.created_at >= ? AND s.created_at < ?
       `);
-      
+
       const previousRevenue = previousSalesQuery.get(
         previousPeriodStart.toISOString(),
         startDate.toISOString()
@@ -2582,7 +2587,7 @@ app.post("/api/customers", async (req, res) => {
         const date = new Date();
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         trends.push({
           date: dateStr,
           revenue: dailyData[dateStr]?.revenue || 0,
