@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Printer, Eye, Download, Palette, Settings, FileText, Languages, Zap } from "lucide-react";
 import { printReceipt, type ReceiptCustomization } from "@/components/pos/print-receipt";
+import ReceiptTemplateManager from "@/components/pos/receipt-template-manager";
 
 export default function ReceiptSettings() {
   const { toast } = useToast();
@@ -189,7 +190,7 @@ export default function ReceiptSettings() {
           {/* Settings Panel */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="business" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="business" className="flex items-center gap-1">
                   <Settings className="h-4 w-4" />
                   Business
@@ -205,6 +206,10 @@ export default function ReceiptSettings() {
                 <TabsTrigger value="styling" className="flex items-center gap-1">
                   <Palette className="h-4 w-4" />
                   Styling
+                </TabsTrigger>
+                <TabsTrigger value="templates" className="flex items-center gap-1">
+                  <FileText className="h-4 w-4" />
+                  Templates
                 </TabsTrigger>
                 <TabsTrigger value="advanced" className="flex items-center gap-1">
                   <Languages className="h-4 w-4" />
@@ -485,6 +490,139 @@ export default function ReceiptSettings() {
                 </Card>
               </TabsContent>
 
+              {/* Template Selection */}
+              <TabsContent value="templates" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Receipt Templates</CardTitle>
+                    <CardDescription>Choose from pre-designed receipt templates</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button 
+                        variant="outline" 
+                        className="h-20 flex flex-col items-center justify-center gap-2"
+                        onClick={() => {
+                          setSettings(prev => ({
+                            ...prev,
+                            paperWidth: 'thermal80',
+                            fontSize: 'medium',
+                            fontFamily: 'courier',
+                            headerStyle: 'centered',
+                            headerBackground: true,
+                            boldTotals: true,
+                            separatorStyle: 'solid'
+                          }));
+                          toast({ title: "Template Applied", description: "Professional template selected" });
+                        }}
+                      >
+                        <FileText className="h-6 w-6" />
+                        Professional
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="h-20 flex flex-col items-center justify-center gap-2"
+                        onClick={() => {
+                          setSettings(prev => ({
+                            ...prev,
+                            paperWidth: 'thermal58',
+                            fontSize: 'small',
+                            fontFamily: 'courier',
+                            headerStyle: 'centered',
+                            headerBackground: false,
+                            boldTotals: false,
+                            separatorStyle: 'dashed'
+                          }));
+                          toast({ title: "Template Applied", description: "Compact template selected" });
+                        }}
+                      >
+                        <FileText className="h-6 w-6" />
+                        Compact
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="h-20 flex flex-col items-center justify-center gap-2"
+                        onClick={() => {
+                          setSettings(prev => ({
+                            ...prev,
+                            paperWidth: 'thermal80',
+                            fontSize: 'large',
+                            fontFamily: 'impact',
+                            headerStyle: 'centered',
+                            headerBackground: true,
+                            boldTotals: true,
+                            separatorStyle: 'solid'
+                          }));
+                          toast({ title: "Template Applied", description: "Bold template selected" });
+                        }}
+                      >
+                        <FileText className="h-6 w-6" />
+                        Bold
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="h-20 flex flex-col items-center justify-center gap-2"
+                        onClick={() => {
+                          setSettings(prev => ({
+                            ...prev,
+                            paperWidth: 'a4',
+                            fontSize: 'medium',
+                            fontFamily: 'arial',
+                            headerStyle: 'left',
+                            headerBackground: false,
+                            boldTotals: true,
+                            separatorStyle: 'solid'
+                          }));
+                          toast({ title: "Template Applied", description: "Office template selected" });
+                        }}
+                      >
+                        <FileText className="h-6 w-6" />
+                        Office
+                      </Button>
+                    </div>
+                    
+                    <div className="pt-4 border-t">
+                      <h4 className="text-sm font-medium mb-3">Quick Actions</h4>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button 
+                          size="sm" 
+                          variant="secondary"
+                          onClick={() => {
+                            setSettings(prev => ({ ...prev, showMRP: !prev.showMRP }));
+                            toast({ title: "MRP Display", description: `MRP ${settings.showMRP ? 'hidden' : 'shown'}` });
+                          }}
+                        >
+                          Toggle MRP
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="secondary"
+                          onClick={() => {
+                            setSettings(prev => ({ ...prev, showItemSKU: !prev.showItemSKU }));
+                            toast({ title: "SKU Display", description: `SKU ${settings.showItemSKU ? 'hidden' : 'shown'}` });
+                          }}
+                        >
+                          Toggle SKU
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="secondary"
+                          onClick={() => {
+                            setSettings(prev => ({ ...prev, headerBackground: !prev.headerBackground }));
+                            toast({ title: "Header Style", description: `Background ${settings.headerBackground ? 'removed' : 'added'}` });
+                          }}
+                        >
+                          Toggle Header BG
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
               {/* Advanced Settings */}
               <TabsContent value="advanced" className="space-y-4">
                 <Card>
@@ -556,14 +694,74 @@ export default function ReceiptSettings() {
                         />
                       </div>
                     )}
+                    
+                    <div className="pt-4 border-t">
+                      <h4 className="text-sm font-medium mb-3">Settings Management</h4>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            const dataStr = JSON.stringify(settings, null, 2);
+                            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                            
+                            const exportFileDefaultName = 'receipt-settings.json';
+                            
+                            const linkElement = document.createElement('a');
+                            linkElement.setAttribute('href', dataUri);
+                            linkElement.setAttribute('download', exportFileDefaultName);
+                            linkElement.click();
+                            
+                            toast({ title: "Settings Exported", description: "Receipt settings downloaded successfully" });
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Export Settings
+                        </Button>
+                        
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = '.json';
+                            input.onchange = (e) => {
+                              const file = (e.target as HTMLInputElement).files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                  try {
+                                    const importedSettings = JSON.parse(e.target?.result as string);
+                                    setSettings(prev => ({ ...prev, ...importedSettings }));
+                                    toast({ title: "Settings Imported", description: "Receipt settings loaded successfully" });
+                                  } catch (error) {
+                                    toast({ title: "Import Failed", description: "Invalid settings file", variant: "destructive" });
+                                  }
+                                };
+                                reader.readAsText(file);
+                              }
+                            };
+                            input.click();
+                          }}
+                        >
+                          Import Settings
+                        </Button>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
           </div>
 
-          {/* Live Preview */}
-          <div className="lg:col-span-1">
+          {/* Live Preview and Template Manager */}
+          <div className="lg:col-span-1 space-y-6">
+            <ReceiptTemplateManager 
+              currentSettings={settings}
+              onApplyTemplate={(newSettings) => setSettings(newSettings)}
+            />
+            
             <Card className="sticky top-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

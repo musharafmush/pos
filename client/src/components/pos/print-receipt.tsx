@@ -347,6 +347,35 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             justify-content: space-between;
             background: ${receiptSettings.headerBackground ? '#fff3cd' : 'transparent'};
             border-radius: 5px;
+            ${receiptSettings.boldTotals ? 'text-transform: uppercase; letter-spacing: 0.5px;' : ''}
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 6px 0;
+            font-weight: bold;
+        }
+
+        .savings-highlight {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: ${parseInt(fonts.base) - 2}px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 2px;
+        }
+
+        .premium-border {
+            border: 3px double #000;
+            padding: 8px;
+            margin: 6px 0;
+            border-radius: 8px;
         }
 
         .payment-info {
@@ -450,6 +479,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                 Ph: ${receiptSettings.phoneNumber}
                 ${receiptSettings.email ? `<br>Email: ${receiptSettings.email}` : ''}
             </div>
+            ${receiptSettings.headerStyle === 'centered' ? '<div style="margin-top: 4px;">⭐ Welcome to Our Store ⭐</div>' : ''}
         </div>
 
         <!-- Bill Details -->
@@ -544,6 +574,12 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                 <span>GRAND TOTAL:</span>
                 <span>${receiptSettings.currencySymbol}${data.grandTotal.toFixed(2)}</span>
             </div>
+            
+            ${data.items.reduce((sum, item) => sum + (item.mrp - parseFloat(item.price)) * item.quantity, 0) > 0 ? `
+                <div class="highlight-box">
+                    🎉 YOU SAVED ${receiptSettings.currencySymbol}${data.items.reduce((sum, item) => sum + (item.mrp - parseFloat(item.price)) * item.quantity, 0).toFixed(2)} TODAY! 🎉
+                </div>
+            ` : ''}
         </div>
 
         <!-- Payment -->
