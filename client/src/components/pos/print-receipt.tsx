@@ -329,6 +329,23 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     const formattedDate = date.toLocaleDateString('en-IN');
     const formattedTime = date.toLocaleTimeString('en-IN', { hour12: true });
 
+    // Ensure sale has proper structure with defaults
+    const safeData = {
+      orderNumber: sale.orderNumber || 'PREVIEW-123456',
+      createdAt: sale.createdAt || new Date().toISOString(),
+      user: sale.user || { name: 'Admin User' },
+      customer: sale.customer || { name: 'Preview Customer' },
+      items: sale.items || [
+        { productName: 'Premium Rice (5kg)', quantity: 2, unitPrice: 125, subtotal: 250, productSku: 'ITM264973991' },
+        { productName: 'Cooking Oil (1L)', quantity: 1, unitPrice: 75, subtotal: 75, productSku: 'ITM264973992' },
+        { productName: 'Sugar (1kg)', quantity: 3, unitPrice: 45, subtotal: 135, productSku: 'ITM264973993' }
+      ],
+      total: sale.total || 460,
+      tax: sale.tax || 0,
+      taxAmount: sale.taxAmount || 0,
+      paymentMethod: sale.paymentMethod || 'CASH'
+    };
+
     return `
       <div style="
         width: ${settings.paperWidth === 'thermal58' ? '58mm' : settings.paperWidth === 'thermal80' ? '80mm' : '112mm'};
@@ -366,7 +383,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         <div style="margin-bottom: 3mm;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
             <span>Bill No:</span>
-            <span style="font-weight: bold;">${sale.orderNumber || 'PREVIEW-123456'}</span>
+            <span style="font-weight: bold;">${safeData.orderNumber}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
             <span>Date:</span>
@@ -378,7 +395,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
             <span>Cashier:</span>
-            <span>${sale.user?.name || 'Admin User'}</span>
+            <span>${safeData.user.name}</span>
           </div>
         </div>
 
@@ -389,7 +406,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         <!-- Customer Details -->
         <div style="margin-bottom: 3mm;">
           <div style="font-weight: bold; margin-bottom: 1mm;">Customer Details:</div>
-          <div>Name: ${sale.customer?.name || 'Preview Customer'}</div>
+          <div>Name: ${safeData.customer.name}</div>
         </div>
 
         <!-- Dotted Line -->
@@ -405,14 +422,10 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         </div>
 
         <!-- Items List -->
-        ${(sale.items && sale.items.length > 0 ? sale.items : [
-          { productName: 'Premium Rice (5kg)', quantity: 2, unitPrice: 125, subtotal: 250, productSku: 'ITM264973991' },
-          { productName: 'Cooking Oil (1L)', quantity: 1, unitPrice: 75, subtotal: 75, productSku: 'ITM264973992' },
-          { productName: 'Sugar (1kg)', quantity: 3, unitPrice: 45, subtotal: 135, productSku: 'ITM264973993' }
-        ]).map((item: any) => `
+        ${safeData.items.map((item: any) => `
           <div style="margin-bottom: 3mm;">
             <div style="font-weight: bold; margin-bottom: 1mm;">
-              ${item.productName || item.name}
+              ${item.productName || item.name || 'Item'}
             </div>
             ${settings.showItemSKU ? `
             <div style="font-size: 8px; color: #666; margin-bottom: 1mm;">
@@ -423,7 +436,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
               <div style="flex: 2;"></div>
               <div style="flex: 1; text-align: center;">${item.quantity || 1}</div>
               <div style="flex: 1; text-align: right;">${settings.currencySymbol}${Number(item.unitPrice || item.price || 100).toFixed(0)}</div>
-              <div style="flex: 1; text-align: right;">${settings.currencySymbol}${Number(item.subtotal || item.total || (item.quantity * item.unitPrice) || 100).toFixed(0)}</div>
+              <div style="flex: 1; text-align: right;">${settings.currencySymbol}${Number(item.subtotal || item.total || ((item.quantity || 1) * (item.unitPrice || item.price || 100))).toFixed(0)}</div>
             </div>
             ${settings.showMRP && settings.showSavings ? `
             <div style="text-align: right; font-size: 8px; margin-top: 1mm; color: #4caf50;">
@@ -440,33 +453,33 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         <div style="margin-bottom: 3mm;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
             <span>Sub Total:</span>
-            <span>${settings.currencySymbol}${Number(sale.total || 460).toFixed(0)}</span>
+            <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
             <span>Taxable Amount:</span>
-            <span>${settings.currencySymbol}${Number(sale.total || 460).toFixed(0)}</span>
+            <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 2mm;">
-            <span>GST (${sale.tax || 0}%):</span>
-            <span>${settings.currencySymbol}${Number(sale.taxAmount || 0).toFixed(0)}</span>
+            <span>GST (${safeData.tax}%):</span>
+            <span>${settings.currencySymbol}${Number(safeData.taxAmount).toFixed(0)}</span>
           </div>
 
           <div style="display: flex; justify-content: space-between; ${settings.boldTotals ? 'font-weight: bold;' : ''} font-size: 12px; border: 2px solid #000; padding: 2mm; margin: 2mm 0; ${settings.headerBackground ? 'background: #f5f5f5;' : ''}">
             <span>Total:</span>
-            <span>${settings.currencySymbol}${Number(sale.total || 460).toFixed(0)}</span>
+            <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
           </div>
         </div>
 
         <!-- Payment Details -->
-        ${sale.paymentMethod ? `
+        ${safeData.paymentMethod ? `
         <div style="margin-bottom: 3mm;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
             <span>Payment Method:</span>
-            <span style="font-weight: bold;">${(sale.paymentMethod || 'CASH').toUpperCase()}</span>
+            <span style="font-weight: bold;">${safeData.paymentMethod.toUpperCase()}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
             <span>Amount Paid:</span>
-            <span style="font-weight: bold;">${settings.currencySymbol}${Number(sale.total || 460).toFixed(0)}</span>
+            <span style="font-weight: bold;">${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
           </div>
         </div>
         ` : ''}
@@ -483,10 +496,10 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             ${(settings.receiptFooter || 'Thank you for shopping with us!').replace(/\n/g, '<br>')}
           </div>
           <div style="font-size: 8px; color: #666; margin-bottom: 1mm;">
-            Items: ${(sale.items || []).length || 3} | Total Qty: ${(sale.items || []).reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 6} | Savings: ${settings.currencySymbol}${((sale.items || []).reduce((sum: number) => sum + 20, 0) || 50).toFixed(2)}
+            Items: ${safeData.items.length} | Total Qty: ${safeData.items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)} | Savings: ${settings.currencySymbol}${(safeData.items.reduce((sum: number) => sum + 20, 0)).toFixed(2)}
           </div>
           <div style="font-size: 8px; color: #666; margin-bottom: 1mm;">
-            Receipt: ${sale.orderNumber || 'PREVIEW-123456'} | Terminal: POS-Enhanced
+            Receipt: ${safeData.orderNumber} | Terminal: POS-Enhanced
           </div>
           <div style="font-size: 8px; color: #666;">
             ✨ Powered by Awesome Shop POS ✨
