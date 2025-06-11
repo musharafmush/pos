@@ -70,63 +70,60 @@ export const printReceipt = (data: ReceiptData) => {
 
         body {
             font-family: 'Arial', 'Helvetica', sans-serif;
-            font-size: 11px;
-            line-height: 1.3;
+            font-size: 9px;
+            line-height: 1.2;
             color: #000;
             background: #fff;
-            padding: 8px;
-            max-width: 280px;
+            padding: 4px;
+            max-width: 220px;
             margin: 0 auto;
+            word-wrap: break-word;
         }
 
         .receipt-container {
             width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 12px;
+            padding: 4px;
             background: #fff;
         }
 
         .header {
             text-align: center;
-            border-bottom: 1px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 12px;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
         }
 
         .business-name {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 3px;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
         }
 
         .business-tagline {
-            font-size: 9px;
+            font-size: 7px;
             font-style: italic;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             color: #666;
         }
 
         .business-details {
-            font-size: 8px;
-            line-height: 1.2;
+            font-size: 7px;
+            line-height: 1.1;
             color: #444;
         }
 
         .bill-info {
-            margin: 8px 0;
-            font-size: 9px;
-            background: #f8f9fa;
-            padding: 6px;
-            border-radius: 3px;
+            margin: 4px 0;
+            font-size: 8px;
+            padding: 2px 0;
         }
 
         .bill-info-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .bill-info-row span:first-child {
@@ -135,15 +132,13 @@ export const printReceipt = (data: ReceiptData) => {
 
         .separator {
             border-top: 1px dashed #ccc;
-            margin: 6px 0;
+            margin: 3px 0;
         }
 
         .customer-section {
-            margin: 8px 0;
-            font-size: 9px;
-            background: #f0f8ff;
-            padding: 4px;
-            border-radius: 3px;
+            margin: 4px 0;
+            font-size: 8px;
+            padding: 2px 0;
         }
 
         .section-title {
@@ -153,119 +148,120 @@ export const printReceipt = (data: ReceiptData) => {
         }
 
         .items-section {
-            margin: 12px 0;
+            margin: 6px 0;
         }
 
         .items-header {
             display: flex;
             font-weight: bold;
-            background: #e9ecef;
-            padding: 4px;
-            border-radius: 3px;
-            font-size: 8px;
+            padding: 2px 0;
+            font-size: 7px;
             text-transform: uppercase;
+            border-bottom: 1px solid #000;
         }
 
-        .item-name-col { flex: 2.5; }
-        .item-qty-col { flex: 0.8; text-align: center; }
-        .item-rate-col { flex: 1.2; text-align: right; }
-        .item-amt-col { flex: 1.2; text-align: right; }
+        .item-name-col { flex: 2.2; }
+        .item-qty-col { flex: 0.6; text-align: center; }
+        .item-rate-col { flex: 1; text-align: right; }
+        .item-amt-col { flex: 1; text-align: right; }
 
         .item-row {
-            margin: 4px 0;
-            font-size: 9px;
-            border-bottom: 1px dotted #eee;
-            padding-bottom: 4px;
+            margin: 2px 0;
+            font-size: 8px;
+            border-bottom: 1px dotted #ddd;
+            padding-bottom: 2px;
         }
 
         .item-main {
             display: flex;
-            padding: 2px 0;
+            padding: 1px 0;
             align-items: center;
         }
 
         .item-details {
-            font-size: 7px;
+            font-size: 6px;
             color: #888;
-            margin: 2px 0;
+            margin: 1px 0;
             font-style: italic;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .item-mrp {
-            font-size: 7px;
+            font-size: 6px;
             color: #28a745;
             margin-top: 1px;
         }
 
         .totals-section {
-            margin-top: 12px;
-            background: #f8f9fa;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 9px;
+            margin-top: 6px;
+            padding: 2px 0;
+            font-size: 8px;
         }
 
         .total-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 2px;
-            padding: 1px 0;
+            margin-bottom: 1px;
+            padding: 0;
         }
 
         .grand-total {
             font-weight: bold;
-            font-size: 12px;
-            background: #2c5aa0;
+            font-size: 10px;
+            background: #000;
             color: white;
-            padding: 6px;
-            border-radius: 3px;
-            margin: 6px 0;
+            padding: 3px;
+            margin: 3px 0;
+            text-align: center;
         }
 
         .payment-section {
-            margin: 8px 0;
-            font-size: 9px;
-            background: #e8f5e8;
-            padding: 6px;
-            border-radius: 3px;
+            margin: 4px 0;
+            font-size: 8px;
+            padding: 2px 0;
         }
 
         .footer {
             text-align: center;
-            margin-top: 12px;
-            border-top: 1px solid #ddd;
-            padding-top: 8px;
-            font-size: 8px;
+            margin-top: 6px;
+            border-top: 1px dashed #000;
+            padding-top: 4px;
+            font-size: 7px;
         }
 
         .footer-note {
-            margin: 3px 0;
+            margin: 1px 0;
             color: #666;
         }
 
         .system-info {
-            font-size: 7px;
+            font-size: 6px;
             color: #999;
-            margin-top: 6px;
+            margin-top: 2px;
         }
 
         .thank-you {
             font-weight: bold;
-            color: #2c5aa0;
-            font-size: 10px;
-            margin-bottom: 4px;
+            color: #000;
+            font-size: 8px;
+            margin-bottom: 2px;
         }
 
         @media print {
             body {
                 padding: 0;
                 margin: 0;
+                max-width: 58mm;
             }
             .receipt-container {
                 width: 58mm;
                 max-width: none;
-                border: none;
-                border-radius: 0;
+                padding: 2px;
+            }
+            .header, .footer {
+                border-color: #000 !important;
             }
         }
     </style>
@@ -279,7 +275,7 @@ export const printReceipt = (data: ReceiptData) => {
             <div class="business-details">
                 ${receiptSettings.taxId ? `GST No: ${receiptSettings.taxId}<br>` : ''}
                 Ph: ${receiptSettings.phoneNumber}<br>
-                ${receiptSettings.businessAddress}
+                ${receiptSettings.businessAddress.replace(/\n/g, '<br>')}
             </div>
         </div>
 
