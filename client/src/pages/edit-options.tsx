@@ -479,288 +479,293 @@ export default function EditOptions() {
 
           {/* Receipt Settings */}
           <TabsContent value="receipt" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Receipt className="h-5 w-5" />
-                  Bill Receipt Details Configuration
-                  <Badge variant="outline" className="ml-auto">
-                    {businessSettings.businessName} - {receiptSettings.receiptWidth}
-                  </Badge>
-                </CardTitle>
-                <CardDescription>
-                  Customize bill receipt layout, formatting, and content for POS Enhanced
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Header Section */}
-                <div className="border rounded-lg p-4 bg-blue-50">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <Store className="h-4 w-4" />
-                    Header Section
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="storeName">Store Name (Bold Header)</Label>
-                      <Input
-                        id="storeName"
-                        value={businessSettings.businessName}
-                        onChange={(e) => updateBusinessSetting('businessName', e.target.value)}
-                        placeholder="Store name at top"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gstDisplay">GST Number Display</Label>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="showGSTHeader"
-                          checked={receiptSettings.showGST}
-                          onCheckedChange={(checked) => updateReceiptSetting('showGST', checked)}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Configuration Panel */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5" />
+                    Bill Receipt Details Configuration
+                    <Badge variant="outline" className="ml-auto">
+                      {businessSettings.businessName} - {receiptSettings.receiptWidth}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Customize bill receipt layout, formatting, and content for POS Enhanced
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Header Section */}
+                  <div className="border rounded-lg p-4 bg-blue-50">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <Store className="h-4 w-4" />
+                      Header Section
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="storeName">Store Name (Bold Header)</Label>
+                        <Input
+                          id="storeName"
+                          value={businessSettings.businessName}
+                          onChange={(e) => updateBusinessSetting('businessName', e.target.value)}
+                          placeholder="Store name at top"
                         />
-                        <span className="text-sm">Show below address</span>
                       </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    <Label htmlFor="headerAlignment">Header Alignment</Label>
-                    <Select value={receiptSettings.receiptWidth} onValueChange={(value) => updateReceiptSetting('receiptWidth', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="left">Left Aligned</SelectItem>
-                        <SelectItem value="center">Center Aligned</SelectItem>
-                        <SelectItem value="right">Right Aligned</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Date & Time Format */}
-                <div className="border rounded-lg p-4 bg-green-50">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Date & Time Format
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="dateFormat">Date Format</Label>
-                      <Select defaultValue="dd-mm-yyyy">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="dd-mm-yyyy">DD-MM-YYYY</SelectItem>
-                          <SelectItem value="mm-dd-yyyy">MM-DD-YYYY</SelectItem>
-                          <SelectItem value="yyyy-mm-dd">YYYY-MM-DD</SelectItem>
-                          <SelectItem value="dd/mm/yyyy">DD/MM/YYYY</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="timeFormat">Time Format</Label>
-                      <Select defaultValue="12hour">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="12hour">12 Hour (AM/PM)</SelectItem>
-                          <SelectItem value="24hour">24 Hour</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Amount & Total Section */}
-                <div className="border rounded-lg p-4 bg-yellow-50">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <Calculator className="h-4 w-4" />
-                    Amount & Total Formatting
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="totalAlignment">Total Amount Alignment</Label>
-                      <Select defaultValue="right">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="left">Left Aligned</SelectItem>
-                          <SelectItem value="center">Center Aligned</SelectItem>
-                          <SelectItem value="right">Right Aligned</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="currencyFormat">Currency Display</Label>
-                      <Select value={businessSettings.currency} onValueChange={(value) => updateBusinessSetting('currency', value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="INR">₹ (Indian Rupee)</SelectItem>
-                          <SelectItem value="USD">$ (US Dollar)</SelectItem>
-                          <SelectItem value="EUR">€ (Euro)</SelectItem>
-                          <SelectItem value="GBP">£ (British Pound)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="boldTotals">Bold Total Amount</Label>
-                        <p className="text-sm text-gray-500">Make grand total bold and prominent</p>
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Business Address</Label>
+                        <Textarea
+                          id="address"
+                          value={businessSettings.address}
+                          onChange={(e) => updateBusinessSetting('address', e.target.value)}
+                          placeholder="Complete business address"
+                          rows={2}
+                        />
                       </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="showSavings">Show Savings Amount</Label>
-                        <p className="text-sm text-gray-500">Display total savings on receipt</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer Section */}
-                <div className="border rounded-lg p-4 bg-purple-50">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Footer Section
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="thankYouMessage">Thank You Message</Label>
-                      <Input
-                        id="thankYouMessage"
-                        defaultValue="Thank You for shopping with us!"
-                        placeholder="Thank you message"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="thankYouBold">Bold Thank You</Label>
-                          <p className="text-sm text-gray-500">Make thank you message bold</p>
+                      <div className="space-y-2">
+                        <Label htmlFor="gstDisplay">GST Number Display</Label>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showGSTHeader"
+                            checked={receiptSettings.showGST}
+                            onCheckedChange={(checked) => updateReceiptSetting('showGST', checked)}
+                          />
+                          <span className="text-sm">Show below address</span>
                         </div>
-                        <Switch defaultChecked />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="thankYouCenter">Center Align</Label>
-                          <p className="text-sm text-gray-500">Center align thank you message</p>
-                        </div>
-                        <Switch defaultChecked />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="additionalFooter">Additional Footer Text</Label>
-                      <Textarea
-                        id="additionalFooter"
-                        value={receiptSettings.footerText}
-                        onChange={(e) => updateReceiptSetting('footerText', e.target.value)}
-                        placeholder="Visit again soon&#10;Customer Care: support@store.com"
-                        rows={3}
-                      />
+                  </div>
+
+                  {/* Date & Time Format */}
+                  <div className="border rounded-lg p-4 bg-green-50">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Date & Time Format
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="dateFormat">Date Format</Label>
+                        <Select defaultValue="dd-mm-yyyy">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="dd-mm-yyyy">DD-MM-YYYY</SelectItem>
+                            <SelectItem value="mm-dd-yyyy">MM-DD-YYYY</SelectItem>
+                            <SelectItem value="yyyy-mm-dd">YYYY-MM-DD</SelectItem>
+                            <SelectItem value="dd/mm/yyyy">DD/MM/YYYY</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Paper & Print Settings */}
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <Printer className="h-4 w-4" />
-                    Paper & Print Settings
-                  </h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="receiptWidth">Receipt Width</Label>
-                      <Select value={receiptSettings.receiptWidth} onValueChange={(value) => updateReceiptSetting('receiptWidth', value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="58mm">58mm (Small)</SelectItem>
-                          <SelectItem value="80mm">80mm (Standard)</SelectItem>
-                          <SelectItem value="112mm">112mm (Large)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="fontSize">Font Size</Label>
-                      <Select defaultValue="medium">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="small">Small</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="large">Large</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="copies">Number of Copies</Label>
-                      <Input
-                        id="copies"
-                        type="number"
-                        min="1"
-                        max="5"
-                        value={receiptSettings.copies}
-                        onChange={(e) => updateReceiptSetting('copies', parseInt(e.target.value))}
-                      />
+                  {/* Paper & Print Settings */}
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <Printer className="h-4 w-4" />
+                      Paper & Print Settings
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="receiptWidth">Receipt Width</Label>
+                        <Select value={receiptSettings.receiptWidth} onValueChange={(value) => updateReceiptSetting('receiptWidth', value)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="58mm">58mm (Small)</SelectItem>
+                            <SelectItem value="80mm">80mm (Standard)</SelectItem>
+                            <SelectItem value="112mm">112mm (Large)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="footerText">Footer Message</Label>
+                        <Textarea
+                          id="footerText"
+                          value={receiptSettings.footerText}
+                          onChange={(e) => updateReceiptSetting('footerText', e.target.value)}
+                          placeholder="Thank you for shopping with us!"
+                          rows={2}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <Separator />
+                  <Separator />
 
-                <div className="flex justify-between">
-                  <div className="flex gap-2">
+                  <div className="flex justify-between">
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={previewReceipt}
+                        className="bg-blue-50 hover:bg-blue-100 border-blue-200"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview Receipt
+                      </Button>
+                    </div>
                     <Button 
-                      variant="outline" 
-                      onClick={previewReceipt}
-                      className="bg-blue-50 hover:bg-blue-100 border-blue-200"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Preview Receipt
-                    </Button>
-                    <Button 
-                      variant="outline"
                       onClick={() => {
-                        // Save settings first, then preview
                         handleSaveReceiptSettings();
-                        setTimeout(() => previewReceipt(), 1000);
+                        setTimeout(() => {
+                          previewReceipt();
+                          toast({
+                            title: "✅ Settings Saved & Preview Generated",
+                            description: "Your bill receipt settings have been saved and preview opened"
+                          });
+                        }, 800);
                       }}
-                      className="bg-green-50 hover:bg-green-100 border-green-200"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      <Eye className="h-4 w-4 mr-1" />
-                      Save & Preview
+                      Save Receipt Settings
                     </Button>
                   </div>
-                  <Button 
-                    onClick={() => {
-                      handleSaveReceiptSettings();
-                      // Auto-preview after save
-                      setTimeout(() => {
-                        previewReceipt();
-                        toast({
-                          title: "✅ Settings Saved & Preview Generated",
-                          description: "Your bill receipt settings have been saved and preview opened"
-                        });
-                      }, 800);
-                    }}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Receipt Settings
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Live Preview Panel */}
+              <Card className="h-fit">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="h-5 w-5" />
+                    Live Receipt Preview
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      {receiptSettings.receiptWidth}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Real-time preview of your receipt with current settings
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-white border-2 border-gray-200 rounded-lg p-4 shadow-sm">
+                    <div className="font-mono text-xs leading-relaxed max-w-xs mx-auto bg-white border border-gray-300 p-3">
+                      {/* Receipt Header */}
+                      <div className="text-center mb-3">
+                        <div className="font-bold text-sm mb-1">{businessSettings.businessName.toUpperCase()}</div>
+                        <div className="text-xs text-gray-600 whitespace-pre-line">{businessSettings.address}</div>
+                        {receiptSettings.showGST && (
+                          <div className="text-xs mt-1">GST: {businessSettings.gstNumber}</div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-dashed border-gray-400 my-2"></div>
+
+                      {/* Bill Details */}
+                      <div className="text-xs mb-2">
+                        <div className="flex justify-between">
+                          <span>Bill No:</span>
+                          <span className="font-bold">PREVIEW-123456</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Date:</span>
+                          <span>{new Date().toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          })}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Time:</span>
+                          <span>{new Date().toLocaleTimeString('en-IN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Cashier:</span>
+                          <span>Admin User</span>
+                        </div>
+                      </div>
+
+                      {/* Customer Details */}
+                      <div className="text-xs mb-2">
+                        <div><strong>Customer Details:</strong></div>
+                        <div>Name: Preview Customer</div>
+                      </div>
+
+                      <div className="border-t border-dashed border-gray-400 my-2"></div>
+
+                      {/* Items Header */}
+                      <div className="text-xs grid grid-cols-12 gap-1 font-bold mb-1">
+                        <div className="col-span-5">Item</div>
+                        <div className="col-span-2 text-center">Qty</div>
+                        <div className="col-span-2 text-right">Rate</div>
+                        <div className="col-span-3 text-right">Amt</div>
+                      </div>
+
+                      {/* Sample Items */}
+                      <div className="text-xs space-y-1 mb-2">
+                        <div className="grid grid-cols-12 gap-1">
+                          <div className="col-span-5">
+                            <div>Premium Rice (5kg)</div>
+                            <div className="text-gray-500 text-xs">ITM264973991</div>
+                            <div className="text-gray-500 text-xs">MRP:₹150 Save:₹25</div>
+                          </div>
+                          <div className="col-span-2 text-center">2</div>
+                          <div className="col-span-2 text-right">₹125</div>
+                          <div className="col-span-3 text-right">₹250</div>
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-1">
+                          <div className="col-span-5">
+                            <div>Cooking Oil (1L)</div>
+                            <div className="text-gray-500 text-xs">ITM264973992</div>
+                            <div className="text-gray-500 text-xs">MRP:₹85 Save:₹10</div>
+                          </div>
+                          <div className="col-span-2 text-center">1</div>
+                          <div className="col-span-2 text-right">₹75</div>
+                          <div className="col-span-3 text-right">₹75</div>
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-1">
+                          <div className="col-span-5">
+                            <div>Sugar (1kg)</div>
+                            <div className="text-gray-500 text-xs">ITM264973993</div>
+                            <div className="text-gray-500 text-xs">MRP:₹50 Save:₹15</div>
+                          </div>
+                          <div className="col-span-2 text-center">3</div>
+                          <div className="col-span-2 text-right">₹45</div>
+                          <div className="col-span-3 text-right">₹135</div>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-dashed border-gray-400 my-2"></div>
+
+                      {/* Totals */}
+                      <div className="text-xs space-y-1">
+                        <div className="flex justify-between">
+                          <span>Sub Total:</span>
+                          <span>₹460</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Taxable Amount:</span>
+                          <span>₹460</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-sm">
+                          <span>Total:</span>
+                          <span>₹460</span>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-dashed border-gray-400 my-2"></div>
+
+                      {/* Footer */}
+                      <div className="text-center text-xs">
+                        <div className="font-bold text-green-600 mb-2">🙏 धन्यवाद | Thank you! 🙏</div>
+                        <div className="whitespace-pre-line">{receiptSettings.footerText}</div>
+                        <div className="mt-2 text-gray-600">
+                          <div>Items: 3 | Total Qty: 6 | Savings: ₹50.00</div>
+                          <div>Receipt: PREVIEW-123456 | Terminal: POS-Enhanced</div>
+                          <div>✨ Powered by Awesome Shop POS ✨</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* POS Settings */}
@@ -887,7 +892,7 @@ export default function EditOptions() {
                 <CardTitle className="flex items-center gap-2">
                   <Printer className="h-5 w-5" />
                   Printer Configuration
-                </CardTitle>
+                                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
