@@ -158,127 +158,155 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       <div style="
         width: 80mm;
         font-family: 'Courier New', monospace;
-        font-size: 11px;
-        line-height: 1.2;
+        font-size: 10px;
+        line-height: 1.3;
         margin: 0;
         padding: 2mm;
         background: white;
         color: black;
       ">
-        <!-- Receipt Header -->
-        <div style="text-align: center; margin-bottom: 3mm;">
-          <div style="font-size: 9px; margin-bottom: 1mm;">
-            Receipt from ${formattedDate} at ${formattedTime}
+        <!-- Business Header -->
+        <div style="text-align: center; margin-bottom: 4mm;">
+          <div style="font-size: 16px; font-weight: bold; margin-bottom: 2mm; letter-spacing: 2px;">
+            AWESOME SHOP POS
           </div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">
-            Receipt || PosSystemEnhanced || ₹${Number(sale.total).toFixed(2)}
-          </div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">
-            ${new Date().getFullYear()}
-          </div>
-          <div style="font-size: 9px; margin-bottom: 3mm;">
-            Powered by Awesome Shop POS v1.0
-          </div>
-        </div>
-
-        <!-- Dashed Border -->
-        <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
-
-        <!-- Thank You Message -->
-        <div style="text-align: center; margin-bottom: 3mm;">
-          <div style="font-weight: bold; font-size: 11px; margin-bottom: 1mm;">🙏 धन्यवाद | Thank you for shopping</div>
-          <div style="font-weight: bold; font-size: 11px; margin-bottom: 1mm;">with us! 🙏</div>
-          <div style="font-size: 10px; margin-bottom: 1mm;">Thank you for shopping with us!</div>
-          <div style="font-size: 10px;">Visit again Soon.</div>
-        </div>
-
-        <!-- Dashed Border -->
-        <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
-
-        <!-- Business Information -->
-        <div style="text-align: center; margin-bottom: 3mm;">
-          <div style="font-size: 14px; font-weight: bold; margin-bottom: 1mm;">
-            ${settings.businessName || 'M MART'}
-          </div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">
+          <div style="font-size: 12px; margin-bottom: 2mm;">
             Professional Retail Solution
           </div>
           <div style="font-size: 9px; margin-bottom: 1mm;">
-            GST NO. ${settings.gstNumber || '33QIWPS9348F1Z2'}
+            GST No: 29ABCDE1234F1Z5 | Ph: +91-9876543210
           </div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">
-            NAME : ${settings.businessName || 'M MART'}
-          </div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">
-            ADDRESS : ${settings.businessAddress || '47,SHOP NO.1&2,SAMUTHIRAM,THANDRAMPATTU MAIN ROAD,TIRUVANNAMALAI-606603'}
-          </div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">
-            THANDARAMPATTU MAIN ROAD,
-          </div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">
-            SAMUTHIRAM VILLAGE,
-          </div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">
-            TIRUVANNAMALAI-606603
-          </div>
-          <div style="font-size: 10px; font-weight: bold; margin-top: 2mm;">
-            Welcome to Our Store
+          <div style="font-size: 9px; margin-bottom: 2mm;">
+            123 Main Street, City - 560001
           </div>
         </div>
 
-        <!-- Dashed Border -->
-        <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
+        <!-- Horizontal Line -->
+        <div style="border-top: 1px solid #000; margin: 3mm 0;"></div>
 
         <!-- Bill Details -->
-        <div style="text-align: center; font-size: 10px; margin-bottom: 3mm;">
-          <div style="margin-bottom: 1mm;">Bill No: ${sale.orderNumber}</div>
-          <div style="margin-bottom: 1mm;">Date: ${formattedDate}</div>
-        </div>
-
-        <!-- Items Section -->
-        ${(sale.items || []).length > 0 ? `
         <div style="margin-bottom: 3mm;">
-          <div style="font-size: 10px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 1mm;">
-            <div style="display: flex; justify-content: space-between;">
-              <span style="width: 35%;">ITEM</span>
-              <span style="width: 12%; text-align: center;">QTY</span>
-              <span style="width: 23%; text-align: right;">RATE</span>
-              <span style="width: 30%; text-align: right;">AMOUNT</span>
-            </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
+            <span>Bill No:</span>
+            <span style="font-weight: bold;">${sale.orderNumber}</span>
           </div>
-
-          ${(sale.items || []).map((item: any) => `
-            <div style="margin-bottom: 1mm; font-size: 10px;">
-              <div style="display: flex; justify-content: space-between;">
-                <div style="width: 35%;">
-                  <div style="font-weight: bold;">${item.productName}</div>
-                </div>
-                <div style="width: 12%; text-align: center;">
-                  ${item.quantity}
-                </div>
-                <div style="width: 23%; text-align: right;">
-                  ₹${Number(item.unitPrice).toFixed(2)}
-                </div>
-                <div style="width: 30%; text-align: right;">
-                  ₹${Number(item.subtotal || item.quantity * item.unitPrice).toFixed(2)}
-                </div>
-              </div>
-            </div>
-          `).join('')}
-
-          <!-- Total -->
-          <div style="border-top: 1px dashed #000; padding-top: 1mm; margin-top: 2mm;">
-            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px;">
-              <span>TOTAL:</span>
-              <span>₹${Number(sale.total).toFixed(2)}</span>
-            </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
+            <span>Date:</span>
+            <span>${formattedDate}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
+            <span>Time:</span>
+            <span>${formattedTime}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
+            <span>Cashier:</span>
+            <span>${sale.user?.name || 'Admin User'}</span>
           </div>
         </div>
-        ` : ''}
 
-        <!-- Payment Method -->
-        <div style="text-align: center; font-size: 10px; margin-bottom: 3mm;">
-          <div>Payment Method: ${sale.paymentMethod?.toUpperCase() || 'CASH'}</div>
+        <!-- Dotted Line -->
+        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
+
+        <!-- Customer Details -->
+        <div style="margin-bottom: 3mm;">
+          <div style="font-weight: bold; margin-bottom: 1mm;">Customer Details:</div>
+          <div>Name: ${sale.customer?.name || 'Walk-in Customer'}</div>
+        </div>
+
+        <!-- Dotted Line -->
+        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
+
+        <!-- Items Header -->
+        <div style="display: flex; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 2mm;">
+          <div style="flex: 2;">Item</div>
+          <div style="flex: 1; text-align: center;">Qty</div>
+          <div style="flex: 1; text-align: right;">Rate</div>
+          <div style="flex: 1; text-align: right;">Amt</div>
+        </div>
+
+        <!-- Items List -->
+        ${(sale.items || []).map((item: any) => `
+          <div style="margin-bottom: 3mm;">
+            <div style="font-weight: bold; margin-bottom: 1mm;">
+              ${item.productName || 'rice (250g Pack)'}
+            </div>
+            <div style="font-size: 8px; color: #666; margin-bottom: 1mm;">
+              ITM26497399I-
+            </div>
+            <div style="font-size: 8px; color: #666; margin-bottom: 1mm;">
+              REPACK-250G
+            </div>
+            <div style="font-size: 8px; color: #666; margin-bottom: 2mm;">
+              174954769359$
+            </div>
+            <div style="display: flex;">
+              <div style="flex: 2;"></div>
+              <div style="flex: 1; text-align: center;">${item.quantity || 1}</div>
+              <div style="flex: 1; text-align: right;">₹${Number(item.unitPrice || 100).toFixed(0)}</div>
+              <div style="flex: 1; text-align: right;">₹${Number(item.subtotal || item.quantity * item.unitPrice || 100).toFixed(0)}</div>
+            </div>
+            <div style="text-align: right; font-size: 8px; margin-top: 1mm;">
+              MRP: ₹${Number((item.unitPrice || 100) + 20).toFixed(0)} (You Save: ₹20)
+            </div>
+          </div>
+        `).join('')}
+
+        <!-- Dotted Line -->
+        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
+
+        <!-- Totals Section -->
+        <div style="margin-bottom: 3mm;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
+            <span>Sub Total:</span>
+            <span>₹${Number(sale.total).toFixed(0)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
+            <span>Taxable Amount:</span>
+            <span>₹${Number(sale.total).toFixed(0)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2mm;">
+            <span>GST (0%):</span>
+            <span>₹0</span>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 2mm 0;">
+            <span>GRAND TOTAL:</span>
+            <span>₹${Number(sale.total).toFixed(0)}</span>
+          </div>
+        </div>
+
+        <!-- Payment Details -->
+        <div style="margin-bottom: 3mm;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
+            <span>Payment Method:</span>
+            <span style="font-weight: bold;">${(sale.paymentMethod || 'CASH').toUpperCase()}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
+            <span>Amount Paid:</span>
+            <span style="font-weight: bold;">₹${Number(sale.total).toFixed(0)}</span>
+          </div>
+        </div>
+
+        <!-- Dotted Line -->
+        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
+
+        <!-- Notes -->
+        <div style="margin-bottom: 3mm;">
+          <div style="font-weight: bold; margin-bottom: 1mm;">Notes:</div>
+          <div style="font-size: 8px;">Bill: ${sale.orderNumber} | Terminal: POS-Enhanced</div>
+        </div>
+
+        <!-- Solid Line -->
+        <div style="border-top: 1px solid #000; margin: 3mm 0;"></div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 3mm;">
+          <div style="font-weight: bold; margin-bottom: 2mm;">
+            Thank you for shopping with us!
+          </div>
+          <div style="font-size: 9px;">
+            Visit again soon
+          </div>
         </div>
       </div>
     `;
