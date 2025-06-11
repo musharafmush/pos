@@ -118,11 +118,11 @@ export default function EditOptions() {
         // Load receipt settings from backend API
         console.log('🔄 Loading receipt settings from backend...');
         const response = await fetch('/api/settings/receipt');
-        
+
         if (response.ok) {
           const backendSettings = await response.json();
           console.log('✅ Backend receipt settings loaded:', backendSettings);
-          
+
           // Map backend settings to component state
           setBusinessSettings(prev => ({
             ...prev,
@@ -246,7 +246,7 @@ export default function EditOptions() {
       }
     } catch (error) {
       console.error('❌ Error saving receipt settings:', error);
-      
+
       // Fallback to localStorage only
       const combinedSettings = {
         ...businessSettings,
@@ -898,148 +898,4 @@ export default function EditOptions() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="roundingMethod">Rounding Method</Label>
-                    <Select value={posSettings.roundingMethod} onValueChange={(value) => updatePOSSetting('roundingMethod', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="round">Round to Nearest</SelectItem>
-                        <SelectItem value="floor">Round Down</SelectItem>
-                        <SelectItem value="ceil">Round Up</SelectItem>
-                        <SelectItem value="none">No Rounding</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="defaultPayment">Default Payment Method</Label>
-                  <Select value={posSettings.defaultPaymentMethod} onValueChange={(value) => updatePOSSetting('defaultPaymentMethod', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="card">Card</SelectItem>
-                      <SelectItem value="upi">UPI</SelectItem>
-                      <SelectItem value="credit">Store Credit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="quickSale">Quick Sale Mode</Label>
-                      <p className="text-sm text-gray-500">Enable fast checkout without customer details</p>
-                    </div>
-                    <Switch
-                      id="quickSale"
-                      checked={posSettings.quickSaleMode}
-                      onCheckedChange={(checked) => updatePOSSetting('quickSaleMode', checked)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="barcode">Barcode Scanning</Label>
-                      <p className="text-sm text-gray-500">Enable barcode scanner support</p>
-                    </div>
-                    <Switch
-                      id="barcode"
-                      checked={posSettings.barcodeScanning}
-                      onCheckedChange={(checked) => updatePOSSetting('barcodeScanning', checked)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="customerRequired">Customer Required</Label>
-                      <p className="text-sm text-gray-500">Require customer selection for all sales</p>
-                    </div>
-                    <Switch
-                      id="customerRequired"
-                      checked={posSettings.customerRequired}
-                      onCheckedChange={(checked) => updatePOSSetting('customerRequired', checked)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="discount">Discount Enabled</Label>
-                      <p className="text-sm text-gray-500">Allow discounts on items and bills</p>
-                    </div>
-                    <Switch
-                      id="discount"
-                      checked={posSettings.discountEnabled}
-                      onCheckedChange={(checked) => updatePOSSetting('discountEnabled', checked)}
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="flex justify-end">
-                  <Button onClick={handleSavePOSSettings}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save POS Settings
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Additional tabs would go here for Printer, Payment, and Advanced settings */}
-          <TabsContent value="printer" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Printer className="h-5 w-5" />
-                  Printer Configuration
-                                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Printer className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Printer settings will be available in the next update</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="payment" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Payment Gateway Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Payment gateway configuration coming soon</p>
-                </div>              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="advanced" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Advanced System Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Advanced settings for system administrators</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardLayout>
-  );
-}
+                  <div className="space-y-
