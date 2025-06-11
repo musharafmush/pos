@@ -34,11 +34,12 @@ interface ReceiptData {
   notes?: string;
 }
 
-export function printReceipt(data: ReceiptData) {
+export const printReceipt = (data: ReceiptData) => {
   const printWindow = window.open('', '_blank', 'width=400,height=700');
 
   if (!printWindow) {
     console.error('Failed to open print window');
+    alert('Unable to open print window. Please check your browser popup settings.');
     return;
   }
 
@@ -371,15 +372,26 @@ export function printReceipt(data: ReceiptData) {
 </body>
 </html>`;
 
-  printWindow.document.open();
-  printWindow.document.write(receiptHtml);
-  printWindow.document.close();
+  try {
+    printWindow.document.open();
+    printWindow.document.write(receiptHtml);
+    printWindow.document.close();
 
-  // Wait for content to load before printing
-  printWindow.onload = () => {
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
-  };
-}
+    // Wait for content to load before printing
+    printWindow.onload = () => {
+      setTimeout(() => {
+        try {
+          printWindow.print();
+          printWindow.close();
+        } catch (error) {
+          console.error('Print error:', error);
+          printWindow.close();
+        }
+      }, 500);
+    };
+  } catch (error) {
+    console.error('Receipt generation error:', error);
+    printWindow.close();
+    alert('Failed to generate receipt. Please try again.');
+  }
+};

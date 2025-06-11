@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { PrinterIcon, XIcon } from 'lucide-react';
+import { Printer, X } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
 
 interface ReceiptSettings {
@@ -342,7 +342,7 @@ export default function ReceiptSettings() {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center space-x-2">
-            <PrinterIcon className="h-5 w-5 text-blue-600" />
+            <Printer className="h-5 w-5 text-blue-600" />
             <h2 className="text-lg font-semibold">Receipt & Printer Settings</h2>
           </div>
           <Button
@@ -350,7 +350,7 @@ export default function ReceiptSettings() {
             size="sm"
             onClick={() => setIsOpen(false)}
           >
-            <XIcon className="h-4 w-4" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
 
@@ -458,7 +458,7 @@ export default function ReceiptSettings() {
                   Save Settings
                 </Button>
                 <Button onClick={handlePrintTest} variant="outline" className="flex-1">
-                  <PrinterIcon className="h-4 w-4 mr-2" />
+                  <Printer className="h-4 w-4 mr-2" />
                   Print Test
                 </Button>
               </div>
