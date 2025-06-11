@@ -69,61 +69,62 @@ export const printReceipt = (data: ReceiptData) => {
         }
 
         body {
-            font-family: 'Arial', 'Helvetica', sans-serif;
-            font-size: 9px;
-            line-height: 1.2;
+            font-family: 'Courier New', 'monospace', sans-serif;
+            font-size: 10px;
+            line-height: 1.3;
             color: #000;
             background: #fff;
-            padding: 4px;
-            max-width: 220px;
+            padding: 8px;
+            max-width: 280px;
             margin: 0 auto;
             word-wrap: break-word;
         }
 
         .receipt-container {
             width: 100%;
-            padding: 4px;
+            padding: 6px;
             background: #fff;
+            border: 1px solid #ddd;
         }
 
         .header {
             text-align: center;
             border-bottom: 1px dashed #000;
-            padding-bottom: 6px;
-            margin-bottom: 6px;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
         }
 
         .business-name {
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
         }
 
         .business-tagline {
-            font-size: 7px;
+            font-size: 8px;
             font-style: italic;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             color: #666;
         }
 
         .business-details {
-            font-size: 7px;
-            line-height: 1.1;
+            font-size: 8px;
+            line-height: 1.2;
             color: #444;
         }
 
         .bill-info {
-            margin: 4px 0;
-            font-size: 8px;
-            padding: 2px 0;
+            margin: 6px 0;
+            font-size: 9px;
+            padding: 3px 0;
         }
 
         .bill-info-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 1px;
+            margin-bottom: 2px;
         }
 
         .bill-info-row span:first-child {
@@ -131,8 +132,8 @@ export const printReceipt = (data: ReceiptData) => {
         }
 
         .separator {
-            border-top: 1px dashed #ccc;
-            margin: 3px 0;
+            border-top: 1px dashed #000;
+            margin: 5px 0;
         }
 
         .customer-section {
@@ -148,120 +149,125 @@ export const printReceipt = (data: ReceiptData) => {
         }
 
         .items-section {
-            margin: 6px 0;
+            margin: 8px 0;
         }
 
         .items-header {
             display: flex;
             font-weight: bold;
-            padding: 2px 0;
-            font-size: 7px;
+            padding: 3px 0;
+            font-size: 8px;
             text-transform: uppercase;
             border-bottom: 1px solid #000;
         }
 
-        .item-name-col { flex: 2.2; }
-        .item-qty-col { flex: 0.6; text-align: center; }
-        .item-rate-col { flex: 1; text-align: right; }
-        .item-amt-col { flex: 1; text-align: right; }
+        .item-name-col { flex: 3; }
+        .item-qty-col { flex: 0.8; text-align: center; }
+        .item-rate-col { flex: 1.2; text-align: right; }
+        .item-amt-col { flex: 1.2; text-align: right; }
 
         .item-row {
-            margin: 2px 0;
-            font-size: 8px;
-            border-bottom: 1px dotted #ddd;
-            padding-bottom: 2px;
+            margin: 3px 0;
+            font-size: 9px;
+            border-bottom: 1px dotted #ccc;
+            padding-bottom: 3px;
         }
 
         .item-main {
             display: flex;
-            padding: 1px 0;
+            padding: 2px 0;
             align-items: center;
         }
 
         .item-details {
-            font-size: 6px;
-            color: #888;
-            margin: 1px 0;
+            font-size: 7px;
+            color: #666;
+            margin: 2px 0;
             font-style: italic;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .item-mrp {
-            font-size: 6px;
+            font-size: 7px;
             color: #28a745;
-            margin-top: 1px;
+            margin-top: 2px;
         }
 
         .totals-section {
-            margin-top: 6px;
-            padding: 2px 0;
-            font-size: 8px;
+            margin-top: 8px;
+            padding: 3px 0;
+            font-size: 9px;
         }
 
         .total-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 1px;
-            padding: 0;
+            margin-bottom: 2px;
+            padding: 1px 0;
         }
 
         .grand-total {
             font-weight: bold;
-            font-size: 10px;
-            background: #000;
-            color: white;
-            padding: 3px;
-            margin: 3px 0;
+            font-size: 11px;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 4px;
+            margin: 4px 0;
             text-align: center;
         }
 
         .payment-section {
-            margin: 4px 0;
-            font-size: 8px;
-            padding: 2px 0;
+            margin: 6px 0;
+            font-size: 9px;
+            padding: 3px 0;
         }
 
         .footer {
             text-align: center;
-            margin-top: 6px;
+            margin-top: 8px;
             border-top: 1px dashed #000;
-            padding-top: 4px;
-            font-size: 7px;
+            padding-top: 6px;
+            font-size: 8px;
         }
 
         .footer-note {
-            margin: 1px 0;
+            margin: 2px 0;
             color: #666;
         }
 
         .system-info {
-            font-size: 6px;
+            font-size: 7px;
             color: #999;
-            margin-top: 2px;
+            margin-top: 3px;
         }
 
         .thank-you {
             font-weight: bold;
             color: #000;
-            font-size: 8px;
-            margin-bottom: 2px;
+            font-size: 9px;
+            margin-bottom: 3px;
         }
 
         @media print {
             body {
-                padding: 0;
+                padding: 2mm;
                 margin: 0;
-                max-width: 58mm;
+                max-width: 80mm;
+                font-size: 9px;
             }
             .receipt-container {
-                width: 58mm;
+                width: 80mm;
                 max-width: none;
-                padding: 2px;
+                padding: 3mm;
+                border: none;
             }
-            .header, .footer {
+            .header, .footer, .separator {
                 border-color: #000 !important;
+            }
+            .business-name {
+                font-size: 16px;
+            }
+            .items-header, .total-row {
+                font-size: 10px;
             }
         }
     </style>
