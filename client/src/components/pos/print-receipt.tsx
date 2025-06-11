@@ -1,3 +1,4 @@
+
 import { formatCurrency } from "@/lib/currency";
 
 interface ReceiptItem {
@@ -68,69 +69,73 @@ export const printReceipt = (data: ReceiptData) => {
             box-sizing: border-box;
         }
 
+        @page {
+            size: 80mm auto;
+            margin: 0;
+        }
+
         body {
-            font-family: 'Courier New', 'monospace', sans-serif;
-            font-size: 9px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
             line-height: 1.2;
             color: #000;
             background: #fff;
-            padding: 4px;
-            max-width: 280px;
+            width: 80mm;
+            max-width: 80mm;
             margin: 0 auto;
-            word-wrap: break-word;
-            overflow: hidden;
+            padding: 2mm;
         }
 
         .receipt-container {
             width: 100%;
-            padding: 4px;
-            background: #fff;
-            border: none;
-            page-break-inside: avoid;
+            max-width: 76mm;
         }
 
         .header {
             text-align: center;
+            margin-bottom: 3px;
+            padding-bottom: 3px;
             border-bottom: 1px dashed #000;
-            padding-bottom: 4px;
-            margin-bottom: 4px;
         }
 
         .business-name {
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-bottom: 2px;
-        }
-
-        .business-tagline {
-            font-size: 7px;
-            font-style: italic;
-            margin-bottom: 3px;
-            color: #666;
-        }
-
-        .business-details {
-            font-size: 7px;
-            line-height: 1.1;
-            color: #444;
-        }
-
-        .bill-info {
-            margin: 3px 0;
-            font-size: 8px;
-            padding: 2px 0;
-        }
-
-        .bill-info-row {
-            display: flex;
-            justify-content: space-between;
             margin-bottom: 1px;
         }
 
-        .bill-info-row span:first-child {
-            font-weight: 600;
+        .business-tagline {
+            font-size: 8px;
+            margin-bottom: 2px;
+            font-style: italic;
+        }
+
+        .gst-line {
+            font-size: 8px;
+            font-weight: bold;
+            margin-bottom: 1px;
+        }
+
+        .business-address {
+            font-size: 7px;
+            line-height: 1.1;
+            margin-bottom: 2px;
+        }
+
+        .contact-info {
+            font-size: 8px;
+            margin-bottom: 2px;
+        }
+
+        .bill-details {
+            margin: 3px 0;
+            font-size: 8px;
+        }
+
+        .bill-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1px;
         }
 
         .separator {
@@ -138,65 +143,60 @@ export const printReceipt = (data: ReceiptData) => {
             margin: 3px 0;
         }
 
-        .customer-section {
+        .customer-info {
+            font-size: 8px;
             margin: 2px 0;
-            font-size: 7px;
-            padding: 1px 0;
         }
 
-        .section-title {
-            font-weight: bold;
-            color: #2c5aa0;
-            margin-bottom: 1px;
-        }
-
-        .items-section {
-            margin: 4px 0;
+        .items-table {
+            width: 100%;
+            font-size: 8px;
+            margin: 3px 0;
         }
 
         .items-header {
-            display: flex;
-            font-weight: bold;
-            padding: 2px 0;
-            font-size: 7px;
-            text-transform: uppercase;
             border-bottom: 1px solid #000;
+            padding: 1px 0;
+            font-weight: bold;
+            display: flex;
+            text-transform: uppercase;
         }
 
-        .item-name-col { flex: 3; }
-        .item-qty-col { flex: 0.8; text-align: center; }
-        .item-rate-col { flex: 1.2; text-align: right; }
-        .item-amt-col { flex: 1.2; text-align: right; }
+        .col-item { flex: 3; }
+        .col-qty { flex: 1; text-align: center; }
+        .col-rate { flex: 1.5; text-align: right; }
+        .col-amount { flex: 1.5; text-align: right; }
 
         .item-row {
-            margin: 2px 0;
-            font-size: 8px;
+            padding: 1px 0;
             border-bottom: 1px dotted #ccc;
-            padding-bottom: 2px;
+            margin: 1px 0;
         }
 
         .item-main {
             display: flex;
-            padding: 1px 0;
             align-items: center;
         }
 
-        .item-details {
-            font-size: 6px;
-            color: #666;
-            margin: 1px 0;
-            font-style: italic;
+        .item-name {
+            font-weight: 500;
+            font-size: 8px;
         }
 
-        .item-mrp {
+        .item-sku {
+            font-size: 6px;
+            color: #666;
+            margin-top: 1px;
+        }
+
+        .mrp-save {
             font-size: 6px;
             color: #28a745;
             margin-top: 1px;
         }
 
-        .totals-section {
-            margin-top: 4px;
-            padding: 2px 0;
+        .totals {
+            margin-top: 3px;
             font-size: 8px;
         }
 
@@ -204,23 +204,22 @@ export const printReceipt = (data: ReceiptData) => {
             display: flex;
             justify-content: space-between;
             margin-bottom: 1px;
-            padding: 0;
         }
 
         .grand-total {
-            font-weight: bold;
-            font-size: 9px;
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
-            padding: 2px;
+            padding: 2px 0;
             margin: 2px 0;
-            text-align: center;
+            font-weight: bold;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
         }
 
-        .payment-section {
+        .payment-info {
             margin: 3px 0;
             font-size: 8px;
-            padding: 2px 0;
         }
 
         .footer {
@@ -231,125 +230,108 @@ export const printReceipt = (data: ReceiptData) => {
             font-size: 7px;
         }
 
-        .footer-note {
+        .footer-line {
             margin: 1px 0;
-            color: #666;
         }
 
         .system-info {
             font-size: 6px;
-            color: #999;
-            margin-top: 1px;
+            color: #666;
+            margin-top: 2px;
         }
 
         .thank-you {
             font-weight: bold;
-            color: #000;
             font-size: 8px;
             margin-bottom: 2px;
         }
 
         @media print {
-            @page {
-                size: 80mm auto;
-                margin: 2mm;
-            }
             body {
-                padding: 0;
-                margin: 0;
-                max-width: 76mm;
-                font-size: 8px;
-                line-height: 1.1;
+                width: 80mm;
+                max-width: 80mm;
+                font-size: 9px;
             }
+            
             .receipt-container {
-                width: 76mm;
-                max-width: none;
-                padding: 2mm;
-                border: none;
-                page-break-inside: avoid;
+                max-width: 76mm;
             }
-            .header, .footer, .separator {
-                border-color: #000 !important;
-                page-break-inside: avoid;
-            }
+            
             .business-name {
-                font-size: 12px;
+                font-size: 13px;
             }
-            .items-header, .total-row {
-                font-size: 8px;
-            }
-            .items-section {
-                page-break-inside: avoid;
-            }
-            .footer {
-                page-break-before: avoid;
+            
+            .grand-total {
+                font-size: 9px;
             }
         }
     </style>
 </head>
 <body>
     <div class="receipt-container">
-        <!-- Header Section -->
+        <!-- Header -->
         <div class="header">
             <div class="business-name">${receiptSettings.businessName}</div>
             <div class="business-tagline">Professional Retail Solution</div>
-            <div class="business-details">
-                ${receiptSettings.taxId ? `GST No: ${receiptSettings.taxId}<br>` : ''}
-                Ph: ${receiptSettings.phoneNumber}<br>
+            <div class="gst-line">GST NO: ${receiptSettings.taxId}</div>
+            <div class="business-address">
                 ${receiptSettings.businessAddress.replace(/\n/g, '<br>')}
             </div>
+            <div class="contact-info">Ph: ${receiptSettings.phoneNumber}</div>
         </div>
 
-        <!-- Bill Information -->
-        <div class="bill-info">
-            <div class="bill-info-row">
+        <!-- Bill Details -->
+        <div class="bill-details">
+            <div class="bill-row">
                 <span>Bill No:</span>
                 <span>${data.billNumber}</span>
             </div>
-            <div class="bill-info-row">
+            <div class="bill-row">
                 <span>Date:</span>
                 <span>${data.billDate}</span>
             </div>
-            <div class="bill-info-row">
+            <div class="bill-row">
                 <span>Time:</span>
-                <span>${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                <span>${new Date().toLocaleTimeString('en-IN', { 
+                    hour12: false,
+                    hour: '2-digit', 
+                    minute: '2-digit'
+                })}</span>
             </div>
-            <div class="bill-info-row">
+            <div class="bill-row">
                 <span>Cashier:</span>
                 <span>${data.salesMan}</span>
             </div>
         </div>
 
         <!-- Customer Details -->
-        <div class="customer-section">
-            <div class="section-title">Customer Details</div>
+        <div class="customer-info">
+            <div><strong>Customer Details</strong></div>
             <div>Name: ${data.customerDetails.name}</div>
         </div>
 
         <div class="separator"></div>
 
-        <!-- Items Section -->
-        <div class="items-section">
+        <!-- Items -->
+        <div class="items-table">
             <div class="items-header">
-                <div class="item-name-col">Item</div>
-                <div class="item-qty-col">Qty</div>
-                <div class="item-rate-col">Rate</div>
-                <div class="item-amt-col">Amount</div>
+                <div class="col-item">ITEM</div>
+                <div class="col-qty">QTY</div>
+                <div class="col-rate">RATE</div>
+                <div class="col-amount">AMOUNT</div>
             </div>
 
             ${data.items.map(item => `
                 <div class="item-row">
                     <div class="item-main">
-                        <div class="item-name-col">${item.name}</div>
-                        <div class="item-qty-col">${item.quantity}</div>
-                        <div class="item-rate-col">${formatCurrency(parseFloat(item.price))}</div>
-                        <div class="item-amt-col">${formatCurrency(item.total)}</div>
-                    </div>
-                    <div class="item-details">
-                        ${item.sku}
-                    </div>
-                    <div class="item-mrp">
-                        MRP: ${formatCurrency(item.mrp)} (Save: ${formatCurrency(item.mrp - parseFloat(item.price))})
+                        <div class="col-item">
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-sku">${item.sku}</div>
+                            <div class="mrp-save">MRP: ${formatCurrency(item.mrp)} (Save: ${formatCurrency(item.mrp - parseFloat(item.price))})</div>
+                        </div>
+                        <div class="col-qty">${item.quantity}</div>
+                        <div class="col-rate">${formatCurrency(parseFloat(item.price))}</div>
+                        <div class="col-amount">${formatCurrency(item.total)}</div>
                     </div>
                 </div>
             `).join('')}
@@ -357,31 +339,29 @@ export const printReceipt = (data: ReceiptData) => {
 
         <div class="separator"></div>
 
-        <!-- Totals Section -->
-        <div class="totals-section">
+        <!-- Totals -->
+        <div class="totals">
             <div class="total-row">
                 <span>Sub Total:</span>
                 <span>${formatCurrency(data.subtotal)}</span>
             </div>
-
             <div class="total-row">
                 <span>Taxable Amount:</span>
                 <span>${formatCurrency(data.subtotal - data.discount)}</span>
             </div>
-
             <div class="total-row">
                 <span>GST (0%):</span>
                 <span>${formatCurrency(0)}</span>
             </div>
-
-            <div class="total-row grand-total">
+            
+            <div class="grand-total">
                 <span>GRAND TOTAL:</span>
                 <span>${formatCurrency(data.grandTotal)}</span>
             </div>
         </div>
 
-        <!-- Payment Section -->
-        <div class="payment-section">
+        <!-- Payment -->
+        <div class="payment-info">
             <div class="total-row">
                 <span>Payment Method:</span>
                 <span>${data.paymentMethod.toUpperCase()}</span>
@@ -398,11 +378,10 @@ export const printReceipt = (data: ReceiptData) => {
             ` : ''}
         </div>
 
-        <!-- Notes -->
         ${data.notes ? `
             <div class="separator"></div>
-            <div class="customer-section">
-                <div class="section-title">Notes:</div>
+            <div class="customer-info">
+                <div><strong>Notes:</strong></div>
                 <div>${data.notes}</div>
             </div>
         ` : ''}
@@ -410,8 +389,10 @@ export const printReceipt = (data: ReceiptData) => {
         <!-- Footer -->
         <div class="footer">
             <div class="thank-you">Thank you for shopping with us!</div>
-            ${receiptSettings.receiptFooter.split('\n').map(line => `<div class="footer-note">${line}</div>`).join('')}
-
+            ${receiptSettings.receiptFooter.split('\n').map(line => 
+                `<div class="footer-line">${line}</div>`
+            ).join('')}
+            
             <div class="system-info">
                 Items: ${data.items.length} | Total Qty: ${data.items.reduce((sum, item) => sum + item.quantity, 0)}
             </div>
