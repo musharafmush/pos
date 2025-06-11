@@ -148,9 +148,9 @@ export default function EditOptions() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               <Edit3 className="h-8 w-8 text-blue-600" />
-              Edit Options
+              POS Bill Edit
             </h1>
-            <p className="text-gray-500 mt-1">Configure your POS system settings and preferences</p>
+            <p className="text-gray-500 mt-1">Configure your POS bill settings and receipt preferences</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowAdvanced(!showAdvanced)}>
