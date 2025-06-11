@@ -205,119 +205,133 @@ export default function EditOptions() {
   };
 
   const previewReceipt = () => {
-    // Save current settings first to ensure preview uses latest settings
-    const combinedSettings = {
-      businessName: businessSettings.businessName,
-      businessAddress: businessSettings.address,
-      phoneNumber: businessSettings.phone,
-      email: businessSettings.email,
-      taxId: businessSettings.gstNumber,
-      receiptFooter: receiptSettings.footerText,
-      showLogo: receiptSettings.showLogo,
-      autoPrint: false, // Don't auto-print for preview
-      paperWidth: receiptSettings.receiptWidth,
-      fontSize: 'medium' as const,
-      fontFamily: 'courier' as const,
-      headerStyle: 'centered' as const,
-      showCustomerDetails: true,
-      showItemSKU: true,
-      showMRP: true,
-      showSavings: true,
-      showBarcode: false,
-      showQRCode: false,
-      headerBackground: true,
-      boldTotals: true,
-      separatorStyle: 'solid' as const,
-      showTermsConditions: false,
-      termsConditions: '',
-      showReturnPolicy: false,
-      returnPolicy: '',
-      language: 'english' as const,
-      currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
-      thermalOptimized: true
-    };
+    try {
+      // Save current settings first to ensure preview uses latest settings
+      const combinedSettings = {
+        businessName: businessSettings.businessName,
+        businessAddress: businessSettings.address,
+        phoneNumber: businessSettings.phone,
+        email: businessSettings.email,
+        taxId: businessSettings.gstNumber,
+        receiptFooter: receiptSettings.footerText,
+        showLogo: receiptSettings.showLogo,
+        autoPrint: false, // Don't auto-print for preview
+        paperWidth: receiptSettings.receiptWidth,
+        fontSize: 'medium' as const,
+        fontFamily: 'courier' as const,
+        headerStyle: 'centered' as const,
+        showCustomerDetails: true,
+        showItemSKU: true,
+        showMRP: true,
+        showSavings: true,
+        showBarcode: false,
+        showQRCode: false,
+        headerBackground: true,
+        boldTotals: true,
+        separatorStyle: 'solid' as const,
+        showTermsConditions: false,
+        termsConditions: '',
+        showReturnPolicy: false,
+        returnPolicy: '',
+        language: 'english' as const,
+        currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
+        thermalOptimized: true
+      };
 
-    // Save to localStorage for receipt system
-    localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
+      // Save to localStorage for receipt system
+      localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
 
-    // Create comprehensive test receipt data
-    const testReceiptData = {
-      billNumber: `PREVIEW-${Date.now().toString().slice(-6)}`,
-      billDate: new Date().toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit', 
-        year: 'numeric'
-      }),
-      customerDetails: {
-        name: 'Walk-in Customer',
-        doorNo: '+91-9876543210'
-      },
-      salesMan: 'Admin User',
-      items: [
-        {
-          id: 1,
-          name: 'Premium Rice (5kg)',
-          sku: 'ITM264973991-RICE-5KG',
-          quantity: 2,
-          price: '125.00',
-          total: 250.00,
-          mrp: 150.00
+      // Create comprehensive test receipt data
+      const testReceiptData = {
+        billNumber: `PREVIEW-${Date.now().toString().slice(-6)}`,
+        billDate: new Date().toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: '2-digit', 
+          year: 'numeric'
+        }),
+        customerDetails: {
+          name: 'Preview Customer',
+          doorNo: '+91-9876543210'
         },
-        {
-          id: 2,
-          name: 'Cooking Oil (1L)',
-          sku: 'ITM264973992-OIL-1L',
-          quantity: 1,
-          price: '75.00',
-          total: 75.00,
-          mrp: 85.00
-        },
-        {
-          id: 3,
-          name: 'Sugar (1kg)',
-          sku: 'ITM264973993-SUGAR-1KG',
-          quantity: 3,
-          price: '45.00',
-          total: 135.00,
-          mrp: 50.00
+        salesMan: 'Admin User',
+        items: [
+          {
+            id: 1,
+            name: 'Premium Rice (5kg)',
+            sku: 'ITM264973991-RICE-5KG',
+            quantity: 2,
+            price: '125.00',
+            total: 250.00,
+            mrp: 150.00
+          },
+          {
+            id: 2,
+            name: 'Cooking Oil (1L)',
+            sku: 'ITM264973992-OIL-1L',
+            quantity: 1,
+            price: '75.00',
+            total: 75.00,
+            mrp: 85.00
+          },
+          {
+            id: 3,
+            name: 'Sugar (1kg)',
+            sku: 'ITM264973993-SUGAR-1KG',
+            quantity: 3,
+            price: '45.00',
+            total: 135.00,
+            mrp: 50.00
+          }
+        ],
+        subtotal: 460.00,
+        discount: 25.00,
+        discountType: 'fixed' as const,
+        taxRate: 0,
+        taxAmount: 0,
+        grandTotal: 435.00,
+        amountPaid: 435.00,
+        changeDue: 0,
+        paymentMethod: 'CASH',
+        notes: `Preview from POS Bill Edit - ${new Date().toLocaleString('en-IN')}`
+      };
+
+      console.log('Generating preview with settings:', combinedSettings);
+      console.log('Test receipt data:', testReceiptData);
+
+      // Direct import and execute print receipt
+      import('@/components/pos/print-receipt').then(({ printReceipt }) => {
+        try {
+          console.log('Calling printReceipt function...');
+          printReceipt(testReceiptData, combinedSettings);
+          
+          toast({
+            title: "✅ Receipt Preview Generated",
+            description: `Preview opened with ${receiptSettings.receiptWidth} paper width and ${businessSettings.businessName} settings`
+          });
+        } catch (error) {
+          console.error('Preview generation error:', error);
+          toast({
+            title: "❌ Preview Error",
+            description: `Failed to generate preview: ${error.message}`,
+            variant: "destructive"
+          });
         }
-      ],
-      subtotal: 460.00,
-      discount: 25.00,
-      discountType: 'fixed' as const,
-      taxRate: 0,
-      taxAmount: 0,
-      grandTotal: 435.00,
-      amountPaid: 435.00,
-      changeDue: 0,
-      paymentMethod: 'CASH',
-      notes: 'Preview receipt from POS Bill Edit settings - Sample data for testing'
-    };
-
-    // Dynamic import and execute print receipt
-    import('@/components/pos/print-receipt').then(({ printReceipt }) => {
-      try {
-        printReceipt(testReceiptData, combinedSettings);
+      }).catch(error => {
+        console.error('Import error:', error);
         toast({
-          title: "✅ Receipt Preview Generated",
-          description: "Preview window opened with your current settings"
-        });
-      } catch (error) {
-        console.error('Preview error:', error);
-        toast({
-          title: "❌ Preview Error",
-          description: "Failed to generate preview. Please try again.",
+          title: "❌ Module Load Error", 
+          description: "Failed to load receipt module. Please check console for details.",
           variant: "destructive"
         });
-      }
-    }).catch(error => {
-      console.error('Import error:', error);
+      });
+    } catch (error) {
+      console.error('Preview setup error:', error);
       toast({
-        title: "❌ Module Load Error", 
-        description: "Failed to load receipt module. Please refresh the page.",
+        title: "❌ Setup Error",
+        description: "Failed to setup preview. Please try again.",
         variant: "destructive"
       });
-    });
+    }
   };
 
   const updateBusinessSetting = (key: string, value: string) => {
@@ -486,6 +500,9 @@ export default function EditOptions() {
                 <CardTitle className="flex items-center gap-2">
                   <Receipt className="h-5 w-5" />
                   Bill Receipt Details Configuration
+                  <Badge variant="outline" className="ml-auto">
+                    {businessSettings.businessName} - {receiptSettings.receiptWidth}
+                  </Badge>
                 </CardTitle>
                 <CardDescription>
                   Customize bill receipt layout, formatting, and content for POS Enhanced
@@ -732,7 +749,7 @@ export default function EditOptions() {
                       onClick={() => {
                         // Save settings first, then preview
                         handleSaveReceiptSettings();
-                        setTimeout(() => previewReceipt(), 500);
+                        setTimeout(() => previewReceipt(), 1000);
                       }}
                       className="bg-green-50 hover:bg-green-100 border-green-200"
                     >
@@ -741,7 +758,19 @@ export default function EditOptions() {
                       Save & Preview
                     </Button>
                   </div>
-                  <Button onClick={handleSaveReceiptSettings}>
+                  <Button 
+                    onClick={() => {
+                      handleSaveReceiptSettings();
+                      // Auto-preview after save
+                      setTimeout(() => {
+                        previewReceipt();
+                        toast({
+                          title: "✅ Settings Saved & Preview Generated",
+                          description: "Your bill receipt settings have been saved and preview opened"
+                        });
+                      }, 800);
+                    }}
+                  >
                     <Save className="h-4 w-4 mr-2" />
                     Save Receipt Settings
                   </Button>
