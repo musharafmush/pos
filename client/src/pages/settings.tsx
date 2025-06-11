@@ -25,6 +25,8 @@ import { useTheme } from "@/components/ui/theme-provider";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { PrinterIcon, DollarSignIcon, BellIcon, ShieldIcon, UserIcon, DatabaseIcon } from 'lucide-react';
+import ReceiptSettings from './receipt-settings';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -45,6 +47,7 @@ export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [receiptPreview, setReceiptPreview] = useState<string>("");
+  const [showReceiptSettings, setShowReceiptSettings] = useState(false);
 
   // Load current user data
   const { data: userData } = useQuery({
@@ -95,12 +98,12 @@ export default function Settings() {
         email: data.email,
         image: data.image
       };
-      
+
       // Only include password if it's provided
       if (data.password) {
         Object.assign(updateData, { password: data.password });
       }
-      
+
       return await apiRequest("PUT", `/api/users/${userId}`, updateData);
     },
     onSuccess: () => {
@@ -179,7 +182,7 @@ ${receiptSettings.receiptFooter}
             <TabsTrigger value="receipts">Receipt Settings</TabsTrigger>
             <TabsTrigger value="tax">Tax Settings</TabsTrigger>
           </TabsList>
-          
+
           {/* Profile Settings */}
           <TabsContent value="profile">
             <Card>
@@ -211,7 +214,7 @@ ${receiptSettings.receiptFooter}
                         <p className="text-sm text-gray-500 dark:text-gray-400">{userData?.user?.email}</p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={profileForm.control}
@@ -226,7 +229,7 @@ ${receiptSettings.receiptFooter}
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={profileForm.control}
                         name="email"
@@ -241,7 +244,7 @@ ${receiptSettings.receiptFooter}
                         )}
                       />
                     </div>
-                    
+
                     <FormField
                       control={profileForm.control}
                       name="image"
@@ -255,7 +258,7 @@ ${receiptSettings.receiptFooter}
                         </FormItem>
                       )}
                     />
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={profileForm.control}
@@ -273,7 +276,7 @@ ${receiptSettings.receiptFooter}
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={profileForm.control}
                         name="confirmPassword"
@@ -288,7 +291,7 @@ ${receiptSettings.receiptFooter}
                         )}
                       />
                     </div>
-                    
+
                     <div className="flex justify-end mt-6">
                       <Button 
                         type="submit"
@@ -302,7 +305,7 @@ ${receiptSettings.receiptFooter}
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* Appearance Settings */}
           <TabsContent value="appearance">
             <Card>
@@ -329,7 +332,7 @@ ${receiptSettings.receiptFooter}
                     </Select>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label>Color Mode Preview</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -342,7 +345,7 @@ ${receiptSettings.receiptFooter}
                         <div className="h-8 w-8 rounded-full bg-accent"></div>
                       </div>
                     </div>
-                    
+
                     <div className="border rounded-lg p-4 bg-gray-900 text-white">
                       <h3 className="text-lg font-medium mb-2">Dark Mode</h3>
                       <div className="flex space-x-2">
@@ -354,7 +357,7 @@ ${receiptSettings.receiptFooter}
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="animations">UI Animations</Label>
@@ -364,7 +367,7 @@ ${receiptSettings.receiptFooter}
                     Enable or disable UI animations for smoother experience
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="compact">Compact Mode</Label>
@@ -374,7 +377,7 @@ ${receiptSettings.receiptFooter}
                     Reduce spacing between elements for a more compact view
                   </p>
                 </div>
-                
+
                 <div className="flex justify-end mt-6">
                   <Button>
                     Save Appearance Settings
@@ -383,7 +386,7 @@ ${receiptSettings.receiptFooter}
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* Receipt Settings */}
           <TabsContent value="receipts">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -402,7 +405,7 @@ ${receiptSettings.receiptFooter}
                       onChange={(e) => setReceiptSettings(prev => ({ ...prev, businessName: e.target.value }))}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="address">Business Address</Label>
                     <Textarea 
@@ -413,7 +416,7 @@ ${receiptSettings.receiptFooter}
                       rows={3}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input 
@@ -423,7 +426,7 @@ ${receiptSettings.receiptFooter}
                       onChange={(e) => setReceiptSettings(prev => ({ ...prev, phone: e.target.value }))}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="taxId">Tax ID / GST Number</Label>
                     <Input 
@@ -433,7 +436,7 @@ ${receiptSettings.receiptFooter}
                       onChange={(e) => setReceiptSettings(prev => ({ ...prev, taxId: e.target.value }))}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="receiptFooter">Receipt Footer</Label>
                     <Textarea 
@@ -444,7 +447,7 @@ ${receiptSettings.receiptFooter}
                       rows={2}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="showLogo">Show Logo</Label>
@@ -455,7 +458,7 @@ ${receiptSettings.receiptFooter}
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="printAutomatically">Print Automatically</Label>
@@ -466,7 +469,7 @@ ${receiptSettings.receiptFooter}
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="printerSelect">Default Printer</Label>
                     <Select 
@@ -483,7 +486,7 @@ ${receiptSettings.receiptFooter}
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="flex justify-end mt-6">
                     <Button 
                       type="button"
@@ -500,7 +503,7 @@ ${receiptSettings.receiptFooter}
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Receipt Preview</CardTitle>
@@ -550,7 +553,7 @@ ${receiptSettings.receiptFooter}
               </Card>
             </div>
           </TabsContent>
-          
+
           {/* Tax Settings */}
           <TabsContent value="tax">
             <Card>
@@ -574,7 +577,7 @@ ${receiptSettings.receiptFooter}
                       This rate will be applied to all sales by default
                     </p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="taxCalculation">Tax Calculation Method</Label>
                     <Select defaultValue="afterDiscount">
@@ -588,7 +591,7 @@ ${receiptSettings.receiptFooter}
                     </Select>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="taxIncluded">Prices include tax</Label>
@@ -598,7 +601,7 @@ ${receiptSettings.receiptFooter}
                     If enabled, entered product prices are considered tax-inclusive
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="multipleTaxes">Enable multiple tax rates</Label>
@@ -608,10 +611,10 @@ ${receiptSettings.receiptFooter}
                     Allow different tax rates for different product categories
                   </p>
                 </div>
-                
+
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                   <h3 className="text-lg font-medium mb-4">Tax Categories</h3>
-                  
+
                   <div className="space-y-4">
                     <div className="grid grid-cols-3 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="col-span-2">
@@ -627,7 +630,7 @@ ${receiptSettings.receiptFooter}
                         />
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-3 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="col-span-2">
                         <Label htmlFor="generalCategory">General Merchandise</Label>
@@ -642,14 +645,14 @@ ${receiptSettings.receiptFooter}
                         />
                       </div>
                     </div>
-                    
+
                     <Button variant="outline" className="w-full">
                       <PlusIcon className="h-4 w-4 mr-2" />
                       Add Tax Category
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end mt-6">
                   <Button onClick={() => {
                     toast({
@@ -665,7 +668,12 @@ ${receiptSettings.receiptFooter}
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+
+      {/* Receipt Settings Modal */}
+      {showReceiptSettings && (
+        <ReceiptSettings />
+      )}
+    </div>
   );
 }
 
