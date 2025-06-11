@@ -124,11 +124,23 @@ export default function Settings() {
     updateProfileMutation.mutate(data);
   };
 
-  const testReceipt = `
-LARAVEL POS SYSTEM
-1234 Main Street
-City, State 12345
-Tel: (123) 456-7890
+  // Receipt settings form state
+  const [receiptSettings, setReceiptSettings] = useState({
+    businessName: "LARAVEL POS SYSTEM",
+    address: "1234 Main Street\nCity, State 12345",
+    phone: "(123) 456-7890",
+    taxId: "",
+    receiptFooter: "Thank you for shopping with us!",
+    showLogo: false,
+    printAutomatically: true,
+    defaultPrinter: "default"
+  });
+
+  const generateTestReceipt = () => `
+${receiptSettings.businessName}
+${receiptSettings.address}
+Tel: ${receiptSettings.phone}
+${receiptSettings.taxId ? `Tax ID: ${receiptSettings.taxId}` : ''}
 -------------------------------
 RECEIPT #12345
 Date: ${new Date().toLocaleDateString()}
@@ -150,7 +162,7 @@ Payment Method: Cash
 Amount Paid:             $15.00
 Change:                   $1.88
 -------------------------------
-Thank you for shopping with us!
+${receiptSettings.receiptFooter}
   `;
 
   return (
@@ -383,46 +395,84 @@ Thank you for shopping with us!
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="businessName">Business Name</Label>
-                    <Input id="businessName" placeholder="Your Business Name" defaultValue="LARAVEL POS" />
+                    <Input 
+                      id="businessName" 
+                      placeholder="Your Business Name" 
+                      value={receiptSettings.businessName}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, businessName: e.target.value }))}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="address">Business Address</Label>
-                    <Textarea id="address" placeholder="Business Address" defaultValue="1234 Main Street&#10;City, State 12345" />
+                    <Textarea 
+                      id="address" 
+                      placeholder="Business Address" 
+                      value={receiptSettings.address}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, address: e.target.value }))}
+                      rows={3}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" placeholder="(123) 456-7890" defaultValue="(123) 456-7890" />
+                    <Input 
+                      id="phone" 
+                      placeholder="(123) 456-7890" 
+                      value={receiptSettings.phone}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, phone: e.target.value }))}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="taxId">Tax ID / GST Number</Label>
-                    <Input id="taxId" placeholder="Your tax ID number" />
+                    <Input 
+                      id="taxId" 
+                      placeholder="Your tax ID number" 
+                      value={receiptSettings.taxId}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, taxId: e.target.value }))}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="receiptFooter">Receipt Footer</Label>
-                    <Textarea id="receiptFooter" placeholder="Custom message for receipt footer" defaultValue="Thank you for shopping with us!" />
+                    <Textarea 
+                      id="receiptFooter" 
+                      placeholder="Custom message for receipt footer" 
+                      value={receiptSettings.receiptFooter}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, receiptFooter: e.target.value }))}
+                      rows={2}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="showLogo">Show Logo</Label>
-                      <Switch id="showLogo" />
+                      <Switch 
+                        id="showLogo" 
+                        checked={receiptSettings.showLogo}
+                        onCheckedChange={(checked) => setReceiptSettings(prev => ({ ...prev, showLogo: checked }))}
+                      />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="printAutomatically">Print Automatically</Label>
-                      <Switch id="printAutomatically" defaultChecked />
+                      <Switch 
+                        id="printAutomatically" 
+                        checked={receiptSettings.printAutomatically}
+                        onCheckedChange={(checked) => setReceiptSettings(prev => ({ ...prev, printAutomatically: checked }))}
+                      />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="printerSelect">Default Printer</Label>
-                    <Select defaultValue="default">
+                    <Select 
+                      value={receiptSettings.defaultPrinter}
+                      onValueChange={(value) => setReceiptSettings(prev => ({ ...prev, defaultPrinter: value }))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a printer" />
                       </SelectTrigger>
@@ -438,7 +488,7 @@ Thank you for shopping with us!
                     <Button 
                       type="button"
                       onClick={() => {
-                        setReceiptPreview(testReceipt);
+                        setReceiptPreview(generateTestReceipt());
                         toast({
                           title: "Settings updated",
                           description: "Receipt settings have been saved successfully",
@@ -457,13 +507,42 @@ Thank you for shopping with us!
                   <CardDescription>Preview how your receipt will look</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-white border border-gray-200 rounded-lg p-6 font-mono text-sm overflow-auto max-h-[600px]">
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 font-mono text-sm overflow-auto max-h-[600px] text-black">
                     <pre className="whitespace-pre-wrap">
-                      {receiptPreview || testReceipt}
+                      {receiptPreview || generateTestReceipt()}
                     </pre>
                   </div>
-                  <div className="flex justify-end mt-4">
-                    <Button variant="outline">
+                  <div className="flex justify-between mt-4">
+                    <Button 
+                      variant="outline"
+                      onClick={() => setReceiptPreview(generateTestReceipt())}
+                    >
+                      Refresh Preview
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        const printWindow = window.open('', '_blank', 'width=400,height=700');
+                        if (printWindow) {
+                          printWindow.document.write(`
+                            <html>
+                              <head>
+                                <title>Test Receipt</title>
+                                <style>
+                                  body { font-family: monospace; margin: 20px; }
+                                  pre { white-space: pre-wrap; }
+                                </style>
+                              </head>
+                              <body>
+                                <pre>${receiptPreview || generateTestReceipt()}</pre>
+                              </body>
+                            </html>
+                          `);
+                          printWindow.document.close();
+                          printWindow.print();
+                        }
+                      }}
+                    >
                       Print Test Receipt
                     </Button>
                   </div>
