@@ -46,11 +46,11 @@ export const printReceipt = (data: ReceiptData) => {
   // Load receipt settings from localStorage
   const savedSettings = localStorage.getItem('receiptSettings');
   const receiptSettings = savedSettings ? JSON.parse(savedSettings) : {
-    businessName: 'AWESOME SHOP POS',
-    businessAddress: '123 Main Street, City - 560001',
+    businessName: 'M MART',
+    businessAddress: '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD,\nSAMUTHIRAM VILLAGE,\nTIRUVANNAMALAI-606603',
     phoneNumber: '+91-9876543210',
-    taxId: '29ABCDE1234F1Z5',
-    receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@awesomeshop.com',
+    taxId: '33QIWPS9348F1Z2',
+    receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com',
     showLogo: false,
     autoPrint: true
   };

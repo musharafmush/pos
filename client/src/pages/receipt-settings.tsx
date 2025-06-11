@@ -22,10 +22,10 @@ interface ReceiptSettings {
 
 export default function ReceiptSettings() {
   const [settings, setSettings] = useState<ReceiptSettings>({
-    businessName: 'AWESOME SHOP POS',
-    businessAddress: '123 Main Street\nCity, State 560001',
+    businessName: 'M MART',
+    businessAddress: '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD,\nSAMUTHIRAM VILLAGE,\nTIRUVANNAMALAI-606603',
     phoneNumber: '(123) 456-7890',
-    taxId: '29ABCDE1234F1Z5',
+    taxId: '33QIWPS9348F1Z2',
     receiptFooter: 'Thank you for shopping with us!',
     showLogo: false,
     autoPrint: true
@@ -473,7 +473,7 @@ export default function ReceiptSettings() {
               <div className="bg-white p-4 rounded border shadow-sm">
                 <div className="font-mono text-xs leading-tight">
                   <div className="text-center border-b border-dashed border-gray-400 pb-2 mb-2">
-                    <div className="font-bold text-sm">{settings.businessName}</div>
+                    <div className="font-bold text-sm">M MART</div>
                     <div className="text-xs mt-1 whitespace-pre-line">
                       {settings.businessAddress}
                     </div>
