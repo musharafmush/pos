@@ -641,13 +641,13 @@ export default function EditOptions() {
                 <CardContent>
                   <div className="bg-white border-2 border-gray-200 rounded-lg p-4 shadow-sm">
                     <div className="font-mono text-xs leading-relaxed max-w-xs mx-auto bg-white border border-gray-300 p-3">
-                      {/* Receipt Header */}
+                      {/* Receipt Header - Matching actual format */}
                       <div className="text-center mb-3">
-                        <div className="font-bold text-sm mb-1">{businessSettings.businessName.toUpperCase()}</div>
-                        <div className="text-xs text-gray-600 whitespace-pre-line">{businessSettings.address}</div>
-                        {receiptSettings.showGST && (
-                          <div className="text-xs mt-1">GST: {businessSettings.gstNumber}</div>
-                        )}
+                        <div className="font-bold text-lg mb-1">{businessSettings.businessName.toUpperCase()}</div>
+                        <div className="text-xs text-gray-600 mb-1">Professional Retail Solution</div>
+                        <div className="text-xs font-bold text-red-600 mb-1">GST NO: {businessSettings.gstNumber}</div>
+                        <div className="text-xs whitespace-pre-line mb-1">{businessSettings.address}</div>
+                        <div className="text-xs">Tel: {businessSettings.phone}</div>
                       </div>
 
                       <div className="border-t border-dashed border-gray-400 my-2"></div>
@@ -688,46 +688,48 @@ export default function EditOptions() {
                       <div className="border-t border-dashed border-gray-400 my-2"></div>
 
                       {/* Items Header */}
-                      <div className="text-xs grid grid-cols-12 gap-1 font-bold mb-1">
-                        <div className="col-span-5">Item</div>
-                        <div className="col-span-2 text-center">Qty</div>
-                        <div className="col-span-2 text-right">Rate</div>
-                        <div className="col-span-3 text-right">Amt</div>
+                      <div className="text-xs mb-1">
+                        <div className="flex">
+                          <div className="w-24">Item</div>
+                          <div className="w-8 text-center">Qty</div>
+                          <div className="w-12 text-right">Rate</div>
+                          <div className="w-12 text-right">Amt</div>
+                        </div>
                       </div>
 
-                      {/* Sample Items */}
+                      {/* Sample Items - Matching exact format */}
                       <div className="text-xs space-y-1 mb-2">
-                        <div className="grid grid-cols-12 gap-1">
-                          <div className="col-span-5">
-                            <div>Premium Rice (5kg)</div>
-                            <div className="text-gray-500 text-xs">ITM264973991</div>
-                            <div className="text-gray-500 text-xs">MRP:₹150 Save:₹25</div>
+                        <div>
+                          <div className="flex">
+                            <div className="w-24">Premium Rice (5kg)</div>
+                            <div className="w-8 text-center">2</div>
+                            <div className="w-12 text-right">₹125</div>
+                            <div className="w-12 text-right">₹250</div>
                           </div>
-                          <div className="col-span-2 text-center">2</div>
-                          <div className="col-span-2 text-right">₹125</div>
-                          <div className="col-span-3 text-right">₹250</div>
+                          <div className="text-gray-500 text-xs ml-0">ITM264973991</div>
+                          <div className="text-gray-500 text-xs ml-0">MRP:₹150 Save:₹25</div>
                         </div>
 
-                        <div className="grid grid-cols-12 gap-1">
-                          <div className="col-span-5">
-                            <div>Cooking Oil (1L)</div>
-                            <div className="text-gray-500 text-xs">ITM264973992</div>
-                            <div className="text-gray-500 text-xs">MRP:₹85 Save:₹10</div>
+                        <div>
+                          <div className="flex">
+                            <div className="w-24">Cooking Oil (1L)</div>
+                            <div className="w-8 text-center">1</div>
+                            <div className="w-12 text-right">₹75</div>
+                            <div className="w-12 text-right">₹75</div>
                           </div>
-                          <div className="col-span-2 text-center">1</div>
-                          <div className="col-span-2 text-right">₹75</div>
-                          <div className="col-span-3 text-right">₹75</div>
+                          <div className="text-gray-500 text-xs ml-0">ITM264973992</div>
+                          <div className="text-gray-500 text-xs ml-0">MRP:₹85 Save:₹10</div>
                         </div>
 
-                        <div className="grid grid-cols-12 gap-1">
-                          <div className="col-span-5">
-                            <div>Sugar (1kg)</div>
-                            <div className="text-gray-500 text-xs">ITM264973993</div>
-                            <div className="text-gray-500 text-xs">MRP:₹50 Save:₹15</div>
+                        <div>
+                          <div className="flex">
+                            <div className="w-24">Sugar (1kg)</div>
+                            <div className="w-8 text-center">3</div>
+                            <div className="w-12 text-right">₹45</div>
+                            <div className="w-12 text-right">₹135</div>
                           </div>
-                          <div className="col-span-2 text-center">3</div>
-                          <div className="col-span-2 text-right">₹45</div>
-                          <div className="col-span-3 text-right">₹135</div>
+                          <div className="text-gray-500 text-xs ml-0">ITM264973993</div>
+                          <div className="text-gray-500 text-xs ml-0">MRP:₹50 Save:₹15</div>
                         </div>
                       </div>
 
@@ -751,11 +753,11 @@ export default function EditOptions() {
 
                       <div className="border-t border-dashed border-gray-400 my-2"></div>
 
-                      {/* Footer */}
+                      {/* Footer - Matching actual format */}
                       <div className="text-center text-xs">
                         <div className="font-bold text-green-600 mb-2">🙏 धन्यवाद | Thank you! 🙏</div>
-                        <div className="whitespace-pre-line">{receiptSettings.footerText}</div>
-                        <div className="mt-2 text-gray-600">
+                        <div className="whitespace-pre-line mb-2">{receiptSettings.footerText}</div>
+                        <div className="text-gray-600 space-y-1">
                           <div>Items: 3 | Total Qty: 6 | Savings: ₹50.00</div>
                           <div>Receipt: PREVIEW-123456 | Terminal: POS-Enhanced</div>
                           <div>✨ Powered by Awesome Shop POS ✨</div>
