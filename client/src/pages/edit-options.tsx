@@ -30,7 +30,9 @@ import {
   RefreshCw,
   Edit3,
   Eye,
-  EyeOff
+  EyeOff,
+  Calendar,
+  FileText
 } from 'lucide-react';
 
 interface BusinessSettings {
@@ -137,6 +139,71 @@ export default function EditOptions() {
     toast({
       title: "Settings Reset",
       description: "All settings have been reset to default values."
+    });
+  };
+
+  const previewReceipt = () => {
+    // Create test receipt data using current settings
+    const testReceiptData = {
+      billNumber: `POS${Date.now()}`,
+      billDate: new Date().toLocaleDateString('en-IN'),
+      customerDetails: {
+        name: 'Test Customer',
+        doorNo: '+91-9876543210'
+      },
+      salesMan: 'Admin User',
+      items: [
+        {
+          id: 1,
+          name: 'Sample Product 1',
+          sku: 'SKU001',
+          quantity: 2,
+          price: '125.00',
+          total: 250.00,
+          mrp: 150.00
+        }
+      ],
+      subtotal: 250.00,
+      discount: 25.00,
+      discountType: 'fixed' as const,
+      taxRate: 18,
+      taxAmount: 40.50,
+      grandTotal: 265.50,
+      amountPaid: 300.00,
+      changeDue: 34.50,
+      paymentMethod: 'CASH',
+      notes: 'Test receipt from POS Bill Edit settings'
+    };
+
+    // Use current settings for receipt customization
+    const customization = {
+      businessName: businessSettings.businessName,
+      businessAddress: businessSettings.address,
+      phoneNumber: businessSettings.phone,
+      email: businessSettings.email,
+      taxId: businessSettings.gstNumber,
+      receiptFooter: receiptSettings.footerText,
+      showLogo: receiptSettings.showLogo,
+      showGST: receiptSettings.showGST,
+      paperWidth: receiptSettings.receiptWidth as 'thermal58' | 'thermal80' | 'thermal112',
+      headerStyle: 'centered' as const,
+      showCustomerDetails: true,
+      showItemSKU: true,
+      showMRP: true,
+      showSavings: true,
+      boldTotals: true,
+      currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
+      autoPrint: false // Don't auto-print preview
+    };
+
+    // Import and use print function
+    import('@/components/pos/print-receipt').then(({ printReceipt }) => {
+      printReceipt(testReceiptData, customization);
+    });
+
+    toast({
+      title: "Receipt Preview",
+      description: "Opening receipt preview with current settings"
     });
   };
 
@@ -292,89 +359,243 @@ export default function EditOptions() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Receipt className="h-5 w-5" />
-                  Receipt Configuration
+                  Bill Receipt Details Configuration
                 </CardTitle>
                 <CardDescription>
-                  Customize how your receipts look and what information they contain
+                  Customize bill receipt layout, formatting, and content for POS Enhanced
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="receiptWidth">Receipt Width</Label>
+                {/* Header Section */}
+                <div className="border rounded-lg p-4 bg-blue-50">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Store className="h-4 w-4" />
+                    Header Section
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="storeName">Store Name (Bold Header)</Label>
+                      <Input
+                        id="storeName"
+                        value={businessSettings.businessName}
+                        onChange={(e) => setBusinessSettings({...businessSettings, businessName: e.target.value})}
+                        placeholder="Store name at top"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gstDisplay">GST Number Display</Label>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="showGSTHeader"
+                          checked={receiptSettings.showGST}
+                          onCheckedChange={(checked) => setReceiptSettings({...receiptSettings, showGST: checked})}
+                        />
+                        <span className="text-sm">Show below address</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <Label htmlFor="headerAlignment">Header Alignment</Label>
                     <Select value={receiptSettings.receiptWidth} onValueChange={(value) => setReceiptSettings({...receiptSettings, receiptWidth: value})}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="58mm">58mm (Small)</SelectItem>
-                        <SelectItem value="80mm">80mm (Standard)</SelectItem>
-                        <SelectItem value="112mm">112mm (Large)</SelectItem>
+                        <SelectItem value="left">Left Aligned</SelectItem>
+                        <SelectItem value="center">Center Aligned</SelectItem>
+                        <SelectItem value="right">Right Aligned</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="copies">Number of Copies</Label>
-                    <Input
-                      id="copies"
-                      type="number"
-                      min="1"
-                      max="5"
-                      value={receiptSettings.copies}
-                      onChange={(e) => setReceiptSettings({...receiptSettings, copies: parseInt(e.target.value)})}
-                    />
-                  </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="showLogo">Show Business Logo</Label>
-                      <p className="text-sm text-gray-500">Display logo on receipts</p>
+                {/* Date & Time Format */}
+                <div className="border rounded-lg p-4 bg-green-50">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Date & Time Format
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="dateFormat">Date Format</Label>
+                      <Select defaultValue="dd-mm-yyyy">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dd-mm-yyyy">DD-MM-YYYY</SelectItem>
+                          <SelectItem value="mm-dd-yyyy">MM-DD-YYYY</SelectItem>
+                          <SelectItem value="yyyy-mm-dd">YYYY-MM-DD</SelectItem>
+                          <SelectItem value="dd/mm/yyyy">DD/MM/YYYY</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <Switch
-                      id="showLogo"
-                      checked={receiptSettings.showLogo}
-                      onCheckedChange={(checked) => setReceiptSettings({...receiptSettings, showLogo: checked})}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="showGST">Show GST Details</Label>
-                      <p className="text-sm text-gray-500">Include GST information on receipts</p>
+                    <div className="space-y-2">
+                      <Label htmlFor="timeFormat">Time Format</Label>
+                      <Select defaultValue="12hour">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="12hour">12 Hour (AM/PM)</SelectItem>
+                          <SelectItem value="24hour">24 Hour</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <Switch
-                      id="showGST"
-                      checked={receiptSettings.showGST}
-                      onCheckedChange={(checked) => setReceiptSettings({...receiptSettings, showGST: checked})}
-                    />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="headerText">Receipt Header Text</Label>
-                  <Input
-                    id="headerText"
-                    value={receiptSettings.headerText}
-                    onChange={(e) => setReceiptSettings({...receiptSettings, headerText: e.target.value})}
-                    placeholder="Welcome message"
-                  />
+                {/* Amount & Total Section */}
+                <div className="border rounded-lg p-4 bg-yellow-50">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Calculator className="h-4 w-4" />
+                    Amount & Total Formatting
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="totalAlignment">Total Amount Alignment</Label>
+                      <Select defaultValue="right">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="left">Left Aligned</SelectItem>
+                          <SelectItem value="center">Center Aligned</SelectItem>
+                          <SelectItem value="right">Right Aligned</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="currencyFormat">Currency Display</Label>
+                      <Select value={businessSettings.currency} onValueChange={(value) => setBusinessSettings({...businessSettings, currency: value})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="INR">₹ (Indian Rupee)</SelectItem>
+                          <SelectItem value="USD">$ (US Dollar)</SelectItem>
+                          <SelectItem value="EUR">€ (Euro)</SelectItem>
+                          <SelectItem value="GBP">£ (British Pound)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="boldTotals">Bold Total Amount</Label>
+                        <p className="text-sm text-gray-500">Make grand total bold and prominent</p>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="showSavings">Show Savings Amount</Label>
+                        <p className="text-sm text-gray-500">Display total savings on receipt</p>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="footerText">Receipt Footer Text</Label>
-                  <Textarea
-                    id="footerText"
-                    value={receiptSettings.footerText}
-                    onChange={(e) => setReceiptSettings({...receiptSettings, footerText: e.target.value})}
-                    placeholder="Thank you message"
-                    rows={2}
-                  />
+                {/* Footer Section */}
+                <div className="border rounded-lg p-4 bg-purple-50">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Footer Section
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="thankYouMessage">Thank You Message</Label>
+                      <Input
+                        id="thankYouMessage"
+                        defaultValue="Thank You for shopping with us!"
+                        placeholder="Thank you message"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="thankYouBold">Bold Thank You</Label>
+                          <p className="text-sm text-gray-500">Make thank you message bold</p>
+                        </div>
+                        <Switch defaultChecked />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="thankYouCenter">Center Align</Label>
+                          <p className="text-sm text-gray-500">Center align thank you message</p>
+                        </div>
+                        <Switch defaultChecked />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="additionalFooter">Additional Footer Text</Label>
+                      <Textarea
+                        id="additionalFooter"
+                        value={receiptSettings.footerText}
+                        onChange={(e) => setReceiptSettings({...receiptSettings, footerText: e.target.value})}
+                        placeholder="Visit again soon&#10;Customer Care: support@store.com"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Paper & Print Settings */}
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Printer className="h-4 w-4" />
+                    Paper & Print Settings
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="receiptWidth">Receipt Width</Label>
+                      <Select value={receiptSettings.receiptWidth} onValueChange={(value) => setReceiptSettings({...receiptSettings, receiptWidth: value})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="58mm">58mm (Small)</SelectItem>
+                          <SelectItem value="80mm">80mm (Standard)</SelectItem>
+                          <SelectItem value="112mm">112mm (Large)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="fontSize">Font Size</Label>
+                      <Select defaultValue="medium">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="small">Small</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="large">Large</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="copies">Number of Copies</Label>
+                      <Input
+                        id="copies"
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={receiptSettings.copies}
+                        onChange={(e) => setReceiptSettings({...receiptSettings, copies: parseInt(e.target.value)})}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <Separator />
 
-                <div className="flex justify-end">
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={previewReceipt}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview Receipt
+                  </Button>
                   <Button onClick={handleSaveReceiptSettings}>
                     <Save className="h-4 w-4 mr-2" />
                     Save Receipt Settings
