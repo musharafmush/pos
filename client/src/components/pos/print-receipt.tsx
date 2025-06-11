@@ -129,10 +129,13 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
   const paperConfigs = {
     thermal58: { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
     thermal80: { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
+    '80mm': { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
+    '58mm': { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
+    '112mm': { width: '108mm', maxWidth: '104mm', fontSize: '12px' },
     a4: { width: '210mm', maxWidth: '200mm', fontSize: '12px' }
   };
 
-  const config = paperConfigs[receiptSettings.paperWidth];
+  const config = paperConfigs[receiptSettings.paperWidth] || paperConfigs.thermal80;
 
   // Font configurations
   const fontSizes = {
