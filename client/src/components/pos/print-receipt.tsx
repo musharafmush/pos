@@ -159,64 +159,85 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         width: 80mm;
         font-family: 'Courier New', monospace;
         font-size: 11px;
-        line-height: 1.1;
+        line-height: 1.2;
         margin: 0;
-        padding: 1mm;
+        padding: 2mm;
         background: white;
         color: black;
       ">
-        <!-- Header -->
-        <div style="text-align: center; margin-bottom: 3mm; padding-bottom: 2mm;">
+        <!-- Receipt Header -->
+        <div style="text-align: center; margin-bottom: 3mm;">
+          <div style="font-size: 9px; margin-bottom: 1mm;">
+            Receipt from ${formattedDate} at ${formattedTime}
+          </div>
+          <div style="font-size: 9px; margin-bottom: 1mm;">
+            Receipt || PosSystemEnhanced || ₹${Number(sale.total).toFixed(2)}
+          </div>
+          <div style="font-size: 9px; margin-bottom: 1mm;">
+            ${new Date().getFullYear()}
+          </div>
+          <div style="font-size: 9px; margin-bottom: 3mm;">
+            Powered by Awesome Shop POS v1.0
+          </div>
+        </div>
+
+        <!-- Dashed Border -->
+        <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
+
+        <!-- Thank You Message -->
+        <div style="text-align: center; margin-bottom: 3mm;">
+          <div style="font-weight: bold; font-size: 11px; margin-bottom: 1mm;">🙏 धन्यवाद | Thank you for shopping</div>
+          <div style="font-weight: bold; font-size: 11px; margin-bottom: 1mm;">with us! 🙏</div>
+          <div style="font-size: 10px; margin-bottom: 1mm;">Thank you for shopping with us!</div>
+          <div style="font-size: 10px;">Visit again Soon.</div>
+        </div>
+
+        <!-- Dashed Border -->
+        <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
+
+        <!-- Business Information -->
+        <div style="text-align: center; margin-bottom: 3mm;">
           <div style="font-size: 14px; font-weight: bold; margin-bottom: 1mm;">
             ${settings.businessName || 'M MART'}
           </div>
           <div style="font-size: 9px; margin-bottom: 1mm;">
             Professional Retail Solution
           </div>
-          <div style="font-size: 9px; margin-bottom: 1mm; font-weight: bold;">
-            GST NO    : ${settings.gstNumber || '33QIWPS9348F1Z2'}
+          <div style="font-size: 9px; margin-bottom: 1mm;">
+            GST NO. ${settings.gstNumber || '33QIWPS9348F1Z2'}
           </div>
           <div style="font-size: 9px; margin-bottom: 1mm;">
-            NAME      : ${settings.businessName || 'M MART'}
+            NAME : ${settings.businessName || 'M MART'}
           </div>
           <div style="font-size: 9px; margin-bottom: 1mm;">
-            ADDRESS   : ${settings.businessAddress || '47,SHOP NO.1&2,'}
+            ADDRESS : ${settings.businessAddress || '47,SHOP NO.1&2,SAMUTHIRAM,THANDRAMPATTU MAIN ROAD,TIRUVANNAMALAI-606603'}
           </div>
           <div style="font-size: 9px; margin-bottom: 1mm;">
-                        ${settings.businessAddress2 || 'THANDARAMPATTU MAIN ROAD,'}
+            THANDARAMPATTU MAIN ROAD,
           </div>
           <div style="font-size: 9px; margin-bottom: 1mm;">
-                       ${settings.businessAddress3 || 'SAMUTHIRAM VILLAGE,'}
+            SAMUTHIRAM VILLAGE,
           </div>
           <div style="font-size: 9px; margin-bottom: 1mm;">
-                        ${settings.businessAddress4 || 'TIRUVANNAMALAI-606603'}
+            TIRUVANNAMALAI-606603
+          </div>
+          <div style="font-size: 10px; font-weight: bold; margin-top: 2mm;">
+            Welcome to Our Store
           </div>
         </div>
 
-        
-        <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 1mm 0; margin-bottom: 2mm; font-size: 10px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
-              <span>Bill No:</span>
-              <span style="font-weight: bold;">${sale.orderNumber}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
-              <span>Date:</span>
-              <span>${formattedDate}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span>Time:</span>
-              <span>${formattedTime}</span>
-            </div>
-          </div>
+        <!-- Dashed Border -->
+        <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
 
-        <!-- Customer Details -->
-        <div style="margin-bottom: 2mm; font-size: 10px;">
-          <div style="font-weight: bold; margin-bottom: 1mm;">Customer Details</div>
-          <div>Name: ${sale.customer?.name || 'Walk-in Customer'}</div>
+        <!-- Bill Details -->
+        <div style="text-align: center; font-size: 10px; margin-bottom: 3mm;">
+          <div style="margin-bottom: 1mm;">Bill No: ${sale.orderNumber}</div>
+          <div style="margin-bottom: 1mm;">Date: ${formattedDate}</div>
         </div>
 
-        <!-- Items Header -->
-        <div style="border-top: 1px dashed #000; padding-top: 1mm;">
+        <!-- Items Section -->
+        ${(sale.items || []).length > 0 ? `
+        <div style="margin-bottom: 3mm;">
           <div style="font-size: 10px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 1mm;">
             <div style="display: flex; justify-content: space-between;">
               <span style="width: 35%;">ITEM</span>
@@ -226,131 +247,38 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             </div>
           </div>
 
-          <!-- Items List -->
-          <div style="margin-bottom: 2mm; font-size: 10px;">
-            ${(sale.items || []).map((item: any) => `
-              <div style="border-bottom: 1px dotted #ccc; padding-bottom: 1mm; margin-bottom: 1mm;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                  <div style="width: 35%; flex-shrink: 0;">
-                    <div style="font-weight: bold; font-size: 10px;">${item.productName}</div>
-                    <div style="font-size: 8px; color: #666;">SKU: ${item.productSku || item.sku || 'ITM' + Math.random().toString().substr(2, 6)}</div>
-                  </div>
-                  <div style="width: 12%; text-align: center; flex-shrink: 0;">
-                    ${item.quantity}
-                  </div>
-                  <div style="width: 23%; text-align: right; flex-shrink: 0;">
-                    ₹${Number(item.unitPrice).toFixed(2)}
-                  </div>
-                  <div style="width: 30%; text-align: right; flex-shrink: 0;">
-                    ₹${Number(item.subtotal || item.quantity * item.unitPrice).toFixed(2)}
-                  </div>
+          ${(sale.items || []).map((item: any) => `
+            <div style="margin-bottom: 1mm; font-size: 10px;">
+              <div style="display: flex; justify-content: space-between;">
+                <div style="width: 35%;">
+                  <div style="font-weight: bold;">${item.productName}</div>
                 </div>
-                ${item.discount > 0 ? `<div style="font-size: 8px; color: #666; margin-top: 0.5mm;">GST: ₹${(item.quantity * item.unitPrice * 0.18).toFixed(2)} (Save: ₹${Number(item.discount).toFixed(2)})</div>` : ''}
+                <div style="width: 12%; text-align: center;">
+                  ${item.quantity}
+                </div>
+                <div style="width: 23%; text-align: right;">
+                  ₹${Number(item.unitPrice).toFixed(2)}
+                </div>
+                <div style="width: 30%; text-align: right;">
+                  ₹${Number(item.subtotal || item.quantity * item.unitPrice).toFixed(2)}
+                </div>
               </div>
-            `).join('')}
-          </div>
-        </div>
+            </div>
+          `).join('')}
 
-        <!-- Sub Totals -->
-        <div style="border-top: 1px dashed #000; padding-top: 1mm; margin-bottom: 2mm;">
-          <div style="font-size: 10px; margin-bottom: 1mm;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
-              <span>Sub Total:</span>
-              <span>₹${(Number(sale.total) - Number(sale.tax || 0)).toFixed(2)}</span>
-            </div>
-            ${sale.discount > 0 ? `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
-              <span>Discount:</span>
-              <span>-₹${Number(sale.discount).toFixed(2)}</span>
-            </div>
-            ` : ''}
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
-              <span>Taxable Amount:</span>
-              <span>₹${(Number(sale.total) - Number(sale.tax || 0) - Number(sale.discount || 0)).toFixed(2)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
-              <span>GST (0%):</span>
-              <span>₹${Number(sale.tax || 0).toFixed(2)}</span>
-            </div>
-          </div>
-
-          <!-- Grand Total -->
-          <div style="border: 2px solid #000; padding: 2mm; font-weight: bold; font-size: 12px; text-align: center; margin: 2mm 0;">
-            <div style="display: flex; justify-content: space-between;">
-              <span>GRAND TOTAL:</span>
+          <!-- Total -->
+          <div style="border-top: 1px dashed #000; padding-top: 1mm; margin-top: 2mm;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px;">
+              <span>TOTAL:</span>
               <span>₹${Number(sale.total).toFixed(2)}</span>
             </div>
           </div>
         </div>
-
-        ${sale.discount > 0 ? `
-        <div style="text-align: center; background: #000; color: #fff; padding: 2mm; margin-bottom: 3mm; font-size: 11px; font-weight: bold;">
-          🎉 YOU SAVED ₹${Number(sale.discount).toFixed(2)} TODAY! 🎉
-        </div>
         ` : ''}
 
-        <!-- Payment Details -->
-        <div style="margin-bottom: 3mm; font-size: 11px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
-            <span>Payment Method:</span>
-            <span style="text-transform: uppercase;">${sale.paymentMethod}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>Amount Paid:</span>
-            <span>₹${Number(sale.total).toFixed(2)}</span>
-          </div>
-        </div>
-
-        <!-- Notes Section -->
-        <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2mm 0; margin-bottom: 3mm; font-size: 10px; text-align: center;">
-          <div style="font-weight: bold; margin-bottom: 1mm;">Notes:</div>
-          <div>Bills positively checked Terminal POS</div>
-          <div>Enhanced.</div>
-        </div>
-
-        <!-- Thank You Message -->
-        <div style="text-align: center; font-size: 11px; margin-bottom: 3mm; padding: 2mm; border: 1px solid #000;">
-          <div style="font-weight: bold; margin-bottom: 1mm;">🙏 धन्यवाद | Thank you for shopping</div>
-          <div style="font-weight: bold; margin-bottom: 1mm;">with us! 🙏</div>
-          <div style="margin-bottom: 1mm;">Thank you for shopping with us!</div>
-          <div style="margin-bottom: 2mm;">Visit again Soon.</div>
-          <div style="font-size: 9px; color: #666;">
-            Receipt from ${date.toLocaleDateString('en-IN')} at ${date.toLocaleTimeString('en-IN')}<br>
-            Receipt || PosSystemEnhanced || ₹${Number(sale.total).toFixed(2)}<br>
-            ${new Date().getFullYear()}
-          </div>
-          <div style="margin-top: 2mm; font-size: 9px; color: #666;">
-            Powered by Awesome Shop POS v1.0
-          </div>
-        </div>
-
-        <!-- Thank You Section -->
-        <div style="text-align: center; margin: 2mm 0; padding: 2mm; border: 1px dashed #000;">
-          <div style="font-weight: bold; font-size: 11px; margin-bottom: 1mm;">🙏 धन्यवाद | Thank you for shopping</div>
-          <div style="font-weight: bold; font-size: 11px; margin-bottom: 1mm;">with us! 🙏</div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">Thank you for shopping with us!</div>
-          <div style="font-size: 9px;">Visit again Soon.</div>
-        </div>
-
-        <!-- Store Info Footer -->
-        <div style="text-align: center; border: 2px solid #000; padding: 2mm; font-size: 9px; margin-bottom: 2mm;">
-          <div style="font-weight: bold; font-size: 12px; margin-bottom: 1mm;">M MART</div>
-          <div style="font-size: 8px; margin-bottom: 0.5mm;">Professional Retail Solution</div>
-          <div style="font-size: 8px; margin-bottom: 0.5mm;">GST NO. ${settings.gstNumber || '33QIWPS9348F1Z2'}</div>
-          <div style="font-size: 8px; margin-bottom: 0.5mm;">NAME      : ${settings.businessName || 'M MART'}</div>
-          <div style="font-size: 8px; margin-bottom: 0.5mm;">ADDRESS   : ${settings.businessAddress || '47,SHOP NO.1&2,'}</div>
-          <div style="font-size: 8px; margin-bottom: 0.5mm;">            ${settings.businessAddress2 || 'THANDARAMPATTU MAIN ROAD,'}</div>
-          <div style="font-size: 8px; margin-bottom: 0.5mm;">           ${settings.businessAddress3 || 'SAMUTHIRAM VILLAGE,'}</div>
-          <div style="font-size: 8px; margin-bottom: 1mm;">            ${settings.businessAddress4 || 'TIRUVANNAMALAI-606603'}</div>
-          <div style="font-size: 8px; font-weight: bold;">Welcome to Our Store</div>
-        </div>
-
-        <!-- Final Receipt Details -->
-        <div style="text-align: center; font-size: 8px; border-top: 1px dashed #000; padding-top: 1mm;">
-          <div>Bill No: ${sale.orderNumber}</div>
-          <div>Date: ${formattedDate}</div>
-          <div>Time: ${formattedTime}</div>
-          
+        <!-- Payment Method -->
+        <div style="text-align: center; font-size: 10px; margin-bottom: 3mm;">
+          <div>Payment Method: ${sale.paymentMethod?.toUpperCase() || 'CASH'}</div>
         </div>
       </div>
     `;
