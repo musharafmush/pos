@@ -2110,34 +2110,23 @@ app.post("/api/customers", async (req, res) => {
       
       const { sqlite } = await import('@db');
       
-      // Check if settings table exists
-      const tableCheck = sqlite.prepare(`
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='settings'
-      `).get();
+      // Ensure settings table exists with proper schema
+      sqlite.prepare(`
+        CREATE TABLE IF NOT EXISTS settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key TEXT NOT NULL UNIQUE,
+          value TEXT NOT NULL,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
 
-      if (!tableCheck) {
-        // Return default settings if table doesn't exist
-        return res.json({
-          businessName: 'M MART',
-          businessAddress: '123 Business Street, City, State',
-          phoneNumber: '+91-9876543210',
-          taxId: '33GSPDB3311F1ZZ',
-          receiptFooter: 'Thank you for shopping with us!',
-          paperWidth: '80mm',
-          showLogo: true,
-          autoPrint: true,
-          showCustomerDetails: true,
-          showItemSKU: true,
-          showMRP: true,
-          showSavings: true,
-          headerStyle: 'centered',
-          boldTotals: true,
-          separatorStyle: 'solid',
-          thermalOptimized: true,
-          fontSize: 'medium',
-          fontFamily: 'courier'
-        });
+      // Check if updated_at column exists, add if missing
+      const tableInfo = sqlite.prepare("PRAGMA table_info(settings)").all();
+      const hasUpdatedAt = tableInfo.some((col: any) => col.name === 'updated_at');
+      
+      if (!hasUpdatedAt) {
+        sqlite.prepare('ALTER TABLE settings ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP').run();
+        console.log('Added updated_at column to settings table');
       }
 
       // Get all receipt-related settings
@@ -2202,7 +2191,7 @@ app.post("/api/customers", async (req, res) => {
       
       const { sqlite } = await import('@db');
       
-      // Ensure settings table exists
+      // Ensure settings table exists with proper schema
       sqlite.prepare(`
         CREATE TABLE IF NOT EXISTS settings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2211,6 +2200,15 @@ app.post("/api/customers", async (req, res) => {
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `).run();
+
+      // Check if updated_at column exists, add if missing
+      const tableInfo = sqlite.prepare("PRAGMA table_info(settings)").all();
+      const hasUpdatedAt = tableInfo.some((col: any) => col.name === 'updated_at');
+      
+      if (!hasUpdatedAt) {
+        sqlite.prepare('ALTER TABLE settings ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP').run();
+        console.log('Added updated_at column to settings table');
+      }
 
       // Prepare upsert statement
       const upsertSetting = sqlite.prepare(`
