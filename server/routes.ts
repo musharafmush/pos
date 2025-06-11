@@ -1920,6 +1920,150 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Receipt Settings API endpoints
+  app.get('/api/settings/receipt', async (req, res) => {
+    try {
+      console.log('🔧 Fetching receipt settings');
+      
+      const { sqlite } = await import('@db');
+      
+      // Check if settings table exists
+      const tableCheck = sqlite.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='settings'
+      `).get();
+
+      if (!tableCheck) {
+        // Return default settings if table doesn't exist
+        return res.json({
+          businessName: 'M MART',
+          businessAddress: '123 Business Street, City, State',
+          phoneNumber: '+91-9876543210',
+          taxId: '33GSPDB3311F1ZZ',
+          receiptFooter: 'Thank you for shopping with us!',
+          paperWidth: '80mm',
+          showLogo: true,
+          autoPrint: true,
+          showCustomerDetails: true,
+          showItemSKU: true,
+          showMRP: true,
+          showSavings: true,
+          headerStyle: 'centered',
+          boldTotals: true,
+          separatorStyle: 'solid',
+          thermalOptimized: true,
+          fontSize: 'medium',
+          fontFamily: 'courier'
+        });
+      }
+
+      // Get all receipt-related settings
+      const receiptKeys = [
+        'businessName', 'businessAddress', 'phoneNumber', 'taxId', 'receiptFooter',
+        'paperWidth', 'showLogo', 'autoPrint', 'showCustomerDetails', 'showItemSKU',
+        'showMRP', 'showSavings', 'headerStyle', 'boldTotals', 'separatorStyle',
+        'thermalOptimized', 'fontSize', 'fontFamily'
+      ];
+
+      const settings = {};
+      const getSettingQuery = sqlite.prepare('SELECT value FROM settings WHERE key = ?');
+
+      receiptKeys.forEach(key => {
+        const result = getSettingQuery.get(key);
+        if (result) {
+          try {
+            // Try to parse as JSON first (for boolean/object values)
+            settings[key] = JSON.parse(result.value);
+          } catch {
+            // If not JSON, use as string
+            settings[key] = result.value;
+          }
+        }
+      });
+
+      // Apply defaults for missing settings
+      const defaultSettings = {
+        businessName: 'M MART',
+        businessAddress: '123 Business Street, City, State',
+        phoneNumber: '+91-9876543210',
+        taxId: '33GSPDB3311F1ZZ',
+        receiptFooter: 'Thank you for shopping with us!',
+        paperWidth: '80mm',
+        showLogo: true,
+        autoPrint: true,
+        showCustomerDetails: true,
+        showItemSKU: true,
+        showMRP: true,
+        showSavings: true,
+        headerStyle: 'centered',
+        boldTotals: true,
+        separatorStyle: 'solid',
+        thermalOptimized: true,
+        fontSize: 'medium',
+        fontFamily: 'courier'
+      };
+
+      const finalSettings = { ...defaultSettings, ...settings };
+      console.log('📄 Receipt settings retrieved:', Object.keys(finalSettings));
+      
+      res.json(finalSettings);
+    } catch (error) {
+      console.error('❌ Error fetching receipt settings:', error);
+      res.status(500).json({ error: 'Failed to fetch receipt settings' });
+    }
+  });
+
+  app.post('/api/settings/receipt', async (req, res) => {
+    try {
+      console.log('💾 Saving receipt settings:', req.body);
+      
+      const { sqlite } = await import('@db');
+      
+      // Ensure settings table exists
+      sqlite.prepare(`
+        CREATE TABLE IF NOT EXISTS settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key TEXT NOT NULL UNIQUE,
+          value TEXT NOT NULL,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+
+      // Prepare upsert statement
+      const upsertSetting = sqlite.prepare(`
+        INSERT INTO settings (key, value, updated_at) 
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET 
+          value = excluded.value,
+          updated_at = CURRENT_TIMESTAMP
+      `);
+
+      // Save each setting
+      const transaction = sqlite.transaction((settings) => {
+        Object.entries(settings).forEach(([key, value]) => {
+          const serializedValue = typeof value === 'object' ? JSON.stringify(value) : value.toString();
+          upsertSetting.run(key, serializedValue);
+        });
+      });
+
+      transaction(req.body);
+
+      console.log('✅ Receipt settings saved successfully');
+      res.json({ 
+        success: true, 
+        message: 'Receipt settings saved successfully',
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error saving receipt settings:', error);
+      res.status(500).json({ 
+        error: 'Failed to save receipt settings',
+        message: error.message 
+      });
+    }
+  });
+
   // Comprehensive sales test endpoint
   app.get('/api/sales/test', async (req, res) => {
     try {

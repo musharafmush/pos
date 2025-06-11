@@ -101,25 +101,71 @@ export default function EditOptions() {
 
   // Load saved settings on component mount
   useEffect(() => {
-    try {
-      const savedBusiness = localStorage.getItem('businessSettings');
-      const savedReceipt = localStorage.getItem('receiptConfig');
-      const savedPOS = localStorage.getItem('posSettings');
+    const loadSettings = async () => {
+      try {
+        // Load business and POS settings from localStorage
+        const savedBusiness = localStorage.getItem('businessSettings');
+        const savedPOS = localStorage.getItem('posSettings');
 
-      if (savedBusiness) {
-        setBusinessSettings(prev => ({ ...prev, ...JSON.parse(savedBusiness) }));
-      }
+        if (savedBusiness) {
+          setBusinessSettings(prev => ({ ...prev, ...JSON.parse(savedBusiness) }));
+        }
 
-      if (savedReceipt) {
-        setReceiptSettings(prev => ({ ...prev, ...JSON.parse(savedReceipt) }));
-      }
+        if (savedPOS) {
+          setPOSSettings(prev => ({ ...prev, ...JSON.parse(savedPOS) }));
+        }
 
-      if (savedPOS) {
-        setPOSSettings(prev => ({ ...prev, ...JSON.parse(savedPOS) }));
+        // Load receipt settings from backend API
+        console.log('🔄 Loading receipt settings from backend...');
+        const response = await fetch('/api/settings/receipt');
+        
+        if (response.ok) {
+          const backendSettings = await response.json();
+          console.log('✅ Backend receipt settings loaded:', backendSettings);
+          
+          // Map backend settings to component state
+          setBusinessSettings(prev => ({
+            ...prev,
+            businessName: backendSettings.businessName || prev.businessName,
+            address: backendSettings.businessAddress || prev.address,
+            phone: backendSettings.phoneNumber || prev.phone,
+            gstNumber: backendSettings.taxId || prev.gstNumber
+          }));
+
+          setReceiptSettings(prev => ({
+            ...prev,
+            receiptWidth: backendSettings.paperWidth || prev.receiptWidth,
+            showLogo: backendSettings.showLogo !== undefined ? backendSettings.showLogo : prev.showLogo,
+            showGST: backendSettings.showGST !== undefined ? backendSettings.showGST : prev.showGST,
+            footerText: backendSettings.receiptFooter || prev.footerText,
+            printerType: backendSettings.printerType || prev.printerType,
+            copies: backendSettings.copies || prev.copies
+          }));
+
+          // Also save to localStorage for offline access
+          localStorage.setItem('receiptSettings', JSON.stringify(backendSettings));
+        } else {
+          console.log('⚠️ Backend settings not available, using localStorage fallback');
+          const savedReceipt = localStorage.getItem('receiptConfig');
+          if (savedReceipt) {
+            setReceiptSettings(prev => ({ ...prev, ...JSON.parse(savedReceipt) }));
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading settings:', error);
+        // Fallback to localStorage if backend fails
+        try {
+          const savedReceipt = localStorage.getItem('receiptConfig');
+          if (savedReceipt) {
+            setReceiptSettings(prev => ({ ...prev, ...JSON.parse(savedReceipt) }));
+          }
+        } catch (localError) {
+          console.error('❌ localStorage fallback also failed:', localError);
+        }
       }
-    } catch (error) {
-      console.error('Error loading saved settings:', error);
-    }
+    };
+
+    loadSettings();
   }, []);
 
 
@@ -132,49 +178,95 @@ export default function EditOptions() {
     });
   };
 
-  const handleSaveReceiptSettings = () => {
-    // Combine business and receipt settings for complete receipt configuration
-    const combinedSettings = {
-      ...businessSettings,
-      ...receiptSettings,
-      // Map fields properly for receipt system
-      businessAddress: businessSettings.address,
-      taxId: businessSettings.gstNumber,
-      receiptFooter: receiptSettings.footerText,
-      paperWidth: receiptSettings.receiptWidth,
-      showCustomerDetails: true,
-      showItemSKU: true,
-      showMRP: true,
-      showSavings: true,
-      headerStyle: 'centered' as const,
-      boldTotals: true,
-      separatorStyle: 'solid' as const,
-      showTermsConditions: false,
-      termsConditions: '',
-      showReturnPolicy: false,
-      returnPolicy: '',
-      language: 'english' as const,
-      currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
-      thermalOptimized: true,
-      fontSize: 'medium' as const,
-      fontFamily: 'courier' as const,
-      showBarcode: false,
-      showQRCode: false,
-      headerBackground: true,
-      autoPrint: true
-    };
+  const handleSaveReceiptSettings = async () => {
+    try {
+      console.log('💾 Saving receipt settings to backend...');
 
-    // Save to localStorage for receipt printing
-    localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
+      // Combine business and receipt settings for complete receipt configuration
+      const combinedSettings = {
+        ...businessSettings,
+        ...receiptSettings,
+        // Map fields properly for backend storage
+        businessName: businessSettings.businessName,
+        businessAddress: businessSettings.address,
+        phoneNumber: businessSettings.phone,
+        taxId: businessSettings.gstNumber,
+        receiptFooter: receiptSettings.footerText,
+        paperWidth: receiptSettings.receiptWidth,
+        showLogo: receiptSettings.showLogo,
+        showGST: receiptSettings.showGST,
+        showCustomerDetails: true,
+        showItemSKU: true,
+        showMRP: true,
+        showSavings: true,
+        headerStyle: 'centered',
+        boldTotals: true,
+        separatorStyle: 'solid',
+        showTermsConditions: false,
+        termsConditions: '',
+        showReturnPolicy: false,
+        returnPolicy: '',
+        language: 'english',
+        currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
+        thermalOptimized: true,
+        fontSize: 'medium',
+        fontFamily: 'courier',
+        showBarcode: false,
+        showQRCode: false,
+        headerBackground: true,
+        autoPrint: true,
+        printerType: receiptSettings.printerType,
+        copies: receiptSettings.copies
+      };
 
-    // Also save individual settings
-    localStorage.setItem('businessSettings', JSON.stringify(businessSettings));
-    localStorage.setItem('receiptConfig', JSON.stringify(receiptSettings));
+      // Save to backend API
+      const response = await fetch('/api/settings/receipt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(combinedSettings)
+      });
 
-    toast({
-      title: "✅ Receipt Settings Saved",
-      description: "Your bill receipt format has been updated and will be used for all future receipts."
-    });
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Settings saved to backend:', result);
+
+        // Also save to localStorage for offline access and receipt printing
+        localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
+        localStorage.setItem('businessSettings', JSON.stringify(businessSettings));
+        localStorage.setItem('receiptConfig', JSON.stringify(receiptSettings));
+
+        toast({
+          title: "✅ Receipt Settings Saved",
+          description: "Your bill receipt format has been saved to the database and will be used for all future receipts."
+        });
+      } else {
+        throw new Error('Failed to save settings to backend');
+      }
+    } catch (error) {
+      console.error('❌ Error saving receipt settings:', error);
+      
+      // Fallback to localStorage only
+      const combinedSettings = {
+        ...businessSettings,
+        ...receiptSettings,
+        businessAddress: businessSettings.address,
+        taxId: businessSettings.gstNumber,
+        receiptFooter: receiptSettings.footerText,
+        paperWidth: receiptSettings.receiptWidth
+      };
+
+      localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
+      localStorage.setItem('businessSettings', JSON.stringify(businessSettings));
+      localStorage.setItem('receiptConfig', JSON.stringify(receiptSettings));
+
+      toast({
+        title: "⚠️ Settings Saved Locally",
+        description: "Settings saved to browser storage. Backend sync failed but receipt printing will work.",
+        variant: "default"
+      });
+    }
   };
 
   const handleSavePOSSettings = () => {
@@ -202,10 +294,10 @@ export default function EditOptions() {
     });
   };
 
-  const previewReceipt = () => {
+  const previewReceipt = async () => {
     try {
       // Save current settings first to ensure preview uses latest settings
-      handleSaveReceiptSettings();
+      await handleSaveReceiptSettings();
 
       const combinedSettings = {
         ...businessSettings,
@@ -606,15 +698,24 @@ export default function EditOptions() {
                       </Button>
                     </div>
                     <Button 
-                      onClick={() => {
-                        handleSaveReceiptSettings();
-                        setTimeout(() => {
-                          previewReceipt();
+                      onClick={async () => {
+                        try {
+                          await handleSaveReceiptSettings();
+                          setTimeout(() => {
+                            previewReceipt();
+                            toast({
+                              title: "✅ Settings Saved & Preview Generated",
+                              description: "Your bill receipt settings have been saved to database and preview opened"
+                            });
+                          }, 500);
+                        } catch (error) {
+                          console.error('Error in save and preview:', error);
                           toast({
-                            title: "✅ Settings Saved & Preview Generated",
-                            description: "Your bill receipt settings have been saved and preview opened"
+                            title: "❌ Error",
+                            description: "Failed to save settings. Please try again.",
+                            variant: "destructive"
                           });
-                        }, 800);
+                        }
                       }}
                     >
                       <Save className="h-4 w-4 mr-2" />
