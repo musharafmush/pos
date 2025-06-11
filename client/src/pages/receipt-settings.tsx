@@ -27,7 +27,7 @@ export default function ReceiptSettings() {
     showLogo: false,
     autoPrint: true,
     paperWidth: 'thermal80',
-    fontSize: 'medium',
+    fontSize: 'small',
     fontFamily: 'courier',
     headerStyle: 'centered',
     showCustomerDetails: true,
@@ -36,15 +36,16 @@ export default function ReceiptSettings() {
     showSavings: true,
     showBarcode: false,
     showQRCode: false,
-    headerBackground: true,
+    headerBackground: false,
     boldTotals: true,
-    separatorStyle: 'solid',
+    separatorStyle: 'dashed',
     showTermsConditions: false,
     termsConditions: 'All sales are final. No returns without receipt.',
     showReturnPolicy: false,
     returnPolicy: '7 days return policy. Terms apply.',
     language: 'english',
-    currencySymbol: '₹'
+    currencySymbol: '₹',
+    thermalOptimized: true
   });
 
   useEffect(() => {
@@ -311,9 +312,10 @@ export default function ReceiptSettings() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="thermal58">58mm Thermal</SelectItem>
-                            <SelectItem value="thermal80">80mm Thermal</SelectItem>
-                            <SelectItem value="a4">A4 Paper</SelectItem>
+                            <SelectItem value="thermal58">58mm Thermal (Small)</SelectItem>
+                            <SelectItem value="thermal80">80mm Thermal (Standard)</SelectItem>
+                            <SelectItem value="thermal112">112mm Thermal (Wide)</SelectItem>
+                            <SelectItem value="a4">A4 Paper (210mm)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -466,6 +468,15 @@ export default function ReceiptSettings() {
                           id="boldTotals" 
                           checked={settings.boldTotals}
                           onCheckedChange={(checked) => setSettings(prev => ({ ...prev, boldTotals: checked }))}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="thermalOptimized">Thermal Printer Optimized</Label>
+                        <Switch 
+                          id="thermalOptimized" 
+                          checked={settings.thermalOptimized || true}
+                          onCheckedChange={(checked) => setSettings(prev => ({ ...prev, thermalOptimized: checked }))}
                         />
                       </div>
                     </div>
