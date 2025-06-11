@@ -100,6 +100,8 @@ function Router() {
       <Route path="/categories" component={Categories} />
       <ProtectedRoute path="/brands" component={Brands} />
       <ProtectedRoute path="/accounts-dashboard" component={AccountsDashboard} />
+      <ProtectedRoute path="/receipt-settings" component={ReceiptSettings} />
+      <ProtectedRoute path="/printer-receipt-editor" component={PrinterReceiptEditor} />
       <ProtectedRoute path="/edit-options" component={EditOptions} />
       <Route component={NotFound} />
     </Switch>
