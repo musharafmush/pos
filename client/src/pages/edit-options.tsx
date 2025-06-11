@@ -330,54 +330,87 @@ export default function EditOptions() {
 
       localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
 
+      // Create safe test receipt data with all required properties
       const testReceiptData = {
         orderNumber: `PREVIEW-123456`,
         createdAt: new Date().toISOString(),
-        user: { name: 'Admin User' },
-        customer: { name: 'Preview Customer' },
+        user: { 
+          name: 'Admin User',
+          id: 1
+        },
+        customer: { 
+          name: 'Preview Customer',
+          id: 1
+        },
         items: [
           {
             productName: 'Premium Rice (5kg)',
             productSku: 'ITM264973991',
             quantity: 2,
             unitPrice: 125,
-            subtotal: 250
+            subtotal: 250,
+            price: 125,
+            total: 250,
+            name: 'Premium Rice (5kg)',
+            sku: 'ITM264973991'
           },
           {
             productName: 'Cooking Oil (1L)',
             productSku: 'ITM264973992',
             quantity: 1,
             unitPrice: 75,
-            subtotal: 75
+            subtotal: 75,
+            price: 75,
+            total: 75,
+            name: 'Cooking Oil (1L)',
+            sku: 'ITM264973992'
           },
           {
             productName: 'Sugar (1kg)',
             productSku: 'ITM264973993',
             quantity: 3,
             unitPrice: 45,
-            subtotal: 135
+            subtotal: 135,
+            price: 45,
+            total: 135,
+            name: 'Sugar (1kg)',
+            sku: 'ITM264973993'
           }
         ],
         total: 460,
         discount: 0,
         tax: 0,
         taxAmount: 0,
-        paymentMethod: 'CASH'
+        paymentMethod: 'CASH',
+        status: 'completed'
       };
+
+      // Validate data before printing
+      console.log('🔍 Test receipt data:', testReceiptData);
+      console.log('🔍 Combined settings:', combinedSettings);
 
       import('@/components/pos/print-receipt')
         .then(({ printReceipt }) => {
-          printReceipt(testReceiptData, combinedSettings);
-          toast({
-            title: "✅ Receipt Preview Generated",
-            description: `Preview opened with ${receiptSettings.receiptWidth} paper width and ${businessSettings.businessName} settings`
-          });
+          try {
+            printReceipt(testReceiptData, combinedSettings);
+            toast({
+              title: "✅ Receipt Preview Generated",
+              description: `Preview opened with ${receiptSettings.receiptWidth} paper width and ${businessSettings.businessName} settings`
+            });
+          } catch (printError) {
+            console.error("❌ Error during receipt printing:", printError);
+            toast({
+              title: "❌ Preview Failed",
+              description: `Print error: ${printError.message || 'Unknown print error'}. Please check console for details.`,
+              variant: "destructive"
+            });
+          }
         })
         .catch(error => {
-          console.error("Failed to load print-receipt module", error);
+          console.error("❌ Failed to load print-receipt module:", error);
           toast({
             title: "❌ Preview Failed", 
-            description: `Receipt preview error: ${error.message || 'Module loading failed'}. Please refresh the page and try again.`,
+            description: `Module loading failed: ${error.message || 'Import error'}. Please refresh the page and try again.`,
             variant: "destructive"
           });
         });

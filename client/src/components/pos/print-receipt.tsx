@@ -325,25 +325,47 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 };
 
   const generateReceiptHTML = (sale: any, settings: any) => {
-    const date = new Date(sale.createdAt);
-    const formattedDate = date.toLocaleDateString('en-IN');
-    const formattedTime = date.toLocaleTimeString('en-IN', { hour12: true });
+    // Safely handle date parsing
+    let formattedDate = new Date().toLocaleDateString('en-IN');
+    let formattedTime = new Date().toLocaleTimeString('en-IN', { hour12: true });
+    
+    try {
+      if (sale?.createdAt) {
+        const date = new Date(sale.createdAt);
+        if (!isNaN(date.getTime())) {
+          formattedDate = date.toLocaleDateString('en-IN');
+          formattedTime = date.toLocaleTimeString('en-IN', { hour12: true });
+        }
+      }
+    } catch (error) {
+      console.warn('Date parsing error:', error);
+    }
 
-    // Ensure sale has proper structure with defaults
+    // Ensure sale has proper structure with defaults and safe property access
     const safeData = {
-      orderNumber: sale.orderNumber || 'PREVIEW-123456',
-      createdAt: sale.createdAt || new Date().toISOString(),
-      user: sale.user || { name: 'Admin User' },
-      customer: sale.customer || { name: 'Preview Customer' },
-      items: sale.items || [
+      orderNumber: sale?.orderNumber || 'PREVIEW-123456',
+      createdAt: sale?.createdAt || new Date().toISOString(),
+      user: {
+        name: sale?.user?.name || 'Admin User'
+      },
+      customer: {
+        name: sale?.customer?.name || 'Preview Customer'
+      },
+      items: Array.isArray(sale?.items) ? sale.items.map((item: any) => ({
+        productName: item?.productName || item?.name || 'Sample Product',
+        quantity: Number(item?.quantity) || 1,
+        unitPrice: Number(item?.unitPrice || item?.price) || 100,
+        subtotal: Number(item?.subtotal || item?.total) || 100,
+        productSku: item?.productSku || item?.sku || 'ITM000000'
+      })) : [
         { productName: 'Premium Rice (5kg)', quantity: 2, unitPrice: 125, subtotal: 250, productSku: 'ITM264973991' },
         { productName: 'Cooking Oil (1L)', quantity: 1, unitPrice: 75, subtotal: 75, productSku: 'ITM264973992' },
         { productName: 'Sugar (1kg)', quantity: 3, unitPrice: 45, subtotal: 135, productSku: 'ITM264973993' }
       ],
-      total: sale.total || 460,
-      tax: sale.tax || 0,
-      taxAmount: sale.taxAmount || 0,
-      paymentMethod: sale.paymentMethod || 'CASH'
+      total: Number(sale?.total) || 460,
+      tax: Number(sale?.tax) || 0,
+      taxAmount: Number(sale?.taxAmount) || 0,
+      paymentMethod: sale?.paymentMethod || 'CASH'
     };
 
     return `
