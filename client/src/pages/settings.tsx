@@ -139,31 +139,71 @@ export default function Settings() {
     defaultPrinter: "default"
   });
 
+  // Load receipt settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('receiptSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setReceiptSettings({
+        businessName: settings.businessName || "AWESOME SHOP POS",
+        address: settings.businessAddress || "123 Main Street\nCity, State 560001",
+        phone: settings.phoneNumber || "(123) 456-7890",
+        taxId: settings.taxId || "",
+        receiptFooter: settings.receiptFooter || "Thank you for shopping with us!",
+        showLogo: settings.showLogo || false,
+        printAutomatically: settings.autoPrint || true,
+        defaultPrinter: settings.defaultPrinter || "default"
+      });
+    }
+  }, []);
+
+  const saveReceiptSettings = () => {
+    const settingsToSave = {
+      businessName: receiptSettings.businessName,
+      businessAddress: receiptSettings.address,
+      phoneNumber: receiptSettings.phone,
+      taxId: receiptSettings.taxId,
+      receiptFooter: receiptSettings.receiptFooter,
+      showLogo: receiptSettings.showLogo,
+      autoPrint: receiptSettings.printAutomatically,
+      defaultPrinter: receiptSettings.defaultPrinter
+    };
+    
+    localStorage.setItem('receiptSettings', JSON.stringify(settingsToSave));
+    toast({
+      title: "Settings updated",
+      description: "Receipt settings have been saved successfully",
+    });
+  };
+
   const generateTestReceipt = () => `
 ${receiptSettings.businessName}
+Professional Retail Solution
+${receiptSettings.taxId ? `GST No: ${receiptSettings.taxId} | ` : ''}Ph: ${receiptSettings.phone}
 ${receiptSettings.address}
-Tel: ${receiptSettings.phone}
-${receiptSettings.taxId ? `Tax ID: ${receiptSettings.taxId}` : ''}
 -------------------------------
-RECEIPT #12345
+Bill No: POS1749631206824
 Date: ${new Date().toLocaleDateString()}
 Time: ${new Date().toLocaleTimeString()}
-Cashier: ${userData?.user?.name || "John Doe"}
+Cashier: ${userData?.user?.name || "Admin User"}
 -------------------------------
-ITEM             QTY   PRICE   TOTAL
+Customer Details:
+Name: Walk-in Customer
 -------------------------------
-Organic Banana    2    $2.99   $5.98
-White Bread       1    $2.29   $2.29
-Almond Milk       1    $3.99   $3.99
+Item                Qty  Rate    Amt
 -------------------------------
-Subtotal:                $12.26
-Tax (7%):                 $0.86
+rice (250g Pack)     1   ₹100   ₹100
+ITM26497399-REPACK-2500-1749547699598
+MRP: ₹120 (You Save: ₹20)
 -------------------------------
-TOTAL:                   $13.12
+Sub Total:                 ₹100
+Taxable Amount:            ₹100
+GST (0%):                   ₹0
+-------------------------------
+GRAND TOTAL:              ₹100
 
-Payment Method: Cash
-Amount Paid:             $15.00
-Change:                   $1.88
+Payment Method:           CASH
+Amount Paid:              ₹100
 -------------------------------
 ${receiptSettings.receiptFooter}
   `;
@@ -491,11 +531,8 @@ ${receiptSettings.receiptFooter}
                     <Button 
                       type="button"
                       onClick={() => {
+                        saveReceiptSettings();
                         setReceiptPreview(generateTestReceipt());
-                        toast({
-                          title: "Settings updated",
-                          description: "Receipt settings have been saved successfully",
-                        });
                       }}
                     >
                       Save Receipt Settings

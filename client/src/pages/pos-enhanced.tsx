@@ -2312,6 +2312,20 @@ Terminal: POS-Enhanced
                 </Button>
                 <Button
                   onClick={() => {
+                    // Save receipt settings to localStorage
+                    const settingsToSave = {
+                      businessName: receiptSettings.businessName,
+                      businessAddress: receiptSettings.address,
+                      phoneNumber: receiptSettings.phone,
+                      taxId: receiptSettings.taxId,
+                      receiptFooter: receiptSettings.receiptFooter,
+                      showLogo: receiptSettings.showLogo,
+                      autoPrint: receiptSettings.printAutomatically,
+                      defaultPrinter: receiptSettings.defaultPrinter
+                    };
+                    
+                    localStorage.setItem('receiptSettings', JSON.stringify(settingsToSave));
+                    
                     toast({
                       title: "Settings Saved",
                       description: "Receipt and printer settings have been updated successfully",

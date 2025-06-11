@@ -42,7 +42,18 @@ export default function ReceiptSettings() {
   }, []);
 
   const handleSave = () => {
-    localStorage.setItem('receiptSettings', JSON.stringify(settings));
+    const settingsToSave = {
+      businessName: settings.businessName,
+      businessAddress: settings.businessAddress,
+      phoneNumber: settings.phoneNumber,
+      taxId: settings.taxId,
+      receiptFooter: settings.receiptFooter,
+      showLogo: settings.showLogo,
+      autoPrint: settings.autoPrint,
+      defaultPrinter: "default"
+    };
+    
+    localStorage.setItem('receiptSettings', JSON.stringify(settingsToSave));
     alert('Receipt settings saved successfully!');
   };
 

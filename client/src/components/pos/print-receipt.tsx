@@ -42,6 +42,18 @@ export function printReceipt(data: ReceiptData) {
     return;
   }
 
+  // Load receipt settings from localStorage
+  const savedSettings = localStorage.getItem('receiptSettings');
+  const receiptSettings = savedSettings ? JSON.parse(savedSettings) : {
+    businessName: 'AWESOME SHOP POS',
+    businessAddress: '123 Main Street, City - 560001',
+    phoneNumber: '+91-9876543210',
+    taxId: '29ABCDE1234F1Z5',
+    receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@awesomeshop.com',
+    showLogo: false,
+    autoPrint: true
+  };
+
   const receiptHtml = `
 <!DOCTYPE html>
 <html>
@@ -218,11 +230,11 @@ export function printReceipt(data: ReceiptData) {
     <div class="receipt-container">
         <!-- Header Section -->
         <div class="header">
-            <div class="business-name">AWESOME SHOP POS</div>
+            <div class="business-name">${receiptSettings.businessName}</div>
             <div class="business-tagline">Professional Retail Solution</div>
             <div class="business-details">
-                GST No: 29ABCDE1234F1Z5 | Ph: +91-9876543210<br>
-                123 Main Street, City - 560001
+                ${receiptSettings.taxId ? `GST No: ${receiptSettings.taxId} | ` : ''}Ph: ${receiptSettings.phoneNumber}<br>
+                ${receiptSettings.businessAddress}
             </div>
         </div>
 
@@ -346,9 +358,7 @@ export function printReceipt(data: ReceiptData) {
 
         <!-- Footer -->
         <div class="footer">
-            <div class="footer-note">Thank you for shopping with us!</div>
-            <div class="footer-note">Visit again soon</div>
-            <div class="footer-note">Customer Care: support@awesomeshop.com</div>
+            ${receiptSettings.receiptFooter.split('\n').map(line => `<div class="footer-note">${line}</div>`).join('')}
 
             <div class="system-info">
                 Items: ${data.items.length} | Qty: ${data.items.reduce((sum, item) => sum + item.quantity, 0)}
