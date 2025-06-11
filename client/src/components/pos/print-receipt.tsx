@@ -35,7 +35,47 @@ interface ReceiptData {
   notes?: string;
 }
 
-export const printReceipt = (data: ReceiptData) => {
+export interface ReceiptCustomization {
+  businessName: string;
+  businessAddress: string;
+  phoneNumber: string;
+  email?: string;
+  taxId: string;
+  receiptFooter: string;
+  showLogo: boolean;
+  autoPrint: boolean;
+  
+  // Layout Customization
+  paperWidth: 'thermal58' | 'thermal80' | 'a4';
+  fontSize: 'small' | 'medium' | 'large';
+  fontFamily: 'courier' | 'arial' | 'impact';
+  headerStyle: 'centered' | 'left' | 'justified';
+  
+  // Content Options
+  showCustomerDetails: boolean;
+  showItemSKU: boolean;
+  showMRP: boolean;
+  showSavings: boolean;
+  showBarcode: boolean;
+  showQRCode: boolean;
+  
+  // Colors and Styling
+  headerBackground: boolean;
+  boldTotals: boolean;
+  separatorStyle: 'solid' | 'dashed' | 'dotted';
+  
+  // Additional Info
+  showTermsConditions: boolean;
+  termsConditions: string;
+  showReturnPolicy: boolean;
+  returnPolicy: string;
+  
+  // Multi-language Support
+  language: 'english' | 'hindi' | 'tamil';
+  currencySymbol: string;
+}
+
+export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptCustomization>) => {
   const printWindow = window.open('', '_blank', 'width=400,height=700');
 
   if (!printWindow) {
@@ -44,16 +84,67 @@ export const printReceipt = (data: ReceiptData) => {
     return;
   }
 
-  // Load receipt settings from localStorage
+  // Load receipt settings from localStorage with defaults
   const savedSettings = localStorage.getItem('receiptSettings');
-  const receiptSettings = savedSettings ? JSON.parse(savedSettings) : {
+  const defaultSettings: ReceiptCustomization = {
     businessName: 'M MART',
     businessAddress: '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD,\nSAMUTHIRAM VILLAGE,\nTIRUVANNAMALAI-606603',
     phoneNumber: '+91-9876543210',
+    email: 'info@mmart.com',
     taxId: '33QIWPS9348F1Z2',
     receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com',
     showLogo: false,
-    autoPrint: true
+    autoPrint: true,
+    paperWidth: 'thermal80',
+    fontSize: 'medium',
+    fontFamily: 'courier',
+    headerStyle: 'centered',
+    showCustomerDetails: true,
+    showItemSKU: true,
+    showMRP: true,
+    showSavings: true,
+    showBarcode: false,
+    showQRCode: false,
+    headerBackground: true,
+    boldTotals: true,
+    separatorStyle: 'solid',
+    showTermsConditions: false,
+    termsConditions: 'All sales are final. No returns without receipt.',
+    showReturnPolicy: false,
+    returnPolicy: '7 days return policy. Terms apply.',
+    language: 'english',
+    currencySymbol: '₹'
+  };
+
+  const receiptSettings = {
+    ...defaultSettings,
+    ...(savedSettings ? JSON.parse(savedSettings) : {}),
+    ...customization
+  };
+
+  // Paper width configurations
+  const paperConfigs = {
+    thermal58: { width: '54mm', maxWidth: '50mm', fontSize: '9px' },
+    thermal80: { width: '76mm', maxWidth: '72mm', fontSize: '11px' },
+    a4: { width: '210mm', maxWidth: '200mm', fontSize: '12px' }
+  };
+
+  const config = paperConfigs[receiptSettings.paperWidth];
+
+  // Font configurations
+  const fontSizes = {
+    small: { base: '9px', header: '14px', total: '11px' },
+    medium: { base: '11px', header: '16px', total: '12px' },
+    large: { base: '13px', header: '18px', total: '14px' }
+  };
+
+  const fonts = fontSizes[receiptSettings.fontSize];
+
+  // Font family options
+  const fontFamilies = {
+    courier: "'Courier New', 'Consolas', 'Lucida Console', monospace",
+    arial: "'Arial', 'Helvetica', sans-serif",
+    impact: "'Impact', 'Arial Black', sans-serif"
   };
 
   const receiptHtml = `
@@ -70,18 +161,18 @@ export const printReceipt = (data: ReceiptData) => {
         }
 
         @page {
-            size: 80mm 297mm;
-            margin: 5mm 2mm;
+            size: ${config.width} 297mm;
+            margin: 2mm;
         }
 
         body {
-            font-family: 'Courier New', 'Consolas', 'Lucida Console', monospace;
-            font-size: 11px;
+            font-family: ${fontFamilies[receiptSettings.fontFamily]};
+            font-size: ${fonts.base};
             font-weight: 500;
             line-height: 1.3;
             color: #000;
             background: #fff;
-            width: 76mm;
+            width: ${config.maxWidth};
             margin: 0 auto;
             padding: 2mm;
             -webkit-print-color-adjust: exact;
@@ -89,88 +180,100 @@ export const printReceipt = (data: ReceiptData) => {
         }
 
         .receipt-container {
-            width: 72mm;
+            width: 100%;
             margin: 0 auto;
-            text-align: left;
+            text-align: ${receiptSettings.headerStyle === 'centered' ? 'center' : 'left'};
         }
 
         .header {
-            text-align: center;
-            margin-bottom: 6px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #000;
+            ${receiptSettings.headerStyle === 'centered' ? 'text-align: center;' : 'text-align: left;'}
+            margin-bottom: 8px;
+            padding: 6px;
+            ${receiptSettings.headerBackground ? 'background: #f8f8f8;' : ''}
+            border: ${receiptSettings.separatorStyle} 1px #000;
+            border-radius: 3px;
         }
 
         .business-name {
-            font-size: 16px;
+            font-size: ${fonts.header};
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         .business-tagline {
-            font-size: 10px;
+            font-size: ${parseInt(fonts.base) - 1}px;
             margin-bottom: 3px;
             font-style: italic;
+            color: #555;
         }
 
         .gst-line {
-            font-size: 10px;
+            font-size: ${parseInt(fonts.base) - 1}px;
             font-weight: bold;
             margin-bottom: 2px;
+            color: #d63384;
         }
 
         .business-address {
-            font-size: 9px;
+            font-size: ${parseInt(fonts.base) - 2}px;
             line-height: 1.2;
             margin-bottom: 3px;
         }
 
         .contact-info {
-            font-size: 10px;
+            font-size: ${parseInt(fonts.base) - 1}px;
             margin-bottom: 3px;
         }
 
         .bill-details {
-            margin: 4px 0;
-            font-size: 10px;
+            margin: 6px 0;
+            font-size: ${parseInt(fonts.base) - 1}px;
+            background: #f9f9f9;
+            padding: 4px;
+            border-radius: 3px;
         }
 
         .bill-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 1px;
-            padding: 0 1px;
+            margin-bottom: 2px;
+            padding: 0 2px;
         }
 
         .separator {
-            border-top: 1px solid #000;
-            margin: 4px 0;
+            border-top: 1px ${receiptSettings.separatorStyle} #000;
+            margin: 6px 0;
         }
 
         .customer-info {
-            font-size: 10px;
-            margin: 3px 0;
+            font-size: ${parseInt(fonts.base) - 1}px;
+            margin: 4px 0;
+            padding: 3px;
+            background: #f0f8ff;
+            border-radius: 3px;
         }
 
         .items-table {
             width: 100%;
-            font-size: 10px;
-            margin: 4px 0;
+            font-size: ${parseInt(fonts.base) - 1}px;
+            margin: 6px 0;
         }
 
         .items-header {
-            border-bottom: 1px solid #000;
-            padding: 2px 0;
+            border-bottom: 2px solid #000;
+            padding: 3px 0;
             font-weight: bold;
             display: flex;
             text-transform: uppercase;
-            background: #f0f0f0;
+            background: ${receiptSettings.headerBackground ? '#e9ecef' : 'transparent'};
+            border-radius: 3px 3px 0 0;
         }
 
         .col-item { 
-            flex: 2.5; 
-            padding-left: 1px;
+            flex: 2.8; 
+            padding-left: 2px;
         }
         .col-qty { 
             flex: 0.8; 
@@ -179,18 +282,18 @@ export const printReceipt = (data: ReceiptData) => {
         .col-rate { 
             flex: 1.2; 
             text-align: right; 
-            padding-right: 2px;
+            padding-right: 3px;
         }
         .col-amount { 
-            flex: 1.2; 
+            flex: 1.3; 
             text-align: right; 
-            padding-right: 1px;
+            padding-right: 2px;
         }
 
         .item-row {
-            padding: 2px 0;
-            border-bottom: 1px dotted #999;
-            margin: 1px 0;
+            padding: 3px 0;
+            border-bottom: 1px ${receiptSettings.separatorStyle} #ccc;
+            margin: 2px 0;
         }
 
         .item-main {
@@ -200,85 +303,113 @@ export const printReceipt = (data: ReceiptData) => {
 
         .item-name {
             font-weight: bold;
-            font-size: 10px;
+            font-size: ${parseInt(fonts.base)}px;
             line-height: 1.1;
+            color: #2c3e50;
         }
 
         .item-sku {
-            font-size: 8px;
-            color: #555;
+            font-size: ${parseInt(fonts.base) - 3}px;
+            color: #6c757d;
             margin-top: 1px;
+            font-family: monospace;
         }
 
         .mrp-save {
-            font-size: 8px;
-            color: #006600;
+            font-size: ${parseInt(fonts.base) - 2}px;
+            color: #28a745;
             margin-top: 1px;
+            font-weight: 500;
         }
 
         .totals {
-            margin-top: 4px;
-            font-size: 10px;
+            margin-top: 6px;
+            font-size: ${parseInt(fonts.base)}px;
+            background: #f8f9fa;
+            padding: 4px;
+            border-radius: 5px;
         }
 
         .total-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 1px;
-            padding: 0 1px;
+            margin-bottom: 2px;
+            padding: 1px 3px;
         }
 
         .grand-total {
-            border-top: 1px solid #000;
-            border-bottom: 1px solid #000;
-            padding: 3px 1px;
-            margin: 3px 0;
-            font-weight: bold;
-            font-size: 12px;
+            border: 2px solid #000;
+            padding: 6px 4px;
+            margin: 4px 0;
+            font-weight: ${receiptSettings.boldTotals ? 'bold' : 'normal'};
+            font-size: ${fonts.total};
             display: flex;
             justify-content: space-between;
-            background: #f0f0f0;
+            background: ${receiptSettings.headerBackground ? '#fff3cd' : 'transparent'};
+            border-radius: 5px;
         }
 
         .payment-info {
-            margin: 4px 0;
-            font-size: 10px;
+            margin: 6px 0;
+            font-size: ${parseInt(fonts.base)}px;
+            background: #e7f3ff;
+            padding: 4px;
+            border-radius: 3px;
         }
 
         .footer {
             text-align: center;
-            margin-top: 6px;
-            border-top: 1px solid #000;
-            padding-top: 4px;
-            font-size: 9px;
+            margin-top: 8px;
+            border-top: 2px ${receiptSettings.separatorStyle} #000;
+            padding-top: 6px;
+            font-size: ${parseInt(fonts.base) - 1}px;
         }
 
         .footer-line {
-            margin: 1px 0;
-            line-height: 1.1;
+            margin: 2px 0;
+            line-height: 1.2;
         }
 
         .system-info {
-            font-size: 8px;
-            color: #555;
-            margin-top: 3px;
+            font-size: ${parseInt(fonts.base) - 3}px;
+            color: #6c757d;
+            margin-top: 4px;
         }
 
         .thank-you {
             font-weight: bold;
-            font-size: 10px;
-            margin-bottom: 3px;
+            font-size: ${parseInt(fonts.base) + 1}px;
+            margin-bottom: 4px;
+            color: #198754;
+        }
+
+        .terms-conditions {
+            font-size: ${parseInt(fonts.base) - 2}px;
+            margin-top: 4px;
+            padding: 3px;
+            background: #fff3cd;
+            border-radius: 3px;
+            border: 1px solid #ffeaa7;
+        }
+
+        .return-policy {
+            font-size: ${parseInt(fonts.base) - 2}px;
+            margin-top: 3px;
+            padding: 3px;
+            background: #d1ecf1;
+            border-radius: 3px;
+            border: 1px solid #bee5eb;
         }
 
         @media print {
             @page {
-                size: 80mm 297mm;
-                margin: 2mm;
+                size: ${config.width} 297mm;
+                margin: 1mm;
             }
             
             body {
-                width: 76mm;
-                font-size: 11px;
+                width: ${config.maxWidth};
+                font-size: ${fonts.base};
                 margin: 0;
                 padding: 1mm;
                 -webkit-print-color-adjust: exact;
@@ -286,21 +417,21 @@ export const printReceipt = (data: ReceiptData) => {
             }
             
             .receipt-container {
-                width: 74mm;
+                width: 100%;
                 margin: 0;
             }
             
             .business-name {
-                font-size: 16px;
+                font-size: ${fonts.header};
             }
             
             .grand-total {
-                font-size: 12px;
-                background: #f0f0f0 !important;
+                font-size: ${fonts.total};
+                background: ${receiptSettings.headerBackground ? '#fff3cd !important' : 'transparent !important'};
             }
             
             .items-header {
-                background: #f0f0f0 !important;
+                background: ${receiptSettings.headerBackground ? '#e9ecef !important' : 'transparent !important'};
             }
         }
     </style>
@@ -315,14 +446,17 @@ export const printReceipt = (data: ReceiptData) => {
             <div class="business-address">
                 ${receiptSettings.businessAddress.replace(/\n/g, '<br>')}
             </div>
-            <div class="contact-info">Ph: ${receiptSettings.phoneNumber}</div>
+            <div class="contact-info">
+                Ph: ${receiptSettings.phoneNumber}
+                ${receiptSettings.email ? `<br>Email: ${receiptSettings.email}` : ''}
+            </div>
         </div>
 
         <!-- Bill Details -->
         <div class="bill-details">
             <div class="bill-row">
-                <span>Bill No:</span>
-                <span>${data.billNumber}</span>
+                <span><strong>Bill No:</strong></span>
+                <span><strong>${data.billNumber}</strong></span>
             </div>
             <div class="bill-row">
                 <span>Date:</span>
@@ -331,7 +465,7 @@ export const printReceipt = (data: ReceiptData) => {
             <div class="bill-row">
                 <span>Time:</span>
                 <span>${new Date().toLocaleTimeString('en-IN', { 
-                    hour12: false,
+                    hour12: true,
                     hour: '2-digit', 
                     minute: '2-digit'
                 })}</span>
@@ -343,10 +477,13 @@ export const printReceipt = (data: ReceiptData) => {
         </div>
 
         <!-- Customer Details -->
+        ${receiptSettings.showCustomerDetails ? `
         <div class="customer-info">
             <div><strong>Customer Details</strong></div>
             <div>Name: ${data.customerDetails.name}</div>
+            ${data.customerDetails.doorNo ? `<div>Contact: ${data.customerDetails.doorNo}</div>` : ''}
         </div>
+        ` : ''}
 
         <div class="separator"></div>
 
@@ -364,12 +501,17 @@ export const printReceipt = (data: ReceiptData) => {
                     <div class="item-main">
                         <div class="col-item">
                             <div class="item-name">${item.name}</div>
-                            <div class="item-sku">${item.sku}</div>
-                            <div class="mrp-save">MRP: ${formatCurrency(item.mrp)} (Save: ${formatCurrency(item.mrp - parseFloat(item.price))})</div>
+                            ${receiptSettings.showItemSKU ? `<div class="item-sku">SKU: ${item.sku}</div>` : ''}
+                            ${receiptSettings.showMRP && receiptSettings.showSavings ? `
+                                <div class="mrp-save">
+                                    MRP: ${receiptSettings.currencySymbol}${item.mrp} 
+                                    (Save: ${receiptSettings.currencySymbol}${(item.mrp - parseFloat(item.price)).toFixed(2)})
+                                </div>
+                            ` : ''}
                         </div>
                         <div class="col-qty">${item.quantity}</div>
-                        <div class="col-rate">${formatCurrency(parseFloat(item.price))}</div>
-                        <div class="col-amount">${formatCurrency(item.total)}</div>
+                        <div class="col-rate">${receiptSettings.currencySymbol}${parseFloat(item.price).toFixed(2)}</div>
+                        <div class="col-amount">${receiptSettings.currencySymbol}${item.total.toFixed(2)}</div>
                     </div>
                 </div>
             `).join('')}
@@ -381,20 +523,26 @@ export const printReceipt = (data: ReceiptData) => {
         <div class="totals">
             <div class="total-row">
                 <span>Sub Total:</span>
-                <span>${formatCurrency(data.subtotal)}</span>
+                <span>${receiptSettings.currencySymbol}${data.subtotal.toFixed(2)}</span>
             </div>
+            ${data.discount > 0 ? `
+                <div class="total-row">
+                    <span>Discount ${data.discountType === 'percentage' ? `(${data.discount}%)` : ''}:</span>
+                    <span>-${receiptSettings.currencySymbol}${(typeof data.discount === 'number' ? data.discount : 0).toFixed(2)}</span>
+                </div>
+            ` : ''}
             <div class="total-row">
                 <span>Taxable Amount:</span>
-                <span>${formatCurrency(data.subtotal - data.discount)}</span>
+                <span>${receiptSettings.currencySymbol}${(data.subtotal - (typeof data.discount === 'number' ? data.discount : 0)).toFixed(2)}</span>
             </div>
             <div class="total-row">
-                <span>GST (0%):</span>
-                <span>${formatCurrency(0)}</span>
+                <span>GST (${data.taxRate}%):</span>
+                <span>${receiptSettings.currencySymbol}${data.taxAmount.toFixed(2)}</span>
             </div>
             
             <div class="grand-total">
                 <span>GRAND TOTAL:</span>
-                <span>${formatCurrency(data.grandTotal)}</span>
+                <span>${receiptSettings.currencySymbol}${data.grandTotal.toFixed(2)}</span>
             </div>
         </div>
 
@@ -402,16 +550,16 @@ export const printReceipt = (data: ReceiptData) => {
         <div class="payment-info">
             <div class="total-row">
                 <span>Payment Method:</span>
-                <span>${data.paymentMethod.toUpperCase()}</span>
+                <span><strong>${data.paymentMethod.toUpperCase()}</strong></span>
             </div>
             <div class="total-row">
                 <span>Amount Paid:</span>
-                <span>${formatCurrency(data.amountPaid)}</span>
+                <span><strong>${receiptSettings.currencySymbol}${data.amountPaid.toFixed(2)}</strong></span>
             </div>
             ${data.changeDue > 0 ? `
                 <div class="total-row">
                     <span>Change Due:</span>
-                    <span>${formatCurrency(data.changeDue)}</span>
+                    <span><strong>${receiptSettings.currencySymbol}${data.changeDue.toFixed(2)}</strong></span>
                 </div>
             ` : ''}
         </div>
@@ -424,21 +572,38 @@ export const printReceipt = (data: ReceiptData) => {
             </div>
         ` : ''}
 
+        <!-- Terms & Conditions -->
+        ${receiptSettings.showTermsConditions ? `
+            <div class="terms-conditions">
+                <div><strong>Terms & Conditions:</strong></div>
+                <div>${receiptSettings.termsConditions}</div>
+            </div>
+        ` : ''}
+
+        <!-- Return Policy -->
+        ${receiptSettings.showReturnPolicy ? `
+            <div class="return-policy">
+                <div><strong>Return Policy:</strong></div>
+                <div>${receiptSettings.returnPolicy}</div>
+            </div>
+        ` : ''}
+
         <!-- Footer -->
         <div class="footer">
-            <div class="thank-you">Thank you for shopping with us!</div>
+            <div class="thank-you">🙏 धन्यवाद | Thank you for shopping with us! 🙏</div>
             ${receiptSettings.receiptFooter.split('\n').map(line => 
                 `<div class="footer-line">${line}</div>`
             ).join('')}
             
             <div class="system-info">
-                Items: ${data.items.length} | Total Qty: ${data.items.reduce((sum, item) => sum + item.quantity, 0)}
+                Items: ${data.items.length} | Total Qty: ${data.items.reduce((sum, item) => sum + item.quantity, 0)} | 
+                Savings: ${receiptSettings.currencySymbol}${data.items.reduce((sum, item) => sum + (item.mrp - parseFloat(item.price)) * item.quantity, 0).toFixed(2)}
             </div>
             <div class="system-info">
-                Bill: ${data.billNumber} | Terminal: POS-Enhanced
+                Receipt: ${data.billNumber} | Terminal: POS-Enhanced | ${new Date().toLocaleDateString('en-IN')}
             </div>
             <div class="system-info">
-                Powered by Awesome Shop POS v6.5.2
+                ✨ Powered by Awesome Shop POS v7.0 ✨
             </div>
         </div>
     </div>
@@ -454,13 +619,19 @@ export const printReceipt = (data: ReceiptData) => {
     printWindow.onload = () => {
       setTimeout(() => {
         try {
-          printWindow.print();
-          printWindow.close();
+          if (receiptSettings.autoPrint) {
+            printWindow.print();
+          }
+          
+          // Don't close immediately to allow user to see preview
+          if (receiptSettings.autoPrint) {
+            setTimeout(() => printWindow.close(), 2000);
+          }
         } catch (error) {
           console.error('Print error:', error);
           printWindow.close();
         }
-      }, 500);
+      }, 800);
     };
   } catch (error) {
     console.error('Receipt generation error:', error);
@@ -468,3 +639,6 @@ export const printReceipt = (data: ReceiptData) => {
     alert('Failed to generate receipt. Please try again.');
   }
 };
+
+// Export the customization interface for use in settings
+export { type ReceiptCustomization };
