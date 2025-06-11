@@ -673,7 +673,6 @@ ${receiptSettings.receiptFooter}
       {showReceiptSettings && (
         <ReceiptSettings />
       )}
-      </div>
     </DashboardLayout>
   );
 }
