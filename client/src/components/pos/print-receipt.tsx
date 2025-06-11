@@ -193,9 +193,8 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           </div>
         </div>
 
-        <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 1mm 0; margin-bottom: 2mm;">
-          <!-- Bill Details -->
-          <div style="margin-bottom: 2mm; font-size: 10px;">
+        
+        <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 1mm 0; margin-bottom: 2mm; font-size: 10px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
               <span>Bill No:</span>
               <span style="font-weight: bold;">${sale.orderNumber}</span>
@@ -204,16 +203,11 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
               <span>Date:</span>
               <span>${formattedDate}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
+            <div style="display: flex; justify-content: space-between;">
               <span>Time:</span>
               <span>${formattedTime}</span>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span>Cashier:</span>
-              <span>${sale.user?.name || 'Admin User'}</span>
-            </div>
           </div>
-        </div>
 
         <!-- Customer Details -->
         <div style="margin-bottom: 2mm; font-size: 10px;">
@@ -356,7 +350,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <div>Bill No: ${sale.orderNumber}</div>
           <div>Date: ${formattedDate}</div>
           <div>Time: ${formattedTime}</div>
-          <div>Cashier: ${sale.user?.name || 'Admin User'}</div>
+          
         </div>
       </div>
     `;
@@ -715,10 +709,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                     minute: '2-digit'
                 })}</span>
             </div>
-            <div class="bill-row">
-                <span>Cashier:</span>
-                <span>${data.salesMan}</span>
-            </div>
+            
         </div>
 
         <!-- Customer Details -->
@@ -791,7 +782,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             </div>
 
             ${data.items.reduce((sum, item) => sum + (item.mrp - parseFloat(item.price)) * item.quantity, 0) > 0 ? `
-                <div class="highlight-box">
+                <div class="highlight-box">This commit removes the cashier information from the receipt.
                     🎉 YOU SAVED ${receiptSettings.currencySymbol}${data.items.reduce((sum, item) => sum + (item.mrp - parseFloat(item.price)) * item.quantity, 0).toFixed(2)} TODAY! 🎉
                 </div>
             ` : ''}
