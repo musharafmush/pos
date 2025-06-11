@@ -28,3 +28,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     </div>
   );
 }
+
+// Add default export for compatibility
+export default DashboardLayout;
