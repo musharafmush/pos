@@ -77,32 +77,6 @@ export default function EditOptions() {
     currency: 'INR'
   });
 
-  // Load saved settings on component mount
-  useEffect(() => {
-    try {
-      const savedBusiness = localStorage.getItem('businessSettings');
-      const savedReceipt = localStorage.getItem('receiptConfig');
-      const savedPOS = localStorage.getItem('posSettings');
-
-      if (savedBusiness) {
-        const parsed = JSON.parse(savedBusiness);
-        setBusinessSettings(prev => ({ ...prev, ...parsed }));
-      }
-
-      if (savedReceipt) {
-        const parsed = JSON.parse(savedReceipt);
-        setReceiptSettings(prev => ({ ...prev, ...parsed }));
-      }
-
-      if (savedPOS) {
-        const parsed = JSON.parse(savedPOS);
-        setPOSSettings(prev => ({ ...prev, ...parsed }));
-      }
-    } catch (error) {
-      console.error('Error loading saved settings:', error);
-    }
-  }, []);
-
   const [receiptSettings, setReceiptSettings] = useState<ReceiptSettings>({
     receiptWidth: '80mm',
     showLogo: true,
@@ -124,6 +98,30 @@ export default function EditOptions() {
   });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Load saved settings on component mount
+  useEffect(() => {
+    try {
+      const savedBusiness = localStorage.getItem('businessSettings');
+      const savedReceipt = localStorage.getItem('receiptConfig');
+      const savedPOS = localStorage.getItem('posSettings');
+
+      if (savedBusiness) {
+        setBusinessSettings(prev => ({ ...prev, ...JSON.parse(savedBusiness) }));
+      }
+
+      if (savedReceipt) {
+        setReceiptSettings(prev => ({ ...prev, ...JSON.parse(savedReceipt) }));
+      }
+
+      if (savedPOS) {
+        setPOSSettings(prev => ({ ...prev, ...JSON.parse(savedPOS) }));
+      }
+    } catch (error) {
+      console.error('Error loading saved settings:', error);
+    }
+  }, []);
+
 
   const handleSaveBusinessSettings = () => {
     // Save to localStorage or API
@@ -168,11 +166,11 @@ export default function EditOptions() {
 
     // Save to localStorage for receipt printing
     localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
-    
+
     // Also save individual settings
     localStorage.setItem('businessSettings', JSON.stringify(businessSettings));
     localStorage.setItem('receiptConfig', JSON.stringify(receiptSettings));
-    
+
     toast({
       title: "✅ Receipt Settings Saved",
       description: "Your bill receipt format has been updated and will be used for all future receipts."
@@ -207,26 +205,20 @@ export default function EditOptions() {
   const previewReceipt = () => {
     try {
       // Save current settings first to ensure preview uses latest settings
+      handleSaveReceiptSettings();
+
       const combinedSettings = {
-        businessName: businessSettings.businessName,
+        ...businessSettings,
+        ...receiptSettings,
         businessAddress: businessSettings.address,
-        phoneNumber: businessSettings.phone,
-        email: businessSettings.email,
         taxId: businessSettings.gstNumber,
         receiptFooter: receiptSettings.footerText,
-        showLogo: receiptSettings.showLogo,
-        autoPrint: false, // Don't auto-print for preview
         paperWidth: receiptSettings.receiptWidth,
-        fontSize: 'medium' as const,
-        fontFamily: 'courier' as const,
-        headerStyle: 'centered' as const,
         showCustomerDetails: true,
         showItemSKU: true,
         showMRP: true,
         showSavings: true,
-        showBarcode: false,
-        showQRCode: false,
-        headerBackground: true,
+        headerStyle: 'centered' as const,
         boldTotals: true,
         separatorStyle: 'solid' as const,
         showTermsConditions: false,
@@ -235,18 +227,22 @@ export default function EditOptions() {
         returnPolicy: '',
         language: 'english' as const,
         currencySymbol: businessSettings.currency === 'INR' ? '₹' : '$',
-        thermalOptimized: true
+        thermalOptimized: true,
+        fontSize: 'medium' as const,
+        fontFamily: 'courier' as const,
+        showBarcode: false,
+        showQRCode: false,
+        headerBackground: true,
+        autoPrint: false // Don't auto-print for preview
       };
 
-      // Save to localStorage for receipt system
       localStorage.setItem('receiptSettings', JSON.stringify(combinedSettings));
 
-      // Create comprehensive test receipt data
       const testReceiptData = {
         billNumber: `PREVIEW-${Date.now().toString().slice(-6)}`,
         billDate: new Date().toLocaleDateString('en-IN', {
           day: '2-digit',
-          month: '2-digit', 
+          month: '2-digit',
           year: 'numeric'
         }),
         customerDetails: {
@@ -295,40 +291,28 @@ export default function EditOptions() {
         notes: `Preview from POS Bill Edit - ${new Date().toLocaleString('en-IN')}`
       };
 
-      console.log('Generating preview with settings:', combinedSettings);
-      console.log('Test receipt data:', testReceiptData);
-
-      // Direct import and execute print receipt
-      import('@/components/pos/print-receipt').then(({ printReceipt }) => {
-        try {
-          console.log('Calling printReceipt function...');
+      import('@/components/pos/print-receipt')
+        .then(({ printReceipt }) => {
           printReceipt(testReceiptData, combinedSettings);
-          
           toast({
             title: "✅ Receipt Preview Generated",
             description: `Preview opened with ${receiptSettings.receiptWidth} paper width and ${businessSettings.businessName} settings`
           });
-        } catch (error) {
-          console.error('Preview generation error:', error);
+        })
+        .catch(error => {
+          console.error("Failed to load print-receipt module", error);
           toast({
-            title: "❌ Preview Error",
-            description: `Failed to generate preview: ${error.message}`,
+            title: "❌ Preview Failed",
+            description: "Could not generate receipt preview. Check console for errors.",
             variant: "destructive"
           });
-        }
-      }).catch(error => {
-        console.error('Import error:', error);
-        toast({
-          title: "❌ Module Load Error", 
-          description: "Failed to load receipt module. Please check console for details.",
-          variant: "destructive"
         });
-      });
+
     } catch (error) {
-      console.error('Preview setup error:', error);
+      console.error("Preview error:", error);
       toast({
-        title: "❌ Setup Error",
-        description: "Failed to setup preview. Please try again.",
+        title: "❌ Preview Failed",
+        description: "Could not generate receipt preview. Check console for errors.",
         variant: "destructive"
       });
     }
@@ -926,8 +910,7 @@ export default function EditOptions() {
                 <div className="text-center py-8">
                   <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">Payment gateway configuration coming soon</p>
-                </div>
-              </CardContent>
+                </div>              </CardContent>
             </Card>
           </TabsContent>
 
