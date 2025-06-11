@@ -893,7 +893,7 @@ export default function EditOptions() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="inclusive">Tax Inclusive</SelectItem>
-                        <SelectItem value="exclusive">Tax Exclusive</SelectItem>                        <SelectItem value="compound">Compound Tax</SelectItem>
+                        <SelectItem value="exclusive">TaxExclusive</SelectItem>                        <SelectItem value="compound">Compound Tax</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -928,7 +928,7 @@ export default function EditOptions() {
 
                 <div className="grid grid-cols-1 gap-6">
                   <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
+                    <div className="space-y-2">
                       <Label htmlFor="quickSale">Quick Sale Mode</Label>
                       <p className="text-sm text-muted-foreground">
                         Skip customer selection for faster transactions
@@ -942,7 +942,7 @@ export default function EditOptions() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
+                    <div className="space-y-2">
                       <Label htmlFor="barcode">Barcode Scanning</Label>
                       <p className="text-sm text-muted-foreground">
                         Enable barcode scanner support
@@ -956,7 +956,7 @@ export default function EditOptions() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
+                    <div className="space-y-2">
                       <Label htmlFor="customerRequired">Customer Required</Label>
                       <p className="text-sm text-muted-foreground">
                         Force customer selection for all sales
@@ -970,7 +970,7 @@ export default function EditOptions() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
+                    <div className="space-y-2">
                       <Label htmlFor="discountEnabled">Discount Enabled</Label>
                       <p className="text-sm text-muted-foreground">
                         Allow discounts on items and bills

@@ -1920,6 +1920,189 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Business Settings API endpoints
+  app.get('/api/settings/business', async (req, res) => {
+    try {
+      console.log('🏢 Fetching business settings');
+      
+      const { sqlite } = await import('@db');
+      
+      // Get business-related settings
+      const businessKeys = [
+        'businessName', 'address', 'phone', 'email', 'gstNumber', 'logo', 
+        'timezone', 'currency'
+      ];
+
+      const settings = {};
+      const getSettingQuery = sqlite.prepare('SELECT value FROM settings WHERE key = ?');
+
+      businessKeys.forEach(key => {
+        const result = getSettingQuery.get(key);
+        if (result) {
+          try {
+            settings[key] = JSON.parse(result.value);
+          } catch {
+            settings[key] = result.value;
+          }
+        }
+      });
+
+      // Apply defaults
+      const defaultSettings = {
+        businessName: 'M MART',
+        address: '123 Business Street, City, State',
+        phone: '+91-9876543210',
+        email: 'contact@mmart.com',
+        gstNumber: '33GSPDB3311F1ZZ',
+        logo: '',
+        timezone: 'Asia/Kolkata',
+        currency: 'INR'
+      };
+
+      const finalSettings = { ...defaultSettings, ...settings };
+      console.log('🏢 Business settings retrieved');
+      
+      res.json(finalSettings);
+    } catch (error) {
+      console.error('❌ Error fetching business settings:', error);
+      res.status(500).json({ error: 'Failed to fetch business settings' });
+    }
+  });
+
+  app.post('/api/settings/business', async (req, res) => {
+    try {
+      console.log('💾 Saving business settings:', req.body);
+      
+      const { sqlite } = await import('@db');
+      
+      // Ensure settings table exists
+      sqlite.prepare(`
+        CREATE TABLE IF NOT EXISTS settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key TEXT NOT NULL UNIQUE,
+          value TEXT NOT NULL,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+
+      const upsertSetting = sqlite.prepare(`
+        INSERT INTO settings (key, value, updated_at) 
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET 
+          value = excluded.value,
+          updated_at = CURRENT_TIMESTAMP
+      `);
+
+      const transaction = sqlite.transaction((settings) => {
+        Object.entries(settings).forEach(([key, value]) => {
+          const serializedValue = typeof value === 'object' ? JSON.stringify(value) : value.toString();
+          upsertSetting.run(key, serializedValue);
+        });
+      });
+
+      transaction(req.body);
+
+      console.log('✅ Business settings saved successfully');
+      res.json({ 
+        success: true, 
+        message: 'Business settings saved successfully',
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error saving business settings:', error);
+      res.status(500).json({ 
+        error: 'Failed to save business settings',
+        message: error.message 
+      });
+    }
+  });
+
+  // POS Settings API endpoints
+  app.get('/api/settings/pos', async (req, res) => {
+    try {
+      console.log('🛒 Fetching POS settings');
+      
+      const { sqlite } = await import('@db');
+      
+      const posKeys = [
+        'quickSaleMode', 'barcodeScanning', 'customerRequired', 'discountEnabled',
+        'taxCalculation', 'roundingMethod', 'defaultPaymentMethod'
+      ];
+
+      const settings = {};
+      const getSettingQuery = sqlite.prepare('SELECT value FROM settings WHERE key = ?');
+
+      posKeys.forEach(key => {
+        const result = getSettingQuery.get(key);
+        if (result) {
+          try {
+            settings[key] = JSON.parse(result.value);
+          } catch {
+            settings[key] = result.value;
+          }
+        }
+      });
+
+      const defaultSettings = {
+        quickSaleMode: false,
+        barcodeScanning: true,
+        customerRequired: false,
+        discountEnabled: true,
+        taxCalculation: 'inclusive',
+        roundingMethod: 'round',
+        defaultPaymentMethod: 'cash'
+      };
+
+      const finalSettings = { ...defaultSettings, ...settings };
+      console.log('🛒 POS settings retrieved');
+      
+      res.json(finalSettings);
+    } catch (error) {
+      console.error('❌ Error fetching POS settings:', error);
+      res.status(500).json({ error: 'Failed to fetch POS settings' });
+    }
+  });
+
+  app.post('/api/settings/pos', async (req, res) => {
+    try {
+      console.log('💾 Saving POS settings:', req.body);
+      
+      const { sqlite } = await import('@db');
+      
+      const upsertSetting = sqlite.prepare(`
+        INSERT INTO settings (key, value, updated_at) 
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET 
+          value = excluded.value,
+          updated_at = CURRENT_TIMESTAMP
+      `);
+
+      const transaction = sqlite.transaction((settings) => {
+        Object.entries(settings).forEach(([key, value]) => {
+          const serializedValue = typeof value === 'object' ? JSON.stringify(value) : value.toString();
+          upsertSetting.run(key, serializedValue);
+        });
+      });
+
+      transaction(req.body);
+
+      console.log('✅ POS settings saved successfully');
+      res.json({ 
+        success: true, 
+        message: 'POS settings saved successfully',
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error saving POS settings:', error);
+      res.status(500).json({ 
+        error: 'Failed to save POS settings',
+        message: error.message 
+      });
+    }
+  });
+
   // Receipt Settings API endpoints
   app.get('/api/settings/receipt', async (req, res) => {
     try {
