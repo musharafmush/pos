@@ -87,14 +87,28 @@ window.addEventListener('error', (event) => {
     console.log('Chunk loading error detected, attempting refresh...');
     setTimeout(() => window.location.reload(), 1000);
   }
+  
+  // Handle connection errors
+  if (event.error?.message?.includes('Failed to fetch')) {
+    console.log('Connection error detected, attempting reconnection...');
+  }
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
   
   // Handle network errors gracefully
-  if (event.reason?.message?.includes('fetch')) {
+  if (event.reason?.message?.includes('fetch') || event.reason?.message?.includes('NetworkError')) {
     console.log('Network error detected, will retry...');
+    event.preventDefault();
+    return;
+  }
+  
+  // Handle API errors
+  if (event.reason?.status >= 400) {
+    console.log('API error detected:', event.reason.status);
+    event.preventDefault();
+    return;
   }
   
   event.preventDefault(); // Prevent the default browser behavior
