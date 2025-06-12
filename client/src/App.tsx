@@ -50,6 +50,7 @@ import ReceiptSettings from "./pages/receipt-settings";
 import PrinterReceiptEditor from "./pages/printer-receipt-editor";
 import ThermalPrinterSetup from "./pages/thermal-printer-setup";
 import EditOptions from "@/pages/edit-options";
+import AutoPrinterSetup from "@/pages/auto-printer-setup";
 
 function Router() {
   return (
@@ -105,6 +106,7 @@ function Router() {
       <ProtectedRoute path="/printer-receipt-editor" component={PrinterReceiptEditor} />
       <ProtectedRoute path="/thermal-printer-setup" component={ThermalPrinterSetup} />
       <ProtectedRoute path="/edit-options" component={EditOptions} />
+      <ProtectedRoute path="/auto-printer-setup" component={AutoPrinterSetup} />
       <Route component={NotFound} />
     </Switch>
   );

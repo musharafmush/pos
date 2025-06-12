@@ -1745,8 +1745,7 @@ export default function POSEnhanced() {
                   <h3 className="text-lg font-medium mb-2 opacity-90">Current Cash Balance</h3>
                   <div className="text-4xl font-bold mb-4">{formatCurrency(cashInHand)}</div>
                   <div className="bg-green-400/30 rounded-lg p-3">
-                    <div className="flex justify-between">
-                      <div className="text-center">
+                    <div className="flex justify-between"><div className="text-center">
                         <div className="text-sm opacity-80">Today's Sales</div>
                         <div className="font-semibold">₹0</div>
                       </div>
@@ -2323,9 +2322,9 @@ Terminal: POS-Enhanced
                       autoPrint: receiptSettings.printAutomatically,
                       defaultPrinter: receiptSettings.defaultPrinter
                     };
-                    
+
                     localStorage.setItem('receiptSettings', JSON.stringify(settingsToSave));
-                    
+
                     toast({
                       title: "Settings Saved",
                       description: "Receipt and printer settings have been updated successfully",
