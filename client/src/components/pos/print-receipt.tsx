@@ -488,8 +488,8 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       <div class="thermal-dotted"></div>
       ` : ''}
       
-      <div style="display: flex; font-weight: bold; font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 1mm;">
-        <div style="flex: 2;">Item</div>
+      <div style="display: flex; font-weight: bold; font-size: 12px; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 1mm;">
+        <div style="flex: 3;">Item</div>
         <div style="flex: 1; text-align: center;">Qty</div>
         <div style="flex: 1; text-align: right;">Rate</div>
         <div style="flex: 1; text-align: right;">Total</div>
@@ -497,23 +497,24 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       
       ${safeData.items.map((item: any) => `
         <div style="margin-bottom: 2mm; font-size: 12px;">
-          <div style="font-weight: bold; margin-bottom: 1mm; font-size: 13px;">
-            ${(item.productName || item.name || 'Item').substring(0, settings.paperWidth === 'thermal58' ? 20 : 30)}
+          <div style="font-weight: bold; margin-bottom: 0.5mm; font-size: 13px;">
+            ${(item.productName || item.name || 'Item').substring(0, settings.paperWidth === 'thermal58' ? 20 : 32)}
           </div>
           ${settings.showItemSKU ? `
-          <div style="font-size: 11px; color: #666; margin-bottom: 1mm;">
+          <div style="font-size: 10px; color: #666; margin-bottom: 1mm; font-style: italic;">
             ${item.productSku || item.sku || 'ITM000000'}
           </div>
           ` : ''}
           <div style="display: flex; font-size: 12px;">
-            <div style="flex: 2;"></div>
+            <div style="flex: 3;"></div>
             <div style="flex: 1; text-align: center;">${item.quantity || 1}</div>
             <div style="flex: 1; text-align: right;">${settings.currencySymbol}${Number(item.unitPrice || item.price || 100).toFixed(0)}</div>
             <div style="flex: 1; text-align: right; font-weight: bold;">${settings.currencySymbol}${Number(item.subtotal || item.total || ((item.quantity || 1) * (item.unitPrice || item.price || 100))).toFixed(0)}</div>
           </div>
-          ${settings.showMRP && settings.showSavings ? `
-          <div style="text-align: right; font-size: 10px; margin-top: 1mm; color: #4caf50;">
-            MRP: ${settings.currencySymbol}${Number((item.unitPrice || item.price || 100) + 20).toFixed(0)} | Save: ${settings.currencySymbol}${((item.unitPrice || item.price || 100) * 0.2).toFixed(0)}
+          ${settings.showMRP ? `
+          <div style="text-align: right; font-size: 11px; margin-top: 1mm; color: #666;">
+            <span style="color: #666;">MRP: ${settings.currencySymbol}${Number((item.unitPrice || item.price || 100) + 20).toFixed(0)}</span>
+            ${settings.showSavings ? ` | Save: ${settings.currencySymbol}${((item.unitPrice || item.price || 100) * 0.2).toFixed(0)}` : ''}
           </div>
           ` : ''}
         </div>
