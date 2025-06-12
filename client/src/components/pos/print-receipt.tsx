@@ -150,7 +150,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     impact: "'Impact', 'Arial Black', sans-serif"
   };
 
-  const receiptHtml = generateReceiptHTML({
+  const receiptHtml = generateThermalReceiptHTML({
         orderNumber: data.billNumber,
         createdAt: data.billDate,
         user: { name: data.salesMan },
@@ -180,67 +180,141 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
   const paperWidth = receiptSettings?.paperWidth || '80mm';
   const printCSS = `
     <style>
-      * { box-sizing: border-box; }
-      body { 
+      * { 
+        box-sizing: border-box; 
         margin: 0; 
-        padding: 8px; 
-        font-family: 'Courier New', monospace;
-        background: white;
-        color: black;
-        line-height: 1.2;
+        padding: 0; 
       }
+      
+      html, body { 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        font-family: 'Courier New', 'Consolas', monospace !important;
+        background: white !important;
+        color: black !important;
+        line-height: 1.1 !important;
+        font-size: ${paperWidth === 'thermal58' ? '10px' : paperWidth === 'thermal80' ? '11px' : '12px'} !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      
       .receipt { 
-        width: 100%; 
-        max-width: ${paperWidth === 'thermal58' ? '220px' : paperWidth === 'thermal80' ? '300px' : '400px'};
-        margin: 0 auto;
-        padding: 4px;
-        border: 1px solid #ddd;
-        background: white;
+        width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 2mm !important;
+        border: none !important;
+        background: white !important;
+        page-break-inside: avoid !important;
+        display: block !important;
       }
 
-      /* Print-specific styles */
+      /* Thermal Printer Optimized Styles */
+      @page { 
+        size: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} auto !important;
+        margin: 0mm !important; 
+        padding: 0mm !important;
+        border: none !important;
+      }
+
       @media print {
-        body { 
+        html, body { 
           margin: 0 !important; 
           padding: 0 !important; 
           background: white !important;
+          font-size: ${paperWidth === 'thermal58' ? '8pt' : paperWidth === 'thermal80' ? '9pt' : '10pt'} !important;
+          width: 100% !important;
+          height: auto !important;
         }
+        
         .receipt { 
-          width: ${paperWidth} !important;
+          width: 100% !important;
           max-width: none !important;
           margin: 0 !important;
-          padding: 2mm !important;
+          padding: 1.5mm !important;
           border: none !important;
-          font-size: ${paperWidth === 'thermal58' ? '8pt' : paperWidth === 'thermal80' ? '9pt' : '10pt'} !important;
-        }
-        @page { 
-          size: ${paperWidth} auto; 
-          margin: 0mm !important; 
+          box-shadow: none !important;
+          page-break-inside: avoid !important;
         }
 
-        /* Hide browser UI elements */
-        .no-print { display: none !important; }
+        /* Hide all non-essential elements for thermal printing */
+        .no-print, .print-instructions { 
+          display: none !important; 
+        }
+        
+        /* Ensure single page output */
+        * { 
+          page-break-inside: avoid !important; 
+        }
       }
 
-      /* Screen preview styles */
+      /* Screen preview styles - minimal for thermal format */
       @media screen {
         body {
-          background: #f5f5f5;
-          padding: 20px;
+          background: #f8f9fa !important;
+          padding: 10px !important;
+          display: flex !important;
+          justify-content: center !important;
+          align-items: flex-start !important;
+          min-height: 100vh !important;
         }
+        
         .receipt {
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          background: white;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+          background: white !important;
+          border: 1px solid #e0e0e0 !important;
+          border-radius: 2px !important;
         }
+        
         .print-instructions {
-          text-align: center;
-          margin: 20px 0;
-          padding: 10px;
-          background: #e3f2fd;
-          border-radius: 4px;
-          font-family: Arial, sans-serif;
-          font-size: 14px;
+          position: fixed !important;
+          top: 10px !important;
+          right: 10px !important;
+          background: rgba(33, 150, 243, 0.9) !important;
+          color: white !important;
+          padding: 8px 12px !important;
+          border-radius: 4px !important;
+          font-family: Arial, sans-serif !important;
+          font-size: 12px !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+          z-index: 1000 !important;
         }
+      }
+
+      /* Thermal specific typography */
+      .thermal-header {
+        font-weight: bold !important;
+        text-align: center !important;
+        font-size: ${paperWidth === 'thermal58' ? '12px' : '14px'} !important;
+        letter-spacing: 1px !important;
+        margin-bottom: 2mm !important;
+      }
+      
+      .thermal-line {
+        border-top: 1px solid #000 !important;
+        margin: 1.5mm 0 !important;
+        height: 0 !important;
+      }
+      
+      .thermal-dotted {
+        border-top: 1px dotted #000 !important;
+        margin: 1.5mm 0 !important;
+        height: 0 !important;
+      }
+      
+      .thermal-text {
+        font-size: ${paperWidth === 'thermal58' ? '9px' : '10px'} !important;
+        line-height: 1.2 !important;
+      }
+      
+      .thermal-total {
+        font-weight: bold !important;
+        font-size: ${paperWidth === 'thermal58' ? '11px' : '12px'} !important;
+        border: 1px solid #000 !important;
+        padding: 1mm !important;
+        text-align: center !important;
+        margin: 2mm 0 !important;
       }
     </style>
   `;
@@ -249,54 +323,53 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Receipt - ${data.billNumber}</title>
+        <title>Thermal Receipt - ${data.billNumber}</title>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'}, initial-scale=1.0">
         ${printCSS}
       </head>
       <body>
         <div class="print-instructions no-print">
-          <strong>Receipt Preview - ${data.billNumber}</strong><br>
-          Paper Size: ${paperWidth} | Use Ctrl+P to print<br>
-          <button onclick="window.print()" style="margin: 5px; padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🖨️ Print Now</button>
-          <button onclick="window.close()" style="margin: 5px; padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">❌ Close</button>
+          🖨️ Thermal Receipt: ${data.billNumber} | ${paperWidth}
+          <br><button onclick="window.print()" style="margin: 2px; padding: 4px 8px; background: #2196F3; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Print</button>
+          <button onclick="window.close()" style="margin: 2px; padding: 4px 8px; background: #f44336; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Close</button>
         </div>
+        
         <div class="receipt">${receiptHtml}</div>
 
         <script>
-          // Auto-focus the print window
+          // Thermal printer optimized script
           window.focus();
 
-          // Enhanced print handling
-          function autoPrint() {
+          function thermalPrint() {
             try {
-              window.print();
+              // Set print preferences for thermal printer
+              if (window.print) {
+                window.print();
+              }
             } catch (e) {
-              console.error('Auto-print failed:', e);
-              alert('Please use Ctrl+P to print or click the Print button above.');
+              console.error('Thermal print failed:', e);
             }
           }
 
-          // Auto-print after a short delay (optional)
-          ${receiptSettings?.autoPrint !== false ? 'setTimeout(autoPrint, 1000);' : ''}
+          // Auto-print for thermal printers
+          ${receiptSettings?.autoPrint !== false ? 'setTimeout(thermalPrint, 800);' : ''}
 
-          // Handle print completion
-          window.onafterprint = function() {
-            console.log('Print dialog closed');
-            // Optionally auto-close after printing
-            // setTimeout(() => window.close(), 2000);
-          };
-
-          // Keyboard shortcuts
+          // Optimized keyboard handling
           document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'p') {
               e.preventDefault();
-              window.print();
+              thermalPrint();
             }
             if (e.key === 'Escape') {
               window.close();
             }
           });
+
+          // Handle after print
+          window.onafterprint = function() {
+            console.log('Thermal print completed');
+          };
         </script>
       </body>
     </html>
@@ -324,7 +397,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
   }
 };
 
-  const generateReceiptHTML = (sale: any, settings: any) => {
+  const generateThermalReceiptHTML = (sale: any, settings: any) => {
     // Safely handle date parsing
     let formattedDate = new Date().toLocaleDateString('en-IN');
     let formattedTime = new Date().toLocaleTimeString('en-IN', { hour12: true });
@@ -369,163 +442,134 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     };
 
     return `
-      <div style="
-        width: ${settings.paperWidth === 'thermal58' ? '58mm' : settings.paperWidth === 'thermal80' ? '80mm' : '112mm'};
-        font-family: 'Courier New', monospace;
-        font-size: ${settings.paperWidth === 'thermal58' ? '9px' : '10px'};
-        line-height: 1.3;
-        margin: 0;
-        padding: 2mm;
-        background: white;
-        color: black;
-      ">
-        <!-- Business Header -->
-        <div style="text-align: center; margin-bottom: 4mm;">
-          <div style="font-size: 16px; font-weight: bold; margin-bottom: 2mm; letter-spacing: 2px;">
-            ${settings.businessName || 'M MART'}
-          </div>
-          <div style="font-size: 12px; margin-bottom: 2mm;">
-            Professional Retail Solution
-          </div>
-          <div style="font-size: 9px; margin-bottom: 1mm; font-weight: bold; color: #d32f2f;">
-            GST NO: ${settings.taxId || '33GSPDB3311F1ZZ'}
-          </div>
-          <div style="font-size: 9px; margin-bottom: 1mm;">
-            ${(settings.businessAddress || '123 Business Street, City, State').replace(/\n/g, '<br>')}
-          </div>
-          <div style="font-size: 9px; margin-bottom: 2mm;">
-            Tel: ${settings.phoneNumber || '+91-9876543210'}
-          </div>
+      <div class="thermal-header">
+        ${settings.businessName || 'M MART'}
+      </div>
+      
+      <div style="text-align: center; font-size: 10px; margin-bottom: 2mm;">
+        Professional Retail Solution
+      </div>
+      
+      <div style="text-align: center; font-size: 8px; font-weight: bold; color: #333; margin-bottom: 1mm;">
+        GST: ${settings.taxId || '33GSPDB3311F1ZZ'}
+      </div>
+      
+      <div style="text-align: center; font-size: 8px; margin-bottom: 2mm;">
+        ${(settings.businessAddress || 'Business Address').replace(/\n/g, '<br>')}
+      </div>
+      
+      <div style="text-align: center; font-size: 8px; margin-bottom: 2mm;">
+        Tel: ${settings.phoneNumber || '+91-9876543210'}
+      </div>
+      
+      <div class="thermal-line"></div>
+      
+      <div class="thermal-text" style="margin-bottom: 2mm;">
+        <div style="display: flex; justify-content: space-between;">
+          <span>Bill:</span><strong>${safeData.orderNumber}</strong>
         </div>
-
-        <!-- Horizontal Line -->
-        <div style="border-top: 1px solid #000; margin: 3mm 0;"></div>
-
-        <!-- Bill Details -->
-        <div style="margin-bottom: 3mm;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
-            <span>Bill No:</span>
-            <span style="font-weight: bold;">${safeData.orderNumber}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
-            <span>Date:</span>
-            <span>${formattedDate}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
-            <span>Time:</span>
-            <span>${formattedTime}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
-            <span>Cashier:</span>
-            <span>${safeData.user.name}</span>
-          </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Date:</span><span>${formattedDate}</span>
         </div>
-
-        <!-- Dotted Line -->
-        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
-
-        ${settings.showCustomerDetails ? `
-        <!-- Customer Details -->
-        <div style="margin-bottom: 3mm;">
-          <div style="font-weight: bold; margin-bottom: 1mm;">Customer Details:</div>
-          <div>Name: ${safeData.customer.name}</div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Time:</span><span>${formattedTime}</span>
         </div>
-
-        <!-- Dotted Line -->
-        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
-        ` : ''}
-
-        <!-- Items Header -->
-        <div style="display: flex; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 2mm;">
-          <div style="flex: 2;">Item</div>
-          <div style="flex: 1; text-align: center;">Qty</div>
-          <div style="flex: 1; text-align: right;">Rate</div>
-          <div style="flex: 1; text-align: right;">Amt</div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Cashier:</span><span>${safeData.user.name}</span>
         </div>
-
-        <!-- Items List -->
-        ${safeData.items.map((item: any) => `
-          <div style="margin-bottom: 3mm;">
-            <div style="font-weight: bold; margin-bottom: 1mm;">
-              ${item.productName || item.name || 'Item'}
-            </div>
-            ${settings.showItemSKU ? `
-            <div style="font-size: 8px; color: #666; margin-bottom: 1mm;">
-              ${item.productSku || item.sku || 'ITM264973991'}
-            </div>
-            ` : ''}
-            <div style="display: flex;">
-              <div style="flex: 2;"></div>
-              <div style="flex: 1; text-align: center;">${item.quantity || 1}</div>
-              <div style="flex: 1; text-align: right;">${settings.currencySymbol}${Number(item.unitPrice || item.price || 100).toFixed(0)}</div>
-              <div style="flex: 1; text-align: right;">${settings.currencySymbol}${Number(item.subtotal || item.total || ((item.quantity || 1) * (item.unitPrice || item.price || 100))).toFixed(0)}</div>
-            </div>
-            ${settings.showMRP && settings.showSavings ? `
-            <div style="text-align: right; font-size: 8px; margin-top: 1mm; color: #4caf50;">
-              MRP: ${settings.currencySymbol}${Number((item.unitPrice || item.price || 100) + 20).toFixed(0)} Save: ${settings.currencySymbol}${((item.unitPrice || item.price || 100) * 0.2).toFixed(0)}
-            </div>
-            ` : ''}
+      </div>
+      
+      <div class="thermal-dotted"></div>
+      
+      ${settings.showCustomerDetails ? `
+      <div class="thermal-text" style="margin-bottom: 2mm;">
+        <strong>Customer:</strong> ${safeData.customer.name}
+      </div>
+      <div class="thermal-dotted"></div>
+      ` : ''}
+      
+      <div style="display: flex; font-weight: bold; font-size: 9px; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 1mm;">
+        <div style="flex: 2;">Item</div>
+        <div style="flex: 1; text-align: center;">Qty</div>
+        <div style="flex: 1; text-align: right;">Rate</div>
+        <div style="flex: 1; text-align: right;">Total</div>
+      </div>
+      
+      ${safeData.items.map((item: any) => `
+        <div style="margin-bottom: 2mm; font-size: 8px;">
+          <div style="font-weight: bold; margin-bottom: 1mm; font-size: 9px;">
+            ${(item.productName || item.name || 'Item').substring(0, ${settings.paperWidth === 'thermal58' ? '20' : '30'})}
           </div>
-        `).join('')}
-
-        <!-- Dotted Line -->
-        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
-
-        <!-- Totals Section -->
-        <div style="margin-bottom: 3mm;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
-            <span>Sub Total:</span>
-            <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
+          ${settings.showItemSKU ? `
+          <div style="font-size: 7px; color: #666; margin-bottom: 1mm;">
+            ${item.productSku || item.sku || 'ITM000000'}
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
-            <span>Taxable Amount:</span>
-            <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
+          ` : ''}
+          <div style="display: flex; font-size: 8px;">
+            <div style="flex: 2;"></div>
+            <div style="flex: 1; text-align: center;">${item.quantity || 1}</div>
+            <div style="flex: 1; text-align: right;">${settings.currencySymbol}${Number(item.unitPrice || item.price || 100).toFixed(0)}</div>
+            <div style="flex: 1; text-align: right; font-weight: bold;">${settings.currencySymbol}${Number(item.subtotal || item.total || ((item.quantity || 1) * (item.unitPrice || item.price || 100))).toFixed(0)}</div>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 2mm;">
-            <span>GST (${safeData.tax}%):</span>
-            <span>${settings.currencySymbol}${Number(safeData.taxAmount).toFixed(0)}</span>
+          ${settings.showMRP && settings.showSavings ? `
+          <div style="text-align: right; font-size: 7px; margin-top: 1mm; color: #4caf50;">
+            MRP: ${settings.currencySymbol}${Number((item.unitPrice || item.price || 100) + 20).toFixed(0)} | Save: ${settings.currencySymbol}${((item.unitPrice || item.price || 100) * 0.2).toFixed(0)}
           </div>
-
-          <div style="display: flex; justify-content: space-between; ${settings.boldTotals ? 'font-weight: bold;' : ''} font-size: 12px; border: 2px solid #000; padding: 2mm; margin: 2mm 0; ${settings.headerBackground ? 'background: #f5f5f5;' : ''}">
-            <span>Total:</span>
-            <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
-          </div>
+          ` : ''}
         </div>
-
-        <!-- Payment Details -->
-        ${safeData.paymentMethod ? `
-        <div style="margin-bottom: 3mm;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
-            <span>Payment Method:</span>
-            <span style="font-weight: bold;">${safeData.paymentMethod.toUpperCase()}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
-            <span>Amount Paid:</span>
-            <span style="font-weight: bold;">${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
-          </div>
+      `).join('')}
+      
+      <div class="thermal-dotted"></div>
+      
+      <div class="thermal-text" style="margin-bottom: 2mm;">
+        <div style="display: flex; justify-content: space-between;">
+          <span>Sub Total:</span>
+          <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
         </div>
-        ` : ''}
-
-        <!-- Dotted Line -->
-        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
-
-        <!-- Footer -->
-        <div style="text-align: center; margin-top: 3mm;">
-          <div style="font-weight: bold; margin-bottom: 2mm; font-size: 12px;">
-            🙏 धन्यवाद | Thank you! 🙏
-          </div>
-          <div style="font-size: 9px; margin-bottom: 2mm;">
-            ${(settings.receiptFooter || 'Thank you for shopping with us!').replace(/\n/g, '<br>')}
-          </div>
-          <div style="font-size: 8px; color: #666; margin-bottom: 1mm;">
-            Items: ${safeData.items.length} | Total Qty: ${safeData.items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)} | Savings: ${settings.currencySymbol}${(safeData.items.reduce((sum: number) => sum + 20, 0)).toFixed(2)}
-          </div>
-          <div style="font-size: 8px; color: #666; margin-bottom: 1mm;">
-            Receipt: ${safeData.orderNumber} | Terminal: POS-Enhanced
-          </div>
-          <div style="font-size: 8px; color: #666;">
-            ✨ Powered by Awesome Shop POS ✨
-          </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Taxable:</span>
+          <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>GST (${safeData.tax}%):</span>
+          <span>${settings.currencySymbol}${Number(safeData.taxAmount).toFixed(0)}</span>
+        </div>
+      </div>
+      
+      <div class="thermal-total">
+        <div style="display: flex; justify-content: space-between; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'};">
+          <span>TOTAL:</span>
+          <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
+        </div>
+      </div>
+      
+      ${safeData.paymentMethod ? `
+      <div class="thermal-text" style="margin: 2mm 0;">
+        <div style="display: flex; justify-content: space-between;">
+          <span>Payment:</span>
+          <strong>${safeData.paymentMethod.toUpperCase()}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Paid:</span>
+          <strong>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</strong>
+        </div>
+      </div>
+      ` : ''}
+      
+      <div class="thermal-dotted"></div>
+      
+      <div style="text-align: center; margin: 2mm 0;">
+        <div style="font-weight: bold; font-size: 10px; margin-bottom: 1mm;">
+          🙏 Thank You! 🙏
+        </div>
+        <div style="font-size: 8px; margin-bottom: 1mm;">
+          ${(settings.receiptFooter || 'Visit Again Soon!').split('\n')[0]}
+        </div>
+        <div style="font-size: 7px; color: #666;">
+          Items: ${safeData.items.length} | Qty: ${safeData.items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)}
+        </div>
+        <div style="font-size: 7px; color: #666;">
+          ${safeData.orderNumber} | POS-Thermal
         </div>
       </div>
     `;
