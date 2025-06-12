@@ -160,22 +160,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/auth/register', async (req, res) => {
     try {
+      console.log('Registration request received:', req.body);
+      
       // Validate user data with more specific error messages
       try {
         const userData = schema.userInsertSchema.parse(req.body);
+        console.log('User data validated:', { ...userData, password: '[HIDDEN]' });
 
         // If username is provided, check if it already exists
         if (userData.username) {
           const existingUsername = await storage.getUserByUsername(userData.username);
           if (existingUsername) {
-            return res.status(400).json({ message: 'Username already exists' });
+            console.log('Username already exists:', userData.username);
+            return res.status(400).json({ message: 'Username already exists. Please choose a different username.' });
           }
         }
 
         // Always check if email already exists since it's required now
         const existingEmail = await storage.getUserByEmail(userData.email);
         if (existingEmail) {
-          return res.status(400).json({ message: 'Email already exists' });
+          console.log('Email already exists:', userData.email);
+          return res.status(400).json({ message: 'Email address already exists. Please use a different email or try logging in.' });
         }
 
         // Hash password
@@ -210,13 +215,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (zodError) {
         if (zodError instanceof z.ZodError) {
+          console.log('Validation errors:', zodError.errors);
           // Format validation errors for better readability
           const formattedErrors = zodError.errors.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }));
           return res.status(400).json({ 
-            message: 'Validation failed',
+            message: 'Validation failed: ' + formattedErrors.map(e => `${e.field}: ${e.message}`).join(', '),
             errors: formattedErrors 
           });
         }
@@ -224,7 +230,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error('Error registering user:', error);
-      res.status(500).json({ message: 'Internal server error during registration' });
+      res.status(500).json({ 
+        message: 'Registration failed. Please try again or contact support.',
+        details: error.message || 'Unknown error occurred'
+      });
     }
   });
 
