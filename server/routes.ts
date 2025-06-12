@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
 import { z } from "zod";
-import * * as schema from "../shared/schema.js";
+import * as schema from "../shared/schema.js";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import session from "express-session";
