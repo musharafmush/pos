@@ -25,10 +25,6 @@ interface ThermalPrinterSettings {
   drawer: boolean;
   autoConnect: boolean;
   retryAttempts: number;
-  modernLayout: boolean;
-  qrCodeEnabled: boolean;
-  qrCodeType: 'invoice' | 'payment' | 'feedback';
-  qrCodeSize: 'small' | 'medium' | 'large';
 }
 
 interface ThermalPrinterProps {
@@ -62,10 +58,6 @@ export const ThermalPrinter: React.FC<ThermalPrinterProps> = ({
     drawer: false,
     autoConnect: true,
     retryAttempts: 3,
-    modernLayout: true,
-    qrCodeEnabled: true,
-    qrCodeType: 'invoice',
-    qrCodeSize: 'medium',
     ...externalSettings
   });
 
@@ -145,24 +137,20 @@ export const ThermalPrinter: React.FC<ThermalPrinterProps> = ({
       const thermalSettings = {
         paperWidth: settings.paperWidth,
         fontSize: 'medium' as const,
-        fontFamily: settings.modernLayout ? 'arial' as const : 'courier' as const,
+        fontFamily: 'courier' as const,
         headerStyle: 'centered' as const,
         showCustomerDetails: true,
         showItemSKU: true,
         showMRP: true,
         showSavings: true,
-        showQRCode: settings.qrCodeEnabled,
-        qrCodeType: settings.qrCodeType,
-        qrCodeSize: settings.qrCodeSize,
         autoPrint: false,
-        businessName: 'M MART',
+        businessName: 'M MART - Thermal Test',
         businessAddress: 'Test Address for Thermal Printer',
         phoneNumber: '+91-9876543210',
         taxId: '33GSPDB3311F1ZZ',
         receiptFooter: 'Thermal Printer Test Receipt\nThank you for your business!',
         currencySymbol: '₹',
-        thermalOptimized: true,
-        modernLayout: settings.modernLayout
+        thermalOptimized: true
       };
 
       // Import and use the print function
@@ -411,68 +399,6 @@ export const ThermalPrinter: React.FC<ThermalPrinterProps> = ({
               onCheckedChange={(checked) => updateSetting('autoConnect', checked)}
             />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Receipt Layout Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Receipt Layout & QR Code</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Modern Layout Design</Label>
-            <Switch 
-              checked={settings.modernLayout}
-              onCheckedChange={(checked) => updateSetting('modernLayout', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label>Enable QR Code</Label>
-            <Switch 
-              checked={settings.qrCodeEnabled}
-              onCheckedChange={(checked) => updateSetting('qrCodeEnabled', checked)}
-            />
-          </div>
-
-          {settings.qrCodeEnabled && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>QR Code Type</Label>
-                <Select 
-                  value={settings.qrCodeType} 
-                  onValueChange={(value: any) => updateSetting('qrCodeType', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="invoice">Invoice Details</SelectItem>
-                    <SelectItem value="payment">Payment QR</SelectItem>
-                    <SelectItem value="feedback">Feedback Link</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label>QR Code Size</Label>
-                <Select 
-                  value={settings.qrCodeSize} 
-                  onValueChange={(value: any) => updateSetting('qrCodeSize', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="small">Small (60px)</SelectItem>
-                    <SelectItem value="medium">Medium (80px)</SelectItem>
-                    <SelectItem value="large">Large (100px)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
