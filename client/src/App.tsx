@@ -46,8 +46,9 @@ import Brands from "./pages/brands";
 import AccountsDashboard from "./pages/accounts-dashboard";
 import SaleReturnsDashboard from "./pages/sale-returns-dashboard";
 import ProfitManagement from "./pages/profit-management";
-import ReceiptSettings from "@/pages/receipt-settings";
-import PrinterReceiptEditor from "@/pages/printer-receipt-editor";
+import ReceiptSettings from "./pages/receipt-settings";
+import PrinterReceiptEditor from "./pages/printer-receipt-editor";
+import ThermalPrinterSetup from "./pages/thermal-printer-setup";
 import EditOptions from "@/pages/edit-options";
 
 function Router() {
@@ -102,6 +103,7 @@ function Router() {
       <ProtectedRoute path="/accounts-dashboard" component={AccountsDashboard} />
       <ProtectedRoute path="/receipt-settings" component={ReceiptSettings} />
       <ProtectedRoute path="/printer-receipt-editor" component={PrinterReceiptEditor} />
+      <ProtectedRoute path="/thermal-printer-setup" component={ThermalPrinterSetup} />
       <ProtectedRoute path="/edit-options" component={EditOptions} />
       <Route component={NotFound} />
     </Switch>
