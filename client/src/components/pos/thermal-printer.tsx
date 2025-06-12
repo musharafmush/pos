@@ -47,7 +47,7 @@ export const ThermalPrinter: React.FC<ThermalPrinterProps> = ({
     printerType: 'usb',
     paperWidth: '80mm',
     baudRate: '9600',
-    deviceName: 'Thermal Printer',
+    deviceName: 'Xprinter XP-420B',
     ipAddress: '192.168.1.100',
     port: '9100',
     characterSet: 'cp437',

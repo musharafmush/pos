@@ -155,6 +155,61 @@ const ThermalPrinterSetup: React.FC = () => {
           <TabsContent value="troubleshoot" className="space-y-4">
             <Card>
               <CardHeader>
+                <CardTitle>🖨️ Xprinter XP-420B Configuration Guide</CardTitle>
+                <CardDescription>
+                  Optimal settings for Xprinter XP-420B thermal receipt printer
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">📋 Step-by-Step Configuration</h4>
+                  <div className="space-y-2 text-sm text-blue-800">
+                    <div><strong>1. Set Custom Paper Size:</strong></div>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Control Panel → Devices and Printers</li>
+                      <li>Right-click Xprinter XP-420B → Printing Preferences</li>
+                      <li>Advanced/Page Setup → Width: 72mm, Height: 297mm</li>
+                      <li>Save as "Thermal Receipt"</li>
+                    </ul>
+                    
+                    <div className="mt-3"><strong>2. Print Dialog Settings:</strong></div>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>More Settings → Margins: None</li>
+                      <li>Background Graphics: ✅ Enabled</li>
+                      <li>Scale: 100%</li>
+                      <li>Paper Size: 72mm x Receipt</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-3 bg-green-50">
+                    <h4 className="font-medium text-sm text-green-900">✅ Correct Settings</h4>
+                    <ul className="text-sm text-green-800 mt-1 space-y-1">
+                      <li>• Paper: 72mm × 297mm</li>
+                      <li>• Margins: None (0mm)</li>
+                      <li>• Scale: 100%</li>
+                      <li>• Background Graphics: ON</li>
+                      <li>• Driver: Official Xprinter</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="border rounded-lg p-3 bg-red-50">
+                    <h4 className="font-medium text-sm text-red-900">❌ Common Issues</h4>
+                    <ul className="text-sm text-red-800 mt-1 space-y-1">
+                      <li>• Wrong paper size (A4/Letter)</li>
+                      <li>• Large margins cutting content</li>
+                      <li>• Scale not 100%</li>
+                      <li>• Background graphics disabled</li>
+                      <li>• Generic/wrong driver</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Troubleshooting Guide</CardTitle>
                 <CardDescription>
                   Common issues and solutions for thermal printers

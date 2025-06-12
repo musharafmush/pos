@@ -200,22 +200,26 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       }
       
       .receipt { 
-        width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
+        width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '72mm' : '112mm'} !important;
         max-width: none !important;
         margin: 0 !important;
-        padding: 2mm !important;
+        padding: 1mm !important;
         border: none !important;
         background: white !important;
         page-break-inside: avoid !important;
         display: block !important;
       }
 
-      /* Thermal Printer Optimized Styles */
+      /* Xprinter XP-420B Optimized Styles */
       @page { 
-        size: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} auto !important;
+        size: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '72mm' : '112mm'} 297mm !important;
         margin: 0mm !important; 
         padding: 0mm !important;
         border: none !important;
+        /* Ensure background graphics are printed */
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       @media print {
@@ -223,19 +227,26 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           margin: 0 !important; 
           padding: 0 !important; 
           background: white !important;
-          font-size: ${paperWidth === 'thermal58' ? '11pt' : paperWidth === 'thermal80' ? '13pt' : '15pt'} !important;
+          font-size: ${paperWidth === 'thermal58' ? '11pt' : paperWidth === 'thermal80' ? '12pt' : '15pt'} !important;
           width: 100% !important;
           height: auto !important;
+          /* Enable background graphics for Xprinter */
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         
         .receipt { 
           width: 100% !important;
-          max-width: none !important;
+          max-width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '72mm' : '112mm'} !important;
           margin: 0 !important;
-          padding: 1.5mm !important;
+          padding: 0.5mm !important;
           border: none !important;
           box-shadow: none !important;
           page-break-inside: avoid !important;
+          /* Ensure proper scaling for Xprinter */
+          transform: scale(1.0) !important;
+          transform-origin: top left !important;
         }
 
         /* Hide all non-essential elements for thermal printing */
@@ -243,9 +254,15 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           display: none !important; 
         }
         
-        /* Ensure single page output */
+        /* Ensure single page output and proper margins */
         * { 
           page-break-inside: avoid !important; 
+        }
+        
+        /* Xprinter specific optimizations */
+        .thermal-line, .thermal-dotted {
+          background: black !important;
+          border-color: black !important;
         }
       }
 
@@ -330,20 +347,60 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       </head>
       <body>
         <div class="print-instructions no-print">
-          🖨️ Thermal Receipt: ${data.billNumber} | ${paperWidth}
-          <br><button onclick="window.print()" style="margin: 2px; padding: 4px 8px; background: #2196F3; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Print</button>
+          🖨️ Xprinter XP-420B Receipt: ${data.billNumber} | ${paperWidth}
+          <br><small>Paper: 72mm x 297mm | Scale: 100% | Margins: None</small>
+          <br><button onclick="xprinterOptimizedPrint()" style="margin: 2px; padding: 4px 8px; background: #2196F3; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Print (Optimized)</button>
+          <button onclick="window.print()" style="margin: 2px; padding: 4px 8px; background: #4CAF50; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Standard Print</button>
           <button onclick="window.close()" style="margin: 2px; padding: 4px 8px; background: #f44336; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Close</button>
         </div>
         
         <div class="receipt">${receiptHtml}</div>
 
         <script>
-          // Thermal printer optimized script
+          // Xprinter XP-420B optimized script
           window.focus();
+
+          function xprinterOptimizedPrint() {
+            try {
+              // Show Xprinter configuration reminder
+              const confirmed = confirm(
+                'Xprinter XP-420B Settings Check:\\n\\n' +
+                '✅ Paper Size: 72mm x 297mm (or "Thermal Receipt")\\n' +
+                '✅ Margins: None\\n' +
+                '✅ Scale: 100%\\n' +
+                '✅ Background Graphics: Enabled\\n' +
+                '✅ Driver: Official Xprinter XP-420B\\n\\n' +
+                'Continue with optimized print?'
+              );
+              
+              if (confirmed) {
+                // Apply Xprinter-specific print settings
+                document.body.style.transform = 'scale(1.0)';
+                document.body.style.transformOrigin = 'top left';
+                
+                // Ensure all graphics elements are visible
+                const elements = document.querySelectorAll('.thermal-line, .thermal-dotted, .thermal-total');
+                elements.forEach(el => {
+                  el.style.background = 'black';
+                  el.style.borderColor = 'black';
+                  el.style.webkitPrintColorAdjust = 'exact';
+                  el.style.colorAdjust = 'exact';
+                  el.style.printColorAdjust = 'exact';
+                });
+                
+                setTimeout(() => {
+                  window.print();
+                }, 200);
+              }
+            } catch (e) {
+              console.error('Xprinter optimized print failed:', e);
+              alert('Print failed. Using standard print instead.');
+              window.print();
+            }
+          }
 
           function thermalPrint() {
             try {
-              // Set print preferences for thermal printer
               if (window.print) {
                 window.print();
               }
@@ -352,24 +409,47 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             }
           }
 
-          // Auto-print for thermal printers
-          ${receiptSettings?.autoPrint !== false ? 'setTimeout(thermalPrint, 800);' : ''}
+          // Auto-print for thermal printers (with Xprinter optimization)
+          ${receiptSettings?.autoPrint !== false ? 'setTimeout(xprinterOptimizedPrint, 800);' : ''}
 
           // Optimized keyboard handling
           document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'p') {
               e.preventDefault();
-              thermalPrint();
+              xprinterOptimizedPrint();
             }
             if (e.key === 'Escape') {
               window.close();
             }
           });
 
-          // Handle after print
+          // Handle after print with status feedback
           window.onafterprint = function() {
-            console.log('Thermal print completed');
+            console.log('Xprinter thermal print completed');
+            // Optional: Show success message
+            setTimeout(() => {
+              if (confirm('Print completed! Close window?')) {
+                window.close();
+              }
+            }, 1000);
           };
+
+          // Add print configuration helper
+          function showXprinterConfig() {
+            alert(
+              'Xprinter XP-420B Configuration Guide:\\n\\n' +
+              '1. Control Panel > Devices and Printers\\n' +
+              '2. Right-click Xprinter XP-420B > Printing Preferences\\n' +
+              '3. Advanced/Page Setup:\\n' +
+              '   - Width: 72mm\\n' +
+              '   - Height: 297mm\\n' +
+              '   - Save as "Thermal Receipt"\\n\\n' +
+              '4. In Print Dialog:\\n' +
+              '   - More Settings > Margins: None\\n' +
+              '   - Background Graphics: Enabled\\n' +
+              '   - Scale: 100%'
+            );
+          }
         </script>
       </body>
     </html>
