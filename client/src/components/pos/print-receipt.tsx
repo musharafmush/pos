@@ -57,11 +57,14 @@ export interface ReceiptCustomization {
   showSavings: boolean;
   showBarcode: boolean;
   showQRCode: boolean;
+  qrCodeType: 'invoice' | 'payment' | 'feedback';
+  qrCodeSize: 'small' | 'medium' | 'large';
 
   // Colors and Styling
   headerBackground: boolean;
   boldTotals: boolean;
   separatorStyle: 'solid' | 'dashed' | 'dotted';
+  modernLayout: boolean;
 
   // Additional Info
   showTermsConditions: boolean;
@@ -324,6 +327,14 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
   }
 };
 
+  // QR Code generation function
+  const generateQRCode = (data: string, size: string = 'medium') => {
+    const sizes = { small: 80, medium: 120, large: 160 };
+    const qrSize = sizes[size] || 120;
+    const qrCodeURL = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(data)}&format=png&margin=10`;
+    return qrCodeURL;
+  };
+
   const generateReceiptHTML = (sale: any, settings: any) => {
     // Safely handle date parsing
     let formattedDate = new Date().toLocaleDateString('en-IN');
@@ -368,10 +379,26 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       paymentMethod: sale?.paymentMethod || 'CASH'
     };
 
+    // Generate QR code data based on type
+    const getQRCodeData = () => {
+      switch (settings.qrCodeType) {
+        case 'payment':
+          return `upi://pay?pa=merchant@bank&pn=${encodeURIComponent(settings.businessName)}&am=${safeData.total}&cu=INR&tn=Bill%20${safeData.orderNumber}`;
+        case 'feedback':
+          return `https://feedback.example.com/rate?invoice=${safeData.orderNumber}`;
+        case 'invoice':
+        default:
+          return `Invoice: ${safeData.orderNumber}\nDate: ${formattedDate}\nAmount: ${settings.currencySymbol}${safeData.total}\nBusiness: ${settings.businessName}`;
+      }
+    };
+
+    const modernLayout = settings.modernLayout;
+    const paperWidth = settings.paperWidth === 'thermal58' ? '58mm' : settings.paperWidth === 'thermal80' ? '80mm' : '112mm';
+
     return `
       <div style="
-        width: ${settings.paperWidth === 'thermal58' ? '58mm' : settings.paperWidth === 'thermal80' ? '80mm' : '112mm'};
-        font-family: 'Courier New', monospace;
+        width: ${paperWidth};
+        font-family: ${modernLayout ? "'Arial', sans-serif" : "'Courier New', monospace"};
         font-size: ${settings.paperWidth === 'thermal58' ? '9px' : '10px'};
         line-height: 1.3;
         margin: 0;
@@ -380,16 +407,28 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         color: black;
       ">
         <!-- Business Header -->
-        <div style="text-align: center; margin-bottom: 4mm;">
-          <div style="font-size: 16px; font-weight: bold; margin-bottom: 2mm; letter-spacing: 2px;">
+        <div style="text-align: center; margin-bottom: 4mm; ${modernLayout ? 'border-bottom: 2px solid #333; padding-bottom: 3mm;' : ''}">
+          <div style="font-size: ${modernLayout ? '18px' : '16px'}; font-weight: bold; margin-bottom: 2mm; letter-spacing: ${modernLayout ? '1px' : '2px'}; ${modernLayout ? 'color: #2c3e50;' : ''}">
             ${settings.businessName || 'M MART'}
           </div>
+          ${modernLayout ? `
+          <div style="font-size: 10px; color: #7f8c8d; margin-bottom: 2mm;">
+            TAX ID: ${settings.taxId || '33GSPDB3311F1ZZ'}
+          </div>
+          <div style="font-size: 9px; color: #34495e; margin-bottom: 1mm;">
+            Invoice Date: ${formattedDate} ${formattedTime}
+          </div>
+          <div style="font-size: 9px; color: #34495e; margin-bottom: 2mm;">
+            SER # ${safeData.orderNumber}
+          </div>
+          ` : `
           <div style="font-size: 12px; margin-bottom: 2mm;">
             Professional Retail Solution
           </div>
           <div style="font-size: 9px; margin-bottom: 1mm; font-weight: bold; color: #d32f2f;">
             GST NO: ${settings.taxId || '33GSPDB3311F1ZZ'}
           </div>
+          `}
           <div style="font-size: 9px; margin-bottom: 1mm;">
             ${(settings.businessAddress || '123 Business Street, City, State').replace(/\n/g, '<br>')}
           </div>
@@ -398,6 +437,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           </div>
         </div>
 
+        ${!modernLayout ? `
         <!-- Horizontal Line -->
         <div style="border-top: 1px solid #000; margin: 3mm 0;"></div>
 
@@ -420,21 +460,50 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             <span>${safeData.user.name}</span>
           </div>
         </div>
+        ` : ''}
 
-        <!-- Dotted Line -->
-        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
-
-        ${settings.showCustomerDetails ? `
-        <!-- Customer Details -->
-        <div style="margin-bottom: 3mm;">
-          <div style="font-weight: bold; margin-bottom: 1mm;">Customer Details:</div>
-          <div>Name: ${safeData.customer.name}</div>
-        </div>
-
+        ${!modernLayout ? `
         <!-- Dotted Line -->
         <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
         ` : ''}
 
+        ${settings.showCustomerDetails ? `
+        <!-- Customer Details -->
+        <div style="margin-bottom: 3mm; ${modernLayout ? 'background: #f8f9fa; padding: 2mm; border-radius: 2mm;' : ''}">
+          <div style="font-weight: bold; margin-bottom: 1mm; ${modernLayout ? 'color: #495057;' : ''}">Customer: ${safeData.customer.name}</div>
+        </div>
+        ` : ''}
+
+        ${!modernLayout ? `
+        <!-- Dotted Line -->
+        <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
+        ` : ''}
+
+        <!-- Items Section -->
+        ${modernLayout ? `
+        <div style="border: 1px solid #dee2e6; border-radius: 3mm; overflow: hidden; margin-bottom: 3mm;">
+          <!-- Items Header -->
+          <div style="background: #e9ecef; display: flex; font-weight: bold; padding: 2mm; border-bottom: 1px solid #dee2e6;">
+            <div style="flex: 2; color: #495057;">Description</div>
+            <div style="flex: 1; text-align: center; color: #495057;">Qty</div>
+            <div style="flex: 1; text-align: right; color: #495057;">SubTotal</div>
+          </div>
+          
+          <!-- Items List -->
+          ${safeData.items.map((item: any, index: number) => `
+            <div style="padding: 2mm; ${index > 0 ? 'border-top: 1px solid #f1f3f4;' : ''}">
+              <div style="font-weight: 500; margin-bottom: 1mm; color: #212529;">
+                ${item.productName || item.name || 'Item'}
+              </div>
+              <div style="display: flex; align-items: center;">
+                <div style="flex: 2; font-size: 9px; color: #6c757d;"></div>
+                <div style="flex: 1; text-align: center; font-weight: 500;">${item.quantity || 1}</div>
+                <div style="flex: 1; text-align: right; font-weight: bold;">${settings.currencySymbol} ${Number(item.subtotal || item.total || ((item.quantity || 1) * (item.unitPrice || item.price || 100))).toFixed(2)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        ` : `
         <!-- Items Header -->
         <div style="display: flex; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 2mm;">
           <div style="flex: 2;">Item</div>
@@ -467,7 +536,27 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             ` : ''}
           </div>
         `).join('')}
+        `}
 
+        ${modernLayout ? `
+        <!-- Modern Totals Section -->
+        <div style="margin-bottom: 3mm;">
+          <div style="display: flex; justify-content: space-between; padding: 1mm 0; font-size: 10px; color: #6c757d;">
+            <span>Total Tax:</span>
+            <span>${settings.currencySymbol} ${Number(safeData.taxAmount || 5.24).toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 1mm 0; font-size: 10px; color: #6c757d;">
+            <span>Total Discount:</span>
+            <span>${settings.currencySymbol} 0.00</span>
+          </div>
+          <div style="border-top: 2px solid #343a40; padding: 2mm 0; margin-top: 2mm;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; color: #212529;">
+              <span>Total</span>
+              <span>${settings.currencySymbol} ${Number(safeData.total).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+        ` : `
         <!-- Dotted Line -->
         <div style="border-top: 1px dotted #000; margin: 3mm 0;"></div>
 
@@ -491,6 +580,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
           </div>
         </div>
+        `}
 
         <!-- Payment Details -->
         ${safeData.paymentMethod ? `
@@ -511,9 +601,38 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 
         <!-- Footer -->
         <div style="text-align: center; margin-top: 3mm;">
+          ${modernLayout ? `
+          <div style="margin-bottom: 3mm;">
+            <div style="font-size: 10px; color: #495057; margin-bottom: 2mm;">
+              Thank you for shopping!
+            </div>
+            <div style="font-size: 8px; color: #6c757d;">
+              Scan & Pay
+            </div>
+          </div>
+          ` : `
           <div style="font-weight: bold; margin-bottom: 2mm; font-size: 12px;">
             🙏 धन्यवाद | Thank you! 🙏
           </div>
+          `}
+          
+          ${settings.showQRCode ? `
+          <!-- QR Code -->
+          <div style="margin: 3mm 0; text-align: center;">
+            <img src="${generateQRCode(getQRCodeData(), settings.qrCodeSize || 'medium')}" 
+                 style="width: ${settings.qrCodeSize === 'small' ? '60px' : settings.qrCodeSize === 'large' ? '100px' : '80px'}; 
+                        height: ${settings.qrCodeSize === 'small' ? '60px' : settings.qrCodeSize === 'large' ? '100px' : '80px'}; 
+                        border: 1px solid #ddd; 
+                        padding: 2mm; 
+                        background: white;" 
+                 alt="QR Code" />
+            <div style="font-size: 8px; color: #666; margin-top: 1mm;">
+              ${settings.qrCodeType === 'payment' ? 'Scan to Pay' : settings.qrCodeType === 'feedback' ? 'Scan for Feedback' : 'Invoice QR Code'}
+            </div>
+          </div>
+          ` : ''}
+          
+          ${!modernLayout ? `
           <div style="font-size: 9px; margin-bottom: 2mm;">
             ${(settings.receiptFooter || 'Thank you for shopping with us!').replace(/\n/g, '<br>')}
           </div>
@@ -526,6 +645,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <div style="font-size: 8px; color: #666;">
             ✨ Powered by Awesome Shop POS ✨
           </div>
+          ` : ''}
         </div>
       </div>
     `;
