@@ -930,8 +930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             c.phone as customerPhone, 
             u.name as userName,
             (
-              SELECT GROUP_CONCAT```python
-(p.name || ' (x' || si.quantity || ')')
+              SELECT GROUP_CONCAT(p.name || ' (x' || si.quantity || ')')
               FROM sale_items si 
               LEFT JOIN products p ON si.product_id = p.id 
               WHERE si.sale_id = s.id
