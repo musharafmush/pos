@@ -200,21 +200,23 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       }
       
       .receipt { 
-        width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '72mm' : '112mm'} !important;
-        max-width: none !important;
-        margin: 0 !important;
-        padding: 1mm !important;
+        width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
+        max-width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
+        margin: 0 auto !important;
+        padding: 2mm !important;
         border: none !important;
         background: white !important;
         page-break-inside: avoid !important;
         display: block !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
       }
 
       /* Xprinter XP-420B Optimized Styles */
       @page { 
-        size: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '72mm' : '112mm'} 297mm !important;
-        margin: 0mm !important; 
-        padding: 0mm !important;
+        size: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} auto !important;
+        margin: 0 !important; 
+        padding: 0 !important;
         border: none !important;
         /* Ensure background graphics are printed */
         -webkit-print-color-adjust: exact !important;
@@ -223,13 +225,20 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       }
 
       @media print {
+        * {
+          margin: 0 !important;
+          padding: 0 !important;
+          box-sizing: border-box !important;
+        }
+        
         html, body { 
           margin: 0 !important; 
           padding: 0 !important; 
           background: white !important;
-          font-size: ${paperWidth === 'thermal58' ? '11pt' : paperWidth === 'thermal80' ? '12pt' : '15pt'} !important;
+          font-size: ${paperWidth === 'thermal58' ? '10pt' : paperWidth === 'thermal80' ? '11pt' : '14pt'} !important;
           width: 100% !important;
           height: auto !important;
+          overflow: visible !important;
           /* Enable background graphics for Xprinter */
           -webkit-print-color-adjust: exact !important;
           color-adjust: exact !important;
@@ -237,16 +246,17 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         }
         
         .receipt { 
-          width: 100% !important;
-          max-width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '72mm' : '112mm'} !important;
-          margin: 0 !important;
-          padding: 0.5mm !important;
+          width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
+          max-width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
+          margin: 0 auto !important;
+          padding: 2mm !important;
           border: none !important;
           box-shadow: none !important;
           page-break-inside: avoid !important;
           /* Ensure proper scaling for Xprinter */
           transform: scale(1.0) !important;
-          transform-origin: top left !important;
+          transform-origin: top center !important;
+          background: white !important;
         }
 
         /* Hide all non-essential elements for thermal printing */
@@ -270,18 +280,20 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       @media screen {
         body {
           background: #f8f9fa !important;
-          padding: 10px !important;
+          padding: 5px !important;
           display: flex !important;
           justify-content: center !important;
           align-items: flex-start !important;
           min-height: 100vh !important;
+          margin: 0 !important;
         }
         
         .receipt {
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
           background: white !important;
-          border: 1px solid #e0e0e0 !important;
+          border: 1px solid #ddd !important;
           border-radius: 2px !important;
+          margin: 5px auto !important;
         }
         
         .print-instructions {
@@ -348,8 +360,9 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       <body>
         <div class="print-instructions no-print">
           🖨️ Xprinter XP-420B Receipt: ${data.billNumber} | ${paperWidth}
-          <br><small>Paper: 72mm x 297mm | Scale: 100% | Margins: None</small>
-          <br><button onclick="xprinterOptimizedPrint()" style="margin: 2px; padding: 4px 8px; background: #2196F3; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Print (Optimized)</button>
+          <br><small>Paper: ${paperWidth === 'thermal80' ? '80mm' : '58mm'} x 297mm | Scale: 100% | Margins: 0mm (All sides)</small>
+          <br><small style="color: #d32f2f;">⚠️ IMPORTANT: Set Margins to 0mm in print dialog → More Settings</small>
+          <br><button onclick="xprinterOptimizedPrint()" style="margin: 2px; padding: 4px 8px; background: #2196F3; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Print (Zero Margins)</button>
           <button onclick="window.print()" style="margin: 2px; padding: 4px 8px; background: #4CAF50; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Standard Print</button>
           <button onclick="window.close()" style="margin: 2px; padding: 4px 8px; background: #f44336; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Close</button>
         </div>
@@ -365,8 +378,8 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
               // Show Xprinter configuration reminder
               const confirmed = confirm(
                 'Xprinter XP-420B Settings Check:\\n\\n' +
-                '✅ Paper Size: 72mm x 297mm (or "Thermal Receipt")\\n' +
-                '✅ Margins: None\\n' +
+                '✅ Paper Size: ${paperWidth === 'thermal80' ? '80mm' : '58mm'} x 297mm (or "Thermal Receipt")\\n' +
+                '✅ Margins: 0mm (All sides)\\n' +
                 '✅ Scale: 100%\\n' +
                 '✅ Background Graphics: Enabled\\n' +
                 '✅ Driver: Official Xprinter XP-420B\\n\\n' +
@@ -375,8 +388,13 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
               
               if (confirmed) {
                 // Apply Xprinter-specific print settings
-                document.body.style.transform = 'scale(1.0)';
-                document.body.style.transformOrigin = 'top left';
+                const receipt = document.querySelector('.receipt');
+                if (receipt) {
+                  receipt.style.margin = '0';
+                  receipt.style.padding = '2mm';
+                  receipt.style.width = '${paperWidth === 'thermal58' ? '54mm' : '76mm'}';
+                  receipt.style.maxWidth = '${paperWidth === 'thermal58' ? '54mm' : '76mm'}';
+                }
                 
                 // Ensure all graphics elements are visible
                 const elements = document.querySelectorAll('.thermal-line, .thermal-dotted, .thermal-total');
@@ -388,9 +406,15 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                   el.style.printColorAdjust = 'exact';
                 });
                 
+                // Force page margins to 0
+                const style = document.createElement('style');
+                style.textContent = '@page { margin: 0 !important; }';
+                document.head.appendChild(style);
+                
                 setTimeout(() => {
                   window.print();
-                }, 200);
+                  document.head.removeChild(style);
+                }, 300);
               }
             } catch (e) {
               console.error('Xprinter optimized print failed:', e);
