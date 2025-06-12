@@ -313,10 +313,10 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 
   } catch (error) {
     console.error('❌ Error in printReceipt:', error);
-    
+
     // Show user-friendly error message
     alert(`Receipt preview failed: ${error.message || 'Unknown error'}. Please check console for details.`);
-    
+
     // Cleanup
     if (printContainer && printContainer.parentNode) {
       document.body.removeChild(printContainer);
@@ -328,7 +328,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     // Safely handle date parsing
     let formattedDate = new Date().toLocaleDateString('en-IN');
     let formattedTime = new Date().toLocaleTimeString('en-IN', { hour12: true });
-    
+
     try {
       if (sale?.createdAt) {
         const date = new Date(sale.createdAt);
