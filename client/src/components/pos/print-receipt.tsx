@@ -498,7 +498,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       ${safeData.items.map((item: any) => `
         <div style="margin-bottom: 2mm; font-size: 8px;">
           <div style="font-weight: bold; margin-bottom: 1mm; font-size: 9px;">
-            ${(item.productName || item.name || 'Item').substring(0, ${settings.paperWidth === 'thermal58' ? '20' : '30'})}
+            ${(item.productName || item.name || 'Item').substring(0, settings.paperWidth === 'thermal58' ? 20 : 30)}
           </div>
           ${settings.showItemSKU ? `
           <div style="font-size: 7px; color: #666; margin-bottom: 1mm;">
