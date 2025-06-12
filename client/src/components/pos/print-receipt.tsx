@@ -416,13 +416,13 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 
     // Ensure sale has proper structure with defaults and safe property access
     const safeData = {
-      orderNumber: sale?.orderNumber || 'PREVIEW-123456',
+      orderNumber: sale?.orderNumber || 'POS1749705290189',
       createdAt: sale?.createdAt || new Date().toISOString(),
       user: {
         name: sale?.user?.name || 'Admin User'
       },
       customer: {
-        name: sale?.customer?.name || 'Preview Customer'
+        name: sale?.customer?.name || 'Walk-in Customer'
       },
       items: Array.isArray(sale?.items) ? sale.items.map((item: any) => ({
         productName: item?.productName || item?.name || 'Sample Product',
@@ -431,145 +431,135 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         subtotal: Number(item?.subtotal || item?.total) || 100,
         productSku: item?.productSku || item?.sku || 'ITM000000'
       })) : [
-        { productName: 'Premium Rice (5kg)', quantity: 2, unitPrice: 125, subtotal: 250, productSku: 'ITM264973991' },
-        { productName: 'Cooking Oil (1L)', quantity: 1, unitPrice: 75, subtotal: 75, productSku: 'ITM264973992' },
-        { productName: 'Sugar (1kg)', quantity: 3, unitPrice: 45, subtotal: 135, productSku: 'ITM264973993' }
+        { productName: 'salte 250 (250g Pack)', quantity: 1, unitPrice: 100, subtotal: 100, productSku: 'ITM007797849-REPACK-250G-17494473112' },
+        { productName: 'rice 250g', quantity: 1, unitPrice: 100, subtotal: 100, productSku: 'ITM688883976' },
+        { productName: 'dal 250g', quantity: 1, unitPrice: 100, subtotal: 100, productSku: 'ITM6127761836' },
+        { productName: 'badam', quantity: 1, unitPrice: 1000, subtotal: 1000, productSku: 'ITM94816680' }
       ],
-      total: Number(sale?.total) || 460,
+      total: Number(sale?.total) || 1300,
       tax: Number(sale?.tax) || 0,
       taxAmount: Number(sale?.taxAmount) || 0,
       paymentMethod: sale?.paymentMethod || 'CASH'
     };
 
     return `
-      <div class="thermal-header">
+      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '14px' : '16px'}; font-weight: bold; margin-bottom: 2mm;">
         ${settings.businessName || 'M MART'}
       </div>
       
-      <div style="text-align: center; font-size: 14px; margin-bottom: 2mm;">
+      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; margin-bottom: 1mm;">
         Professional Retail Solution
       </div>
       
-      <div style="text-align: center; font-size: 12px; font-weight: bold; color: #333; margin-bottom: 1mm;">
+      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; font-weight: bold; margin-bottom: 1mm;">
         GST: ${settings.taxId || '33GSPDB3311F1ZZ'}
       </div>
       
-      <div style="text-align: center; font-size: 12px; margin-bottom: 2mm;">
-        ${(settings.businessAddress || 'Business Address').replace(/\n/g, '<br>')}
+      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '9px' : '10px'}; margin-bottom: 1mm;">
+        123 Business Street, City, State
       </div>
       
-      <div style="text-align: center; font-size: 12px; margin-bottom: 2mm;">
+      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '9px' : '10px'}; margin-bottom: 2mm;">
         Tel: ${settings.phoneNumber || '+91-9876543210'}
       </div>
       
-      <div class="thermal-line"></div>
+      <div style="border-top: 1px solid #000; margin: 2mm 0; height: 0;"></div>
       
-      <div class="thermal-text" style="margin-bottom: 2mm;">
+      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; margin-bottom: 2mm;">
         <div style="display: flex; justify-content: space-between;">
-          <span>Bill:</span><strong>${safeData.orderNumber}</strong>
+          <span>Bill:</span><strong style="text-align: right;">${safeData.orderNumber}</strong>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>Date:</span><span>${formattedDate}</span>
+          <span>Date:</span><span style="text-align: right;">${formattedDate}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>Time:</span><span>${formattedTime}</span>
+          <span>Time:</span><span style="text-align: right;">${formattedTime}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>Cashier:</span><span>${safeData.user.name}</span>
+          <span>Cashier:</span><span style="text-align: right;">${safeData.user.name}</span>
         </div>
       </div>
       
-      <div class="thermal-dotted"></div>
+      <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
       
-      ${settings.showCustomerDetails ? `
-      <div class="thermal-text" style="margin-bottom: 2mm;">
+      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; margin-bottom: 2mm;">
         <strong>Customer:</strong> ${safeData.customer.name}
       </div>
-      <div class="thermal-dotted"></div>
-      ` : ''}
       
-      <div style="display: flex; font-weight: bold; font-size: 12px; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 1mm;">
-        <div style="flex: 3;">Item</div>
+      <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
+      
+      <div style="display: flex; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 2mm;">
+        <div style="flex: 1;">Item</div>
         <div style="flex: 1; text-align: center;">Qty</div>
-        <div style="flex: 1; text-align: right;">Rate</div>
+        <div style="flex: 1; text-align: center;">Rate</div>
         <div style="flex: 1; text-align: right;">Total</div>
       </div>
       
       ${safeData.items.map((item: any) => `
-        <div style="margin-bottom: 2mm; font-size: 12px;">
-          <div style="font-weight: bold; margin-bottom: 0.5mm; font-size: 13px;">
-            ${(item.productName || item.name || 'Item').substring(0, settings.paperWidth === 'thermal58' ? 20 : 32)}
+        <div style="margin-bottom: 3mm; font-size: ${settings.paperWidth === 'thermal58' ? '9px' : '10px'};">
+          <div style="font-weight: bold; margin-bottom: 1mm;">
+            ${(item.productName || item.name || 'Item')}
           </div>
-          ${settings.showItemSKU ? `
-          <div style="font-size: 10px; color: #666; margin-bottom: 1mm; font-style: italic;">
+          <div style="font-size: ${settings.paperWidth === 'thermal58' ? '8px' : '9px'}; color: #666; margin-bottom: 1mm; font-style: italic;">
             ${item.productSku || item.sku || 'ITM000000'}
           </div>
-          ` : ''}
-          <div style="display: flex; font-size: 12px;">
-            <div style="flex: 3;"></div>
-            <div style="flex: 1; text-align: center;">${item.quantity || 1}</div>
-            <div style="flex: 1; text-align: right;">${settings.currencySymbol}${Number(item.unitPrice || item.price || 100).toFixed(0)}</div>
+          <div style="display: flex; align-items: center;">
+            <div style="flex: 1;"></div>
+            <div style="flex: 1; text-align: center; font-weight: bold;">${item.quantity || 1}</div>
+            <div style="flex: 1; text-align: center; font-weight: bold;">${settings.currencySymbol}${Number(item.unitPrice || item.price || 100).toFixed(0)}</div>
             <div style="flex: 1; text-align: right; font-weight: bold;">${settings.currencySymbol}${Number(item.subtotal || item.total || ((item.quantity || 1) * (item.unitPrice || item.price || 100))).toFixed(0)}</div>
           </div>
-          ${settings.showMRP ? `
-          <div style="text-align: right; font-size: 11px; margin-top: 1mm; color: #666;">
-            <span style="color: #666;">MRP: ${settings.currencySymbol}${Number((item.unitPrice || item.price || 100) + 20).toFixed(0)}</span>
-            ${settings.showSavings ? ` | Save: ${settings.currencySymbol}${((item.unitPrice || item.price || 100) * 0.2).toFixed(0)}` : ''}
+          <div style="text-align: right; font-size: ${settings.paperWidth === 'thermal58' ? '8px' : '9px'}; margin-top: 1mm; color: #666;">
+            MRP: ${settings.currencySymbol}${Number((item.unitPrice || item.price || 100) + 20).toFixed(0)} | Save: ${settings.currencySymbol}${((item.unitPrice || item.price || 100) * 0.2).toFixed(0)}
           </div>
-          ` : ''}
         </div>
       `).join('')}
       
-      <div class="thermal-dotted"></div>
+      <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
       
-      <div class="thermal-text" style="margin-bottom: 2mm;">
+      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; margin-bottom: 2mm;">
         <div style="display: flex; justify-content: space-between;">
           <span>Sub Total:</span>
-          <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
+          <span style="text-align: right;">${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span>Taxable:</span>
-          <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
+          <span style="text-align: right;">${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>GST (${safeData.tax}%):</span>
-          <span>${settings.currencySymbol}${Number(safeData.taxAmount).toFixed(0)}</span>
+          <span>GST (0%):</span>
+          <span style="text-align: right;">${settings.currencySymbol}0</span>
         </div>
       </div>
       
-      <div class="thermal-total">
-        <div style="display: flex; justify-content: space-between; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'};">
-          <span>TOTAL:</span>
-          <span>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
-        </div>
+      <div style="border: 2px solid #000; padding: 2mm; text-align: center; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '14px'}; margin: 2mm 0;">
+        TOTAL: ${settings.currencySymbol}${Number(safeData.total).toFixed(0)}
       </div>
       
-      ${safeData.paymentMethod ? `
-      <div class="thermal-text" style="margin: 2mm 0;">
+      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; margin: 2mm 0;">
         <div style="display: flex; justify-content: space-between;">
           <span>Payment:</span>
-          <strong>${safeData.paymentMethod.toUpperCase()}</strong>
+          <strong style="text-align: right;">${safeData.paymentMethod.toUpperCase()}</strong>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span>Paid:</span>
-          <strong>${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</strong>
+          <strong style="text-align: right;">${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</strong>
         </div>
       </div>
-      ` : ''}
       
-      <div class="thermal-dotted"></div>
+      <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
       
       <div style="text-align: center; margin: 2mm 0;">
-        <div style="font-weight: bold; font-size: 14px; margin-bottom: 1mm;">
+        <div style="font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '14px'}; margin-bottom: 1mm;">
           🙏 Thank You! 🙏
         </div>
-        <div style="font-size: 12px; margin-bottom: 1mm;">
-          ${(settings.receiptFooter || 'Visit Again Soon!').split('\n')[0]}
+        <div style="font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; margin-bottom: 1mm;">
+          Thank you for shopping with us!
         </div>
-        <div style="font-size: 10px; color: #666;">
+        <div style="font-size: ${settings.paperWidth === 'thermal58' ? '8px' : '9px'}; color: #666;">
           Items: ${safeData.items.length} | Qty: ${safeData.items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)}
         </div>
-        <div style="font-size: 10px; color: #666;">
+        <div style="font-size: ${settings.paperWidth === 'thermal58' ? '8px' : '9px'}; color: #666;">
           ${safeData.orderNumber} | POS-Thermal
         </div>
       </div>
