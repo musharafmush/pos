@@ -1672,8 +1672,7 @@ export default function PurchaseEntryProfessional() {
                             <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Amount</TableHead>
                             <TableHead className="w-36 text-center font-bold border-r px-3 py-3 text-xs">Net Amount</TableHead>
                             <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">Cash %</TableHead>
-                            <Table```text
-Head className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Cash Amt</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Cash Amt</TableHead>
                             <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Batch No</TableHead>
                             <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Location</TableHead>
                             <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">Unit</TableHead>
