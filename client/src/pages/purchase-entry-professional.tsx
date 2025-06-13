@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X } from "lucide-react";
+import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X, QrCode as QrCodeIcon } from "lucide-react";
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
@@ -294,6 +294,7 @@ export default function PurchaseEntryProfessional() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("details");
+  const [barcodeInput, setBarcodeInput] = useState("");
   const [summary, setSummary] = useState({
     totalItems: 0,
     totalQuantity: 0,
@@ -988,6 +989,100 @@ export default function PurchaseEntryProfessional() {
     setEditingItemIndex(null);
   };
 
+  // Barcode scanning functionality
+  const handleBarcodeSubmit = async () => {
+    if (!barcodeInput.trim()) return;
+
+    try {
+      // Find product by barcode
+      const product = products.find(p => 
+        p.barcode && p.barcode.toLowerCase() === barcodeInput.toLowerCase().trim()
+      );
+
+      if (product) {
+        // Check if product already exists in current items
+        const existingItemIndex = form.getValues("items").findIndex(item => 
+          item.productId === product.id
+        );
+
+        if (existingItemIndex !== -1) {
+          // Increment quantity if product already exists
+          const currentQty = form.getValues(`items.${existingItemIndex}.receivedQty`) || 0;
+          const newQty = currentQty + 1;
+          form.setValue(`items.${existingItemIndex}.receivedQty`, newQty);
+          form.setValue(`items.${existingItemIndex}.quantity`, newQty);
+
+          // Recalculate net amount
+          const cost = form.getValues(`items.${existingItemIndex}.unitCost`) || 0;
+          const discount = form.getValues(`items.${existingItemIndex}.discountAmount`) || 0;
+          const taxPercentage = form.getValues(`items.${existingItemIndex}.taxPercentage`) || 0;
+
+          const subtotal = newQty * cost;
+          const taxableAmount = subtotal - discount;
+          const tax = (taxableAmount * taxPercentage) / 100;
+          const netAmount = taxableAmount + tax;
+
+          form.setValue(`items.${existingItemIndex}.netAmount`, netAmount);
+          form.trigger(`items.${existingItemIndex}`);
+
+          toast({
+            title: "Quantity Updated! 📦",
+            description: `${product.name} quantity increased to ${newQty}`,
+          });
+        } else {
+          // Add as new item if first occurrence
+          const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
+          
+          append({
+            productId: product.id,
+            code: product.sku || "",
+            description: product.description || product.name,
+            quantity: 1,
+            receivedQty: 1,
+            freeQty: 0,
+            unitCost: parseFloat(product.price) || 0,
+            sellingPrice: parseFloat(product.price) || 0,
+            mrp: parseFloat(product.price) * 1.2 || 0,
+            hsnCode: product.hsnCode || "",
+            taxPercentage: 18,
+            discountAmount: 0,
+            discountPercent: 0,
+            expiryDate: "",
+            batchNumber: newBatchNumber,
+            netCost: 0,
+            roiPercent: 0,
+            grossProfitPercent: 0,
+            netAmount: parseFloat(product.price) || 0,
+            cashPercent: 0,
+            cashAmount: 0,
+            location: "",
+            unit: "PCS",
+          });
+
+          toast({
+            title: "Product Added by Barcode! 🎯",
+            description: `${product.name} added to purchase order`,
+          });
+        }
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Barcode Not Found",
+          description: `No product found with barcode: ${barcodeInput}`,
+        });
+      }
+    } catch (error) {
+      console.error("Error processing barcode:", error);
+      toast({
+        variant: "destructive",
+        title: "Barcode Error",
+        description: "Failed to process barcode scan",
+      });
+    } finally {
+      setBarcodeInput("");
+    }
+  };
+
   // Enhanced dynamic add item function
   const addItem = () => {
     openAddItemModal();
@@ -1256,6 +1351,31 @@ export default function PurchaseEntryProfessional() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Barcode Scanner Input */}
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+              <QrCodeIcon className="h-4 w-4 text-blue-600" />
+              <Input
+                placeholder="Scan or enter barcode..."
+                value={barcodeInput}
+                onChange={(e) => setBarcodeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleBarcodeSubmit();
+                  }
+                }}
+                className="w-48 h-8 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none placeholder:text-blue-600/70"
+              />
+              <Button
+                onClick={handleBarcodeSubmit}
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-100"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+
             <Button 
               variant="outline" 
               size="sm"
@@ -1634,6 +1754,46 @@ export default function PurchaseEntryProfessional() {
 
             {/* Line Items Tab */}
             <TabsContent value="items" className="space-y-4">
+              {/* Barcode Scanner Section */}
+              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-semibold text-blue-800 flex items-center gap-2">
+                    <QrCodeIcon className="h-5 w-5" />
+                    Quick Barcode Entry
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 relative">
+                      <QrCodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
+                      <Input
+                        placeholder="Scan barcode or type product code to quickly add items..."
+                        value={barcodeInput}
+                        onChange={(e) => setBarcodeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleBarcodeSubmit();
+                          }
+                        }}
+                        className="pl-10 text-sm border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleBarcodeSubmit}
+                      disabled={!barcodeInput.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add to Purchase
+                    </Button>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">
+                    💡 Tip: Use a barcode scanner or manually enter product barcodes for instant item addition
+                  </p>
+                </CardContent>
+              </Card>
+
               <Card className="w-full">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
@@ -1959,12 +2119,27 @@ export default function PurchaseEntryProfessional() {
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    {...form.register(`items.${index}.hsnCode`)}
-                                    className="w-full text-center text-xs"
-                                    placeholder="HSN"
-                                  />
+                                <TableCell className="border-r border-gray-200 px-2 py-2">
+                                  <div className="space-y-2">
+                                    <Input
+                                      {...form.register(`items.${index}.hsnCode`)}
+                                      className="w-full text-center text-xs"
+                                      placeholder="HSN Code"
+                                    />
+                                    {/* Barcode Display */}
+                                    {selectedProduct?.barcode && (
+                                      <div className="flex flex-col items-center p-2 bg-gray-50 rounded border">
+                                        <img
+                                          src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${selectedProduct.barcode}`}
+                                          alt="Product Barcode"
+                                          className="w-12 h-12 mb-1"
+                                        />
+                                        <span className="text-xs font-mono text-gray-600">
+                                          {selectedProduct.barcode}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
@@ -2559,6 +2734,42 @@ export default function PurchaseEntryProfessional() {
                   placeholder="HSN Code"
                 />
               </div>
+
+              {/* Barcode Display Section */}
+              {modalData.productId > 0 && (
+                <div className="space-y-2 col-span-2">
+                  <Label>Product Barcode</Label>
+                  <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg border">
+                    {(() => {
+                      const product = products.find(p => p.id === modalData.productId);
+                      if (product?.barcode) {
+                        return (
+                          <div className="flex flex-col items-center">
+                            <img
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${product.barcode}`}
+                              alt="Product Barcode"
+                              className="w-16 h-16 mb-2"
+                            />
+                            <span className="text-sm font-mono text-gray-700 bg-white px-3 py-1 rounded border">
+                              {product.barcode}
+                            </span>
+                            <span className="text-xs text-gray-500 mt-1">Scan this code for quick entry</span>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="text-center text-gray-500">
+                            <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center mb-2 mx-auto">
+                              <span className="text-xs">No Barcode</span>
+                            </div>
+                            <span className="text-sm">No barcode available for this product</span>
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="modal-taxPercentage">Tax %</Label>
