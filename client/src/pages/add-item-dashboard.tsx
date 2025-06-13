@@ -793,6 +793,7 @@ export default function AddItemDashboard() {
                       <TableRow>
                         <TableHead>Product</TableHead>
                         <TableHead>SKU</TableHead>
+                        <TableHead>Barcode</TableHead>
                         <TableHead>Price</TableHead>
                         <TableHead>MRP</TableHead>
                         <TableHead>Stock</TableHead>
@@ -818,6 +819,19 @@ export default function AddItemDashboard() {
                             <div className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
                               {product.sku}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {product.barcode ? (
+                              <div className="flex items-center justify-center">
+                                <img
+                                  src={`https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${product.barcode}`}
+                                  alt="Barcode"
+                                  className="w-8 h-8"
+                                />
+                              </div>
+                            ) : (
+                              <span>No Barcode</span>
+                            )}
                           </TableCell>
                           <TableCell>{formatCurrency(parseFloat(product.price.toString()))}</TableCell>
                           <TableCell>{formatCurrency(parseFloat(product.mrp?.toString() || product.price.toString()))}</TableCell>
@@ -1128,6 +1142,7 @@ export default function AddItemDashboard() {
                         <TableRow>
                           <TableHead>Product</TableHead>
                           <TableHead>SKU</TableHead>
+                          <TableHead>Barcode</TableHead>
                           <TableHead>Price</TableHead>
                           <TableHead>MRP</TableHead>
                           <TableHead>Stock</TableHead>
@@ -1155,6 +1170,19 @@ export default function AddItemDashboard() {
                               <div className="font-mono text-sm bg-gray-100 px-2 py-1 rounded max-w-fit">
                                 {product.sku}
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              {product.barcode ? (
+                                <div className="flex items-center justify-center">
+                                  <img
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${product.barcode}`}
+                                    alt="Barcode"
+                                    className="w-8 h-8"
+                                  />
+                                </div>
+                              ) : (
+                                <span>No Barcode</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <div className="font-semibold text-green-600">
