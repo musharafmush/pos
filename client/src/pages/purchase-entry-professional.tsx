@@ -1553,81 +1553,169 @@ export default function PurchaseEntryProfessional() {
 
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="space-y-1">
-                                    {/* Product search by name */}
-                                    <Input
-                                      placeholder="Search by product name..."
-                                      className="w-full text-xs"
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          const searchTerm = e.currentTarget.value.toLowerCase();
-                                          const matchedProduct = products.find(p => 
-                                            p.name.toLowerCase().includes(searchTerm) ||
-                                            p.description?.toLowerCase().includes(searchTerm)
-                                          );
-                                          if (matchedProduct) {
-                                            handleProductSelection(index, matchedProduct.id);
-                                            e.currentTarget.value = '';
-                                            toast({
-                                              title: "Product Found! 🎯",
-                                              description: `${matchedProduct.name} selected automatically.`,
-                                            });
-                                          } else {
-                                            toast({
-                                              variant: "destructive",
-                                              title: "Product Not Found",
-                                              description: "No product matches your search term.",
-                                            });
+                                    {/* Enhanced Product search by name with live filtering */}
+                                    <div className="relative">
+                                      <Input
+                                        placeholder="🔍 Search products... (Press Enter)"
+                                        className="w-full text-xs pr-8"
+                                        onChange={(e) => {
+                                          const searchValue = e.target.value.toLowerCase();
+                                          // Show real-time filtering hints
+                                          if (searchValue.length > 2) {
+                                            const matches = products.filter(p => 
+                                              p.name.toLowerCase().includes(searchValue) ||
+                                              p.description?.toLowerCase().includes(searchValue) ||
+                                              p.sku?.toLowerCase().includes(searchValue)
+                                            );
+                                            // Visual feedback for search results count
+                                            const indicator = e.target.nextElementSibling as HTMLElement;
+                                            if (indicator) {
+                                              indicator.textContent = `${matches.length}`;
+                                              indicator.className = matches.length > 0 ? 
+                                                'absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-medium text-green-600 bg-green-100 px-1 rounded' : 
+                                                'absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-medium text-red-600 bg-red-100 px-1 rounded';
+                                            }
                                           }
-                                        }
-                                      }}
-                                    />
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            const searchTerm = e.currentTarget.value.toLowerCase().trim();
+                                            if (searchTerm.length < 2) {
+                                              toast({
+                                                variant: "destructive",
+                                                title: "Search Query Too Short",
+                                                description: "Please enter at least 2 characters to search.",
+                                              });
+                                              return;
+                                            }
+
+                                            // Enhanced search logic - prioritize exact matches
+                                            let matchedProduct = products.find(p => 
+                                              p.name.toLowerCase() === searchTerm ||
+                                              p.sku?.toLowerCase() === searchTerm
+                                            );
+
+                                            if (!matchedProduct) {
+                                              // Fallback to partial matches
+                                              matchedProduct = products.find(p => 
+                                                p.name.toLowerCase().includes(searchTerm) ||
+                                                p.description?.toLowerCase().includes(searchTerm) ||
+                                                p.sku?.toLowerCase().includes(searchTerm)
+                                              );
+                                            }
+
+                                            if (matchedProduct) {
+                                              handleProductSelection(index, matchedProduct.id);
+                                              e.currentTarget.value = '';
+                                              // Clear the indicator
+                                              const indicator = e.currentTarget.nextElementSibling as HTMLElement;
+                                              if (indicator) indicator.textContent = '';
+                                              
+                                              toast({
+                                                title: "Product Found! 🎯",
+                                                description: `${matchedProduct.name} (${matchedProduct.sku}) selected. Stock: ${matchedProduct.stockQuantity || 0}`,
+                                              });
+                                            } else {
+                                              // Show similar products suggestion
+                                              const similarProducts = products.filter(p => 
+                                                p.name.toLowerCase().includes(searchTerm.substring(0, 3)) ||
+                                                searchTerm.split(' ').some(word => 
+                                                  word.length > 2 && p.name.toLowerCase().includes(word)
+                                                )
+                                              ).slice(0, 3);
+
+                                              if (similarProducts.length > 0) {
+                                                toast({
+                                                  variant: "destructive",
+                                                  title: "Product Not Found",
+                                                  description: `No exact match for "${searchTerm}". Similar: ${similarProducts.map(p => p.name).join(', ')}`,
+                                                });
+                                              } else {
+                                                toast({
+                                                  variant: "destructive",
+                                                  title: "Product Not Found",
+                                                  description: `No product matches "${searchTerm}". Check spelling or use the dropdown below.`,
+                                                });
+                                              }
+                                            }
+                                          }
+                                        }}
+                                      />
+                                      <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-medium"></span>
+                                    </div>
                                     
                                     <Select 
                                       onValueChange={(value) => handleProductSelection(index, parseInt(value))}
                                       value={form.watch(`items.${index}.productId`)?.toString() || ""}
                                     >
                                       <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select Product">
+                                        <SelectValue placeholder="📋 Select from List">
                                           {selectedProduct ? (
                                             <div className="flex flex-col text-left">
                                               <span className="font-medium text-sm">{selectedProduct.name}</span>
                                               <span className="text-xs text-gray-500">{selectedProduct.sku}</span>
                                             </div>
-                                          ) : "Select Product"}
+                                          ) : "📋 Select from List"}
                                         </SelectValue>
                                       </SelectTrigger>
-                                      <SelectContent>
-                                        {products.map((product) => (
-                                          <SelectItem key={product.id} value={product.id.toString()}>
-                                            <div className="flex flex-col">
-                                              <div className="flex items-center justify-between w-full">
-                                                <span className="font-medium">{product.name}</span>
-                                                <span className={`text-xs px-2 py-1 rounded-full ml-2 ${
-                                                  (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
-                                                    ? 'bg-red-100 text-red-700' 
-                                                    : 'bg-green-100 text-green-700'
-                                                }`}>
-                                                  {product.stockQuantity || 0}
-                                                </span>
+                                      <SelectContent className="max-h-[300px] overflow-y-auto">
+                                        {products.length === 0 ? (
+                                          <div className="p-4 text-center text-gray-500">
+                                            <span>No products available</span>
+                                          </div>
+                                        ) : (
+                                          products.map((product) => (
+                                            <SelectItem key={product.id} value={product.id.toString()}>
+                                              <div className="flex flex-col w-full">
+                                                <div className="flex items-center justify-between w-full">
+                                                  <div className="flex flex-col">
+                                                    <span className="font-medium text-sm">{product.name}</span>
+                                                    <span className="text-xs text-gray-500">{product.sku} | ₹{product.price}</span>
+                                                  </div>
+                                                  <div className="flex flex-col items-end ml-2">
+                                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                                      (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
+                                                        ? 'bg-red-100 text-red-700' 
+                                                        : (product.stockQuantity || 0) > 50
+                                                          ? 'bg-green-100 text-green-700'
+                                                          : 'bg-yellow-100 text-yellow-700'
+                                                    }`}>
+                                                      {product.stockQuantity || 0}
+                                                    </span>
+                                                    {(product.stockQuantity || 0) <= (product.alertThreshold || 5) && (
+                                                      <span className="text-xs text-red-600 font-medium">Low Stock!</span>
+                                                    )}
+                                                  </div>
+                                                </div>
                                               </div>
-                                              <span className="text-xs text-gray-500">{product.sku}</span>
-                                            </div>
-                                          </SelectItem>
-                                        ))}
+                                            </SelectItem>
+                                          ))
+                                        )}
                                       </SelectContent>
                                     </Select>
 
-                                    {/* Stock indicator below product selection */}
+                                    {/* Enhanced Stock indicator with more details */}
                                     {selectedProduct && (
-                                      <div className="text-xs text-center">
-                                        <span className="text-gray-600">Stock: </span>
-                                        <span className={`font-medium ${
-                                          (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
-                                            ? 'text-red-600' 
-                                            : 'text-green-600'
-                                        }`}>
-                                          {selectedProduct.stockQuantity || 0} units
-                                        </span>
+                                      <div className="bg-gray-50 rounded p-2 border">
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="text-gray-600">Current Stock:</span>
+                                          <span className={`font-bold ${
+                                            (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
+                                              ? 'text-red-600' 
+                                              : 'text-green-600'
+                                          }`}>
+                                            {selectedProduct.stockQuantity || 0} units
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs mt-1">
+                                          <span className="text-gray-600">Price:</span>
+                                          <span className="font-medium text-blue-600">₹{selectedProduct.price}</span>
+                                        </div>
+                                        {(selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) && (
+                                          <div className="text-xs text-red-600 font-medium mt-1 flex items-center">
+                                            <span>⚠️ Low Stock Alert!</span>
+                                          </div>
+                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -2112,52 +2200,143 @@ export default function PurchaseEntryProfessional() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="modal-product">Product Name *</Label>
-                <Select 
-                  onValueChange={(value) => {
-                    const productId = parseInt(value);
-                    const product = products.find(p => p.id === productId);
-                    if (product) {
-                      const newModalData = {
-                        ...modalData,
-                        productId,
-                        code: product.sku || "",
-                        description: product.description || product.name,
-                        unitCost: parseFloat(product.price) || 0,
-                        mrp: parseFloat(product.price) * 1.2 || 0,
-                        sellingPrice: parseFloat(product.price) || 0,
-                        hsnCode: product.hsnCode || "",
-                      };
-                      setModalData(newModalData);
-                      if (editingItemIndex !== null) {
-                        syncModalToTable();
+                
+                {/* Advanced search input for modal */}
+                <div className="space-y-2">
+                  <Input
+                    placeholder="🔍 Type to search products... (name, code, description)"
+                    className="w-full"
+                    onChange={(e) => {
+                      const searchValue = e.target.value.toLowerCase();
+                      // Real-time search feedback
+                      if (searchValue.length > 1) {
+                        const matches = products.filter(p => 
+                          p.name.toLowerCase().includes(searchValue) ||
+                          p.description?.toLowerCase().includes(searchValue) ||
+                          p.sku?.toLowerCase().includes(searchValue)
+                        );
+                        
+                        // Auto-select if only one match
+                        if (matches.length === 1 && searchValue.length > 3) {
+                          const product = matches[0];
+                          const newModalData = {
+                            ...modalData,
+                            productId: product.id,
+                            code: product.sku || "",
+                            description: product.description || product.name,
+                            unitCost: parseFloat(product.price) || 0,
+                            mrp: parseFloat(product.price) * 1.2 || 0,
+                            sellingPrice: parseFloat(product.price) || 0,
+                            hsnCode: product.hsnCode || "",
+                          };
+                          setModalData(newModalData);
+                        }
                       }
-                    }
-                  }}
-                  value={modalData.productId?.toString() || ""}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((product) => (
-                      <SelectItem key={product.id} value={product.id.toString()}>
-                        <div className="flex flex-col">
-                          <div className="flex items-center justify-between w-full">
-                            <span className="font-medium">{product.name}</span>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
-                                ? 'bg-red-100 text-red-700' 
-                                : 'bg-green-100 text-green-700'
-                            }`}>
-                              Stock: {product.stockQuantity || 0}
-                            </span>
-                          </div>
-                          <span className="text-xs text-gray-500">{product.sku}</span>
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const searchTerm = e.currentTarget.value.toLowerCase().trim();
+                        if (searchTerm.length < 2) return;
+
+                        // Find exact or best match
+                        let matchedProduct = products.find(p => 
+                          p.name.toLowerCase() === searchTerm ||
+                          p.sku?.toLowerCase() === searchTerm
+                        );
+
+                        if (!matchedProduct) {
+                          matchedProduct = products.find(p => 
+                            p.name.toLowerCase().includes(searchTerm) ||
+                            p.description?.toLowerCase().includes(searchTerm) ||
+                            p.sku?.toLowerCase().includes(searchTerm)
+                          );
+                        }
+
+                        if (matchedProduct) {
+                          const newModalData = {
+                            ...modalData,
+                            productId: matchedProduct.id,
+                            code: matchedProduct.sku || "",
+                            description: matchedProduct.description || matchedProduct.name,
+                            unitCost: parseFloat(matchedProduct.price) || 0,
+                            mrp: parseFloat(matchedProduct.price) * 1.2 || 0,
+                            sellingPrice: parseFloat(matchedProduct.price) || 0,
+                            hsnCode: matchedProduct.hsnCode || "",
+                          };
+                          setModalData(newModalData);
+                          e.currentTarget.value = '';
+                          
+                          toast({
+                            title: "Product Selected! 🎯",
+                            description: `${matchedProduct.name} selected automatically.`,
+                          });
+                        }
+                      }
+                    }}
+                  />
+                  
+                  <Select 
+                    onValueChange={(value) => {
+                      const productId = parseInt(value);
+                      const product = products.find(p => p.id === productId);
+                      if (product) {
+                        const newModalData = {
+                          ...modalData,
+                          productId,
+                          code: product.sku || "",
+                          description: product.description || product.name,
+                          unitCost: parseFloat(product.price) || 0,
+                          mrp: parseFloat(product.price) * 1.2 || 0,
+                          sellingPrice: parseFloat(product.price) || 0,
+                          hsnCode: product.hsnCode || "",
+                        };
+                        setModalData(newModalData);
+                        if (editingItemIndex !== null) {
+                          syncModalToTable();
+                        }
+                      }
+                    }}
+                    value={modalData.productId?.toString() || ""}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Or select from dropdown list" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[250px] overflow-y-auto">
+                      {products.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">
+                          <span>No products available</span>
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      ) : (
+                        products.map((product) => (
+                          <SelectItem key={product.id} value={product.id.toString()}>
+                            <div className="flex flex-col w-full">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{product.name}</span>
+                                  <span className="text-xs text-gray-500">{product.sku} | ₹{product.price}</span>
+                                </div>
+                                <div className="flex flex-col items-end ml-2">
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
+                                      ? 'bg-red-100 text-red-700' 
+                                      : (product.stockQuantity || 0) > 50
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-yellow-100 text-yellow-700'
+                                  }`}>
+                                    {product.stockQuantity || 0}
+                                  </span>
+                                  {(product.stockQuantity || 0) <= (product.alertThreshold || 5) && (
+                                    <span className="text-xs text-red-600 font-medium">Low!</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Current Stock Display */}
