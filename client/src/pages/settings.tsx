@@ -48,6 +48,7 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [showReceiptSettings, setShowReceiptSettings] = useState(false);
+  const [selectedBackupFile, setSelectedBackupFile] = useState<File | null>(null);
 
   // Load current user data
   const { data: userData } = useQuery({
@@ -176,6 +177,166 @@ export default function Settings() {
     });
   };
 
+  // Data management handlers
+  const handleBackupData = async () => {
+    try {
+      const response = await fetch('/api/backup/create', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create backup');
+      }
+
+      const result = await response.json();
+      
+      // Download the backup file
+      const downloadResponse = await fetch('/api/backup/download', {
+        credentials: 'include'
+      });
+      
+      if (downloadResponse.ok) {
+        const blob = await downloadResponse.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `pos-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+          title: "Backup created successfully",
+          description: "Your data has been backed up and downloaded",
+        });
+      }
+    } catch (error) {
+      console.error('Backup error:', error);
+      toast({
+        title: "Backup failed",
+        description: "Failed to create backup. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleClearData = async () => {
+    const confirmed = window.confirm(
+      "⚠️ WARNING: This will permanently delete ALL your data including products, sales, purchases, customers, and suppliers. This action cannot be undone.\n\nAre you absolutely sure you want to continue?"
+    );
+
+    if (!confirmed) return;
+
+    const doubleConfirmed = window.confirm(
+      "This is your final warning. All data will be lost forever. Type 'DELETE' in the next prompt to confirm."
+    );
+
+    if (!doubleConfirmed) return;
+
+    const finalConfirmation = window.prompt(
+      "Type 'DELETE' (in capital letters) to confirm data deletion:"
+    );
+
+    if (finalConfirmation !== 'DELETE') {
+      toast({
+        title: "Data deletion cancelled",
+        description: "Confirmation text did not match. Your data is safe.",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/data/clear', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to clear data');
+      }
+
+      queryClient.clear();
+      
+      toast({
+        title: "All data cleared",
+        description: "All data has been permanently deleted from the system",
+      });
+
+      // Refresh the page to reset the application state
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+    } catch (error) {
+      console.error('Clear data error:', error);
+      toast({
+        title: "Failed to clear data",
+        description: "An error occurred while clearing data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRestoreFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/json') {
+      setSelectedBackupFile(file);
+    } else {
+      toast({
+        title: "Invalid file",
+        description: "Please select a valid JSON backup file",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRestoreData = async () => {
+    if (!selectedBackupFile) return;
+
+    const confirmed = window.confirm(
+      "⚠️ WARNING: This will replace ALL current data with the backup data. Current data will be lost. Are you sure you want to continue?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('backup', selectedBackupFile);
+
+      const response = await fetch('/api/backup/restore', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to restore backup');
+      }
+
+      queryClient.clear();
+      
+      toast({
+        title: "Data restored successfully",
+        description: "Your backup has been restored successfully",
+      });
+
+      // Refresh the page to reload the restored data
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+    } catch (error) {
+      console.error('Restore error:', error);
+      toast({
+        title: "Restore failed",
+        description: "Failed to restore backup. Please check the file and try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const generateTestReceipt = () => `
 ${receiptSettings.businessName}
 Professional Retail Solution
@@ -220,6 +381,7 @@ ${receiptSettings.receiptFooter}
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="receipts">Receipt Settings</TabsTrigger>
+            <TabsTrigger value="data">Data Management</TabsTrigger>
             <TabsTrigger value="tax">Tax Settings</TabsTrigger>
           </TabsList>
 
@@ -589,6 +751,100 @@ ${receiptSettings.receiptFooter}
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Data Management */}
+          <TabsContent value="data" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DatabaseIcon className="h-5 w-5" />
+                  Data Management
+                </CardTitle>
+                <CardDescription>
+                  Backup your data or clear all data from the system
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Backup Section */}
+                  <div className="border rounded-lg p-6 space-y-4">
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <DatabaseIcon className="h-5 w-5" />
+                      <h3 className="font-semibold">Backup Data</h3>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Create a complete backup of your POS data including products, sales, purchases, customers, and suppliers.
+                    </p>
+                    <div className="space-y-2">
+                      <Button 
+                        onClick={handleBackupData}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        <DatabaseIcon className="h-4 w-4 mr-2" />
+                        Create Backup
+                      </Button>
+                      <p className="text-xs text-gray-500">
+                        Backup will be saved to your downloads folder
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Clear Data Section */}
+                  <div className="border rounded-lg p-6 space-y-4 border-red-200 dark:border-red-800">
+                    <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                      <ShieldIcon className="h-5 w-5" />
+                      <h3 className="font-semibold">Clear All Data</h3>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Permanently delete all data from the system. This action cannot be undone.
+                    </p>
+                    <div className="space-y-2">
+                      <Button 
+                        onClick={handleClearData}
+                        className="w-full"
+                        variant="destructive"
+                      >
+                        <ShieldIcon className="h-4 w-4 mr-2" />
+                        Clear All Data
+                      </Button>
+                      <p className="text-xs text-red-500">
+                        ⚠️ This will delete all your data permanently
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Restore Section */}
+                <div className="border-t pt-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                      <DatabaseIcon className="h-5 w-5" />
+                      <h3 className="font-semibold">Restore from Backup</h3>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Restore your data from a previously created backup file.
+                    </p>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleRestoreFile}
+                        className="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      <Button 
+                        onClick={handleRestoreData}
+                        disabled={!selectedBackupFile}
+                        variant="outline"
+                      >
+                        Restore Data
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Tax Settings */}
