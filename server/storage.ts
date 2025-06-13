@@ -415,11 +415,36 @@ export const storage = {
 
   async deleteSupplier(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(suppliers).where(eq(suppliers.id, id)).returning({ id: suppliers.id });
-      return result.length > 0;
+      console.log('Storage: Attempting to delete supplier with ID:', id);
+      
+      // Check if supplier exists first
+      const existingSupplier = await this.getSupplierById(id);
+      if (!existingSupplier) {
+        console.log('Storage: Supplier not found with ID:', id);
+        return false;
+      }
+
+      // Use direct SQLite for reliable deletion
+      const { sqlite } = await import('../db/index.js');
+
+      // Check for references (purchases) before deletion
+      const purchaseCheck = sqlite.prepare(`
+        SELECT COUNT(*) as count FROM purchases WHERE supplier_id = ?
+      `).get(id);
+
+      if (purchaseCheck.count > 0) {
+        throw new Error(`Cannot delete supplier. This supplier has ${purchaseCheck.count} associated purchase records. Please remove or reassign these purchases first.`);
+      }
+
+      // Delete the supplier
+      const deleteSupplier = sqlite.prepare('DELETE FROM suppliers WHERE id = ?');
+      const result = deleteSupplier.run(id);
+
+      console.log('Storage: Supplier deletion result:', result);
+      return result.changes > 0;
     } catch (error) {
-      console.error('Error deleting supplier:', error);
-      throw error;
+      console.error('Storage: Error deleting supplier:', error);
+      throw new Error(`Failed to delete supplier: ${error.message}`);
     }
   },
 
