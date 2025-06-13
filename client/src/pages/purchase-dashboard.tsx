@@ -90,6 +90,8 @@ export default function PurchaseDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -102,11 +104,19 @@ export default function PurchaseDashboard() {
   // Delete purchase mutation
   const deletePurchase = useMutation({
     mutationFn: async (purchaseId: number) => {
-      const response = await apiRequest("DELETE", `/api/purchases/${purchaseId}`);
+      const response = await fetch(`/api/purchases/${purchaseId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
       if (!response.ok) {
-        throw new Error("Failed to delete purchase");
+        const errorData = await response.text();
+        throw new Error(errorData || `Failed to delete purchase. Status: ${response.status}`);
       }
-      return response.json();
+      
+      return response.ok;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
@@ -114,13 +124,17 @@ export default function PurchaseDashboard() {
         title: "Success",
         description: "Purchase order deleted successfully",
       });
+      setDeleteDialogOpen(false);
+      setPurchaseToDelete(null);
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Delete error:', error);
       toast({
         title: "Error",
-        description: "Failed to delete purchase order",
+        description: error.message || "Failed to delete purchase order",
         variant: "destructive",
       });
+      setDeleteDialogOpen(false);
     },
   });
 
@@ -188,8 +202,15 @@ export default function PurchaseDashboard() {
     window.location.href = `/purchase-entry-professional?edit=${purchase.id}`;
   };
 
-  const handleDelete = async (purchase: Purchase) => {
-    deletePurchase.mutate(purchase.id);
+  const handleDelete = (purchase: Purchase) => {
+    setPurchaseToDelete(purchase);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (purchaseToDelete) {
+      deletePurchase.mutate(purchaseToDelete.id);
+    }
   };
 
   if (error) {
@@ -525,31 +546,13 @@ export default function PurchaseDashboard() {
                                       Print Order
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Delete Purchase Order</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Are you sure you want to delete this purchase order? This action cannot be undone.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() => handleDelete(purchase)}
-                                            className="bg-red-600 hover:bg-red-700"
-                                          >
-                                            Delete
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDelete(purchase)}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </TableCell>
@@ -1046,6 +1049,56 @@ export default function PurchaseDashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-red-600" />
+                Delete Purchase Order
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this purchase order? This action cannot be undone.
+                {purchaseToDelete && (
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="text-sm font-medium text-red-800">
+                      <strong>Order:</strong> {purchaseToDelete.orderNumber || `PO-${purchaseToDelete.id}`}
+                    </div>
+                    <div className="text-sm text-red-700">
+                      <strong>Supplier:</strong> {purchaseToDelete.supplier?.name || 'Unknown'}
+                    </div>
+                    <div className="text-sm text-red-700">
+                      <strong>Amount:</strong> {formatCurrency(parseFloat(purchaseToDelete.totalAmount?.toString() || "0"))}
+                    </div>
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletePurchase.isPending}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                disabled={deletePurchase.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deletePurchase.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Order
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

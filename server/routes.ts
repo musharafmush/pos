@@ -1546,7 +1546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Routes: Error deleting supplier:', error);
-      
+
       // Check for specific error types
       if (error.message.includes('Cannot delete supplier')) {
         return res.status(400).json({ 
@@ -1855,7 +1855,7 @@ app.post("/api/customers", async (req, res) => {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ errors: error.errors });
       }
-      console.error('Error creating user:', error);
+      console.error('Error creating user:, error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
@@ -2732,6 +2732,46 @@ app.post("/api/customers", async (req, res) => {
       res.status(500).json({ error: "Failed to fetch profit analysis" });
     }
   });
+
+  // Delete purchase
+app.delete("/api/purchases/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+
+    if (isNaN(id)) {
+      return c.json({ error: "Invalid purchase ID" }, 400);
+    }
+
+    // Start a transaction to ensure data consistency
+    const deleteTransaction = db.transaction(() => {
+      // First delete related purchase items
+      const deleteItemsStmt = db.prepare("DELETE FROM purchase_items WHERE purchase_id = ?");
+      const itemsResult = deleteItemsStmt.run(id);
+
+      // Then delete the purchase
+      const deletePurchaseStmt = db.prepare("DELETE FROM purchases WHERE id = ?");
+      const purchaseResult = deletePurchaseStmt.run(id);
+
+      return { itemsDeleted: itemsResult.changes, purchaseDeleted: purchaseResult.changes };
+    });
+
+    const result = deleteTransaction();
+
+    if (result.purchaseDeleted === 0) {
+      return c.json({ error: "Purchase not found" }, 404);
+    }
+
+    console.log(`Deleted purchase ${id} with ${result.itemsDeleted} items`);
+    return c.json({ 
+      success: true, 
+      message: "Purchase deleted successfully",
+      itemsDeleted: result.itemsDeleted
+    });
+  } catch (error: any) {
+    console.error("Error deleting purchase:", error);
+    return c.json({ error: `Failed to delete purchase: ${error.message}` }, 500);
+  }
+});
 
   // Create HTTP server
   const httpServer = createServer(app);
