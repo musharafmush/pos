@@ -1434,8 +1434,7 @@ export default function PurchaseEntryProfessional() {
                           <SelectItem value="pending_approval">Pending Approval</SelectItem>
                           <SelectItem value="approved">Approved</SelectItem>
                           <SelectItem value="ordered">Ordered</SelectItem>
-                          <SelectItem value="partially_received">Partially Received</SelectItem>
-                          <SelectItem value="received">Fully Received</SelectItem>                          <SelectItem value="closed">Closed</SelectItem>
+                          <SelectItem value="partially_received">Partially Received</SelectItem>                          <SelectItem value="closed">Closed</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                         </SelectContent>
                       </Select>
@@ -1653,32 +1652,32 @@ export default function PurchaseEntryProfessional() {
                       <Table className="text-sm">
                         <TableHeader>
                           <TableRow className="bg-blue-50 border-b-2 border-blue-200">
-                            <TableHead className="w-16 text-center font-bold border-r px-2 py-3">No</TableHead>
-                            <TableHead className="w-32 font-bold border-r px-2 py-3">Code</TableHead>
-                            <TableHead className="min-w-[200px] font-bold border-r px-2 py-3">Product Name</TableHead>
-                            <TableHead className="min-w-[150px] font-bold border-r px-2 py-3">Description</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Previous Stock</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Received Qty</TableHead>
-                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Free Qty</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Cost</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">HSN Code</TableHead>
-                            <TableHead className="w-20 text-center font-bold border-r px-2 py-3">Tax %</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Disc Amt</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Exp. Date</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Net Cost</TableHead>
-                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">ROI %</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Gross Profit %</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Selling Price</TableHead>
-                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">MRP</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Amount</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Net Amount</TableHead>
-                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Cash %</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Cash Amt</TableHead>
-                            <TableHead className="w-28 text-center font-file>
-bold border-r px-2 py-3">Batch No</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Location</TableHead>
-                            <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Unit</TableHead>
-                            <TableHead className="w-20 text-center font-bold px-2 py-3">Actions</TableHead>
+                            <TableHead className="w-16 text-center font-bold border-r px-3 py-3 text-xs">No</TableHead>
+                            <TableHead className="w-36 font-bold border-r px-3 py-3 text-xs">Code</TableHead>
+                            <TableHead className="min-w-[250px] font-bold border-r px-3 py-3 text-xs">Product Name</TableHead>
+                            <TableHead className="min-w-[180px] font-bold border-r px-3 py-3 text-xs">Description</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Previous Stock</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Received Qty</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">Free Qty</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Cost</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">HSN Code</TableHead>
+                            <TableHead className="w-24 text-center font-bold border-r px-3 py-3 text-xs">Tax %</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Disc Amt</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r px-3 py-3 text-xs">Exp. Date</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Net Cost</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">ROI %</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r px-3 py-3 text-xs">Gross Profit %</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r px-3 py-3 text-xs">Selling Price</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">MRP</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Amount</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r px-3 py-3 text-xs">Net Amount</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">Cash %</TableHead>
+                            <Table```text
+Head className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Cash Amt</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Batch No</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Location</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">Unit</TableHead>
+                            <TableHead className="w-24 text-center font-bold px-3 py-3 text-xs">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1703,11 +1702,11 @@ bold border-r px-2 py-3">Batch No</TableHead>
 
                             return (
                               <TableRow key={field.id} className="hover:bg-gray-50">
-                                <TableCell className="text-center font-medium border-r px-2 py-3">
+                                <TableCell className="text-center font-medium border-r px-3 py-3">
                                   {index + 1}
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     {...form.register(`items.${index}.code`)}
                                     className="w-full text-xs"
@@ -1743,7 +1742,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="space-y-1">
                                     {/* Enhanced Product search with auto-suggestion dropdown */}
                                     <div className="relative">
@@ -1831,7 +1830,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     {...form.register(`items.${index}.description`)}
                                     className="w-full text-xs"
@@ -1859,7 +1858,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     type="number"
                                     min="0"
@@ -1897,7 +1896,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     type="number"
                                     min="0"
@@ -1907,7 +1906,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="relative">
                                     <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
                                     <Input
@@ -1957,7 +1956,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     {...form.register(`items.${index}.hsnCode`)}
                                     className="w-full text-center text-xs"
@@ -1965,7 +1964,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     type="number"
                                     min="0"
@@ -1977,7 +1976,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="relative">
                                     <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
                                     <Input
@@ -1991,7 +1990,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     type="date"
                                     {...form.register(`items.${index}.expiryDate`)}
@@ -2000,28 +1999,28 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
                                     <span className="text-xs">₹</span>
                                     <span className="ml-1 font-medium">{netCost.toFixed(0)}</span>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
                                     <span className="font-medium">{roiPercent.toFixed(2)}</span>
                                     <span className="text-xs ml-1">%</span>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
                                                                    <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
                                     <span className="text-xs ml-1">%</span>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="relative">
                                     <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
                                     <Input
@@ -2035,7 +2034,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="relative">
                                     <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
                                     <Input
@@ -2049,7 +2048,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="flex items-center justify-center p-1 bg-blue-50 rounded text-xs">
                                     {amount > 0 ? (
                                       <>
@@ -2062,7 +2061,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="flex items-center justify-center p-1 bg-green-50 rounded text-xs">
                                     {form.watch(`items.${index}.netAmount`) > 0 ? (
                                       <>
@@ -2075,7 +2074,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     type="number"
                                     min="0"
@@ -2087,7 +2086,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
                                     {cashAmount > 0 ? (
                                       <>
@@ -2100,7 +2099,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     {...form.register(`items.${index}.batchNumber`)}
                                     className="w-full text-xs"
@@ -2108,7 +2107,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Input
                                     {...form.register(`items.${index}.location`)}
                                     className="w-full text-xs"
@@ -2116,7 +2115,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
+                                <TableCell className="border-r px-3 py-3">
                                   <Select onValueChange={(value) => form.setValue(`items.${index}.unit`, value)} defaultValue="PCS">
                                     <SelectTrigger className="w-full text-xs">
                                       <SelectValue placeholder="Unit" />
@@ -2132,7 +2131,7 @@ bold border-r px-2 py-3">Batch No</TableHead>
                                   </Select>
                                 </TableCell>
 
-                                <TableCell className="px-2 py-3">
+                                <TableCell className="px-3 py-3">
                                   <div className="flex items-center justify-center gap-1">
                                     <Button
                                       type="button"
