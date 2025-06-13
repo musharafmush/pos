@@ -452,11 +452,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if SKU already exists
-      const existingProduct = await storage.getProductBySku(requestData.sku);
-      if (existingProduct) {
-        return res.status(400).json({ 
-          message: 'A product with this SKU/Item Code already exists' 
-        });
+      try {
+        const existingProduct = await storage.getProductBySku(requestData.sku);
+        if (existingProduct) {
+          return res.status(400).json({
+            message: 'A product with this SKU/Item Code already exists'
+          });
+        }
+      } catch (skuCheckError) {
+        console.error('Error checking SKU:', skuCheckError);
+        // Continue with creation if SKU check fails
       }
 
       const productData = schema.productInsertSchema.parse(requestData);

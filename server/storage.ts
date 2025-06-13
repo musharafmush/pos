@@ -136,12 +136,22 @@ export const storage = {
 
   async getProductBySku(sku: string): Promise<Product | null> {
     try {
-      const product = await db.query.products.findFirst({
-        where: eq(products.sku, sku),
-        with: {
-          category: true
-        }
-      });
+      // Try ORM method first
+      try {
+        const product = await db.query.products.findFirst({
+          where: eq(products.sku, sku),
+          with: {
+            category: true
+          }
+        });
+        return product || null;
+      } catch (ormError) {
+        console.log('ORM method failed, trying direct SQLite query:', ormError.message);
+      }
+
+      // Fallback to direct SQLite query
+      const { sqlite } = await import('../db/index.js');
+      const product = sqlite.prepare('SELECT * FROM products WHERE sku = ?').get(sku);
       return product || null;
     } catch (error) {
       console.error('Error fetching product by SKU:', error);
