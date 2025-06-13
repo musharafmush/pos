@@ -169,7 +169,7 @@ export default function Settings() {
       autoPrint: receiptSettings.printAutomatically,
       defaultPrinter: receiptSettings.defaultPrinter
     };
-    
+
     localStorage.setItem('receiptSettings', JSON.stringify(settingsToSave));
     toast({
       title: "Settings updated",
@@ -190,12 +190,12 @@ export default function Settings() {
       }
 
       const result = await response.json();
-      
+
       // Download the backup file
       const downloadResponse = await fetch('/api/backup/download', {
         credentials: 'include'
       });
-      
+
       if (downloadResponse.ok) {
         const blob = await downloadResponse.blob();
         const url = window.URL.createObjectURL(blob);
@@ -258,7 +258,7 @@ export default function Settings() {
       }
 
       queryClient.clear();
-      
+
       toast({
         title: "All data cleared",
         description: "All data has been permanently deleted from the system",
@@ -316,7 +316,7 @@ export default function Settings() {
       }
 
       queryClient.clear();
-      
+
       toast({
         title: "Data restored successfully",
         description: "Your backup has been restored successfully",
@@ -381,8 +381,8 @@ ${receiptSettings.receiptFooter}
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="receipts">Receipt Settings</TabsTrigger>
-            <TabsTrigger value="data">Data Management</TabsTrigger>
             <TabsTrigger value="tax">Tax Settings</TabsTrigger>
+            <TabsTrigger value="data">Data Management</TabsTrigger>
           </TabsList>
 
           {/* Profile Settings */}
