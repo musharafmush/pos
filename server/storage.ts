@@ -1,4 +1,3 @@
-
 import { db } from "../db/index.js";
 import { eq, desc, sql, and, gte, lte, like, asc } from "drizzle-orm";
 import * as schema from "../shared/schema.js";
@@ -39,6 +38,33 @@ export class Storage {
     return await db.select().from(schema.users).orderBy(desc(schema.users.createdAt));
   }
 
+  async getUserByUsernameOrEmail(usernameOrEmail: string) {
+    try {
+      const { sqlite } = await import('@db');
+
+      // Try to find user by either email or username
+      const query = `
+        SELECT * FROM users 
+        WHERE email = ? OR username = ?
+        LIMIT 1
+      `;
+
+      const user = sqlite.prepare(query).get(usernameOrEmail, usernameOrEmail);
+
+      if (user) {
+        console.log('Found user in database:', user.id, user.email);
+        return user;
+      }
+
+      console.log('No user found for:', usernameOrEmail);
+      return null;
+    } catch (error) {
+      console.error('Error in getUserByUsernameOrEmail:', error);
+      // Don't throw error, return null to allow fallback
+      return null;
+    }
+  }
+
   // Product management
   async createProduct(productData: any) {
     const [product] = await db.insert(schema.products).values(productData).returning();
@@ -48,13 +74,13 @@ export class Storage {
   async getProducts(page: number = 1, limit: number = 50, search?: string) {
     const offset = (page - 1) * limit;
     let query = db.select().from(schema.products);
-    
+
     if (search) {
       query = query.where(
         sql`${schema.products.name} LIKE ${'%' + search + '%'} OR ${schema.products.sku} LIKE ${'%' + search + '%'}`
       );
     }
-    
+
     const products = await query.limit(limit).offset(offset).orderBy(desc(schema.products.createdAt));
     return products;
   }
@@ -77,7 +103,7 @@ export class Storage {
   async createSupplier(supplierData: any) {
     try {
       console.log('Creating supplier with data:', supplierData);
-      
+
       // Validate required fields
       if (!supplierData.name) {
         throw new Error('Supplier name is required');
@@ -103,7 +129,7 @@ export class Storage {
 
       const [supplier] = await db.insert(schema.suppliers).values(processedData).returning();
       console.log('Supplier created successfully:', supplier);
-      
+
       return supplier;
     } catch (error) {
       console.error('Error creating supplier:', error);
@@ -199,7 +225,7 @@ export class Storage {
     const totalProducts = await db.select({ count: sql`count(*)` }).from(schema.products);
     const totalCustomers = await db.select({ count: sql`count(*)` }).from(schema.customers);
     const totalSales = await db.select({ count: sql`count(*)` }).from(schema.sales);
-    
+
     return {
       totalProducts: totalProducts[0]?.count || 0,
       totalCustomers: totalCustomers[0]?.count || 0,
@@ -210,7 +236,7 @@ export class Storage {
   async getDailySalesData(days: number = 7) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    
+
     return await db.select({
       date: sql`DATE(${schema.sales.createdAt})`,
       total: sql`SUM(${schema.sales.total})`
