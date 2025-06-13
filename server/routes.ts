@@ -1435,15 +1435,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/suppliers', isAuthenticated, async (req, res) => {
     try {
-      const supplierData = schema.supplierInsertSchema.parse(req.body);
-      const supplier = await storage.createSupplier(supplierData);
-      res.status(201).json(supplier);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ errors: error.errors });
+      console.log('Creating supplier with data:', req.body);
+      
+      // Validate required fields first
+      if (!req.body.name || req.body.name.trim() === '') {
+        return res.status(400).json({ 
+          message: 'Supplier name is required',
+          errors: [{ field: 'name', message: 'Name is required' }]
+        });
       }
+
+      // Process the data to handle empty strings
+      const processedData = {
+        ...req.body,
+        name: req.body.name.trim(),
+        email: req.body.email && req.body.email.trim() !== '' ? req.body.email.trim() : '',
+        phone: req.body.phone && req.body.phone.trim() !== '' ? req.body.phone.trim() : '',
+        address: req.body.address && req.body.address.trim() !== '' ? req.body.address.trim() : '',
+        contactPerson: req.body.contactPerson && req.body.contactPerson.trim() !== '' ? req.body.contactPerson.trim() : '',
+        taxId: req.body.taxId && req.body.taxId.trim() !== '' ? req.body.taxId.trim() : '',
+        registrationType: req.body.registrationType || '',
+        registrationNumber: req.body.registrationNumber || '',
+        mobileNo: req.body.mobileNo || '',
+        extensionNumber: req.body.extensionNumber || '',
+        faxNo: req.body.faxNo || '',
+        building: req.body.building || '',
+        street: req.body.street || '',
+        city: req.body.city || '',
+        state: req.body.state || '',
+        country: req.body.country || '',
+        pinCode: req.body.pinCode || '',
+        landmark: req.body.landmark || '',
+        supplierType: req.body.supplierType || '',
+        creditDays: req.body.creditDays || '',
+        discountPercent: req.body.discountPercent || '',
+        notes: req.body.notes || '',
+        status: req.body.status || 'active'
+      };
+
+      console.log('Processed supplier data:', processedData);
+      
+      const supplierData = schema.supplierInsertSchema.parse(processedData);
+      console.log('Validated supplier data:', supplierData);
+      
+      const supplier = await storage.createSupplier(supplierData);
+      console.log('Supplier created successfully:', supplier);
+      
+      res.status(201).json({
+        ...supplier,
+        message: 'Supplier created successfully'
+      });
+    } catch (error) {
       console.error('Error creating supplier:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      
+      if (error instanceof z.ZodError) {
+        console.error('Validation errors:', error.errors);
+        return res.status(400).json({ 
+          message: 'Validation failed',
+          errors: error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
+      
+      // Handle specific database errors
+      if (error.message?.includes('UNIQUE constraint')) {
+        return res.status(400).json({ 
+          message: 'A supplier with this information already exists',
+          error: 'Duplicate entry'
+        });
+      }
+      
+      res.status(500).json({ 
+        message: 'Failed to create supplier. Please try again.',
+        error: error.message || 'Internal server error'
+      });
     }
   });
 

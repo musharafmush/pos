@@ -165,22 +165,38 @@ export default function Suppliers() {
   // Create supplier mutation
   const createSupplierMutation = useMutation({
     mutationFn: async (data: SupplierFormValues) => {
+      console.log('Submitting supplier data:', data);
       const res = await apiRequest("POST", "/api/suppliers", data);
-      return await res.json();
+      const result = await res.json();
+      console.log('Supplier creation response:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Supplier created",
-        description: "The supplier has been successfully created.",
+        description: data.message || "The supplier has been successfully created.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       form.reset();
       setFormOpen(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Supplier creation error:', error);
+      
+      let errorMessage = 'Failed to create supplier';
+      
+      // Handle specific error formats
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.errors && Array.isArray(error.errors)) {
+        errorMessage = error.errors.map((err: any) => `${err.field}: ${err.message}`).join(', ');
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       toast({
         title: "Error creating supplier",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },
