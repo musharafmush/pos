@@ -1519,16 +1519,69 @@ export default function PurchaseEntryProfessional() {
                                   <Input
                                     {...form.register(`items.${index}.code`)}
                                     className="w-full text-xs"
-                                    placeholder="Code"
+                                    placeholder="Code/SKU (Press Enter to search)"
                                     onChange={(e) => {
                                       form.setValue(`items.${index}.code`, e.target.value);
                                       syncTableToModal(index);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        const searchCode = e.currentTarget.value.toLowerCase().trim();
+                                        if (searchCode) {
+                                          const matchedProduct = products.find(p => 
+                                            p.sku?.toLowerCase() === searchCode ||
+                                            p.sku?.toLowerCase().includes(searchCode)
+                                          );
+                                          if (matchedProduct) {
+                                            handleProductSelection(index, matchedProduct.id);
+                                            toast({
+                                              title: "Product Found by Code! 🎯",
+                                              description: `${matchedProduct.name} (${matchedProduct.sku}) selected.`,
+                                            });
+                                          } else {
+                                            toast({
+                                              variant: "destructive",
+                                              title: "Code Not Found",
+                                              description: `No product found with code: ${searchCode}`,
+                                            });
+                                          }
+                                        }
+                                      }
                                     }}
                                   />
                                 </TableCell>
 
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="space-y-1">
+                                    {/* Product search by name */}
+                                    <Input
+                                      placeholder="Search by product name..."
+                                      className="w-full text-xs"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          const searchTerm = e.currentTarget.value.toLowerCase();
+                                          const matchedProduct = products.find(p => 
+                                            p.name.toLowerCase().includes(searchTerm) ||
+                                            p.description?.toLowerCase().includes(searchTerm)
+                                          );
+                                          if (matchedProduct) {
+                                            handleProductSelection(index, matchedProduct.id);
+                                            e.currentTarget.value = '';
+                                            toast({
+                                              title: "Product Found! 🎯",
+                                              description: `${matchedProduct.name} selected automatically.`,
+                                            });
+                                          } else {
+                                            toast({
+                                              variant: "destructive",
+                                              title: "Product Not Found",
+                                              description: "No product matches your search term.",
+                                            });
+                                          }
+                                        }
+                                      }}
+                                    />
+                                    
                                     <Select 
                                       onValueChange={(value) => handleProductSelection(index, parseInt(value))}
                                       value={form.watch(`items.${index}.productId`)?.toString() || ""}
@@ -1636,6 +1689,13 @@ export default function PurchaseEntryProfessional() {
                                     })}
                                     className="w-full text-center text-xs"
                                     placeholder="0"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        // Move to cost field
+                                        const nextField = document.querySelector(`input[name="items.${index}.unitCost"]`) as HTMLInputElement;
+                                        nextField?.focus();
+                                      }
+                                    }}
                                   />
                                 </TableCell>
 
@@ -1680,6 +1740,21 @@ export default function PurchaseEntryProfessional() {
                                       })}
                                       className="w-full text-right text-xs pl-6"
                                       placeholder="0"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          // Move to next row's product field or add new row
+                                          if (index === fields.length - 1) {
+                                            addItem();
+                                            setTimeout(() => {
+                                              const newRowCodeField = document.querySelector(`input[name="items.${index + 1}.code"]`) as HTMLInputElement;
+                                              newRowCodeField?.focus();
+                                            }, 100);
+                                          } else {
+                                            const nextRowCodeField = document.querySelector(`input[name="items.${index + 1}.code"]`) as HTMLInputElement;
+                                            nextRowCodeField?.focus();
+                                          }
+                                        }
+                                      }}
                                     />
                                   </div>
                                 </TableCell>
