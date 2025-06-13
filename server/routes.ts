@@ -665,95 +665,220 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 Restoring data from backup...');
 
-      // Handle file upload (you might need to add multer for file uploads)
       let backupData;
-      if (req.body.backup) {
-        backupData = JSON.parse(req.body.backup);
-      } else {
-        return res.status(400).json({ error: 'No backup data provided' });
+      try {
+        if (req.body.backup) {
+          // Handle JSON string backup data
+          if (typeof req.body.backup === 'string') {
+            backupData = JSON.parse(req.body.backup);
+          } else {
+            backupData = req.body.backup;
+          }
+        } else {
+          return res.status(400).json({ error: 'No backup data provided' });
+        }
+
+        // Validate backup structure
+        if (!backupData.data || !backupData.timestamp) {
+          return res.status(400).json({ error: 'Invalid backup file format' });
+        }
+
+        console.log('📦 Backup validation passed, starting restore...');
+      } catch (parseError) {
+        console.error('❌ Error parsing backup data:', parseError);
+        return res.status(400).json({ error: 'Invalid JSON format in backup file' });
       }
 
       const { sqlite } = await import('@db');
 
       // Start transaction
       const restoreTransaction = sqlite.transaction(() => {
-        // Clear existing data (in reverse order due to foreign keys)
-        sqlite.prepare('DELETE FROM purchase_items').run();
-        sqlite.prepare('DELETE FROM sale_items').run();
-        sqlite.prepare('DELETE FROM purchases').run();
-        sqlite.prepare('DELETE FROM sales').run();
-        sqlite.prepare('DELETE FROM products').run();
-        sqlite.prepare('DELETE FROM customers').run();
-        sqlite.prepare('DELETE FROM suppliers').run();
-        sqlite.prepare('DELETE FROM categories').run();
-        sqlite.prepare('DELETE FROM settings WHERE key != "admin_setup"').run(); // Keep admin setup
+        try {
+          console.log('🗑️ Clearing existing data...');
+          
+          // Clear existing data (in reverse order due to foreign keys)
+          sqlite.prepare('DELETE FROM purchase_items').run();
+          sqlite.prepare('DELETE FROM sale_items').run();
+          sqlite.prepare('DELETE FROM purchases').run();
+          sqlite.prepare('DELETE FROM sales').run();
+          sqlite.prepare('DELETE FROM products').run();
+          sqlite.prepare('DELETE FROM customers').run();
+          sqlite.prepare('DELETE FROM suppliers').run();
+          sqlite.prepare('DELETE FROM categories').run();
+          sqlite.prepare('DELETE FROM settings WHERE key NOT IN ("admin_setup")').run();
 
-        // Restore data
-        const data = backupData.data;
+          // Reset auto-increment sequences
+          sqlite.prepare('DELETE FROM sqlite_sequence').run();
 
-        // Restore categories
-        if (data.categories?.length) {
-          const insertCategory = sqlite.prepare('INSERT INTO categories (id, name, description, created_at) VALUES (?, ?, ?, ?)');
-          data.categories.forEach(cat => {
-            insertCategory.run(cat.id, cat.name, cat.description, cat.created_at);
+          const data = backupData.data;
+          console.log('📊 Backup contains:', {
+            categories: data.categories?.length || 0,
+            suppliers: data.suppliers?.length || 0,
+            customers: data.customers?.length || 0,
+            products: data.products?.length || 0,
+            sales: data.sales?.length || 0,
+            purchases: data.purchases?.length || 0
           });
-        }
 
-        // Restore suppliers
-        if (data.suppliers?.length) {
-          const insertSupplier = sqlite.prepare(`
-            INSERT INTO suppliers (id, name, email, phone, mobile_no, extension_number, fax_no, contact_person, address, building, street, city, state, country, pin_code, landmark, tax_id, registration_type, registration_number, supplier_type, credit_days, discount_percent, notes, status, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `);
-          data.suppliers.forEach(sup => {
-            insertSupplier.run(sup.id, sup.name, sup.email, sup.phone, sup.mobile_no, sup.extension_number, sup.fax_no, sup.contact_person, sup.address, sup.building, sup.street, sup.city, sup.state, sup.country, sup.pin_code, sup.landmark, sup.tax_id, sup.registration_type, sup.registration_number, sup.supplier_type, sup.credit_days, sup.discount_percent, sup.notes, sup.status, sup.created_at);
-          });
-        }
+          // Restore categories
+          if (data.categories?.length) {
+            console.log(`📂 Restoring ${data.categories.length} categories...`);
+            const insertCategory = sqlite.prepare('INSERT INTO categories (id, name, description, created_at) VALUES (?, ?, ?, ?)');
+            data.categories.forEach(cat => {
+              insertCategory.run(cat.id, cat.name, cat.description || null, cat.created_at);
+            });
+          }
 
-        // Restore customers
-        if (data.customers?.length) {
-          const insertCustomer = sqlite.prepare('INSERT INTO customers (id, name, email, phone, address, tax_id, credit_limit, business_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-          data.customers.forEach(cust => {
-            insertCustomer.run(cust.id, cust.name, cust.email, cust.phone, cust.address, cust.tax_id, cust.credit_limit, cust.business_name, cust.created_at);
-          });
-        }
+          // Restore suppliers
+          if (data.suppliers?.length) {
+            console.log(`🏢 Restoring ${data.suppliers.length} suppliers...`);
+            const insertSupplier = sqlite.prepare(`
+              INSERT INTO suppliers (id, name, email, phone, mobile_no, extension_number, fax_no, contact_person, address, building, street, city, state, country, pin_code, landmark, tax_id, registration_type, registration_number, supplier_type, credit_days, discount_percent, notes, status, created_at) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            data.suppliers.forEach(sup => {
+              insertSupplier.run(
+                sup.id, sup.name, sup.email || null, sup.phone || null, sup.mobile_no || null, 
+                sup.extension_number || null, sup.fax_no || null, sup.contact_person || null, 
+                sup.address || null, sup.building || null, sup.street || null, sup.city || null, 
+                sup.state || null, sup.country || null, sup.pin_code || null, sup.landmark || null, 
+                sup.tax_id || null, sup.registration_type || null, sup.registration_number || null, 
+                sup.supplier_type || null, sup.credit_days || null, sup.discount_percent || null, 
+                sup.notes || null, sup.status || 'active', sup.created_at
+              );
+            });
+          }
 
-        // Restore products
-        if (data.products?.length) {
-          const insertProduct = sqlite.prepare(`
-            INSERT INTO products (id, name, description, sku, price, mrp, cost, weight, weight_unit, category_id, stock_quantity, alert_threshold, barcode, image, active, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `);
-          data.products.forEach(prod => {
-            insertProduct.run(prod.id, prod.name, prod.description, prod.sku, prod.price, prod.mrp, prod.cost, prod.weight, prod.weight_unit, prod.category_id, prod.stock_quantity, prod.alert_threshold, prod.barcode, prod.image, prod.active, prod.created_at, prod.updated_at);
-          });
-        }
+          // Restore customers
+          if (data.customers?.length) {
+            console.log(`👥 Restoring ${data.customers.length} customers...`);
+            const insertCustomer = sqlite.prepare('INSERT INTO customers (id, name, email, phone, address, tax_id, credit_limit, business_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            data.customers.forEach(cust => {
+              insertCustomer.run(
+                cust.id, cust.name, cust.email || null, cust.phone || null, 
+                cust.address || null, cust.tax_id || null, cust.credit_limit || 0, 
+                cust.business_name || null, cust.created_at
+              );
+            });
+          }
 
-        // Restore settings
-        if (data.settings?.length) {
-          const insertSetting = sqlite.prepare('INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)');
-          data.settings.forEach(setting => {
-            if (setting.key !== 'admin_setup') { // Don't overwrite admin setup
-              insertSetting.run(setting.key, setting.value, setting.updated_at);
+          // Restore products
+          if (data.products?.length) {
+            console.log(`📦 Restoring ${data.products.length} products...`);
+            const insertProduct = sqlite.prepare(`
+              INSERT INTO products (id, name, description, sku, price, mrp, cost, weight, weight_unit, category_id, stock_quantity, alert_threshold, barcode, image, active, created_at, updated_at) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            data.products.forEach(prod => {
+              insertProduct.run(
+                prod.id, prod.name, prod.description || null, prod.sku, 
+                prod.price, prod.mrp || prod.price, prod.cost || 0, 
+                prod.weight || null, prod.weight_unit || 'kg', prod.category_id, 
+                prod.stock_quantity || 0, prod.alert_threshold || 5, 
+                prod.barcode || null, prod.image || null, prod.active !== false ? 1 : 0, 
+                prod.created_at, prod.updated_at
+              );
+            });
+          }
+
+          // Restore sales
+          if (data.sales?.length) {
+            console.log(`💰 Restoring ${data.sales.length} sales...`);
+            const insertSale = sqlite.prepare(`
+              INSERT INTO sales (id, order_number, customer_id, user_id, total, tax, discount, payment_method, status, created_at) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            data.sales.forEach(sale => {
+              insertSale.run(
+                sale.id, sale.order_number || `SALE-${sale.id}`, sale.customer_id || null, 
+                sale.user_id || 1, sale.total, sale.tax || 0, sale.discount || 0, 
+                sale.payment_method || 'cash', sale.status || 'completed', sale.created_at
+              );
+            });
+
+            // Restore sale items
+            if (data.sale_items?.length) {
+              console.log(`📋 Restoring ${data.sale_items.length} sale items...`);
+              const insertSaleItem = sqlite.prepare(`
+                INSERT INTO sale_items (id, sale_id, product_id, quantity, unit_price, price, subtotal, total) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              `);
+              data.sale_items.forEach(item => {
+                insertSaleItem.run(
+                  item.id, item.sale_id, item.product_id, item.quantity, 
+                  item.unit_price || item.price, item.price || item.unit_price, 
+                  item.subtotal || item.total, item.total || item.subtotal
+                );
+              });
             }
-          });
-        }
+          }
 
-        console.log('✅ Data restored successfully');
+          // Restore purchases
+          if (data.purchases?.length) {
+            console.log(`🛒 Restoring ${data.purchases.length} purchases...`);
+            const insertPurchase = sqlite.prepare(`
+              INSERT INTO purchases (id, purchase_number, order_number, supplier_id, user_id, total, status, order_date, created_at) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            data.purchases.forEach(purchase => {
+              insertPurchase.run(
+                purchase.id, purchase.purchase_number || `PO-${purchase.id}`, 
+                purchase.order_number || purchase.purchase_number || `PO-${purchase.id}`, 
+                purchase.supplier_id, purchase.user_id || 1, purchase.total, 
+                purchase.status || 'pending', purchase.order_date || purchase.created_at, 
+                purchase.created_at
+              );
+            });
+
+            // Restore purchase items
+            if (data.purchase_items?.length) {
+              console.log(`📦 Restoring ${data.purchase_items.length} purchase items...`);
+              const insertPurchaseItem = sqlite.prepare(`
+                INSERT INTO purchase_items (id, purchase_id, product_id, quantity, received_qty, unit_cost, subtotal) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+              `);
+              data.purchase_items.forEach(item => {
+                insertPurchaseItem.run(
+                  item.id, item.purchase_id, item.product_id, item.quantity, 
+                  item.received_qty || item.quantity, item.unit_cost, 
+                  item.subtotal || (item.quantity * item.unit_cost)
+                );
+              });
+            }
+          }
+
+          // Restore settings
+          if (data.settings?.length) {
+            console.log(`⚙️ Restoring ${data.settings.length} settings...`);
+            const insertSetting = sqlite.prepare('INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)');
+            data.settings.forEach(setting => {
+              if (setting.key !== 'admin_setup') {
+                insertSetting.run(setting.key, setting.value, setting.updated_at);
+              }
+            });
+          }
+
+          console.log('✅ All data restored successfully');
+        } catch (transactionError) {
+          console.error('❌ Transaction error:', transactionError);
+          throw transactionError;
+        }
       });
 
       restoreTransaction();
 
       res.json({ 
         success: true, 
-        message: 'Data restored successfully' 
+        message: 'Data restored successfully',
+        timestamp: new Date().toISOString()
       });
 
     } catch (error) {
       console.error('❌ Error restoring backup:', error);
       res.status(500).json({ 
         error: 'Failed to restore backup',
-        message: error.message 
+        message: error.message,
+        details: error.stack
       });
     }
   });

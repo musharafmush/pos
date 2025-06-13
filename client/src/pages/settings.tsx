@@ -281,19 +281,33 @@ export default function Settings() {
 
   const handleRestoreFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'application/json') {
-      setSelectedBackupFile(file);
-    } else {
-      toast({
-        title: "Invalid file",
-        description: "Please select a valid JSON backup file",
-        variant: "destructive"
-      });
+    if (file) {
+      // Accept both .json files and files without extension (for downloaded backups)
+      if (file.type === 'application/json' || file.name.endsWith('.json') || file.name.includes('pos-backup')) {
+        setSelectedBackupFile(file);
+        toast({
+          title: "File selected",
+          description: `Selected: ${file.name}`,
+        });
+      } else {
+        toast({
+          title: "Invalid file",
+          description: "Please select a valid JSON backup file (.json)",
+          variant: "destructive"
+        });
+      }
     }
   };
 
   const handleRestoreData = async () => {
-    if (!selectedBackupFile) return;
+    if (!selectedBackupFile) {
+      toast({
+        title: "No file selected",
+        description: "Please select a backup file first",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const confirmed = window.confirm(
       "⚠️ WARNING: This will replace ALL current data with the backup data. Current data will be lost. Are you sure you want to continue?"
@@ -302,25 +316,47 @@ export default function Settings() {
     if (!confirmed) return;
 
     try {
-      const formData = new FormData();
-      formData.append('backup', selectedBackupFile);
+      // Read the file content
+      const fileContent = await selectedBackupFile.text();
+      let backupData;
 
+      try {
+        backupData = JSON.parse(fileContent);
+      } catch (parseError) {
+        throw new Error('Invalid backup file format. Please ensure it\'s a valid JSON file.');
+      }
+
+      // Validate backup data structure
+      if (!backupData.data || !backupData.timestamp) {
+        throw new Error('Invalid backup file structure. This doesn\'t appear to be a valid POS backup file.');
+      }
+
+      // Send backup data directly as JSON
       const response = await fetch('/api/backup/restore', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ backup: fileContent }),
         credentials: 'include'
       });
 
       if (!response.ok) {
-        throw new Error('Failed to restore backup');
+        const errorText = await response.text();
+        throw new Error(`Failed to restore backup: ${errorText}`);
       }
+
+      const result = await response.json();
 
       queryClient.clear();
 
       toast({
         title: "Data restored successfully",
-        description: "Your backup has been restored successfully",
+        description: "Your backup has been restored successfully. Page will reload shortly.",
       });
+
+      // Clear the selected file
+      setSelectedBackupFile(null);
 
       // Refresh the page to reload the restored data
       setTimeout(() => {
@@ -331,7 +367,7 @@ export default function Settings() {
       console.error('Restore error:', error);
       toast({
         title: "Restore failed",
-        description: "Failed to restore backup. Please check the file and try again.",
+        description: error.message || "Failed to restore backup. Please check the file and try again.",
         variant: "destructive"
       });
     }
@@ -838,24 +874,32 @@ ${receiptSettings.receiptFooter}
                       <div className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg p-4">
                         <input
                           type="file"
-                          accept=".json"
+                          accept=".json,application/json"
                           onChange={handleRestoreFile}
                           className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300"
                         />
+                        <p className="text-xs text-gray-500 mt-2">
+                          Select a backup file (.json) created from this system
+                        </p>
                       </div>
                       <Button 
                         onClick={handleRestoreData}
                         disabled={!selectedBackupFile}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
                         size="lg"
                       >
                         <DatabaseIcon className="h-4 w-4 mr-2" />
-                        {selectedBackupFile ? 'Restore from Backup' : 'Select Backup File'}
+                        {selectedBackupFile ? 'Restore from Backup' : 'Select Backup File First'}
                       </Button>
                       {selectedBackupFile && (
-                        <p className="text-xs text-blue-600 dark:text-blue-400">
-                          📁 Selected: {selectedBackupFile.name}
-                        </p>
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                          <p className="text-xs text-blue-600 dark:text-blue-400">
+                            📁 Selected: {selectedBackupFile.name}
+                          </p>
+                          <p className="text-xs text-blue-500 dark:text-blue-300 mt-1">
+                            Size: {Math.round(selectedBackupFile.size / 1024)} KB
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
