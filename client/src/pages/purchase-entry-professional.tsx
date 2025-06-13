@@ -815,7 +815,8 @@ export default function PurchaseEntryProfessional() {
 
       // Calculate GST automatically
       const cgstRate = parseFloat(product.cgstRate || "0");
-      const sgstRate = parseFloat(product.sgstRate || "0");
+      const sgstRate = parseFloat(```python
+product.sgstRate || "0");
       const igstRate = parseFloat(product.igstRate || "0");
       const totalGst = cgstRate + sgstRate + igstRate;
 
@@ -1701,15 +1702,15 @@ export default function PurchaseEntryProfessional() {
 
                             return (
                               <TableRow key={field.id} className="hover:bg-blue-50 border-b border-gray-200 transition-colors">
-                                <TableCell className="text-center font-medium border-r border-gray-200 px-4 py-4">
+                                <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="flex items-center justify-center h-8">
-                                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
+                                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
                                       {index + 1}
                                     </span>
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r border-gray-200 px-4 py-4">
+                                <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <Input
                                     {...form.register(`items.${index}.code`)}
                                     className="w-full text-sm"
@@ -1745,7 +1746,7 @@ export default function PurchaseEntryProfessional() {
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r border-gray-200 px-4 py-4">
+                                <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     {/* Enhanced Product search with auto-suggestion dropdown */}
                                     <div className="relative">
@@ -1833,7 +1834,7 @@ export default function PurchaseEntryProfessional() {
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r border-gray-200 px-4 py-4">
+                                <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <Input
                                     {...form.register(`items.${index}.description`)}
                                     className="w-full text-sm"
@@ -1845,7 +1846,7 @@ export default function PurchaseEntryProfessional() {
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r border-gray-200 px-4 py-4">
+                                <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg text-sm h-12">
                                     {selectedProduct ? (
                                       <span className={`font-medium ${
