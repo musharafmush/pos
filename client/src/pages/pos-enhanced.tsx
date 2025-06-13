@@ -1463,10 +1463,10 @@ export default function POSEnhanced() {
                   
 
                   {discount > 0 && (
-                    
-                      Discount Amount:
-                      -{formatCurrency(discountAmount)}
-                    
+                    <div className="flex justify-between">
+                      <span>Discount Amount:</span>
+                      <span>-{formatCurrency(discountAmount)}</span>
+                    </div>
                   )}
 
                 
