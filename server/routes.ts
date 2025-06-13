@@ -2197,262 +2197,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create customer
-  app.post("/api/customers", async (req, res) => {
-    try {
-      const { name, email, phone, address, taxNumber, creditLimit, businessName } = req.body;
+app.post("/api/customers", async (req, res) => {
+  try {
+    const { name, email, phone, address, taxNumber, creditLimit, businessName } = req.body;
 
-      console.log("Customer creation request received:", req.body);
+    console.log("Customer creation request received:", req.body);
 
-      // Validate required fields
-      if (!name || name.trim() === "") {
-        return res.status(400).json({ error: "Customer name is required" });
-      }
-
-      // Use direct SQLite insertion to avoid schema mapping issues
-      const { sqlite } = await import('../db/index.js');
-
-      // Check what columns exist in the customers table
-      const tableInfo = sqlite.prepare("PRAGMA table_info(customers)").all();
-      const columnNames = tableInfo.map(col => col.name);
-      console.log("Available columns in customers table:", columnNames);
-
-      // Prepare customer data with proper null handling
-      const customerData = {
-        name: name.trim(),
-        email: (email && email.trim() !== "") ? email.trim() : null,
-        phone: (phone && phone.trim() !== "") ? phone.trim() : null,
-        address: (address && address.trim() !== "") ? address.trim() : null,
-        tax_id: (taxNumber && taxNumber.trim() !== "") ? taxNumber.trim() : null,
-        credit_limit: (creditLimit && !isNaN(parseFloat(creditLimit))) ? parseFloat(creditLimit) : 0,
-        business_name: (businessName && businessName.trim() !== "") ? businessName.trim() : null,
-      };
-
-      console.log("Creating customer with processed data:", customerData);
-
-      // Build the insert query dynamically
-      let columns = ['name'];
-      let placeholders = ['?'];
-      let values = [customerData.name];
-
-      // Add optional columns only if they exist in the table and have values
-      const optionalFields = [
-        { column: 'email', value: customerData.email },
-        { column: 'phone', value: customerData.phone },
-        { column: 'address', value: customerData.address },
-        { column: 'tax_id', value: customerData.tax_id },
-        { column: 'credit_limit', value: customerData.credit_limit },
-        { column: 'business_name', value: customerData.business_name }
-      ];
-
-      optionalFields.forEach(field => {
-        if (columnNames.includes(field.column)) {
-          columns.push(field.column);
-          placeholders.push('?');
-          values.push(field.value);
-        }
-      });
-
-      // Add created_at if it exists
-      if (columnNames.includes('created_at')) {
-        columns.push('created_at');
-        placeholders.push('CURRENT_TIMESTAMP');
-      }
-
-      // Build the final query
-      const insertQuery = `
-        INSERT INTO customers (${columns.join(', ')}) 
-        VALUES (${placeholders.join(', ')})
-      `;
-
-      console.log("Final insert query:", insertQuery);
-      console.log("Values to insert:", values);
-
-      const insertCustomer = sqlite.prepare(insertQuery);
-      const result = insertCustomer.run(...values);
-
-      // Get the created customer with proper field mapping
-      const getCustomerQuery = `
-        SELECT 
-          id,
-          name,
-          email,
-          phone,
-          address,
-          ${columnNames.includes('tax_id') ? 'tax_id as taxId' : 'NULL as taxId'},
-          ${columnNames.includes('credit_limit') ? 'credit_limit as creditLimit' : '0 as creditLimit'},
-          ${columnNames.includes('business_name') ? 'business_name as businessName' : 'NULL as businessName'},
-          ${columnNames.includes('created_at') ? 'created_at as createdAt' : 'NULL as createdAt'}
-        FROM customers 
-        WHERE id = ?
-      `;
-
-      const newCustomer = sqlite.prepare(getCustomerQuery).get(result.lastInsertRowid);
-
-      console.log("Customer created successfully:", newCustomer);
-      res.status(201).json({
-        ...newCustomer,
-        message: "Customer created successfully"
-      });
-
-    } catch (error) {
-      console.error("Error creating customer:", error);
-      res.status(500).json({ 
-        error: "Failed to create customer", 
-        details: error.message 
-      });
+    // Validate required fields
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ error: "Customer name is required" });
     }
-  });
 
-  // Update customer
-  app.put('/api/customers/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const { name, email, phone, address, taxId, creditLimit, businessName } = req.body;
+    // Use direct SQLite insertion to avoid schema mapping issues
+    const { sqlite } = await import('../db/index.js');
 
-      console.log("Customer update request received:", id, req.body);
+    // Check what columns exist in the customers table
+    const tableInfo = sqlite.prepare("PRAGMA table_info(customers)").all();
+    const columnNames = tableInfo.map(col => col.name);
+    console.log("Available columns in customers table:", columnNames);
 
-      // Validate required fields
-      if (!name || name.trim() === "") {
-        return res.status(400).json({ error: "Customer name is required" });
+    // Prepare customer data with proper null handling
+    const customerData = {
+      name: name.trim(),
+      email: (email && email.trim() !== "") ? email.trim() : null,
+      phone: (phone && phone.trim() !== "") ? phone.trim() : null,
+      address: (address && address.trim() !== "") ? address.trim() : null,
+      tax_id: (taxNumber && taxNumber.trim() !== "") ? taxNumber.trim() : null,
+      credit_limit: (creditLimit && !isNaN(parseFloat(creditLimit))) ? parseFloat(creditLimit) : 0,
+      business_name: (businessName && businessName.trim() !== "") ? businessName.trim() : null,
+    };
+
+    console.log("Creating customer with processed data:", customerData);
+
+    // Build the insert query dynamically
+    let columns = ['name'];
+    let placeholders = ['?'];
+    let values = [customerData.name];
+
+    // Add optional columns only if they exist in the table and have values
+    const optionalFields = [
+      { column: 'email', value: customerData.email },
+      { column: 'phone', value: customerData.phone },
+      { column: 'address', value: customerData.address },
+      { column: 'tax_id', value: customerData.tax_id },
+      { column: 'credit_limit', value: customerData.credit_limit },
+      { column: 'business_name', value: customerData.business_name }
+    ];
+
+    optionalFields.forEach(field => {
+      if (columnNames.includes(field.column)) {
+        columns.push(field.column);
+        placeholders.push('?');
+        values.push(field.value);
       }
+    });
 
-      if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ error: "Invalid customer ID" });
-      }
-
-      const { sqlite } = await import('../db/index.js');
-
-      // Check if customer exists
-      const existingCustomer = sqlite.prepare('SELECT id FROM customers WHERE id = ?').get(id);
-      if (!existingCustomer) {
-        return res.status(404).json({ error: 'Customer not found' });
-      }
-
-      // Check what columns exist in the customers table
-      const tableInfo = sqlite.prepare("PRAGMA table_info(customers)").all();
-      const columnNames = tableInfo.map(col => col.name);
-
-      // Prepare update data
-      const updateData = {
-        name: name.trim(),
-        email: (email && email.trim() !== "") ? email.trim() : null,
-        phone: (phone && phone.trim() !== "") ? phone.trim() : null,
-        address: (address && address.trim() !== "") ? address.trim() : null,
-        tax_id: (taxId && taxId.trim() !== "") ? taxId.trim() : null,
-        credit_limit: (creditLimit && !isNaN(parseFloat(creditLimit))) ? parseFloat(creditLimit) : 0,
-        business_name: (businessName && businessName.trim() !== "") ? businessName.trim() : null,
-      };
-
-      // Build update query dynamically
-      const updateFields = [];
-      const values = [];
-
-      Object.entries(updateData).forEach(([key, value]) => {
-        if (columnNames.includes(key)) {
-          updateFields.push(`${key} = ?`);
-          values.push(value);
-        }
-      });
-
-      values.push(id); // Add ID for WHERE clause
-
-      const updateQuery = `
-        UPDATE customers 
-        SET ${updateFields.join(', ')} 
-        WHERE id = ?
-      `;
-
-      console.log("Update query:", updateQuery);
-      console.log("Update values:", values);
-
-      const updateResult = sqlite.prepare(updateQuery).run(...values);
-
-      if (updateResult.changes === 0) {
-        return res.status(404).json({ error: 'Customer not found or no changes made' });
-      }
-
-      // Get the updated customer
-      const getCustomerQuery = `
-        SELECT 
-          id,
-          name,
-          email,
-          phone,
-          address,
-          ${columnNames.includes('tax_id') ? 'tax_id as taxId' : 'NULL as taxId'},
-          ${columnNames.includes('credit_limit') ? 'credit_limit as creditLimit' : '0 as creditLimit'},
-          ${columnNames.includes('business_name') ? 'business_name as businessName' : 'NULL as businessName'},
-          ${columnNames.includes('created_at') ? 'created_at as createdAt' : 'NULL as createdAt'}
-        FROM customers 
-        WHERE id = ?
-      `;
-
-      const updatedCustomer = sqlite.prepare(getCustomerQuery).get(id);
-
-      console.log("Customer updated successfully:", updatedCustomer);
-      res.json({
-        ...updatedCustomer,
-        message: "Customer updated successfully"
-      });
-
-    } catch (error) {
-      console.error("Error updating customer:", error);
-      res.status(500).json({ 
-        error: "Failed to update customer", 
-        message: error.message 
-      });
+    // Add created_at if it exists
+    if (columnNames.includes('created_at')) {
+      columns.push('created_at');
+      placeholders.push('CURRENT_TIMESTAMP');
     }
-  });
 
-  app.delete('/api/customers/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
+    // Build the final query
+    const insertQuery = `
+      INSERT INTO customers (${columns.join(', ')}) 
+      VALUES (${placeholders.join(', ')})
+    `;
 
-      console.log("Customer delete request received:", id);
+    console.log("Final insert query:", insertQuery);
+    console.log("Values to insert:", values);
 
-      if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ error: "Invalid customer ID" });
-      }
+    const insertCustomer = sqlite.prepare(insertQuery);
+    const result = insertCustomer.run(...values);
 
-      const { sqlite } = await import('../db/index.js');
+    // Get the created customer with proper field mapping
+    const getCustomerQuery = `
+      SELECT 
+        id,
+        name,
+        email,
+        phone,
+        address,
+        ${columnNames.includes('tax_id') ? 'tax_id as taxId' : 'NULL as taxId'},
+        ${columnNames.includes('credit_limit') ? 'credit_limit as creditLimit' : '0 as creditLimit'},
+        ${columnNames.includes('business_name') ? 'business_name as businessName' : 'NULL as businessName'},
+        ${columnNames.includes('created_at') ? 'created_at as createdAt' : 'NULL as createdAt'}
+      FROM customers 
+      WHERE id = ?
+    `;
 
-      // Check if customer exists
-      const existingCustomer = sqlite.prepare('SELECT id, name FROM customers WHERE id = ?').get(id);
-      if (!existingCustomer) {
-        return res.status(404).json({ error: 'Customer not found' });
-      }
+    const newCustomer = sqlite.prepare(getCustomerQuery).get(result.lastInsertRowid);
 
-      // Check if customer has any sales transactions
-      const hasSales = sqlite.prepare('SELECT COUNT(*) as count FROM sales WHERE customer_id = ?').get(id);
-      if (hasSales && hasSales.count > 0) {
-        return res.status(400).json({ 
-          error: 'Cannot delete customer', 
-          message: `Customer "${existingCustomer.name}" has ${hasSales.count} sales transactions. Please remove or reassign these transactions first.`
-        });
-      }
+    console.log("Customer created successfully:", newCustomer);
+    res.status(201).json({
+      ...newCustomer,
+      message: "Customer created successfully"
+    });
 
-      // Delete the customer
-      const deleteResult = sqlite.prepare('DELETE FROM customers WHERE id = ?').run(id);
-
-      if (deleteResult.changes === 0) {
-        return res.status(404).json({ error: 'Customer not found' });
-      }
-
-      console.log("Customer deleted successfully:", id);
-      res.json({ 
-        message: 'Customer deleted successfully',
-        deletedId: id,
-        deletedName: existingCustomer.name
-      });
-
-    } catch (error) {
-      console.error("Error deleting customer:", error);
-      res.status(500).json({ 
-        error: "Failed to delete customer", 
-        message: error.message 
-      });
-    }
-  });
+  } catch (error) {
+    console.error("Error creating customer:", error);
+    res.status(500).json({ 
+      error: "Failed to create customer", 
+      details: error.message 
+    });
+  }
+});
 
   app.put('/api/customers/:id', isAuthenticated, async (req, res) => {
     try {

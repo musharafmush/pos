@@ -1,643 +1,693 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus, Filter, Pencil, Trash2, Mail, Phone, MapPin } from "lucide-react";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useFormatCurrency } from "@/lib/currency";
+import { format } from "date-fns";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Edit, Trash2, Eye, Users, Phone, Mail, MapPin, Building } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+// UI Components
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface Customer {
-  id: number;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  taxId?: string;
-  creditLimit?: number;
-  businessName?: string;
-  createdAt?: string;
-}
+// Form schema
+const customerFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters long"),
+  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
+  taxNumber: z.string().optional().or(z.literal("")),
+  creditLimit: z.string().optional().or(z.literal("")),
+  businessName: z.string().optional().or(z.literal("")),
+});
 
-export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+type CustomerFormValues = z.infer<typeof customerFormSchema>;
+
+export default function Customers() {
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    taxId: '',
-    creditLimit: 0,
-    businessName: ''
-  });
+  const [editingCustomer, setEditingCustomer] = useState<any>(null);
+  const [entriesPerPage, setEntriesPerPage] = useState<number>(25);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const formatCurrency = useFormatCurrency();
 
   // Fetch customers
-  const fetchCustomers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/customers');
-      if (response.ok) {
-        const data = await response.json();
-        setCustomers(data);
-      } else {
-        throw new Error('Failed to fetch customers');
+  const { data: customers = [] } = useQuery({
+    queryKey: ["/api/customers"],
+    queryFn: async () => {
+      const res = await fetch("/api/customers");
+      if (!res.ok) throw new Error("Failed to fetch customers");
+      return await res.json();
+    }
+  });
+
+  // Create customer form
+  const form = useForm<CustomerFormValues>({
+    resolver: zodResolver(customerFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      taxNumber: "",
+      creditLimit: "",
+      businessName: "",
+    },
+    // This ensures the form doesn't switch from uncontrolled to controlled
+    mode: "onChange"
+  });
+
+  // Edit customer form
+  const editForm = useForm<CustomerFormValues>({
+    resolver: zodResolver(customerFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      taxNumber: "",
+      creditLimit: "",
+      businessName: "",
+    },
+    // This ensures the form doesn't switch from uncontrolled to controlled
+    mode: "onChange"
+  });
+
+  // Create customer mutation
+  const createCustomerMutation = useMutation({
+    mutationFn: async (data: CustomerFormValues) => {
+      console.log("Submitting customer data:", data);
+      
+      // Map form fields to API expected format
+      const customerPayload = {
+        name: data.name,
+        email: data.email || null,
+        phone: data.phone || null,
+        address: data.address || null,
+        taxNumber: data.taxNumber || null,
+        creditLimit: data.creditLimit || "0",
+        businessName: data.businessName || null,
+      };
+
+      const res = await apiRequest("POST", "/api/customers", customerPayload);
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || errorData.details || `HTTP ${res.status}: ${res.statusText}`);
       }
-    } catch (error) {
-      console.error('Error fetching customers:', error);
+
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      console.log("Customer created successfully:", data);
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
-        title: "Error",
-        description: "Failed to fetch customers",
-        variant: "destructive"
+        title: "Customer created",
+        description: "New customer has been added successfully.",
       });
-    } finally {
-      setLoading(false);
+      form.reset();
+      setIsAddDialogOpen(false);
+    },
+    onError: (error: any) => {
+      console.error("Customer creation error:", error);
+      toast({
+        title: "Error creating customer",
+        description: error.message || "There was an error creating the customer. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Update customer mutation
+  const updateCustomerMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: CustomerFormValues }) => {
+      const res = await apiRequest("PUT", `/api/customers/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      toast({
+        title: "Customer updated",
+        description: "Customer information has been updated successfully.",
+      });
+      editForm.reset();
+      setIsEditDialogOpen(false);
+      setEditingCustomer(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating customer",
+        description: error.message || "There was an error updating the customer.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete customer mutation
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/customers/${id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      toast({
+        title: "Customer deleted",
+        description: "Customer has been deleted successfully.",
+      });
+      setIsDeleteAlertOpen(false);
+      setSelectedCustomerId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting customer",
+        description: error.message || "There was an error deleting the customer.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Handle adding a new customer
+  const onSubmit = (data: CustomerFormValues) => {
+    createCustomerMutation.mutate(data);
+  };
+
+  // Handle editing a customer
+  const onEditSubmit = (data: CustomerFormValues) => {
+    if (editingCustomer) {
+      updateCustomerMutation.mutate({ id: editingCustomer.id, data });
     }
   };
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  // Filter customers based on search term
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone?.includes(searchTerm) ||
-    customer.businessName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      taxId: '',
-      creditLimit: 0,
-      businessName: ''
-    });
-  };
-
-  // Handle create customer
-  const handleCreateCustomer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Customer name is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/customers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim() || null,
-          phone: formData.phone.trim() || null,
-          address: formData.address.trim() || null,
-          taxNumber: formData.taxId.trim() || null,
-          creditLimit: formData.creditLimit || 0,
-          businessName: formData.businessName.trim() || null
-        }),
-      });
-
-      if (response.ok) {
-        const newCustomer = await response.json();
-        setCustomers([...customers, newCustomer]);
-        setIsCreateDialogOpen(false);
-        resetForm();
-        toast({
-          title: "Success",
-          description: "Customer created successfully"
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create customer');
-      }
-    } catch (error) {
-      console.error('Error creating customer:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create customer",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Handle edit customer
-  const handleEditCustomer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedCustomer || !formData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Customer name is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/customers/${selectedCustomer.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim() || null,
-          phone: formData.phone.trim() || null,
-          address: formData.address.trim() || null,
-          taxId: formData.taxId.trim() || null,
-          creditLimit: formData.creditLimit || 0,
-          businessName: formData.businessName.trim() || null
-        }),
-      });
-
-      if (response.ok) {
-        const updatedCustomer = await response.json();
-        setCustomers(customers.map(c => c.id === selectedCustomer.id ? updatedCustomer : c));
-        setIsEditDialogOpen(false);
-        setSelectedCustomer(null);
-        resetForm();
-        toast({
-          title: "Success",
-          description: "Customer updated successfully"
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update customer');
-      }
-    } catch (error) {
-      console.error('Error updating customer:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update customer",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Handle delete customer
-  const handleDeleteCustomer = async (customer: Customer) => {
-    try {
-      const response = await fetch(`/api/customers/${customer.id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setCustomers(customers.filter(c => c.id !== customer.id));
-        toast({
-          title: "Success",
-          description: "Customer deleted successfully"
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete customer');
-      }
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete customer",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Open edit dialog
-  const openEditDialog = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setFormData({
-      name: customer.name || '',
-      email: customer.email || '',
-      phone: customer.phone || '',
-      address: customer.address || '',
-      taxId: customer.taxId || '',
-      creditLimit: customer.creditLimit || 0,
-      businessName: customer.businessName || ''
+  // Handle opening edit dialog
+  const handleEditCustomer = (customer: any) => {
+    setEditingCustomer(customer);
+    editForm.reset({
+      name: customer.name || "",
+      email: customer.email || "",
+      phone: customer.phone || "",
+      address: customer.address || "",
+      taxNumber: customer.taxId || "",
+      creditLimit: customer.creditLimit || "",
+      businessName: customer.businessName || "",
     });
     setIsEditDialogOpen(true);
   };
 
-  // Open view dialog
-  const openViewDialog = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setIsViewDialogOpen(true);
+  // Handle opening delete dialog
+  const handleDeleteClick = (id: number) => {
+    setSelectedCustomerId(id);
+    setIsDeleteAlertOpen(true);
   };
 
-  // Customer form fields
-  const CustomerForm = ({ onSubmit, title, submitText }: { onSubmit: (e: React.FormEvent) => void, title: string, submitText: string }) => (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Customer Name *</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Enter customer name"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="businessName">Business Name</Label>
-          <Input
-            id="businessName"
-            value={formData.businessName}
-            onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-            placeholder="Enter business name"
-          />
-        </div>
-      </div>
+  // Handle confirming deletion
+  const confirmDelete = () => {
+    if (selectedCustomerId) {
+      deleteCustomerMutation.mutate(selectedCustomerId);
+    }
+  };
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            placeholder="Enter email address"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone">Phone</Label>
-          <Input
-            id="phone"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            placeholder="Enter phone number"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
-        <Input
-          id="address"
-          value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          placeholder="Enter full address"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="taxId">Tax ID / GST Number</Label>
-          <Input
-            id="taxId"
-            value={formData.taxId}
-            onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
-            placeholder="Enter tax ID or GST number"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="creditLimit">Credit Limit (₹)</Label>
-          <Input
-            id="creditLimit"
-            type="number"
-            min="0"
-            value={formData.creditLimit}
-            onChange={(e) => setFormData({ ...formData, creditLimit: parseFloat(e.target.value) || 0 })}
-            placeholder="Enter credit limit"
-          />
-        </div>
-      </div>
-
-      <DialogFooter>
-        <Button type="submit">{submitText}</Button>
-      </DialogFooter>
-    </form>
-  );
-
-  if (loading) {
+  // Filter customers based on search term
+  const filteredCustomers = customers.filter((customer: any) => {
+    const searchLower = searchTerm.toLowerCase();
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading customers...</div>
-      </div>
+      customer.name?.toLowerCase().includes(searchLower) ||
+      customer.email?.toLowerCase().includes(searchLower) ||
+      customer.phone?.toLowerCase().includes(searchLower) ||
+      customer.businessName?.toLowerCase().includes(searchLower)
     );
-  }
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customer Management</h1>
-          <p className="text-muted-foreground">
-            Manage your customer database with complete CRUD operations
-          </p>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Customer
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Create New Customer</DialogTitle>
-              <DialogDescription>
-                Add a new customer to your database. Fill in the required information below.
-              </DialogDescription>
-            </DialogHeader>
-            <CustomerForm
-              onSubmit={handleCreateCustomer}
-              title="Create Customer"
-              submitText="Create Customer"
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{customers.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Business Customers</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {customers.filter(c => c.businessName).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">With Email</CardTitle>
-            <Mail className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {customers.filter(c => c.email).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">With Phone</CardTitle>
-            <Phone className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {customers.filter(c => c.phone).length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Customer Database</CardTitle>
-          <CardDescription>
-            Search and manage your customers. Click on actions to view, edit, or delete customers.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search customers by name, email, phone, or business name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
-
-          {/* Customer Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Business</TableHead>
-                  <TableHead>Credit Limit</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCustomers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      {customers.length === 0 ? 'No customers found. Create your first customer!' : 'No customers match your search.'}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div className="font-semibold">{customer.name}</div>
-                          {customer.taxId && (
-                            <div className="text-sm text-muted-foreground">Tax ID: {customer.taxId}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {customer.email && (
-                            <div className="flex items-center text-sm">
-                              <Mail className="h-3 w-3 mr-1" />
-                              {customer.email}
-                            </div>
-                          )}
-                          {customer.phone && (
-                            <div className="flex items-center text-sm">
-                              <Phone className="h-3 w-3 mr-1" />
-                              {customer.phone}
-                            </div>
-                          )}
-                          {customer.address && (
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {customer.address.substring(0, 30)}...
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {customer.businessName ? (
-                          <Badge variant="outline">{customer.businessName}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">Individual</span>
+    <DashboardLayout>
+      <div className="container max-w-full pb-8 px-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">Customers</h1>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="mr-2 h-4 w-4" /> Add Customer
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Customer</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter customer name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="businessName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Business Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter business name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="email@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">
-                          ₹{customer.creditLimit?.toLocaleString() || '0'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openViewDialog(customer)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(customer)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Customer</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{customer.name}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteCustomer(customer)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Phone number" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="taxNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tax Number</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Tax identification number" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="creditLimit"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Credit Limit</FormLabel>
+                            <FormControl>
+                              <Input placeholder="₹0" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button type="button" variant="outline">Cancel</Button>
+                      </DialogClose>
+                      <Button 
+                        type="submit" 
+                        disabled={createCustomerMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {createCustomerMutation.isPending ? "Saving..." : "Save Customer"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Edit Dialog */}
+          <Card>
+            <CardHeader className="pb-1">
+              <div className="flex justify-between items-center">
+                <CardTitle>All your Customers</CardTitle>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="h-9 gap-1">
+                    <Filter className="h-4 w-4" /> Filters
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Show</span>
+                  <Select
+                    value={entriesPerPage.toString()}
+                    onValueChange={(value) => setEntriesPerPage(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-[70px] h-9">
+                      <SelectValue placeholder="25" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-600">entries</span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="h-9">
+                      Export CSV
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9">
+                      Export Excel
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9">
+                      Print
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9">
+                      Column visibility
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9">
+                      Export PDF
+                    </Button>
+                  </div>
+                  <Input
+                    placeholder="Search..."
+                    className="w-[200px] h-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="w-[80px]">Action</TableHead>
+                      <TableHead className="w-[80px]">Contact ID</TableHead>
+                      <TableHead className="w-[200px]">Business Name</TableHead>
+                      <TableHead className="w-[150px]">Name</TableHead>
+                      <TableHead className="w-[200px]">Email</TableHead>
+                      <TableHead className="w-[150px]">Tax number</TableHead>
+                      <TableHead className="w-[120px]">Credit Limit</TableHead>
+                      <TableHead className="w-[120px]">Pay term</TableHead>
+                      <TableHead className="w-[120px]">Opening Balance</TableHead>
+                      <TableHead className="w-[120px]">Advance Balance</TableHead>
+                      <TableHead className="w-[120px]">Added On</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCustomers.slice(0, entriesPerPage).map((customer: any) => (
+                      <TableRow key={customer.id}>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                Actions
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleDeleteClick(customer.id)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                        <TableCell>C{String(customer.id).padStart(5, '0')}</TableCell>
+                        <TableCell>{customer.businessName || '-'}</TableCell>
+                        <TableCell>{customer.name}</TableCell>
+                        <TableCell>
+                          {customer.email ? (
+                            <div className="flex items-center gap-1">
+                              <Mail className="h-4 w-4 text-gray-500" />
+                              <span>{customer.email}</span>
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </TableCell>
+                        <TableCell>{customer.taxId || '-'}</TableCell>
+                        <TableCell>{formatCurrency(customer.creditLimit || 0)}</TableCell>
+                        <TableCell>{customer.paymentTerm || '-'}</TableCell>
+                        <TableCell>{formatCurrency(customer.openingBalance || 0)}</TableCell>
+                        <TableCell>{formatCurrency(customer.advanceBalance || 0)}</TableCell>
+                        <TableCell>
+                          {customer.createdAt 
+                            ? format(new Date(customer.createdAt), 'MM/dd/yyyy')
+                            : '-'
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredCustomers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={11} className="text-center py-8 text-gray-500">
+                          No customers found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Edit Customer Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
-            <DialogDescription>
-              Update customer information. Make changes below and save.
-            </DialogDescription>
           </DialogHeader>
-          <CustomerForm
-            onSubmit={handleEditCustomer}
-            title="Edit Customer"
-            submitText="Update Customer"
-          />
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={editForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name*</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter customer name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="businessName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter business name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="email@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Phone number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={editForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="taxNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tax Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Tax identification number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="creditLimit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Credit Limit</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0.00" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button 
+                  type="submit" 
+                  disabled={updateCustomerMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {updateCustomerMutation.isPending ? "Saving..." : "Update Customer"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
-      {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Customer Details</DialogTitle>
-            <DialogDescription>
-              Complete information for {selectedCustomer?.name}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedCustomer && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Customer Name</Label>
-                  <p className="text-sm text-muted-foreground">{selectedCustomer.name}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Business Name</Label>
-                  <p className="text-sm text-muted-foreground">{selectedCustomer.businessName || 'N/A'}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Email</Label>
-                  <p className="text-sm text-muted-foreground">{selectedCustomer.email || 'N/A'}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Phone</Label>
-                  <p className="text-sm text-muted-foreground">{selectedCustomer.phone || 'N/A'}</p>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">Address</Label>
-                <p className="text-sm text-muted-foreground">{selectedCustomer.address || 'N/A'}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Tax ID</Label>
-                  <p className="text-sm text-muted-foreground">{selectedCustomer.taxId || 'N/A'}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Credit Limit</Label>
-                  <p className="text-sm text-muted-foreground">₹{selectedCustomer.creditLimit?.toLocaleString() || '0'}</p>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">Created Date</Label>
-                <p className="text-sm text-muted-foreground">
-                  {selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}
-                </p>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>Close</Button>
-            <Button onClick={() => {
-              setIsViewDialogOpen(false);
-              if (selectedCustomer) openEditDialog(selectedCustomer);
-            }}>
-              Edit Customer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this customer? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              {deleteCustomerMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </DashboardLayout>
   );
 }
