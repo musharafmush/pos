@@ -2757,6 +2757,136 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Barcode Configuration API endpoints
+  app.get('/api/settings/barcode', async (req, res) => {
+    try {
+      console.log('🔧 Fetching barcode configuration');
+
+      const { sqlite } = await import('@db');
+
+      // Ensure settings table exists with proper schema
+      sqlite.prepare(`
+        CREATE TABLE IF NOT EXISTS settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key TEXT NOT NULL UNIQUE,
+          value TEXT NOT NULL,
+          updated_at DATETIME
+        )
+      `).run();
+
+      // Get all barcode-related settings
+      const barcodeKeys = [
+        'barcodeEnabled', 'defaultBarcodeType', 'autoGenerateBarcode', 'duplicateBarcodeCheck',
+        'scannerEnabled', 'scannerPort', 'scannerBaudRate', 'scannerTimeout', 'scannerBeep', 'scannerAutoFocus',
+        'countryCode', 'companyPrefix', 'productCodeStart', 'checksumValidation',
+        'showBarcodeOnReceipt', 'showBarcodeOnLabels', 'barcodeHeight', 'barcodeWidth', 'showHumanReadable',
+        'labelPaperSize', 'labelOrientation', 'printDensity', 'labelQuantity'
+      ];
+
+      const settings = {};
+      const getSettingQuery = sqlite.prepare('SELECT value FROM settings WHERE key = ?');
+
+      barcodeKeys.forEach(key => {
+        const result = getSettingQuery.get(key);
+        if (result) {
+          try {
+            // Try to parse as JSON first (for boolean/object values)
+            settings[key] = JSON.parse(result.value);
+          } catch {
+            // If not JSON, use as string
+            settings[key] = result.value;
+          }
+        }
+      });
+
+      // Apply defaults for missing settings
+      const defaultSettings = {
+        barcodeEnabled: true,
+        defaultBarcodeType: 'EAN13',
+        autoGenerateBarcode: false,
+        duplicateBarcodeCheck: true,
+        scannerEnabled: true,
+        scannerPort: 'COM3',
+        scannerBaudRate: '9600',
+        scannerTimeout: '5000',
+        scannerBeep: true,
+        scannerAutoFocus: true,
+        countryCode: '890',
+        companyPrefix: '12345',
+        productCodeStart: '00001',
+        checksumValidation: true,
+        showBarcodeOnReceipt: true,
+        showBarcodeOnLabels: true,
+        barcodeHeight: '50',
+        barcodeWidth: '200',
+        showHumanReadable: true,
+        labelPaperSize: '50x30mm',
+        labelOrientation: 'landscape',
+        printDensity: 'medium',
+        labelQuantity: '1'
+      };
+
+      const finalSettings = { ...defaultSettings, ...settings };
+      console.log('🔧 Barcode configuration retrieved:', Object.keys(finalSettings));
+
+      res.json(finalSettings);
+    } catch (error) {
+      console.error('❌ Error fetching barcode configuration:', error);
+      res.status(500).json({ error: 'Failed to fetch barcode configuration' });
+    }
+  });
+
+  app.post('/api/settings/barcode', async (req, res) => {
+    try {
+      console.log('💾 Saving barcode configuration:', req.body);
+
+      const { sqlite } = await import('@db');
+
+      // Ensure settings table exists with proper schema
+      sqlite.prepare(`
+        CREATE TABLE IF NOT EXISTS settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key TEXT NOT NULL UNIQUE,
+          value TEXT NOT NULL,
+          updated_at DATETIME
+        )
+      `).run();
+
+      // Prepare upsert statement
+      const upsertSetting = sqlite.prepare(`
+        INSERT INTO settings (key, value, updated_at) 
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET 
+          value = excluded.value,
+          updated_at = CURRENT_TIMESTAMP
+      `);
+
+      // Save each setting
+      const transaction = sqlite.transaction((settings) => {
+        Object.entries(settings).forEach(([key, value]) => {
+          const serializedValue = typeof value === 'object' ? JSON.stringify(value) : value.toString();
+          upsertSetting.run(key, serializedValue);
+        });
+      });
+
+      transaction(req.body);
+
+      console.log('✅ Barcode configuration saved successfully');
+      res.json({ 
+        success: true, 
+        message: 'Barcode configuration saved successfully',
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error saving barcode configuration:', error);
+      res.status(500).json({ 
+        error: 'Failed to save barcode configuration',
+        message: error.message 
+      });
+    }
+  });
+
   // Receipt Settings API endpoints
   app.get('/api/settings/receipt', async (req, res) => {
     try {
