@@ -1431,15 +1431,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/suppliers', isAuthenticated, async (req, res) => {
     try {
-      const supplierData = schema.supplierInsertSchema.parse(req.body);
+      console.log('Supplier creation request body:', req.body);
+
+      // Ensure required fields have default values if missing
+      const requestData = {
+        ...req.body,
+        name: req.body.name || '',
+        email: req.body.email || null,
+        phone: req.body.phone || null,
+        mobileNo: req.body.mobileNo || null,
+        extensionNumber: req.body.extensionNumber || null,
+        faxNo: req.body.faxNo || null,
+        contactPerson: req.body.contactPerson || null,
+        address: req.body.address || null,
+        building: req.body.building || null,
+        street: req.body.street || null,
+        city: req.body.city || null,
+        state: req.body.state || null,
+        country: req.body.country || null,
+        pinCode: req.body.pinCode || null,
+        landmark: req.body.landmark || null,
+        taxId: req.body.taxId || null,
+        registrationType: req.body.registrationType || null,
+        registrationNumber: req.body.registrationNumber || null,
+        supplierType: req.body.supplierType || null,
+        creditDays: req.body.creditDays || null,
+        discountPercent: req.body.discountPercent || null,
+        notes: req.body.notes || null,
+        status: req.body.status || 'active'
+      };
+
+      console.log('Processed supplier data:', requestData);
+
+      // Validate required fields
+      if (!requestData.name) {
+        return res.status(400).json({ 
+          message: 'Supplier name is required' 
+        });
+      }
+
+      const supplierData = schema.supplierInsertSchema.parse(requestData);
+      console.log('Validated supplier data:', supplierData);
+
       const supplier = await storage.createSupplier(supplierData);
-      res.status(201).json(supplier);
+      console.log('Created supplier successfully:', supplier.id);
+
+      res.status(201).json({
+        ...supplier,
+        message: 'Supplier created successfully'
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ errors: error.errors });
+        console.error('Validation errors:', JSON.stringify(error.errors, null, 2));
+        const detailedErrors = error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          received: err.received,
+          expected: err.expected
+        }));
+        console.error('Detailed validation errors:', detailedErrors);
+        return res.status(400).json({ 
+          message: 'Validation failed',
+          errors: error.errors, 
+          details: detailedErrors 
+        });
       }
       console.error('Error creating supplier:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ 
+        message: 'Failed to create supplier',
+        error: error.message 
+      });
     }
   });
 

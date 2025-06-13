@@ -320,23 +320,83 @@ export const storage = {
 
   async createSupplier(supplier: {
     name: string;
-    contactPerson?: string;
     email?: string;
     phone?: string;
+    mobileNo?: string;
+    extensionNumber?: string;
+    faxNo?: string;
+    contactPerson?: string;
     address?: string;
-    registrationNumber?: string;
+    building?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    pinCode?: string;
+    landmark?: string;
     taxId?: string;
-    website?: string;
+    registrationType?: string;
+    registrationNumber?: string;
+    supplierType?: string;
+    creditDays?: string;
+    discountPercent?: string;
+    notes?: string;
+    status?: string;
   }): Promise<Supplier> {
     try {
-      const [newSupplier] = await db.insert(suppliers).values({
-        ...supplier,
-        status: 'active'
-      }).returning();
-      return newSupplier;
+      console.log('Storage: Creating supplier with data:', supplier);
+
+      // Import SQLite database directly for reliable creation
+      const { sqlite } = await import('../db/index.js');
+
+      // Insert supplier using raw SQL
+      const insertSupplier = sqlite.prepare(`
+        INSERT INTO suppliers (
+          name, email, phone, mobile_no, extension_number, fax_no, contact_person,
+          address, building, street, city, state, country, pin_code, landmark,
+          tax_id, registration_type, registration_number, supplier_type,
+          credit_days, discount_percent, notes, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertSupplier.run(
+        supplier.name,
+        supplier.email || null,
+        supplier.phone || null,
+        supplier.mobileNo || null,
+        supplier.extensionNumber || null,
+        supplier.faxNo || null,
+        supplier.contactPerson || null,
+        supplier.address || null,
+        supplier.building || null,
+        supplier.street || null,
+        supplier.city || null,
+        supplier.state || null,
+        supplier.country || null,
+        supplier.pinCode || null,
+        supplier.landmark || null,
+        supplier.taxId || null,
+        supplier.registrationType || null,
+        supplier.registrationNumber || null,
+        supplier.supplierType || null,
+        supplier.creditDays || null,
+        supplier.discountPercent || null,
+        supplier.notes || null,
+        supplier.status || 'active'
+      );
+
+      // Get the created supplier
+      const getSupplier = sqlite.prepare('SELECT * FROM suppliers WHERE id = ?');
+      const newSupplier = getSupplier.get(result.lastInsertRowid);
+
+      console.log('Storage: Supplier created successfully:', newSupplier);
+      return {
+        ...newSupplier,
+        createdAt: new Date(newSupplier.created_at)
+      };
     } catch (error) {
-      console.error('Error creating supplier:', error);
-      throw error;
+      console.error('Storage: Error creating supplier:', error);
+      throw new Error(`Failed to create supplier: ${error.message}`);
     }
   },
 
