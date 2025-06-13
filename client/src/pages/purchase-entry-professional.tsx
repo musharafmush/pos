@@ -18,9 +18,162 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive } from "lucide-react";
+import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X } from "lucide-react";
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+
+// Product Search with Suggestions Component
+const ProductSearchWithSuggestions = ({ 
+  products, 
+  onProductSelect, 
+  placeholder = "Search products..." 
+}: {
+  products: Product[];
+  onProductSelect: (product: Product) => void;
+  placeholder?: string;
+}) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  useEffect(() => {
+    if (searchTerm.length >= 2) {
+      const filtered = products.filter(product => 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      ).slice(0, 8); // Limit to 8 suggestions
+      
+      setFilteredProducts(filtered);
+      setShowSuggestions(filtered.length > 0);
+      setSelectedIndex(-1);
+    } else {
+      setShowSuggestions(false);
+      setFilteredProducts([]);
+    }
+  }, [searchTerm, products]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev < filteredProducts.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredProducts.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < filteredProducts.length) {
+          selectProduct(filteredProducts[selectedIndex]);
+        } else if (filteredProducts.length === 1) {
+          selectProduct(filteredProducts[0]);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+        break;
+    }
+  };
+
+  const selectProduct = (product: Product) => {
+    onProductSelect(product);
+    setSearchTerm("");
+    setShowSuggestions(false);
+    setSelectedIndex(-1);
+  };
+
+  return (
+    <div className="relative w-full">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <Input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full text-xs pl-10 pr-8"
+          onFocus={() => {
+            if (searchTerm.length >= 2 && filteredProducts.length > 0) {
+              setShowSuggestions(true);
+            }
+          }}
+        />
+        {searchTerm && (
+          <button
+            onClick={() => {
+              setSearchTerm("");
+              setShowSuggestions(false);
+            }}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Suggestions Dropdown */}
+      {showSuggestions && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-y-auto">
+          {filteredProducts.length === 0 ? (
+            <div className="p-3 text-sm text-gray-500 text-center">
+              No products found for "{searchTerm}"
+            </div>
+          ) : (
+            <>
+              <div className="p-2 text-xs text-gray-500 bg-gray-50 border-b">
+                {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+              </div>
+              {filteredProducts.map((product, index) => (
+                <div
+                  key={product.id}
+                  onClick={() => selectProduct(product)}
+                  className={`p-3 cursor-pointer border-b border-gray-100 hover:bg-blue-50 ${
+                    index === selectedIndex ? 'bg-blue-100' : ''
+                  }`}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-gray-900 mb-1">
+                        {product.name}
+                      </div>
+                      <div className="text-xs text-gray-500 flex items-center gap-2">
+                        <span>SKU: {product.sku || 'N/A'}</span>
+                        <span>•</span>
+                        <span>₹{product.price}</span>
+                      </div>
+                    </div>
+                    <div className="text-right ml-3">
+                      <div className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
+                          ? 'bg-red-100 text-red-700' 
+                          : (product.stockQuantity || 0) > 50
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        Stock: {product.stockQuantity || 0}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const purchaseItemSchema = z.object({
   productId: z.number().min(1, "Product is required"),
@@ -1553,95 +1706,13 @@ export default function PurchaseEntryProfessional() {
 
                                 <TableCell className="border-r px-2 py-3">
                                   <div className="space-y-1">
-                                    {/* Enhanced Product search by name with live filtering */}
+                                    {/* Enhanced Product search with auto-suggestion dropdown */}
                                     <div className="relative">
-                                      <Input
-                                        placeholder="🔍 Search products... (Press Enter)"
-                                        className="w-full text-xs pr-8"
-                                        onChange={(e) => {
-                                          const searchValue = e.target.value.toLowerCase();
-                                          // Show real-time filtering hints
-                                          if (searchValue.length > 2) {
-                                            const matches = products.filter(p => 
-                                              p.name.toLowerCase().includes(searchValue) ||
-                                              p.description?.toLowerCase().includes(searchValue) ||
-                                              p.sku?.toLowerCase().includes(searchValue)
-                                            );
-                                            // Visual feedback for search results count
-                                            const indicator = e.target.nextElementSibling as HTMLElement;
-                                            if (indicator) {
-                                              indicator.textContent = `${matches.length}`;
-                                              indicator.className = matches.length > 0 ? 
-                                                'absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-medium text-green-600 bg-green-100 px-1 rounded' : 
-                                                'absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-medium text-red-600 bg-red-100 px-1 rounded';
-                                            }
-                                          }
-                                        }}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            const searchTerm = e.currentTarget.value.toLowerCase().trim();
-                                            if (searchTerm.length < 2) {
-                                              toast({
-                                                variant: "destructive",
-                                                title: "Search Query Too Short",
-                                                description: "Please enter at least 2 characters to search.",
-                                              });
-                                              return;
-                                            }
-
-                                            // Enhanced search logic - prioritize exact matches
-                                            let matchedProduct = products.find(p => 
-                                              p.name.toLowerCase() === searchTerm ||
-                                              p.sku?.toLowerCase() === searchTerm
-                                            );
-
-                                            if (!matchedProduct) {
-                                              // Fallback to partial matches
-                                              matchedProduct = products.find(p => 
-                                                p.name.toLowerCase().includes(searchTerm) ||
-                                                p.description?.toLowerCase().includes(searchTerm) ||
-                                                p.sku?.toLowerCase().includes(searchTerm)
-                                              );
-                                            }
-
-                                            if (matchedProduct) {
-                                              handleProductSelection(index, matchedProduct.id);
-                                              e.currentTarget.value = '';
-                                              // Clear the indicator
-                                              const indicator = e.currentTarget.nextElementSibling as HTMLElement;
-                                              if (indicator) indicator.textContent = '';
-                                              
-                                              toast({
-                                                title: "Product Found! 🎯",
-                                                description: `${matchedProduct.name} (${matchedProduct.sku}) selected. Stock: ${matchedProduct.stockQuantity || 0}`,
-                                              });
-                                            } else {
-                                              // Show similar products suggestion
-                                              const similarProducts = products.filter(p => 
-                                                p.name.toLowerCase().includes(searchTerm.substring(0, 3)) ||
-                                                searchTerm.split(' ').some(word => 
-                                                  word.length > 2 && p.name.toLowerCase().includes(word)
-                                                )
-                                              ).slice(0, 3);
-
-                                              if (similarProducts.length > 0) {
-                                                toast({
-                                                  variant: "destructive",
-                                                  title: "Product Not Found",
-                                                  description: `No exact match for "${searchTerm}". Similar: ${similarProducts.map(p => p.name).join(', ')}`,
-                                                });
-                                              } else {
-                                                toast({
-                                                  variant: "destructive",
-                                                  title: "Product Not Found",
-                                                  description: `No product matches "${searchTerm}". Check spelling or use the dropdown below.`,
-                                                });
-                                              }
-                                            }
-                                          }
-                                        }}
+                                      <ProductSearchWithSuggestions 
+                                        products={products}
+                                        onProductSelect={(product) => handleProductSelection(index, product.id)}
+                                        placeholder="🔍 Search products..."
                                       />
-                                      <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-medium"></span>
                                     </div>
                                     
                                     <Select 
@@ -2201,78 +2272,32 @@ export default function PurchaseEntryProfessional() {
               <div className="space-y-2">
                 <Label htmlFor="modal-product">Product Name *</Label>
                 
-                {/* Advanced search input for modal */}
+                {/* Enhanced search with suggestions for modal */}
                 <div className="space-y-2">
-                  <Input
-                    placeholder="🔍 Type to search products... (name, code, description)"
-                    className="w-full"
-                    onChange={(e) => {
-                      const searchValue = e.target.value.toLowerCase();
-                      // Real-time search feedback
-                      if (searchValue.length > 1) {
-                        const matches = products.filter(p => 
-                          p.name.toLowerCase().includes(searchValue) ||
-                          p.description?.toLowerCase().includes(searchValue) ||
-                          p.sku?.toLowerCase().includes(searchValue)
-                        );
-                        
-                        // Auto-select if only one match
-                        if (matches.length === 1 && searchValue.length > 3) {
-                          const product = matches[0];
-                          const newModalData = {
-                            ...modalData,
-                            productId: product.id,
-                            code: product.sku || "",
-                            description: product.description || product.name,
-                            unitCost: parseFloat(product.price) || 0,
-                            mrp: parseFloat(product.price) * 1.2 || 0,
-                            sellingPrice: parseFloat(product.price) || 0,
-                            hsnCode: product.hsnCode || "",
-                          };
-                          setModalData(newModalData);
-                        }
+                  <ProductSearchWithSuggestions
+                    products={products}
+                    onProductSelect={(product) => {
+                      const newModalData = {
+                        ...modalData,
+                        productId: product.id,
+                        code: product.sku || "",
+                        description: product.description || product.name,
+                        unitCost: parseFloat(product.price) || 0,
+                        mrp: parseFloat(product.price) * 1.2 || 0,
+                        sellingPrice: parseFloat(product.price) || 0,
+                        hsnCode: product.hsnCode || "",
+                      };
+                      setModalData(newModalData);
+                      if (editingItemIndex !== null) {
+                        syncModalToTable();
                       }
+                      
+                      toast({
+                        title: "Product Selected! 🎯",
+                        description: `${product.name} selected with auto-populated details.`,
+                      });
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const searchTerm = e.currentTarget.value.toLowerCase().trim();
-                        if (searchTerm.length < 2) return;
-
-                        // Find exact or best match
-                        let matchedProduct = products.find(p => 
-                          p.name.toLowerCase() === searchTerm ||
-                          p.sku?.toLowerCase() === searchTerm
-                        );
-
-                        if (!matchedProduct) {
-                          matchedProduct = products.find(p => 
-                            p.name.toLowerCase().includes(searchTerm) ||
-                            p.description?.toLowerCase().includes(searchTerm) ||
-                            p.sku?.toLowerCase().includes(searchTerm)
-                          );
-                        }
-
-                        if (matchedProduct) {
-                          const newModalData = {
-                            ...modalData,
-                            productId: matchedProduct.id,
-                            code: matchedProduct.sku || "",
-                            description: matchedProduct.description || matchedProduct.name,
-                            unitCost: parseFloat(matchedProduct.price) || 0,
-                            mrp: parseFloat(matchedProduct.price) * 1.2 || 0,
-                            sellingPrice: parseFloat(matchedProduct.price) || 0,
-                            hsnCode: matchedProduct.hsnCode || "",
-                          };
-                          setModalData(newModalData);
-                          e.currentTarget.value = '';
-                          
-                          toast({
-                            title: "Product Selected! 🎯",
-                            description: `${matchedProduct.name} selected automatically.`,
-                          });
-                        }
-                      }
-                    }}
+                    placeholder="🔍 Search products by name, SKU, or description..."
                   />
                   
                   <Select 
@@ -2299,7 +2324,7 @@ export default function PurchaseEntryProfessional() {
                     value={modalData.productId?.toString() || ""}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Or select from dropdown list" />
+                      <SelectValue placeholder="Or browse all products from dropdown" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[250px] overflow-y-auto">
                       {products.length === 0 ? (
