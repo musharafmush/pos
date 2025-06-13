@@ -11,11 +11,6 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { db } from "../db/index.js";
 import { eq, desc, sql } from "drizzle-orm";
 import { returns as returnTransactions, sales, returnItems, products, customers } from "../shared/schema.js";
-import { BackupManager } from '../create-backup.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -166,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/register', async (req, res) => {
     try {
       console.log('Registration request received:', req.body);
-
+      
       // Validate user data with more specific error messages
       try {
         const userData = schema.userInsertSchema.parse(req.body);
@@ -921,8 +916,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const search = req.query.search as string;
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
       const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
-      Implementing backup API endpoints for creating, listing, and managing application backups.
-``````text
       const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const customerId = req.query.customerId ? parseInt(req.query.customerId as string) : undefined;
 
@@ -1870,6 +1863,7 @@ app.post("/api/customers", async (req, res) => {
       const topProducts = await storage.getTopSellingProducts(limit, startDate);
       res.json(topProducts);
     } catch (error) {
+      // Adding profit analysis API endpoint to provide detailed profit insights.
       console.error('Error fetching top selling products:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
@@ -2657,61 +2651,6 @@ app.post("/api/customers", async (req, res) => {
     } catch (error) {
       console.error("❌ Error fetching profit analysis:", error);
       res.status(500).json({ error: "Failed to fetch profit analysis" });
-    }
-  });
-  
-  // Backup routes
-  app.post('/api/backup/create', async (req, res) => {
-    try {
-      const backupManager = new BackupManager();
-      const backupPath = await backupManager.createFullBackup({
-        customName: `manual-backup-${Date.now()}`
-      });
-
-      res.json({ 
-        success: true, 
-        backupPath,
-        message: 'Full backup created successfully'
-      });
-    } catch (error) {
-      console.error('Backup creation failed:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to create backup',
-        error: error.message 
-      });
-    }
-  });
-
-  app.post('/api/backup/quick', async (req, res) => {
-    try {
-      await execAsync('npx tsx quick-backup.ts');
-      res.json({ 
-        success: true, 
-        message: 'Quick backup created successfully'
-      });
-    } catch (error) {
-      console.error('Quick backup failed:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to create quick backup',
-        error: error.message 
-      });
-    }
-  });
-
-  app.get('/api/backup/list', async (req, res) => {
-    try {
-      const backupManager = new BackupManager();
-      const backups = await backupManager.listBackups();
-      res.json({ success: true, backups });
-    } catch (error) {
-      console.error('Failed to list backups:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to list backups',
-        error: error.message 
-      });
     }
   });
 

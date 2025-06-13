@@ -25,7 +25,7 @@ import { useTheme } from "@/components/ui/theme-provider";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { PrinterIcon, DollarSignIcon, BellIcon, ShieldIcon, UserIcon, DatabaseIcon, HardDrive, Archive, RefreshCw } from 'lucide-react';
+import { PrinterIcon, DollarSignIcon, BellIcon, ShieldIcon, UserIcon, DatabaseIcon } from 'lucide-react';
 import ReceiptSettings from './receipt-settings';
 
 const profileFormSchema = z.object({
@@ -168,7 +168,7 @@ export default function Settings() {
       autoPrint: receiptSettings.printAutomatically,
       defaultPrinter: receiptSettings.defaultPrinter
     };
-
+    
     localStorage.setItem('receiptSettings', JSON.stringify(settingsToSave));
     toast({
       title: "Settings updated",
@@ -207,71 +207,6 @@ Amount Paid:              ₹100
 -------------------------------
 ${receiptSettings.receiptFooter}
   `;
-
-    const handleCreateBackup = async () => {
-    try {
-      toast({
-        title: "Creating Backup",
-        description: "Please wait while we create your backup...",
-      });
-
-      const response = await fetch('/api/backup/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: "Backup Created Successfully",
-          description: `Backup saved to: ${result.backupPath}`,
-        });
-      } else {
-        throw new Error('Failed to create backup');
-      }
-    } catch (error) {
-      toast({
-        title: "Backup Failed",
-        description: "There was an error creating the backup. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleQuickBackup = async () => {
-    try {
-      toast({
-        title: "Creating Quick Backup",
-        description: "Creating a quick backup of your system...",
-      });
-
-      const response = await fetch('/api/backup/quick', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: "Quick Backup Created",
-          description: `Quick backup completed successfully!`,
-        });
-      } else {
-        throw new Error('Failed to create quick backup');
-      }
-    } catch (error) {
-      toast({
-        title: "Quick Backup Failed",
-        description: "There was an error creating the quick backup.",
-        variant: "destructive",
-      });
-    }
-  };
-
 
   return (
     <DashboardLayout>
@@ -768,95 +703,8 @@ ${receiptSettings.receiptFooter}
               </CardContent>
             </Card>
           </TabsContent>
-               {/* Backup & Data Management Section */}
-        <TabsContent value="backup">
-          <div className="mt-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Archive className="h-6 w-6 text-blue-600" />
-              Backup & Data Management
-            </h2>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Full System Backup */}
-              <Card className="hover:shadow-lg transition-all duration-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <HardDrive className="h-5 w-5 text-green-600" />
-                    Full System Backup
-                  </CardTitle>
-                  <CardDescription>
-                    Create a complete backup of your POS system including database, configuration, and images
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    onClick={handleCreateBackup}
-                    className="w-full"
-                    size="lg"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Create Full Backup
-                  </Button>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Includes: Database, JSON export, configuration files, and images
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Quick Backup */}
-              <Card className="hover:shadow-lg transition-all duration-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <RefreshCw className="h-5 w-5 text-blue-600" />
-                    Quick Backup
-                  </CardTitle>
-                  <CardDescription>
-                    Create a fast backup of essential data for quick recovery
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    onClick={handleQuickBackup}
-                    variant="outline"
-                    className="w-full"
-                    size="lg"
-                  >
-                    <Archive className="h-4 w-4 mr-2" />
-                    Quick Backup
-                  </Button>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Fast backup with auto-generated timestamp
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Backup Information */}
-              <Card className="md:col-span-2 bg-blue-50 border-blue-200">
-                <CardHeader>
-                  <CardTitle className="text-blue-800">Backup Information</CardTitle>
-                </CardHeader>
-                <CardContent className="text-blue-700">
-                  <div className="grid gap-3 text-sm">
-                    <div className="flex items-start gap-2">
-                      <Badge variant="secondary" className="text-xs">Info</Badge>
-                      <span>Backups are stored in the <code>/backups</code> directory</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Badge variant="secondary" className="text-xs">Tip</Badge>
-                      <span>Full backups include a restore script for easy recovery</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Badge variant="secondary" className="text-xs">Note</Badge>
-                      <span>Quick backups are perfect for daily automated backups</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+        </Tabs>
+      </div>
 
       {/* Receipt Settings Modal */}
       {showReceiptSettings && (
