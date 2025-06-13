@@ -47,9 +47,8 @@ import AccountsDashboard from "./pages/accounts-dashboard";
 import SaleReturnsDashboard from "./pages/sale-returns-dashboard";
 import ProfitManagement from "./pages/profit-management";
 import ReceiptSettings from "./pages/receipt-settings";
-import PrinterReceiptEditor from "@/pages/printer-receipt-editor";
-import BarcodeConfiguration from "@/pages/barcode-configuration";
-import ThermalPrinterSetup from "@/pages/thermal-printer-setup";
+import PrinterReceiptEditor from "./pages/printer-receipt-editor";
+import ThermalPrinterSetup from "./pages/thermal-printer-setup";
 import EditOptions from "@/pages/edit-options";
 import AutoPrinterSetup from "@/pages/auto-printer-setup";
 
@@ -108,7 +107,6 @@ function Router() {
       <ProtectedRoute path="/thermal-printer-setup" component={ThermalPrinterSetup} />
       <ProtectedRoute path="/edit-options" component={EditOptions} />
       <ProtectedRoute path="/auto-printer-setup" component={AutoPrinterSetup} />
-      <ProtectedRoute path="/barcode-configuration" component={BarcodeConfiguration} />
       <Route component={NotFound} />
     </Switch>
   );
