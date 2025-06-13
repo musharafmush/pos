@@ -179,7 +179,7 @@ export default function AddItemDashboard() {
       try {
         const url = force ? `/api/products/${productId}?force=true` : `/api/products/${productId}`;
         console.log('Attempting to delete product:', productId, 'URL:', url);
-        
+
         const response = await fetch(url, {
           method: 'DELETE',
           headers: {
@@ -264,7 +264,7 @@ export default function AddItemDashboard() {
     },
     onError: (error: Error) => {
       console.error('Delete mutation onError:', error);
-      
+
       try {
         const errorData = JSON.parse(error.message);
 
@@ -282,7 +282,7 @@ export default function AddItemDashboard() {
         }
       } catch (parseError) {
         console.error('Failed to parse error data:', parseError);
-        
+
         // Handle simple error messages
         if (error.message.includes('purchaseItems') || error.message.includes('referenced')) {
           toast({
@@ -392,7 +392,7 @@ export default function AddItemDashboard() {
 
   const handleDeleteProduct = async (productId: number) => {
     console.log('handleDeleteProduct called with ID:', productId);
-    
+
     if (!productId || productId <= 0) {
       toast({
         title: "Invalid Product",
@@ -884,8 +884,7 @@ export default function AddItemDashboard() {
                 {/* Pagination Controls */}
                 {filteredProducts.length > 0 && (
                   <div className="flex items-center justify-between px-2 py-4">
-                    <div className="text-sm text-gray-700">
-                      Showing {startIndex + 1} to {Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length} products
+                    <div className="text-sm text-gray-700">Showing {startIndex + 1} to {Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length} products
                     </div>
 
                     {totalPages > 1 && (
