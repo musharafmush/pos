@@ -176,29 +176,66 @@ export default function AddItemDashboard() {
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async ({ productId, force = false }: { productId: number; force?: boolean }) => {
-      const url = force ? `/api/products/${productId}?force=true` : `/api/products/${productId}`;
-      const response = await apiRequest("DELETE", url);
+      try {
+        const url = force ? `/api/products/${productId}?force=true` : `/api/products/${productId}`;
+        console.log('Attempting to delete product:', productId, 'URL:', url);
+        
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(JSON.stringify({
-          message: errorData.message,
-          canForceDelete: errorData.canForceDelete || false,
-          references: errorData.references || { saleItems: 0, purchaseItems: 0 },
-          productId,
-          status: response.status
-        }));
+        console.log('Delete response status:', response.status);
+
+        if (!response.ok) {
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch (parseError) {
+            console.error('Failed to parse error response:', parseError);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          console.log('Delete error data:', errorData);
+
+          throw new Error(JSON.stringify({
+            message: errorData.message || `Failed to delete product (${response.status})`,
+            canForceDelete: errorData.canForceDelete || false,
+            references: errorData.references || { saleItems: 0, purchaseItems: 0 },
+            productId,
+            status: response.status
+          }));
+        }
+
+        let responseData;
+        try {
+          responseData = await response.json();
+        } catch (parseError) {
+          // If no JSON response, return success message
+          responseData = { message: "Product deleted successfully" };
+        }
+
+        console.log('Delete success data:', responseData);
+        return responseData;
+      } catch (error) {
+        console.error('Delete mutation error:', error);
+        throw error;
       }
-      return response.json();
     },
     onSuccess: (data) => {
+      console.log('Delete mutation success:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Success",
-        description: data.message || "Product deleted successfully",
+        description: data?.message || "Product deleted successfully",
       });
     },
     onError: (error: Error) => {
+      console.error('Delete mutation onError:', error);
+      
       try {
         const errorData = JSON.parse(error.message);
 
@@ -214,13 +251,13 @@ export default function AddItemDashboard() {
           }
           return;
         }
-      } catch (e) {
-        // Handle as regular error
+      } catch (parseError) {
+        console.error('Failed to parse error data:', parseError);
       }
 
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete product",
+        title: "Delete Failed",
+        description: error.message || "Failed to delete product. Please try again.",
         variant: "destructive",
       });
     },
@@ -315,7 +352,27 @@ export default function AddItemDashboard() {
   };
 
   const handleDeleteProduct = async (productId: number) => {
-    deleteProductMutation.mutate({ productId });
+    console.log('handleDeleteProduct called with ID:', productId);
+    
+    if (!productId || productId <= 0) {
+      toast({
+        title: "Invalid Product",
+        description: "Cannot delete product with invalid ID",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      deleteProductMutation.mutate({ productId });
+    } catch (error) {
+      console.error('Error in handleDeleteProduct:', error);
+      toast({
+        title: "Delete Error",
+        description: "An unexpected error occurred while deleting the product",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUpdateProduct = async () => {
@@ -1108,9 +1165,10 @@ export default function AddItemDashboard() {
                                   <AlertDialogTrigger asChild>
                                     <Button 
                                       variant="ghost" 
-                                      size="sm" 
+                                      size="sm"
                                       title="Delete Product"
                                       className="h-8 w-8 p-0 hover:bg-red-100"
+                                      disabled={deleteProductMutation.isPending}
                                     >
                                       <TrashIcon className="w-4 h-4 text-red-600" />
                                     </Button>
@@ -1120,15 +1178,23 @@ export default function AddItemDashboard() {
                                       <AlertDialogTitle>Delete Active Item</AlertDialogTitle>
                                       <AlertDialogDescription>
                                         Are you sure you want to delete "{product.name}"? This will remove the item from your active inventory. This action cannot be undone.
+                                        <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                          <strong>Product ID:</strong> {product.id}<br />
+                                          <strong>SKU:</strong> {product.sku}<br />
+                                          <strong>Current Stock:</strong> {product.stockQuantity} units
+                                        </div>
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogCancel disabled={deleteProductMutation.isPending}>
+                                        Cancel
+                                      </AlertDialogCancel>
                                       <AlertDialogAction 
                                         onClick={() => handleDeleteProduct(product.id)}
                                         className="bg-red-600 hover:bg-red-700"
+                                        disabled={deleteProductMutation.isPending}
                                       >
-                                        Delete Item
+                                        {deleteProductMutation.isPending ? "Deleting..." : "Delete Item"}
                                       </AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
