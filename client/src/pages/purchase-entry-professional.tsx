@@ -38,15 +38,27 @@ const ProductSearchWithSuggestions = ({
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
   useEffect(() => {
-    if (searchTerm.length >= 2) {
-      const filtered = products.filter(product => 
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      ).slice(0, 8); // Limit to 8 suggestions
+    if (searchTerm.length >= 1) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      
+      const filtered = products.filter(product => {
+        if (!product) return false;
+        
+        const name = (product.name || '').toLowerCase();
+        const sku = (product.sku || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        
+        return name.includes(searchLower) ||
+               sku.includes(searchLower) ||
+               description.includes(searchLower) ||
+               name.startsWith(searchLower) ||
+               sku.startsWith(searchLower);
+      }).slice(0, 10); // Limit to 10 suggestions
+      
+      console.log('Search term:', searchTerm, 'Filtered products:', filtered.length);
       
       setFilteredProducts(filtered);
-      setShowSuggestions(filtered.length > 0);
+      setShowSuggestions(filtered.length > 0 && searchTerm.length >= 1);
       setSelectedIndex(-1);
     } else {
       setShowSuggestions(false);
@@ -103,9 +115,17 @@ const ProductSearchWithSuggestions = ({
           placeholder={placeholder}
           className="w-full text-xs pl-10 pr-8"
           onFocus={() => {
-            if (searchTerm.length >= 2 && filteredProducts.length > 0) {
+            if (searchTerm.length >= 1 && filteredProducts.length > 0) {
               setShowSuggestions(true);
             }
+          }}
+          onBlur={(e) => {
+            // Delay hiding suggestions to allow for clicks
+            setTimeout(() => {
+              if (!e.currentTarget.contains(document.activeElement)) {
+                setShowSuggestions(false);
+              }
+            }, 150);
           }}
         />
         {searchTerm && (
@@ -122,52 +142,70 @@ const ProductSearchWithSuggestions = ({
       </div>
 
       {/* Suggestions Dropdown */}
-      {showSuggestions && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-y-auto">
-          {filteredProducts.length === 0 ? (
-            <div className="p-3 text-sm text-gray-500 text-center">
-              No products found for "{searchTerm}"
-            </div>
-          ) : (
-            <>
-              <div className="p-2 text-xs text-gray-500 bg-gray-50 border-b">
-                {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
-              </div>
-              {filteredProducts.map((product, index) => (
-                <div
-                  key={product.id}
-                  onClick={() => selectProduct(product)}
-                  className={`p-3 cursor-pointer border-b border-gray-100 hover:bg-blue-50 ${
-                    index === selectedIndex ? 'bg-blue-100' : ''
-                  }`}
-                  onMouseEnter={() => setSelectedIndex(index)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-gray-900 mb-1">
-                        {product.name}
-                      </div>
-                      <div className="text-xs text-gray-500 flex items-center gap-2">
-                        <span>SKU: {product.sku || 'N/A'}</span>
-                        <span>•</span>
-                        <span>₹{product.price}</span>
-                      </div>
-                    </div>
-                    <div className="text-right ml-3">
-                      <div className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
-                          ? 'bg-red-100 text-red-700' 
-                          : (product.stockQuantity || 0) > 50
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        Stock: {product.stockQuantity || 0}
-                      </div>
-                    </div>
+      {showSuggestions && filteredProducts.length > 0 && (
+        <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-80 overflow-y-auto">
+          <div className="sticky top-0 p-2 text-xs text-gray-600 bg-blue-50 border-b border-blue-200 font-medium">
+            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+          </div>
+          
+          {filteredProducts.map((product, index) => (
+            <div
+              key={`suggestion-${product.id}-${index}`}
+              onClick={() => selectProduct(product)}
+              className={`p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                index === selectedIndex 
+                  ? 'bg-blue-100 border-blue-200' 
+                  : 'hover:bg-gray-50'
+              }`}
+              onMouseEnter={() => setSelectedIndex(index)}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm text-gray-900 mb-1 truncate">
+                    {product.name || 'Unnamed Product'}
                   </div>
+                  <div className="text-xs text-gray-600 flex items-center gap-2 mb-1">
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
+                      {product.sku || 'No SKU'}
+                    </span>
+                    <span className="text-gray-400">•</span>
+                    <span className="font-medium text-green-600">₹{product.price || '0'}</span>
+                  </div>
+                  {product.description && (
+                    <div className="text-xs text-gray-500 truncate">
+                      {product.description}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </>
+                
+                <div className="text-right flex-shrink-0">
+                  <div className={`text-xs px-2 py-1 rounded-full font-medium border ${
+                    (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
+                      ? 'bg-red-50 text-red-700 border-red-200' 
+                      : (product.stockQuantity || 0) > 50
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                  }`}>
+                    Stock: {product.stockQuantity || 0}
+                  </div>
+                  {(product.stockQuantity || 0) <= (product.alertThreshold || 5) && (
+                    <div className="text-xs text-red-600 font-medium mt-1">
+                      ⚠️ Low Stock
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {filteredProducts.length === 0 && searchTerm.length >= 2 && (
+            <div className="p-4 text-center">
+              <div className="text-gray-400 mb-2">🔍</div>
+              <div className="text-sm text-gray-600 font-medium">No products found</div>
+              <div className="text-xs text-gray-500">
+                Try searching with different keywords
+              </div>
+            </div>
           )}
         </div>
       )}
