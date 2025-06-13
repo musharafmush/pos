@@ -1857,7 +1857,7 @@ app.post("/api/customers", async (req, res) => {
       }
 
       // Remove password from response
-      const { password, ...safeUser } = user:
+      const { password, ...safeUser } = user;
       res.json(safeUser);
     } catch (error) {
       console.error('Error fetching user:', error);
