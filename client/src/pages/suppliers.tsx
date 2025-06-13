@@ -338,12 +338,52 @@ export default function Suppliers() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
           
-          <Button 
-            className="bg-blue-600 hover:bg-blue-700"
-            onClick={handleAddSupplier}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add Supplier
-          </Button>
+          <div className="flex gap-2">
+            {/* Show backup button only when no suppliers */}
+            {suppliers.length === 0 && (
+              <Button 
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/backup/create-sample-suppliers', {
+                      method: 'POST'
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                      toast({
+                        title: "Sample data created",
+                        description: result.message,
+                      });
+                      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+                    } else {
+                      toast({
+                        title: "Error creating sample data",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to create sample suppliers",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="border-green-600 text-green-600 hover:bg-green-50"
+              >
+                <Building2 className="mr-2 h-4 w-4" /> Create Sample Data
+              </Button>
+            )}
+            
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleAddSupplier}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add Supplier
+            </Button>
+          </div>
         </div>
         
         <Card>

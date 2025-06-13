@@ -2041,6 +2041,119 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Backup endpoint to create sample suppliers
+  app.post('/api/backup/create-sample-suppliers', async (req, res) => {
+    try {
+      console.log('🔄 Creating sample suppliers');
+
+      const sampleSuppliers = [
+        {
+          name: 'ABC Electronics Pvt Ltd',
+          email: 'contact@abcelectronics.com',
+          phone: '+91-9876543210',
+          contactPerson: 'Rajesh Kumar',
+          address: '123 Industrial Area, Phase 1, Gurgaon, Haryana 122001',
+          taxId: '06AABCA1234M1Z5',
+          registrationType: 'regular',
+          registrationNumber: '06AABCA1234M1Z5',
+          supplierType: 'manufacturer',
+          status: 'active',
+          creditDays: '30',
+          discountPercent: '5',
+          notes: 'Reliable electronics supplier with good payment terms'
+        },
+        {
+          name: 'Delhi Traders',
+          email: 'sales@delhitraders.in',
+          phone: '+91-9123456789',
+          contactPerson: 'Amit Sharma',
+          address: '45 Karol Bagh, New Delhi 110005',
+          taxId: '07BBBCB5678N2Y6',
+          registrationType: 'regular',
+          registrationNumber: '07BBBCB5678N2Y6',
+          supplierType: 'wholesaler',
+          status: 'active',
+          creditDays: '15',
+          discountPercent: '3',
+          notes: 'Fast delivery within Delhi NCR'
+        },
+        {
+          name: 'Maharashtra Goods Supply',
+          email: 'info@maharashtragoods.com',
+          phone: '+91-8765432109',
+          contactPerson: 'Priya Patil',
+          address: '78 Pune Industrial Estate, Pune, Maharashtra 411001',
+          taxId: '27CCCDC9012P3X7',
+          registrationType: 'regular',
+          registrationNumber: '27CCCDC9012P3X7',
+          supplierType: 'distributor',
+          status: 'active',
+          creditDays: '45',
+          discountPercent: '7',
+          notes: 'Good for bulk orders, excellent quality control'
+        },
+        {
+          name: 'South India Suppliers',
+          email: 'orders@southindiasuppliers.co.in',
+          phone: '+91-7654321098',
+          contactPerson: 'Venkat Reddy',
+          address: '56 T. Nagar, Chennai, Tamil Nadu 600017',
+          taxId: '33DDDDE3456Q4Z8',
+          registrationType: 'regular',
+          registrationNumber: '33DDDDE3456Q4Z8',
+          supplierType: 'manufacturer',
+          status: 'active',
+          creditDays: '30',
+          discountPercent: '4',
+          notes: 'Specializes in textile and consumer goods'
+        },
+        {
+          name: 'Local General Store',
+          email: 'localstore@gmail.com',
+          phone: '+91-6543210987',
+          contactPerson: 'Suresh Gupta',
+          address: 'Main Market, Sector 14, Noida, UP 201301',
+          taxId: '',
+          registrationType: 'unregistered',
+          registrationNumber: '',
+          supplierType: 'retailer',
+          status: 'active',
+          creditDays: '7',
+          discountPercent: '2',
+          notes: 'Small local supplier for daily essentials'
+        }
+      ];
+
+      const createdSuppliers = [];
+
+      for (const supplierData of sampleSuppliers) {
+        try {
+          const supplier = await storage.createSupplier(supplierData);
+          createdSuppliers.push(supplier);
+          console.log(`✅ Created supplier: ${supplier.name}`);
+        } catch (error) {
+          console.error(`❌ Error creating supplier ${supplierData.name}:`, error);
+        }
+      }
+
+      console.log(`🎉 Created ${createdSuppliers.length} sample suppliers`);
+
+      res.json({
+        success: true,
+        message: `Successfully created ${createdSuppliers.length} sample suppliers`,
+        suppliers: createdSuppliers
+      });
+
+    } catch (error) {
+      console.error('❌ Error creating sample suppliers:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create sample suppliers',
+        message: error.message
+      });
+    }
+  });
+
   // Business Settings API endpoints
   app.get('/api/settings/business', async (req, res) => {
     try {

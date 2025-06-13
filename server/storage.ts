@@ -141,6 +141,84 @@ export class Storage {
     return await db.select().from(schema.suppliers).orderBy(desc(schema.suppliers.createdAt));
   }
 
+  async listSuppliers() {
+    try {
+      console.log('📋 Fetching suppliers list');
+      
+      // Try ORM method first
+      try {
+        const suppliers = await db.select().from(schema.suppliers).orderBy(desc(schema.suppliers.createdAt));
+        console.log(`✅ Found ${suppliers.length} suppliers via ORM`);
+        return suppliers;
+      } catch (ormError) {
+        console.log('ORM method failed, trying direct SQLite:', ormError.message);
+      }
+
+      // Fallback to direct SQLite query
+      const { sqlite } = await import('@db');
+
+      // Check if suppliers table exists
+      const tableCheck = sqlite.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='suppliers'
+      `).get();
+
+      if (!tableCheck) {
+        console.log('⚠️ Suppliers table does not exist');
+        return [];
+      }
+
+      // Get table structure
+      const tableInfo = sqlite.prepare("PRAGMA table_info(suppliers)").all();
+      const columnNames = tableInfo.map(col => col.name);
+      console.log("Available columns in suppliers table:", columnNames);
+
+      // Build query based on available columns
+      const selectFields = [
+        'id',
+        'name',
+        'email',
+        'phone',
+        'address',
+        columnNames.includes('contact_person') ? 'contact_person as contactPerson' : 
+        columnNames.includes('contactPerson') ? 'contactPerson' : 'NULL as contactPerson',
+        columnNames.includes('tax_id') ? 'tax_id as taxId' : 
+        columnNames.includes('taxId') ? 'taxId' : 
+        columnNames.includes('gst_number') ? 'gst_number as taxId' : 'NULL as taxId',
+        columnNames.includes('status') ? 'status' : "'active' as status",
+        columnNames.includes('supplier_type') ? 'supplier_type as supplierType' : 
+        columnNames.includes('supplierType') ? 'supplierType' : 'NULL as supplierType',
+        columnNames.includes('registration_type') ? 'registration_type as registrationType' : 
+        columnNames.includes('registrationType') ? 'registrationType' : 'NULL as registrationType',
+        columnNames.includes('registration_number') ? 'registration_number as registrationNumber' : 
+        columnNames.includes('registrationNumber') ? 'registrationNumber' : 'NULL as registrationNumber',
+        columnNames.includes('credit_days') ? 'credit_days as creditDays' : 
+        columnNames.includes('creditDays') ? 'creditDays' : 'NULL as creditDays',
+        columnNames.includes('discount_percent') ? 'discount_percent as discountPercent' : 
+        columnNames.includes('discountPercent') ? 'discountPercent' : 'NULL as discountPercent',
+        columnNames.includes('notes') ? 'notes' : 'NULL as notes',
+        columnNames.includes('created_at') ? 'created_at as createdAt' : 
+        columnNames.includes('createdAt') ? 'createdAt' : 'NULL as createdAt'
+      ];
+
+      const query = `
+        SELECT ${selectFields.join(', ')}
+        FROM suppliers 
+        ORDER BY ${columnNames.includes('created_at') ? 'created_at' : columnNames.includes('createdAt') ? 'createdAt' : 'id'} DESC
+      `;
+
+      console.log('🔍 Executing suppliers query:', query);
+      const suppliers = sqlite.prepare(query).all();
+
+      console.log(`📋 Found ${suppliers.length} suppliers via direct query`);
+      return suppliers;
+
+    } catch (error) {
+      console.error('❌ Error in listSuppliers:', error);
+      return [];
+    }
+  }
+
   async getSupplierById(id: number) {
     const [supplier] = await db.select().from(schema.suppliers).where(eq(schema.suppliers.id, id));
     return supplier;
