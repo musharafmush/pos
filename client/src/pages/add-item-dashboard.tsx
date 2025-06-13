@@ -192,13 +192,42 @@ export default function AddItemDashboard() {
         if (!response.ok) {
           let errorData;
           try {
-            errorData = await response.json();
+            const text = await response.text();
+            try {
+              errorData = JSON.parse(text);
+            } catch {
+              // If response is not JSON, create error object
+              errorData = {
+                message: text || `Failed to delete product (${response.status})`,
+                canForceDelete: false,
+                references: { saleItems: 0, purchaseItems: 0 }
+              };
+            }
           } catch (parseError) {
             console.error('Failed to parse error response:', parseError);
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            errorData = {
+              message: `HTTP ${response.status}: ${response.statusText}`,
+              canForceDelete: false,
+              references: { saleItems: 0, purchaseItems: 0 }
+            };
           }
 
           console.log('Delete error data:', errorData);
+
+          // Handle specific error cases
+          if (response.status === 400 && (
+            errorData.message?.includes('purchaseItems') || 
+            errorData.message?.includes('referenced') ||
+            errorData.message?.includes('cannot delete')
+          )) {
+            throw new Error(JSON.stringify({
+              message: errorData.message || "Product cannot be deleted because it has related records",
+              canForceDelete: true,
+              references: errorData.references || { saleItems: 0, purchaseItems: 1 },
+              productId,
+              status: response.status
+            }));
+          }
 
           throw new Error(JSON.stringify({
             message: errorData.message || `Failed to delete product (${response.status})`,
@@ -239,7 +268,7 @@ export default function AddItemDashboard() {
       try {
         const errorData = JSON.parse(error.message);
 
-        if (errorData.status === 400 && errorData.canForceDelete) {
+        if ((errorData.status === 400 || errorData.status === 409) && errorData.canForceDelete) {
           const confirmMessage = `${errorData.message}\n\n` +
             `This product is referenced in:\n` +
             `• ${errorData.references.saleItems || 0} sale records\n` +
@@ -253,6 +282,16 @@ export default function AddItemDashboard() {
         }
       } catch (parseError) {
         console.error('Failed to parse error data:', parseError);
+        
+        // Handle simple error messages
+        if (error.message.includes('purchaseItems') || error.message.includes('referenced')) {
+          toast({
+            title: "Cannot Delete Product",
+            description: "This product has related purchase records. Please remove those records first or contact support for force deletion.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       toast({
