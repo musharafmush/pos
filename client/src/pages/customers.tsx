@@ -140,28 +140,15 @@ export default function Customers() {
     mutationFn: async (data: CustomerFormValues) => {
       console.log("Submitting customer data:", data);
       
-      // Enhanced validation before API call
-      if (!data.name?.trim()) {
-        throw new Error("Customer name is required");
-      }
-
-      if (data.email && !data.email.includes('@')) {
-        throw new Error("Please enter a valid email address");
-      }
-
-      if (data.creditLimit && isNaN(parseFloat(data.creditLimit))) {
-        throw new Error("Credit limit must be a valid number");
-      }
-      
       // Map form fields to API expected format
       const customerPayload = {
-        name: data.name.trim(),
-        email: data.email?.trim() || null,
-        phone: data.phone?.trim() || null,
-        address: data.address?.trim() || null,
-        taxNumber: data.taxNumber?.trim() || null,
-        creditLimit: data.creditLimit ? parseFloat(data.creditLimit).toString() : "0",
-        businessName: data.businessName?.trim() || null,
+        name: data.name,
+        email: data.email || null,
+        phone: data.phone || null,
+        address: data.address || null,
+        taxNumber: data.taxNumber || null,
+        creditLimit: data.creditLimit || "0",
+        businessName: data.businessName || null,
       };
 
       const res = await apiRequest("POST", "/api/customers", customerPayload);
@@ -177,8 +164,8 @@ export default function Customers() {
       console.log("Customer created successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
-        title: "✅ Customer Created",
-        description: `${data.name} has been added successfully with ID: C${String(data.id).padStart(5, '0')}`,
+        title: "Customer created",
+        description: "New customer has been added successfully.",
       });
       form.reset();
       setIsAddDialogOpen(false);
@@ -186,7 +173,7 @@ export default function Customers() {
     onError: (error: any) => {
       console.error("Customer creation error:", error);
       toast({
-        title: "❌ Error Creating Customer",
+        title: "Error creating customer",
         description: error.message || "There was an error creating the customer. Please try again.",
         variant: "destructive",
       });
@@ -196,44 +183,14 @@ export default function Customers() {
   // Update customer mutation
   const updateCustomerMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: CustomerFormValues }) => {
-      // Enhanced validation before API call
-      if (!data.name?.trim()) {
-        throw new Error("Customer name is required");
-      }
-
-      if (data.email && !data.email.includes('@')) {
-        throw new Error("Please enter a valid email address");
-      }
-
-      if (data.creditLimit && isNaN(parseFloat(data.creditLimit))) {
-        throw new Error("Credit limit must be a valid number");
-      }
-
-      // Clean and format data
-      const customerPayload = {
-        name: data.name.trim(),
-        email: data.email?.trim() || null,
-        phone: data.phone?.trim() || null,
-        address: data.address?.trim() || null,
-        taxNumber: data.taxNumber?.trim() || null,
-        creditLimit: data.creditLimit ? parseFloat(data.creditLimit).toString() : "0",
-        businessName: data.businessName?.trim() || null,
-      };
-
-      const res = await apiRequest("PUT", `/api/customers/${id}`, customerPayload);
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(errorData.error || errorData.message || `HTTP ${res.status}: ${res.statusText}`);
-      }
-      
+      const res = await apiRequest("PUT", `/api/customers/${id}`, data);
       return await res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
-        title: "✅ Customer Updated",
-        description: `${data.name}'s information has been updated successfully.`,
+        title: "Customer updated",
+        description: "Customer information has been updated successfully.",
       });
       editForm.reset();
       setIsEditDialogOpen(false);
@@ -241,7 +198,7 @@ export default function Customers() {
     },
     onError: (error: any) => {
       toast({
-        title: "❌ Error Updating Customer",
+        title: "Error updating customer",
         description: error.message || "There was an error updating the customer.",
         variant: "destructive",
       });
@@ -252,36 +209,23 @@ export default function Customers() {
   const deleteCustomerMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/customers/${id}`);
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(errorData.message || errorData.error || `HTTP ${res.status}: ${res.statusText}`);
-      }
-      
       return await res.json();
     },
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      
-      // Find the deleted customer name for better feedback
-      const deletedCustomer = customers.find((c: any) => c.id === variables);
-      const customerName = deletedCustomer?.name || `Customer ID: ${variables}`;
-      
       toast({
-        title: "🗑️ Customer Deleted",
-        description: `${customerName} has been permanently removed from the system.`,
+        title: "Customer deleted",
+        description: "Customer has been deleted successfully.",
       });
       setIsDeleteAlertOpen(false);
       setSelectedCustomerId(null);
     },
     onError: (error: any) => {
       toast({
-        title: "❌ Error Deleting Customer",
-        description: error.message || "This customer may have associated transactions that prevent deletion.",
+        title: "Error deleting customer",
+        description: error.message || "There was an error deleting the customer.",
         variant: "destructive",
       });
-      setIsDeleteAlertOpen(false);
-      setSelectedCustomerId(null);
     }
   });
 
@@ -325,31 +269,15 @@ export default function Customers() {
     }
   };
 
-  // Enhanced filter customers based on search term with better matching
+  // Filter customers based on search term
   const filteredCustomers = customers.filter((customer: any) => {
-    if (!searchTerm.trim()) return true;
-    
-    const searchLower = searchTerm.toLowerCase().trim();
-    
-    // Search in multiple fields with partial matching
-    const searchableFields = [
-      customer.name,
-      customer.email,
-      customer.phone,
-      customer.businessName,
-      customer.taxId,
-      customer.address,
-      `C${String(customer.id).padStart(5, '0')}` // Customer ID format
-    ];
-    
-    return searchableFields.some(field => 
-      field && field.toString().toLowerCase().includes(searchLower)
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      customer.name?.toLowerCase().includes(searchLower) ||
+      customer.email?.toLowerCase().includes(searchLower) ||
+      customer.phone?.toLowerCase().includes(searchLower) ||
+      customer.businessName?.toLowerCase().includes(searchLower)
     );
-  });
-
-  // Sort customers by name for better organization
-  const sortedCustomers = filteredCustomers.sort((a: any, b: any) => {
-    return (a.name || '').localeCompare(b.name || '');
   });
 
   return (
@@ -496,13 +424,8 @@ export default function Customers() {
             </CardHeader>
             <CardContent>
               <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-600">
-                    Showing {Math.min(entriesPerPage, sortedCustomers.length)} of {sortedCustomers.length} customers
-                    {searchTerm && ` (filtered from ${customers.length} total)`}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Show</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Show</span>
                   <Select
                     value={entriesPerPage.toString()}
                     onValueChange={(value) => setEntriesPerPage(parseInt(value))}
@@ -537,22 +460,12 @@ export default function Customers() {
                       Export PDF
                     </Button>
                   </div>
-                  <div className="relative">
-                    <Input
-                      placeholder="Search customers by name, email, phone, or ID..."
-                      className="w-[300px] h-9 pr-8"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm("")}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
+                  <Input
+                    placeholder="Search..."
+                    className="w-[200px] h-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -574,7 +487,7 @@ export default function Customers() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedCustomers.slice(0, entriesPerPage).map((customer: any) => (
+                    {filteredCustomers.slice(0, entriesPerPage).map((customer: any) => (
                       <TableRow key={customer.id}>
                         <TableCell>
                           <DropdownMenu>
@@ -623,23 +536,10 @@ export default function Customers() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {sortedCustomers.length === 0 && (
+                    {filteredCustomers.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center py-8">
-                          {searchTerm ? (
-                            <div className="text-gray-500">
-                              <p className="text-lg font-medium">No customers found</p>
-                              <p className="text-sm">Try adjusting your search terms or <button 
-                                onClick={() => setSearchTerm("")}
-                                className="text-blue-600 hover:underline"
-                              >clear search</button></p>
-                            </div>
-                          ) : (
-                            <div className="text-gray-500">
-                              <p className="text-lg font-medium">No customers yet</p>
-                              <p className="text-sm">Add your first customer to get started</p>
-                            </div>
-                          )}
+                        <TableCell colSpan={11} className="text-center py-8 text-gray-500">
+                          No customers found
                         </TableCell>
                       </TableRow>
                     )}
