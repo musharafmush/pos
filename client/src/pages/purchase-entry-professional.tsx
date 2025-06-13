@@ -105,7 +105,7 @@ const ProductSearchWithSuggestions = ({
   };
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" style={{ zIndex: 1000 }}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
         <Input
@@ -125,7 +125,7 @@ const ProductSearchWithSuggestions = ({
               if (e.currentTarget && !e.currentTarget.contains(document.activeElement)) {
                 setShowSuggestions(false);
               }
-            }, 150);
+            }, 200);
           }}
         />
         {searchTerm && (
@@ -143,7 +143,14 @@ const ProductSearchWithSuggestions = ({
 
       {/* Suggestions Dropdown */}
       {showSuggestions && filteredProducts.length > 0 && (
-        <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-80 overflow-y-auto">
+        <div className="fixed z-[99999] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto" 
+             style={{ 
+               position: 'absolute',
+               top: '100%',
+               left: '0',
+               right: '0',
+               zIndex: 99999
+             }}>
           <div className="sticky top-0 p-2 text-xs text-gray-600 bg-blue-50 border-b border-blue-200 font-medium">
             {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
           </div>
@@ -1745,10 +1752,10 @@ export default function PurchaseEntryProfessional() {
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <div className="space-y-2">
+                                <TableCell className="border-r border-gray-200 px-2 py-2" style={{ position: 'relative', overflow: 'visible' }}>
+                                  <div className="space-y-2" style={{ position: 'relative', zIndex: 1000 }}>
                                     {/* Enhanced Product search with auto-suggestion dropdown */}
-                                    <div className="relative">
+                                    <div className="relative" style={{ zIndex: 1001 }}>
                                       <ProductSearchWithSuggestions 
                                         products={products}
                                         onProductSelect={(product) => handleProductSelection(index, product.id)}
