@@ -122,7 +122,7 @@ const ProductSearchWithSuggestions = ({
           onBlur={(e) => {
             // Delay hiding suggestions to allow for clicks
             setTimeout(() => {
-              if (!e.currentTarget.contains(document.activeElement)) {
+              if (e.currentTarget && !e.currentTarget.contains(document.activeElement)) {
                 setShowSuggestions(false);
               }
             }, 150);
