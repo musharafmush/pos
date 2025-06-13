@@ -1404,7 +1404,9 @@ export default function POSEnhanced() {
                           
                               Recall (Alt+R)
                               {holdSales.length > 0 && (
-                                  {holdSales.length}
+                                  <Badge variant="secondary" className="ml-1 text-xs">
+                                      {holdSales.length}
+                                  </Badge>
                               )}
                           
                       
