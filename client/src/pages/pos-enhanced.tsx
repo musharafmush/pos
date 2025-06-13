@@ -83,6 +83,18 @@ export default function POSEnhanced() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [showOceanDialog, setShowOceanDialog] = useState(false);
+  const [oceanFreight, setOceanFreight] = useState({
+    containerNumber: "",
+    vesselName: "",
+    portOfLoading: "",
+    portOfDischarge: "",
+    freightCost: "",
+    insuranceCost: "",
+    customsDuty: "",
+    handlingCharges: "",
+    totalOceanCost: 0
+  });
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [billNumber, setBillNumber] = useState(`POS${Date.now()}`);
@@ -330,19 +342,40 @@ export default function POSEnhanced() {
     setAmountPaid("");
     setPaymentMethod("cash");
     setBarcodeInput("");
+    setOceanFreight({
+      containerNumber: "",
+      vesselName: "",
+      portOfLoading: "",
+      portOfDischarge: "",
+      freightCost: "",
+      insuranceCost: "",
+      customsDuty: "",
+      handlingCharges: "",
+      totalOceanCost: 0
+    });
 
     if (cart.length > 0) {
       toast({
         title: "Cart Cleared",
-        description: "All items have been removed from cart",
+        description: "All items and ocean freight have been cleared",
       });
     }
   };
 
-  // Calculate totals without tax
+  // Calculate ocean freight total
+  const calculateOceanTotal = () => {
+    const freight = parseFloat(oceanFreight.freightCost) || 0;
+    const insurance = parseFloat(oceanFreight.insuranceCost) || 0;
+    const customs = parseFloat(oceanFreight.customsDuty) || 0;
+    const handling = parseFloat(oceanFreight.handlingCharges) || 0;
+    return freight + insurance + customs + handling;
+  };
+
+  // Calculate totals with ocean freight
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
   const discountAmount = (subtotal * discount) / 100;
-  const total = subtotal - discountAmount;
+  const oceanTotal = calculateOceanTotal();
+  const total = subtotal - discountAmount + oceanTotal;
 
   // Register opening
   const handleOpenRegister = () => {
@@ -1384,6 +1417,15 @@ export default function POSEnhanced() {
                 </Button>
                 <Button 
                   variant="outline"
+                  onClick={() => setShowOceanDialog(true)}
+                  title="Enter Ocean Freight & Shipping Costs"
+                  className={`hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  Enter Ocean
+                </Button>
+                <Button 
+                  variant="outline"
                   onClick={holdCurrentSale}
                   disabled={cart.length === 0}
                   title="Hold current sale (Alt+H)"
@@ -1476,6 +1518,13 @@ export default function POSEnhanced() {
                     <div className="flex justify-between text-red-600">
                       <span>Discount Amount:</span>
                       <span>-{formatCurrency(discountAmount)}</span>
+                    </div>
+                  )}
+
+                  {oceanTotal > 0 && (
+                    <div className="flex justify-between text-blue-600">
+                      <span>Ocean Freight:</span>
+                      <span>+{formatCurrency(oceanTotal)}</span>
                     </div>
                   )}
 
@@ -2449,6 +2498,181 @@ Terminal: POS-Enhanced
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Save Settings
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Ocean Freight Dialog */}
+          <Dialog open={showOceanDialog} onOpenChange={setShowOceanDialog}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Package className="h-6 w-6 text-blue-600" />
+                  Enter Ocean Freight & Shipping Costs
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Shipping Details */}
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 className="font-semibold text-blue-800 mb-3">Shipping Details</h3>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="containerNumber">Container Number</Label>
+                        <Input
+                          id="containerNumber"
+                          value={oceanFreight.containerNumber}
+                          onChange={(e) => setOceanFreight(prev => ({ ...prev, containerNumber: e.target.value }))}
+                          placeholder="e.g., ABCD1234567"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="vesselName">Vessel Name</Label>
+                        <Input
+                          id="vesselName"
+                          value={oceanFreight.vesselName}
+                          onChange={(e) => setOceanFreight(prev => ({ ...prev, vesselName: e.target.value }))}
+                          placeholder="e.g., MSC Oscar"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="portOfLoading">Port of Loading</Label>
+                        <Input
+                          id="portOfLoading"
+                          value={oceanFreight.portOfLoading}
+                          onChange={(e) => setOceanFreight(prev => ({ ...prev, portOfLoading: e.target.value }))}
+                          placeholder="e.g., Shanghai, China"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="portOfDischarge">Port of Discharge</Label>
+                        <Input
+                          id="portOfDischarge"
+                          value={oceanFreight.portOfDischarge}
+                          onChange={(e) => setOceanFreight(prev => ({ ...prev, portOfDischarge: e.target.value }))}
+                          placeholder="e.g., Mumbai, India"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cost Details */}
+                <div className="space-y-4">
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h3 className="font-semibold text-green-800 mb-3">Cost Breakdown</h3>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="freightCost">Ocean Freight Cost</Label>
+                        <Input
+                          id="freightCost"
+                          type="number"
+                          value={oceanFreight.freightCost}
+                          onChange={(e) => setOceanFreight(prev => ({ ...prev, freightCost: e.target.value }))}
+                          placeholder="0.00"
+                          className="mt-1"
+                          step="0.01"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="insuranceCost">Marine Insurance</Label>
+                        <Input
+                          id="insuranceCost"
+                          type="number"
+                          value={oceanFreight.insuranceCost}
+                          onChange={(e) => setOceanFreight(prev => ({ ...prev, insuranceCost: e.target.value }))}
+                          placeholder="0.00"
+                          className="mt-1"
+                          step="0.01"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="customsDuty">Customs Duty</Label>
+                        <Input
+                          id="customsDuty"
+                          type="number"
+                          value={oceanFreight.customsDuty}
+                          onChange={(e) => setOceanFreight(prev => ({ ...prev, customsDuty: e.target.value }))}
+                          placeholder="0.00"
+                          className="mt-1"
+                          step="0.01"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="handlingCharges">Handling Charges</Label>
+                        <Input
+                          id="handlingCharges"
+                          type="number"
+                          value={oceanFreight.handlingCharges}
+                          onChange={(e) => setOceanFreight(prev => ({ ...prev, handlingCharges: e.target.value }))}
+                          placeholder="0.00"
+                          className="mt-1"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Total Display */}
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg">
+                    <div className="text-center">
+                      <div className="text-sm font-medium opacity-90 mb-2">Total Ocean Freight</div>
+                      <div className="text-2xl font-bold">{formatCurrency(calculateOceanTotal())}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-6 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setOceanFreight({
+                      containerNumber: "",
+                      vesselName: "",
+                      portOfLoading: "",
+                      portOfDischarge: "",
+                      freightCost: "",
+                      insuranceCost: "",
+                      customsDuty: "",
+                      handlingCharges: "",
+                      totalOceanCost: 0
+                    });
+                  }}
+                >
+                  Clear All
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowOceanDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowOceanDialog(false);
+                    toast({
+                      title: "Ocean Freight Added",
+                      description: `Total ocean costs: ${formatCurrency(calculateOceanTotal())}`,
+                    });
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Apply Ocean Costs
                 </Button>
               </div>
             </DialogContent>
