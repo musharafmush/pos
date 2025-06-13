@@ -1855,7 +1855,7 @@ app.post("/api/customers", async (req, res) => {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ errors: error.errors });
       }
-      console.error('Error creating user:, error);
+      console.error('Error creating user:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
