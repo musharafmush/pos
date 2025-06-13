@@ -76,6 +76,7 @@ interface CartItem extends Product {
 
 export default function POSEnhanced() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -188,11 +189,60 @@ export default function POSEnhanced() {
     },
   });
 
-  // Filter products based on search term
+  // Filter products based on search term or barcode
   const filteredProducts = products.filter((product: Product) => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Handle barcode submission
+  const handleBarcodeSubmit = () => {
+    if (!barcodeInput.trim()) {
+      toast({
+        title: "Empty Barcode",
+        description: "Please enter a barcode to scan",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Search for product by barcode
+    const foundProduct = products.find((product: Product) => 
+      product.barcode && product.barcode.toLowerCase() === barcodeInput.toLowerCase().trim()
+    );
+
+    if (foundProduct) {
+      addToCart(foundProduct);
+      setBarcodeInput("");
+      toast({
+        title: "Product Added",
+        description: `${foundProduct.name} added via barcode scan`,
+        variant: "default",
+      });
+    } else {
+      // If not found by barcode, try SKU
+      const foundBySku = products.find((product: Product) => 
+        product.sku.toLowerCase() === barcodeInput.toLowerCase().trim()
+      );
+
+      if (foundBySku) {
+        addToCart(foundBySku);
+        setBarcodeInput("");
+        toast({
+          title: "Product Added",
+          description: `${foundBySku.name} added via SKU scan`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Product Not Found",
+          description: `No product found with barcode: ${barcodeInput}`,
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   // Cart functions
   const addToCart = (product: Product) => {
@@ -279,6 +329,7 @@ export default function POSEnhanced() {
     setDiscount(0);
     setAmountPaid("");
     setPaymentMethod("cash");
+    setBarcodeInput("");
 
     if (cart.length > 0) {
       toast({
@@ -656,7 +707,13 @@ export default function POSEnhanced() {
 
       if (e.key === "F1") {
         e.preventDefault();
-        searchInputRef.current?.focus();
+        // Focus on barcode input first, then search
+        const barcodeInput = document.querySelector('input[placeholder*="Scan barcode"]') as HTMLInputElement;
+        if (barcodeInput) {
+          barcodeInput.focus();
+        } else {
+          searchInputRef.current?.focus();
+        }
       } else if (e.key === "F10") {
         e.preventDefault();
         if (cart.length > 0) setShowPaymentDialog(true);
@@ -1080,14 +1137,64 @@ export default function POSEnhanced() {
           </div>
 
           {/* Search Section */}
-          <div className="bg-white border-b border-gray-200px-6 py-4">
+          <div className="bg-white border-b border-gray-200 px-6 py-4">
+            {/* Barcode Scanner Section */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                    <Scan className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-800">Barcode Scanner</h3>
+                    <p className="text-sm text-blue-600">Scan or enter product barcode for instant addition</p>
+                  </div>
+                </div>
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Ready
+                </Badge>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex-1 relative">
+                  <Scan className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
+                  <Input
+                    placeholder="Scan barcode or type product code to add instantly..."
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleBarcodeSubmit();
+                      }
+                    }}
+                    className="pl-10 text-sm border-blue-300 focus:border-blue-500 focus:ring-blue-500 h-12"
+                    autoFocus
+                  />
+                </div>
+                <Button
+                  onClick={handleBarcodeSubmit}
+                  disabled={!barcodeInput.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white h-12 px-6"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Item
+                </Button>
+              </div>
+              <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                <Info className="h-3 w-3" />
+                💡 Tip: Use a barcode scanner or manually enter product barcodes/SKU for instant cart addition
+              </p>
+            </div>
+
             <div className="flex items-center space-x-4 mb-4">
               <Button 
                 onClick={() => searchInputRef.current?.focus()}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <Scan className="h-4 w-4 mr-2" />
-                Scan Barcode (F1)
+                <Search className="h-4 w-4 mr-2" />
+                Search Products (F1)
               </Button>
               <Button variant="outline" className="hover:bg-gray-50">
                 <Search className="h-4 w-4 mr-2" />
@@ -1153,10 +1260,14 @@ export default function POSEnhanced() {
                     <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-gray-300" />
                     <h3 className="text-2xl font-semibold text-gray-600 mb-3">Cart is Empty</h3>
                     <p className="text-gray-500 mb-6 text-lg">Start by searching for products above</p>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-3xl mx-auto text-sm text-gray-500">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 max-w-4xl mx-auto text-sm text-gray-500">
                       <div className="bg-white p-4 rounded-lg border">
                         <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F1</kbd>
-                        <p className="mt-2">Focus search bar</p>
+                        <p className="mt-2">Focus barcode scanner</p>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg border">
+                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">Enter</kbd>
+                        <p className="mt-2">Add scanned item</p>
                       </div>
                       <div className="bg-white p-4 rounded-lg border">
                         <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F10</kbd>
@@ -1443,6 +1554,9 @@ export default function POSEnhanced() {
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900">{product.name}</h4>
                       <p className="text-sm text-gray-500 font-mono">{product.sku}</p>
+                      {product.barcode && (
+                        <p className="text-xs text-blue-600 font-mono">📷 {product.barcode}</p>
+                      )}
                       {product.category && (
                         <Badge variant="outline" className="mt-1 text-xs">
                           {product.category.name}
