@@ -650,7 +650,6 @@ export default function Customers() {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
 
       {/* Edit Customer Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
