@@ -71,50 +71,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         console.log('Login attempt with:', usernameOrEmail);
 
-        // For demo purposes, handle test accounts
-        if (usernameOrEmail === 'admin' && password === 'admin123') {
-          const testAdmin = {
-            id: 1,
-            username: 'admin',
-            email: 'admin@mmart.com',
-            name: 'Administrator',
-            role: 'admin',
-            active: true
-          };
-          console.log('Test admin login successful');
-          return done(null, testAdmin);
+        // Find user by either username or email
+        const user = await storage.getUserByUsernameOrEmail(usernameOrEmail);
+
+        if (!user) {
+          console.log('User not found for:', usernameOrEmail);
+          return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
         }
 
-        if (usernameOrEmail === 'cashier' && password === 'cashier123') {
-          const testCashier = {
-            id: 2,
-            username: 'cashier',
-            email: 'cashier@mmart.com',
-            name: 'Cashier',
-            role: 'cashier',
-            active: true
-          };
-          console.log('Test cashier login successful');
-          return done(null, testCashier);
+        console.log('User found:', user.id, user.email);
+
+        // Check if user is active
+        if (!user.active) {
+          return done(null, false, { message: 'Account is disabled. Please contact an administrator.' });
         }
 
-        // Try to find user in database
+        // Verify password
         try {
-          const user = await storage.getUserByUsernameOrEmail(usernameOrEmail);
-
-          if (!user) {
-            console.log('User not found for:', usernameOrEmail);
-            return done(null, false, { message: 'Invalid credentials. Please check your username/email and password.' });
-          }
-
-          console.log('User found:', user.id, user.email);
-
-          // Check if user is active
-          if (!user.active) {
-            return done(null, false, { message: 'Account is disabled. Please contact an administrator.' });
-          }
-
-          // Verify password
+          console.log('Attempting password verification');
           const isValidPassword = await bcrypt.compare(password, user.password);
           console.log('Password validation result:', isValidPassword);
 
@@ -125,14 +99,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log('Authentication successful, user logged in');
           return done(null, user);
-        } catch (dbError) {
-          console.error('Database error during login:', dbError);
-          // Fallback to test accounts if database fails
-          return done(null, false, { message: 'Authentication service temporarily unavailable. Please try test accounts.' });
+        } catch (error) {
+          console.error('Password verification error:', error);
+          return done(null, false, { message: 'Authentication error. Please try again.' });
         }
       } catch (error) {
         console.error('Login error:', error);
-        return done(null, false, { message: 'Authentication error. Please try again.' });
+        return done(error);
       }
     }
   ));
@@ -154,78 +127,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/login', (req, res, next) => {
     console.log('Login request received:', req.body.usernameOrEmail);
 
-    try {
-      passport.authenticate('local', (err: Error | null, user: any, info: { message: string } | undefined) => {
-        if (err) {
-          console.error('Login error:', err);
-          return res.status(500).json({ 
-            message: 'Authentication service error. Please try again or use test accounts.',
-            details: err.message 
-          });
+    passport.authenticate('local', (err: Error | null, user: any, info: { message: string } | undefined) => {
+      if (err) {
+        console.error('Login error:', err);
+        return res.status(500).json({ message: 'Internal server error during login' });
+      }
+
+      if (!user) {
+        console.log('Authentication failed:', info?.message);
+        return res.status(401).json({ message: info?.message || 'Invalid username or password' });
+      }
+
+      console.log('Authentication successful for user:', user.id);
+
+      // Log the user in
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error('Session login error:', loginErr);
+          return res.status(500).json({ message: 'Error establishing session' });
         }
 
-        if (!user) {
-          console.log('Authentication failed:', info?.message);
-          return res.status(401).json({ 
-            message: info?.message || 'Invalid username or password. Try: admin/admin123 or cashier/cashier123'
-          });
-        }
+        console.log('Session created successfully');
 
-        console.log('Authentication successful for user:', user.id || user.username);
+        // Remove password from response
+        const userResponse = { ...user };
+        if (userResponse.password) delete userResponse.password;
 
-        // Log the user in
-        req.login(user, (loginErr) => {
-          if (loginErr) {
-            console.error('Session login error:', loginErr);
-            return res.status(500).json({ 
-              message: 'Error establishing session. Please try again.',
-              details: loginErr.message 
-            });
-          }
-
-          console.log('Session created successfully');
-
-          // Remove password from response
-          const userResponse = { ...user };
-          if (userResponse.password) delete userResponse.password;
-
-          return res.json({ 
-            user: userResponse,
-            message: 'Login successful'
-          });
-        });
-      })(req, res, next);
-    } catch (error) {
-      console.error('Login endpoint error:', error);
-      return res.status(500).json({ 
-        message: 'Authentication system error. Please try test accounts: admin/admin123 or cashier/cashier123'
+        return res.json({ user: userResponse });
       });
-    }
+    })(req, res, next);
   });
 
   app.post('/api/auth/register', async (req, res) => {
     try {
-      console.log('Registration request received:', req.body);
-
       // Validate user data with more specific error messages
       try {
         const userData = schema.userInsertSchema.parse(req.body);
-        console.log('User data validated:', { ...userData, password: '[HIDDEN]' });
 
         // If username is provided, check if it already exists
         if (userData.username) {
           const existingUsername = await storage.getUserByUsername(userData.username);
           if (existingUsername) {
-            console.log('Username already exists:', userData.username);
-            return res.status(400).json({ message: 'Username already exists. Please choose a different username.' });
+            return res.status(400).json({ message: 'Username already exists' });
           }
         }
 
         // Always check if email already exists since it's required now
         const existingEmail = await storage.getUserByEmail(userData.email);
         if (existingEmail) {
-          console.log('Email already exists:', userData.email);
-          return res.status(400).json({ message: 'Email address already exists. Please use a different email or try logging in.' });
+          return res.status(400).json({ message: 'Email already exists' });
         }
 
         // Hash password
@@ -260,14 +210,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (zodError) {
         if (zodError instanceof z.ZodError) {
-          console.log('Validation errors:', zodError.errors);
           // Format validation errors for better readability
           const formattedErrors = zodError.errors.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }));
           return res.status(400).json({ 
-            message: 'Validation failed: ' + formattedErrors.map(e => `${e.field}: ${e.message}`).join(', '),
+            message: 'Validation failed',
             errors: formattedErrors 
           });
         }
@@ -275,10 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error('Error registering user:', error);
-      res.status(500).json({ 
-        message: 'Registration failed. Please try again or contact support.',
-        details: error.message || 'Unknown error occurred'
-      });
+      res.status(500).json({ message: 'Internal server error during registration' });
     }
   });
 
@@ -447,119 +393,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new product
-app.post("/api/products", async (req, res) => {
-  try {
-    console.log("Creating product with data:", req.body);
+  app.post('/api/products', isAuthenticated, async (req, res) => {
+    try {
+      console.log('Product creation request body:', req.body);
 
-    const {
-      name,
-      sku,
-      description,
-      price,
-      mrp,
-      cost,
-      weight,
-      weightUnit,
-      stockQuantity,
-      categoryId,
-      barcode,
-      active,
-      alertThreshold,
-      unit,
-      hsnCode,
-      taxRate,
-      trackInventory,
-      allowNegativeStock,
-    } = req.body;
+      // Ensure required fields have default values if missing
+      const requestData = {
+        ...req.body,
+        name: req.body.name || req.body.itemName || '',
+        sku: req.body.sku || req.body.itemCode || '',
+        description: req.body.description || req.body.aboutProduct || '',
+        mrp: req.body.mrp || req.body.price || '0',
+        cost: req.body.cost || '0',
+        price: req.body.price || '0',
+        weight: req.body.weight || req.body.weightInGms || null,
+        weightUnit: req.body.weightUnit || 'kg',
+        stockQuantity: parseInt(req.body.stockQuantity) || 0,
+        alertThreshold: parseInt(req.body.alertThreshold) || 5,
+        categoryId: parseInt(req.body.categoryId) || 1,
+        active: req.body.active !== false,
+        barcode: req.body.barcode || req.body.eanCode || '',
 
-    // Validate required fields
-    if (!name || !sku || price === undefined || stockQuantity === undefined) {
-      return res.status(400).json({
-        error: "Missing required fields",
-        required: ["name", "sku", "price", "stockQuantity"],
+        // GST and tax information
+        hsnCode: req.body.hsnCode || '',
+        gstCode: req.body.gstCode || '',
+        cgstRate: req.body.cgstRate || '0',
+        sgstRate: req.body.sgstRate || '0',
+        igstRate: req.body.igstRate || '0',
+        cessRate: req.body.cessRate || '0',
+        taxCalculationMethod: req.body.taxCalculationMethod || 'exclusive'
+      };
+
+      console.log('Processed product data:', requestData);
+
+      // Validate required fields
+      if (!requestData.name) {
+        return res.status(400).json({ 
+          message: 'Product name is required' 
+        });
+      }
+
+      if (!requestData.sku) {
+        return res.status(400).json({ 
+          message: 'Product SKU/Item Code is required' 
+        });
+      }
+
+      if (!requestData.price || requestData.price === '0') {
+        return res.status(400).json({ 
+          message: 'Product price is required and must be greater than 0' 
+        });
+      }
+
+      if (!requestData.categoryId) {
+        return res.status(400).json({ 
+          message: 'Category is required' 
+        });
+      }
+
+      // Check if SKU already exists
+      const existingProduct = await storage.getProductBySku(requestData.sku);
+      if (existingProduct) {
+        return res.status(400).json({ 
+          message: 'A product with this SKU/Item Code already exists' 
+        });
+      }
+
+      const productData = schema.productInsertSchema.parse(requestData);
+      console.log('Validated product data:', productData);
+
+      const product = await storage.createProduct(productData);
+      console.log('Created product successfully:', product.id);
+
+      res.status(201).json({
+        ...product,
+        message: 'Product created successfully'
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error('Validation errors:', JSON.stringify(error.errors, null, 2));
+        const detailedErrors = error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          received: err.received,
+          expected: err.expected
+        }));
+        console.error('Detailed validation errors:', detailedErrors);
+        return res.status(400).json({ 
+          message: 'Validation failed',
+          errors: error.errors, 
+          details: detailedErrors 
+        });
+      }
+      console.error('Error creating product:', error);
+      res.status(500).json({ 
+        message: 'Failed to create product',
+        error: error.message 
       });
     }
-
-    // Check if SKU already exists using storage method
-    const existingProduct = await storage.getProductBySku(sku);
-    if (existingProduct) {
-      return res.status(400).json({
-        error: "Product with this SKU already exists",
-        sku,
-      });
-    }
-
-    const productData = {
-      name: name.trim(),
-      sku: sku.trim(),
-      description: description?.trim() || "",
-      price: parseFloat(price),
-      mrp: parseFloat(mrp) || parseFloat(price),
-      cost: parseFloat(cost) || 0,
-      weight: weight ? parseFloat(weight) : null,
-      weightUnit: weightUnit || "kg",
-      stockQuantity: parseInt(stockQuantity),
-      categoryId: parseInt(categoryId) || 1,
-      barcode: barcode?.trim() || "",
-      active: active !== false,
-      alertThreshold: parseInt(alertThreshold) || 5,
-      unit: unit || "PCS",
-      hsnCode: hsnCode?.trim() || "",
-      taxRate: parseFloat(taxRate) || 18,
-      trackInventory: trackInventory !== false,
-      allowNegativeStock: allowNegativeStock === true,
-    };
-
-    console.log("Processed product data:", productData);
-
-    const stmt = db.prepare(`
-      INSERT INTO products (
-        name, sku, description, price, mrp, cost, weight, weight_unit,
-        stock_quantity, category_id, barcode, active, alert_threshold,
-        unit, hsn_code, tax_rate, track_inventory, allow_negative_stock
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(
-      productData.name,
-      productData.sku,
-      productData.description,
-      productData.price,
-      productData.mrp,
-      productData.cost,
-      productData.weight,
-      productData.weightUnit,
-      productData.stockQuantity,
-      productData.categoryId,
-      productData.barcode,
-      productData.active ? 1 : 0,
-      productData.alertThreshold,
-      productData.unit,
-      productData.hsnCode,
-      productData.taxRate,
-      productData.trackInventory ? 1 : 0,
-      productData.allowNegativeStock ? 1 : 0
-    );
-
-    console.log("Product created with ID:", result.lastInsertRowid);
-
-    const newProduct = {
-      id: result.lastInsertRowid,
-      ...productData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    res.status(201).json(newProduct);
-  } catch (error) {
-    console.error("Error creating product:", error);
-    res.status(500).json({
-      error: "Failed to create product",
-      message: error.message,
-    });
-  }
-});
+  });
 
   app.put('/api/products/:id', isAuthenticated, async (req, res) => {
     try {
@@ -944,7 +876,8 @@ app.post("/api/products", async (req, res) => {
         status: "completed",
         message: "Sale completed successfully",
         timestamp: new Date().toISOString(),
-        saved: true      };
+        saved: true
+      };
 
       console.log("📊 POS Enhanced sale saved successfully:", responseData);
       res.status(201).json(responseData);
@@ -1493,82 +1426,15 @@ app.post("/api/products", async (req, res) => {
 
   app.post('/api/suppliers', isAuthenticated, async (req, res) => {
     try {
-      console.log('Creating supplier with data:', req.body);
-
-      // Validate required fields first
-      if (!req.body.name || req.body.name.trim() === '') {
-        return res.status(400).json({ 
-          message: 'Supplier name is required',
-          errors: [{ field: 'name', message: 'Name is required' }]
-        });
-      }
-
-      // Process the data to handle empty strings
-      const processedData = {
-        ...req.body,
-        name: req.body.name.trim(),
-        email: req.body.email && req.body.email.trim() !== '' ? req.body.email.trim() : '',
-        phone: req.body.phone && req.body.phone.trim() !== '' ? req.body.phone.trim() : '',
-        address: req.body.address && req.body.address.trim() !== '' ? req.body.address.trim() : '',
-        contactPerson: req.body.contactPerson && req.body.contactPerson.trim() !== '' ? req.body.contactPerson.trim() : '',
-        taxId: req.body.taxId && req.body.taxId.trim() !== '' ? req.body.taxId.trim() : '',
-        registrationType: req.body.registrationType || '',
-        registrationNumber: req.body.registrationNumber || '',
-        mobileNo: req.body.mobileNo || '',
-        extensionNumber: req.body.extensionNumber || '',
-        faxNo: req.body.faxNo || '',
-        building: req.body.building || '',
-        street: req.body.street || '',
-        city: req.body.city || '',
-        state: req.body.state || '',
-        country: req.body.country || '',
-        pinCode: req.body.pinCode || '',
-        landmark: req.body.landmark || '',
-        supplierType: req.body.supplierType || '',
-        creditDays: req.body.creditDays || '',
-        discountPercent: req.body.discountPercent || '',
-        notes: req.body.notes || '',
-        status: req.body.status || 'active'
-      };
-
-      console.log('Processed supplier data:', processedData);
-
-      const supplierData = schema.supplierInsertSchema.parse(processedData);
-      console.log('Validated supplier data:', supplierData);
-
+      const supplierData = schema.supplierInsertSchema.parse(req.body);
       const supplier = await storage.createSupplier(supplierData);
-      console.log('Supplier created successfully:', supplier);
-
-      res.status(201).json({
-        ...supplier,
-        message: 'Supplier created successfully'
-      });
+      res.status(201).json(supplier);
     } catch (error) {
-      console.error('Error creating supplier:', error);
-
       if (error instanceof z.ZodError) {
-        console.error('Validation errors:', error.errors);
-        return res.status(400).json({ 
-          message: 'Validation failed',
-          errors: error.errors.map(err => ({
-            field: err.path.join('.'),
-            message: err.message
-          }))
-        });
+        return res.status(400).json({ errors: error.errors });
       }
-
-      // Handle specific database errors
-      if (error.message?.includes('UNIQUE constraint')) {
-        return res.status(400).json({ 
-          message: 'A supplier with this information already exists',
-          error: 'Duplicate entry'
-        });
-      }
-
-      res.status(500).json({ 
-        message: 'Failed to create supplier. Please try again.',
-        error: error.message || 'Internal server error'
-      });
+      console.error('Error creating supplier:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -2051,119 +1917,6 @@ app.post("/api/customers", async (req, res) => {
     } catch (error) {
       console.error('Error fetching payment analytics:', error);
       res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  // Backup endpoint to create sample suppliers
-  app.post('/api/backup/create-sample-suppliers', async (req, res) => {
-    try {
-      console.log('🔄 Creating sample suppliers');
-
-      const sampleSuppliers = [
-        {
-          name: 'ABC Electronics Pvt Ltd',
-          email: 'contact@abcelectronics.com',
-          phone: '+91-9876543210',
-          contactPerson: 'Rajesh Kumar',
-          address: '123 Industrial Area, Phase 1, Gurgaon, Haryana 122001',
-          taxId: '06AABCA1234M1Z5',
-          registrationType: 'regular',
-          registrationNumber: '06AABCA1234M1Z5',
-          supplierType: 'manufacturer',
-          status: 'active',
-          creditDays: '30',
-          discountPercent: '5',
-          notes: 'Reliable electronics supplier with good payment terms'
-        },
-        {
-          name: 'Delhi Traders',
-          email: 'sales@delhitraders.in',
-          phone: '+91-9123456789',
-          contactPerson: 'Amit Sharma',
-          address: '45 Karol Bagh, New Delhi 110005',
-          taxId: '07BBBCB5678N2Y6',
-          registrationType: 'regular',
-          registrationNumber: '07BBBCB5678N2Y6',
-          supplierType: 'wholesaler',
-          status: 'active',
-          creditDays: '15',
-          discountPercent: '3',
-          notes: 'Fast delivery within Delhi NCR'
-        },
-        {
-          name: 'Maharashtra Goods Supply',
-          email: 'info@maharashtragoods.com',
-          phone: '+91-8765432109',
-          contactPerson: 'Priya Patil',
-          address: '78 Pune Industrial Estate, Pune, Maharashtra 411001',
-          taxId: '27CCCDC9012P3X7',
-          registrationType: 'regular',
-          registrationNumber: '27CCCDC9012P3X7',
-          supplierType: 'distributor',
-          status: 'active',
-          creditDays: '45',
-          discountPercent: '7',
-          notes: 'Good for bulk orders, excellent quality control'
-        },
-        {
-          name: 'South India Suppliers',
-          email: 'orders@southindiasuppliers.co.in',
-          phone: '+91-7654321098',
-          contactPerson: 'Venkat Reddy',
-          address: '56 T. Nagar, Chennai, Tamil Nadu 600017',
-          taxId: '33DDDDE3456Q4Z8',
-          registrationType: 'regular',
-          registrationNumber: '33DDDDE3456Q4Z8',
-          supplierType: 'manufacturer',
-          status: 'active',
-          creditDays: '30',
-          discountPercent: '4',
-          notes: 'Specializes in textile and consumer goods'
-        },
-        {
-          name: 'Local General Store',
-          email: 'localstore@gmail.com',
-          phone: '+91-6543210987',
-          contactPerson: 'Suresh Gupta',
-          address: 'Main Market, Sector 14, Noida, UP 201301',
-          taxId: '',
-          registrationType: 'unregistered',
-          registrationNumber: '',
-          supplierType: 'retailer',
-          status: 'active',
-          creditDays: '7',
-          discountPercent: '2',
-          notes: 'Small local supplier for daily essentials'
-        }
-      ];
-
-      const createdSuppliers = [];
-
-      for (const supplierData of sampleSuppliers) {
-        try {
-          const supplier = await storage.createSupplier(supplierData);
-          createdSuppliers.push(supplier);
-          console.log(`✅ Created supplier: ${supplier.name}`);
-        } catch (error) {
-          console.error(`❌ Error creating supplier ${supplierData.name}:`, error);
-        }
-      }
-
-      console.log(`🎉 Created ${createdSuppliers.length} sample suppliers`);
-
-      res.json({
-        success: true,
-        message: `Successfully created ${createdSuppliers.length} sample suppliers`,
-        suppliers: createdSuppliers
-      });
-
-    } catch (error) {
-      console.error('❌ Error creating sample suppliers:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to create sample suppliers',
-        message: error.message
-      });
     }
   });
 

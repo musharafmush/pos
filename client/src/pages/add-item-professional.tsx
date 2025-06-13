@@ -865,7 +865,8 @@ export default function AddItemProfessional() {
                                       const hsnValue = e.target.value;
                                       field.onChange(hsnValue);
 
-                                                                            // Auto-suggest GST code                                      let suggestedGst = "";
+                                                                            // Auto-suggest GST code based on HSN
+                                      let suggestedGst = "";
                                       if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
                                         suggestedGst = "GST 0%";
                                       } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17") || hsnValue.startsWith("21") || hsnValue.startsWith("30") || hsnValue.startsWith("49") || hsnValue.startsWith("63")) {

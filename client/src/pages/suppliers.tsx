@@ -165,38 +165,22 @@ export default function Suppliers() {
   // Create supplier mutation
   const createSupplierMutation = useMutation({
     mutationFn: async (data: SupplierFormValues) => {
-      console.log('Submitting supplier data:', data);
       const res = await apiRequest("POST", "/api/suppliers", data);
-      const result = await res.json();
-      console.log('Supplier creation response:', result);
-      return result;
+      return await res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
         title: "Supplier created",
-        description: data.message || "The supplier has been successfully created.",
+        description: "The supplier has been successfully created.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       form.reset();
       setFormOpen(false);
     },
-    onError: (error: any) => {
-      console.error('Supplier creation error:', error);
-      
-      let errorMessage = 'Failed to create supplier';
-      
-      // Handle specific error formats
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.errors && Array.isArray(error.errors)) {
-        errorMessage = error.errors.map((err: any) => `${err.field}: ${err.message}`).join(', ');
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      
+    onError: (error) => {
       toast({
         title: "Error creating supplier",
-        description: errorMessage,
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -338,52 +322,12 @@ export default function Suppliers() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
           
-          <div className="flex gap-2">
-            {/* Show backup button only when no suppliers */}
-            {suppliers.length === 0 && (
-              <Button 
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/backup/create-sample-suppliers', {
-                      method: 'POST'
-                    });
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                      toast({
-                        title: "Sample data created",
-                        description: result.message,
-                      });
-                      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
-                    } else {
-                      toast({
-                        title: "Error creating sample data",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "Failed to create sample suppliers",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-                className="border-green-600 text-green-600 hover:bg-green-50"
-              >
-                <Building2 className="mr-2 h-4 w-4" /> Create Sample Data
-              </Button>
-            )}
-            
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={handleAddSupplier}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Supplier
-            </Button>
-          </div>
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={handleAddSupplier}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Supplier
+          </Button>
         </div>
         
         <Card>
