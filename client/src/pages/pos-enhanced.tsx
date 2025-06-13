@@ -76,7 +76,6 @@ interface CartItem extends Product {
 
 export default function POSEnhanced() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -189,60 +188,11 @@ export default function POSEnhanced() {
     },
   });
 
-  // Filter products based on search term or barcode
+  // Filter products based on search term
   const filteredProducts = products.filter((product: Product) => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()))
+    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Handle barcode submission
-  const handleBarcodeSubmit = () => {
-    if (!barcodeInput.trim()) {
-      toast({
-        title: "Empty Barcode",
-        description: "Please enter a barcode to scan",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Search for product by barcode
-    const foundProduct = products.find((product: Product) => 
-      product.barcode && product.barcode.toLowerCase() === barcodeInput.toLowerCase().trim()
-    );
-
-    if (foundProduct) {
-      addToCart(foundProduct);
-      setBarcodeInput("");
-      toast({
-        title: "Product Added",
-        description: `${foundProduct.name} added via barcode scan`,
-        variant: "default",
-      });
-    } else {
-      // If not found by barcode, try SKU
-      const foundBySku = products.find((product: Product) => 
-        product.sku.toLowerCase() === barcodeInput.toLowerCase().trim()
-      );
-
-      if (foundBySku) {
-        addToCart(foundBySku);
-        setBarcodeInput("");
-        toast({
-          title: "Product Added",
-          description: `${foundBySku.name} added via SKU scan`,
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Product Not Found",
-          description: `No product found with barcode: ${barcodeInput}`,
-          variant: "destructive",
-        });
-      }
-    }
-  };
 
   // Cart functions
   const addToCart = (product: Product) => {
@@ -329,7 +279,6 @@ export default function POSEnhanced() {
     setDiscount(0);
     setAmountPaid("");
     setPaymentMethod("cash");
-    setBarcodeInput("");
 
     if (cart.length > 0) {
       toast({
@@ -697,16 +646,6 @@ export default function POSEnhanced() {
     }
   };
 
-    // Handle Enter operation (e.g., adding product from search)
-    const handleEnterOperation = () => {
-      if (searchTerm && filteredProducts.length > 0) {
-          // Assuming you want to add the first filtered product to the cart
-          addToCart(filteredProducts[0]);
-      } else if (barcodeInput.trim()) {
-          handleBarcodeSubmit();
-      }
-  };
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -717,13 +656,7 @@ export default function POSEnhanced() {
 
       if (e.key === "F1") {
         e.preventDefault();
-        // Focus on barcode input first, then search
-        const barcodeInput = document.querySelector('input[placeholder*="Scan barcode"]') as HTMLInputElement;
-        if (barcodeInput) {
-          barcodeInput.focus();
-        } else {
-          searchInputRef.current?.focus();
-        }
+        searchInputRef.current?.focus();
       } else if (e.key === "F10") {
         e.preventDefault();
         if (cart.length > 0) setShowPaymentDialog(true);
@@ -760,9 +693,6 @@ export default function POSEnhanced() {
       else if (e.ctrlKey && e.key === "d") {
         e.preventDefault();
         toggleDiscount();
-      } else if (e.key === "Enter") {
-          e.preventDefault();
-          handleEnterOperation();
       }
     };
 
@@ -777,7 +707,7 @@ export default function POSEnhanced() {
       window.removeEventListener("keydown", handleKeyPress);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
-  }, [cart.length, discount, searchTerm, barcodeInput, filteredProducts]);
+  }, [cart.length, discount]);
 
   const currentDate = new Date().toLocaleDateString('en-IN');
   const currentTime = new Date().toLocaleTimeString('en-IN', { 
@@ -1150,107 +1080,33 @@ export default function POSEnhanced() {
           </div>
 
           {/* Search Section */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            {/* Barcode Scanner Section */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                    <Scan className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-blue-800">Barcode Scanner</h3>
-                    <p className="text-sm text-blue-600">Scan or enter product barcode for instant addition</p>
-                  </div>
-                </div>
-                <Badge className="bg-green-100 text-green-800 border-green-200">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Ready
-                </Badge>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex-1 relative">
-                  <Scan className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
-                  <Input
-                    placeholder="Scan barcode or type product code to add instantly..."
-                    value={barcodeInput}
-                    onChange={(e) => setBarcodeInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleBarcodeSubmit();
-                      }
-                    }}
-                    className="pl-10 text-sm border-blue-300 focus:border-blue-500 focus:ring-blue-500 h-12"
-                    autoFocus
-                  />
-                </div>
-                <Button
-                  onClick={handleBarcodeSubmit}
-                  disabled={!barcodeInput.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white h-12 px-6"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Item
-                </Button>
-              </div>
-              <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-                <Info className="h-3 w-3" />
-                💡 Tip: Use a barcode scanner or manually enter product barcodes/SKU for instant cart addition
-              </p>
-            </div>
-
-            
-              
-                  
-                      
-                          
-                              
-                                  
-                                      Search Products (F1)
-                                  
-                                  
-                                      Enter Operation (Enter)
-                                  
-                                  
-                                      Browse Categories
-                                  
-                                  
-                                      Refresh Data
-                                  
-                              
-
+          <div className="bg-white border-b border-gray-200px-6 py-4">
             <div className="flex items-center space-x-4 mb-4">
-                <Button 
-                  onClick={() => searchInputRef.current?.focus()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  Search Products (F1)
-                </Button>
-                <Button 
-                  onClick={handleEnterOperation}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Enter Operation (Enter)
-                </Button>
-                <Button variant="outline" className="hover:bg-gray-50">
-                  <Package className="h-4 w-4 mr-2" />
-                  Browse Categories
-                </Button>
-                <div className="flex-1" />
-                <Button 
-                  variant="outline" 
-                  onClick={() => queryClient.invalidateQueries()}
-                  className="hover:bg-gray-50"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh Data
-                </Button>
-              </div>
-            
+              <Button 
+                onClick={() => searchInputRef.current?.focus()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Scan className="h-4 w-4 mr-2" />
+                Scan Barcode (F1)
+              </Button>
+              <Button variant="outline" className="hover:bg-gray-50">
+                <Search className="h-4 w-4 mr-2" />
+                Search Products
+              </Button>
+              <Button variant="outline" className="hover:bg-gray-50">
+                <Package className="h-4 w-4 mr-2" />
+                Browse Categories
+              </Button>
+              <div className="flex-1" />
+              <Button 
+                variant="outline" 
+                onClick={() => queryClient.invalidateQueries()}
+                className="hover:bg-gray-50"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Data
+              </Button>
+            </div>
 
             <div className="flex items-center space-x-4">
               <div className="relative flex-1">
@@ -1297,14 +1153,10 @@ export default function POSEnhanced() {
                     <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-gray-300" />
                     <h3 className="text-2xl font-semibold text-gray-600 mb-3">Cart is Empty</h3>
                     <p className="text-gray-500 mb-6 text-lg">Start by searching for products above</p>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 max-w-4xl mx-auto text-sm text-gray-500">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-3xl mx-auto text-sm text-gray-500">
                       <div className="bg-white p-4 rounded-lg border">
                         <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F1</kbd>
-                        <p className="mt-2">Focus barcode scanner</p>
-                      </div>
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">Enter</kbd>
-                        <p className="mt-2">Add scanned item</p>
+                        <p className="mt-2">Focus search bar</p>
                       </div>
                       <div className="bg-white p-4 rounded-lg border">
                         <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F10</kbd>
@@ -1389,823 +1241,1002 @@ export default function POSEnhanced() {
               {/* Bottom Action Bar */}
               <div className="flex items-center justify-between mt-6 p-4 bg-gray-100 rounded-xl border border-gray-200">
 
-                
+                <div className="flex space-x-3">
+                <Button 
+                  variant="outline"
+                  onClick={() => setupQuickPayment("cash")}
+                  disabled={cart.length === 0}
+                  title="Quick cash payment (Alt+C)"
+                  className="hover:bg-green-50 hover:text-green-700 hover:border-green-200"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Cash (Alt+C)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setupQuickPayment("upi")}
+                  disabled={cart.length === 0}
+                  title="Quick UPI payment (Alt+U)"
+                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                >
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  UPI (Alt+U)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={toggleDiscount}
+                  title="Toggle 10% discount (Ctrl+D)"
+                  className={`hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
+                >
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Discount (Ctrl+D)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={holdCurrentSale}
+                  disabled={cart.length === 0}
+                  title="Hold current sale (Alt+H)"
+                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Hold (Alt+H)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowHoldSales(true)}
+                  title="Recall held sales (Alt+R)"
+                  className="hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200"
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Recall (Alt+R)
+                  {holdSales.length > 0 && (
+                    <span className="ml-1 bg-yellow-100 text-yellow-800 text-xs px-1.5 py-0.5 rounded-full">
+                      {holdSales.length}
+                    </span>
+                  )}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={clearCart} 
+                  disabled={cart.length === 0}
+                  className="hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear (F12)
+                </Button>
+              </div>
 
-                  
-                      
-                          Cash (Alt+C)
-                      
-                          UPI (Alt+U)
-                      
-                          Discount (Ctrl+D)
-                      
-                          Hold (Alt+H)
-                      
-                          
-                              Recall (Alt+R)
-                              {holdSales.length > 0 && (
-                                  <Badge variant="secondary" className="ml-1 text-xs">
-                                      {holdSales.length}
-                                  </Badge>
-                              )}
-                          
-                      
-                          Clear (F12)
-                      
-                  
-
-                
-
-                  
-                      System Online
-                  
-                  Terminal: POS-01
-                  {currentTime}
-                
-              
+                <div className="flex items-center space-x-4 text-sm">
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    System Online
+                  </Badge>
+                  <span className="text-gray-600">Terminal: POS-01</span>
+                  <span className="text-gray-600 font-mono">{currentTime}</span>
+                </div>
+              </div>
             </div>
 
             {/* Bill Summary Sidebar */}
             <div className="w-96 bg-white border-l border-gray-200 p-6">
-              
-                
-                  
-                      Bill Summary
-                  
-                
-                Bill #{billNumber}
-                {currentDate}
-              
+              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-6 rounded-xl mb-6 shadow-lg">
+                <div className="flex items-center mb-3">
+                  <Receipt className="h-6 w-6 mr-3" />
+                  <h2 className="text-xl font-bold">Bill Summary</h2>
+                </div>
+                <div className="text-purple-100 text-sm">Bill #{billNumber}</div>
+                <div className="text-purple-100 text-sm">{currentDate}</div>
+              </div>
 
               {/* Bill Details */}
-              
-                
-                  
-                      Items:
-                      {cart.length}
-                  
-                  
-                      Total Qty:
-                      {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                  
-                  
-                      Gross Amount:
-                      {formatCurrency(subtotal)}
-                  
+              <Card className="mb-6 border border-gray-200">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex justify-between text-lg">
+                    <span className="text-gray-600">Items:</span>
+                    <span className="font-semibold">{cart.length}</span>
+                  </div>
+                  <div className="flex justify-between text-lg">
+                    <span className="text-gray-600">Total Qty:</span>
+                    <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg">
+                    <span className="text-gray-600">Gross Amount:</span>
+                    <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                  </div>
 
-                  
 
-                      Discount:
-                      
-                          
-                          %
-                      
-                  
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Discount:</span>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        value={discount}
+                        onChange={(e) => setDiscount(Number(e.target.value))}
+                        className="w-16 h-8 text-center"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="text-sm text-gray-500">%</span>
+                    </div>
+                  </div>
 
                   {discount > 0 && (
-                    <div className="flex justify-between">
+                    <div className="flex justify-between text-red-600">
                       <span>Discount Amount:</span>
                       <span>-{formatCurrency(discountAmount)}</span>
                     </div>
                   )}
 
-                
-              
+
+
+                </CardContent>
+              </Card>
 
               {/* Net Amount Payable */}
-              
-                
-                  
-                      Net Amount Payable
-                      {formatCurrency(total)}
-                  
-                
-              
+              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl mb-6 shadow-lg">
+                <div className="text-center">
+                  <div className="text-sm font-medium opacity-90 mb-2">Net Amount Payable</div>
+                  <div className="text-4xl font-bold">{formatCurrency(total)}</div>
+                </div>
+              </div>
 
               {/* Action Buttons */}
-              
-                
-                  
-                      
-                          Complete Payment (F10)
-                      
-                  
+              <div className="space-y-3">
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 h-auto"
+                  onClick={() => setShowPaymentDialog(true)}
+                  disabled={cart.length === 0}
+                >
+                  <CreditCard className="h-5 w-5 mr-3" />
+                  Proceed to Payment (F10)
+                </Button>
 
-                
-                  
-                      
-                          Clear All Items
-                      
-                  
+                <Button
+                  variant="outline"
+                  className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={clearCart}
+                  disabled={cart.length === 0}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All Items
+                </Button>
 
-                
-                  
-                      
-                          Print Receipt
-                      
-                  
-              
+                <Button
+                  variant="outline"
+                  className="w-full hover:bg-gray-50"
+                  onClick={() => {
+                    if (cart.length > 0) {
+                      handlePrintReceipt(null);
+                    } else {
+                      toast({
+                        title: "Empty Cart",
+                        description: "Please add items to cart before printing receipt",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={cart.length === 0}
+                >
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Print Receipt
+                </Button>
+              </div>
             </div>
-          
+          </div>
 
           {/* Product Search Results Overlay */}
           {searchTerm && filteredProducts.length > 0 && (
-            
-              
-                
+            <div className="absolute top-48 left-6 right-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-20 max-h-80 overflow-auto">
+              <div className="p-3 bg-gray-50 border-b border-gray-200 rounded-t-xl">
+                <h3 className="font-semibold text-gray-900">
                   Found {filteredProducts.length} products
-                
-              
+                </h3>
+              </div>
               {filteredProducts.slice(0, 8).map((product: Product) => (
-                
-                  
-                    
-                      
-                          {product.name}
-                          {product.sku}
-                          {product.barcode && (
-                            📷 {product.barcode}
-                          )}
-                          {product.category && (
-                            
-                              {product.category.name}
-                            
-                          )}
-                      
-                      
-                          {formatCurrency(parseFloat(product.price))}
-                          {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
-                      
-                    
-                  
-                
+                <div
+                  key={product.id}
+                  className="p-4 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                  onClick={() => addToCart(product)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">{product.name}</h4>
+                      <p className="text-sm text-gray-500 font-mono">{product.sku}</p>
+                      {product.category && (
+                        <Badge variant="outline" className="mt-1 text-xs">
+                          {product.category.name}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-right ml-4">
+                      <div className="font-bold text-lg text-green-600">
+                        {formatCurrency(parseFloat(product.price))}
+                      </div>
+                      <div className={`text-sm ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
-            
+            </div>
           )}
 
           {/* Open Register Dialog */}
-          
-            
-              
-                
-                  
-                      
-                          Open Cash Register
-                      
-                  
-                
+          <Dialog open={showOpenRegister} onOpenChange={setShowOpenRegister}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <DollarSign className="h-6 w-6 text-blue-600" />
+                  Open Cash Register
+                </DialogTitle>
+              </DialogHeader>
 
-                  
-                    Enter the opening cash amount you're placing in the register drawer.
-                    This will be your starting balance for the day.
-                  
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <p className="text-blue-800 text-sm mb-2">Enter the opening cash amount you're placing in the register drawer.</p>
+                  <p className="text-blue-600 text-xs">This will be your starting balance for the day.</p>
+                </div>
 
-                
-                  
-                      Opening Cash Amount
-                      
-                          
-                              Enter opening amount
-                          
-                      
-                  
-                
+                <div>
+                  <Label htmlFor="openingCash" className="text-sm font-medium">Opening Cash Amount</Label>
+                  <Input
+                    id="openingCash"
+                    type="number"
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(e.target.value)}
+                    placeholder="Enter opening amount"
+                    className="mt-1 text-lg"
+                    step="0.01"
+                    min="0"
+                    autoFocus
+                  />
+                </div>
 
-                
-                  
-                      Cancel
-                      
-                          Open Register
-                      
-                  
-                
-              
-            
-          
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowOpenRegister(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleOpenRegister}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={!cashAmount || parseFloat(cashAmount) < 0}
+                  >
+                    Open Register
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Withdrawal Dialog */}
-          
-            
-              
-                
-                  
-                      
-                          Cash Withdrawal
-                      
-                  
-                
+          <Dialog open={showWithdrawal} onOpenChange={setShowWithdrawal}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <TrendingDown className="h-6 w-6 text-orange-600" />
+                  Cash Withdrawal
+                </DialogTitle>
+              </DialogHeader>
 
-                  
-                    Available Cash: {formatCurrency(cashInHand)}
-                    Enter amount to withdraw from register
-                  
+              <div className="space-y-4">
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <p className="text-orange-800 text-sm mb-2">Available Cash: {formatCurrency(cashInHand)}</p>
+                  <p className="text-orange-600 text-xs">Enter amount to withdraw from register</p>
+                </div>
 
-                
-                  
-                      Withdrawal Amount
-                      
-                          
-                              Enter withdrawal amount
-                          
-                      
-                  
-                
+                <div>
+                  <Label htmlFor="withdrawalAmount" className="text-sm font-medium">Withdrawal Amount</Label>
+                  <Input
+                    id="withdrawalAmount"
+                    type="number"
+                    value={withdrawalAmount}
+                    onChange={(e) => setWithdrawalAmount(e.target.value)}
+                    placeholder="Enter withdrawal amount"
+                    className="mt-1 text-lg"
+                    step="0.01"
+                    min="0"
+                    max={cashInHand}
+                    autoFocus
+                  />
+                </div>
 
-                
-                  
-                      Note (Optional)
-                      
-                          
-                              e.g., Cash sent to bank
-                          
-                      
-                  
-                
+                <div>
+                  <Label htmlFor="withdrawalNote" className="text-sm font-medium">Note (Optional)</Label>
+                  <Input
+                    id="withdrawalNote"
+                    value={withdrawalNote}
+                    onChange={(e) => setWithdrawalNote(e.target.value)}
+                    placeholder="e.g., Cash sent to bank"
+                    className="mt-1"
+                  />
+                </div>
 
-                
-                  
-                      Cancel
-                      
-                          Process Withdrawal
-                      
-                  
-                
-              
-            
-          
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowWithdrawal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleWithdrawal}
+                    className="bg-orange-600 hover:bg-orange-700"
+                    disabled={!withdrawalAmount || parseFloat(withdrawalAmount) <= 0 || parseFloat(withdrawalAmount) > cashInHand}
+                  >
+                    Process Withdrawal
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Close Register Dialog */}
-          
-            
-              
-                
-                  
-                      
-                          End of Day Summary
-                      
-                  
-                
+          <Dialog open={showCloseRegister} onOpenChange={setShowCloseRegister}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Archive className="h-6 w-6 text-red-600" />
+                  End of Day Summary
+                </DialogTitle>
+              </DialogHeader>
 
-                
-                  
-                    {/* Opening Summary */}
-                    
-                      
-                          Opening
-                          
-                              Opening Cash:
-                              {formatCurrency(openingCash)}
-                          
-                      
-                    
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Opening Summary */}
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 className="font-semibold text-blue-800 mb-3">Opening</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">Opening Cash:</span>
+                        <span className="font-semibold">{formatCurrency(openingCash)}</span>
+                      </div>
+                    </div>
+                  </div>
 
-                    {/* Sales Summary */}
-                    
-                      
-                          Sales Received
-                          
-                              Cash Payments:
-                              {formatCurrency(cashReceived)}
-                          
-                          
-                              UPI Payments:
-                              {formatCurrency(upiReceived)}
-                          
-                          
-                              Card Payments:
-                              {formatCurrency(cardReceived)}
-                          
-                          
-                              Bank Transfer:
-                              {formatCurrency(bankReceived)}
-                          
-                          
-                              Cheque:
-                              {formatCurrency(chequeReceived)}
-                          
-                          
-                              Other:
-                              {formatCurrency(otherReceived)}
-                          
-                          Total Sales:
-                          {formatCurrency(cashReceived + upiReceived + cardReceived + bankReceived + chequeReceived + otherReceived)}
-                      
-                    
+                  {/* Sales Summary */}
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h3 className="font-semibold text-green-800 mb-3">Sales Received</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Cash Payments:</span>
+                        <span className="font-semibold">{formatCurrency(cashReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">UPI Payments:</span>
+                        <span className="font-semibold">{formatCurrency(upiReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Card Payments:</span>
+                        <span className="font-semibold">{formatCurrency(cardReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Bank Transfer:</span>
+                        <span className="font-semibold">{formatCurrency(bankReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Cheque:</span>
+                        <span className="font-semibold">{formatCurrency(chequeReceived)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Other:</span>
+                        <span className="font-semibold">{formatCurrency(otherReceived)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-bold">
+                        <span className="text-green-700">Total Sales:</span>
+                        <span>{formatCurrency(cashReceived + upiReceived + cardReceived + bankReceived + chequeReceived + otherReceived)}</span>
+                      </div>
+                    </div>
+                  </div>
 
-                    {/* Outgoing Summary */}
-                    
-                      
-                          Outgoing
-                          
-                              Withdrawals:
-                              {formatCurrency(totalWithdrawals)}
-                          
-                          
-                              Refunds:
-                              {formatCurrency(totalRefunds)}
-                          
-                      
-                    
+                  {/* Outgoing Summary */}
+                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                    <h3 className="font-semibold text-red-800 mb-3">Outgoing</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-red-700">Withdrawals:</span>
+                        <span className="font-semibold">{formatCurrency(totalWithdrawals)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-red-700">Refunds:</span>
+                        <span className="font-semibold">{formatCurrency(totalRefunds)}</span>
+                      </div>
+                    </div>
+                  </div>
 
-                    {/* Final Summary */}
-                    
-                      
-                          Final Cash Count
-                          
-                              Opening Cash:
-                              {formatCurrency(openingCash)}
-                          
-                          
-                              + Cash Payments:
-                              {formatCurrency(cashReceived)}
-                          
-                          
-                              + UPI (as cash):
-                              {formatCurrency(upiReceived)}
-                          
-                          
-                              - Withdrawals:
-                              {formatCurrency(totalWithdrawals)}
-                          
-                          Expected Cash:
-                          {formatCurrency(openingCash + cashReceived + upiReceived - totalWithdrawals)}
-                          Current Cash:
-                          {formatCurrency(cashInHand)}
-                      
-                    
-                  
-                
+                  {/* Final Summary */}
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <h3 className="font-semibold text-purple-800 mb-3">Final Cash Count</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-700">Opening Cash:</span>
+                        <span>{formatCurrency(openingCash)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-700">+ Cash Payments:</span>
+                        <span>{formatCurrency(cashReceived)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-700">+ UPI (as cash):</span>
+                        <span>{formatCurrency(upiReceived)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-700">- Withdrawals:</span>
+                        <span>{formatCurrency(totalWithdrawals)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-bold text-lg">
+                        <span className="text-purple-700">Expected Cash:</span>
+                        <span className="text-purple-800">{formatCurrency(openingCash + cashReceived + upiReceived - totalWithdrawals)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg">
+                        <span className="text-purple-700">Current Cash:</span>
+                        <span className="text-purple-800">{formatCurrency(cashInHand)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                
-                  
-                      Keep Open
-                      
-                          Close Register
-                      
-                  
-                
-              
-            
-          
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCloseRegister(false)}
+                  >
+                    Keep Open
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setRegisterOpened(false);
+                      setOpeningCash(0);
+                      setCashInHand(0);
+                      setCashReceived(0);
+                      setUpiReceived(0);
+                      setCardReceived(0);
+                      setBankReceived(0);
+                      setChequeReceived(0);
+                      setOtherReceived(0);
+                      setTotalWithdrawals(0);
+                      setTotalRefunds(0);
+                      setShowCloseRegister(false);
+                      toast({
+                        title: "Register Closed",
+                        description: "End of day completed successfully",
+                      });
+                    }}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Close Register
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Cash Register Management Modal */}
-      
-        
-          
-            
-              
-                
-                    
-                      
-                          Cash Register Management
-                      
-                      Professional cash & payment tracking system
-                    
-                    
-                        
-                        Live System
-                        06:29 am
-                    
-                  
-                
-              
+      <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg">
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                <Banknote className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="text-gray-800">Cash Register Management</div>
+                <div className="text-sm text-gray-600 font-normal">Professional cash & payment tracking system</div>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-sm text-gray-600">Live System</span>
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">06:29 am</span>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
 
-              
-                {/* Current Balance Display */}
-                
-                  
-                      
-                          Current Cash Balance
-                          {formatCurrency(cashInHand)}
-                          
-                              
-                                  Today's Sales
-                                  ₹0
-                              
-                              
-                                  Transactions
-                                  0
-                              
-                          
-                      
-                  
-                
+          <div className="grid grid-cols-12 gap-6 p-2">
+            {/* Current Balance Display */}
+            <div className="col-span-4">
+              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-2xl shadow-lg">
+                <div className="text-center">
+                  <h3 className="text-lg font-medium mb-2 opacity-90">Current Cash Balance</h3>
+                  <div className="text-4xl font-bold mb-4">{formatCurrency(cashInHand)}</div>
+                  <div className="bg-green-400/30 rounded-lg p-3">
+                    <div className="flex justify-between"><div className="text-center">
+                        <div className="text-sm opacity-80">Today's Sales</div>
+                        <div className="font-semibold">₹0</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm opacity-80">Transactions</div>
+                        <div className="font-semibold">0</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                {/* Cash Payments Section */}
-                
-                  
-                      
-                          Cash Payments
-                      
-                      Quick Add
-                  
-                  
+            {/* Cash Payments Section */}
+            <div className="col-span-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Banknote className="w-5 h-5 text-green-600" />
+                    <h4 className="font-semibold text-gray-800">Cash Payments</h4>
+                  </div>
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Quick Add</span>
+                </div>
 
-                      {[100, 500, 1000, 2000, 5000, 10000, 20000, 50000].map((amount) => (
-                        
-                            
-                                
-                                ₹{amount >= 1000 ? `${amount/1000}k` : amount}
-                            
-                        
-                      ))}
-                  
-                
+                <div className="grid grid-cols-2 gap-2">
+                  {[100, 500, 1000, 2000, 5000, 10000, 20000, 50000].map((amount) => (
+                    <Button
+                      key={amount}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCashAmount(amount.toString());
+                        setCashOperation('add');
+                        setCashReason(`Cash payment ₹${amount}`);
+                      }}
+                      className="border-green-200 text-green-700 hover:bg-green-50 h-12 flex flex-col justify-center"
+                    >
+                      <Plus className="w-3 h-3 mb-1" />
+                      <span className="font-semibold">₹{amount >= 1000 ? `${amount/1000}k` : amount}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-                {/* Digital Payments Section */}
-                
-                  
-                      
-                          Digital Payments
-                      
-                      UPI • Cards
-                  
-                  
+            {/* Digital Payments Section */}
+            <div className="col-span-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-blue-600" />
+                    <h4 className="font-semibold text-gray-800">Digital Payments</h4>
+                  </div>
+                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">UPI • Cards</span>
+                </div>
 
-                  {/* UPI Payments */}
-                  
-                    
-                      {[250, 500, 1000, 2000].map((amount) => (
-                        
-                            
-                                
-                                ₹{amount}
-                                UPI
-                            
-                        
-                      ))}
-                    
-                  
+                {/* UPI Payments */}
+                <div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {[250, 500, 1000, 2000].map((amount) => (
+                      <Button
+                        key={`upi-${amount}`}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCashAmount(amount.toString());
+                          setCashOperation('add');
+                          setCashReason(`UPI payment ₹${amount}`);
+                        }}
+                        className="border-blue-200 text-blue-700 hover:bg-blue-50 h-12 flex flex-col justify-center"
+                      >
+                        <Plus className="w-3 h-3 mb-1" />
+                        <span className="font-semibold">₹{amount}</span>
+                        <span className="text-xs text-blue-600">UPI</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
 
-                  {/* Card Payments */}
-                  
-                    
-                      {[5000, 10000, 25000, 50000].map((amount) => (
-                        
-                            
-                                
-                                ₹{amount >= 1000 ? `${amount/1000}k` : amount}
-                                Card
-                            
-                        
-                      ))}
-                    
-                  
-                
-              
+                {/* Card Payments */}
+                <div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[5000, 10000, 25000, 50000].map((amount) => (
+                      <Button
+                        key={`card-${amount}`}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCashAmount(amount.toString());
+                          setCashOperation('add');
+                          setCashReason(`Card payment ₹${amount}`);
+                        }}
+                        className="border-purple-200 text-purple-700 hover:bg-purple-50 h-12 flex flex-col justify-center"
+                      >
+                        <Plus className="w-3 h-3 mb-1" />
+                        <span className="font-semibold">₹{amount >= 1000 ? `${amount/1000}k` : amount}</span>
+                        <span className="text-xs text-purple-600">Card</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-              {/* Transaction Type Selection */}
-              
-                
-                  
-                      
-                          
-                              📋
-                          
-                          Transaction Type
-                      
-                  
+            {/* Transaction Type Selection */}
+            <div className="col-span-6">
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-gray-100 rounded flex items-center justify-center">
+                    <span className="text-xs">📋</span>
+                  </div>
+                  Transaction Type
+                </h4>
 
-                  
-                    
-                      
-                        
-                            
-                                Add Money
-                            
-                            Increase register balance
-                        
-                      
-                    
+                <div className="grid grid-cols-2 gap-4">
+                  <Card className={`cursor-pointer transition-all border-2 ${cashOperation === 'add' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
+                        onClick={() => setCashOperation('add')}>
+                    <CardContent className="p-4 text-center">
+                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <Plus className="w-6 h-6 text-green-600" />
+                      </div>
+                      <h4 className="font-semibold text-green-700 mb-1">Add Money</h4>
+                      <p className="text-sm text-green-600">Increase register balance</p>
+                    </CardContent>
+                  </Card>
 
-                    
-                      
-                        
-                            
-                                Remove Money
-                            
-                            Decrease register balance
-                        
-                      
-                    
-                  
-                
-              
+                  <Card className={`cursor-pointer transition-all border-2 ${cashOperation === 'remove' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-red-300'}`}
+                        onClick={() => setCashOperation('remove')}>
+                    <CardContent className="p-4 text-center">
+                      <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <Minus className="w-6 h-6 text-red-600" />
+                      </div>
+                      <h4 className="font-semibold text-red-700 mb-1">Remove Money</h4>
+                      <p className="text-sm text-red-600">Decrease register balance</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
 
-              {/* Cash Removal Section */}
-              
-                
-                  
-                      
-                          Cash Removal
-                      
-                      Bank Deposits
-                  
-                  
+            {/* Cash Removal Section */}
+            <div className="col-span-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Minus className="w-5 h-5 text-red-600" />
+                    <h4 className="font-semibold text-gray-800">Cash Removal</h4>
+                  </div>
+                  <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Bank Deposits</span>
+                </div>
 
-                    
-                      
-                          
-                              ₹2,000
-                              Bank Deposit
-                          
-                      
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCashAmount("2000");
+                      setCashOperation("remove");
+                      setCashReason("Bank deposit ₹2000");
+                    }}
+                    className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
+                  >
+                    <Minus className="w-4 h-4 mb-1" />
+                    <span className="font-semibold">₹2,000</span>
+                    <span className="text-xs text-red-600">Bank Deposit</span>
+                  </Button>
 
-                      
-                          
-                              ₹5,000
-                              Bank Deposit
-                          
-                      
-                  
-                
-              
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCashAmount("5000");
+                      setCashOperation("remove");
+                      setCashReason("Bank deposit ₹5000");
+                    }}
+                    className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
+                  >
+                    <Minus className="w-4 h-4 mb-1" />
+                    <span className="font-semibold">₹5,000</span>
+                    <span className="text-xs text-red-600">Bank Deposit</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
 
-              {/* Manual Entry Form */}
-              
-                
-                  
-                      Manual Entry
-                      
-                          
-                              Amount (₹)
-                              
-                                  
-                                      Enter amount
-                                  
-                              
-                          
-                          
-                              Reason
-                              
-                                  
-                                      Enter reason
-                                  
-                              
-                          
-                      
-                      
-                          
-                              {cashOperation === 'add' ? 'Add to Register' : cashOperation === 'remove' ? 'Remove from Register' : 'Select Operation'}
-                          
-                      
-                  
-                
-              
-            
-          
-        
-      
+            {/* Manual Entry Form */}
+            <div className="col-span-12">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-800 mb-4">Manual Entry</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="cashAmount" className="text-sm font-medium">Amount (₹)</Label>
+                    <Input
+                      id="cashAmount"
+                      type="number"
+                      value={cashAmount}
+                      onChange={(e) => setCashAmount(e.target.value)}
+                      placeholder="Enter amount"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cashReason" className="text-sm font-medium">Reason</Label>
+                    <Input
+                      id="cashReason"
+                      value={cashReason}
+                      onChange={(e) => setCashReason(e.target.value)}
+                      placeholder="Enter reason"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={handleCashOperation} 
+                      className={`w-full h-10 ${
+                        cashOperation === 'add' 
+                          ? 'bg-green-600 hover:bg-green-700' 
+                          : cashOperation === 'remove'
+                          ? 'bg-red-600 hover:bg-red-700'
+                          : 'bg-gray-400'
+                      }`}
+                      disabled={!cashAmount || parseFloat(cashAmount) <= 0 || !cashOperation}
+                    >
+                      {cashOperation === 'add' ? 'Add to Register' : cashOperation === 'remove' ? 'Remove from Register' : 'Select Operation'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
           {/* New Customer Dialog */}
-          
-            
-              
-                
-                  
-                      
-                          Add New Customer
-                      
-                  
-                
+          <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center text-xl">
+                  <UserPlus className="h-6 w-6 mr-3" />
+                  Add New Customer
+                </DialogTitle>
+              </DialogHeader>
 
-                
-                  
-                      Customer Name *
-                      
-                          
-                              Enter customer name
-                          
-                      
-                  
-                
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name *</label>
+                  <Input
+                    placeholder="Enter customer name"
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    className="w-full"
+                    autoFocus
+                  />
+                </div>
 
-                
-                  
-                      Phone Number
-                      
-                          
-                              Enter phone number
-                          
-                      
-                  
-                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <Input
+                    placeholder="Enter phone number"
+                    value={newCustomerPhone}
+                    onChange={(e) => setNewCustomerPhone(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
 
-                
-                  
-                      Email Address
-                      
-                          
-                              Enter email address
-                          
-                      
-                  
-                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                  <Input
+                    placeholder="Enter email address"
+                    value={newCustomerEmail}
+                    onChange={(e) => setNewCustomerEmail(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
 
-                
-                  
-                      Cancel
-                      
-                          Create Customer
-                      
-                  
-                
-              
-            
-          
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowNewCustomerDialog(false)}
+                    disabled={isCreatingCustomer}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={createNewCustomer}
+                    disabled={isCreatingCustomer}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {isCreatingCustomer ? "Creating..." : "Create Customer"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Hold Sales Dialog */}
-          
-            
-              
-                
-                  
-                      
-                          Held Sales ({holdSales.length})
-                      
-                  
-                
+          <Dialog open={showHoldSales} onOpenChange={setShowHoldSales}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <List className="h-6 w-6 text-blue-600" />
+                  Held Sales ({holdSales.length})
+                </DialogTitle>
+              </DialogHeader>
 
-                
-                  {holdSales.length === 0 ? (
-                    
-                      
-                          
-                              No Held Sales
-                          
-                          Hold a sale using Alt+H to save it for later
-                      
-                    
-                  ) : (
-                    
-                      {holdSales.map((holdSale) => (
-                        
-                          
-                            
-                              
-                                
-                                  {holdSale.id}
-                                  
-                                      {holdSale.cart.length} items
-                                  
-                                  
-                                      {holdSale.cart.reduce((sum, item) => sum + item.quantity, 0)} units
-                                  
-                                
+              <div className="space-y-4">
+                {holdSales.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No Held Sales</h3>
+                    <p className="text-gray-500">Hold a sale using Alt+H to save it for later</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {holdSales.map((holdSale) => (
+                      <Card key={holdSale.id} className="p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-2">
+                              <h4 className="font-semibold text-gray-900">{holdSale.id}</h4>
+                              <Badge variant="outline" className="text-xs">
+                                {holdSale.cart.length} items
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {holdSale.cart.reduce((sum, item) => sum + item.quantity, 0)} units
+                              </Badge>
+                            </div>
 
-                                
-                                  Customer: {holdSale.customer?.name || "Walk-in Customer"}
-                                  Time: {holdSale.timestamp.toLocaleString()}
-                                  {holdSale.discount > 0 && (
-                                    Discount: {holdSale.discount}%
-                                  )}
-                                
+                            <div className="text-sm text-gray-600 mb-2">
+                              <div>Customer: {holdSale.customer?.name || "Walk-in Customer"}</div>
+                              <div>Time: {holdSale.timestamp.toLocaleString()}</div>
+                              {holdSale.discount > 0 && (
+                                <div>Discount: {holdSale.discount}%</div>
+                              )}
+                            </div>
 
-                                
-                                  Items: {holdSale.cart.map(item => `${item.name} (${item.quantity})`).join(", ")}
-                                
-                              
+                            <div className="text-sm text-gray-500">
+                              Items: {holdSale.cart.map(item => `${item.name} (${item.quantity})`).join(", ")}
+                            </div>
+                          </div>
 
-                              
-                                
-                                  
-                                      Recall
-                                  
-                                  
-                                      Delete
-                                  
-                                
-                              
-                            
-                          
-                        
-                      ))}
-                    
-                  )}
-                
+                          <div className="text-right ml-4">
+                            <div className="text-2xl font-bold text-green-600 mb-2">
+                              {formatCurrency(holdSale.total)}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => recallHeldSale(holdSale)}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Recall
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => deleteHeldSale(holdSale.id)}
+                                className="text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                
-                  
-                      Close
-                  
-                
-              
-            
-          
+              <div className="flex justify-end pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowHoldSales(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Printer Settings Dialog */}
-          
-            
-              
-                
-                  
-                      
-                          Receipt & Printer Settings
-                      
-                  
-                
+          <Dialog open={showPrinterSettings} onOpenChange={setShowPrinterSettings}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Printer className="h-6 w-6 text-blue-600" />
+                  Receipt & Printer Settings
+                </DialogTitle>
+              </DialogHeader>
 
-                
-                  {/* Settings Form */}
-                  
-                    
-                      
-                          Business Name
-                          
-                              
-                                  Your Business Name
-                              
-                          
-                      
-                    
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Settings Form */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="businessName">Business Name</Label>
+                    <Input 
+                      id="businessName" 
+                      placeholder="Your Business Name" 
+                      value={receiptSettings.businessName}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, businessName: e.target.value }))}
+                    />
+                  </div>
 
-                    
-                      
-                          Business Address
-                          
-                              
-                                  Business Address
-                              
-                              
-                    
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Business Address</Label>
+                    <Textarea 
+                      id="address" 
+                      placeholder="Business Address" 
+                      value={receiptSettings.address}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, address: e.target.value }))}
+                      rows={3}
+                    />
+                  </div>
 
-                    
-                      
-                          Phone Number
-                          
-                              
-                                  (123) 456-7890
-                              
-                          
-                      
-                    
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input 
+                      id="phone" 
+                      placeholder="(123) 456-7890" 
+                      value={receiptSettings.phone}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, phone: e.target.value }))}
+                    />
+                  </div>
 
-                    
-                      
-                          Tax ID / GST Number
-                          
-                              
-                                  Your tax ID number
-                              
-                          
-                      
-                    
+                  <div className="space-y-2">
+                    <Label htmlFor="taxId">Tax ID / GST Number</Label>
+                    <Input 
+                      id="taxId" 
+                      placeholder="Your tax ID number" 
+                      value={receiptSettings.taxId}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, taxId: e.target.value }))}
+                    />
+                  </div>
 
-                    
-                      
-                          Receipt Footer
-                          
-                              
-                                  Custom message for receipt footer
-                              
-                              
-                    
+                  <div className="space-y-2">
+                    <Label htmlFor="receiptFooter">Receipt Footer</Label>
+                    <Textarea 
+                      id="receiptFooter" 
+                      placeholder="Custom message for receipt footer" 
+                      value={receiptSettings.receiptFooter}
+                      onChange={(e) => setReceiptSettings(prev => ({ ...prev, receiptFooter: e.target.value }))}
+                      rows={2}
+                    />
+                  </div>
 
-                    
-                      
-                          
-                              Show Logo on Receipt
-                              
-                          
-                          
-                              Auto Print After Sale
-                              
-                          
-                      
-                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showLogo">Show Logo on Receipt</Label>
+                      <Switch 
+                        id="showLogo" 
+                        checked={receiptSettings.showLogo}
+                        onCheckedChange={(checked) => setReceiptSettings(prev => ({ ...prev, showLogo: checked }))}
+                      />
+                    </div>
 
-                  
-                      
-                          Default Printer
-                          
-                              
-                                  
-                                      Select a printer
-                                  
-                                  
-                                      System Default Printer
-                                  
-                                  
-                                      Thermal Receipt Printer
-                                  
-                                  
-                                      Office Inkjet Printer
-                                  
-                                  
-                                      Laser Printer
-                                  
-                              
-                          
-                      
-                  
-                
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="printAutomatically">Auto Print After Sale</Label>
+                      <Switch 
+                        id="printAutomatically" 
+                        checked={receiptSettings.printAutomatically}
+                        onCheckedChange={(checked) => setReceiptSettings(prev => ({ ...prev, printAutomatically: checked }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="printerSelect">Default Printer</Label>
+                    <Select 
+                      value={receiptSettings.defaultPrinter}
+                      onValueChange={(value) => setReceiptSettings(prev => ({ ...prev, defaultPrinter: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a printer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">System Default Printer</SelectItem>
+                        <SelectItem value="thermal">Thermal Receipt Printer</SelectItem>
+                        <SelectItem value="inkjet">Office Inkjet Printer</SelectItem>
+                        <SelectItem value="laser">Laser Printer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
                 {/* Receipt Preview */}
-                
-                  
-                      Receipt Preview
-                      
-                        
+                <div className="space-y-4">
+                  <div>
+                    <Label>Receipt Preview</Label>
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 font-mono text-sm overflow-auto max-h-[500px] text-black mt-2">
+                      <pre className="whitespace-pre-wrap text-center">
 {receiptSettings.businessName}
 {receiptSettings.address}
 Tel: {receiptSettings.phone}
@@ -2234,148 +2265,207 @@ Amount Paid:             {formatCurrency(parseFloat(amountPaid) || total).padSta
 -------------------------------
 {receiptSettings.receiptFooter}
 Terminal: POS-Enhanced
-                      
-                    
-                  
+                      </pre>
+                    </div>
+                  </div>
 
-                  
-                    
-                      
-                          
-                              Print Test
-                          
-                      
-                    
-                  
-                
-              
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        const printWindow = window.open('', '_blank', 'width=400,height=700');
+                        if (printWindow) {
+                          printWindow.document.write(`
+                            <html>
+                              <head>
+                                <title>Test Receipt</title>
+                                <style>
+                                  body { font-family: monospace; margin: 20px; font-size: 12px; }
+                                  pre { white-space: pre-wrap; }
+                                </style>
+                              </head>
+                              <body>
+                                <pre>${printWindow.document.querySelector('pre')?.textContent || 'Test Receipt'}</pre>
+                              </body>
+                            </html>
+                          `);
+                          printWindow.document.close();
+                          printWindow.print();
+                        }
+                      }}
+                      className="flex-1"
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print Test
+                    </Button>
+                  </div>
+                </div>
+              </div>
 
-              
-                
-                  
-                      Cancel
-                      
-                          
-                              Save Settings
-                          
-                      
-                  
-                
-              
-            
-          
+              <div className="flex justify-end space-x-3 pt-6 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPrinterSettings(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Save receipt settings to localStorage
+                    const settingsToSave = {
+                      businessName: receiptSettings.businessName,
+                      businessAddress: receiptSettings.address,
+                      phoneNumber: receiptSettings.phone,
+                      taxId: receiptSettings.taxId,
+                      receiptFooter: receiptSettings.receiptFooter,
+                      showLogo: receiptSettings.showLogo,
+                      autoPrint: receiptSettings.printAutomatically,
+                      defaultPrinter: receiptSettings.defaultPrinter
+                    };
+
+                    localStorage.setItem('receiptSettings', JSON.stringify(settingsToSave));
+
+                    toast({
+                      title: "Settings Saved",
+                      description: "Receipt and printer settings have been updated successfully",
+                    });
+                    setShowPrinterSettings(false);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Save Settings
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Payment Dialog */}
-          
-            
-              
-                
-                  
-                      
-                          Complete Payment
-                      
-                  
-                
+          <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center text-xl">
+                  <CreditCard className="h-6 w-6 mr-3" />
+                  Complete Payment
+                </DialogTitle>
+              </DialogHeader>
 
-                
-                  
-                      {formatCurrency(total)}
-                      Amount to Pay
-                  
-                
+              <div className="space-y-6">
+                <div className="p-6 bg-green-50 rounded-xl text-center border border-green-200">
+                  <div className="text-3xl font-bold text-green-700">
+                    {formatCurrency(total)}
+                  </div>
+                  <div className="text-green-600 mt-1">Amount to Pay</div>
+                </div>
 
-                
-                  
-                      Payment Method
-                      
-                          
-                              
-                                  
-                              
-                              
-                                  💵 Cash Payment
-                              
-                              
-                                  📱 UPI Payment
-                              
-                              
-                                  💳 Card Payment
-                              
-                              
-                                  🏦 Bank Transfer
-                              
-                              
-                                  📝 Cheque Payment
-                              
-                              
-                                  🔄 Other
-                              
-                          
-                      
-                  
-                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">💵 Cash Payment</SelectItem>
+                      <SelectItem value="upi">📱 UPI Payment</SelectItem>
+                      <SelectItem value="card">💳 Card Payment</SelectItem>
+                      <SelectItem value="bank">🏦 Bank Transfer</SelectItem>
+                      <SelectItem value="cheque">📝 Cheque Payment</SelectItem>
+                      <SelectItem value="other">🔄 Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                
-                  
-                      Amount Received
-                      
-                          
-                              Enter amount (min: {formatCurrency(total)})
-                          
-                      
-                      {amountPaid && parseFloat(amountPaid) < total && (
-                        
-                          
-                            Insufficient amount. Need at least {formatCurrency(total)}
-                          
-                        
-                      )}
-                      {amountPaid && parseFloat(amountPaid) > total && (
-                        
-                          
-                            Change to return: {formatCurrency(parseFloat(amountPaid) - total)}
-                          
-                        
-                      )}
-                      {amountPaid && parseFloat(amountPaid) === total && (
-                        
-                          
-                            Exact amount - No change required
-                          
-                        
-                      )}
-                  
-                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount Received</label>
+                  <Input
+                    type="number"
+                    placeholder={`Enter amount (min: ${formatCurrency(total)})`}
+                    value={amountPaid}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow empty string or valid decimal numbers
+                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                        setAmountPaid(value);
+                      }
+                    }}
+                    step="0.01"
+                    min={0}
+                    className="text-lg p-3"
+                    autoFocus
+                  />
+                  {amountPaid && parseFloat(amountPaid) < total && (
+                    <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                      <p className="text-red-700 font-semibold">
+                        Insufficient amount. Need at least {formatCurrency(total)}
+                      </p>
+                    </div>
+                  )}
+                  {amountPaid && parseFloat(amountPaid) > total && (
+                    <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-blue-700 font-semibold">
+                        Change to return: {formatCurrency(parseFloat(amountPaid) - total)}
+                      </p>
+                    </div>
+                  )}
+                  {amountPaid && parseFloat(amountPaid) === total && (
+                    <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-green-700 font-semibold">
+                        Exact amount - No change required
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 {/* Detailed Payment Options */}
                 {paymentMethod === "cash" && (
-                  
-                    
-                      
-                          Exact Amount
-                      
-                      
-                          +₹100
-                      
-                      
-                          +₹500
-                      
-                    
-                  
+                  <div className="grid grid-cols-3 gap-2 mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAmountPaid(total.toString())}
+                      className="text-sm"
+                    >
+                      Exact Amount
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAmountPaid((total + 100).toString())}
+                      className="text-sm"
+                    >
+                      +₹100
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAmountPaid((total + 500).toString())}
+                      className="text-sm"
+                    >
+                      +₹500
+                    </Button>
+                  </div>
                 )}
 
-                
-                  
-                      Cancel
-                      
-                          {isProcessing ? "Processing..." : `Complete Sale ${formatCurrency(total)}`}
-                      
-                  
-                
-              
-            
-          
-        
-    
-  
-The code adds an "Enter Operation" button with associated functionality and updates the help text.```text
+                <div className="flex justify-end space-x-3 pt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPaymentDialog(false)}
+                    disabled={isProcessing}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={processSale}
+                    disabled={isProcessing || !amountPaid || parseFloat(amountPaid) < total}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isProcessing ? "Processing..." : `Complete Sale ${formatCurrency(total)}`}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+    </div>
+  );
+}
