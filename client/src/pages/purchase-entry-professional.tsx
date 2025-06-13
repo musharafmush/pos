@@ -1634,49 +1634,49 @@ export default function PurchaseEntryProfessional() {
 
             {/* Line Items Tab */}
             <TabsContent value="items" className="space-y-4">
-              <Card>
-                <CardHeader>
+              <Card className="w-full">
+                <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle>Line Items</CardTitle>
+                    <CardTitle className="text-xl font-semibold">Line Items</CardTitle>
                     <div className="flex gap-2">
-                      <Button onClick={addItem} size="sm" variant="outline">
+                      <Button onClick={addItem} size="sm" variant="outline" className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200">
                         <Plus className="mr-2 h-4 w-4" />
                         Add Item
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[2400px] bg-white">
-                      <Table className="text-sm">
+                <CardContent className="p-6">
+                  <div className="w-full overflow-x-auto border border-gray-200 rounded-lg">
+                    <div className="min-w-[3200px] bg-white shadow-sm">
+                      <Table className="text-sm border-collapse">
                         <TableHeader>
-                          <TableRow className="bg-blue-50 border-b-2 border-blue-200">
-                            <TableHead className="w-16 text-center font-bold border-r px-3 py-3 text-xs">No</TableHead>
-                            <TableHead className="w-36 font-bold border-r px-3 py-3 text-xs">Code</TableHead>
-                            <TableHead className="min-w-[250px] font-bold border-r px-3 py-3 text-xs">Product Name</TableHead>
-                            <TableHead className="min-w-[180px] font-bold border-r px-3 py-3 text-xs">Description</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Previous Stock</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Received Qty</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">Free Qty</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Cost</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">HSN Code</TableHead>
-                            <TableHead className="w-24 text-center font-bold border-r px-3 py-3 text-xs">Tax %</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Disc Amt</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r px-3 py-3 text-xs">Exp. Date</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Net Cost</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">ROI %</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r px-3 py-3 text-xs">Gross Profit %</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r px-3 py-3 text-xs">Selling Price</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">MRP</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Amount</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r px-3 py-3 text-xs">Net Amount</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">Cash %</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Cash Amt</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Batch No</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r px-3 py-3 text-xs">Location</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-3 py-3 text-xs">Unit</TableHead>
-                            <TableHead className="w-24 text-center font-bold px-3 py-3 text-xs">Actions</TableHead>
+                          <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-300">
+                            <TableHead className="w-20 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">No</TableHead>
+                            <TableHead className="w-40 font-bold border-r border-blue-200 px-4 py-4 text-sm">Code</TableHead>
+                            <TableHead className="min-w-[280px] font-bold border-r border-blue-200 px-4 py-4 text-sm">Product Name</TableHead>
+                            <TableHead className="min-w-[200px] font-bold border-r border-blue-200 px-4 py-4 text-sm">Description</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Previous Stock</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Received Qty</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Free Qty</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cost</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">HSN Code</TableHead>
+                            <TableHead className="w-28 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Tax %</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Disc Amt</TableHead>
+                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Exp. Date</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Net Cost</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">ROI %</TableHead>
+                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Gross Profit %</TableHead>
+                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Selling Price</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">MRP</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Amount</TableHead>
+                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Net Amount</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cash %</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cash Amt</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Batch No</TableHead>
+                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Location</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Unit</TableHead>
+                            <TableHead className="w-28 text-center font-bold px-4 py-4 text-sm">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1700,15 +1700,19 @@ export default function PurchaseEntryProfessional() {
                             const grossProfitPercent = sellingPrice > 0 ? ((sellingPrice - netCost) / sellingPrice) * 100 : 0;
 
                             return (
-                              <TableRow key={field.id} className="hover:bg-gray-50">
-                                <TableCell className="text-center font-medium border-r px-3 py-3">
-                                  {index + 1}
+                              <TableRow key={field.id} className="hover:bg-blue-50 border-b border-gray-200 transition-colors">
+                                <TableCell className="text-center font-medium border-r border-gray-200 px-4 py-4">
+                                  <div className="flex items-center justify-center h-8">
+                                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
+                                      {index + 1}
+                                    </span>
+                                  </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-3 py-3">
+                                <TableCell className="border-r border-gray-200 px-4 py-4">
                                   <Input
                                     {...form.register(`items.${index}.code`)}
-                                    className="w-full text-xs"
+                                    className="w-full text-sm"
                                     placeholder="Code/SKU (Press Enter to search)"
                                     onChange={(e) => {
                                       form.setValue(`items.${index}.code`, e.target.value);
@@ -1741,8 +1745,8 @@ export default function PurchaseEntryProfessional() {
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="space-y-1">
+                                <TableCell className="border-r border-gray-200 px-4 py-4">
+                                  <div className="space-y-2">
                                     {/* Enhanced Product search with auto-suggestion dropdown */}
                                     <div className="relative">
                                       <ProductSearchWithSuggestions 
@@ -1829,10 +1833,10 @@ export default function PurchaseEntryProfessional() {
                                   </div>
                                 </TableCell>
 
-                                <TableCell className="border-r px-3 py-3">
+                                <TableCell className="border-r border-gray-200 px-4 py-4">
                                   <Input
                                     {...form.register(`items.${index}.description`)}
-                                    className="w-full text-xs"
+                                    className="w-full text-sm"
                                     placeholder="Description"
                                     onChange={(e) => {
                                       form.setValue(`items.${index}.description`, e.target.value);
@@ -1841,8 +1845,8 @@ export default function PurchaseEntryProfessional() {
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-3 py-4">
-                                  <div className="flex items-center justify-center p-2 bg-gray-50 rounded text-sm h-10">
+                                <TableCell className="border-r border-gray-200 px-4 py-4">
+                                  <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg text-sm h-12">
                                     {selectedProduct ? (
                                       <span className={`font-medium ${
                                         (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
