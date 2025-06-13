@@ -144,7 +144,7 @@ export class Storage {
   async listSuppliers() {
     try {
       console.log('📋 Fetching suppliers list');
-      
+
       // Try ORM method first
       try {
         const suppliers = await db.select().from(schema.suppliers).orderBy(desc(schema.suppliers.createdAt));
@@ -351,6 +351,11 @@ export class Storage {
       .from(schema.products)
       .where(sql`${schema.products.stock} <= ${threshold}`)
       .orderBy(asc(schema.products.stock));
+  }
+
+  async getProductBySku(sku: string) {
+    const [product] = await db.select().from(schema.products).where(eq(schema.products.sku, sku));
+    return product;
   }
 }
 

@@ -481,8 +481,8 @@ app.post("/api/products", async (req, res) => {
       });
     }
 
-    // Check if SKU already exists using direct database query
-    const existingProduct = db.prepare("SELECT id FROM products WHERE sku = ?").get(sku);
+    // Check if SKU already exists using storage method
+    const existingProduct = await storage.getProductBySku(sku);
     if (existingProduct) {
       return res.status(400).json({
         error: "Product with this SKU already exists",
