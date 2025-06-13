@@ -139,7 +139,7 @@ export default function Customers() {
   const createCustomerMutation = useMutation({
     mutationFn: async (data: CustomerFormValues) => {
       console.log("Submitting customer data:", data);
-      
+
       // Enhanced validation before API call
       if (!data.name?.trim()) {
         throw new Error("Customer name is required");
@@ -152,7 +152,7 @@ export default function Customers() {
       if (data.creditLimit && isNaN(parseFloat(data.creditLimit))) {
         throw new Error("Credit limit must be a valid number");
       }
-      
+
       // Map form fields to API expected format
       const customerPayload = {
         name: data.name.trim(),
@@ -221,12 +221,12 @@ export default function Customers() {
       };
 
       const res = await apiRequest("PUT", `/api/customers/${id}`, customerPayload);
-      
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.error || errorData.message || `HTTP ${res.status}: ${res.statusText}`);
       }
-      
+
       return await res.json();
     },
     onSuccess: (data) => {
@@ -252,21 +252,21 @@ export default function Customers() {
   const deleteCustomerMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/customers/${id}`);
-      
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.message || errorData.error || `HTTP ${res.status}: ${res.statusText}`);
       }
-      
+
       return await res.json();
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      
+
       // Find the deleted customer name for better feedback
       const deletedCustomer = customers.find((c: any) => c.id === variables);
       const customerName = deletedCustomer?.name || `Customer ID: ${variables}`;
-      
+
       toast({
         title: "🗑️ Customer Deleted",
         description: `${customerName} has been permanently removed from the system.`,
@@ -328,9 +328,9 @@ export default function Customers() {
   // Enhanced filter customers based on search term with better matching
   const filteredCustomers = customers.filter((customer: any) => {
     if (!searchTerm.trim()) return true;
-    
+
     const searchLower = searchTerm.toLowerCase().trim();
-    
+
     // Search in multiple fields with partial matching
     const searchableFields = [
       customer.name,
@@ -341,7 +341,7 @@ export default function Customers() {
       customer.address,
       `C${String(customer.id).padStart(5, '0')}` // Customer ID format
     ];
-    
+
     return searchableFields.some(field => 
       field && field.toString().toLowerCase().includes(searchLower)
     );
