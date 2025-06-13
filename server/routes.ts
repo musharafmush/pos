@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/register', async (req, res) => {
     try {
       console.log('Registration request received:', req.body);
-      
+
       // Validate user data with more specific error messages
       try {
         const userData = schema.userInsertSchema.parse(req.body);
@@ -447,105 +447,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/products', isAuthenticated, async (req, res) => {
-    try {
-      console.log('Product creation request body:', req.body);
+  // Create new product
+app.post("/api/products", async (req, res) => {
+  try {
+    console.log("Creating product with data:", req.body);
 
-      // Ensure required fields have default values if missing
-      const requestData = {
-        ...req.body,
-        name: req.body.name || req.body.itemName || '',
-        sku: req.body.sku || req.body.itemCode || '',
-        description: req.body.description || req.body.aboutProduct || '',
-        mrp: req.body.mrp || req.body.price || '0',
-        cost: req.body.cost || '0',
-        price: req.body.price || '0',
-        weight: req.body.weight || req.body.weightInGms || null,
-        weightUnit: req.body.weightUnit || 'kg',
-        stockQuantity: parseInt(req.body.stockQuantity) || 0,
-        alertThreshold: parseInt(req.body.alertThreshold) || 5,
-        categoryId: parseInt(req.body.categoryId) || 1,
-        active: req.body.active !== false,
-        barcode: req.body.barcode || req.body.eanCode || '',
+    const {
+      name,
+      sku,
+      description,
+      price,
+      mrp,
+      cost,
+      weight,
+      weightUnit,
+      stockQuantity,
+      categoryId,
+      barcode,
+      active,
+      alertThreshold,
+      unit,
+      hsnCode,
+      taxRate,
+      trackInventory,
+      allowNegativeStock,
+    } = req.body;
 
-        // GST and tax information
-        hsnCode: req.body.hsnCode || '',
-        gstCode: req.body.gstCode || '',
-        cgstRate: req.body.cgstRate || '0',
-        sgstRate: req.body.sgstRate || '0',
-        igstRate: req.body.igstRate || '0',
-        cessRate: req.body.cessRate || '0',
-        taxCalculationMethod: req.body.taxCalculationMethod || 'exclusive'
-      };
-
-      console.log('Processed product data:', requestData);
-
-      // Validate required fields
-      if (!requestData.name) {
-        return res.status(400).json({ 
-          message: 'Product name is required' 
-        });
-      }
-
-      if (!requestData.sku) {
-        return res.status(400).json({ 
-          message: 'Product SKU/Item Code is required' 
-        });
-      }
-
-      if (!requestData.price || requestData.price === '0') {
-        return res.status(400).json({ 
-          message: 'Product price is required and must be greater than 0' 
-        });
-      }
-
-      if (!requestData.categoryId) {
-        return res.status(400).json({ 
-          message: 'Category is required' 
-        });
-      }
-
-      // Check if SKU already exists
-      const existingProduct = await storage.getProductBySku(requestData.sku);
-      if (existingProduct) {
-        return res.status(400).json({ 
-          message: 'A product with this SKU/Item Code already exists' 
-        });
-      }
-
-      const productData = schema.productInsertSchema.parse(requestData);
-      console.log('Validated product data:', productData);
-
-      const product = await storage.createProduct(productData);
-      console.log('Created product successfully:', product.id);
-
-      res.status(201).json({
-        ...product,
-        message: 'Product created successfully'
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        console.error('Validation errors:', JSON.stringify(error.errors, null, 2));
-        const detailedErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message,
-          received: err.received,
-          expected: err.expected
-        }));
-        console.error('Detailed validation errors:', detailedErrors);
-        return res.status(400).json({ 
-          message: 'Validation failed',
-          errors: error.errors, 
-          details: detailedErrors 
-        });
-      }
-      console.error('Error creating product:', error);
-      res.status(500).json({ 
-        message: 'Failed to create product',
-        error: error.message 
+    // Validate required fields
+    if (!name || !sku || price === undefined || stockQuantity === undefined) {
+      return res.status(400).json({
+        error: "Missing required fields",
+        required: ["name", "sku", "price", "stockQuantity"],
       });
     }
-  });
+
+    // Check if SKU already exists using direct database query
+    const existingProduct = db.prepare("SELECT id FROM products WHERE sku = ?").get(sku);
+    if (existingProduct) {
+      return res.status(400).json({
+        error: "Product with this SKU already exists",
+        sku,
+      });
+    }
+
+    const productData = {
+      name: name.trim(),
+      sku: sku.trim(),
+      description: description?.trim() || "",
+      price: parseFloat(price),
+      mrp: parseFloat(mrp) || parseFloat(price),
+      cost: parseFloat(cost) || 0,
+      weight: weight ? parseFloat(weight) : null,
+      weightUnit: weightUnit || "kg",
+      stockQuantity: parseInt(stockQuantity),
+      categoryId: parseInt(categoryId) || 1,
+      barcode: barcode?.trim() || "",
+      active: active !== false,
+      alertThreshold: parseInt(alertThreshold) || 5,
+      unit: unit || "PCS",
+      hsnCode: hsnCode?.trim() || "",
+      taxRate: parseFloat(taxRate) || 18,
+      trackInventory: trackInventory !== false,
+      allowNegativeStock: allowNegativeStock === true,
+    };
+
+    console.log("Processed product data:", productData);
+
+    const stmt = db.prepare(`
+      INSERT INTO products (
+        name, sku, description, price, mrp, cost, weight, weight_unit,
+        stock_quantity, category_id, barcode, active, alert_threshold,
+        unit, hsn_code, tax_rate, track_inventory, allow_negative_stock
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(
+      productData.name,
+      productData.sku,
+      productData.description,
+      productData.price,
+      productData.mrp,
+      productData.cost,
+      productData.weight,
+      productData.weightUnit,
+      productData.stockQuantity,
+      productData.categoryId,
+      productData.barcode,
+      productData.active ? 1 : 0,
+      productData.alertThreshold,
+      productData.unit,
+      productData.hsnCode,
+      productData.taxRate,
+      productData.trackInventory ? 1 : 0,
+      productData.allowNegativeStock ? 1 : 0
+    );
+
+    console.log("Product created with ID:", result.lastInsertRowid);
+
+    const newProduct = {
+      id: result.lastInsertRowid,
+      ...productData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    res.status(201).json(newProduct);
+  } catch (error) {
+    console.error("Error creating product:", error);
+    res.status(500).json({
+      error: "Failed to create product",
+      message: error.message,
+    });
+  }
+});
 
   app.put('/api/products/:id', isAuthenticated, async (req, res) => {
     try {
@@ -930,8 +944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "completed",
         message: "Sale completed successfully",
         timestamp: new Date().toISOString(),
-        saved: true
-      };
+        saved: true      };
 
       console.log("📊 POS Enhanced sale saved successfully:", responseData);
       res.status(201).json(responseData);
@@ -1481,7 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/suppliers', isAuthenticated, async (req, res) => {
     try {
       console.log('Creating supplier with data:', req.body);
-      
+
       // Validate required fields first
       if (!req.body.name || req.body.name.trim() === '') {
         return res.status(400).json({ 
@@ -1519,20 +1532,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log('Processed supplier data:', processedData);
-      
+
       const supplierData = schema.supplierInsertSchema.parse(processedData);
       console.log('Validated supplier data:', supplierData);
-      
+
       const supplier = await storage.createSupplier(supplierData);
       console.log('Supplier created successfully:', supplier);
-      
+
       res.status(201).json({
         ...supplier,
         message: 'Supplier created successfully'
       });
     } catch (error) {
       console.error('Error creating supplier:', error);
-      
+
       if (error instanceof z.ZodError) {
         console.error('Validation errors:', error.errors);
         return res.status(400).json({ 
@@ -1543,7 +1556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }))
         });
       }
-      
+
       // Handle specific database errors
       if (error.message?.includes('UNIQUE constraint')) {
         return res.status(400).json({ 
@@ -1551,7 +1564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'Duplicate entry'
         });
       }
-      
+
       res.status(500).json({ 
         message: 'Failed to create supplier. Please try again.',
         error: error.message || 'Internal server error'
@@ -1844,7 +1857,7 @@ app.post("/api/customers", async (req, res) => {
       }
 
       // Remove password from response
-      const { password, ...safeUser } = user;
+      const { password, ...safeUser } = user:
       res.json(safeUser);
     } catch (error) {
       console.error('Error fetching user:', error);
