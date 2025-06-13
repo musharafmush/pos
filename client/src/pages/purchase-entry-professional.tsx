@@ -815,8 +815,7 @@ export default function PurchaseEntryProfessional() {
 
       // Calculate GST automatically
       const cgstRate = parseFloat(product.cgstRate || "0");
-      const sgstRate = parseFloat```
-(product.sgstRate || "0");
+      const sgstRate = parseFloat(product.sgstRate || "0");
       const igstRate = parseFloat(product.igstRate || "0");
       const totalGst = cgstRate + sgstRate + igstRate;
 
@@ -1675,8 +1674,8 @@ export default function PurchaseEntryProfessional() {
                             <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Net Amount</TableHead>
                             <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Cash %</TableHead>
                             <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Cash Amt</TableHead>
-                            <TableHead className="w-28```
- text-center font-bold border-r px-2 py-3">Batch No</TableHead>
+                            <TableHead className="w-28 text-center font-file>
+bold border-r px-2 py-3">Batch No</TableHead>
                             <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Location</TableHead>
                             <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Unit</TableHead>
                             <TableHead className="w-20 text-center font-bold px-2 py-3">Actions</TableHead>
