@@ -40,23 +40,23 @@ const ProductSearchWithSuggestions = ({
   useEffect(() => {
     if (searchTerm.length >= 1) {
       const searchLower = searchTerm.toLowerCase().trim();
-      
+
       const filtered = products.filter(product => {
         if (!product) return false;
-        
+
         const name = (product.name || '').toLowerCase();
         const sku = (product.sku || '').toLowerCase();
         const description = (product.description || '').toLowerCase();
-        
+
         return name.includes(searchLower) ||
                sku.includes(searchLower) ||
                description.includes(searchLower) ||
                name.startsWith(searchLower) ||
                sku.startsWith(searchLower);
       }).slice(0, 10); // Limit to 10 suggestions
-      
+
       console.log('Search term:', searchTerm, 'Filtered products:', filtered.length);
-      
+
       setFilteredProducts(filtered);
       setShowSuggestions(filtered.length > 0 && searchTerm.length >= 1);
       setSelectedIndex(-1);
@@ -147,7 +147,7 @@ const ProductSearchWithSuggestions = ({
           <div className="sticky top-0 p-2 text-xs text-gray-600 bg-blue-50 border-b border-blue-200 font-medium">
             {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
           </div>
-          
+
           {filteredProducts.map((product, index) => (
             <div
               key={`suggestion-${product.id}-${index}`}
@@ -177,7 +177,7 @@ const ProductSearchWithSuggestions = ({
                     </div>
                   )}
                 </div>
-                
+
                 <div className="text-right flex-shrink-0">
                   <div className={`text-xs px-2 py-1 rounded-full font-medium border ${
                     (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
@@ -197,7 +197,7 @@ const ProductSearchWithSuggestions = ({
               </div>
             </div>
           ))}
-          
+
           {filteredProducts.length === 0 && searchTerm.length >= 2 && (
             <div className="p-4 text-center">
               <div className="text-gray-400 mb-2">🔍</div>
@@ -422,7 +422,7 @@ export default function PurchaseEntryProfessional() {
   // Hold Purchase functions
   const holdPurchase = () => {
     const currentFormData = form.getValues();
-    
+
     // Validate that at least supplier is selected
     if (!currentFormData.supplierId || currentFormData.supplierId === 0) {
       toast({
@@ -445,7 +445,7 @@ export default function PurchaseEntryProfessional() {
     };
 
     setHeldPurchases(prev => [...prev, heldPurchase]);
-    
+
     // Reset form for new purchase
     const newOrderNumber = `PO-${Date.now().toString().slice(-8)}`;
     form.reset({
@@ -504,7 +504,7 @@ export default function PurchaseEntryProfessional() {
 
   const recallHeldPurchase = (heldPurchase: any) => {
     form.reset(heldPurchase.formData);
-    
+
     // Remove from held purchases
     setHeldPurchases(prev => prev.filter(p => p.id !== heldPurchase.id));
     setShowHeldPurchases(false);
@@ -704,7 +704,7 @@ export default function PurchaseEntryProfessional() {
             tax = taxableAmount - baseAmount;
             subtotal += baseAmount;
             break;
-          
+
           case "compound":
             // Tax on tax calculation
             taxableAmount = itemCost - discount;
@@ -713,7 +713,7 @@ export default function PurchaseEntryProfessional() {
             tax = primaryTax + compoundTax;
             subtotal += itemCost;
             break;
-          
+
           case "exclusive":
           default:
             // Standard tax exclusive calculation
@@ -756,14 +756,14 @@ export default function PurchaseEntryProfessional() {
             baseAmount = taxableAmount / (1 + (taxPercentage / 100));
             tax = taxableAmount - baseAmount;
             break;
-          
+
           case "compound":
             taxableAmount = itemCost - discount;
             const primaryTax = (taxableAmount * (taxPercentage / 100));
             const compoundTax = (primaryTax * (taxPercentage / 100));
             tax = primaryTax + compoundTax;
             break;
-          
+
           case "exclusive":
           default:
             taxableAmount = itemCost - discount;
@@ -815,7 +815,8 @@ export default function PurchaseEntryProfessional() {
 
       // Calculate GST automatically
       const cgstRate = parseFloat(product.cgstRate || "0");
-      const sgstRate = parseFloat(product.sgstRate || "0");
+      const sgstRate = parseFloat```
+(product.sgstRate || "0");
       const igstRate = parseFloat(product.igstRate || "0");
       const totalGst = cgstRate + sgstRate + igstRate;
 
@@ -1674,7 +1675,8 @@ export default function PurchaseEntryProfessional() {
                             <TableHead className="w-32 text-center font-bold border-r px-2 py-3">Net Amount</TableHead>
                             <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Cash %</TableHead>
                             <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Cash Amt</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Batch No</TableHead>
+                            <TableHead className="w-28```
+ text-center font-bold border-r px-2 py-3">Batch No</TableHead>
                             <TableHead className="w-28 text-center font-bold border-r px-2 py-3">Location</TableHead>
                             <TableHead className="w-24 text-center font-bold border-r px-2 py-3">Unit</TableHead>
                             <TableHead className="w-20 text-center font-bold px-2 py-3">Actions</TableHead>
@@ -1752,7 +1754,7 @@ export default function PurchaseEntryProfessional() {
                                         placeholder="🔍 Search products..."
                                       />
                                     </div>
-                                    
+
                                     <Select 
                                       onValueChange={(value) => handleProductSelection(index, parseInt(value))}
                                       value={form.watch(`items.${index}.productId`)?.toString() || ""}
@@ -1842,8 +1844,8 @@ export default function PurchaseEntryProfessional() {
                                   />
                                 </TableCell>
 
-                                <TableCell className="border-r px-2 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                                <TableCell className="border-r px-3 py-4">
+                                  <div className="flex items-center justify-center p-2 bg-gray-50 rounded text-sm h-10">
                                     {selectedProduct ? (
                                       <span className={`font-medium ${
                                         (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
@@ -2309,7 +2311,7 @@ export default function PurchaseEntryProfessional() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="modal-product">Product Name *</Label>
-                
+
                 {/* Enhanced search with suggestions for modal */}
                 <div className="space-y-2">
                   <ProductSearchWithSuggestions
@@ -2329,7 +2331,7 @@ export default function PurchaseEntryProfessional() {
                       if (editingItemIndex !== null) {
                         syncModalToTable();
                       }
-                      
+
                       toast({
                         title: "Product Selected! 🎯",
                         description: `${product.name} selected with auto-populated details.`,
@@ -2337,7 +2339,7 @@ export default function PurchaseEntryProfessional() {
                     }}
                     placeholder="🔍 Search products by name, SKU, or description..."
                   />
-                  
+
                   <Select 
                     onValueChange={(value) => {
                       const productId = parseInt(value);
@@ -2419,7 +2421,7 @@ export default function PurchaseEntryProfessional() {
                       {(() => {
                         const product = products.find(p => p.id === modalData.productId);
                         return product?.stockQuantity || 0;
-                      })()} units
+})()} units
                     </span>
                   </div>
                 </div>
