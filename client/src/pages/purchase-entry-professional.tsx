@@ -815,8 +815,7 @@ export default function PurchaseEntryProfessional() {
 
       // Calculate GST automatically
       const cgstRate = parseFloat(product.cgstRate || "0");
-      const sgstRate = parseFloat(```python
-product.sgstRate || "0");
+      const sgstRate = parseFloat(product.sgstRate || "0");
       const igstRate = parseFloat(product.igstRate || "0");
       const totalGst = cgstRate + sgstRate + igstRate;
 
