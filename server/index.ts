@@ -4,9 +4,9 @@ import { setupVite, serveStatic, log } from "./vite.js";
 import { initializeDatabase } from "../db/sqlite-migrate";
 
 const app = express();
-// Parse JSON with a higher limit for large requests (especially backup files)
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+// Parse JSON with appropriate limits for backup files (reduced to prevent memory issues)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();
