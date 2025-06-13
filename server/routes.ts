@@ -664,34 +664,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/backup/restore', async (req, res) => {
     try {
       console.log('🔄 Starting backup restore process...');
+      console.log('📦 Request body size:', JSON.stringify(req.body).length, 'characters');
 
       let backupData;
       
-      // Parse and validate backup data
+      // Parse and validate backup data with size checking
       try {
-        if (req.body.backup) {
-          if (typeof req.body.backup === 'string') {
-            backupData = JSON.parse(req.body.backup);
-          } else {
-            backupData = req.body.backup;
+        // Check if we have backup data
+        if (!req.body.backup) {
+          return res.status(400).json({ 
+            error: 'No backup data provided',
+            message: 'Please select a valid backup file to restore'
+          });
+        }
+
+        // Handle different input formats
+        if (typeof req.body.backup === 'string') {
+          console.log('📄 Processing string backup data...');
+          
+          // Check if the string is too large
+          if (req.body.backup.length > 50 * 1024 * 1024) { // 50MB limit
+            return res.status(413).json({ 
+              error: 'Backup file too large',
+              message: 'Backup file exceeds 50MB limit. Please use a smaller backup file.'
+            });
           }
+          
+          try {
+            backupData = JSON.parse(req.body.backup);
+          } catch (jsonError) {
+            console.error('❌ JSON parsing failed:', jsonError.message);
+            return res.status(400).json({ 
+              error: 'Invalid JSON format',
+              message: 'The backup file contains invalid JSON data. Please check the file format.'
+            });
+          }
+        } else if (typeof req.body.backup === 'object') {
+          console.log('📄 Processing object backup data...');
+          backupData = req.body.backup;
         } else {
-          return res.status(400).json({ error: 'No backup data provided' });
+          return res.status(400).json({ 
+            error: 'Invalid backup format',
+            message: 'Backup data must be in JSON format'
+          });
         }
 
         // Validate backup structure
         if (!backupData || typeof backupData !== 'object') {
-          return res.status(400).json({ error: 'Invalid backup data format' });
+          return res.status(400).json({ 
+            error: 'Invalid backup data format',
+            message: 'Backup file structure is not valid'
+          });
         }
 
-        if (!backupData.data || !backupData.timestamp) {
-          return res.status(400).json({ error: 'Backup file missing required data or timestamp' });
+        if (!backupData.data) {
+          return res.status(400).json({ 
+            error: 'Invalid backup file',
+            message: 'Backup file is missing data section'
+          });
+        }
+
+        if (!backupData.timestamp) {
+          console.log('⚠️ Backup missing timestamp, continuing...');
         }
 
         console.log('📦 Backup validation passed, starting restore...');
+        console.log('📊 Backup contains:', Object.keys(backupData.data || {}));
+        
       } catch (parseError) {
         console.error('❌ Error parsing backup data:', parseError);
-        return res.status(400).json({ error: 'Invalid JSON format in backup file' });
+        return res.status(400).json({ 
+          error: 'Failed to process backup file',
+          message: parseError.message || 'Unable to parse backup data'
+        });
       }
 
       const { sqlite } = await import('@db');
@@ -952,19 +997,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       } catch (transactionError) {
         console.error('❌ Transaction failed:', transactionError);
+        
+        // Provide specific error messages based on error type
+        let errorMessage = 'Database transaction failed during restore';
+        let userMessage = 'Failed to restore backup due to database error';
+        
+        if (transactionError.message?.includes('SQLITE_CONSTRAINT')) {
+          errorMessage = 'Database constraint violation during restore';
+          userMessage = 'Backup data conflicts with existing database constraints';
+        } else if (transactionError.message?.includes('no such table')) {
+          errorMessage = 'Database table missing during restore';
+          userMessage = 'Database schema is incomplete. Please contact support.';
+        } else if (transactionError.message?.includes('disk')) {
+          errorMessage = 'Insufficient disk space during restore';
+          userMessage = 'Not enough disk space to complete restore operation';
+        }
+        
         res.status(500).json({ 
-          error: 'Failed to restore backup',
-          message: `Transaction error: ${transactionError.message}`,
-          details: transactionError.stack
+          error: errorMessage,
+          message: userMessage,
+          technical: transactionError.message,
+          timestamp: new Date().toISOString()
         });
       }
 
     } catch (error) {
       console.error('❌ Critical error during backup restore:', error);
+      
+      // Handle specific error types
+      if (error.message?.includes('entity too large')) {
+        return res.status(413).json({ 
+          error: 'Backup file too large',
+          message: 'The backup file is too large to process. Please try a smaller backup file or contact support.',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      if (error.message?.includes('timeout')) {
+        return res.status(408).json({ 
+          error: 'Restore operation timed out',
+          message: 'The restore operation took too long. Please try again or use a smaller backup file.',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       res.status(500).json({ 
-        error: 'Failed to restore backup',
-        message: error.message || 'Unknown error occurred',
-        details: error.stack
+        error: 'Critical restore failure',
+        message: error.message || 'An unexpected error occurred during restore',
+        timestamp: new Date().toISOString()
       });
     }
   });
