@@ -1033,7 +1033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 Clearing all data...');
 
-      const { sqlite } = await import('../db/index.js');
+      const { sqlite } = await import('@db');
 
       // Check database connection first
       try {
@@ -1055,6 +1055,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const clearTransaction = sqlite.transaction(() => {
           console.log('🗑️ Starting data clearing transaction...');
 
+          // Get all table names first
+          const tables = sqlite.prepare(`
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name NOT LIKE 'sqlite_%'
+          `).all().map((row: any) => row.name);
+
+          console.log('📋 Available tables:', tables);
+
           // Clear data in safe order (children first to avoid FK violations)
           const tablesToClear = [
             'return_items',
@@ -1067,7 +1075,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'customers',
             'suppliers',
             'categories'
-          ];
+          ].filter(table => tables.includes(table));
+
+          console.log('🗑️ Tables to clear:', tablesToClear);
 
           let totalCleared = 0;
           tablesToClear.forEach(table => {
@@ -1082,14 +1092,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           // Clear settings except essential ones
-          try {
-            const settingsResult = sqlite.prepare(`
-              DELETE FROM settings 
-              WHERE key NOT IN ('admin_setup', 'businessName', 'currency')
-            `).run();
-            console.log(`🗑️ Cleared ${settingsResult.changes} settings`);
-          } catch (settingsError) {
-            console.log(`⚠️ Could not clear settings: ${settingsError.message}`);
+          if (tables.includes('settings')) {
+            try {
+              const settingsResult = sqlite.prepare(`
+                DELETE FROM settings 
+                WHERE key NOT IN ('admin_setup', 'businessName', 'currency')
+              `).run();
+              console.log(`🗑️ Cleared ${settingsResult.changes} settings`);
+            } catch (settingsError) {
+              console.log(`⚠️ Could not clear settings: ${settingsError.message}`);
+            }
           }
 
           // Reset auto-increment sequences
