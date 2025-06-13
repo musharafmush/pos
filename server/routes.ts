@@ -1033,39 +1033,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 Clearing all data...');
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
-      // Start transaction to clear all data
-      const clearTransaction = sqlite.transaction(() => {
-        // Clear data in order to respect foreign key constraints
-        sqlite.prepare('DELETE FROM purchase_items').run();
-        sqlite.prepare('DELETE FROM sale_items').run();
-        sqlite.prepare('DELETE FROM purchases').run();
-        sqlite.prepare('DELETE FROM sales').run();
-        sqlite.prepare('DELETE FROM products').run();
-        sqlite.prepare('DELETE FROM customers').run();
-        sqlite.prepare('DELETE FROM suppliers').run();
-        sqlite.prepare('DELETE FROM categories').run();
-        sqlite.prepare('DELETE FROM settings WHERE key NOT IN ("admin_setup")').run(); // Keep essential settings
+      // Check database connection first
+      try {
+        sqlite.prepare('SELECT 1').get();
+        console.log('✅ Database connection verified');
+      } catch (dbError) {
+        console.error('❌ Database connection failed:', dbError);
+        return res.status(500).json({ 
+          error: 'Database connection failed',
+          message: 'Unable to connect to database. Please try again later.'
+        });
+      }
 
-        // Reset auto-increment counters
-        sqlite.prepare('DELETE FROM sqlite_sequence').run();
+      // Disable foreign key constraints temporarily
+      sqlite.prepare('PRAGMA foreign_keys = OFF').run();
+
+      try {
+        // Start transaction to clear all data
+        const clearTransaction = sqlite.transaction(() => {
+          console.log('🗑️ Starting data clearing transaction...');
+
+          // Clear data in safe order (children first to avoid FK violations)
+          const tablesToClear = [
+            'return_items',
+            'returns', 
+            'purchase_items',
+            'sale_items',
+            'purchases',
+            'sales',
+            'products',
+            'customers',
+            'suppliers',
+            'categories'
+          ];
+
+          let totalCleared = 0;
+          tablesToClear.forEach(table => {
+            try {
+              const result = sqlite.prepare(`DELETE FROM ${table}`).run();
+              console.log(`🗑️ Cleared ${result.changes} records from ${table}`);
+              totalCleared += result.changes;
+            } catch (clearError) {
+              console.log(`⚠️ Could not clear ${table}: ${clearError.message}`);
+              // Continue with other tables even if one fails
+            }
+          });
+
+          // Clear settings except essential ones
+          try {
+            const settingsResult = sqlite.prepare(`
+              DELETE FROM settings 
+              WHERE key NOT IN ('admin_setup', 'businessName', 'currency')
+            `).run();
+            console.log(`🗑️ Cleared ${settingsResult.changes} settings`);
+          } catch (settingsError) {
+            console.log(`⚠️ Could not clear settings: ${settingsError.message}`);
+          }
+
+          // Reset auto-increment sequences
+          try {
+            sqlite.prepare('DELETE FROM sqlite_sequence').run();
+            console.log('🔄 Reset auto-increment sequences');
+          } catch (seqError) {
+            console.log(`⚠️ Could not reset sequences: ${seqError.message}`);
+          }
+
+          console.log(`✅ Data clearing completed. Total records cleared: ${totalCleared}`);
+          return totalCleared;
+        });
+
+        const recordsCleared = clearTransaction();
+
+        // Re-enable foreign key constraints
+        sqlite.prepare('PRAGMA foreign_keys = ON').run();
 
         console.log('✅ All data cleared successfully');
-      });
 
-      clearTransaction();
+        res.json({ 
+          success: true, 
+          message: 'All data cleared successfully',
+          recordsCleared: recordsCleared,
+          timestamp: new Date().toISOString()
+        });
 
-      res.json({ 
-        success: true, 
-        message: 'All data cleared successfully' 
-      });
+      } catch (transactionError) {
+        // Re-enable foreign keys even if transaction fails
+        try {
+          sqlite.prepare('PRAGMA foreign_keys = ON').run();
+        } catch (pragmaError) {
+          console.log('⚠️ Could not re-enable foreign keys:', pragmaError.message);
+        }
+        
+        throw transactionError;
+      }
 
     } catch (error) {
       console.error('❌ Error clearing data:', error);
+      
+      let errorMessage = 'Failed to clear data';
+      let userMessage = 'An error occurred while clearing data. Please try again.';
+      
+      if (error.message?.includes('SQLITE_BUSY')) {
+        userMessage = 'Database is busy. Please wait a moment and try again.';
+      } else if (error.message?.includes('SQLITE_LOCKED')) {
+        userMessage = 'Database is locked. Please close any other operations and try again.';
+      } else if (error.message?.includes('no such table')) {
+        userMessage = 'Database tables are missing. Please contact support.';
+      }
+      
       res.status(500).json({ 
-        error: 'Failed to clear data',
-        message: error.message 
+        error: errorMessage,
+        message: userMessage,
+        technical: error.message,
+        timestamp: new Date().toISOString()
       });
     }
   });
