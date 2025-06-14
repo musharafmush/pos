@@ -1814,8 +1814,8 @@ export default function POSEnhanced() {
 
                 <Button
                   variant="outline"
-                  className="wfull hover:bg-gray-50"
-                  onClick={(){
+                  className="w-full hover:bg-gray-50"
+                  onClick={() => {
                     if (cart.length > 0) {
                       handlePrintReceipt(null);
                     } else {
