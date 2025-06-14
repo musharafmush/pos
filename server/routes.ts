@@ -2262,27 +2262,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/purchases', isAuthenticated, async (req, res) => {
+  app.get('/api/purchases', async (req, res) => {
     try {
-      const limit = parseInt(req.query.limit as string || '20');
+      console.log('📊 Purchases API endpoint accessed');
+      const limit = parseInt(req.query.limit as string || '50');
       const offset = parseInt(req.query.offset as string || '0');
 
-      // Use direct DB query to avoid the complex ORM issues
-      const result = await db.query.purchases.findMany({
-        limit,
-        offset,
-        orderBy: (purchases, { desc }) => [desc(purchases.createdAt)],
-        with: {
-          supplier: true,
-          user: true
-        }
-      });
+      // Use direct SQLite query for reliability
+      const { sqlite } = await import('@db');
 
-      console.log(`Found ${result.length} purchases`);
-      res.json(result);
+      // Check if purchases table exists
+      const tableCheck = sqlite.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='purchases'
+      `).get();
+
+      if (!tableCheck) {
+        console.log('❌ Purchases table does not exist');
+        return res.json([]);
+      }
+
+      // Get table structure to handle column variations
+      const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
+      const columnNames = tableInfo.map((col: any) => col.name);
+      console.log('📋 Available purchase columns:', columnNames);
+
+      // Build dynamic query based on available columns
+      const baseColumns = ['id'];
+      const optionalColumns = [
+        'order_number', 'supplier_id', 'user_id', 'total', 'status',
+        'order_date', 'created_at', 'due_date', 'received_date',
+        'payment_status', 'paid_amount', 'payment_method'
+      ];
+
+      const availableColumns = baseColumns.concat(
+        optionalColumns.filter(col => columnNames.includes(col))
+      );
+
+      const query = `
+        SELECT 
+          p.${availableColumns.join(', p.')},
+          s.name as supplier_name,
+          s.email as supplier_email,
+          s.phone as supplier_phone,
+          u.name as user_name
+        FROM purchases p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN users u ON p.user_id = u.id
+        ORDER BY ${columnNames.includes('created_at') ? 'p.created_at' : 'p.id'} DESC
+        LIMIT ? OFFSET ?
+      `;
+
+      console.log('🔍 Executing purchases query');
+      const purchases = sqlite.prepare(query).all(limit, offset);
+
+      // Format the results to match expected structure
+      const formattedPurchases = purchases.map((purchase: any) => ({
+        id: purchase.id,
+        orderNumber: purchase.order_number || `PO-${purchase.id}`,
+        supplierId: purchase.supplier_id,
+        userId: purchase.user_id,
+        total: purchase.total || '0',
+        totalAmount: purchase.total || '0',
+        status: purchase.status || 'pending',
+        orderDate: purchase.order_date || purchase.created_at,
+        createdAt: purchase.created_at,
+        dueDate: purchase.due_date,
+        receivedDate: purchase.received_date,
+        paymentStatus: purchase.payment_status || 'due',
+        paidAmount: purchase.paid_amount || '0',
+        paymentMethod: purchase.payment_method || 'cash',
+        supplier: purchase.supplier_name ? {
+          id: purchase.supplier_id,
+          name: purchase.supplier_name,
+          email: purchase.supplier_email,
+          phone: purchase.supplier_phone
+        } : null,
+        user: {
+          id: purchase.user_id,
+          name: purchase.user_name || 'System User'
+        },
+        items: [] // Will be populated separately if needed
+      }));
+
+      console.log(`✅ Found ${formattedPurchases.length} purchases`);
+      res.json(formattedPurchases);
+
     } catch (error) {
-      console.error('Error fetching purchases:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching purchases:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch purchases',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
@@ -2299,6 +2371,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching purchase:', error);
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Update purchase payment status
+  app.put('/api/purchases/:id/payment', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { paymentStatus, paymentAmount, paymentMethod, paymentDate, notes } = req.body;
+
+      console.log('🔄 Updating payment status for purchase:', id, req.body);
+
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ 
+          error: 'Invalid purchase ID',
+          message: 'Purchase ID must be a positive number'
+        });
+      }
+
+      // Use direct SQLite query
+      const { sqlite } = await import('@db');
+
+      // Check if purchase exists
+      const existingPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
+      
+      if (!existingPurchase) {
+        return res.status(404).json({ 
+          error: 'Purchase not found',
+          message: `No purchase order found with ID ${id}`
+        });
+      }
+
+      // Get table structure
+      const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
+      const columnNames = tableInfo.map((col: any) => col.name);
+
+      // Build dynamic update query
+      const updateFields = [];
+      const updateValues = [];
+
+      if (columnNames.includes('payment_status') && paymentStatus) {
+        updateFields.push('payment_status = ?');
+        updateValues.push(paymentStatus);
+      }
+
+      if (columnNames.includes('paid_amount') && paymentAmount !== undefined) {
+        updateFields.push('paid_amount = ?');
+        updateValues.push(parseFloat(paymentAmount).toString());
+      }
+
+      if (columnNames.includes('payment_method') && paymentMethod) {
+        updateFields.push('payment_method = ?');
+        updateValues.push(paymentMethod);
+      }
+
+      if (columnNames.includes('payment_date') && paymentDate) {
+        updateFields.push('payment_date = ?');
+        updateValues.push(paymentDate);
+      }
+
+      if (columnNames.includes('updated_at')) {
+        updateFields.push('updated_at = CURRENT_TIMESTAMP');
+      }
+
+      if (updateFields.length === 0) {
+        return res.status(400).json({ 
+          error: 'No valid fields to update',
+          message: 'No payment fields provided for update'
+        });
+      }
+
+      updateValues.push(id); // For WHERE clause
+
+      const updateQuery = `UPDATE purchases SET ${updateFields.join(', ')} WHERE id = ?`;
+      console.log('🔧 Update query:', updateQuery);
+      console.log('📊 Update values:', updateValues);
+
+      const updateResult = sqlite.prepare(updateQuery).run(...updateValues);
+
+      if (updateResult.changes === 0) {
+        return res.status(404).json({ 
+          error: 'Update failed',
+          message: 'No changes were made to the purchase record'
+        });
+      }
+
+      // Get updated purchase
+      const updatedPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
+
+      console.log('✅ Payment status updated successfully');
+      res.json({ 
+        success: true,
+        purchase: updatedPurchase,
+        message: 'Payment status updated successfully',
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error updating payment status:', error);
+      res.status(500).json({ 
+        error: 'Failed to update payment status',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
@@ -3660,44 +3835,49 @@ app.post("/api/customers", async (req, res) => {
   });
 
   // Delete purchase
-app.delete("/api/purchases/:id", async (c) => {
-  try {
-    const id = parseInt(c.req.param("id"));
+  app.delete("/api/purchases/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
 
-    if (isNaN(id)) {
-      return c.json({ error: "Invalid purchase ID" }, 400);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid purchase ID" });
+      }
+
+      console.log('🗑️ Deleting purchase:', id);
+
+      // Use direct SQLite transaction
+      const { sqlite } = await import('@db');
+
+      // Start a transaction to ensure data consistency
+      const deleteTransaction = sqlite.transaction(() => {
+        // First delete related purchase items
+        const deleteItemsStmt = sqlite.prepare("DELETE FROM purchase_items WHERE purchase_id = ?");
+        const itemsResult = deleteItemsStmt.run(id);
+
+        // Then delete the purchase
+        const deletePurchaseStmt = sqlite.prepare("DELETE FROM purchases WHERE id = ?");
+        const purchaseResult = deletePurchaseStmt.run(id);
+
+        return { itemsDeleted: itemsResult.changes, purchaseDeleted: purchaseResult.changes };
+      });
+
+      const result = deleteTransaction();
+
+      if (result.purchaseDeleted === 0) {
+        return res.status(404).json({ error: "Purchase not found" });
+      }
+
+      console.log(`✅ Deleted purchase ${id} with ${result.itemsDeleted} items`);
+      res.json({ 
+        success: true, 
+        message: "Purchase deleted successfully",
+        itemsDeleted: result.itemsDeleted
+      });
+    } catch (error: any) {
+      console.error("❌ Error deleting purchase:", error);
+      res.status(500).json({ error: `Failed to delete purchase: ${error.message}` });
     }
-
-    // Start a transaction to ensure data consistency
-    const deleteTransaction = db.transaction(() => {
-      // First delete related purchase items
-      const deleteItemsStmt = db.prepare("DELETE FROM purchase_items WHERE purchase_id = ?");
-      const itemsResult = deleteItemsStmt.run(id);
-
-      // Then delete the purchase
-      const deletePurchaseStmt = db.prepare("DELETE FROM purchases WHERE id = ?");
-      const purchaseResult = deletePurchaseStmt.run(id);
-
-      return { itemsDeleted: itemsResult.changes, purchaseDeleted: purchaseResult.changes };
-    });
-
-    const result = deleteTransaction();
-
-    if (result.purchaseDeleted === 0) {
-      return c.json({ error: "Purchase not found" }, 404);
-    }
-
-    console.log(`Deleted purchase ${id} with ${result.itemsDeleted} items`);
-    return c.json({ 
-      success: true, 
-      message: "Purchase deleted successfully",
-      itemsDeleted: result.itemsDeleted
-    });
-  } catch (error: any) {
-    console.error("Error deleting purchase:", error);
-    return c.json({ error: `Failed to delete purchase: ${error.message}` }, 500);
-  }
-});
+  });
 
   // Create HTTP server
   const httpServer = createServer(app);
