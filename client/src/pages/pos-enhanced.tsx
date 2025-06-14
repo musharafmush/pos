@@ -154,23 +154,29 @@ export default function POSEnhanced() {
 
   // Reset cash register form with force flag
   const resetCashRegisterForm = (force = false) => {
+    // Immediate reset
+    setCashAmount("");
+    setCashReason("");
+    setCashOperation('add');
+    
     if (force) {
-      // Force reset with multiple state updates
+      // Additional cleanup with multiple timeouts to ensure state is cleared
       setTimeout(() => {
         setCashAmount("");
         setCashReason("");
         setCashOperation('add');
       }, 0);
-    } else {
-      setCashAmount("");
-      setCashReason("");
-      setCashOperation('add');
+      setTimeout(() => {
+        setCashAmount("");
+        setCashReason("");
+        setCashOperation('add');
+      }, 50);
     }
   };
 
   // Reset all cash register states with proper cleanup
   const resetAllCashRegisterStates = () => {
-    // Force reset all form values
+    // Immediate reset of all form values
     setCashAmount("");
     setCashReason("");
     setCashOperation('add');
@@ -183,18 +189,30 @@ export default function POSEnhanced() {
     setShowCloseRegister(false);
     setShowWithdrawal(false);
     
-    // Additional cleanup with slight delay to ensure state is cleared
-    setTimeout(() => {
+    // Multiple cleanup cycles to ensure state persistence
+    const cleanupStates = () => {
       setCashAmount("");
       setCashReason("");
       setCashOperation('add');
-    }, 50);
+      setWithdrawalAmount("");
+      setWithdrawalNote("");
+    };
+    
+    setTimeout(cleanupStates, 0);
+    setTimeout(cleanupStates, 50);
+    setTimeout(cleanupStates, 100);
   };
 
   // Reset withdrawal form
   const resetWithdrawalForm = () => {
     setWithdrawalAmount("");
     setWithdrawalNote("");
+    
+    // Ensure cleanup
+    setTimeout(() => {
+      setWithdrawalAmount("");
+      setWithdrawalNote("");
+    }, 0);
   };
 
   // Add billDetails state
@@ -1373,13 +1391,23 @@ export default function POSEnhanced() {
   useEffect(() => {
     return () => {
       // Cleanup cash register forms when component is about to unmount
-      setCashAmount("");
-      setCashReason("");
-      setCashOperation('add');
-      setWithdrawalAmount("");
-      setWithdrawalNote("");
+      resetAllCashRegisterStates();
     };
   }, []);
+
+  // Effect to monitor and force cleanup of persistent form states
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // If no cash register dialogs are open, ensure forms are clean
+      if (!showCashRegister && !showOpenRegister && !showCloseRegister && !showWithdrawal) {
+        if (cashAmount || cashReason || withdrawalAmount || withdrawalNote) {
+          resetAllCashRegisterStates();
+        }
+      }
+    }, 1000); // Check every second
+
+    return () => clearInterval(intervalId);
+  }, [showCashRegister, showOpenRegister, showCloseRegister, showWithdrawal, cashAmount, cashReason, withdrawalAmount, withdrawalNote]);
 
   // Update bill details when bill number changes
   useEffect(() => {
@@ -2478,13 +2506,20 @@ export default function POSEnhanced() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        // Reset form first, then set new values
-                        resetCashRegisterForm();
-                        setTimeout(() => {
+                        // Force complete reset first
+                        resetCashRegisterForm(true);
+                        resetAllCashRegisterStates();
+                        
+                        // Set new values with multiple attempts to ensure they stick
+                        const setValues = () => {
                           setCashAmount(amount.toString());
                           setCashOperation('add');
                           setCashReason(`Cash payment ₹${amount}`);
-                        }, 10);
+                        };
+                        
+                        setValues();
+                        setTimeout(setValues, 10);
+                        setTimeout(setValues, 50);
                       }}
                       className="border-green-200 text-green-700 hover:bg-green-50 h-12 flex flex-col justify-center"
                     >
@@ -2516,12 +2551,20 @@ export default function POSEnhanced() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          resetCashRegisterForm();
-                          setTimeout(() => {
+                          // Complete form reset
+                          resetCashRegisterForm(true);
+                          resetAllCashRegisterStates();
+                          
+                          // Set UPI values with persistence
+                          const setUpiValues = () => {
                             setCashAmount(amount.toString());
                             setCashOperation('add');
                             setCashReason(`UPI payment ₹${amount}`);
-                          }, 10);
+                          };
+                          
+                          setUpiValues();
+                          setTimeout(setUpiValues, 10);
+                          setTimeout(setUpiValues, 50);
                         }}
                         className="border-blue-200 text-blue-700 hover:bg-blue-50 h-12 flex flex-col justify-center"
                       >
@@ -2542,12 +2585,20 @@ export default function POSEnhanced() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          resetCashRegisterForm();
-                          setTimeout(() => {
+                          // Complete form reset
+                          resetCashRegisterForm(true);
+                          resetAllCashRegisterStates();
+                          
+                          // Set card values with persistence
+                          const setCardValues = () => {
                             setCashAmount(amount.toString());
                             setCashOperation('add');
                             setCashReason(`Card payment ₹${amount}`);
-                          }, 10);
+                          };
+                          
+                          setCardValues();
+                          setTimeout(setCardValues, 10);
+                          setTimeout(setCardValues, 50);
                         }}
                         className="border-purple-200 text-purple-700 hover:bg-purple-50 h-12 flex flex-col justify-center"
                       >
@@ -2574,9 +2625,8 @@ export default function POSEnhanced() {
                 <div className="grid grid-cols-2 gap-4">
                   <Card className={`cursor-pointer transition-all border-2 ${cashOperation === 'add' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
                         onClick={() => {
-                          // Clear form values when switching operation type
-                          setCashAmount("");
-                          setCashReason("");
+                          // Comprehensive form reset when switching operation type
+                          resetCashRegisterForm(true);
                           setCashOperation('add');
                         }}>
                     <CardContent className="p-4 text-center">
@@ -2590,9 +2640,8 @@ export default function POSEnhanced() {
 
                   <Card className={`cursor-pointer transition-all border-2 ${cashOperation === 'remove' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-red-300'}`}
                         onClick={() => {
-                          // Clear form values when switching operation type
-                          setCashAmount("");
-                          setCashReason("");
+                          // Comprehensive form reset when switching operation type
+                          resetCashRegisterForm(true);
                           setCashOperation('remove');
                         }}>
                     <CardContent className="p-4 text-center">
@@ -2622,12 +2671,20 @@ export default function POSEnhanced() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      resetCashRegisterForm();
-                      setTimeout(() => {
+                      // Complete form reset
+                      resetCashRegisterForm(true);
+                      resetAllCashRegisterStates();
+                      
+                      // Set removal values with persistence
+                      const setBankValues = () => {
                         setCashAmount("2000");
                         setCashOperation("remove");
                         setCashReason("Bank deposit ₹2000");
-                      }, 10);
+                      };
+                      
+                      setBankValues();
+                      setTimeout(setBankValues, 10);
+                      setTimeout(setBankValues, 50);
                     }}
                     className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
                   >
@@ -2639,12 +2696,20 @@ export default function POSEnhanced() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      resetCashRegisterForm();
-                      setTimeout(() => {
+                      // Complete form reset
+                      resetCashRegisterForm(true);
+                      resetAllCashRegisterStates();
+                      
+                      // Set removal values with persistence
+                      const setBankValues = () => {
                         setCashAmount("5000");
                         setCashOperation("remove");
                         setCashReason("Bank deposit ₹5000");
-                      }, 10);
+                      };
+                      
+                      setBankValues();
+                      setTimeout(setBankValues, 10);
+                      setTimeout(setBankValues, 50);
                     }}
                     className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
                   >
