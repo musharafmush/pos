@@ -1012,7 +1012,7 @@ export default function POSEnhanced() {
         // Remove any existing duplicate holds first
         const filteredPrev = prev.filter(sale => !sale.id.startsWith('HOLD-') || 
           Math.abs(new Date(sale.timestamp).getTime() - Date.now()) > 5000);
-        
+
         const newHeldSales = [...filteredPrev, holdSale];
         try {
           localStorage.setItem('heldSales', JSON.stringify(newHeldSales));
@@ -1209,7 +1209,7 @@ export default function POSEnhanced() {
         } else {
           localStorage.removeItem('heldSales');
         }
-        
+
         const removedCount = holdSales.length - validHeldSales.length;
         if (removedCount > 0) {
           toast({
@@ -1246,7 +1246,7 @@ export default function POSEnhanced() {
             timestamp: new Date(sale.timestamp) // Convert timestamp back to Date object
           }));
           setHoldSales(validHeldSales);
-          
+
           // Update localStorage with cleaned data
           if (validHeldSales.length !== parsedHeldSales.length) {
             localStorage.setItem('heldSales', JSON.stringify(validHeldSales));
@@ -1286,7 +1286,7 @@ export default function POSEnhanced() {
 
     // Add event listeners for navigation detection
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       handleBeforeUnload(); // Call on component unmount
@@ -1315,13 +1315,13 @@ export default function POSEnhanced() {
         sale.id &&
         sale.timestamp
       );
-      
+
       if (validHeldSales.length > 0) {
         localStorage.setItem('heldSales', JSON.stringify(validHeldSales));
       } else {
         localStorage.removeItem('heldSales');
       }
-      
+
       // Update state if we filtered out invalid sales
       if (validHeldSales.length !== holdSales.length) {
         setHoldSales(validHeldSales);
@@ -1336,7 +1336,7 @@ export default function POSEnhanced() {
     const cleanupInterval = setInterval(() => {
       const now = Date.now();
       const oneHourAgo = now - (60 * 60 * 1000); // 1 hour ago
-      
+
       setHoldSales(prev => {
         const cleaned = prev.filter(sale => {
           // Keep regular holds, but remove old auto-saves
@@ -1346,7 +1346,7 @@ export default function POSEnhanced() {
           }
           return true;
         });
-        
+
         return cleaned;
       });
     }, 5 * 60 * 1000); // Run every 5 minutes
