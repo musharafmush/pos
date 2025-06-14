@@ -308,8 +308,15 @@ export default function PurchaseEntryProfessional() {
     grandTotal: 0
   });
 
-  // Hold Purchase functionality
-  const [heldPurchases, setHeldPurchases] = useState<any[]>([]);
+  // Hold Purchase functionality - persist in localStorage
+  const [heldPurchases, setHeldPurchases] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('purchase-held-orders');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [showHeldPurchases, setShowHeldPurchases] = useState(false);
 
   // Modal state for Add Item
@@ -429,6 +436,17 @@ export default function PurchaseEntryProfessional() {
   // Loading state for save button
   const [isSaving, setIsSaving] = useState(false);
 
+  // Cleanup effect to prevent memory leaks and stuck states
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts or intervals
+      // Reset form state if component unmounts unexpectedly
+      setIsAddItemModalOpen(false);
+      setShowHeldPurchases(false);
+      setEditingItemIndex(null);
+    };
+  }, []);
+
   // Hold Purchase functions
   const holdPurchase = () => {
     const currentFormData = form.getValues();
@@ -459,7 +477,7 @@ export default function PurchaseEntryProfessional() {
 
     const heldPurchase = {
       id: holdId,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(), // Store as ISO string for localStorage
       supplier: selectedSupplier || { id: 0, name: "No Supplier Selected" },
       orderNumber: currentFormData.orderNumber || `DRAFT-${holdId}`,
       formData: { ...currentFormData },
@@ -468,7 +486,15 @@ export default function PurchaseEntryProfessional() {
       totalValue: summary.grandTotal || 0
     };
 
-    setHeldPurchases(prev => [...prev, heldPurchase]);
+    const updatedHeldPurchases = [...heldPurchases, heldPurchase];
+    setHeldPurchases(updatedHeldPurchases);
+    
+    // Persist to localStorage
+    try {
+      localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
+    } catch (error) {
+      console.error('Failed to save held purchases to localStorage:', error);
+    }
 
     // Reset form for new purchase
     const newOrderNumber = `PO-${Date.now().toString().slice(-8)}`;
@@ -586,8 +612,16 @@ export default function PurchaseEntryProfessional() {
         }, 100);
       }
 
-      // Remove from held purchases
-      setHeldPurchases(prev => prev.filter(p => p.id !== heldPurchase.id));
+      // Remove from held purchases and update localStorage
+      const updatedHeldPurchases = heldPurchases.filter(p => p.id !== heldPurchase.id);
+      setHeldPurchases(updatedHeldPurchases);
+      
+      try {
+        localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
+      } catch (error) {
+        console.error('Failed to update localStorage:', error);
+      }
+      
       setShowHeldPurchases(false);
 
       // Switch to details tab
@@ -608,7 +642,15 @@ export default function PurchaseEntryProfessional() {
   };
 
   const deleteHeldPurchase = (holdId: string) => {
-    setHeldPurchases(prev => prev.filter(p => p.id !== holdId));
+    const updatedHeldPurchases = heldPurchases.filter(p => p.id !== holdId);
+    setHeldPurchases(updatedHeldPurchases);
+    
+    try {
+      localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
+    } catch (error) {
+      console.error('Failed to update localStorage:', error);
+    }
+    
     toast({
       title: "Held Purchase Deleted",
       description: `Held purchase order has been deleted.`,
@@ -3115,7 +3157,7 @@ export default function PurchaseEntryProfessional() {
                                 <div className="flex items-center gap-2">
                                   <span className="text-gray-500 font-medium">Held at:</span>
                                   <span className="text-gray-900">
-                                    {heldPurchase.timestamp.toLocaleDateString()} {heldPurchase.timestamp.toLocaleTimeString()}
+                                    {new Date(heldPurchase.timestamp).toLocaleDateString()} {new Date(heldPurchase.timestamp).toLocaleTimeString()}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
