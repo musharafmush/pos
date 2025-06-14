@@ -1022,8 +1022,8 @@ export default function POSEnhanced() {
           portOfDischarge: "",
           freightCost: "",
           insuranceCost: "",
-          customsDuty: "",```python
-handlingCharges: "",
+          customsDuty: "",
+          handlingCharges: "",
           totalOceanCost: 0
         });
       }, 10);
