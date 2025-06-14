@@ -914,53 +914,155 @@ export default function POSEnhanced() {
     }
 
     const holdId = `HOLD-${Date.now()}`;
+    
+    // Create a deep copy of cart items to prevent reference issues
+    const cartCopy = cart.map(item => ({
+      ...item,
+      // Ensure all properties are properly copied
+      id: item.id,
+      name: item.name,
+      sku: item.sku,
+      price: item.price,
+      quantity: item.quantity,
+      total: item.total,
+      stockQuantity: item.stockQuantity,
+      mrp: item.mrp,
+      category: item.category ? { ...item.category } : undefined
+    }));
+
     const holdSale = {
       id: holdId,
-      cart: [...cart], // Create deep copy to avoid reference issues
-      customer: selectedCustomer,
+      cart: cartCopy,
+      customer: selectedCustomer ? { ...selectedCustomer } : null,
       discount: discount,
       notes: `Held sale at ${new Date().toLocaleTimeString()}`,
       timestamp: new Date(),
-      total: total
+      total: total,
+      oceanFreight: { ...oceanFreight }
     };
 
-    // Add to held sales first
-    setHoldSales(prev => [...prev, holdSale]);
-    
-    // Then clear current cart (but not held sales)
-    clearCart(false);
+    // Store the current cart count for the toast message
+    const itemCount = cart.length;
 
-    toast({
-      title: "Sale Held",
-      description: `Sale ${holdId} has been held successfully. ${cart.length} items saved.`,
-    });
+    // Add to held sales with error handling
+    try {
+      setHoldSales(prev => {
+        const newHeldSales = [...prev, holdSale];
+        // Also store in localStorage as backup
+        localStorage.setItem('heldSales', JSON.stringify(newHeldSales));
+        return newHeldSales;
+      });
+      
+      // Clear current cart (but not held sales) with a small delay to ensure state is updated
+      setTimeout(() => {
+        clearCart(false);
+      }, 50);
+
+      toast({
+        title: "Sale Held Successfully",
+        description: `Sale ${holdId} saved with ${itemCount} items. Use Alt+R to recall.`,
+      });
+    } catch (error) {
+      console.error("Error holding sale:", error);
+      toast({
+        title: "Hold Failed",
+        description: "Failed to hold the sale. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Recall held sale
   const recallHeldSale = (holdSale: typeof holdSales[0]) => {
-    // Clear current cart state first
-    setCart([]);
-    setSelectedCustomer(null);
-    setDiscount(0);
-    setAmountPaid("");
-    setPaymentMethod("cash");
-    setBarcodeInput("");
-    
-    // Use setTimeout to ensure state clearing completes before setting new values
-    setTimeout(() => {
-      setCart([...holdSale.cart]); // Create new array to avoid reference issues
-      setSelectedCustomer(holdSale.customer);
-      setDiscount(holdSale.discount);
-      
-      // Remove from held sales after successful recall
-      setHoldSales(prev => prev.filter(sale => sale.id !== holdSale.id));
-      setShowHoldSales(false);
+    try {
+      // Check if there's a current cart that needs to be cleared
+      if (cart.length > 0) {
+        const confirmRecall = window.confirm(
+          `You have ${cart.length} items in your current cart. Recalling this held sale will clear the current cart. Continue?`
+        );
+        if (!confirmRecall) {
+          return;
+        }
+      }
 
-      toast({
-        title: "Sale Recalled",
-        description: `Sale ${holdSale.id} has been recalled successfully`,
+      // Step 1: Clear all current state
+      setCart([]);
+      setSelectedCustomer(null);
+      setDiscount(0);
+      setAmountPaid("");
+      setPaymentMethod("cash");
+      setBarcodeInput("");
+      setOceanFreight({
+        containerNumber: "",
+        vesselName: "",
+        portOfLoading: "",
+        portOfDischarge: "",
+        freightCost: "",
+        insuranceCost: "",
+        customsDuty: "",
+        handlingCharges: "",
+        totalOceanCost: 0
       });
-    }, 50);
+      
+      // Step 2: Use a longer timeout to ensure all state updates complete
+      setTimeout(() => {
+        try {
+          // Create new cart items to avoid reference issues
+          const restoredCart = holdSale.cart.map(item => ({
+            ...item,
+            // Ensure all properties are restored correctly
+            id: item.id,
+            name: item.name,
+            sku: item.sku,
+            price: item.price,
+            quantity: item.quantity,
+            total: item.total,
+            stockQuantity: item.stockQuantity,
+            mrp: item.mrp,
+            category: item.category
+          }));
+
+          // Restore all state
+          setCart(restoredCart);
+          setSelectedCustomer(holdSale.customer);
+          setDiscount(holdSale.discount || 0);
+          
+          // Restore ocean freight if it exists
+          if (holdSale.oceanFreight) {
+            setOceanFreight(holdSale.oceanFreight);
+          }
+          
+          // Remove from held sales and update localStorage
+          setHoldSales(prev => {
+            const updatedHeldSales = prev.filter(sale => sale.id !== holdSale.id);
+            localStorage.setItem('heldSales', JSON.stringify(updatedHeldSales));
+            return updatedHeldSales;
+          });
+          
+          setShowHoldSales(false);
+
+          toast({
+            title: "Sale Recalled Successfully",
+            description: `${holdSale.id} restored with ${restoredCart.length} items`,
+          });
+        } catch (recallError) {
+          console.error("Error during recall:", recallError);
+          toast({
+            title: "Recall Error",
+            description: "Failed to restore the held sale completely. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error("Error recalling held sale:", error);
+      toast({
+        title: "Recall Failed", 
+        description: "Failed to recall the held sale. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Delete held sale
@@ -974,17 +1076,64 @@ export default function POSEnhanced() {
 
   // Clear all held sales
   const clearAllHeldSales = () => {
-    const count = holdSales.length;
-    setHoldSales([]);
-    toast({
-      title: "All Held Sales Cleared",
-      description: `${count} held sales have been cleared`,
-    });
+    if (holdSales.length === 0) {
+      toast({
+        title: "No Held Sales",
+        description: "There are no held sales to clear",
+        variant: "default",
+      });
+      return;
+    }
+
+    const confirmClear = window.confirm(
+      `Are you sure you want to clear all ${holdSales.length} held sales? This action cannot be undone.`
+    );
+    
+    if (!confirmClear) {
+      return;
+    }
+
+    try {
+      const count = holdSales.length;
+      setHoldSales([]);
+      localStorage.removeItem('heldSales');
+      
+      toast({
+        title: "All Held Sales Cleared",
+        description: `${count} held sales have been permanently cleared`,
+      });
+    } catch (error) {
+      console.error("Error clearing held sales:", error);
+      toast({
+        title: "Clear Failed",
+        description: "Failed to clear all held sales. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Initialize bill number and update bill details when bill number changes
+  // Initialize bill number and load held sales from localStorage
   useEffect(() => {
     setBillNumber(`POS${Date.now()}`);
+    
+    // Load held sales from localStorage on component mount
+    try {
+      const savedHeldSales = localStorage.getItem('heldSales');
+      if (savedHeldSales) {
+        const parsedHeldSales = JSON.parse(savedHeldSales);
+        // Validate and restore held sales
+        if (Array.isArray(parsedHeldSales)) {
+          setHoldSales(parsedHeldSales.map(sale => ({
+            ...sale,
+            timestamp: new Date(sale.timestamp) // Convert timestamp back to Date object
+          })));
+        }
+      }
+    } catch (error) {
+      console.error("Error loading held sales from localStorage:", error);
+      // Clear corrupted data
+      localStorage.removeItem('heldSales');
+    }
   }, []);
 
   // Update bill details when bill number changes
@@ -996,6 +1145,15 @@ export default function POSEnhanced() {
       billTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
     }));
   }, [billNumber]);
+
+  // Save held sales to localStorage whenever holdSales changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('heldSales', JSON.stringify(holdSales));
+    } catch (error) {
+      console.error("Error saving held sales to localStorage:", error);
+    }
+  }, [holdSales]);
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
