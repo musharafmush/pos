@@ -313,12 +313,12 @@ export default function PurchaseDashboard() {
       let successTitle = "Payment Recorded";
       let successDescription = data.message || 'Payment status updated successfully';
       
-      if (data.isCompleted || data.statusAutoUpdated) {
-        successTitle = "Purchase Completed! 🎉";
-        successDescription = `Payment recorded and purchase order completed successfully. Total paid: ${formatCurrency(data.totalPaid || 0)}`;
+      if (data.statusAutoUpdated || data.isCompleted) {
+        successTitle = "Purchase Order Completed! 🎉";
+        successDescription = `Payment recorded and purchase order automatically marked as completed. Total paid: ${formatCurrency(data.totalPaid || 0)}`;
       } else if (data.paymentStatus === 'paid') {
         successTitle = "Payment Completed";
-        successDescription = `Full payment of ${formatCurrency(data.paymentRecorded || 0)} recorded successfully`;
+        successDescription = `Full payment of ${formatCurrency(data.paymentRecorded || 0)} recorded successfully. Purchase is now fully paid.`;
       } else if (data.paymentStatus === 'partial') {
         successTitle = "Partial Payment Recorded";
         successDescription = `Payment of ${formatCurrency(data.paymentRecorded || 0)} recorded. Remaining: ${formatCurrency(data.remainingAmount || 0)}`;
@@ -368,11 +368,24 @@ export default function PurchaseDashboard() {
   const totalPurchases = purchases.length;
   const pendingPurchases = purchases.filter((p: Purchase) => {
     const status = p.status?.toLowerCase() || 'pending';
-    return status === "pending" || status === "ordered" || status === "draft";
+    const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
+    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+    const paymentStatus = p.paymentStatus;
+    
+    // Consider as pending if status is pending/ordered/draft OR if not fully paid
+    return (status === "pending" || status === "ordered" || status === "draft") || 
+           (paymentStatus !== "paid" && paidAmount < totalAmount);
   }).length;
+  
   const completedPurchases = purchases.filter((p: Purchase) => {
     const status = p.status?.toLowerCase() || '';
-    return status === "completed" || status === "received" || status === "delivered";
+    const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
+    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+    const paymentStatus = p.paymentStatus;
+    
+    // Consider as completed if status is completed/received/delivered OR if fully paid
+    return (status === "completed" || status === "received" || status === "delivered") ||
+           (paymentStatus === "paid" && totalAmount > 0 && paidAmount >= totalAmount);
   }).length;
   const totalAmount = purchases.reduce((sum: number, p: Purchase) => {
     const amount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");

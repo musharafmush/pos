@@ -2527,6 +2527,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Auto-update purchase status to completed if fully paid
       let finalStatus = updatedPurchase.status;
+      let statusAutoUpdated = false;
+      
       if (calculatedPaymentStatus === 'paid' && 
           purchaseTotal > 0 && 
           finalPaidAmount >= purchaseTotal && 
@@ -2534,11 +2536,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('🔄 Auto-updating purchase status to completed (fully paid)');
         
-        const updateStatusQuery = `UPDATE purchases SET status = 'completed', received_date = CURRENT_TIMESTAMP WHERE id = ?`;
-        const statusResult = sqlite.prepare(updateStatusQuery).run(id);
+        // Check if received_date column exists
+        const statusUpdateFields = ['status = ?'];
+        const statusUpdateValues = ['completed'];
+        
+        if (columnNames.includes('received_date')) {
+          statusUpdateFields.push('received_date = CURRENT_TIMESTAMP');
+        }
+        if (columnNames.includes('updated_at')) {
+          statusUpdateFields.push('updated_at = CURRENT_TIMESTAMP');
+        }
+        
+        const updateStatusQuery = `UPDATE purchases SET ${statusUpdateFields.join(', ')} WHERE id = ?`;
+        statusUpdateValues.push(id);
+        
+        const statusResult = sqlite.prepare(updateStatusQuery).run(...statusUpdateValues);
         
         if (statusResult.changes > 0) {
           finalStatus = 'completed';
+          statusAutoUpdated = true;
           console.log('✅ Auto-updated purchase status to completed');
         }
       }
@@ -2550,10 +2566,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         success: true,
         purchase: finalPurchase,
-        message: 'Payment status updated successfully',
+        message: statusAutoUpdated ? 'Payment recorded and purchase completed' : 'Payment status updated successfully',
         paymentRecorded: newPaymentAmount,
         totalPaid: finalPaidAmount,
-        statusAutoUpdated: finalStatus === 'completed' && updatedPurchase.status !== 'completed',
+        paymentStatus: calculatedPaymentStatus,
+        statusAutoUpdated: statusAutoUpdated,
+        isCompleted: finalStatus === 'completed',
         timestamp: new Date().toISOString()
       });
 
