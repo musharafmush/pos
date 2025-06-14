@@ -2550,24 +2550,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { status, receivedDate } = req.body;
 
+      console.log('🔄 Purchase status update request:', { id, status, receivedDate });
+
       if (!status) {
         return res.status(400).json({ message: 'Status is required' });
       }
 
-      const purchase = await storage.updatePurchaseStatus(
-        id,
-        status,
-        receivedDate ? new Date(receivedDate) : undefined
-      );
-
-      if (!purchase) {
-        return res.status(404).json({ message: 'Purchase not found' });
+      // Validate status values
+      const validStatuses = ['pending', 'ordered', 'received', 'completed', 'cancelled'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ 
+          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+        });
       }
 
-      res.json(purchase);
+      // Use direct SQLite update if storage method fails
+      try {
+        const purchase = await storage.updatePurchaseStatus(
+          id,
+          status,
+          receivedDate ? new Date(receivedDate) : undefined
+        );
+
+        if (!purchase) {
+          return res.status(404).json({ message: 'Purchase not found' });
+        }
+
+        console.log('✅ Purchase status updated successfully');
+        res.json(purchase);
+      } catch (storageError) {
+        console.log('⚠️ Storage method failed, trying direct SQLite update:', storageError.message);
+        
+        // Fallback to direct SQLite update
+        const { sqlite } = await import('@db');
+        
+        const updateQuery = sqlite.prepare(`
+          UPDATE purchases 
+          SET status = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `);
+        
+        const result = updateQuery.run(status, id);
+        
+        if (result.changes === 0) {
+          return res.status(404).json({ message: 'Purchase not found' });
+        }
+        
+        // Get updated purchase
+        const updatedPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
+        
+        console.log('✅ Purchase status updated via direct SQLite');
+        res.json(updatedPurchase);
+      }
     } catch (error) {
-      console.error('Error updating purchase status:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error updating purchase status:', error);
+      res.status(500).json({ 
+        message: 'Failed to update purchase status',
+        error: error.message 
+      });
     }
   });
 

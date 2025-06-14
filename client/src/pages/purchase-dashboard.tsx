@@ -98,6 +98,9 @@ export default function PurchaseDashboard() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [selectedPurchaseForStatus, setSelectedPurchaseForStatus] = useState<Purchase | null>(null);
+  const [newStatus, setNewStatus] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -141,6 +144,48 @@ export default function PurchaseDashboard() {
         variant: "destructive",
       });
       setDeleteDialogOpen(false);
+    },
+  });
+
+  // Status update mutation
+  const updatePurchaseStatus = useMutation({
+    mutationFn: async ({ purchaseId, status }: { purchaseId: number; status: string }) => {
+      console.log('🔄 Updating purchase status:', purchaseId, status);
+      
+      const response = await fetch(`/api/purchases/${purchaseId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          status,
+          receivedDate: status === 'completed' ? new Date().toISOString() : undefined
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || 'Failed to update status');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      toast({
+        title: "Status Updated",
+        description: `Purchase order status updated to ${newStatus}`,
+      });
+      setStatusDialogOpen(false);
+      setSelectedPurchaseForStatus(null);
+      setNewStatus("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Status Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -394,6 +439,12 @@ export default function PurchaseDashboard() {
     setSelectedPurchaseForPayment(purchase);
     setPaymentAmount(purchase.totalAmount?.toString() || "0");
     setPaymentDialogOpen(true);
+  };
+
+  const handleStatusUpdate = (purchase: Purchase) => {
+    setSelectedPurchaseForStatus(purchase);
+    setNewStatus(purchase.status || "pending");
+    setStatusDialogOpen(true);
   };
 
   const confirmPayment = () => {
@@ -836,6 +887,10 @@ export default function PurchaseDashboard() {
                                     <DropdownMenuItem onClick={() => handleEdit(purchase)}>
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate(purchase)}>
+                                      <RefreshCw className="h-4 w-4 mr-2" />
+                                      Update Status
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     {(!purchase.paymentStatus || purchase.paymentStatus === 'due' || purchase.paymentStatus === 'partial') && (
@@ -1647,6 +1702,101 @@ export default function PurchaseDashboard() {
                   <>
                     <CreditCard className="w-4 h-4 mr-2" />
                     Record Payment ({paymentAmount ? formatCurrency(parseFloat(paymentAmount)) : formatCurrency(0)})
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Status Update Dialog */}
+        <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5" />
+                Update Purchase Status
+              </DialogTitle>
+              <DialogDescription>
+                Update the status for this purchase order
+              </DialogDescription>
+            </DialogHeader>
+            {selectedPurchaseForStatus && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="text-sm">
+                    <div className="font-medium text-blue-800">Order: {selectedPurchaseForStatus.orderNumber || `PO-${selectedPurchaseForStatus.id}`}</div>
+                    <div className="text-blue-700">Supplier: {selectedPurchaseForStatus.supplier?.name || 'Unknown'}</div>
+                    <div className="text-blue-700">Current Status: <span className="font-semibold">{selectedPurchaseForStatus.status || 'Pending'}</span></div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">New Status</label>
+                  <select 
+                    value={newStatus} 
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="ordered">Ordered</option>
+                    <option value="received">Received</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                {newStatus === 'completed' && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-sm text-green-700">
+                      <strong>Note:</strong> Marking as completed will indicate that all items have been received and the order is finalized.
+                    </p>
+                  </div>
+                )}
+
+                {newStatus === 'cancelled' && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm text-red-700">
+                      <strong>Warning:</strong> Cancelling this order cannot be undone. Make sure this is the correct action.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setStatusDialogOpen(false)}
+                disabled={updatePurchaseStatus.isPending}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (selectedPurchaseForStatus) {
+                    updatePurchaseStatus.mutate({ 
+                      purchaseId: selectedPurchaseForStatus.id, 
+                      status: newStatus 
+                    });
+                  }
+                }}
+                disabled={
+                  updatePurchaseStatus.isPending || 
+                  !newStatus ||
+                  !selectedPurchaseForStatus ||
+                  newStatus === selectedPurchaseForStatus.status
+                }
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {updatePurchaseStatus.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Update Status
                   </>
                 )}
               </Button>
