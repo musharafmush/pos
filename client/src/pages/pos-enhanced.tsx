@@ -336,6 +336,9 @@ export default function POSEnhanced() {
   };
 
   const clearCart = (clearHeldSales = false) => {
+    const hadItems = cart.length > 0;
+    
+    // Clear current cart state
     setCart([]);
     setSelectedCustomer(null);
     setDiscount(0);
@@ -354,17 +357,22 @@ export default function POSEnhanced() {
       totalOceanCost: 0
     });
 
-    // Only clear held sales if explicitly requested
+    // Handle held sales based on flag
     if (clearHeldSales) {
       setHoldSales([]);
+      try {
+        localStorage.removeItem('heldSales');
+      } catch (error) {
+        console.warn("Failed to clear localStorage:", error);
+      }
       toast({
         title: "All Data Cleared",
         description: "Cart, ocean freight, and all held sales have been cleared",
       });
-    } else if (cart.length > 0) {
+    } else if (hadItems) {
       toast({
         title: "Cart Cleared",
-        description: "Current cart and ocean freight have been cleared. Held sales preserved.",
+        description: `Current cart cleared. ${holdSales.length} held sales preserved.`,
       });
     }
   };
@@ -915,10 +923,8 @@ export default function POSEnhanced() {
 
     const holdId = `HOLD-${Date.now()}`;
     
-    // Create a deep copy of cart items to prevent reference issues
+    // Create a completely isolated deep copy to prevent any reference issues
     const cartCopy = cart.map(item => ({
-      ...item,
-      // Ensure all properties are properly copied
       id: item.id,
       name: item.name,
       sku: item.sku,
@@ -927,36 +933,71 @@ export default function POSEnhanced() {
       total: item.total,
       stockQuantity: item.stockQuantity,
       mrp: item.mrp,
-      category: item.category ? { ...item.category } : undefined
+      category: item.category ? { 
+        name: item.category.name 
+      } : undefined,
+      barcode: item.barcode || undefined
     }));
 
     const holdSale = {
       id: holdId,
       cart: cartCopy,
-      customer: selectedCustomer ? { ...selectedCustomer } : null,
+      customer: selectedCustomer ? { 
+        id: selectedCustomer.id,
+        name: selectedCustomer.name,
+        phone: selectedCustomer.phone,
+        email: selectedCustomer.email
+      } : null,
       discount: discount,
       notes: `Held sale at ${new Date().toLocaleTimeString()}`,
       timestamp: new Date(),
       total: total,
-      oceanFreight: { ...oceanFreight }
+      oceanFreight: {
+        containerNumber: oceanFreight.containerNumber,
+        vesselName: oceanFreight.vesselName,
+        portOfLoading: oceanFreight.portOfLoading,
+        portOfDischarge: oceanFreight.portOfDischarge,
+        freightCost: oceanFreight.freightCost,
+        insuranceCost: oceanFreight.insuranceCost,
+        customsDuty: oceanFreight.customsDuty,
+        handlingCharges: oceanFreight.handlingCharges,
+        totalOceanCost: oceanFreight.totalOceanCost
+      }
     };
 
-    // Store the current cart count for the toast message
     const itemCount = cart.length;
 
-    // Add to held sales with error handling
     try {
+      // First add to held sales
       setHoldSales(prev => {
         const newHeldSales = [...prev, holdSale];
-        // Also store in localStorage as backup
-        localStorage.setItem('heldSales', JSON.stringify(newHeldSales));
+        // Store in localStorage immediately for persistence
+        try {
+          localStorage.setItem('heldSales', JSON.stringify(newHeldSales));
+        } catch (storageError) {
+          console.warn("Failed to save to localStorage:", storageError);
+        }
         return newHeldSales;
       });
       
-      // Clear current cart (but not held sales) with a small delay to ensure state is updated
-      setTimeout(() => {
-        clearCart(false);
-      }, 50);
+      // Then clear current cart state without affecting held sales
+      setCart([]);
+      setSelectedCustomer(null);
+      setDiscount(0);
+      setAmountPaid("");
+      setPaymentMethod("cash");
+      setBarcodeInput("");
+      setOceanFreight({
+        containerNumber: "",
+        vesselName: "",
+        portOfLoading: "",
+        portOfDischarge: "",
+        freightCost: "",
+        insuranceCost: "",
+        customsDuty: "",
+        handlingCharges: "",
+        totalOceanCost: 0
+      });
 
       toast({
         title: "Sale Held Successfully",
@@ -985,7 +1026,52 @@ export default function POSEnhanced() {
         }
       }
 
-      // Step 1: Clear all current state
+      // Create completely new instances to prevent reference issues
+      const restoredCart = holdSale.cart.map(item => ({
+        id: item.id,
+        name: item.name,
+        sku: item.sku,
+        price: item.price,
+        quantity: item.quantity,
+        total: item.total,
+        stockQuantity: item.stockQuantity,
+        mrp: item.mrp,
+        category: item.category ? { 
+          name: item.category.name 
+        } : undefined,
+        barcode: item.barcode || undefined
+      }));
+
+      const restoredCustomer = holdSale.customer ? {
+        id: holdSale.customer.id,
+        name: holdSale.customer.name,
+        phone: holdSale.customer.phone,
+        email: holdSale.customer.email
+      } : null;
+
+      const restoredOceanFreight = holdSale.oceanFreight ? {
+        containerNumber: holdSale.oceanFreight.containerNumber || "",
+        vesselName: holdSale.oceanFreight.vesselName || "",
+        portOfLoading: holdSale.oceanFreight.portOfLoading || "",
+        portOfDischarge: holdSale.oceanFreight.portOfDischarge || "",
+        freightCost: holdSale.oceanFreight.freightCost || "",
+        insuranceCost: holdSale.oceanFreight.insuranceCost || "",
+        customsDuty: holdSale.oceanFreight.customsDuty || "",
+        handlingCharges: holdSale.oceanFreight.handlingCharges || "",
+        totalOceanCost: holdSale.oceanFreight.totalOceanCost || 0
+      } : {
+        containerNumber: "",
+        vesselName: "",
+        portOfLoading: "",
+        portOfDischarge: "",
+        freightCost: "",
+        insuranceCost: "",
+        customsDuty: "",
+        handlingCharges: "",
+        totalOceanCost: 0
+      };
+
+      // Clear current state completely
       setCart([]);
       setSelectedCustomer(null);
       setDiscount(0);
@@ -1004,56 +1090,32 @@ export default function POSEnhanced() {
         totalOceanCost: 0
       });
       
-      // Step 2: Use a longer timeout to ensure all state updates complete
-      setTimeout(() => {
-        try {
-          // Create new cart items to avoid reference issues
-          const restoredCart = holdSale.cart.map(item => ({
-            ...item,
-            // Ensure all properties are restored correctly
-            id: item.id,
-            name: item.name,
-            sku: item.sku,
-            price: item.price,
-            quantity: item.quantity,
-            total: item.total,
-            stockQuantity: item.stockQuantity,
-            mrp: item.mrp,
-            category: item.category
-          }));
-
-          // Restore all state
-          setCart(restoredCart);
-          setSelectedCustomer(holdSale.customer);
-          setDiscount(holdSale.discount || 0);
-          
-          // Restore ocean freight if it exists
-          if (holdSale.oceanFreight) {
-            setOceanFreight(holdSale.oceanFreight);
-          }
-          
-          // Remove from held sales and update localStorage
-          setHoldSales(prev => {
-            const updatedHeldSales = prev.filter(sale => sale.id !== holdSale.id);
+      // Use requestAnimationFrame to ensure state clearing completes
+      requestAnimationFrame(() => {
+        // Restore the held sale state
+        setCart(restoredCart);
+        setSelectedCustomer(restoredCustomer);
+        setDiscount(holdSale.discount || 0);
+        setOceanFreight(restoredOceanFreight);
+        
+        // Remove from held sales and update localStorage
+        setHoldSales(prev => {
+          const updatedHeldSales = prev.filter(sale => sale.id !== holdSale.id);
+          try {
             localStorage.setItem('heldSales', JSON.stringify(updatedHeldSales));
-            return updatedHeldSales;
-          });
-          
-          setShowHoldSales(false);
+          } catch (storageError) {
+            console.warn("Failed to update localStorage:", storageError);
+          }
+          return updatedHeldSales;
+        });
+        
+        setShowHoldSales(false);
 
-          toast({
-            title: "Sale Recalled Successfully",
-            description: `${holdSale.id} restored with ${restoredCart.length} items`,
-          });
-        } catch (recallError) {
-          console.error("Error during recall:", recallError);
-          toast({
-            title: "Recall Error",
-            description: "Failed to restore the held sale completely. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }, 100);
+        toast({
+          title: "Sale Recalled Successfully",
+          description: `${holdSale.id} restored with ${restoredCart.length} items`,
+        });
+      });
       
     } catch (error) {
       console.error("Error recalling held sale:", error);
