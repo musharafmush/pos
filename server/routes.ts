@@ -1902,6 +1902,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update purchase endpoint
+  app.put('/api/purchases/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = req.body;
+
+      console.log('Updating purchase:', id, 'with data:', updateData);
+
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid purchase ID' });
+      }
+
+      // Check if purchase exists
+      const existingPurchase = await storage.getPurchaseById(id);
+      if (!existingPurchase) {
+        return res.status(404).json({ message: 'Purchase not found' });
+      }
+
+      // Use direct SQLite update for better reliability
+      const { sqlite } = await import('@db');
+
+      const result = sqlite.transaction(() => {
+        try {
+          // Update the main purchase record
+          const updatePurchase = sqlite.prepare(`
+            UPDATE purchases 
+            SET 
+              order_number = ?,
+              supplier_id = ?,
+              order_date = ?,
+              expected_date = ?,
+              payment_method = ?,
+              payment_terms = ?,
+              status = ?,
+              invoice_number = ?,
+              invoice_date = ?,
+              invoice_amount = ?,
+              remarks = ?,
+              freight_amount = ?,
+              surcharge_amount = ?,
+              packing_charges = ?,
+              other_charges = ?,
+              additional_discount = ?,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `);
+
+          const purchaseResult = updatePurchase.run(
+            updateData.orderNumber || existingPurchase.orderNumber,
+            updateData.supplierId || existingPurchase.supplierId,
+            updateData.orderDate || existingPurchase.orderDate,
+            updateData.expectedDate || existingPurchase.expectedDate,
+            updateData.paymentMethod || existingPurchase.paymentMethod || "Credit",
+            updateData.paymentTerms || existingPurchase.paymentTerms || "Net 30",
+            updateData.status || existingPurchase.status || "Pending",
+            updateData.invoiceNumber || existingPurchase.invoiceNumber || "",
+            updateData.invoiceDate || existingPurchase.invoiceDate || "",
+            parseFloat(updateData.invoiceAmount || "0") || 0,
+            updateData.remarks || existingPurchase.remarks || "",
+            parseFloat(updateData.freightAmount || "0") || 0,
+            parseFloat(updateData.surchargeAmount || "0") || 0,
+            parseFloat(updateData.packingCharges || "0") || 0,
+            parseFloat(updateData.otherCharges || "0") || 0,
+            parseFloat(updateData.additionalDiscount || "0") || 0,
+            id
+          );
+
+          console.log(`Updated purchase record: ${purchaseResult.changes} changes`);
+
+          // Update purchase items if provided
+          if (updateData.items && Array.isArray(updateData.items)) {
+            // First, delete existing items
+            const deleteItems = sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?');
+            deleteItems.run(id);
+
+            // Then insert new items
+            const insertItem = sqlite.prepare(`
+              INSERT INTO purchase_items (
+                purchase_id, product_id, quantity, received_qty, free_qty,
+                unit_cost, hsn_code, tax_percentage, discount_amount,
+                expiry_date, batch_number, selling_price, mrp, net_amount,
+                location, unit
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+
+            const updateStock = sqlite.prepare(`
+              UPDATE products 
+              SET stock_quantity = COALESCE(stock_quantity, 0) + ?
+              WHERE id = ?
+            `);
+
+            updateData.items.forEach((item: any) => {
+              if (item.productId && item.productId > 0) {
+                const receivedQty = parseInt(item.receivedQty || item.quantity || 0);
+                const freeQty = parseInt(item.freeQty || 0);
+                const unitCost = parseFloat(item.unitCost || 0);
+
+                // Insert the item
+                insertItem.run(
+                  id,
+                  item.productId,
+                  receivedQty,
+                  receivedQty,
+                  freeQty,
+                  unitCost,
+                  item.hsnCode || "",
+                  parseFloat(item.taxPercentage || "0"),
+                  parseFloat(item.discountAmount || "0"),
+                  item.expiryDate || "",
+                  item.batchNumber || "",
+                  parseFloat(item.sellingPrice || "0"),
+                  parseFloat(item.mrp || "0"),
+                  parseFloat(item.netAmount || "0"),
+                  item.location || "",
+                  item.unit || "PCS"
+                );
+
+                // Update stock
+                if (receivedQty > 0) {
+                  updateStock.run(receivedQty, item.productId);
+                }
+              }
+            });
+          }
+
+          // Get the updated purchase
+          const getUpdatedPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?');
+          return getUpdatedPurchase.get(id);
+
+        } catch (transactionError) {
+          console.error('Transaction error:', transactionError);
+          throw transactionError;
+        }
+      })();
+
+      console.log('Purchase updated successfully:', result);
+      res.json({
+        ...result,
+        message: 'Purchase order updated successfully'
+      });
+
+    } catch (error) {
+      console.error('Error updating purchase:', error);
+      res.status(500).json({ 
+        message: 'Failed to update purchase order',
+        error: error.message 
+      });
+    }
+  });
+
   app.get('/api/purchases', isAuthenticated, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string || '20');

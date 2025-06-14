@@ -1289,7 +1289,7 @@ export default function PurchaseEntryProfessional() {
         });
 
         console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
+        console.log('Response content-type:', response.headers.get('content-type'));
 
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
@@ -1299,17 +1299,35 @@ export default function PurchaseEntryProfessional() {
             try {
               const errorData = await response.json();
               errorMessage = errorData.message || errorData.error || errorMessage;
-            } catch {
+            } catch (jsonError) {
+              console.error('Failed to parse error JSON:', jsonError);
               errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
           } else {
             // If response is HTML (like error page), it means server error
-            const errorText = await response.text();
-            console.error('Server returned HTML instead of JSON:', errorText);
-            errorMessage = `Server error: ${response.status}. Please check if the purchase ID exists and try again.`;
+            try {
+              const errorText = await response.text();
+              console.error('Server returned non-JSON response:', errorText.substring(0, 200));
+              
+              if (errorText.includes('DOCTYPE')) {
+                errorMessage = `Server returned HTML error page. Status: ${response.status}. Please check server logs.`;
+              } else {
+                errorMessage = `Server error: ${response.status}. Response: ${errorText.substring(0, 100)}`;
+              }
+            } catch (textError) {
+              console.error('Failed to read error response:', textError);
+              errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
           }
           
           throw new Error(errorMessage);
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text();
+          console.error('Expected JSON but got:', responseText.substring(0, 200));
+          throw new Error('Server returned invalid response format');
         }
 
         const result = await response.json();
