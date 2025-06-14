@@ -945,10 +945,21 @@ export default function POSEnhanced() {
       return;
     }
 
+    // Validate cart items before holding
+    const validCartItems = cart.filter(item => item && item.id && item.quantity > 0);
+    if (validCartItems.length === 0) {
+      toast({
+        title: "Invalid Cart",
+        description: "Cart contains no valid items to hold",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const holdId = `HOLD-${Date.now()}`;
 
     // Create a completely isolated deep copy using JSON parse/stringify to prevent any reference issues
-    const cartSnapshot = JSON.parse(JSON.stringify(cart.map(item => ({
+    const cartSnapshot = JSON.parse(JSON.stringify(validCartItems.map(item => ({
       id: item.id,
       name: item.name,
       sku: item.sku,
@@ -993,12 +1004,16 @@ export default function POSEnhanced() {
       oceanFreight: oceanSnapshot
     };
 
-    const itemCount = cart.length;
+    const itemCount = validCartItems.length;
 
     try {
       // Add to held sales and update localStorage atomically
       setHoldSales(prev => {
-        const newHeldSales = [...prev, holdSale];
+        // Remove any existing duplicate holds first
+        const filteredPrev = prev.filter(sale => !sale.id.startsWith('HOLD-') || 
+          Math.abs(new Date(sale.timestamp).getTime() - Date.now()) > 5000);
+        
+        const newHeldSales = [...filteredPrev, holdSale];
         try {
           localStorage.setItem('heldSales', JSON.stringify(newHeldSales));
         } catch (storageError) {
@@ -1175,6 +1190,39 @@ export default function POSEnhanced() {
     }
   };
 
+  // Clean up empty or invalid held sales
+  const cleanupHeldSales = () => {
+    const validHeldSales = holdSales.filter(sale => 
+      sale && 
+      sale.cart && 
+      Array.isArray(sale.cart) && 
+      sale.cart.length > 0 &&
+      sale.id &&
+      sale.timestamp
+    );
+
+    if (validHeldSales.length !== holdSales.length) {
+      setHoldSales(validHeldSales);
+      try {
+        if (validHeldSales.length > 0) {
+          localStorage.setItem('heldSales', JSON.stringify(validHeldSales));
+        } else {
+          localStorage.removeItem('heldSales');
+        }
+        
+        const removedCount = holdSales.length - validHeldSales.length;
+        if (removedCount > 0) {
+          toast({
+            title: "Cleaned Up Held Sales",
+            description: `Removed ${removedCount} empty or invalid held sales`,
+          });
+        }
+      } catch (error) {
+        console.warn("Failed to cleanup held sales:", error);
+      }
+    }
+  };
+
   // Initialize bill number and load held sales from localStorage
   useEffect(() => {
     setBillNumber(`POS${Date.now()}`);
@@ -1184,12 +1232,25 @@ export default function POSEnhanced() {
       const savedHeldSales = localStorage.getItem('heldSales');
       if (savedHeldSales) {
         const parsedHeldSales = JSON.parse(savedHeldSales);
-        // Validate and restore held sales
+        // Validate and restore held sales, but filter out invalid or empty ones
         if (Array.isArray(parsedHeldSales)) {
-          setHoldSales(parsedHeldSales.map(sale => ({
+          const validHeldSales = parsedHeldSales.filter(sale => 
+            sale && 
+            sale.cart && 
+            Array.isArray(sale.cart) && 
+            sale.cart.length > 0 &&
+            sale.id &&
+            sale.timestamp
+          ).map(sale => ({
             ...sale,
             timestamp: new Date(sale.timestamp) // Convert timestamp back to Date object
-          })));
+          }));
+          setHoldSales(validHeldSales);
+          
+          // Update localStorage with cleaned data
+          if (validHeldSales.length !== parsedHeldSales.length) {
+            localStorage.setItem('heldSales', JSON.stringify(validHeldSales));
+          }
         }
       }
     } catch (error) {
@@ -1197,7 +1258,40 @@ export default function POSEnhanced() {
       // Clear corrupted data
       localStorage.removeItem('heldSales');
     }
-  }, []);
+
+    // Cleanup function to auto-hold current cart when navigating away
+    const handleBeforeUnload = () => {
+      if (cart.length > 0) {
+        const autoHoldId = `AUTO-HOLD-${Date.now()}`;
+        const autoHoldSale = {
+          id: autoHoldId,
+          cart: JSON.parse(JSON.stringify(cart)),
+          customer: selectedCustomer ? JSON.parse(JSON.stringify(selectedCustomer)) : null,
+          discount: discount,
+          notes: `Auto-saved before navigation at ${new Date().toLocaleTimeString()}`,
+          timestamp: new Date(),
+          total: total,
+          oceanFreight: JSON.parse(JSON.stringify(oceanFreight))
+        };
+
+        try {
+          const existingHeldSales = JSON.parse(localStorage.getItem('heldSales') || '[]');
+          const updatedHeldSales = [...existingHeldSales, autoHoldSale];
+          localStorage.setItem('heldSales', JSON.stringify(updatedHeldSales));
+        } catch (error) {
+          console.warn("Failed to auto-save cart before navigation:", error);
+        }
+      }
+    };
+
+    // Add event listeners for navigation detection
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleBeforeUnload(); // Call on component unmount
+    };
+  }, [cart, selectedCustomer, discount, total, oceanFreight]);
 
   // Update bill details when bill number changes
   useEffect(() => {
@@ -1212,11 +1306,53 @@ export default function POSEnhanced() {
   // Save held sales to localStorage whenever holdSales changes
   useEffect(() => {
     try {
-      localStorage.setItem('heldSales', JSON.stringify(holdSales));
+      // Filter out any invalid held sales before saving
+      const validHeldSales = holdSales.filter(sale => 
+        sale && 
+        sale.cart && 
+        Array.isArray(sale.cart) && 
+        sale.cart.length > 0 &&
+        sale.id &&
+        sale.timestamp
+      );
+      
+      if (validHeldSales.length > 0) {
+        localStorage.setItem('heldSales', JSON.stringify(validHeldSales));
+      } else {
+        localStorage.removeItem('heldSales');
+      }
+      
+      // Update state if we filtered out invalid sales
+      if (validHeldSales.length !== holdSales.length) {
+        setHoldSales(validHeldSales);
+      }
     } catch (error) {
       console.error("Error saving held sales to localStorage:", error);
     }
   }, [holdSales]);
+
+  // Periodic cleanup for old auto-saved held sales
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      const oneHourAgo = now - (60 * 60 * 1000); // 1 hour ago
+      
+      setHoldSales(prev => {
+        const cleaned = prev.filter(sale => {
+          // Keep regular holds, but remove old auto-saves
+          if (sale.id.includes('AUTO-HOLD') || sale.id.includes('TAB-SWITCH')) {
+            const saleTime = new Date(sale.timestamp).getTime();
+            return saleTime > oneHourAgo;
+          }
+          return true;
+        });
+        
+        return cleaned;
+      });
+    }, 5 * 60 * 1000); // Run every 5 minutes
+
+    return () => clearInterval(cleanupInterval);
+  }, []);
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
@@ -2546,15 +2682,25 @@ export default function POSEnhanced() {
               </div>
 
               <div className="flex justify-between pt-4">
-                <Button
-                  variant="outline"
-                  onClick={clearAllHeldSales}
-                  disabled={holdSales.length === 0}
-                  className="text-red-600 hover:bg-red-50 border-red-200"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear All Held Sales
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={cleanupHeldSales}
+                    className="text-blue-600 hover:bg-blue-50 border-blue-200"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Cleanup Empty
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={clearAllHeldSales}
+                    disabled={holdSales.length === 0}
+                    className="text-red-600 hover:bg-red-50 border-red-200"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear All
+                  </Button>
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => setShowHoldSales(false)}
