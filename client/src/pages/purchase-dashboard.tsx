@@ -110,12 +110,12 @@ export default function PurchaseDashboard() {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
         const errorData = await response.text();
         throw new Error(errorData || `Failed to delete purchase. Status: ${response.status}`);
       }
-      
+
       return response.ok;
     },
     onSuccess: () => {
@@ -199,10 +199,10 @@ export default function PurchaseDashboard() {
       if (!response.ok) {
         throw new Error('Failed to fetch purchase details');
       }
-      
+
       const purchaseWithItems = await response.json();
       console.log('📦 Purchase details with items:', purchaseWithItems);
-      
+
       setSelectedPurchase(purchaseWithItems);
       setViewDialogOpen(true);
     } catch (error) {
@@ -784,7 +784,8 @@ export default function PurchaseDashboard() {
                         <div>
                           <label className="text-sm font-medium text-gray-600">Tax Number</label>
                           <p className="text-base mt-1">
-                            {selectedPurchase.supplier?.taxNumber || "Not provided"}
+                            ```python
+{selectedPurchase.supplier?.taxNumber || "Not provided"}
                           </p>
                         </div>
                       </div>
@@ -859,9 +860,14 @@ export default function PurchaseDashboard() {
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Payment Status:</label>
-                        <p className="text-base font-semibold text-orange-600 mt-1">Due</p>
+                      <label className="text-sm font-medium text-gray-600">Payment Status:</label>
+                      <div className="mt-1">
+                        <Badge variant="destructive" className="bg-orange-100 text-orange-800 border-orange-300">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Due Payment
+                        </Badge>
                       </div>
+                    </div>
                     </div>
                   </CardContent>
                 </Card>
