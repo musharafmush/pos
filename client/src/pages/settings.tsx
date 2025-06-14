@@ -217,9 +217,15 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
             id="defaultTaxRate" 
             type="number" 
             placeholder="Enter tax rate" 
-            value={taxSettings.defaultTaxRate}
-            onChange={(e) => updateTaxSetting('defaultTaxRate', parseFloat(e.target.value) || 0)}
+            value={taxSettings.defaultTaxRate.toString()}
+            onChange={(e) => {
+              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+              if (!isNaN(value) && value >= 0 && value <= 100) {
+                updateTaxSetting('defaultTaxRate', value);
+              }
+            }}
             min="0"
+            max="100"
             step="0.01"
           />
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -300,8 +306,13 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
                     <Input
                       id={`cat-rate-${category.id}`}
                       type="number"
-                      value={category.rate}
-                      onChange={(e) => updateTaxCategory(category.id, 'rate', parseFloat(e.target.value) || 0)}
+                      value={category.rate.toString()}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                        if (!isNaN(value) && value >= 0 && value <= 50) {
+                          updateTaxCategory(category.id, 'rate', value);
+                        }
+                      }}
                       placeholder="Tax rate"
                       min="0"
                       max="50"
@@ -386,8 +397,13 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
                   <Input
                     id="new-category-rate"
                     type="number"
-                    value={newCategoryRate}
-                    onChange={(e) => setNewCategoryRate(parseFloat(e.target.value) || 0)}
+                    value={newCategoryRate.toString()}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                      if (!isNaN(value) && value >= 0 && value <= 50) {
+                        setNewCategoryRate(value);
+                      }
+                    }}
                     placeholder="18"
                     min="0"
                     max="50"
