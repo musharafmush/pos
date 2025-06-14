@@ -335,7 +335,7 @@ export default function POSEnhanced() {
     ));
   };
 
-  const clearCart = () => {
+  const clearCart = (clearHeldSales = false) => {
     setCart([]);
     setSelectedCustomer(null);
     setDiscount(0);
@@ -354,10 +354,15 @@ export default function POSEnhanced() {
       totalOceanCost: 0
     });
 
-    if (cart.length > 0) {
+    // Clear held sales if requested
+    if (clearHeldSales) {
+      setHoldSales([]);
+    }
+
+    if (cart.length > 0 || clearHeldSales) {
       toast({
         title: "Cart Cleared",
-        description: "All items and ocean freight have been cleared",
+        description: clearHeldSales ? "All items, ocean freight, and held sales have been cleared" : "All items and ocean freight have been cleared",
       });
     }
   };
@@ -755,7 +760,13 @@ export default function POSEnhanced() {
         toggleFullscreen();
       } else if (e.key === "F12") {
         e.preventDefault();
-        clearCart();
+        if (e.shiftKey) {
+          // Shift+F12 clears everything including held sales
+          clearCart(true);
+        } else {
+          // F12 only clears current cart
+          clearCart(false);
+        }
       } else if (e.key === "Escape") {
         e.preventDefault();
         setSearchTerm("");
@@ -923,17 +934,30 @@ export default function POSEnhanced() {
   // Recall held sale
   const recallHeldSale = (holdSale: typeof holdSales[0]) => {
     if (cart.length > 0) {
-      toast({
-        title: "Cart Not Empty",
-        description: "Please clear current cart before recalling a held sale",
-        variant: "destructive",
-      });
-      return;
-    }
+      // Auto-clear current cart and then recall
+      setCart([]);
+      setSelectedCustomer(null);
+      setDiscount(0);
+      setAmountPaid("");
+      setPaymentMethod("cash");
+      setBarcodeInput("");
+      
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        setCart(holdSale.cart);
+        setSelectedCustomer(holdSale.customer);
+        setDiscount(holdSale.discount);
 
-    setCart(holdSale.cart);
-    setSelectedCustomer(holdSale.customer);
-    setDiscount(holdSale.discount);
+        toast({
+          title: "Current Cart Cleared",
+          description: "Previous cart cleared and held sale recalled",
+        });
+      }, 100);
+    } else {
+      setCart(holdSale.cart);
+      setSelectedCustomer(holdSale.customer);
+      setDiscount(holdSale.discount);
+    }
 
     // Remove from held sales
     setHoldSales(prev => prev.filter(sale => sale.id !== holdSale.id));
@@ -951,6 +975,16 @@ export default function POSEnhanced() {
     toast({
       title: "Sale Deleted",
       description: `Held sale ${holdId} has been deleted`,
+    });
+  };
+
+  // Clear all held sales
+  const clearAllHeldSales = () => {
+    const count = holdSales.length;
+    setHoldSales([]);
+    toast({
+      title: "All Held Sales Cleared",
+      description: `${count} held sales have been cleared`,
     });
   };
 
@@ -1313,6 +1347,7 @@ export default function POSEnhanced() {
                       <div className="bg-white p-4 rounded-lg border">
                         <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F12</kbd>
                         <p className="mt-2">Clear cart</p>
+                        <p className="text-xs text-gray-500">Shift+F12: Clear all</p>
                       </div>
                     </div>
                   </div>
@@ -1450,12 +1485,12 @@ export default function POSEnhanced() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={clearCart} 
+                  onClick={() => clearCart(false)} 
                   disabled={cart.length === 0}
                   className="hover:bg-red-50 hover:text-red-700 hover:border-red-200"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Clear (F12)
+                  Clear Cart (F12)
                 </Button>
               </div>
 
@@ -2279,7 +2314,16 @@ export default function POSEnhanced() {
                 )}
               </div>
 
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-between pt-4">
+                <Button
+                  variant="outline"
+                  onClick={clearAllHeldSales}
+                  disabled={holdSales.length === 0}
+                  className="text-red-600 hover:bg-red-50 border-red-200"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All Held Sales
+                </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowHoldSales(false)}
