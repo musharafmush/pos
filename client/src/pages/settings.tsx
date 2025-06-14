@@ -26,19 +26,25 @@ import { apiRequest } from "@/lib/queryClient";
 
 // Tax Settings Component
 function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
+  const { toast } = useToast();
   const [taxSettings, setTaxSettings] = useState({
-    defaultTaxRate: 7,
+    defaultTaxRate: 18,
     taxCalculationMethod: 'afterDiscount',
     pricesIncludeTax: false,
-    enableMultipleTaxRates: false,
+    enableMultipleTaxRates: true,
     taxCategories: [
-      { id: 1, name: 'Food & Groceries', rate: 0 },
-      { id: 2, name: 'General Merchandise', rate: 7 }
+      { id: 1, name: 'Food & Groceries', rate: 5, hsn: '1001-2000', description: 'Essential food items and groceries' },
+      { id: 2, name: 'General Merchandise', rate: 18, hsn: '3001-9999', description: 'Standard consumer goods' },
+      { id: 3, name: 'Luxury Items', rate: 28, hsn: '8701-8800', description: 'High-end consumer products' },
+      { id: 4, name: 'Essential Services', rate: 0, hsn: '9801-9900', description: 'Tax-exempt essential services' }
     ]
   });
 
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryRate, setNewCategoryRate] = useState(0);
+  const [newCategoryRate, setNewCategoryRate] = useState(18);
+  const [newCategoryHsn, setNewCategoryHsn] = useState('');
+  const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  const [editingCategory, setEditingCategory] = useState<number | null>(null);
 
   // Load tax settings from localStorage on component mount
   useEffect(() => {
@@ -46,51 +52,160 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
     if (savedTaxSettings) {
       try {
         const settings = JSON.parse(savedTaxSettings);
-        setTaxSettings(prev => ({ ...prev, ...settings }));
+        setTaxSettings(prev => ({ 
+          ...prev, 
+          ...settings,
+          // Ensure tax categories have all required fields
+          taxCategories: settings.taxCategories?.map((cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            rate: cat.rate || 0,
+            hsn: cat.hsn || '',
+            description: cat.description || ''
+          })) || prev.taxCategories
+        }));
       } catch (error) {
         console.error('Error loading tax settings:', error);
+        toast({
+          title: "Error loading tax settings",
+          description: "Using default tax configuration",
+          variant: "destructive"
+        });
       }
     }
-  }, []);
+  }, [toast]);
 
   const updateTaxSetting = (key: string, value: any) => {
-    setTaxSettings(prev => ({ ...prev, [key]: value }));
+    setTaxSettings(prev => {
+      const updated = { ...prev, [key]: value };
+      // Auto-save to localStorage
+      localStorage.setItem('taxSettings', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const updateTaxCategory = (id: number, field: string, value: any) => {
-    setTaxSettings(prev => ({
-      ...prev,
-      taxCategories: prev.taxCategories.map(cat => 
-        cat.id === id ? { ...cat, [field]: value } : cat
-      )
-    }));
+    setTaxSettings(prev => {
+      const updated = {
+        ...prev,
+        taxCategories: prev.taxCategories.map(cat => 
+          cat.id === id ? { ...cat, [field]: value } : cat
+        )
+      };
+      localStorage.setItem('taxSettings', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const addTaxCategory = () => {
-    if (newCategoryName.trim()) {
-      const newId = Math.max(...taxSettings.taxCategories.map(c => c.id)) + 1;
-      setTaxSettings(prev => ({
-        ...prev,
-        taxCategories: [...prev.taxCategories, {
-          id: newId,
-          name: newCategoryName.trim(),
-          rate: newCategoryRate
-        }]
-      }));
-      setNewCategoryName('');
-      setNewCategoryRate(0);
+    if (!newCategoryName.trim()) {
+      toast({
+        title: "Category name required",
+        description: "Please enter a category name",
+        variant: "destructive"
+      });
+      return;
     }
+
+    if (newCategoryRate < 0 || newCategoryRate > 50) {
+      toast({
+        title: "Invalid tax rate",
+        description: "Tax rate must be between 0% and 50%",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newId = Math.max(...taxSettings.taxCategories.map(c => c.id), 0) + 1;
+    const newCategory = {
+      id: newId,
+      name: newCategoryName.trim(),
+      rate: newCategoryRate,
+      hsn: newCategoryHsn.trim(),
+      description: newCategoryDescription.trim()
+    };
+
+    setTaxSettings(prev => {
+      const updated = {
+        ...prev,
+        taxCategories: [...prev.taxCategories, newCategory]
+      };
+      localStorage.setItem('taxSettings', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Reset form
+    setNewCategoryName('');
+    setNewCategoryRate(18);
+    setNewCategoryHsn('');
+    setNewCategoryDescription('');
+
+    toast({
+      title: "Tax category added",
+      description: `${newCategory.name} category created successfully`,
+    });
   };
 
   const removeTaxCategory = (id: number) => {
-    setTaxSettings(prev => ({
-      ...prev,
-      taxCategories: prev.taxCategories.filter(cat => cat.id !== id)
-    }));
+    const categoryToRemove = taxSettings.taxCategories.find(cat => cat.id === id);
+    
+    setTaxSettings(prev => {
+      const updated = {
+        ...prev,
+        taxCategories: prev.taxCategories.filter(cat => cat.id !== id)
+      };
+      localStorage.setItem('taxSettings', JSON.stringify(updated));
+      return updated;
+    });
+
+    toast({
+      title: "Tax category removed",
+      description: `${categoryToRemove?.name} category has been deleted`,
+    });
+  };
+
+  const duplicateCategory = (id: number) => {
+    const categoryToDuplicate = taxSettings.taxCategories.find(cat => cat.id === id);
+    if (!categoryToDuplicate) return;
+
+    const newId = Math.max(...taxSettings.taxCategories.map(c => c.id)) + 1;
+    const duplicatedCategory = {
+      ...categoryToDuplicate,
+      id: newId,
+      name: `${categoryToDuplicate.name} (Copy)`
+    };
+
+    setTaxSettings(prev => {
+      const updated = {
+        ...prev,
+        taxCategories: [...prev.taxCategories, duplicatedCategory]
+      };
+      localStorage.setItem('taxSettings', JSON.stringify(updated));
+      return updated;
+    });
+
+    toast({
+      title: "Category duplicated",
+      description: `Created copy of ${categoryToDuplicate.name}`,
+    });
   };
 
   const handleSave = () => {
-    onSave(taxSettings);
+    try {
+      localStorage.setItem('taxSettings', JSON.stringify(taxSettings));
+      onSave(taxSettings);
+      toast({
+        title: "Tax settings saved",
+        description: "All tax configurations have been saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving tax settings:', error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save tax settings. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -158,69 +273,155 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
       </div>
 
       {taxSettings.enableMultipleTaxRates && (
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <h3 className="text-lg font-medium mb-4">Tax Categories</h3>
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-medium">Tax Categories</h3>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {taxSettings.taxCategories.length} categories configured
+            </div>
+          </div>
 
           <div className="space-y-4">
             {taxSettings.taxCategories.map((category) => (
-              <div key={category.id} className="grid grid-cols-12 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="col-span-6">
-                  <Input
-                    value={category.name}
-                    onChange={(e) => updateTaxCategory(category.id, 'name', e.target.value)}
-                    placeholder="Category name"
+              <div key={category.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={`cat-name-${category.id}`}>Category Name</Label>
+                    <Input
+                      id={`cat-name-${category.id}`}
+                      value={category.name}
+                      onChange={(e) => updateTaxCategory(category.id, 'name', e.target.value)}
+                      placeholder="Category name"
+                      className="font-medium"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`cat-rate-${category.id}`}>Tax Rate (%)</Label>
+                    <Input
+                      id={`cat-rate-${category.id}`}
+                      type="number"
+                      value={category.rate}
+                      onChange={(e) => updateTaxCategory(category.id, 'rate', parseFloat(e.target.value) || 0)}
+                      placeholder="Tax rate"
+                      min="0"
+                      max="50"
+                      step="0.01"
+                      className="text-center font-medium"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`cat-hsn-${category.id}`}>HSN Code Range</Label>
+                    <Input
+                      id={`cat-hsn-${category.id}`}
+                      value={category.hsn || ''}
+                      onChange={(e) => updateTaxCategory(category.id, 'hsn', e.target.value)}
+                      placeholder="e.g., 1001-2000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Actions</Label>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => duplicateCategory(category.id)}
+                        className="flex-1"
+                      >
+                        Copy
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={() => removeTaxCategory(category.id)}
+                        className="flex-1"
+                        disabled={taxSettings.taxCategories.length <= 1}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-3 space-y-2">
+                  <Label htmlFor={`cat-desc-${category.id}`}>Description</Label>
+                  <Textarea
+                    id={`cat-desc-${category.id}`}
+                    value={category.description || ''}
+                    onChange={(e) => updateTaxCategory(category.id, 'description', e.target.value)}
+                    placeholder="Description of items in this category"
+                    rows={2}
+                    className="text-sm"
                   />
                 </div>
-                <div className="col-span-4">
-                  <Input
-                    type="number"
-                    value={category.rate}
-                    onChange={(e) => updateTaxCategory(category.id, 'rate', parseFloat(e.target.value) || 0)}
-                    placeholder="Tax rate (%)"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => removeTaxCategory(category.id)}
-                    className="w-full text-red-600 hover:text-red-700"
-                  >
-                    Remove
-                  </Button>
+
+                <div className="mt-3 flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                    {category.rate}% GST
+                  </span>
+                  {category.hsn && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                      HSN: {category.hsn}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
 
-            <div className="grid grid-cols-12 gap-4 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-              <div className="col-span-6">
-                <Input
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="New category name"
-                />
+            {/* Add New Category Form */}
+            <div className="p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <h4 className="text-md font-medium mb-4 text-gray-700 dark:text-gray-300">Add New Tax Category</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-category-name">Category Name *</Label>
+                  <Input
+                    id="new-category-name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="e.g., Electronics, Clothing"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-category-rate">Tax Rate (%) *</Label>
+                  <Input
+                    id="new-category-rate"
+                    type="number"
+                    value={newCategoryRate}
+                    onChange={(e) => setNewCategoryRate(parseFloat(e.target.value) || 0)}
+                    placeholder="18"
+                    min="0"
+                    max="50"
+                    step="0.01"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-category-hsn">HSN Code Range</Label>
+                  <Input
+                    id="new-category-hsn"
+                    value={newCategoryHsn}
+                    onChange={(e) => setNewCategoryHsn(e.target.value)}
+                    placeholder="e.g., 8501-8600"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-category-description">Description</Label>
+                  <Input
+                    id="new-category-description"
+                    value={newCategoryDescription}
+                    onChange={(e) => setNewCategoryDescription(e.target.value)}
+                    placeholder="Brief description"
+                  />
+                </div>
               </div>
-              <div className="col-span-4">
-                <Input
-                  type="number"
-                  value={newCategoryRate}
-                  onChange={(e) => setNewCategoryRate(parseFloat(e.target.value) || 0)}
-                  placeholder="Tax rate (%)"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div className="col-span-2">
+
+              <div className="flex justify-end">
                 <Button 
-                  variant="outline" 
-                  size="sm" 
                   onClick={addTaxCategory}
-                  className="w-full"
-                  disabled={!newCategoryName.trim()}
+                  disabled={!newCategoryName.trim() || newCategoryRate < 0}
+                  className="bg-green-600 hover:bg-green-700"
                 >
-                  <PlusIcon className="h-4 w-4" />
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Tax Category
                 </Button>
               </div>
             </div>
@@ -228,30 +429,119 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
         </div>
       )}
 
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-          <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Tax Configuration Preview</h4>
-          <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
-            <p>• Default tax rate: {taxSettings.defaultTaxRate}%</p>
-            <p>• Calculation method: {taxSettings.taxCalculationMethod === 'afterDiscount' ? 'After discount' : 'Before discount'}</p>
-            <p>• Prices include tax: {taxSettings.pricesIncludeTax ? 'Yes' : 'No'}</p>
-            <p>• Multiple tax rates: {taxSettings.enableMultipleTaxRates ? 'Enabled' : 'Disabled'}</p>
-            {taxSettings.enableMultipleTaxRates && (
-              <div className="mt-2">
-                <p className="font-medium">Tax categories:</p>
-                {taxSettings.taxCategories.map(cat => (
-                  <p key={cat.id} className="ml-2">- {cat.name}: {cat.rate}%</p>
-                ))}
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Configuration Preview */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+            <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
+              <DollarSignIcon className="h-4 w-4" />
+              Tax Configuration Summary
+            </h4>
+            <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+              <div className="flex justify-between">
+                <span>Default tax rate:</span>
+                <span className="font-medium">{taxSettings.defaultTaxRate}%</span>
               </div>
-            )}
+              <div className="flex justify-between">
+                <span>Calculation method:</span>
+                <span className="font-medium">
+                  {taxSettings.taxCalculationMethod === 'afterDiscount' ? 'After discount' : 'Before discount'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Prices include tax:</span>
+                <span className="font-medium">{taxSettings.pricesIncludeTax ? 'Yes' : 'No'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Multiple tax rates:</span>
+                <span className="font-medium">{taxSettings.enableMultipleTaxRates ? 'Enabled' : 'Disabled'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total categories:</span>
+                <span className="font-medium">{taxSettings.taxCategories.length}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Tax Rates */}
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+            <h4 className="font-medium text-green-800 dark:text-green-200 mb-3 flex items-center gap-2">
+              <BellIcon className="h-4 w-4" />
+              Standard GST Rates in India
+            </h4>
+            <div className="space-y-2 text-sm text-green-700 dark:text-green-300">
+              <div className="flex justify-between">
+                <span>Nil Rate (Essential goods):</span>
+                <span className="font-medium">0%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Reduced Rate (Basic necessities):</span>
+                <span className="font-medium">5%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Standard Rate (Most goods):</span>
+                <span className="font-medium">12% & 18%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Higher Rate (Luxury items):</span>
+                <span className="font-medium">28%</span>
+              </div>
+            </div>
           </div>
         </div>
+
+        {taxSettings.enableMultipleTaxRates && taxSettings.taxCategories.length > 0 && (
+          <div className="mt-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-3">Active Tax Categories:</h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {taxSettings.taxCategories.map(cat => (
+                <div key={cat.id} className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded border">
+                  <span className="text-sm font-medium">{cat.name}</span>
+                  <span className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                    {cat.rate}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex justify-end mt-6">
-        <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-          Save Tax Settings
-        </Button>
+      <div className="flex justify-between items-center mt-8">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Last saved: {new Date().toLocaleString()}
+        </div>
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              const confirmed = window.confirm('Reset tax settings to default values?');
+              if (confirmed) {
+                setTaxSettings({
+                  defaultTaxRate: 18,
+                  taxCalculationMethod: 'afterDiscount',
+                  pricesIncludeTax: false,
+                  enableMultipleTaxRates: true,
+                  taxCategories: [
+                    { id: 1, name: 'Food & Groceries', rate: 5, hsn: '1001-2000', description: 'Essential food items and groceries' },
+                    { id: 2, name: 'General Merchandise', rate: 18, hsn: '3001-9999', description: 'Standard consumer goods' }
+                  ]
+                });
+                localStorage.removeItem('taxSettings');
+                toast({
+                  title: "Settings reset",
+                  description: "Tax settings have been reset to defaults",
+                });
+              }
+            }}
+          >
+            Reset to Defaults
+          </Button>
+          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
+            <DatabaseIcon className="h-4 w-4 mr-2" />
+            Save All Tax Settings
+          </Button>
+        </div>
       </div>
     </div>
   );
