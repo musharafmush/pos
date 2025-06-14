@@ -251,8 +251,53 @@ export default function PurchaseDashboard() {
         throw networkError;
       }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data, variables) => {
       console.log('✅ Payment mutation successful:', data);
+      
+      // Check if payment is now fully paid and auto-update status to completed
+      if (data.purchase && selectedPurchaseForPayment) {
+        const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
+        const newPaidAmount = parseFloat(data.totalPaid?.toString() || data.purchase.paid_amount?.toString() || "0");
+        
+        console.log('💰 Payment status check:', {
+          totalAmount,
+          newPaidAmount,
+          currentStatus: selectedPurchaseForPayment.status,
+          paymentStatus: data.purchase.payment_status
+        });
+
+        // If fully paid and status is not already completed, auto-update to completed
+        if (newPaidAmount >= totalAmount && 
+            selectedPurchaseForPayment.status !== 'completed' && 
+            data.purchase.payment_status === 'paid') {
+          
+          console.log('🔄 Auto-updating purchase status to completed (fully paid)');
+          
+          try {
+            const statusResponse = await fetch(`/api/purchases/${selectedPurchaseForPayment.id}/status`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                status: 'completed',
+                receivedDate: new Date().toISOString()
+              }),
+            });
+
+            if (statusResponse.ok) {
+              console.log('✅ Auto-updated purchase status to completed');
+              toast({
+                title: "Status Updated",
+                description: "Purchase automatically marked as completed (fully paid)",
+              });
+            }
+          } catch (statusError) {
+            console.error('⚠️ Failed to auto-update status:', statusError);
+            // Don't throw error, payment was successful
+          }
+        }
+      }
       
       // Invalidate and refetch purchase data
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });

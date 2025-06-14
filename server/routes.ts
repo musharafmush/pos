@@ -2525,13 +2525,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get updated purchase
       const updatedPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
 
+      // Auto-update purchase status to completed if fully paid
+      let finalStatus = updatedPurchase.status;
+      if (calculatedPaymentStatus === 'paid' && 
+          purchaseTotal > 0 && 
+          finalPaidAmount >= purchaseTotal && 
+          updatedPurchase.status !== 'completed') {
+        
+        console.log('🔄 Auto-updating purchase status to completed (fully paid)');
+        
+        const updateStatusQuery = `UPDATE purchases SET status = 'completed', received_date = CURRENT_TIMESTAMP WHERE id = ?`;
+        const statusResult = sqlite.prepare(updateStatusQuery).run(id);
+        
+        if (statusResult.changes > 0) {
+          finalStatus = 'completed';
+          console.log('✅ Auto-updated purchase status to completed');
+        }
+      }
+
+      // Get final updated purchase
+      const finalPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
+
       console.log('✅ Payment status updated successfully');
       res.json({ 
         success: true,
-        purchase: updatedPurchase,
+        purchase: finalPurchase,
         message: 'Payment status updated successfully',
         paymentRecorded: newPaymentAmount,
         totalPaid: finalPaidAmount,
+        statusAutoUpdated: finalStatus === 'completed' && updatedPurchase.status !== 'completed',
         timestamp: new Date().toISOString()
       });
 
