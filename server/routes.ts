@@ -2604,49 +2604,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Use direct SQLite update if storage method fails
-      try {
-        const purchase = await storage.updatePurchaseStatus(
-          id,
-          status,
-          receivedDate ? new Date(receivedDate) : undefined
-        );
+      // Use direct SQLite update with column checking
+      const { sqlite } = await import('@db');
+      
+      // Check what columns exist in the purchases table
+      const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
+      const columnNames = tableInfo.map((col: any) => col.name);
+      console.log('📋 Available purchase columns:', columnNames);
 
-        if (!purchase) {
-          return res.status(404).json({ message: 'Purchase not found' });
-        }
-
-        console.log('✅ Purchase status updated successfully');
-        res.json(purchase);
-      } catch (storageError) {
-        console.log('⚠️ Storage method failed, trying direct SQLite update:', storageError.message);
-        
-        // Fallback to direct SQLite update
-        const { sqlite } = await import('@db');
-        
-        const updateQuery = sqlite.prepare(`
-          UPDATE purchases 
-          SET status = ?, updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `);
-        
-        const result = updateQuery.run(status, id);
-        
-        if (result.changes === 0) {
-          return res.status(404).json({ message: 'Purchase not found' });
-        }
-        
-        // Get updated purchase
-        const updatedPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
-        
-        console.log('✅ Purchase status updated via direct SQLite');
-        res.json(updatedPurchase);
+      // Check if purchase exists first
+      const existingPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
+      if (!existingPurchase) {
+        return res.status(404).json({ message: 'Purchase not found' });
       }
+
+      // Build dynamic update query based on available columns
+      const updateFields = ['status = ?'];
+      const updateValues = [status];
+
+      // Add received_date if provided and column exists
+      if (receivedDate && columnNames.includes('received_date')) {
+        updateFields.push('received_date = ?');
+        updateValues.push(receivedDate);
+      }
+
+      // Add updated_at if column exists
+      if (columnNames.includes('updated_at')) {
+        updateFields.push('updated_at = CURRENT_TIMESTAMP');
+      }
+
+      updateValues.push(id); // For WHERE clause
+
+      const updateQuery = `UPDATE purchases SET ${updateFields.join(', ')} WHERE id = ?`;
+      console.log('🔧 Update query:', updateQuery);
+      console.log('📊 Update values:', updateValues);
+
+      const updatePurchase = sqlite.prepare(updateQuery);
+      const result = updatePurchase.run(...updateValues);
+      
+      if (result.changes === 0) {
+        return res.status(404).json({ message: 'Purchase not found or no changes made' });
+      }
+      
+      // Get updated purchase
+      const updatedPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
+      
+      console.log('✅ Purchase status updated successfully');
+      res.json({
+        success: true,
+        purchase: updatedPurchase,
+        message: `Purchase status updated to ${status}`,
+        timestamp: new Date().toISOString()
+      });
+
     } catch (error) {
       console.error('❌ Error updating purchase status:', error);
       res.status(500).json({ 
         message: 'Failed to update purchase status',
-        error: error.message 
+        error: error.message,
+        timestamp: new Date().toISOString()
       });
     }
   });

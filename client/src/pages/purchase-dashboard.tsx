@@ -171,26 +171,52 @@ export default function PurchaseDashboard() {
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || 'Failed to update status');
+        let errorMessage = `Failed to update status. Status: ${response.status}`;
+        
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } else {
+            const errorText = await response.text();
+            errorMessage = errorText || errorMessage;
+          }
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+        }
+        
+        throw new Error(errorMessage);
       }
 
       return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      
+      const successMessage = data.message || `Purchase order status updated to ${newStatus}`;
+      
       toast({
         title: "Status Updated",
-        description: `Purchase order status updated to ${newStatus}`,
+        description: successMessage,
       });
       setStatusDialogOpen(false);
       setSelectedPurchaseForStatus(null);
       setNewStatus("");
     },
     onError: (error: Error) => {
+      console.error('❌ Status update error:', error);
+      
+      let userMessage = error.message;
+      if (error.message.includes('no such column')) {
+        userMessage = 'Database schema issue. Please refresh the page and try again.';
+      } else if (error.message.includes('SQLITE_')) {
+        userMessage = 'Database error. Please try again in a moment.';
+      }
+      
       toast({
         title: "Status Update Failed",
-        description: error.message,
+        description: userMessage,
         variant: "destructive",
       });
     },
