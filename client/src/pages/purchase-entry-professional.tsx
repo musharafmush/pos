@@ -288,6 +288,9 @@ interface Product {
   cgstRate?: string;
   sgstRate?: string;
   igstRate?: string;
+  alertThreshold?: number;
+  stockQuantity?: number;
+  barcode?: string;
 }
 
 export default function PurchaseEntryProfessional() {
@@ -923,7 +926,7 @@ export default function PurchaseEntryProfessional() {
         mrp: item.mrp || 0,
         netAmount: item.netAmount || 0,
         location: item.location || "",
-        unit: item.unit || "PCS",
+        unit: "PCS",
       });
     } else {
       // Add new item
@@ -1960,7 +1963,7 @@ export default function PurchaseEntryProfessional() {
                                                     }`}>
                                                       {product.stockQuantity || 0}
                                                     </span>
-                                                    {(product.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) && (
+                                                    {(product.stockQuantity || 0) <= (product.alertThreshold || 5) && (
                                                       <span className="text-xs text-red-600 font-medium">Low Stock!</span>
                                                     )}
                                                   </div>
