@@ -331,6 +331,9 @@ export default function PurchaseEntryProfessional() {
     unit: "PCS",
   });
 
+  // State to control bulk items only in modal
+  const [showBulkItemsOnly, setShowBulkItemsOnly] = useState(false);
+
   // Get current date for defaults
   const today = new Date().toISOString().split('T')[0];
 
@@ -416,6 +419,9 @@ export default function PurchaseEntryProfessional() {
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
+
+  // Filter bulk items
+  const bulkItems = products.filter(product => product.name.toUpperCase().includes("BULK"));
 
   // Loading state for save button
   const [isSaving, setIsSaving] = useState(false);
@@ -1032,7 +1038,7 @@ export default function PurchaseEntryProfessional() {
         } else {
           // Add as new item if first occurrence
           const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
-          
+
           append({
             productId: product.id,
             code: product.sku || "",
@@ -1713,7 +1719,7 @@ export default function PurchaseEntryProfessional() {
                     <div className="space-y-2">
                       <Label htmlFor="shippingAddress">Shipping Address</Label>
                       <Textarea
-                        {...form.register("shippingAddress")}
+                        {...form.register(`shippingAddress`)}
                         placeholder="Enter shipping address..."
                         rows={3}
                       />
@@ -1954,7 +1960,7 @@ export default function PurchaseEntryProfessional() {
                                                     }`}>
                                                       {product.stockQuantity || 0}
                                                     </span>
-                                                    {(product.stockQuantity || 0) <= (product.alertThreshold || 5) && (
+                                                    {(product.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) && (
                                                       <span className="text-xs text-red-600 font-medium">Low Stock!</span>
                                                     )}
                                                   </div>
@@ -2543,12 +2549,17 @@ export default function PurchaseEntryProfessional() {
                       <SelectValue placeholder="Or browse all products from dropdown" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[250px] overflow-y-auto">
-                      {products.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">
-                          <span>No products available</span>
-                        </div>
-                      ) : (
-                        products.map((product) => (
+                      {(showBulkItemsOnly ? bulkItems : products).length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">
+                            <span>{showBulkItemsOnly ? "No bulk items available" : "No products available"}</span>
+                            {showBulkItemsOnly && (
+                              <div className="text-xs text-gray-400 mt-2">
+                                Products with "BULK" in their name are considered bulk items
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          (showBulkItemsOnly ? bulkItems : products).map((product) => (
                           <SelectItem key={product.id} value={product.id.toString()}>
                             <div className="flex flex-col w-full">
                               <div className="flex items-center justify-between w-full">
@@ -2577,6 +2588,14 @@ export default function PurchaseEntryProfessional() {
                       )}
                     </SelectContent>
                   </Select>
+                   <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowBulkItemsOnly(!showBulkItemsOnly)}
+                      className="mt-2 w-full"
+                    >
+                      {showBulkItemsOnly ? "Show All Products" : "Show Bulk Items Only"}
+                    </Button>
                 </div>
               </div>
 
@@ -2792,7 +2811,7 @@ export default function PurchaseEntryProfessional() {
                       const cost = modalData.unitCost;
                       const discount = modalData.discountAmount;
                       const subtotal = qty * cost;
-                      const taxableAmount = subtotal - discount;
+                      const taxableAmount = subtotal - value;
                       const tax = (taxableAmount * value) / 100;
                       const netAmount = taxableAmount + tax;
 
