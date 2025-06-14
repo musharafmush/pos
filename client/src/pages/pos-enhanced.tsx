@@ -337,8 +337,9 @@ export default function POSEnhanced() {
 
   const clearCart = (clearHeldSales = false) => {
     const hadItems = cart.length > 0;
+    const heldSalesCount = holdSales.length;
     
-    // Clear current cart state
+    // Force clear current cart state immediately
     setCart([]);
     setSelectedCustomer(null);
     setDiscount(0);
@@ -366,15 +367,38 @@ export default function POSEnhanced() {
         console.warn("Failed to clear localStorage:", error);
       }
       toast({
-        title: "All Data Cleared",
-        description: "Cart, ocean freight, and all held sales have been cleared",
+        title: "🗑️ All Data Cleared",
+        description: "Cart, ocean freight, and all held sales have been permanently cleared",
       });
-    } else if (hadItems) {
-      toast({
-        title: "Cart Cleared",
-        description: `Current cart cleared. ${holdSales.length} held sales preserved.`,
-      });
+    } else {
+      if (hadItems) {
+        toast({
+          title: "🛒 Cart Cleared",
+          description: `Current cart cleared. ${heldSalesCount} held sales safely preserved.`,
+        });
+      }
     }
+
+    // Ensure state is completely reset with a small delay
+    setTimeout(() => {
+      if (!clearHeldSales) {
+        // Double-check that held sales are still intact
+        const savedHeldSales = localStorage.getItem('heldSales');
+        if (savedHeldSales && holdSales.length === 0) {
+          try {
+            const parsedHeldSales = JSON.parse(savedHeldSales);
+            if (Array.isArray(parsedHeldSales) && parsedHeldSales.length > 0) {
+              setHoldSales(parsedHeldSales.map(sale => ({
+                ...sale,
+                timestamp: new Date(sale.timestamp)
+              })));
+            }
+          } catch (error) {
+            console.warn("Failed to restore held sales:", error);
+          }
+        }
+      }
+    }, 100);
   };
 
   // Calculate ocean freight total
@@ -923,8 +947,8 @@ export default function POSEnhanced() {
 
     const holdId = `HOLD-${Date.now()}`;
     
-    // Create a completely isolated deep copy to prevent any reference issues
-    const cartCopy = cart.map(item => ({
+    // Create a completely isolated deep copy using JSON parse/stringify to prevent any reference issues
+    const cartSnapshot = JSON.parse(JSON.stringify(cart.map(item => ({
       id: item.id,
       name: item.name,
       sku: item.sku,
@@ -937,41 +961,44 @@ export default function POSEnhanced() {
         name: item.category.name 
       } : undefined,
       barcode: item.barcode || undefined
+    }))));
+
+    const customerSnapshot = selectedCustomer ? JSON.parse(JSON.stringify({
+      id: selectedCustomer.id,
+      name: selectedCustomer.name,
+      phone: selectedCustomer.phone,
+      email: selectedCustomer.email
+    })) : null;
+
+    const oceanSnapshot = JSON.parse(JSON.stringify({
+      containerNumber: oceanFreight.containerNumber || "",
+      vesselName: oceanFreight.vesselName || "",
+      portOfLoading: oceanFreight.portOfLoading || "",
+      portOfDischarge: oceanFreight.portOfDischarge || "",
+      freightCost: oceanFreight.freightCost || "",
+      insuranceCost: oceanFreight.insuranceCost || "",
+      customsDuty: oceanFreight.customsDuty || "",
+      handlingCharges: oceanFreight.handlingCharges || "",
+      totalOceanCost: oceanFreight.totalOceanCost || 0
     }));
 
     const holdSale = {
       id: holdId,
-      cart: cartCopy,
-      customer: selectedCustomer ? { 
-        id: selectedCustomer.id,
-        name: selectedCustomer.name,
-        phone: selectedCustomer.phone,
-        email: selectedCustomer.email
-      } : null,
+      cart: cartSnapshot,
+      customer: customerSnapshot,
       discount: discount,
       notes: `Held sale at ${new Date().toLocaleTimeString()}`,
       timestamp: new Date(),
       total: total,
-      oceanFreight: {
-        containerNumber: oceanFreight.containerNumber,
-        vesselName: oceanFreight.vesselName,
-        portOfLoading: oceanFreight.portOfLoading,
-        portOfDischarge: oceanFreight.portOfDischarge,
-        freightCost: oceanFreight.freightCost,
-        insuranceCost: oceanFreight.insuranceCost,
-        customsDuty: oceanFreight.customsDuty,
-        handlingCharges: oceanFreight.handlingCharges,
-        totalOceanCost: oceanFreight.totalOceanCost
-      }
+      oceanFreight: oceanSnapshot
     };
 
     const itemCount = cart.length;
 
     try {
-      // First add to held sales
+      // Add to held sales and update localStorage atomically
       setHoldSales(prev => {
         const newHeldSales = [...prev, holdSale];
-        // Store in localStorage immediately for persistence
         try {
           localStorage.setItem('heldSales', JSON.stringify(newHeldSales));
         } catch (storageError) {
@@ -980,28 +1007,30 @@ export default function POSEnhanced() {
         return newHeldSales;
       });
       
-      // Then clear current cart state without affecting held sales
-      setCart([]);
-      setSelectedCustomer(null);
-      setDiscount(0);
-      setAmountPaid("");
-      setPaymentMethod("cash");
-      setBarcodeInput("");
-      setOceanFreight({
-        containerNumber: "",
-        vesselName: "",
-        portOfLoading: "",
-        portOfDischarge: "",
-        freightCost: "",
-        insuranceCost: "",
-        customsDuty: "",
-        handlingCharges: "",
-        totalOceanCost: 0
-      });
+      // Force clear all current state immediately
+      setTimeout(() => {
+        setCart([]);
+        setSelectedCustomer(null);
+        setDiscount(0);
+        setAmountPaid("");
+        setPaymentMethod("cash");
+        setBarcodeInput("");
+        setOceanFreight({
+          containerNumber: "",
+          vesselName: "",
+          portOfLoading: "",
+          portOfDischarge: "",
+          freightCost: "",
+          insuranceCost: "",
+          customsDuty: "",
+          handlingCharges: "",
+          totalOceanCost: 0
+        });
+      }, 10);
 
       toast({
         title: "Sale Held Successfully",
-        description: `Sale ${holdId} saved with ${itemCount} items. Use Alt+R to recall.`,
+        description: `Sale ${holdId} saved with ${itemCount} items. Cart cleared. Use Alt+R to recall.`,
       });
     } catch (error) {
       console.error("Error holding sale:", error);
@@ -1026,40 +1055,10 @@ export default function POSEnhanced() {
         }
       }
 
-      // Create completely new instances to prevent reference issues
-      const restoredCart = holdSale.cart.map(item => ({
-        id: item.id,
-        name: item.name,
-        sku: item.sku,
-        price: item.price,
-        quantity: item.quantity,
-        total: item.total,
-        stockQuantity: item.stockQuantity,
-        mrp: item.mrp,
-        category: item.category ? { 
-          name: item.category.name 
-        } : undefined,
-        barcode: item.barcode || undefined
-      }));
-
-      const restoredCustomer = holdSale.customer ? {
-        id: holdSale.customer.id,
-        name: holdSale.customer.name,
-        phone: holdSale.customer.phone,
-        email: holdSale.customer.email
-      } : null;
-
-      const restoredOceanFreight = holdSale.oceanFreight ? {
-        containerNumber: holdSale.oceanFreight.containerNumber || "",
-        vesselName: holdSale.oceanFreight.vesselName || "",
-        portOfLoading: holdSale.oceanFreight.portOfLoading || "",
-        portOfDischarge: holdSale.oceanFreight.portOfDischarge || "",
-        freightCost: holdSale.oceanFreight.freightCost || "",
-        insuranceCost: holdSale.oceanFreight.insuranceCost || "",
-        customsDuty: holdSale.oceanFreight.customsDuty || "",
-        handlingCharges: holdSale.oceanFreight.handlingCharges || "",
-        totalOceanCost: holdSale.oceanFreight.totalOceanCost || 0
-      } : {
+      // Use JSON parse/stringify for complete isolation
+      const restoredCart = JSON.parse(JSON.stringify(holdSale.cart));
+      const restoredCustomer = holdSale.customer ? JSON.parse(JSON.stringify(holdSale.customer)) : null;
+      const restoredOceanFreight = holdSale.oceanFreight ? JSON.parse(JSON.stringify(holdSale.oceanFreight)) : {
         containerNumber: "",
         vesselName: "",
         portOfLoading: "",
@@ -1071,7 +1070,7 @@ export default function POSEnhanced() {
         totalOceanCost: 0
       };
 
-      // Clear current state completely
+      // Clear current state forcefully
       setCart([]);
       setSelectedCustomer(null);
       setDiscount(0);
@@ -1090,15 +1089,9 @@ export default function POSEnhanced() {
         totalOceanCost: 0
       });
       
-      // Use requestAnimationFrame to ensure state clearing completes
-      requestAnimationFrame(() => {
-        // Restore the held sale state
-        setCart(restoredCart);
-        setSelectedCustomer(restoredCustomer);
-        setDiscount(holdSale.discount || 0);
-        setOceanFreight(restoredOceanFreight);
-        
-        // Remove from held sales and update localStorage
+      // Use multiple frame delays to ensure complete state clearing
+      setTimeout(() => {
+        // First remove from held sales
         setHoldSales(prev => {
           const updatedHeldSales = prev.filter(sale => sale.id !== holdSale.id);
           try {
@@ -1108,14 +1101,22 @@ export default function POSEnhanced() {
           }
           return updatedHeldSales;
         });
-        
-        setShowHoldSales(false);
 
-        toast({
-          title: "Sale Recalled Successfully",
-          description: `${holdSale.id} restored with ${restoredCart.length} items`,
-        });
-      });
+        // Then restore the held sale state
+        setTimeout(() => {
+          setCart(restoredCart);
+          setSelectedCustomer(restoredCustomer);
+          setDiscount(holdSale.discount || 0);
+          setOceanFreight(restoredOceanFreight);
+          
+          setShowHoldSales(false);
+
+          toast({
+            title: "Sale Recalled Successfully",
+            description: `${holdSale.id} restored with ${restoredCart.length} items`,
+          });
+        }, 50);
+      }, 10);
       
     } catch (error) {
       console.error("Error recalling held sale:", error);
