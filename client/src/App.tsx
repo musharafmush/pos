@@ -2,9 +2,12 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { useAuth } from "@/hooks/use-auth";
+import ProtectedRoute from "@/components/auth/protected-route";
+import ErrorBoundary from "@/components/error-boundary";
+import { useEffect } from "react";
 import NotFound from "@/pages/not-found";
 import { ThemeProvider } from "@/components/ui/theme-provider";
-import { ErrorBoundary } from "@/components/error-boundary";
 import Dashboard from "@/pages/dashboard";
 import POS from "@/pages/pos";
 import POSGofrugal from "@/pages/pos-gofrugal";
@@ -39,8 +42,6 @@ import RepackingDashboard from "@/pages/repacking-dashboard";
 import CurrencySettings from "@/pages/currency-settings";
 import BusinessSettings from "@/pages/business-settings";
 import AuthPage from "@/pages/auth-page";
-import { ProtectedRoute } from "@/components/auth/protected-route";
-import { AuthProvider } from "@/hooks/use-auth";
 import Categories from "./pages/categories";
 import Brands from "./pages/brands";
 import AccountsDashboard from "./pages/accounts-dashboard";
@@ -113,6 +114,67 @@ function Router() {
 }
 
 function App() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Handle route changes and navigation
+  useEffect(() => {
+    const handleRouteChange = () => {
+      // Check if we're leaving POS Enhanced and there are held sales that need cleanup
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/pos-enhanced')) {
+        // Check localStorage for any stuck held sales from POS Enhanced
+        try {
+          const heldSales = localStorage.getItem('heldSales');
+          if (heldSales) {
+            const parsedSales = JSON.parse(heldSales);
+            const autoHeldCount = parsedSales.filter((sale: any) => 
+              sale.id && sale.id.includes('AUTO-HOLD')
+            ).length;
+
+            if (autoHeldCount > 3) {
+              console.log(`🧹 Detected ${autoHeldCount} auto-held sales from navigation. Consider cleanup.`);
+            }
+          }
+        } catch (error) {
+          console.warn("Route change handler - localStorage check failed:", error);
+        }
+      }
+    };
+
+    // Listen for route changes
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function(...args) {
+      originalPushState.apply(history, args);
+      handleRouteChange();
+    };
+
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(history, args);
+      handleRouteChange();
+    };
+
+    window.addEventListener('popstate', handleRouteChange);
+
+    return () => {
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" storageKey="pos-theme">

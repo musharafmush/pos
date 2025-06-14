@@ -1022,8 +1022,8 @@ export default function POSEnhanced() {
           portOfDischarge: "",
           freightCost: "",
           insuranceCost: "",
-          customsDuty: "",
-          handlingCharges: "",
+          customsDuty: "",```python
+handlingCharges: "",
           totalOceanCost: 0
         });
       }, 10);
@@ -1815,7 +1815,7 @@ export default function POSEnhanced() {
                 <Button
                   variant="outline"
                   className="wfull hover:bg-gray-50"
-                  onClick={() => {
+                  onClick={(){
                     if (cart.length > 0) {
                       handlePrintReceipt(null);
                     } else {
@@ -2494,7 +2494,7 @@ export default function POSEnhanced() {
                         <Badge variant="outline" className="text-xs">
                           {holdSale.cart.reduce((sum, item) => sum + item.quantity, 0)} units
                         </Badge>
-                        {(holdSale.id.includes('AUTO-HOLD') || holdSale.id.includes('TAB-SWITCH')) && (
+                        {holdSale.id.includes('AUTO-HOLD') && (
                           <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
                             🔄 Auto-Saved
                           </Badge>
@@ -2589,8 +2589,7 @@ export default function POSEnhanced() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="address">Business Address</Label>
-                    <Textarea 
+                    <Label htmlFor="address">Business Address</Label><Textarea 
                       id="address" 
                       placeholder="Business Address" 
                       value={receiptSettings.address}
