@@ -338,7 +338,7 @@ export default function POSEnhanced() {
   const clearCart = (clearHeldSales = false) => {
     const hadItems = cart.length > 0;
     const heldSalesCount = holdSales.length;
-    
+
     // Force clear current cart state immediately
     setCart([]);
     setSelectedCustomer(null);
@@ -946,7 +946,7 @@ export default function POSEnhanced() {
     }
 
     const holdId = `HOLD-${Date.now()}`;
-    
+
     // Create a completely isolated deep copy using JSON parse/stringify to prevent any reference issues
     const cartSnapshot = JSON.parse(JSON.stringify(cart.map(item => ({
       id: item.id,
@@ -1006,7 +1006,7 @@ export default function POSEnhanced() {
         }
         return newHeldSales;
       });
-      
+
       // Force clear all current state immediately
       setTimeout(() => {
         setCart([]);
@@ -1021,6 +1021,7 @@ export default function POSEnhanced() {
           portOfLoading: "",
           portOfDischarge: "",
           freightCost: "",
+```text
           insuranceCost: "",
           customsDuty: "",
           handlingCharges: "",
@@ -1088,7 +1089,7 @@ export default function POSEnhanced() {
         handlingCharges: "",
         totalOceanCost: 0
       });
-      
+
       // Use multiple frame delays to ensure complete state clearing
       setTimeout(() => {
         // First remove from held sales
@@ -1108,7 +1109,7 @@ export default function POSEnhanced() {
           setSelectedCustomer(restoredCustomer);
           setDiscount(holdSale.discount || 0);
           setOceanFreight(restoredOceanFreight);
-          
+
           setShowHoldSales(false);
 
           toast({
@@ -1117,7 +1118,7 @@ export default function POSEnhanced() {
           });
         }, 50);
       }, 10);
-      
+
     } catch (error) {
       console.error("Error recalling held sale:", error);
       toast({
@@ -1151,7 +1152,7 @@ export default function POSEnhanced() {
     const confirmClear = window.confirm(
       `Are you sure you want to clear all ${holdSales.length} held sales? This action cannot be undone.`
     );
-    
+
     if (!confirmClear) {
       return;
     }
@@ -1160,7 +1161,7 @@ export default function POSEnhanced() {
       const count = holdSales.length;
       setHoldSales([]);
       localStorage.removeItem('heldSales');
-      
+
       toast({
         title: "All Held Sales Cleared",
         description: `${count} held sales have been permanently cleared`,
@@ -1178,7 +1179,7 @@ export default function POSEnhanced() {
   // Initialize bill number and load held sales from localStorage
   useEffect(() => {
     setBillNumber(`POS${Date.now()}`);
-    
+
     // Load held sales from localStorage on component mount
     try {
       const savedHeldSales = localStorage.getItem('heldSales');
@@ -1437,7 +1438,7 @@ export default function POSEnhanced() {
                   Ready
                 </Badge>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <div className="flex-1 relative">
                   <Scan className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
@@ -1814,7 +1815,7 @@ export default function POSEnhanced() {
 
                 <Button
                   variant="outline"
-                  className="w-full hover:bg-gray-50"
+                  className="wfull hover:bg-gray-50"
                   onClick={() => {
                     if (cart.length > 0) {
                       handlePrintReceipt(null);
@@ -2456,11 +2457,22 @@ export default function POSEnhanced() {
           <Dialog open={showHoldSales} onOpenChange={setShowHoldSales}>
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-xl">
-                  <List className="h-6 w-6 text-blue-600" />
-                  Held Sales ({holdSales.length})
-                </DialogTitle>
-              </DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <List className="h-6 w-6 text-blue-600" />
+                Held Sales ({holdSales.length})
+              </DialogTitle>
+              {holdSales.some(sale => sale.id.includes('AUTO-HOLD') || sale.id.includes('TAB-SWITCH')) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                  <div className="flex items-center gap-2 text-blue-800 text-sm">
+                    <Info className="h-4 w-4" />
+                    <span className="font-medium">Auto-Recovery Available</span>
+                  </div>
+                  <p className="text-blue-700 text-xs mt-1">
+                    Some sales were automatically saved when you navigated away or switched tabs.
+                  </p>
+                </div>
+              )}
+            </DialogHeader>
 
               <div className="space-y-4">
                 {holdSales.length === 0 ? (
@@ -2476,14 +2488,19 @@ export default function POSEnhanced() {
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-4 mb-2">
-                              <h4 className="font-semibold text-gray-900">{holdSale.id}</h4>
-                              <Badge variant="outline" className="text-xs">
-                                {holdSale.cart.length} items
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {holdSale.cart.reduce((sum, item) => sum + item.quantity, 0)} units
-                              </Badge>
-                            </div>
+                        <h4 className="font-semibold text-gray-900">{holdSale.id}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {holdSale.cart.length} items
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {holdSale.cart.reduce((sum, item) => sum + item.quantity, 0)} units
+                        </Badge>
+                        {(holdSale.id.includes('AUTO-HOLD') || holdSale.id.includes('TAB-SWITCH')) && (
+                          <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                            🔄 Auto-Saved
+                          </Badge>
+                        )}
+                      </div>
 
                             <div className="text-sm text-gray-600 mb-2">
                               <div>Customer: {holdSale.customer?.name || "Walk-in Customer"}</div>
@@ -2777,7 +2794,7 @@ Terminal: POS-Enhanced
                 <div className="space-y-4">
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <h3 className="font-semibold text-blue-800 mb-3">Shipping Details</h3>
-                    
+
                     <div className="space-y-3">
                       <div>
                         <Label htmlFor="containerNumber">Container Number</Label>
@@ -2830,7 +2847,7 @@ Terminal: POS-Enhanced
                 <div className="space-y-4">
                   <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                     <h3 className="font-semibold text-green-800 mb-3">Cost Breakdown</h3>
-                    
+
                     <div className="space-y-3">
                       <div>
                         <Label htmlFor="freightCost">Ocean Freight Cost</Label>
