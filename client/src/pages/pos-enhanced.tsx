@@ -1250,7 +1250,7 @@ export default function POSEnhanced() {
     }
   };
 
-  // Initialize bill number and load held sales from localStorage
+  // Initialize bill number and load held sales + cash register state from localStorage
   useEffect(() => {
     setBillNumber(`POS${Date.now()}`);
 
@@ -1284,6 +1284,32 @@ export default function POSEnhanced() {
       console.error("Error loading held sales from localStorage:", error);
       // Clear corrupted data
       localStorage.removeItem('heldSales');
+    }
+
+    // Load cash register state from localStorage
+    try {
+      const savedCashRegister = localStorage.getItem('cashRegisterState');
+      if (savedCashRegister) {
+        const cashState = JSON.parse(savedCashRegister);
+        
+        // Restore cash register state
+        setRegisterOpened(cashState.registerOpened || false);
+        setOpeningCash(cashState.openingCash || 0);
+        setCashInHand(cashState.cashInHand || 0);
+        setCashReceived(cashState.cashReceived || 0);
+        setUpiReceived(cashState.upiReceived || 0);
+        setCardReceived(cashState.cardReceived || 0);
+        setBankReceived(cashState.bankReceived || 0);
+        setChequeReceived(cashState.chequeReceived || 0);
+        setOtherReceived(cashState.otherReceived || 0);
+        setTotalWithdrawals(cashState.totalWithdrawals || 0);
+        setTotalRefunds(cashState.totalRefunds || 0);
+
+        console.log("💰 Cash register state restored from localStorage:", cashState);
+      }
+    } catch (error) {
+      console.error("Error loading cash register state from localStorage:", error);
+      localStorage.removeItem('cashRegisterState');
     }
 
     // Cleanup function to auto-hold current cart when navigating away
@@ -1368,6 +1394,42 @@ export default function POSEnhanced() {
       console.error("Error saving held sales to localStorage:", error);
     }
   }, [holdSales]);
+
+  // Save cash register state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const cashRegisterState = {
+        registerOpened,
+        openingCash,
+        cashInHand,
+        cashReceived,
+        upiReceived,
+        cardReceived,
+        bankReceived,
+        chequeReceived,
+        otherReceived,
+        totalWithdrawals,
+        totalRefunds,
+        lastUpdated: new Date().toISOString()
+      };
+
+      localStorage.setItem('cashRegisterState', JSON.stringify(cashRegisterState));
+    } catch (error) {
+      console.error("Error saving cash register state to localStorage:", error);
+    }
+  }, [
+    registerOpened,
+    openingCash,
+    cashInHand,
+    cashReceived,
+    upiReceived,
+    cardReceived,
+    bankReceived,
+    chequeReceived,
+    otherReceived,
+    totalWithdrawals,
+    totalRefunds
+  ]);
 
   // Periodic cleanup for old auto-saved held sales
   useEffect(() => {
@@ -2311,6 +2373,14 @@ export default function POSEnhanced() {
                       setTotalWithdrawals(0);
                       setTotalRefunds(0);
                       setShowCloseRegister(false);
+                      
+                      // Clear cash register state from localStorage
+                      try {
+                        localStorage.removeItem('cashRegisterState');
+                      } catch (error) {
+                        console.error("Error clearing cash register state:", error);
+                      }
+                      
                       toast({
                         title: "Register Closed",
                         description: "End of day completed successfully",
