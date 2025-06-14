@@ -83,7 +83,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
 import { apiRequest } from "@/lib/queryClient";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import type { Purchase } from "@shared/schema";
 
 export default function PurchaseDashboard() {
@@ -95,6 +95,7 @@ export default function PurchaseDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // Fetch purchases
   const { data: purchases = [], isLoading, error } = useQuery({
@@ -220,7 +221,7 @@ export default function PurchaseDashboard() {
 
   const handleEdit = (purchase: Purchase) => {
     // Navigate to the purchase entry form in edit mode
-    window.location.href = `/purchase-entry-professional?edit=${purchase.id}`;
+    setLocation(`/purchase-entry-professional?edit=${purchase.id}`);
   };
 
   const handleDelete = (purchase: Purchase) => {
