@@ -1021,7 +1021,6 @@ export default function POSEnhanced() {
           portOfLoading: "",
           portOfDischarge: "",
           freightCost: "",
-```text
           insuranceCost: "",
           customsDuty: "",
           handlingCharges: "",
