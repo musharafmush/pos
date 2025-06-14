@@ -433,25 +433,39 @@ export default function PurchaseEntryProfessional() {
   const holdPurchase = () => {
     const currentFormData = form.getValues();
 
-    // Validate that at least supplier is selected
-    if (!currentFormData.supplierId || currentFormData.supplierId === 0) {
+    // More flexible validation - allow holding even without supplier for draft purposes
+    const hasAnyData = currentFormData.supplierId > 0 || 
+                      currentFormData.orderNumber.trim() !== "" ||
+                      currentFormData.items.some(item => 
+                        item.productId > 0 || 
+                        item.description?.trim() !== "" ||
+                        (item.receivedQty > 0 && item.unitCost > 0)
+                      );
+
+    if (!hasAnyData) {
       toast({
         variant: "destructive",
-        title: "Cannot Hold Purchase",
-        description: "Please select a supplier before holding the purchase order.",
+        title: "Cannot Hold Empty Purchase",
+        description: "Please add at least a supplier, product, or some purchase details before holding.",
       });
       return;
     }
 
     const holdId = `HOLD-${Date.now().toString().slice(-8)}`;
+    const selectedSupplier = suppliers.find(s => s.id === currentFormData.supplierId);
+    const validItems = currentFormData.items.filter(item => 
+      item.productId > 0 || item.description?.trim() !== ""
+    );
+
     const heldPurchase = {
       id: holdId,
       timestamp: new Date(),
-      supplier: suppliers.find(s => s.id === currentFormData.supplierId),
-      orderNumber: currentFormData.orderNumber,
-      formData: currentFormData,
-      summary: summary,
-      itemsCount: currentFormData.items.filter(item => item.productId && item.productId > 0).length
+      supplier: selectedSupplier || { id: 0, name: "No Supplier Selected" },
+      orderNumber: currentFormData.orderNumber || `DRAFT-${holdId}`,
+      formData: { ...currentFormData },
+      summary: { ...summary },
+      itemsCount: validItems.length,
+      totalValue: summary.grandTotal || 0
     };
 
     setHeldPurchases(prev => [...prev, heldPurchase]);
@@ -483,7 +497,7 @@ export default function PurchaseEntryProfessional() {
           code: "",
           description: "",
           quantity: 1,
-          receivedQty: 0,
+          receivedQty: 1,
           freeQty: 0,
           unitCost: 0,
           sellingPrice: 0,
@@ -506,23 +520,91 @@ export default function PurchaseEntryProfessional() {
       ],
     });
 
+    // Force form to refresh
+    setTimeout(() => {
+      setActiveTab("details");
+    }, 100);
+
     toast({
       title: "Purchase Order Held! 📋",
-      description: `Purchase order ${heldPurchase.orderNumber} has been held and can be recalled later.`,
+      description: `Purchase order ${heldPurchase.orderNumber} has been held successfully. You can recall it anytime from the held purchases list.`,
     });
   };
 
   const recallHeldPurchase = (heldPurchase: any) => {
-    form.reset(heldPurchase.formData);
+    try {
+      // Ensure form data is properly structured
+      const recallData = {
+        ...heldPurchase.formData,
+        // Ensure supplier ID is properly set
+        supplierId: heldPurchase.formData.supplierId || 0,
+        // Ensure all required fields have default values
+        orderNumber: heldPurchase.formData.orderNumber || heldPurchase.orderNumber,
+        orderDate: heldPurchase.formData.orderDate || today,
+        paymentTerms: heldPurchase.formData.paymentTerms || "Net 30",
+        paymentMethod: heldPurchase.formData.paymentMethod || "Credit",
+        status: heldPurchase.formData.status || "Pending",
+        taxCalculationMethod: heldPurchase.formData.taxCalculationMethod || "exclusive",
+        // Ensure items array is valid
+        items: heldPurchase.formData.items && heldPurchase.formData.items.length > 0 
+          ? heldPurchase.formData.items
+          : [{
+              productId: 0,
+              code: "",
+              description: "",
+              quantity: 1,
+              receivedQty: 1,
+              freeQty: 0,
+              unitCost: 0,
+              sellingPrice: 0,
+              mrp: 0,
+              hsnCode: "",
+              taxPercentage: 18,
+              discountAmount: 0,
+              discountPercent: 0,
+              expiryDate: "",
+              batchNumber: "",
+              netCost: 0,
+              roiPercent: 0,
+              grossProfitPercent: 0,
+              netAmount: 0,
+              cashPercent: 0,
+              cashAmount: 0,
+              location: "",
+              unit: "PCS",
+            }]
+      };
 
-    // Remove from held purchases
-    setHeldPurchases(prev => prev.filter(p => p.id !== heldPurchase.id));
-    setShowHeldPurchases(false);
+      // Reset form with recalled data
+      form.reset(recallData);
 
-    toast({
-      title: "Purchase Order Recalled! 📋",
-      description: `Purchase order ${heldPurchase.orderNumber} has been recalled successfully.`,
-    });
+      // Force update supplier selection if available
+      if (recallData.supplierId > 0) {
+        setTimeout(() => {
+          form.setValue("supplierId", recallData.supplierId);
+          form.trigger("supplierId");
+        }, 100);
+      }
+
+      // Remove from held purchases
+      setHeldPurchases(prev => prev.filter(p => p.id !== heldPurchase.id));
+      setShowHeldPurchases(false);
+
+      // Switch to details tab
+      setActiveTab("details");
+
+      toast({
+        title: "Purchase Order Recalled! ✅",
+        description: `Purchase order ${heldPurchase.orderNumber} has been recalled successfully and is ready for editing.`,
+      });
+    } catch (error) {
+      console.error("Error recalling held purchase:", error);
+      toast({
+        variant: "destructive",
+        title: "Recall Failed",
+        description: "Failed to recall the held purchase order. Please try again.",
+      });
+    }
   };
 
   const deleteHeldPurchase = (holdId: string) => {
@@ -2963,70 +3045,118 @@ export default function PurchaseEntryProfessional() {
 
         {/* Held Purchases Dialog */}
         <Dialog open={showHeldPurchases} onOpenChange={setShowHeldPurchases}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader className="pb-4">
               <DialogTitle className="flex items-center gap-2 text-xl">
                 <Archive className="h-6 w-6 text-purple-600" />
                 Held Purchase Orders ({heldPurchases.length})
               </DialogTitle>
+              <p className="text-sm text-gray-600">
+                Manage your saved purchase orders. You can recall them to continue editing or delete them if no longer needed.
+              </p>
             </DialogHeader>
 
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto">
               {heldPurchases.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">No Held Purchase Orders</h3>
-                  <p className="text-gray-500">Hold a purchase order to save it for later completion</p>
+                <div className="text-center py-12">
+                  <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                    <FileText className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No Held Purchase Orders</h3>
+                  <p className="text-gray-500 text-sm max-w-md mx-auto">
+                    When you hold a purchase order, it will appear here. This allows you to save your work and continue later without losing any data.
+                  </p>
+                  <div className="mt-4 text-xs text-gray-400">
+                    💡 Tip: Use the "Hold" button in the main toolbar to save your current purchase order
+                  </div>
                 </div>
               ) : (
-                <div className="grid gap-4">
-                  {heldPurchases.map((heldPurchase) => (
-                    <Card key={heldPurchase.id} className="p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4 mb-2">
-                            <h4 className="font-semibold text-gray-900">{heldPurchase.orderNumber}</h4>
-                            <Badge variant="outline" className="text-xs">
-                              {heldPurchase.itemsCount} items
-                            </Badge>
-                            <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700">
-                              Held
-                            </Badge>
+                <div className="space-y-3">
+                  {heldPurchases.map((heldPurchase, index) => (
+                    <Card key={heldPurchase.id} className="hover:shadow-md transition-all duration-200 border-l-4 border-l-purple-400">
+                      <div className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+                                  #{index + 1}
+                                </span>
+                                <h4 className="font-semibold text-gray-900 text-lg">
+                                  {heldPurchase.orderNumber}
+                                </h4>
+                              </div>
+                              <div className="flex gap-2">
+                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                  {heldPurchase.itemsCount} {heldPurchase.itemsCount === 1 ? 'item' : 'items'}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                  Held
+                                </Badge>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-500 font-medium">Supplier:</span>
+                                  <span className="text-gray-900">
+                                    {heldPurchase.supplier?.name || "No supplier selected"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-500 font-medium">Status:</span>
+                                  <span className="text-gray-900">
+                                    {heldPurchase.formData.status || "Pending"}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-500 font-medium">Held at:</span>
+                                  <span className="text-gray-900">
+                                    {heldPurchase.timestamp.toLocaleDateString()} {heldPurchase.timestamp.toLocaleTimeString()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-500 font-medium">Expected:</span>
+                                  <span className="text-gray-900">
+                                    {heldPurchase.formData.expectedDate || "Not set"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {heldPurchase.formData.remarks && (
+                              <div className="bg-gray-50 rounded p-2 text-xs text-gray-600 mb-3">
+                                <span className="font-medium">Remarks:</span> {heldPurchase.formData.remarks}
+                              </div>
+                            )}
                           </div>
 
-                          <div className="text-sm text-gray-600 mb-2">
-                            <div>Supplier: {heldPurchase.supplier?.name || "Not selected"}</div>
-                            <div>Held at: {heldPurchase.timestamp.toLocaleString()}</div>
-                            <div>Status: {heldPurchase.formData.status || "Pending"}</div>
-                          </div>
-
-                          <div className="text-sm text-gray-500">
-                            Expected Date: {heldPurchase.formData.expectedDate || "Not set"}
-                          </div>
-                        </div>
-
-                        <div className="text-right ml-4">
-                          <div className="text-2xl font-bold text-blue-600 mb-2">
-                            {formatCurrency(heldPurchase.summary.grandTotal)}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => recallHeldPurchase(heldPurchase)}
-                              className="bg-purple-600 hover:bg-purple-700"
-                            >
-                              <Download className="h-4 w-4 mr-1" />
-                              Recall
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => deleteHeldPurchase(heldPurchase.id)}
-                              className="text-red-600 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
+                          <div className="text-right ml-4 flex-shrink-0">
+                            <div className="text-2xl font-bold text-green-600 mb-3">
+                              {formatCurrency(heldPurchase.totalValue || heldPurchase.summary?.grandTotal || 0)}
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => recallHeldPurchase(heldPurchase)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white w-full"
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Recall & Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => deleteHeldPurchase(heldPurchase.id)}
+                                className="text-red-600 hover:bg-red-50 border-red-200 w-full"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -3036,7 +3166,12 @@ export default function PurchaseEntryProfessional() {
               )}
             </div>
 
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-between items-center pt-4 border-t">
+              <div className="text-sm text-gray-500">
+                {heldPurchases.length > 0 && (
+                  <span>Total held orders: {heldPurchases.length}</span>
+                )}
+              </div>
               <Button
                 variant="outline"
                 onClick={() => setShowHeldPurchases(false)}
