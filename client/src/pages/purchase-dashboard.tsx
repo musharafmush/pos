@@ -192,9 +192,30 @@ export default function PurchaseDashboard() {
     );
   };
 
-  const handleView = (purchase: Purchase) => {
-    setSelectedPurchase(purchase);
-    setViewDialogOpen(true);
+  const handleView = async (purchase: Purchase) => {
+    try {
+      // Fetch complete purchase details including items
+      const response = await fetch(`/api/purchases/${purchase.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch purchase details');
+      }
+      
+      const purchaseWithItems = await response.json();
+      console.log('📦 Purchase details with items:', purchaseWithItems);
+      
+      setSelectedPurchase(purchaseWithItems);
+      setViewDialogOpen(true);
+    } catch (error) {
+      console.error('❌ Error fetching purchase details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load purchase details",
+        variant: "destructive",
+      });
+      // Fallback to showing purchase without items
+      setSelectedPurchase(purchase);
+      setViewDialogOpen(true);
+    }
   };
 
   const handleEdit = (purchase: Purchase) => {
@@ -857,7 +878,7 @@ export default function PurchaseDashboard() {
                         <div>
                           <h3 className="text-lg font-semibold text-green-800">Purchase Items</h3>
                           <p className="text-sm text-green-600">
-                            {selectedPurchase.items?.length || 0} item(s) in this order
+                            {selectedPurchase.purchaseItems?.length || selectedPurchase.items?.length || 0} item(s) in this order
                           </p>
                         </div>
                       </div>
@@ -867,109 +888,112 @@ export default function PurchaseDashboard() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {selectedPurchase.items && Array.isArray(selectedPurchase.items) && selectedPurchase.items.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <Table className="text-sm">
-                          <TableHeader>
-                            <TableRow className="bg-blue-50 border-b-2">
-                              <TableHead className="w-12 text-center font-semibold">No</TableHead>
-                              <TableHead className="min-w-[120px] font-semibold">Product</TableHead>
-                              <TableHead className="w-20 text-center font-semibold">Qty</TableHead>
-                              <TableHead className="w-24 text-center font-semibold">Unit Cost</TableHead>
-                              <TableHead className="w-24 text-center font-semibold">Amount</TableHead>
-                              <TableHead className="w-20 text-center font-semibold">Tax %</TableHead>
-                              <TableHead className="w-24 text-center font-semibold">Net Amount</TableHead>
-                              <TableHead className="w-20 text-center font-semibold">Unit</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {selectedPurchase.items.map((item: any, index: number) => {
-                              const quantity = Number(item.receivedQty || item.quantity || 0);
-                              const unitCost = parseFloat(item.unitCost || item.cost || "0");
-                              const amount = parseFloat(item.amount || (quantity * unitCost).toString());
-                              const taxPercent = parseFloat(item.taxPercentage || item.taxPercent || "0");
-                              const netAmount = parseFloat(item.netAmount || amount.toString());
+                    {(() => {
+                      const items = selectedPurchase.purchaseItems || selectedPurchase.items || [];
+                      return items.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <Table className="text-sm">
+                            <TableHeader>
+                              <TableRow className="bg-blue-50 border-b-2">
+                                <TableHead className="w-12 text-center font-semibold">No</TableHead>
+                                <TableHead className="min-w-[120px] font-semibold">Product</TableHead>
+                                <TableHead className="w-20 text-center font-semibold">Qty</TableHead>
+                                <TableHead className="w-24 text-center font-semibold">Unit Cost</TableHead>
+                                <TableHead className="w-24 text-center font-semibold">Amount</TableHead>
+                                <TableHead className="w-20 text-center font-semibold">Tax %</TableHead>
+                                <TableHead className="w-24 text-center font-semibold">Net Amount</TableHead>
+                                <TableHead className="w-20 text-center font-semibold">Unit</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {items.map((item: any, index: number) => {
+                                const quantity = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                const unitCost = parseFloat(item.unitCost || item.unit_cost || item.cost || "0");
+                                const amount = parseFloat(item.amount || item.subtotal || item.total || (quantity * unitCost).toString());
+                                const taxPercent = parseFloat(item.taxPercentage || item.tax_percentage || item.taxPercent || "0");
+                                const netAmount = parseFloat(item.netAmount || item.net_amount || amount.toString());
 
-                              return (
-                                <TableRow key={item.id || index} className="hover:bg-gray-50">
-                                  <TableCell className="text-center font-medium">
-                                    {index + 1}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="space-y-1">
-                                      <div className="font-medium text-gray-900">
-                                        {item.product?.name || item.productName || 'Unknown Product'}
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        SKU: {item.product?.sku || item.code || 'N/A'}
-                                      </div>
-                                      {item.description && (
-                                        <div className="text-xs text-gray-600">
-                                          {item.description}
+                                return (
+                                  <TableRow key={item.id || index} className="hover:bg-gray-50">
+                                    <TableCell className="text-center font-medium">
+                                      {index + 1}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="space-y-1">
+                                        <div className="font-medium text-gray-900">
+                                          {item.product?.name || item.product_name || item.productName || `Product #${item.productId || item.product_id || ''}`}
                                         </div>
+                                        <div className="text-xs text-gray-500">
+                                          SKU: {item.product?.sku || item.product_sku || item.code || 'N/A'}
+                                        </div>
+                                        {item.description && (
+                                          <div className="text-xs text-gray-600">
+                                            {item.description}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <span className="font-semibold text-blue-600 text-lg">
+                                        {quantity}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <div className="font-semibold text-gray-900">
+                                        ₹{unitCost.toLocaleString('en-IN')}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <div className="font-semibold text-blue-700">
+                                        ₹{amount.toLocaleString('en-IN')}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      {taxPercent > 0 ? (
+                                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                          {taxPercent}%
+                                        </Badge>
+                                      ) : (
+                                        <span className="text-gray-400">-</span>
                                       )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <span className="font-semibold text-blue-600 text-lg">
-                                      {quantity}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <div className="font-semibold text-gray-900">
-                                      ₹{unitCost.toLocaleString('en-IN')}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <div className="font-semibold text-blue-700">
-                                      ₹{amount.toLocaleString('en-IN')}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    {taxPercent > 0 ? (
-                                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                                        {taxPercent}%
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <div className="font-bold text-green-700 text-base">
+                                        ₹{netAmount.toLocaleString('en-IN')}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <Badge variant="outline" className="text-xs">
+                                        {item.unit || 'PCS'}
                                       </Badge>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <div className="font-bold text-green-700 text-base">
-                                      ₹{netAmount.toLocaleString('en-IN')}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <Badge variant="outline" className="text-xs">
-                                      {item.unit || 'PCS'}
-                                    </Badge>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center">
-                        <div className="flex flex-col items-center gap-4">
-                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                            <Package className="w-8 h-8 text-gray-400" />
-                          </div>
-                          <div>
-                            <h4 className="text-lg font-semibold text-gray-900 mb-2">No Items Found</h4>
-                            <p className="text-gray-600 max-w-md">
-                              This purchase order doesn't have any items or they couldn't be loaded.
-                            </p>
-                          </div>
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md">
-                            <p className="text-sm text-yellow-800">
-                              <strong>Note:</strong> Items may not have been properly saved during order creation.
-                            </p>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <div className="py-12 text-center">
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                              <Package className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-semibold text-gray-900 mb-2">No Items Found</h4>
+                              <p className="text-gray-600 max-w-md">
+                                This purchase order doesn't have any items or they couldn't be loaded.
+                              </p>
+                            </div>
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md">
+                              <p className="text-sm text-yellow-800">
+                                <strong>Note:</strong> Items may not have been properly saved during order creation.
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </CardContent>
                 </Card>
 
