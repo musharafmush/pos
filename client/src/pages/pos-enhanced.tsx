@@ -159,6 +159,16 @@ export default function POSEnhanced() {
     setCashOperation('add');
   };
 
+  // Reset all cash register states
+  const resetAllCashRegisterStates = () => {
+    resetCashRegisterForm();
+    resetWithdrawalForm();
+    setShowCashRegister(false);
+    setShowOpenRegister(false);
+    setShowCloseRegister(false);
+    setShowWithdrawal(false);
+  };
+
   // Reset withdrawal form
   const resetWithdrawalForm = () => {
     setWithdrawalAmount("");
@@ -492,8 +502,11 @@ export default function POSEnhanced() {
       description: `${cashOperation === 'add' ? 'Added' : 'Removed'} ${formatCurrency(amount)}. Current cash: ${formatCurrency(newCashAmount)}`,
     });
 
-    resetCashRegisterForm();
-    setShowCashRegister(false);
+    // Force reset all form states
+    setTimeout(() => {
+      resetCashRegisterForm();
+      setShowCashRegister(false);
+    }, 100);
   };
 
   // Withdrawal handler
@@ -2301,9 +2314,14 @@ export default function POSEnhanced() {
 
           {/* Cash Register Management Modal */}
       <Dialog open={showCashRegister} onOpenChange={(open) => {
-        setShowCashRegister(open);
         if (!open) {
-          resetCashRegisterForm();
+          // Force reset all states when closing
+          setTimeout(() => {
+            resetCashRegisterForm();
+            setShowCashRegister(false);
+          }, 10);
+        } else {
+          setShowCashRegister(open);
         }
       }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -2364,9 +2382,13 @@ export default function POSEnhanced() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setCashAmount(amount.toString());
-                        setCashOperation('add');
-                        setCashReason(`Cash payment ₹${amount}`);
+                        // Reset form first, then set new values
+                        resetCashRegisterForm();
+                        setTimeout(() => {
+                          setCashAmount(amount.toString());
+                          setCashOperation('add');
+                          setCashReason(`Cash payment ₹${amount}`);
+                        }, 10);
                       }}
                       className="border-green-200 text-green-700 hover:bg-green-50 h-12 flex flex-col justify-center"
                     >
@@ -2398,9 +2420,12 @@ export default function POSEnhanced() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setCashAmount(amount.toString());
-                          setCashOperation('add');
-                          setCashReason(`UPI payment ₹${amount}`);
+                          resetCashRegisterForm();
+                          setTimeout(() => {
+                            setCashAmount(amount.toString());
+                            setCashOperation('add');
+                            setCashReason(`UPI payment ₹${amount}`);
+                          }, 10);
                         }}
                         className="border-blue-200 text-blue-700 hover:bg-blue-50 h-12 flex flex-col justify-center"
                       >
@@ -2421,9 +2446,12 @@ export default function POSEnhanced() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setCashAmount(amount.toString());
-                          setCashOperation('add');
-                          setCashReason(`Card payment ₹${amount}`);
+                          resetCashRegisterForm();
+                          setTimeout(() => {
+                            setCashAmount(amount.toString());
+                            setCashOperation('add');
+                            setCashReason(`Card payment ₹${amount}`);
+                          }, 10);
                         }}
                         className="border-purple-200 text-purple-700 hover:bg-purple-50 h-12 flex flex-col justify-center"
                       >
@@ -2449,7 +2477,12 @@ export default function POSEnhanced() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <Card className={`cursor-pointer transition-all border-2 ${cashOperation === 'add' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
-                        onClick={() => setCashOperation('add')}>
+                        onClick={() => {
+                          // Clear form values when switching operation type
+                          setCashAmount("");
+                          setCashReason("");
+                          setCashOperation('add');
+                        }}>
                     <CardContent className="p-4 text-center">
                       <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                         <Plus className="w-6 h-6 text-green-600" />
@@ -2460,7 +2493,12 @@ export default function POSEnhanced() {
                   </Card>
 
                   <Card className={`cursor-pointer transition-all border-2 ${cashOperation === 'remove' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-red-300'}`}
-                        onClick={() => setCashOperation('remove')}>
+                        onClick={() => {
+                          // Clear form values when switching operation type
+                          setCashAmount("");
+                          setCashReason("");
+                          setCashOperation('remove');
+                        }}>
                     <CardContent className="p-4 text-center">
                       <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                         <Minus className="w-6 h-6 text-red-600" />
@@ -2488,9 +2526,12 @@ export default function POSEnhanced() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setCashAmount("2000");
-                      setCashOperation("remove");
-                      setCashReason("Bank deposit ₹2000");
+                      resetCashRegisterForm();
+                      setTimeout(() => {
+                        setCashAmount("2000");
+                        setCashOperation("remove");
+                        setCashReason("Bank deposit ₹2000");
+                      }, 10);
                     }}
                     className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
                   >
@@ -2502,9 +2543,12 @@ export default function POSEnhanced() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setCashAmount("5000");
-                      setCashOperation("remove");
-                      setCashReason("Bank deposit ₹5000");
+                      resetCashRegisterForm();
+                      setTimeout(() => {
+                        setCashAmount("5000");
+                        setCashOperation("remove");
+                        setCashReason("Bank deposit ₹5000");
+                      }, 10);
                     }}
                     className="border-red-200 text-red-700 hover:bg-red-50 h-16 flex flex-col justify-center"
                   >
