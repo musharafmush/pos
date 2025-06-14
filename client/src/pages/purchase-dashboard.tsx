@@ -93,6 +93,11 @@ export default function PurchaseDashboard() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedPurchaseForPayment, setSelectedPurchaseForPayment] = useState<Purchase | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentNotes, setPaymentNotes] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -139,6 +144,45 @@ export default function PurchaseDashboard() {
     },
   });
 
+  // Payment mutation
+  const updatePaymentStatus = useMutation({
+    mutationFn: async ({ purchaseId, paymentData }: { purchaseId: number; paymentData: any }) => {
+      const response = await fetch(`/api/purchases/${purchaseId}/payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || `Failed to update payment status. Status: ${response.status}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      toast({
+        title: "Success",
+        description: "Payment status updated successfully",
+      });
+      setPaymentDialogOpen(false);
+      setSelectedPurchaseForPayment(null);
+      setPaymentAmount("");
+      setPaymentNotes("");
+    },
+    onError: (error: Error) => {
+      console.error('Payment update error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update payment status",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Filter purchases based on search
   const filteredPurchases = purchases.filter((purchase: Purchase) =>
     purchase.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -153,6 +197,17 @@ export default function PurchaseDashboard() {
   const totalAmount = purchases.reduce((sum: number, p: Purchase) => 
     sum + (parseFloat(p.totalAmount?.toString() || "0")), 0
   );
+  
+  // Payment statistics
+  const paidPurchases = purchases.filter((p: Purchase) => p.paymentStatus === "paid").length;
+  const duePurchases = purchases.filter((p: Purchase) => 
+    !p.paymentStatus || p.paymentStatus === "due"
+  ).length;
+  const totalDueAmount = purchases
+    .filter((p: Purchase) => !p.paymentStatus || p.paymentStatus === "due")
+    .reduce((sum: number, p: Purchase) => 
+      sum + (parseFloat(p.totalAmount?.toString() || "0")), 0
+    );
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -227,6 +282,54 @@ export default function PurchaseDashboard() {
   const handleDelete = (purchase: Purchase) => {
     setPurchaseToDelete(purchase);
     setDeleteDialogOpen(true);
+  };
+
+  const handleMarkAsPaid = (purchase: Purchase) => {
+    const paymentData = {
+      paymentStatus: 'paid',
+      paymentAmount: parseFloat(purchase.totalAmount?.toString() || "0"),
+      paymentMethod: 'cash',
+      paymentDate: new Date().toISOString(),
+      notes: 'Marked as paid from dashboard'
+    };
+
+    updatePaymentStatus.mutate({ 
+      purchaseId: purchase.id, 
+      paymentData 
+    });
+  };
+
+  const handleRecordPayment = (purchase: Purchase) => {
+    setSelectedPurchaseForPayment(purchase);
+    setPaymentAmount(purchase.totalAmount?.toString() || "0");
+    setPaymentDialogOpen(true);
+  };
+
+  const confirmPayment = () => {
+    if (!selectedPurchaseForPayment) return;
+
+    const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
+    const paidAmount = parseFloat(paymentAmount || "0");
+    
+    let paymentStatus = 'due';
+    if (paidAmount >= totalAmount) {
+      paymentStatus = 'paid';
+    } else if (paidAmount > 0) {
+      paymentStatus = 'partial';
+    }
+
+    const paymentData = {
+      paymentStatus,
+      paymentAmount: paidAmount,
+      paymentMethod,
+      paymentDate: new Date().toISOString(),
+      notes: paymentNotes
+    };
+
+    updatePaymentStatus.mutate({ 
+      purchaseId: selectedPurchaseForPayment.id, 
+      paymentData 
+    });
   };
 
   const confirmDelete = () => {
@@ -534,6 +637,7 @@ export default function PurchaseDashboard() {
                             <TableHead className="font-semibold">Status</TableHead>
                             <TableHead className="font-semibold">Total Amount</TableHead>
                             <TableHead className="font-semibold">Items</TableHead>
+                            <TableHead className="font-semibold">Payment Status</TableHead>
                             <TableHead className="font-semibold">Expected Date</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -547,7 +651,7 @@ export default function PurchaseDashboard() {
                                       <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-48">
+                                  <DropdownMenuContent align="end" className="w-56">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => handleView(purchase)}>
@@ -557,6 +661,15 @@ export default function PurchaseDashboard() {
                                     <DropdownMenuItem onClick={() => handleEdit(purchase)}>
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => handleMarkAsPaid(purchase)}>
+                                      <CreditCard className="h-4 w-4 mr-2" />
+                                      Mark as Paid
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleRecordPayment(purchase)}>
+                                      <DollarSign className="h-4 w-4 mr-2" />
+                                      Record Payment
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem>
@@ -622,6 +735,47 @@ export default function PurchaseDashboard() {
                                   <Package className="w-4 h-4 text-gray-400" />
                                   <span className="font-medium">{purchase.items?.length || 0} items</span>
                                 </div>
+                              </TableCell>
+                              <TableCell className="py-4">
+                                {(() => {
+                                  const paymentStatus = purchase.paymentStatus || 'due';
+                                  const statusConfig = {
+                                    paid: { 
+                                      variant: "default" as const, 
+                                      icon: CheckCircle, 
+                                      color: "text-green-600 bg-green-100 border-green-300",
+                                      label: "Paid"
+                                    },
+                                    partial: { 
+                                      variant: "secondary" as const, 
+                                      icon: Clock, 
+                                      color: "text-blue-600 bg-blue-100 border-blue-300",
+                                      label: "Partial"
+                                    },
+                                    due: { 
+                                      variant: "destructive" as const, 
+                                      icon: AlertCircle, 
+                                      color: "text-orange-600 bg-orange-100 border-orange-300",
+                                      label: "Due Payment"
+                                    },
+                                    overdue: { 
+                                      variant: "destructive" as const, 
+                                      icon: XCircle, 
+                                      color: "text-red-600 bg-red-100 border-red-300",
+                                      label: "Overdue"
+                                    },
+                                  };
+
+                                  const config = statusConfig[paymentStatus as keyof typeof statusConfig] || statusConfig.due;
+                                  const Icon = config.icon;
+
+                                  return (
+                                    <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${config.color}`}>
+                                      <Icon className="w-3 h-3" />
+                                      {config.label}
+                                    </div>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell className="py-4">
                                 <div className="flex items-center gap-2">
@@ -1077,6 +1231,96 @@ export default function PurchaseDashboard() {
                   Edit Order
                 </Button>
               )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Payment Recording Dialog */}
+        <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Record Payment
+              </DialogTitle>
+              <DialogDescription>
+                Record payment for purchase order
+              </DialogDescription>
+            </DialogHeader>
+            {selectedPurchaseForPayment && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="text-sm font-medium text-blue-800">
+                    Order: {selectedPurchaseForPayment.orderNumber || `PO-${selectedPurchaseForPayment.id}`}
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    Supplier: {selectedPurchaseForPayment.supplier?.name || 'Unknown'}
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    Total Amount: {formatCurrency(parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0"))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">Payment Amount</label>
+                    <Input
+                      type="number"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      placeholder="Enter payment amount"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Payment Method</label>
+                    <select 
+                      value={paymentMethod} 
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                      <option value="cheque">Cheque</option>
+                      <option value="credit_card">Credit Card</option>
+                      <option value="upi">UPI</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Notes (Optional)</label>
+                    <Input
+                      value={paymentNotes}
+                      onChange={(e) => setPaymentNotes(e.target.value)}
+                      placeholder="Payment notes..."
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={confirmPayment}
+                disabled={updatePaymentStatus.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {updatePaymentStatus.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Recording...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Record Payment
+                  </>
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
