@@ -2378,7 +2378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/purchases/:id/payment', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { paymentStatus, paymentAmount, paymentMethod, paymentDate, notes } = req.body;
+      const { paymentStatus, paymentAmount, totalPaidAmount, paymentMethod, paymentDate, notes } = req.body;
 
       console.log('🔄 Updating payment status for purchase:', id, req.body);
 
@@ -2386,6 +2386,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ 
           error: 'Invalid purchase ID',
           message: 'Purchase ID must be a positive number'
+        });
+      }
+
+      // Validate payment amount
+      if (paymentAmount !== undefined && (isNaN(parseFloat(paymentAmount)) || parseFloat(paymentAmount) <= 0)) {
+        return res.status(400).json({ 
+          error: 'Invalid payment amount',
+          message: 'Payment amount must be a positive number'
         });
       }
 
@@ -2406,6 +2414,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
       const columnNames = tableInfo.map((col: any) => col.name);
 
+      // Calculate the new paid amount
+      const currentPaidAmount = parseFloat(existingPurchase.paid_amount || '0');
+      const newPaymentAmount = parseFloat(paymentAmount || '0');
+      const finalPaidAmount = totalPaidAmount !== undefined ? 
+        parseFloat(totalPaidAmount.toString()) : 
+        currentPaidAmount + newPaymentAmount;
+
       // Build dynamic update query
       const updateFields = [];
       const updateValues = [];
@@ -2415,9 +2430,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateValues.push(paymentStatus);
       }
 
-      if (columnNames.includes('paid_amount') && paymentAmount !== undefined) {
+      if (columnNames.includes('paid_amount')) {
         updateFields.push('paid_amount = ?');
-        updateValues.push(parseFloat(paymentAmount).toString());
+        updateValues.push(finalPaidAmount.toString());
       }
 
       if (columnNames.includes('payment_method') && paymentMethod) {
@@ -2464,6 +2479,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         purchase: updatedPurchase,
         message: 'Payment status updated successfully',
+        paymentRecorded: newPaymentAmount,
+        totalPaid: finalPaidAmount,
         timestamp: new Date().toISOString()
       });
 

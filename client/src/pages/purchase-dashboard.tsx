@@ -198,6 +198,7 @@ export default function PurchaseDashboard() {
       setSelectedPurchaseForPayment(null);
       setPaymentAmount("");
       setPaymentNotes("");
+      setPaymentMethod("cash");
     },
     onError: (error: Error) => {
       console.error('Payment update error:', error);
@@ -334,9 +335,19 @@ export default function PurchaseDashboard() {
   const confirmPayment = () => {
     if (!selectedPurchaseForPayment) return;
 
+    // Validate payment amount
+    const newPaymentAmount = parseFloat(paymentAmount || "0");
+    if (newPaymentAmount <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid payment amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
     const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
-    const newPaymentAmount = parseFloat(paymentAmount || "0");
     const totalPaidAmount = currentPaidAmount + newPaymentAmount;
     
     let paymentStatus = 'due';
@@ -348,11 +359,14 @@ export default function PurchaseDashboard() {
 
     const paymentData = {
       paymentStatus,
-      paymentAmount: newPaymentAmount, // Only the new payment amount
+      paymentAmount: newPaymentAmount,
+      totalPaidAmount: totalPaidAmount, // Include total paid amount
       paymentMethod,
       paymentDate: new Date().toISOString(),
-      notes: paymentNotes
+      notes: paymentNotes || `Payment recorded via dashboard - ${paymentMethod}`
     };
+
+    console.log('Confirming payment with data:', paymentData);
 
     updatePaymentStatus.mutate({ 
       purchaseId: selectedPurchaseForPayment.id, 
