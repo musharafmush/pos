@@ -108,6 +108,13 @@ export default function PurchaseDashboard() {
   // Fetch purchases
   const { data: purchases = [], isLoading, error } = useQuery({
     queryKey: ["/api/purchases"],
+    onSuccess: (data) => {
+      console.log('📊 Purchase data received:', {
+        count: data?.length || 0,
+        sample: data?.slice(0, 3) || [],
+        statuses: data?.map(p => p.status) || []
+      });
+    }
   });
 
   // Delete purchase mutation
@@ -346,13 +353,20 @@ export default function PurchaseDashboard() {
     purchase.id?.toString().includes(searchTerm)
   );
 
-  // Calculate statistics
+  // Calculate statistics with better data handling
   const totalPurchases = purchases.length;
-  const pendingPurchases = purchases.filter((p: Purchase) => p.status === "pending").length;
-  const completedPurchases = purchases.filter((p: Purchase) => p.status === "completed").length;
-  const totalAmount = purchases.reduce((sum: number, p: Purchase) => 
-    sum + (parseFloat(p.totalAmount?.toString() || "0")), 0
-  );
+  const pendingPurchases = purchases.filter((p: Purchase) => {
+    const status = p.status?.toLowerCase() || 'pending';
+    return status === "pending" || status === "ordered" || status === "draft";
+  }).length;
+  const completedPurchases = purchases.filter((p: Purchase) => {
+    const status = p.status?.toLowerCase() || '';
+    return status === "completed" || status === "received" || status === "delivered";
+  }).length;
+  const totalAmount = purchases.reduce((sum: number, p: Purchase) => {
+    const amount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
+    return sum + amount;
+  }, 0);
   
   // Payment statistics with improved calculation
   const paidPurchases = purchases.filter((p: Purchase) => {
@@ -589,6 +603,7 @@ export default function PurchaseDashboard() {
   };
 
   if (error) {
+    console.error('❌ Purchase dashboard error:', error);
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -596,13 +611,21 @@ export default function PurchaseDashboard() {
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Purchases</h3>
             <p className="text-gray-600">Failed to load purchase data. Please try again.</p>
-            <Button 
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/purchases"] })}
-              className="mt-4"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Retry
-            </Button>
+            <div className="mt-4 space-x-2">
+              <Button 
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/purchases"] })}
+                variant="outline"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+              <Link href="/purchase-entry-professional">
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Purchase
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </DashboardLayout>
@@ -698,8 +721,16 @@ export default function PurchaseDashboard() {
                     <p className="text-3xl font-bold text-yellow-900">{pendingPurchases}</p>
                     <div className="flex items-center mt-2">
                       <Clock className="w-4 h-4 text-yellow-600 mr-1" />
-                      <span className="text-sm text-yellow-600 font-medium">Needs attention</span>
+                      <span className="text-sm text-yellow-600 font-medium">
+                        {pendingPurchases > 0 ? 'Needs attention' : 'All up to date'}
+                      </span>
                     </div>
+                    {/* Debug info - remove in production */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Total: {totalPurchases} | Pending: {pendingPurchases} | Completed: {completedPurchases}
+                      </div>
+                    )}
                   </div>
                   <div className="w-14 h-14 bg-yellow-200 rounded-full flex items-center justify-center">
                     <Clock className="w-7 h-7 text-yellow-600" />
@@ -718,6 +749,11 @@ export default function PurchaseDashboard() {
                       <CheckCircle className="w-4 h-4 text-purple-600 mr-1" />
                       <span className="text-sm text-purple-600 font-medium">
                         {totalPurchases > 0 ? Math.round((completedPurchases / totalPurchases) * 100) : 0}% completion rate
+                        {totalPurchases > 0 && (
+                          <span className="block text-xs text-gray-500 mt-1">
+                            {completedPurchases} of {totalPurchases} orders
+                          </span>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -888,14 +924,41 @@ export default function PurchaseDashboard() {
                     ) : filteredPurchases.length === 0 ? (
                       <div className="text-center py-12">
                         <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Purchase Orders</h3>
-                        <p className="text-gray-600 mb-4">Get started by creating your first purchase order</p>
-                        <Link href="/purchase-entry-professional">
-                          <Button className="bg-blue-600 hover:bg-blue-700">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create Purchase Order
-                          </Button>
-                        </Link>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          {purchases.length === 0 ? 'No Purchase Orders' : 'No Matching Orders'}
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                          {purchases.length === 0 
+                            ? 'Get started by creating your first purchase order' 
+                            : 'Try adjusting your search or filters to find orders'
+                          }
+                        </p>
+                        <div className="space-x-2">
+                          {purchases.length === 0 ? (
+                            <Link href="/purchase-entry-professional">
+                              <Button className="bg-blue-600 hover:bg-blue-700">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create Purchase Order
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              onClick={() => {
+                                setSearchTerm("");
+                                // Reset any other filters if they exist
+                              }}
+                            >
+                              Clear Filters
+                            </Button>
+                          )}
+                        </div>
+                        {/* Debug info for development */}
+                        {process.env.NODE_ENV === 'development' && purchases.length > 0 && (
+                          <div className="mt-4 text-xs text-gray-500">
+                            Debug: Found {purchases.length} total purchases, but 0 after filtering
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <Table>
