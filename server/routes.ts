@@ -1908,146 +1908,356 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const updateData = req.body;
 
-      console.log('Updating purchase:', id, 'with data:', updateData);
+      console.log('🔄 Updating purchase ID:', id);
+      console.log('📝 Update data received:', JSON.stringify(updateData, null, 2));
 
-      if (isNaN(id)) {
-        return res.status(400).json({ message: 'Invalid purchase ID' });
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ 
+          message: 'Invalid purchase ID',
+          error: 'Purchase ID must be a positive number'
+        });
+      }
+
+      // Validate required fields
+      if (!updateData.supplierId || updateData.supplierId <= 0) {
+        return res.status(400).json({ 
+          message: 'Supplier is required',
+          error: 'Please select a valid supplier'
+        });
+      }
+
+      if (!updateData.orderNumber || updateData.orderNumber.trim() === '') {
+        return res.status(400).json({ 
+          message: 'Order number is required',
+          error: 'Please provide a valid order number'
+        });
       }
 
       // Check if purchase exists
-      const existingPurchase = await storage.getPurchaseById(id);
+      const { sqlite } = await import('@db');
+      
+      const existingPurchaseQuery = sqlite.prepare('SELECT * FROM purchases WHERE id = ?');
+      const existingPurchase = existingPurchaseQuery.get(id);
+      
       if (!existingPurchase) {
-        return res.status(404).json({ message: 'Purchase not found' });
+        return res.status(404).json({ 
+          message: 'Purchase not found',
+          error: `No purchase order found with ID ${id}`
+        });
       }
 
-      // Use direct SQLite update for better reliability
-      const { sqlite } = await import('@db');
+      console.log('✅ Found existing purchase:', existingPurchase.order_number);
 
+      // Use transaction for atomic updates
       const result = sqlite.transaction(() => {
         try {
-          // Update the main purchase record
-          const updatePurchase = sqlite.prepare(`
-            UPDATE purchases 
-            SET 
-              order_number = ?,
-              supplier_id = ?,
-              order_date = ?,
-              expected_date = ?,
-              payment_method = ?,
-              payment_terms = ?,
-              status = ?,
-              invoice_number = ?,
-              invoice_date = ?,
-              invoice_amount = ?,
-              remarks = ?,
-              freight_amount = ?,
-              surcharge_amount = ?,
-              packing_charges = ?,
-              other_charges = ?,
-              additional_discount = ?,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `);
+          // Ensure purchases table has all required columns
+          const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
+          const columnNames = tableInfo.map(col => col.name);
+          console.log('📋 Available columns:', columnNames);
 
-          const purchaseResult = updatePurchase.run(
-            updateData.orderNumber || existingPurchase.orderNumber,
-            updateData.supplierId || existingPurchase.supplierId,
-            updateData.orderDate || existingPurchase.orderDate,
-            updateData.expectedDate || existingPurchase.expectedDate,
-            updateData.paymentMethod || existingPurchase.paymentMethod || "Credit",
-            updateData.paymentTerms || existingPurchase.paymentTerms || "Net 30",
-            updateData.status || existingPurchase.status || "Pending",
-            updateData.invoiceNumber || existingPurchase.invoiceNumber || "",
-            updateData.invoiceDate || existingPurchase.invoiceDate || "",
-            parseFloat(updateData.invoiceAmount || "0") || 0,
-            updateData.remarks || existingPurchase.remarks || "",
-            parseFloat(updateData.freightAmount || "0") || 0,
-            parseFloat(updateData.surchargeAmount || "0") || 0,
-            parseFloat(updateData.packingCharges || "0") || 0,
-            parseFloat(updateData.otherCharges || "0") || 0,
-            parseFloat(updateData.additionalDiscount || "0") || 0,
-            id
-          );
+          // Build dynamic update query based on available columns
+          const updateFields = [];
+          const updateValues = [];
 
-          console.log(`Updated purchase record: ${purchaseResult.changes} changes`);
+          // Core fields that should always exist
+          if (columnNames.includes('order_number')) {
+            updateFields.push('order_number = ?');
+            updateValues.push(updateData.orderNumber);
+          }
+          
+          if (columnNames.includes('supplier_id')) {
+            updateFields.push('supplier_id = ?');
+            updateValues.push(updateData.supplierId);
+          }
 
-          // Update purchase items if provided
-          if (updateData.items && Array.isArray(updateData.items)) {
-            // First, delete existing items
-            const deleteItems = sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?');
-            deleteItems.run(id);
+          if (columnNames.includes('order_date')) {
+            updateFields.push('order_date = ?');
+            updateValues.push(updateData.orderDate || existingPurchase.order_date);
+          }
 
-            // Then insert new items
-            const insertItem = sqlite.prepare(`
-              INSERT INTO purchase_items (
-                purchase_id, product_id, quantity, received_qty, free_qty,
-                unit_cost, hsn_code, tax_percentage, discount_amount,
-                expiry_date, batch_number, selling_price, mrp, net_amount,
-                location, unit
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          // Optional fields
+          const optionalFields = [
+            { column: 'expected_date', value: updateData.expectedDate },
+            { column: 'due_date', value: updateData.expectedDate },
+            { column: 'payment_method', value: updateData.paymentMethod || 'Credit' },
+            { column: 'payment_terms', value: updateData.paymentTerms || 'Net 30' },
+            { column: 'status', value: updateData.status || 'Pending' },
+            { column: 'invoice_number', value: updateData.invoiceNumber || '' },
+            { column: 'invoice_date', value: updateData.invoiceDate || '' },
+            { column: 'invoice_amount', value: parseFloat(updateData.invoiceAmount || '0') },
+            { column: 'remarks', value: updateData.remarks || '' },
+            { column: 'freight_amount', value: parseFloat(updateData.freightAmount || '0') },
+            { column: 'surcharge_amount', value: parseFloat(updateData.surchargeAmount || '0') },
+            { column: 'packing_charges', value: parseFloat(updateData.packingCharges || '0') },
+            { column: 'other_charges', value: parseFloat(updateData.otherCharges || '0') },
+            { column: 'additional_discount', value: parseFloat(updateData.additionalDiscount || '0') }
+          ];
+
+          optionalFields.forEach(field => {
+            if (columnNames.includes(field.column)) {
+              updateFields.push(`${field.column} = ?`);
+              updateValues.push(field.value);
+            }
+          });
+
+          // Always update timestamp if column exists
+          if (columnNames.includes('updated_at')) {
+            updateFields.push('updated_at = CURRENT_TIMESTAMP');
+          }
+
+          updateValues.push(id); // For WHERE clause
+
+          const updateQuery = `UPDATE purchases SET ${updateFields.join(', ')} WHERE id = ?`;
+          console.log('🔧 Update query:', updateQuery);
+          console.log('📊 Update values:', updateValues);
+
+          const updatePurchase = sqlite.prepare(updateQuery);
+          const purchaseResult = updatePurchase.run(...updateValues);
+
+          console.log(`✅ Updated purchase record: ${purchaseResult.changes} changes`);
+
+          if (purchaseResult.changes === 0) {
+            throw new Error('No changes were made to the purchase record');
+          }
+
+          // Handle purchase items update if provided
+          if (updateData.items && Array.isArray(updateData.items) && updateData.items.length > 0) {
+            console.log(`🔄 Updating ${updateData.items.length} purchase items`);
+
+            // Get existing items to calculate stock differences
+            const existingItemsQuery = sqlite.prepare(`
+              SELECT product_id, received_qty FROM purchase_items WHERE purchase_id = ?
             `);
+            const existingItems = existingItemsQuery.all(id);
+            
+            // Create map of existing quantities
+            const existingQtyMap = new Map();
+            existingItems.forEach(item => {
+              existingQtyMap.set(item.product_id, item.received_qty || 0);
+            });
 
+            // Delete existing items
+            const deleteItems = sqlite.prepare('DELETE FROM purchase_items WHERE purchase_id = ?');
+            const deleteResult = deleteItems.run(id);
+            console.log(`🗑️ Deleted ${deleteResult.changes} existing items`);
+
+            // Check if purchase_items table exists and get its structure
+            const itemTableInfo = sqlite.prepare("PRAGMA table_info(purchase_items)").all();
+            const itemColumnNames = itemTableInfo.map(col => col.name);
+            console.log('📋 Available item columns:', itemColumnNames);
+
+            // Build dynamic insert query for items
+            const itemFields = ['purchase_id', 'product_id'];
+            const itemPlaceholders = ['?', '?'];
+            
+            const optionalItemFields = [
+              'quantity', 'received_qty', 'free_qty', 'unit_cost', 'cost',
+              'selling_price', 'mrp', 'hsn_code', 'tax_percentage', 
+              'discount_amount', 'discount_percent', 'expiry_date', 
+              'batch_number', 'net_cost', 'roi_percent', 'gross_profit_percent',
+              'net_amount', 'cash_percent', 'cash_amount', 'location', 'unit',
+              'subtotal', 'total', 'amount'
+            ];
+
+            optionalItemFields.forEach(field => {
+              if (itemColumnNames.includes(field)) {
+                itemFields.push(field);
+                itemPlaceholders.push('?');
+              }
+            });
+
+            const insertItemQuery = `
+              INSERT INTO purchase_items (${itemFields.join(', ')}) 
+              VALUES (${itemPlaceholders.join(', ')})
+            `;
+            
+            const insertItem = sqlite.prepare(insertItemQuery);
             const updateStock = sqlite.prepare(`
               UPDATE products 
               SET stock_quantity = COALESCE(stock_quantity, 0) + ?
               WHERE id = ?
             `);
 
-            updateData.items.forEach((item: any) => {
-              if (item.productId && item.productId > 0) {
-                const receivedQty = parseInt(item.receivedQty || item.quantity || 0);
-                const freeQty = parseInt(item.freeQty || 0);
-                const unitCost = parseFloat(item.unitCost || 0);
+            let itemsProcessed = 0;
+            
+            updateData.items.forEach((item: any, index: number) => {
+              if (!item.productId || item.productId <= 0) {
+                console.log(`⚠️ Skipping item ${index + 1}: Invalid product ID`);
+                return;
+              }
 
-                // Insert the item
-                insertItem.run(
-                  id,
-                  item.productId,
-                  receivedQty,
-                  receivedQty,
-                  freeQty,
-                  unitCost,
-                  item.hsnCode || "",
-                  parseFloat(item.taxPercentage || "0"),
-                  parseFloat(item.discountAmount || "0"),
-                  item.expiryDate || "",
-                  item.batchNumber || "",
-                  parseFloat(item.sellingPrice || "0"),
-                  parseFloat(item.mrp || "0"),
-                  parseFloat(item.netAmount || "0"),
-                  item.location || "",
-                  item.unit || "PCS"
-                );
+              const receivedQty = Math.max(parseInt(item.receivedQty || item.quantity || 0), 0);
+              const quantity = Math.max(parseInt(item.quantity || receivedQty || 1), 0);
+              const unitCost = Math.max(parseFloat(item.unitCost || 0), 0);
 
-                // Update stock
-                if (receivedQty > 0) {
-                  updateStock.run(receivedQty, item.productId);
+              if (receivedQty === 0 || unitCost === 0) {
+                console.log(`⚠️ Skipping item ${index + 1}: Zero quantity or cost`);
+                return;
+              }
+
+              // Build values array based on available columns
+              const itemValues = [id, item.productId]; // Required fields
+
+              optionalItemFields.forEach(field => {
+                if (itemColumnNames.includes(field)) {
+                  switch (field) {
+                    case 'quantity':
+                      itemValues.push(quantity);
+                      break;
+                    case 'received_qty':
+                      itemValues.push(receivedQty);
+                      break;
+                    case 'free_qty':
+                      itemValues.push(parseInt(item.freeQty || 0));
+                      break;
+                    case 'unit_cost':
+                    case 'cost':
+                      itemValues.push(unitCost);
+                      break;
+                    case 'selling_price':
+                      itemValues.push(parseFloat(item.sellingPrice || 0));
+                      break;
+                    case 'mrp':
+                      itemValues.push(parseFloat(item.mrp || 0));
+                      break;
+                    case 'hsn_code':
+                      itemValues.push(item.hsnCode || '');
+                      break;
+                    case 'tax_percentage':
+                      itemValues.push(parseFloat(item.taxPercentage || 0));
+                      break;
+                    case 'discount_amount':
+                      itemValues.push(parseFloat(item.discountAmount || 0));
+                      break;
+                    case 'discount_percent':
+                      itemValues.push(parseFloat(item.discountPercent || 0));
+                      break;
+                    case 'expiry_date':
+                      itemValues.push(item.expiryDate || '');
+                      break;
+                    case 'batch_number':
+                      itemValues.push(item.batchNumber || '');
+                      break;
+                    case 'net_cost':
+                      itemValues.push(parseFloat(item.netCost || unitCost));
+                      break;
+                    case 'roi_percent':
+                      itemValues.push(parseFloat(item.roiPercent || 0));
+                      break;
+                    case 'gross_profit_percent':
+                      itemValues.push(parseFloat(item.grossProfitPercent || 0));
+                      break;
+                    case 'net_amount':
+                      itemValues.push(parseFloat(item.netAmount || (receivedQty * unitCost)));
+                      break;
+                    case 'cash_percent':
+                      itemValues.push(parseFloat(item.cashPercent || 0));
+                      break;
+                    case 'cash_amount':
+                      itemValues.push(parseFloat(item.cashAmount || 0));
+                      break;
+                    case 'location':
+                      itemValues.push(item.location || '');
+                      break;
+                    case 'unit':
+                      itemValues.push(item.unit || 'PCS');
+                      break;
+                    case 'subtotal':
+                    case 'total':
+                    case 'amount':
+                      itemValues.push(receivedQty * unitCost);
+                      break;
+                    default:
+                      itemValues.push(null);
+                  }
                 }
+              });
+
+              try {
+                // Insert the item
+                insertItem.run(...itemValues);
+                
+                // Update stock - calculate difference from existing
+                const oldQty = existingQtyMap.get(item.productId) || 0;
+                const stockDifference = receivedQty - oldQty;
+                
+                if (stockDifference !== 0) {
+                  const stockResult = updateStock.run(stockDifference, item.productId);
+                  console.log(`📦 Stock adjustment for product ${item.productId}: ${stockDifference > 0 ? '+' : ''}${stockDifference} (changes: ${stockResult.changes})`);
+                }
+                
+                itemsProcessed++;
+              } catch (itemError) {
+                console.error(`❌ Error inserting item ${index + 1}:`, itemError);
+                throw new Error(`Failed to insert item ${index + 1}: ${itemError.message}`);
               }
             });
+
+            console.log(`✅ Successfully processed ${itemsProcessed} items`);
           }
 
-          // Get the updated purchase
+          // Calculate and update total if needed
+          if (updateData.items && updateData.items.length > 0) {
+            const newTotal = updateData.items.reduce((sum: number, item: any) => {
+              const qty = parseInt(item.receivedQty || item.quantity || 0);
+              const cost = parseFloat(item.unitCost || 0);
+              return sum + (qty * cost);
+            }, 0);
+
+            if (columnNames.includes('total') && newTotal > 0) {
+              const updateTotal = sqlite.prepare('UPDATE purchases SET total = ? WHERE id = ?');
+              updateTotal.run(newTotal.toString(), id);
+              console.log(`💰 Updated total amount: ${newTotal}`);
+            }
+          }
+
+          // Get the updated purchase record
           const getUpdatedPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?');
-          return getUpdatedPurchase.get(id);
+          const updatedPurchase = getUpdatedPurchase.get(id);
+
+          if (!updatedPurchase) {
+            throw new Error('Failed to retrieve updated purchase record');
+          }
+
+          console.log('✅ Purchase update completed successfully');
+          return updatedPurchase;
 
         } catch (transactionError) {
-          console.error('Transaction error:', transactionError);
+          console.error('❌ Transaction error:', transactionError);
           throw transactionError;
         }
       })();
 
-      console.log('Purchase updated successfully:', result);
+      // Return success response
       res.json({
-        ...result,
-        message: 'Purchase order updated successfully'
+        success: true,
+        purchase: result,
+        message: 'Purchase order updated successfully',
+        timestamp: new Date().toISOString()
       });
 
     } catch (error) {
-      console.error('Error updating purchase:', error);
+      console.error('❌ Error updating purchase:', error);
+      
+      // Provide specific error messages
+      let errorMessage = 'Failed to update purchase order';
+      let userMessage = error.message;
+
+      if (error.message?.includes('SQLITE_CONSTRAINT')) {
+        userMessage = 'Data validation error. Please check all required fields.';
+      } else if (error.message?.includes('no such table')) {
+        userMessage = 'Database table missing. Please contact support.';
+      } else if (error.message?.includes('no such column')) {
+        userMessage = 'Database schema mismatch. Please refresh and try again.';
+      }
+
       res.status(500).json({ 
-        message: 'Failed to update purchase order',
-        error: error.message 
+        success: false,
+        message: errorMessage,
+        error: userMessage,
+        technical: error.message,
+        timestamp: new Date().toISOString()
       });
     }
   });

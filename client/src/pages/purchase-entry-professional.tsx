@@ -1274,22 +1274,57 @@ export default function PurchaseEntryProfessional() {
   const savePurchaseMutation = useMutation({
     mutationFn: async (data: PurchaseFormData) => {
       try {
+        console.log('🔄 Starting purchase save/update process...');
+        
         const url = isEditMode ? `/api/purchases/${editId}` : "/api/purchases";
         const method = isEditMode ? "PUT" : "POST";
 
-        console.log(`${method} ${url} with data:`, data);
+        console.log(`📤 ${method} ${url}`);
+        console.log('📝 Request data:', JSON.stringify(data, null, 2));
 
-        // Use fetch directly instead of apiRequest for better error handling
+        // Enhanced validation before sending
+        if (!data.supplierId || data.supplierId <= 0) {
+          throw new Error('Please select a supplier before saving');
+        }
+
+        if (!data.orderNumber || data.orderNumber.trim() === '') {
+          throw new Error('Order number is required');
+        }
+
+        if (!data.items || data.items.length === 0) {
+          throw new Error('At least one item is required');
+        }
+
+        // Validate items
+        const validItems = data.items.filter(item => 
+          item.productId && 
+          item.productId > 0 && 
+          (item.receivedQty > 0 || item.quantity > 0) &&
+          item.unitCost >= 0
+        );
+
+        if (validItems.length === 0) {
+          throw new Error('Please add at least one valid item with quantity and cost');
+        }
+
+        // Update data with only valid items
+        const requestData = {
+          ...data,
+          items: validItems
+        };
+
+        console.log(`✅ Validation passed. Sending ${validItems.length} valid items`);
+
         const response = await fetch(url, {
           method,
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(requestData),
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response content-type:', response.headers.get('content-type'));
+        console.log(`📥 Response status: ${response.status} ${response.statusText}`);
+        console.log('📄 Response content-type:', response.headers.get('content-type'));
 
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
@@ -1298,24 +1333,33 @@ export default function PurchaseEntryProfessional() {
           if (contentType && contentType.includes('application/json')) {
             try {
               const errorData = await response.json();
-              errorMessage = errorData.message || errorData.error || errorMessage;
+              console.error('❌ Server error response:', errorData);
+              
+              // Use the most specific error message available
+              errorMessage = errorData.error || errorData.message || errorMessage;
+              
+              // Add technical details if available
+              if (errorData.technical && errorData.technical !== errorMessage) {
+                console.error('🔧 Technical details:', errorData.technical);
+              }
+              
             } catch (jsonError) {
-              console.error('Failed to parse error JSON:', jsonError);
+              console.error('❌ Failed to parse error JSON:', jsonError);
               errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
           } else {
-            // If response is HTML (like error page), it means server error
+            // Handle non-JSON responses
             try {
               const errorText = await response.text();
-              console.error('Server returned non-JSON response:', errorText.substring(0, 200));
+              console.error('❌ Server returned non-JSON response:', errorText.substring(0, 500));
               
-              if (errorText.includes('DOCTYPE')) {
-                errorMessage = `Server returned HTML error page. Status: ${response.status}. Please check server logs.`;
+              if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
+                errorMessage = `Server error (${response.status}). The server returned an error page instead of data.`;
               } else {
-                errorMessage = `Server error: ${response.status}. Response: ${errorText.substring(0, 100)}`;
+                errorMessage = `Server error: ${response.status}. ${errorText.substring(0, 100)}`;
               }
             } catch (textError) {
-              console.error('Failed to read error response:', textError);
+              console.error('❌ Failed to read error response:', textError);
               errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
           }
@@ -1323,17 +1367,32 @@ export default function PurchaseEntryProfessional() {
           throw new Error(errorMessage);
         }
 
+        // Validate response content type
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
           const responseText = await response.text();
-          console.error('Expected JSON but got:', responseText.substring(0, 200));
-          throw new Error('Server returned invalid response format');
+          console.error('❌ Expected JSON but got:', responseText.substring(0, 500));
+          throw new Error('Server returned invalid response format. Expected JSON data.');
         }
 
         const result = await response.json();
+        console.log('✅ Success response:', result);
+
+        // Validate response structure
+        if (isEditMode && !result.success && !result.purchase && !result.id) {
+          console.warn('⚠️ Unexpected response structure for update:', result);
+        }
+
         return result;
+        
       } catch (error) {
-        console.error('Purchase save error:', error);
+        console.error('💥 Purchase save/update error:', error);
+        
+        // Re-throw with enhanced error context
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          throw new Error('Network error: Unable to connect to server. Please check your connection and try again.');
+        }
+        
         throw error;
       }
     },
