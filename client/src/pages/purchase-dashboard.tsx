@@ -429,7 +429,7 @@ export default function PurchaseDashboard() {
 
         <div className="p-6">
           {/* Enhanced Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -499,6 +499,27 @@ export default function PurchaseDashboard() {
                   </div>
                   <div className="w-14 h-14 bg-purple-200 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-7 h-7 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-red-700">Payment Due</p>
+                    <p className="text-2xl font-bold text-red-900">{duePurchases}</p>
+                    <div className="text-xs text-red-600 font-medium mt-1">
+                      {formatCurrency(totalDueAmount)}
+                    </div>
+                    <div className="flex items-center mt-1">
+                      <AlertCircle className="w-3 h-3 text-red-600 mr-1" />
+                      <span className="text-xs text-red-600 font-medium">Requires payment</span>
+                    </div>
+                  </div>
+                  <div className="w-14 h-14 bg-red-200 rounded-full flex items-center justify-center">
+                    <CreditCard className="w-7 h-7 text-red-600" />
                   </div>
                 </div>
               </CardContent>
@@ -689,14 +710,24 @@ export default function PurchaseDashboard() {
                                       Edit
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => handleMarkAsPaid(purchase)}>
-                                      <CreditCard className="h-4 w-4 mr-2" />
-                                      Mark as Paid
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleRecordPayment(purchase)}>
-                                      <DollarSign className="h-4 w-4 mr-2" />
-                                      Record Payment
-                                    </DropdownMenuItem>
+                                    {(!purchase.paymentStatus || purchase.paymentStatus === 'due' || purchase.paymentStatus === 'partial') && (
+                                      <>
+                                        <DropdownMenuItem onClick={() => handleMarkAsPaid(purchase)}>
+                                          <CheckCircle className="h-4 w-4 mr-2" />
+                                          Mark as Fully Paid
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleRecordPayment(purchase)}>
+                                          <DollarSign className="h-4 w-4 mr-2" />
+                                          Record Partial Payment
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
+                                    {purchase.paymentStatus === 'paid' && (
+                                      <DropdownMenuItem onClick={() => handleRecordPayment(purchase)}>
+                                        <CreditCard className="h-4 w-4 mr-2" />
+                                        View Payment Details
+                                      </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem>
                                       <FileText className="h-4 w-4 mr-2" />
@@ -765,30 +796,40 @@ export default function PurchaseDashboard() {
                               <TableCell className="py-4">
                                 {(() => {
                                   const paymentStatus = purchase.paymentStatus || 'due';
+                                  const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
+                                  const paidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
+                                  
+                                  // Calculate payment percentage for partial payments
+                                  const paymentPercentage = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
+                                  
                                   const statusConfig = {
                                     paid: { 
                                       variant: "default" as const, 
                                       icon: CheckCircle, 
-                                      color: "text-green-600 bg-green-100 border-green-300",
-                                      label: "Paid"
+                                      color: "text-green-700 bg-green-50 border-green-200",
+                                      label: "Fully Paid",
+                                      bgColor: "bg-green-500"
                                     },
                                     partial: { 
                                       variant: "secondary" as const, 
                                       icon: Clock, 
-                                      color: "text-blue-600 bg-blue-100 border-blue-300",
-                                      label: "Partial"
+                                      color: "text-blue-700 bg-blue-50 border-blue-200",
+                                      label: `Partial (${Math.round(paymentPercentage)}%)`,
+                                      bgColor: "bg-blue-500"
                                     },
                                     due: { 
                                       variant: "destructive" as const, 
                                       icon: AlertCircle, 
-                                      color: "text-orange-600 bg-orange-100 border-orange-300",
-                                      label: "Due Payment"
+                                      color: "text-orange-700 bg-orange-50 border-orange-200",
+                                      label: "Payment Due",
+                                      bgColor: "bg-orange-500"
                                     },
                                     overdue: { 
                                       variant: "destructive" as const, 
                                       icon: XCircle, 
-                                      color: "text-red-600 bg-red-100 border-red-300",
-                                      label: "Overdue"
+                                      color: "text-red-700 bg-red-50 border-red-200",
+                                      label: "Overdue",
+                                      bgColor: "bg-red-500"
                                     },
                                   };
 
@@ -796,9 +837,21 @@ export default function PurchaseDashboard() {
                                   const Icon = config.icon;
 
                                   return (
-                                    <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${config.color}`}>
-                                      <Icon className="w-3 h-3" />
-                                      {config.label}
+                                    <div className="space-y-1">
+                                      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border ${config.color}`}>
+                                        <Icon className="w-3.5 h-3.5" />
+                                        {config.label}
+                                      </div>
+                                      {paymentStatus === 'partial' && (
+                                        <div className="text-xs text-gray-600">
+                                          Paid: {formatCurrency(paidAmount)} / {formatCurrency(totalAmount)}
+                                        </div>
+                                      )}
+                                      {(paymentStatus === 'due' || paymentStatus === 'overdue') && totalAmount > 0 && (
+                                        <div className="text-xs text-gray-600">
+                                          Outstanding: {formatCurrency(totalAmount - paidAmount)}
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })()}
@@ -1263,7 +1316,7 @@ export default function PurchaseDashboard() {
 
         {/* Payment Recording Dialog */}
         <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
@@ -1276,27 +1329,94 @@ export default function PurchaseDashboard() {
             {selectedPurchaseForPayment && (
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="text-sm font-medium text-blue-800">
-                    Order: {selectedPurchaseForPayment.orderNumber || `PO-${selectedPurchaseForPayment.id}`}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-blue-800">Order:</span>
+                      <div className="text-blue-700">{selectedPurchaseForPayment.orderNumber || `PO-${selectedPurchaseForPayment.id}`}</div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-blue-800">Supplier:</span>
+                      <div className="text-blue-700">{selectedPurchaseForPayment.supplier?.name || 'Unknown'}</div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-blue-800">Total Amount:</span>
+                      <div className="text-blue-700 font-semibold">{formatCurrency(parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0"))}</div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-blue-800">Already Paid:</span>
+                      <div className="text-blue-700">{formatCurrency(parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0"))}</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-blue-700">
-                    Supplier: {selectedPurchaseForPayment.supplier?.name || 'Unknown'}
-                  </div>
-                  <div className="text-sm text-blue-700">
-                    Total Amount: {formatCurrency(parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0"))}
-                  </div>
+                  {(() => {
+                    const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
+                    const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+                    const remaining = totalAmount - paidAmount;
+                    return remaining > 0 ? (
+                      <div className="mt-3 pt-3 border-t border-blue-200">
+                        <span className="font-medium text-blue-800">Outstanding Amount:</span>
+                        <div className="text-lg font-bold text-blue-900">{formatCurrency(remaining)}</div>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium">Payment Amount</label>
                     <Input
                       type="number"
+                      step="0.01"
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(e.target.value)}
                       placeholder="Enter payment amount"
                       className="mt-1"
                     />
+                    {(() => {
+                      const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
+                      const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+                      const remaining = totalAmount - paidAmount;
+                      const currentPayment = parseFloat(paymentAmount || "0");
+                      
+                      if (currentPayment > remaining && remaining > 0) {
+                        return (
+                          <p className="text-xs text-amber-600 mt-1">
+                            Payment exceeds outstanding amount. Overpayment: {formatCurrency(currentPayment - remaining)}
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {(() => {
+                      const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
+                      const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+                      const remaining = totalAmount - paidAmount;
+                      
+                      return (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPaymentAmount((remaining / 2).toFixed(2))}
+                            className="text-xs"
+                          >
+                            50% ({formatCurrency(remaining / 2)})
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPaymentAmount(remaining.toFixed(2))}
+                            className="text-xs"
+                          >
+                            Full Amount ({formatCurrency(remaining)})
+                          </Button>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   <div>
@@ -1311,15 +1431,17 @@ export default function PurchaseDashboard() {
                       <option value="cheque">Cheque</option>
                       <option value="credit_card">Credit Card</option>
                       <option value="upi">UPI</option>
+                      <option value="neft">NEFT</option>
+                      <option value="rtgs">RTGS</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Notes (Optional)</label>
+                    <label className="text-sm font-medium">Payment Notes (Optional)</label>
                     <Input
                       value={paymentNotes}
                       onChange={(e) => setPaymentNotes(e.target.value)}
-                      placeholder="Payment notes..."
+                      placeholder="Reference number, bank details, etc..."
                       className="mt-1"
                     />
                   </div>
@@ -1332,7 +1454,7 @@ export default function PurchaseDashboard() {
               </Button>
               <Button 
                 onClick={confirmPayment}
-                disabled={updatePaymentStatus.isPending}
+                disabled={updatePaymentStatus.isPending || !paymentAmount || parseFloat(paymentAmount) <= 0}
                 className="bg-green-600 hover:bg-green-700"
               >
                 {updatePaymentStatus.isPending ? (
