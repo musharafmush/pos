@@ -152,6 +152,19 @@ export default function POSEnhanced() {
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [withdrawalNote, setWithdrawalNote] = useState("");
 
+  // Reset cash register form
+  const resetCashRegisterForm = () => {
+    setCashAmount("");
+    setCashReason("");
+    setCashOperation('add');
+  };
+
+  // Reset withdrawal form
+  const resetWithdrawalForm = () => {
+    setWithdrawalAmount("");
+    setWithdrawalNote("");
+  };
+
   // Add billDetails state
   const [billDetails, setBillDetails] = useState({
     billNumber: `POS${Date.now()}`,
@@ -438,7 +451,7 @@ export default function POSEnhanced() {
       description: `Register opened with ${formatCurrency(amount)}`,
     });
 
-    setCashAmount("");
+    resetCashRegisterForm();
     setShowOpenRegister(false);
   };
 
@@ -479,8 +492,7 @@ export default function POSEnhanced() {
       description: `${cashOperation === 'add' ? 'Added' : 'Removed'} ${formatCurrency(amount)}. Current cash: ${formatCurrency(newCashAmount)}`,
     });
 
-    setCashAmount("");
-    setCashReason("");
+    resetCashRegisterForm();
     setShowCashRegister(false);
   };
 
@@ -514,8 +526,7 @@ export default function POSEnhanced() {
       description: `Withdrew ${formatCurrency(amount)}. ${withdrawalNote ? `Note: ${withdrawalNote}` : ''}`,
     });
 
-    setWithdrawalAmount("");
-    setWithdrawalNote("");
+    resetWithdrawalForm();
     setShowWithdrawal(false);
   };
 
@@ -2013,7 +2024,12 @@ export default function POSEnhanced() {
           )}
 
           {/* Open Register Dialog */}
-          <Dialog open={showOpenRegister} onOpenChange={setShowOpenRegister}>
+          <Dialog open={showOpenRegister} onOpenChange={(open) => {
+            setShowOpenRegister(open);
+            if (!open) {
+              resetCashRegisterForm();
+            }
+          }}>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-xl">
@@ -2046,7 +2062,10 @@ export default function POSEnhanced() {
                 <div className="flex justify-end space-x-3 pt-4">
                   <Button
                     variant="outline"
-                    onClick={() => setShowOpenRegister(false)}
+                    onClick={() => {
+                      resetCashRegisterForm();
+                      setShowOpenRegister(false);
+                    }}
                   >
                     Cancel
                   </Button>
@@ -2063,7 +2082,12 @@ export default function POSEnhanced() {
           </Dialog>
 
           {/* Withdrawal Dialog */}
-          <Dialog open={showWithdrawal} onOpenChange={setShowWithdrawal}>
+          <Dialog open={showWithdrawal} onOpenChange={(open) => {
+            setShowWithdrawal(open);
+            if (!open) {
+              resetWithdrawalForm();
+            }
+          }}>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-xl">
@@ -2108,7 +2132,10 @@ export default function POSEnhanced() {
                 <div className="flex justify-end space-x-3 pt-4">
                   <Button
                     variant="outline"
-                    onClick={() => setShowWithdrawal(false)}
+                    onClick={() => {
+                      resetWithdrawalForm();
+                      setShowWithdrawal(false);
+                    }}
                   >
                     Cancel
                   </Button>
@@ -2125,7 +2152,13 @@ export default function POSEnhanced() {
           </Dialog>
 
           {/* Close Register Dialog */}
-          <Dialog open={showCloseRegister} onOpenChange={setShowCloseRegister}>
+          <Dialog open={showCloseRegister} onOpenChange={(open) => {
+            setShowCloseRegister(open);
+            if (!open) {
+              resetCashRegisterForm();
+              resetWithdrawalForm();
+            }
+          }}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-xl">
@@ -2267,7 +2300,12 @@ export default function POSEnhanced() {
           </Dialog>
 
           {/* Cash Register Management Modal */}
-      <Dialog open={showCashRegister} onOpenChange={setShowCashRegister}>
+      <Dialog open={showCashRegister} onOpenChange={(open) => {
+        setShowCashRegister(open);
+        if (!open) {
+          resetCashRegisterForm();
+        }
+      }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg">
             <DialogTitle className="flex items-center gap-3 text-xl">
