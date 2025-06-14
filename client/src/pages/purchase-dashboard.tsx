@@ -335,18 +335,20 @@ export default function PurchaseDashboard() {
     if (!selectedPurchaseForPayment) return;
 
     const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
-    const paidAmount = parseFloat(paymentAmount || "0");
+    const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+    const newPaymentAmount = parseFloat(paymentAmount || "0");
+    const totalPaidAmount = currentPaidAmount + newPaymentAmount;
     
     let paymentStatus = 'due';
-    if (paidAmount >= totalAmount) {
+    if (totalPaidAmount >= totalAmount) {
       paymentStatus = 'paid';
-    } else if (paidAmount > 0) {
+    } else if (totalPaidAmount > 0) {
       paymentStatus = 'partial';
     }
 
     const paymentData = {
       paymentStatus,
-      paymentAmount: paidAmount,
+      paymentAmount: newPaymentAmount, // Only the new payment amount
       paymentMethod,
       paymentDate: new Date().toISOString(),
       notes: paymentNotes
