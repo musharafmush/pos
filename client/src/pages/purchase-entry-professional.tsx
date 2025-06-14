@@ -823,6 +823,12 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`items.${index}.sellingPrice`, parseFloat(product.price) || 0);
       form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
 
+      // Set default received quantity if not set
+      if (!form.getValues(`items.${index}.receivedQty`) || form.getValues(`items.${index}.receivedQty`) === 0) {
+        form.setValue(`items.${index}.receivedQty`, 1);
+        form.setValue(`items.${index}.quantity`, 1);
+      }
+
       // Calculate GST automatically
       const cgstRate = parseFloat(product.cgstRate || "0");
       const sgstRate = parseFloat(product.sgstRate || "0");
@@ -832,6 +838,19 @@ export default function PurchaseEntryProfessional() {
       if (totalGst > 0) {
         form.setValue(`items.${index}.taxPercentage`, totalGst);
       }
+
+      // Calculate net amount
+      const qty = form.getValues(`items.${index}.receivedQty`) || 1;
+      const cost = parseFloat(product.price) || 0;
+      const taxPercent = totalGst || 18;
+      const subtotal = qty * cost;
+      const tax = (subtotal * taxPercent) / 100;
+      const netAmount = subtotal + tax;
+      
+      form.setValue(`items.${index}.netAmount`, netAmount);
+
+      // Trigger form validation and update
+      form.trigger(`items.${index}`);
 
       toast({
         title: "Product Selected! 🎯",
@@ -1150,13 +1169,15 @@ export default function PurchaseEntryProfessional() {
 
       if (!isEditMode) {
         // Reset form only for new purchases
+        const newOrderNumber = `PO-${Date.now().toString().slice(-8)}`;
         form.reset({
-          orderNumber: `PO-${Date.now().toString().slice(-8)}`,
+          orderNumber: newOrderNumber,
           orderDate: today,
           expectedDate: "",
           paymentTerms: "Net 30",
           paymentMethod: "Credit",
           status: "Pending",
+          taxCalculationMethod: "exclusive",
           freightAmount: 0,
           surchargeAmount: 0,
           packingCharges: 0,
@@ -1174,7 +1195,7 @@ export default function PurchaseEntryProfessional() {
               code: "",
               description: "",
               quantity: 1,
-              receivedQty: 0,
+              receivedQty: 1,
               freeQty: 0,
               unitCost: 0,
               sellingPrice: 0,
@@ -1196,6 +1217,11 @@ export default function PurchaseEntryProfessional() {
             }
           ],
         });
+        
+        // Force form to re-render with clean state
+        setTimeout(() => {
+          setActiveTab("details");
+        }, 100);
       }
     },
     onError: (error: any) => {
@@ -1220,27 +1246,37 @@ export default function PurchaseEntryProfessional() {
         return;
       }
 
-      // Filter and validate items - allow 0 quantities in edit mode if they existed before
+      // Filter and validate items with more flexible validation
       const validItems = data.items.filter(item => {
         const hasProduct = item.productId && item.productId > 0;
-        // In edit mode, include items even with 0 quantity if they have a product selected
-        const hasValidQuantity = isEditMode ? 
-          (hasProduct) : 
-          ((Number(item.receivedQty) || Number(item.quantity) || 0) > 0);
+        const hasValidQuantity = (Number(item.receivedQty) || Number(item.quantity) || 0) > 0;
         const hasCost = (Number(item.unitCost) || 0) >= 0;
+        
+        // Check if item has meaningful data
         return hasProduct && hasValidQuantity && hasCost;
+      });
+
+      console.log('Validating items:', {
+        totalItems: data.items.length,
+        validItems: validItems.length,
+        itemsData: data.items.map(item => ({
+          productId: item.productId,
+          receivedQty: item.receivedQty,
+          quantity: item.quantity,
+          unitCost: item.unitCost
+        }))
       });
 
       if (validItems.length === 0) {
         toast({
           variant: "destructive",
           title: "Validation Error",
-          description: "Please add at least one product to the purchase order.",
+          description: "Please add at least one product with quantity and cost to the purchase order.",
         });
         return;
       }
 
-      // In edit mode, allow 0 quantities but warn about negative costs
+      // Check for negative costs
       const itemsWithIssues = validItems.filter(item => {
         const cost = Number(item.unitCost) || 0;
         return cost < 0;
@@ -1290,35 +1326,36 @@ export default function PurchaseEntryProfessional() {
 
         // Items array in expected format
         items: validItems.map(item => {
-          // Prioritize receivedQty for stock updates
-          const receivedQty = Number(item.receivedQty) || 0;
-          const quantity = Number(item.quantity) || receivedQty || (isEditMode ? 0 : 1);
+          // Ensure we have valid quantities
+          const receivedQty = Math.max(Number(item.receivedQty) || 0, 0);
+          const quantity = Math.max(Number(item.quantity) || receivedQty || 1, 0);
+          const finalQty = receivedQty > 0 ? receivedQty : quantity;
 
-          console.log(`Mapping item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Quantity: ${quantity}`);
+          console.log(`Mapping item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Final Quantity: ${finalQty}`);
 
           return {
-          productId: Number(item.productId),
-          quantity: receivedQty > 0 ? receivedQty : quantity, // Use receivedQty as primary quantity
-          receivedQty: receivedQty, // This is crucial for stock updates
-          freeQty: Number(item.freeQty) || 0,
-          unitCost: Number(item.unitCost) || 0,
-          cost: Number(item.unitCost) || 0,
-          hsnCode: item.hsnCode || "",
-          taxPercentage: Number(item.taxPercentage) || 0,
-          discountAmount: Number(item.discountAmount) || 0,
-          discountPercent: Number(item.discountPercent) || 0,
-          expiryDate: item.expiryDate || "",
-          batchNumber: item.batchNumber || "",
-          sellingPrice: Number(item.sellingPrice) || 0,
-          mrp: Number(item.mrp) || 0,
-          netAmount: Number(item.netAmount) || 0,
-          location: item.location || "",
-          unit: item.unit || "PCS",
-          roiPercent: Number(item.roiPercent) || 0,
-          grossProfitPercent: Number(item.grossProfitPercent) || 0,
-          cashPercent: Number(item.cashPercent) || 0,
-          cashAmount: Number(item.cashAmount) || 0
-        };
+            productId: Number(item.productId),
+            quantity: finalQty,
+            receivedQty: receivedQty,
+            freeQty: Number(item.freeQty) || 0,
+            unitCost: Number(item.unitCost) || 0,
+            cost: Number(item.unitCost) || 0,
+            hsnCode: item.hsnCode || "",
+            taxPercentage: Number(item.taxPercentage) || 0,
+            discountAmount: Number(item.discountAmount) || 0,
+            discountPercent: Number(item.discountPercent) || 0,
+            expiryDate: item.expiryDate || "",
+            batchNumber: item.batchNumber || "",
+            sellingPrice: Number(item.sellingPrice) || 0,
+            mrp: Number(item.mrp) || 0,
+            netAmount: Number(item.netAmount) || 0,
+            location: item.location || "",
+            unit: item.unit || "PCS",
+            roiPercent: Number(item.roiPercent) || 0,
+            grossProfitPercent: Number(item.grossProfitPercent) || 0,
+            cashPercent: Number(item.cashPercent) || 0,
+            cashAmount: Number(item.cashAmount) || 0
+          };
         })
       };
 
