@@ -350,7 +350,20 @@ export default function PurchaseEntryProfessional() {
   // Check if we're in edit mode
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get('edit');
-  const isEditMode = !!editId;
+  const isEditMode = !!editId && editId !== 'null' && editId !== 'undefined';
+
+  // Validate edit ID format
+  useEffect(() => {
+    if (editId && (editId === 'null' || editId === 'undefined' || isNaN(Number(editId)))) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Purchase ID",
+        description: "The purchase order ID in the URL is invalid. Redirecting to create new purchase.",
+      });
+      // Clear the invalid edit parameter
+      window.history.replaceState({}, '', '/purchase-entry-professional');
+    }
+  }, [editId, toast]);
 
   const form = useForm<PurchaseFormData>({
     resolver: zodResolver(purchaseSchema),
@@ -1260,20 +1273,51 @@ export default function PurchaseEntryProfessional() {
   // Submit purchase order (create or update)
   const savePurchaseMutation = useMutation({
     mutationFn: async (data: PurchaseFormData) => {
-      let response;
-      const url = isEditMode ? `/api/purchases/${editId}` : "/api/purchases";
-      const method = isEditMode ? "PUT" : "POST";
+      try {
+        const url = isEditMode ? `/api/purchases/${editId}` : "/api/purchases";
+        const method = isEditMode ? "PUT" : "POST";
 
-      console.log(`${method} ${url} with data:`, data);
+        console.log(`${method} ${url} with data:`, data);
 
-      response = await apiRequest(method, url, data);
+        // Use fetch directly instead of apiRequest for better error handling
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', errorText);
-        throw new Error(isEditMode ? "Failed to update purchase order" : "Failed to create purchase order");
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          let errorMessage = isEditMode ? "Failed to update purchase order" : "Failed to create purchase order";
+          
+          if (contentType && contentType.includes('application/json')) {
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch {
+              errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+          } else {
+            // If response is HTML (like error page), it means server error
+            const errorText = await response.text();
+            console.error('Server returned HTML instead of JSON:', errorText);
+            errorMessage = `Server error: ${response.status}. Please check if the purchase ID exists and try again.`;
+          }
+          
+          throw new Error(errorMessage);
+        }
+
+        const result = await response.json();
+        return result;
+      } catch (error) {
+        console.error('Purchase save error:', error);
+        throw error;
       }
-      return response.json();
     },
     onSuccess: (data) => {
       const totalReceivedItems = form.getValues("items").reduce((total, item) => {
@@ -1370,6 +1414,16 @@ export default function PurchaseEntryProfessional() {
         return;
       }
 
+      // In edit mode, validate that we have a valid edit ID
+      if (isEditMode && (!editId || editId === 'null' || editId === 'undefined')) {
+        toast({
+          variant: "destructive",
+          title: "Edit Error",
+          description: "Invalid purchase order ID. Please try again from the purchases list.",
+        });
+        return;
+      }
+
       // Filter and validate items with more flexible validation
       const validItems = data.items.filter(item => {
         const hasProduct = item.productId && item.productId > 0;
@@ -1383,6 +1437,8 @@ export default function PurchaseEntryProfessional() {
       console.log('Validating items:', {
         totalItems: data.items.length,
         validItems: validItems.length,
+        editMode: isEditMode,
+        editId: editId,
         itemsData: data.items.map(item => ({
           productId: item.productId,
           receivedQty: item.receivedQty,
