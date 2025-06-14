@@ -153,6 +153,9 @@ export const purchases = pgTable('purchases', {
   remarks: text('remarks'),
   orderDate: timestamp('order_date').defaultNow().notNull(),
   receivedDate: timestamp('received_date'),
+  paymentStatus: text('payment_status').default('due'), // due, paid, partial, overdue
+  paidAmount: decimal('paid_amount', { precision: 10, scale: 2 }).default('0'),
+  paymentDate: timestamp('payment_date'),
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 

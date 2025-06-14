@@ -147,8 +147,10 @@ export default function PurchaseDashboard() {
   // Payment mutation
   const updatePaymentStatus = useMutation({
     mutationFn: async ({ purchaseId, paymentData }: { purchaseId: number; paymentData: any }) => {
+      console.log('Updating payment status for purchase:', purchaseId, paymentData);
+      
       const response = await fetch(`/api/purchases/${purchaseId}/payment`, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -156,11 +158,35 @@ export default function PurchaseDashboard() {
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || `Failed to update payment status. Status: ${response.status}`);
+        let errorMessage = `Failed to update payment status. Status: ${response.status}`;
+        
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } else {
+            const errorText = await response.text();
+            // If we get HTML instead of JSON, extract a meaningful error
+            if (errorText.includes('DOCTYPE')) {
+              errorMessage = 'Server error: Payment update endpoint not found or misconfigured';
+            } else {
+              errorMessage = errorText || errorMessage;
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      return response.json();
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return response.json();
+      } else {
+        return { success: true, message: 'Payment status updated successfully' };
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
