@@ -152,21 +152,43 @@ export default function POSEnhanced() {
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [withdrawalNote, setWithdrawalNote] = useState("");
 
-  // Reset cash register form
-  const resetCashRegisterForm = () => {
+  // Reset cash register form with force flag
+  const resetCashRegisterForm = (force = false) => {
+    if (force) {
+      // Force reset with multiple state updates
+      setTimeout(() => {
+        setCashAmount("");
+        setCashReason("");
+        setCashOperation('add');
+      }, 0);
+    } else {
+      setCashAmount("");
+      setCashReason("");
+      setCashOperation('add');
+    }
+  };
+
+  // Reset all cash register states with proper cleanup
+  const resetAllCashRegisterStates = () => {
+    // Force reset all form values
     setCashAmount("");
     setCashReason("");
     setCashOperation('add');
-  };
-
-  // Reset all cash register states
-  const resetAllCashRegisterStates = () => {
-    resetCashRegisterForm();
-    resetWithdrawalForm();
+    setWithdrawalAmount("");
+    setWithdrawalNote("");
+    
+    // Close all dialogs
     setShowCashRegister(false);
     setShowOpenRegister(false);
     setShowCloseRegister(false);
     setShowWithdrawal(false);
+    
+    // Additional cleanup with slight delay to ensure state is cleared
+    setTimeout(() => {
+      setCashAmount("");
+      setCashReason("");
+      setCashOperation('add');
+    }, 50);
   };
 
   // Reset withdrawal form
@@ -461,8 +483,18 @@ export default function POSEnhanced() {
       description: `Register opened with ${formatCurrency(amount)}`,
     });
 
-    resetCashRegisterForm();
+    // Force reset form and close dialog
+    setCashAmount("");
+    setCashReason("");
+    setCashOperation('add');
     setShowOpenRegister(false);
+    
+    // Additional cleanup with delay
+    setTimeout(() => {
+      setCashAmount("");
+      setCashReason("");
+      setCashOperation('add');
+    }, 100);
   };
 
   // Cash operation handler
@@ -502,10 +534,16 @@ export default function POSEnhanced() {
       description: `${cashOperation === 'add' ? 'Added' : 'Removed'} ${formatCurrency(amount)}. Current cash: ${formatCurrency(newCashAmount)}`,
     });
 
-    // Force reset all form states
+    // Force reset all form states immediately and with delay
+    setCashAmount("");
+    setCashReason("");
+    setCashOperation('add');
+    setShowCashRegister(false);
+    
     setTimeout(() => {
-      resetCashRegisterForm();
-      setShowCashRegister(false);
+      setCashAmount("");
+      setCashReason("");
+      setCashOperation('add');
     }, 100);
   };
 
@@ -539,8 +577,15 @@ export default function POSEnhanced() {
       description: `Withdrew ${formatCurrency(amount)}. ${withdrawalNote ? `Note: ${withdrawalNote}` : ''}`,
     });
 
-    resetWithdrawalForm();
+    // Force reset withdrawal form
+    setWithdrawalAmount("");
+    setWithdrawalNote("");
     setShowWithdrawal(false);
+    
+    setTimeout(() => {
+      setWithdrawalAmount("");
+      setWithdrawalNote("");
+    }, 100);
   };
 
   // Update payment tracking when processing sales
@@ -1285,6 +1330,13 @@ export default function POSEnhanced() {
 
     // Cleanup function to auto-hold current cart when navigating away
     const handleBeforeUnload = () => {
+      // Reset cash register forms on navigation
+      setCashAmount("");
+      setCashReason("");
+      setCashOperation('add');
+      setWithdrawalAmount("");
+      setWithdrawalNote("");
+      
       if (cart.length > 0) {
         const autoHoldId = `AUTO-HOLD-${Date.now()}`;
         const autoHoldSale = {
@@ -1316,6 +1368,18 @@ export default function POSEnhanced() {
       handleBeforeUnload(); // Call on component unmount
     };
   }, [cart, selectedCustomer, discount, total, oceanFreight]);
+
+  // Effect to reset cash register forms when navigating between sections
+  useEffect(() => {
+    return () => {
+      // Cleanup cash register forms when component is about to unmount
+      setCashAmount("");
+      setCashReason("");
+      setCashOperation('add');
+      setWithdrawalAmount("");
+      setWithdrawalNote("");
+    };
+  }, []);
 
   // Update bill details when bill number changes
   useEffect(() => {
@@ -2038,10 +2102,18 @@ export default function POSEnhanced() {
 
           {/* Open Register Dialog */}
           <Dialog open={showOpenRegister} onOpenChange={(open) => {
-            setShowOpenRegister(open);
             if (!open) {
-              resetCashRegisterForm();
+              // Force reset form when closing
+              setCashAmount("");
+              setCashReason("");
+              setCashOperation('add');
+              setTimeout(() => {
+                setCashAmount("");
+                setCashReason("");
+                setCashOperation('add');
+              }, 100);
             }
+            setShowOpenRegister(open);
           }}>
             <DialogContent className="max-w-md">
               <DialogHeader>
@@ -2096,10 +2168,16 @@ export default function POSEnhanced() {
 
           {/* Withdrawal Dialog */}
           <Dialog open={showWithdrawal} onOpenChange={(open) => {
-            setShowWithdrawal(open);
             if (!open) {
-              resetWithdrawalForm();
+              // Force reset withdrawal form when closing
+              setWithdrawalAmount("");
+              setWithdrawalNote("");
+              setTimeout(() => {
+                setWithdrawalAmount("");
+                setWithdrawalNote("");
+              }, 100);
             }
+            setShowWithdrawal(open);
           }}>
             <DialogContent className="max-w-md">
               <DialogHeader>
@@ -2166,11 +2244,22 @@ export default function POSEnhanced() {
 
           {/* Close Register Dialog */}
           <Dialog open={showCloseRegister} onOpenChange={(open) => {
-            setShowCloseRegister(open);
             if (!open) {
-              resetCashRegisterForm();
-              resetWithdrawalForm();
+              // Force reset all cash register forms when closing
+              setCashAmount("");
+              setCashReason("");
+              setCashOperation('add');
+              setWithdrawalAmount("");
+              setWithdrawalNote("");
+              setTimeout(() => {
+                setCashAmount("");
+                setCashReason("");
+                setCashOperation('add');
+                setWithdrawalAmount("");
+                setWithdrawalNote("");
+              }, 100);
             }
+            setShowCloseRegister(open);
           }}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
@@ -2315,11 +2404,18 @@ export default function POSEnhanced() {
           {/* Cash Register Management Modal */}
       <Dialog open={showCashRegister} onOpenChange={(open) => {
         if (!open) {
-          // Force reset all states when closing
+          // Immediate reset
+          setCashAmount("");
+          setCashReason("");
+          setCashOperation('add');
+          
+          // Force reset with delay to ensure state is cleared
           setTimeout(() => {
-            resetCashRegisterForm();
+            setCashAmount("");
+            setCashReason("");
+            setCashOperation('add');
             setShowCashRegister(false);
-          }, 10);
+          }, 50);
         } else {
           setShowCashRegister(open);
         }
