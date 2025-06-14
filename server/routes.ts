@@ -2454,13 +2454,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parseFloat(totalPaidAmount.toString()) : 
         currentPaidAmount + newPaymentAmount;
 
+      // Calculate payment status if not provided
+      const purchaseTotal = parseFloat(existingPurchase.total || existingPurchase.totalAmount || '0');
+      let calculatedPaymentStatus = paymentStatus;
+      
+      if (!calculatedPaymentStatus) {
+        if (purchaseTotal > 0) {
+          if (finalPaidAmount >= purchaseTotal) {
+            calculatedPaymentStatus = 'paid';
+          } else if (finalPaidAmount > 0) {
+            calculatedPaymentStatus = 'partial';
+          } else {
+            calculatedPaymentStatus = 'due';
+          }
+        } else {
+          calculatedPaymentStatus = 'due';
+        }
+      }
+
       // Build dynamic update query
       const updateFields = [];
       const updateValues = [];
 
-      if (columnNames.includes('payment_status') && paymentStatus) {
+      if (columnNames.includes('payment_status')) {
         updateFields.push('payment_status = ?');
-        updateValues.push(paymentStatus);
+        updateValues.push(calculatedPaymentStatus);
       }
 
       if (columnNames.includes('paid_amount')) {

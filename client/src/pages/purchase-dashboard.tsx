@@ -264,16 +264,41 @@ export default function PurchaseDashboard() {
     sum + (parseFloat(p.totalAmount?.toString() || "0")), 0
   );
   
-  // Payment statistics
-  const paidPurchases = purchases.filter((p: Purchase) => p.paymentStatus === "paid").length;
-  const duePurchases = purchases.filter((p: Purchase) => 
-    !p.paymentStatus || p.paymentStatus === "due"
-  ).length;
+  // Payment statistics with improved calculation
+  const paidPurchases = purchases.filter((p: Purchase) => {
+    const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
+    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+    return p.paymentStatus === "paid" || (totalAmount > 0 && paidAmount >= totalAmount);
+  }).length;
+  
+  const duePurchases = purchases.filter((p: Purchase) => {
+    const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
+    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+    const paymentStatus = p.paymentStatus;
+    
+    // Consider as due if explicitly marked as due, or if no payment status and unpaid
+    return paymentStatus === "due" || 
+           paymentStatus === "overdue" || 
+           (!paymentStatus && paidAmount < totalAmount) ||
+           (paymentStatus === "partial" && paidAmount < totalAmount);
+  }).length;
+  
   const totalDueAmount = purchases
-    .filter((p: Purchase) => !p.paymentStatus || p.paymentStatus === "due")
-    .reduce((sum: number, p: Purchase) => 
-      sum + (parseFloat(p.totalAmount?.toString() || "0")), 0
-    );
+    .filter((p: Purchase) => {
+      const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
+      const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+      const paymentStatus = p.paymentStatus;
+      
+      return paymentStatus === "due" || 
+             paymentStatus === "overdue" || 
+             (!paymentStatus && paidAmount < totalAmount) ||
+             (paymentStatus === "partial" && paidAmount < totalAmount);
+    })
+    .reduce((sum: number, p: Purchase) => {
+      const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
+      const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+      return sum + Math.max(0, totalAmount - paidAmount);
+    }, 0);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -394,7 +419,6 @@ export default function PurchaseDashboard() {
 
     const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
     const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
-    const remainingAmount = totalAmount - currentPaidAmount;
 
     // Check if payment amount is reasonable
     if (newPaymentAmount > (totalAmount * 2)) {
@@ -410,10 +434,14 @@ export default function PurchaseDashboard() {
     
     // Determine payment status based on amount paid
     let paymentStatus = 'due';
-    if (totalPaidAmount >= totalAmount) {
-      paymentStatus = 'paid';
-    } else if (totalPaidAmount > 0) {
-      paymentStatus = 'partial';
+    if (totalAmount > 0) {
+      if (totalPaidAmount >= totalAmount) {
+        paymentStatus = 'paid';
+      } else if (totalPaidAmount > 0) {
+        paymentStatus = 'partial';
+      } else {
+        paymentStatus = 'due';
+      }
     }
 
     // Validate payment method
@@ -895,12 +923,37 @@ export default function PurchaseDashboard() {
                               </TableCell>
                               <TableCell className="py-4">
                                 {(() => {
-                                  const paymentStatus = purchase.paymentStatus || 'due';
                                   const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
                                   const paidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
                                   
-                                  // Calculate payment percentage for partial payments
-                                  const paymentPercentage = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
+                                  // Determine payment status based on amounts
+                                  let paymentStatus = 'due';
+                                  let paymentPercentage = 0;
+                                  
+                                  if (totalAmount > 0) {
+                                    paymentPercentage = (paidAmount / totalAmount) * 100;
+                                    
+                                    if (paidAmount >= totalAmount) {
+                                      paymentStatus = 'paid';
+                                    } else if (paidAmount > 0) {
+                                      paymentStatus = 'partial';
+                                    } else {
+                                      // Check if overdue based on expected date
+                                      const expectedDate = purchase.expectedDate ? new Date(purchase.expectedDate) : null;
+                                      const today = new Date();
+                                      if (expectedDate && expectedDate < today) {
+                                        paymentStatus = 'overdue';
+                                      } else {
+                                        paymentStatus = 'due';
+                                      }
+                                    }
+                                  }
+                                  
+                                  // Override with stored payment status if it exists and is valid
+                                  const storedStatus = purchase.paymentStatus;
+                                  if (storedStatus && ['paid', 'partial', 'due', 'overdue'].includes(storedStatus)) {
+                                    paymentStatus = storedStatus;
+                                  }
                                   
                                   const statusConfig = {
                                     paid: { 
@@ -918,7 +971,7 @@ export default function PurchaseDashboard() {
                                       bgColor: "bg-blue-500"
                                     },
                                     due: { 
-                                      variant: "destructive" as const, 
+                                      variant: "secondary" as const, 
                                       icon: AlertCircle, 
                                       color: "text-orange-700 bg-orange-50 border-orange-200",
                                       label: "Payment Due",
@@ -935,6 +988,7 @@ export default function PurchaseDashboard() {
 
                                   const config = statusConfig[paymentStatus as keyof typeof statusConfig] || statusConfig.due;
                                   const Icon = config.icon;
+                                  const outstandingAmount = Math.max(0, totalAmount - paidAmount);
 
                                   return (
                                     <div className="space-y-1">
@@ -947,9 +1001,14 @@ export default function PurchaseDashboard() {
                                           Paid: {formatCurrency(paidAmount)} / {formatCurrency(totalAmount)}
                                         </div>
                                       )}
-                                      {(paymentStatus === 'due' || paymentStatus === 'overdue') && totalAmount > 0 && (
+                                      {(paymentStatus === 'due' || paymentStatus === 'overdue') && outstandingAmount > 0 && (
                                         <div className="text-xs text-gray-600">
-                                          Outstanding: {formatCurrency(totalAmount - paidAmount)}
+                                          Outstanding: {formatCurrency(outstandingAmount)}
+                                        </div>
+                                      )}
+                                      {paymentStatus === 'paid' && (
+                                        <div className="text-xs text-green-600">
+                                          Fully paid on {purchase.paymentDate ? format(new Date(purchase.paymentDate), 'MMM dd') : 'N/A'}
                                         </div>
                                       )}
                                     </div>
