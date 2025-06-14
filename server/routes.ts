@@ -2382,6 +2382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🔄 Updating payment status for purchase:', id, req.body);
 
+      // Validate purchase ID
       if (isNaN(id) || id <= 0) {
         return res.status(400).json({ 
           error: 'Invalid purchase ID',
@@ -2389,11 +2390,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Validate payment amount
-      if (paymentAmount !== undefined && (isNaN(parseFloat(paymentAmount)) || parseFloat(paymentAmount) <= 0)) {
+      // Validate payment amount with more detailed checks
+      if (paymentAmount !== undefined) {
+        const amount = parseFloat(paymentAmount);
+        if (isNaN(amount)) {
+          return res.status(400).json({ 
+            error: 'Invalid payment amount format',
+            message: 'Payment amount must be a valid number'
+          });
+        }
+        if (amount <= 0) {
+          return res.status(400).json({ 
+            error: 'Invalid payment amount',
+            message: 'Payment amount must be greater than 0'
+          });
+        }
+        if (amount > 10000000) { // 1 crore limit
+          return res.status(400).json({ 
+            error: 'Payment amount too large',
+            message: 'Payment amount exceeds maximum limit'
+          });
+        }
+      }
+
+      // Validate payment method
+      if (paymentMethod && typeof paymentMethod !== 'string') {
         return res.status(400).json({ 
-          error: 'Invalid payment amount',
-          message: 'Payment amount must be a positive number'
+          error: 'Invalid payment method',
+          message: 'Payment method must be a text value'
+        });
+      }
+
+      // Validate payment status
+      const validStatuses = ['due', 'paid', 'partial', 'overdue'];
+      if (paymentStatus && !validStatuses.includes(paymentStatus)) {
+        return res.status(400).json({ 
+          error: 'Invalid payment status',
+          message: `Payment status must be one of: ${validStatuses.join(', ')}`
         });
       }
 

@@ -144,56 +144,84 @@ export default function PurchaseDashboard() {
     },
   });
 
-  // Payment mutation
+  // Payment mutation with enhanced error handling
   const updatePaymentStatus = useMutation({
     mutationFn: async ({ purchaseId, paymentData }: { purchaseId: number; paymentData: any }) => {
-      console.log('Updating payment status for purchase:', purchaseId, paymentData);
+      console.log('🔄 Updating payment status for purchase:', purchaseId, paymentData);
       
-      const response = await fetch(`/api/purchases/${purchaseId}/payment`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(paymentData),
-      });
+      try {
+        const response = await fetch(`/api/purchases/${purchaseId}/payment`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(paymentData),
+        });
 
-      if (!response.ok) {
-        let errorMessage = `Failed to update payment status. Status: ${response.status}`;
-        
-        try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } else {
-            const errorText = await response.text();
-            // If we get HTML instead of JSON, extract a meaningful error
-            if (errorText.includes('DOCTYPE')) {
-              errorMessage = 'Server error: Payment update endpoint not found or misconfigured';
+        console.log('📡 Payment API response status:', response.status);
+
+        if (!response.ok) {
+          let errorMessage = `Failed to update payment status. Status: ${response.status}`;
+          
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorData.message || errorMessage;
+              console.error('❌ Payment API error data:', errorData);
             } else {
-              errorMessage = errorText || errorMessage;
+              const errorText = await response.text();
+              console.error('❌ Payment API error text:', errorText);
+              
+              // If we get HTML instead of JSON, extract a meaningful error
+              if (errorText.includes('DOCTYPE') || errorText.includes('<html>')) {
+                errorMessage = 'Server error: Payment endpoint not responding correctly. Please try again.';
+              } else if (errorText.includes('Cannot read properties')) {
+                errorMessage = 'Database error: Please check the purchase order exists and try again.';
+              } else {
+                errorMessage = errorText.substring(0, 100) || errorMessage;
+              }
             }
+          } catch (parseError) {
+            console.error('❌ Error parsing response:', parseError);
+            errorMessage = 'Network error: Unable to process server response. Please try again.';
           }
-        } catch (parseError) {
-          console.error('Error parsing response:', parseError);
+          
+          throw new Error(errorMessage);
         }
-        
-        throw new Error(errorMessage);
-      }
 
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return response.json();
-      } else {
-        return { success: true, message: 'Payment status updated successfully' };
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const result = await response.json();
+          console.log('✅ Payment update successful:', result);
+          return result;
+        } else {
+          return { success: true, message: 'Payment status updated successfully' };
+        }
+      } catch (networkError) {
+        console.error('🌐 Network error during payment update:', networkError);
+        if (networkError.name === 'TypeError' && networkError.message.includes('fetch')) {
+          throw new Error('Network connection error. Please check your internet connection and try again.');
+        }
+        throw networkError;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('✅ Payment mutation successful:', data);
+      
+      // Invalidate and refetch purchase data
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      
+      const paymentInfo = data.paymentRecorded ? 
+        `Payment of ${formatCurrency(data.paymentRecorded)} recorded successfully` :
+        'Payment status updated successfully';
+      
       toast({
-        title: "Success",
-        description: "Payment status updated successfully",
+        title: "Payment Recorded",
+        description: paymentInfo,
       });
+      
+      // Reset form state
       setPaymentDialogOpen(false);
       setSelectedPurchaseForPayment(null);
       setPaymentAmount("");
@@ -201,10 +229,21 @@ export default function PurchaseDashboard() {
       setPaymentMethod("cash");
     },
     onError: (error: Error) => {
-      console.error('Payment update error:', error);
+      console.error('❌ Payment update error:', error);
+      
+      // Provide user-friendly error messages
+      let userMessage = error.message;
+      if (error.message.includes('Network')) {
+        userMessage = 'Connection problem. Please check your internet and try again.';
+      } else if (error.message.includes('Database')) {
+        userMessage = 'Database issue. Please refresh the page and try again.';
+      } else if (error.message.includes('Server error')) {
+        userMessage = 'Server problem. Please wait a moment and try again.';
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to update payment status",
+        title: "Payment Failed",
+        description: userMessage,
         variant: "destructive",
       });
     },
@@ -333,14 +372,21 @@ export default function PurchaseDashboard() {
   };
 
   const confirmPayment = () => {
-    if (!selectedPurchaseForPayment) return;
-
-    // Validate payment amount
-    const newPaymentAmount = parseFloat(paymentAmount || "0");
-    if (newPaymentAmount <= 0) {
+    if (!selectedPurchaseForPayment) {
       toast({
         title: "Error",
-        description: "Please enter a valid payment amount",
+        description: "No purchase order selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate payment amount with better error messages
+    const newPaymentAmount = parseFloat(paymentAmount || "0");
+    if (isNaN(newPaymentAmount) || newPaymentAmount <= 0) {
+      toast({
+        title: "Invalid Payment Amount",
+        description: "Please enter a valid payment amount greater than 0",
         variant: "destructive",
       });
       return;
@@ -348,8 +394,21 @@ export default function PurchaseDashboard() {
 
     const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
     const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+    const remainingAmount = totalAmount - currentPaidAmount;
+
+    // Check if payment amount is reasonable
+    if (newPaymentAmount > (totalAmount * 2)) {
+      toast({
+        title: "Warning",
+        description: "Payment amount seems unusually high. Please verify the amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const totalPaidAmount = currentPaidAmount + newPaymentAmount;
     
+    // Determine payment status based on amount paid
     let paymentStatus = 'due';
     if (totalPaidAmount >= totalAmount) {
       paymentStatus = 'paid';
@@ -357,16 +416,41 @@ export default function PurchaseDashboard() {
       paymentStatus = 'partial';
     }
 
+    // Validate payment method
+    if (!paymentMethod || paymentMethod.trim() === '') {
+      toast({
+        title: "Payment Method Required",
+        description: "Please select a payment method",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const paymentData = {
       paymentStatus,
       paymentAmount: newPaymentAmount,
-      totalPaidAmount: totalPaidAmount, // Include total paid amount
-      paymentMethod,
+      totalPaidAmount: totalPaidAmount,
+      paymentMethod: paymentMethod.trim(),
       paymentDate: new Date().toISOString(),
-      notes: paymentNotes || `Payment recorded via dashboard - ${paymentMethod}`
+      notes: paymentNotes?.trim() || `Payment of ${formatCurrency(newPaymentAmount)} recorded via dashboard using ${paymentMethod}`
     };
 
-    console.log('Confirming payment with data:', paymentData);
+    console.log('🔄 Confirming payment with validated data:', paymentData);
+    console.log('📊 Payment breakdown:', {
+      orderNumber: selectedPurchaseForPayment.orderNumber,
+      totalAmount: formatCurrency(totalAmount),
+      currentPaid: formatCurrency(currentPaidAmount),
+      newPayment: formatCurrency(newPaymentAmount),
+      totalAfterPayment: formatCurrency(totalPaidAmount),
+      remainingBalance: formatCurrency(Math.max(0, totalAmount - totalPaidAmount)),
+      status: paymentStatus
+    });
+
+    // Show loading state
+    toast({
+      title: "Processing Payment",
+      description: "Recording payment details...",
+    });
 
     updatePaymentStatus.mutate({ 
       purchaseId: selectedPurchaseForPayment.id, 
@@ -1408,7 +1492,17 @@ export default function PurchaseDashboard() {
                     {(() => {
                       const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
                       const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
-                      const remaining = totalAmount - paidAmount;
+                      const remaining = Math.max(0, totalAmount - paidAmount);
+                      
+                      if (remaining <= 0) {
+                        return (
+                          <div className="col-span-2 text-center py-2">
+                            <span className="text-sm text-green-600 font-medium">
+                              ✅ This order is already fully paid
+                            </span>
+                          </div>
+                        );
+                      }
                       
                       return (
                         <>
@@ -1418,6 +1512,7 @@ export default function PurchaseDashboard() {
                             size="sm"
                             onClick={() => setPaymentAmount((remaining / 2).toFixed(2))}
                             className="text-xs"
+                            disabled={remaining <= 0}
                           >
                             50% ({formatCurrency(remaining / 2)})
                           </Button>
@@ -1427,6 +1522,7 @@ export default function PurchaseDashboard() {
                             size="sm"
                             onClick={() => setPaymentAmount(remaining.toFixed(2))}
                             className="text-xs"
+                            disabled={remaining <= 0}
                           >
                             Full Amount ({formatCurrency(remaining)})
                           </Button>
@@ -1465,23 +1561,33 @@ export default function PurchaseDashboard() {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setPaymentDialogOpen(false)}
+                disabled={updatePaymentStatus.isPending}
+              >
                 Cancel
               </Button>
               <Button 
                 onClick={confirmPayment}
-                disabled={updatePaymentStatus.isPending || !paymentAmount || parseFloat(paymentAmount) <= 0}
-                className="bg-green-600 hover:bg-green-700"
+                disabled={
+                  updatePaymentStatus.isPending || 
+                  !paymentAmount || 
+                  parseFloat(paymentAmount || "0") <= 0 ||
+                  !paymentMethod ||
+                  !selectedPurchaseForPayment
+                }
+                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
               >
                 {updatePaymentStatus.isPending ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Recording...
+                    Recording Payment...
                   </>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Record Payment
+                    Record Payment ({paymentAmount ? formatCurrency(parseFloat(paymentAmount)) : formatCurrency(0)})
                   </>
                 )}
               </Button>
