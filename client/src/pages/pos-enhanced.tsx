@@ -354,15 +354,17 @@ export default function POSEnhanced() {
       totalOceanCost: 0
     });
 
-    // Clear held sales if requested
+    // Only clear held sales if explicitly requested
     if (clearHeldSales) {
       setHoldSales([]);
-    }
-
-    if (cart.length > 0 || clearHeldSales) {
+      toast({
+        title: "All Data Cleared",
+        description: "Cart, ocean freight, and all held sales have been cleared",
+      });
+    } else if (cart.length > 0) {
       toast({
         title: "Cart Cleared",
-        description: clearHeldSales ? "All items, ocean freight, and held sales have been cleared" : "All items and ocean freight have been cleared",
+        description: "Current cart and ocean freight have been cleared. Held sales preserved.",
       });
     }
   };
@@ -681,8 +683,8 @@ export default function POSEnhanced() {
         });
       }
 
-      // Reset everything
-      clearCart();
+      // Reset everything but preserve held sales
+      clearCart(false);
       setShowPaymentDialog(false);
       setAmountPaid("");
       setBillNumber(`POS${Date.now()}`);
@@ -914,7 +916,7 @@ export default function POSEnhanced() {
     const holdId = `HOLD-${Date.now()}`;
     const holdSale = {
       id: holdId,
-      cart: [...cart],
+      cart: [...cart], // Create deep copy to avoid reference issues
       customer: selectedCustomer,
       discount: discount,
       notes: `Held sale at ${new Date().toLocaleTimeString()}`,
@@ -922,51 +924,43 @@ export default function POSEnhanced() {
       total: total
     };
 
+    // Add to held sales first
     setHoldSales(prev => [...prev, holdSale]);
-    clearCart();
+    
+    // Then clear current cart (but not held sales)
+    clearCart(false);
 
     toast({
       title: "Sale Held",
-      description: `Sale ${holdId} has been held successfully`,
+      description: `Sale ${holdId} has been held successfully. ${cart.length} items saved.`,
     });
   };
 
   // Recall held sale
   const recallHeldSale = (holdSale: typeof holdSales[0]) => {
-    if (cart.length > 0) {
-      // Auto-clear current cart and then recall
-      setCart([]);
-      setSelectedCustomer(null);
-      setDiscount(0);
-      setAmountPaid("");
-      setPaymentMethod("cash");
-      setBarcodeInput("");
-      
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        setCart(holdSale.cart);
-        setSelectedCustomer(holdSale.customer);
-        setDiscount(holdSale.discount);
-
-        toast({
-          title: "Current Cart Cleared",
-          description: "Previous cart cleared and held sale recalled",
-        });
-      }, 100);
-    } else {
-      setCart(holdSale.cart);
+    // Clear current cart state first
+    setCart([]);
+    setSelectedCustomer(null);
+    setDiscount(0);
+    setAmountPaid("");
+    setPaymentMethod("cash");
+    setBarcodeInput("");
+    
+    // Use setTimeout to ensure state clearing completes before setting new values
+    setTimeout(() => {
+      setCart([...holdSale.cart]); // Create new array to avoid reference issues
       setSelectedCustomer(holdSale.customer);
       setDiscount(holdSale.discount);
-    }
+      
+      // Remove from held sales after successful recall
+      setHoldSales(prev => prev.filter(sale => sale.id !== holdSale.id));
+      setShowHoldSales(false);
 
-    // Remove from held sales
-    setHoldSales(prev => prev.filter(sale => sale.id !== holdSale.id));
-    setShowHoldSales(false);
-
-    toast({
-      title: "Sale Recalled",
-      description: `Sale ${holdSale.id} has been recalled successfully`,
-    });
+      toast({
+        title: "Sale Recalled",
+        description: `Sale ${holdSale.id} has been recalled successfully`,
+      });
+    }, 50);
   };
 
   // Delete held sale
