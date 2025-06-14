@@ -309,13 +309,24 @@ export default function PurchaseDashboard() {
       // Invalidate and refetch purchase data
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
       
-      const paymentInfo = data.paymentRecorded ? 
-        `Payment of ${formatCurrency(data.paymentRecorded)} recorded successfully` :
-        'Payment status updated successfully';
+      // Enhanced success message based on completion status
+      let successTitle = "Payment Recorded";
+      let successDescription = data.message || 'Payment status updated successfully';
+      
+      if (data.isCompleted || data.statusAutoUpdated) {
+        successTitle = "Purchase Completed! 🎉";
+        successDescription = `Payment recorded and purchase order completed successfully. Total paid: ${formatCurrency(data.totalPaid || 0)}`;
+      } else if (data.paymentStatus === 'paid') {
+        successTitle = "Payment Completed";
+        successDescription = `Full payment of ${formatCurrency(data.paymentRecorded || 0)} recorded successfully`;
+      } else if (data.paymentStatus === 'partial') {
+        successTitle = "Partial Payment Recorded";
+        successDescription = `Payment of ${formatCurrency(data.paymentRecorded || 0)} recorded. Remaining: ${formatCurrency(data.remainingAmount || 0)}`;
+      }
       
       toast({
-        title: "Payment Recorded",
-        description: paymentInfo,
+        title: successTitle,
+        description: successDescription,
       });
       
       // Reset form state
@@ -544,9 +555,13 @@ export default function PurchaseDashboard() {
     
     // Determine payment status based on amount paid
     let paymentStatus = 'due';
+    let purchaseStatus = selectedPurchaseForPayment.status || 'pending';
+    
     if (totalAmount > 0) {
       if (totalPaidAmount >= totalAmount) {
         paymentStatus = 'paid';
+        // Auto-complete purchase when fully paid
+        purchaseStatus = 'completed';
       } else if (totalPaidAmount > 0) {
         paymentStatus = 'partial';
       } else {
@@ -570,7 +585,10 @@ export default function PurchaseDashboard() {
       totalPaidAmount: totalPaidAmount,
       paymentMethod: paymentMethod.trim(),
       paymentDate: new Date().toISOString(),
-      notes: paymentNotes?.trim() || `Payment of ${formatCurrency(newPaymentAmount)} recorded via dashboard using ${paymentMethod}`
+      notes: paymentNotes?.trim() || `Payment of ${formatCurrency(newPaymentAmount)} recorded via dashboard using ${paymentMethod}`,
+      // Include purchase status update if payment is complete
+      updatePurchaseStatus: paymentStatus === 'paid',
+      newPurchaseStatus: purchaseStatus
     };
 
     console.log('🔄 Confirming payment with validated data:', paymentData);
@@ -581,13 +599,17 @@ export default function PurchaseDashboard() {
       newPayment: formatCurrency(newPaymentAmount),
       totalAfterPayment: formatCurrency(totalPaidAmount),
       remainingBalance: formatCurrency(Math.max(0, totalAmount - totalPaidAmount)),
-      status: paymentStatus
+      paymentStatus: paymentStatus,
+      purchaseStatus: purchaseStatus,
+      willAutoComplete: paymentStatus === 'paid'
     });
 
-    // Show loading state
+    // Show loading state with completion info
     toast({
       title: "Processing Payment",
-      description: "Recording payment details...",
+      description: paymentStatus === 'paid' ? 
+        "Recording payment and completing purchase order..." : 
+        "Recording payment details...",
     });
 
     updatePaymentStatus.mutate({ 
