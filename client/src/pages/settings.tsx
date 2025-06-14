@@ -23,6 +23,241 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTheme } from "@/components/ui/theme-provider";
 import { apiRequest } from "@/lib/queryClient";
+
+// Tax Settings Component
+function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
+  const [taxSettings, setTaxSettings] = useState({
+    defaultTaxRate: 7,
+    taxCalculationMethod: 'afterDiscount',
+    pricesIncludeTax: false,
+    enableMultipleTaxRates: false,
+    taxCategories: [
+      { id: 1, name: 'Food & Groceries', rate: 0 },
+      { id: 2, name: 'General Merchandise', rate: 7 }
+    ]
+  });
+
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryRate, setNewCategoryRate] = useState(0);
+
+  // Load tax settings from localStorage on component mount
+  useEffect(() => {
+    const savedTaxSettings = localStorage.getItem('taxSettings');
+    if (savedTaxSettings) {
+      try {
+        const settings = JSON.parse(savedTaxSettings);
+        setTaxSettings(prev => ({ ...prev, ...settings }));
+      } catch (error) {
+        console.error('Error loading tax settings:', error);
+      }
+    }
+  }, []);
+
+  const updateTaxSetting = (key: string, value: any) => {
+    setTaxSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const updateTaxCategory = (id: number, field: string, value: any) => {
+    setTaxSettings(prev => ({
+      ...prev,
+      taxCategories: prev.taxCategories.map(cat => 
+        cat.id === id ? { ...cat, [field]: value } : cat
+      )
+    }));
+  };
+
+  const addTaxCategory = () => {
+    if (newCategoryName.trim()) {
+      const newId = Math.max(...taxSettings.taxCategories.map(c => c.id)) + 1;
+      setTaxSettings(prev => ({
+        ...prev,
+        taxCategories: [...prev.taxCategories, {
+          id: newId,
+          name: newCategoryName.trim(),
+          rate: newCategoryRate
+        }]
+      }));
+      setNewCategoryName('');
+      setNewCategoryRate(0);
+    }
+  };
+
+  const removeTaxCategory = (id: number) => {
+    setTaxSettings(prev => ({
+      ...prev,
+      taxCategories: prev.taxCategories.filter(cat => cat.id !== id)
+    }));
+  };
+
+  const handleSave = () => {
+    onSave(taxSettings);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="defaultTaxRate">Default Tax Rate (%)</Label>
+          <Input 
+            id="defaultTaxRate" 
+            type="number" 
+            placeholder="Enter tax rate" 
+            value={taxSettings.defaultTaxRate}
+            onChange={(e) => updateTaxSetting('defaultTaxRate', parseFloat(e.target.value) || 0)}
+            min="0"
+            step="0.01"
+          />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            This rate will be applied to all sales by default
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="taxCalculation">Tax Calculation Method</Label>
+          <Select 
+            value={taxSettings.taxCalculationMethod} 
+            onValueChange={(value) => updateTaxSetting('taxCalculationMethod', value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select calculation method" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="afterDiscount">Calculate after discount</SelectItem>
+              <SelectItem value="beforeDiscount">Calculate before discount</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="taxIncluded">Prices include tax</Label>
+          <Switch 
+            id="taxIncluded" 
+            checked={taxSettings.pricesIncludeTax}
+            onCheckedChange={(checked) => updateTaxSetting('pricesIncludeTax', checked)}
+          />
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          If enabled, entered product prices are considered tax-inclusive
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="multipleTaxes">Enable multiple tax rates</Label>
+          <Switch 
+            id="multipleTaxes" 
+            checked={taxSettings.enableMultipleTaxRates}
+            onCheckedChange={(checked) => updateTaxSetting('enableMultipleTaxRates', checked)}
+          />
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Allow different tax rates for different product categories
+        </p>
+      </div>
+
+      {taxSettings.enableMultipleTaxRates && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h3 className="text-lg font-medium mb-4">Tax Categories</h3>
+
+          <div className="space-y-4">
+            {taxSettings.taxCategories.map((category) => (
+              <div key={category.id} className="grid grid-cols-12 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="col-span-6">
+                  <Input
+                    value={category.name}
+                    onChange={(e) => updateTaxCategory(category.id, 'name', e.target.value)}
+                    placeholder="Category name"
+                  />
+                </div>
+                <div className="col-span-4">
+                  <Input
+                    type="number"
+                    value={category.rate}
+                    onChange={(e) => updateTaxCategory(category.id, 'rate', parseFloat(e.target.value) || 0)}
+                    placeholder="Tax rate (%)"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => removeTaxCategory(category.id)}
+                    className="w-full text-red-600 hover:text-red-700"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            <div className="grid grid-cols-12 gap-4 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+              <div className="col-span-6">
+                <Input
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="New category name"
+                />
+              </div>
+              <div className="col-span-4">
+                <Input
+                  type="number"
+                  value={newCategoryRate}
+                  onChange={(e) => setNewCategoryRate(parseFloat(e.target.value) || 0)}
+                  placeholder="Tax rate (%)"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div className="col-span-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={addTaxCategory}
+                  className="w-full"
+                  disabled={!newCategoryName.trim()}
+                >
+                  <PlusIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+          <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Tax Configuration Preview</h4>
+          <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+            <p>• Default tax rate: {taxSettings.defaultTaxRate}%</p>
+            <p>• Calculation method: {taxSettings.taxCalculationMethod === 'afterDiscount' ? 'After discount' : 'Before discount'}</p>
+            <p>• Prices include tax: {taxSettings.pricesIncludeTax ? 'Yes' : 'No'}</p>
+            <p>• Multiple tax rates: {taxSettings.enableMultipleTaxRates ? 'Enabled' : 'Disabled'}</p>
+            {taxSettings.enableMultipleTaxRates && (
+              <div className="mt-2">
+                <p className="font-medium">Tax categories:</p>
+                {taxSettings.taxCategories.map(cat => (
+                  <p key={cat.id} className="ml-2">- {cat.name}: {cat.rate}%</p>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end mt-6">
+        <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
+          Save Tax Settings
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { PrinterIcon, DollarSignIcon, BellIcon, ShieldIcon, UserIcon, DatabaseIcon } from 'lucide-react';
@@ -1015,107 +1250,15 @@ ${receiptSettings.receiptFooter}
                 <CardDescription>Configure tax rates and calculation methods</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="defaultTaxRate">Default Tax Rate (%)</Label>
-                    <Input 
-                      id="defaultTaxRate" 
-                      type="number" 
-                      placeholder="Enter tax rate" 
-                      defaultValue="7"
-                      min="0"
-                      step="0.01"
-                    />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      This rate will be applied to all sales by default
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="taxCalculation">Tax Calculation Method</Label>
-                    <Select defaultValue="afterDiscount">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select calculation method" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="afterDiscount">Calculate after discount</SelectItem>
-                        <SelectItem value="beforeDiscount">Calculate before discount</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="taxIncluded">Prices include tax</Label>
-                    <Switch id="taxIncluded" />
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    If enabled, entered product prices are considered tax-inclusive
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="multipleTaxes">Enable multiple tax rates</Label>
-                    <Switch id="multipleTaxes" />
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Allow different tax rates for different product categories
-                  </p>
-                </div>
-
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                  <h3 className="text-lg font-medium mb-4">Tax Categories</h3>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                      <div className="col-span-2">
-                        <Label htmlFor="foodCategory">Food & Groceries</Label>
-                      </div>
-                      <div>
-                        <Input 
-                          id="foodCategory" 
-                          type="number" 
-                          defaultValue="0"
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                      <div className="col-span-2">
-                        <Label htmlFor="generalCategory">General Merchandise</Label>
-                      </div>
-                      <div>
-                        <Input 
-                          id="generalCategory" 
-                          type="number" 
-                          defaultValue="7"
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <Button variant="outline" className="w-full">
-                      <PlusIcon className="h-4 w-4 mr-2" />
-                      Add Tax Category
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex justify-end mt-6">
-                  <Button onClick={() => {
+                <TaxSettings 
+                  onSave={(settings) => {
+                    localStorage.setItem('taxSettings', JSON.stringify(settings));
                     toast({
                       title: "Tax settings updated",
                       description: "Tax settings have been saved successfully",
                     });
-                  }}>
-                    Save Tax Settings
-                  </Button>
-                </div>
+                  }}
+                />
               </CardContent>
             </Card>
           </TabsContent>
