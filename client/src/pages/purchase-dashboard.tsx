@@ -158,7 +158,7 @@ export default function PurchaseDashboard() {
   const updatePurchaseStatus = useMutation({
     mutationFn: async ({ purchaseId, status }: { purchaseId: number; status: string }) => {
       console.log('🔄 Updating purchase status:', purchaseId, status);
-      
+
       const response = await fetch(`/api/purchases/${purchaseId}/status`, {
         method: 'PUT',
         headers: {
@@ -200,7 +200,7 @@ export default function PurchaseDashboard() {
   const updatePaymentStatus = useMutation({
     mutationFn: async ({ purchaseId, paymentData }: { purchaseId: number; paymentData: any }) => {
       console.log('🔄 Updating payment status for purchase:', purchaseId, paymentData);
-      
+
       try {
         const response = await fetch(`/api/purchases/${purchaseId}/payment`, {
           method: 'PUT',
@@ -214,7 +214,7 @@ export default function PurchaseDashboard() {
 
         if (!response.ok) {
           let errorMessage = `Failed to update payment status. Status: ${response.status}`;
-          
+
           try {
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
@@ -224,7 +224,7 @@ export default function PurchaseDashboard() {
             } else {
               const errorText = await response.text();
               console.error('❌ Payment API error text:', errorText);
-              
+
               // If we get HTML instead of JSON, extract a meaningful error
               if (errorText.includes('DOCTYPE') || errorText.includes('<html>')) {
                 errorMessage = 'Server error: Payment endpoint not responding correctly. Please try again.';
@@ -238,7 +238,7 @@ export default function PurchaseDashboard() {
             console.error('❌ Error parsing response:', parseError);
             errorMessage = 'Network error: Unable to process server response. Please try again.';
           }
-          
+
           throw new Error(errorMessage);
         }
 
@@ -260,12 +260,12 @@ export default function PurchaseDashboard() {
     },
     onSuccess: async (data, variables) => {
       console.log('✅ Payment mutation successful:', data);
-      
+
       // Check if payment is now fully paid and auto-update status to completed
       if (data.purchase && selectedPurchaseForPayment) {
         const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
         const newPaidAmount = parseFloat(data.totalPaid?.toString() || data.purchase.paid_amount?.toString() || "0");
-        
+
         console.log('💰 Payment status check:', {
           totalAmount,
           newPaidAmount,
@@ -277,9 +277,9 @@ export default function PurchaseDashboard() {
         if (newPaidAmount >= totalAmount && 
             selectedPurchaseForPayment.status !== 'completed' && 
             data.purchase.payment_status === 'paid') {
-          
+
           console.log('🔄 Auto-updating purchase status to completed (fully paid)');
-          
+
           try {
             const statusResponse = await fetch(`/api/purchases/${selectedPurchaseForPayment.id}/status`, {
               method: 'PUT',
@@ -305,14 +305,14 @@ export default function PurchaseDashboard() {
           }
         }
       }
-      
+
       // Invalidate and refetch purchase data
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-      
+
       // Enhanced success message based on completion status
       let successTitle = "Payment Recorded";
       let successDescription = data.message || 'Payment status updated successfully';
-      
+
       if (data.statusAutoUpdated || data.isCompleted) {
         successTitle = "Purchase Order Completed! 🎉";
         successDescription = `Payment recorded and purchase order automatically marked as completed. Total paid: ${formatCurrency(data.totalPaid || 0)}`;
@@ -323,12 +323,12 @@ export default function PurchaseDashboard() {
         successTitle = "Partial Payment Recorded";
         successDescription = `Payment of ${formatCurrency(data.paymentRecorded || 0)} recorded. Remaining: ${formatCurrency(data.remainingAmount || 0)}`;
       }
-      
+
       toast({
         title: successTitle,
         description: successDescription,
       });
-      
+
       // Reset form state
       setPaymentDialogOpen(false);
       setSelectedPurchaseForPayment(null);
@@ -338,7 +338,7 @@ export default function PurchaseDashboard() {
     },
     onError: (error: Error) => {
       console.error('❌ Payment update error:', error);
-      
+
       // Provide user-friendly error messages
       let userMessage = error.message;
       if (error.message.includes('Network')) {
@@ -348,7 +348,7 @@ export default function PurchaseDashboard() {
       } else if (error.message.includes('Server error')) {
         userMessage = 'Server problem. Please wait a moment and try again.';
       }
-      
+
       toast({
         title: "Payment Failed",
         description: userMessage,
@@ -371,18 +371,18 @@ export default function PurchaseDashboard() {
     const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
     const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
     const paymentStatus = p.paymentStatus;
-    
+
     // Consider as pending if status is pending/ordered/draft OR if not fully paid
     return (status === "pending" || status === "ordered" || status === "draft") || 
            (paymentStatus !== "paid" && paidAmount < totalAmount);
   }).length;
-  
+
   const completedPurchases = purchases.filter((p: Purchase) => {
     const status = p.status?.toLowerCase() || '';
     const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
     const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
     const paymentStatus = p.paymentStatus;
-    
+
     // Consider as completed if status is completed/received/delivered OR if fully paid
     return (status === "completed" || status === "received" || status === "delivered") ||
            (paymentStatus === "paid" && totalAmount > 0 && paidAmount >= totalAmount);
@@ -391,32 +391,32 @@ export default function PurchaseDashboard() {
     const amount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
     return sum + amount;
   }, 0);
-  
+
   // Payment statistics with improved calculation
   const paidPurchases = purchases.filter((p: Purchase) => {
     const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
     const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
     return p.paymentStatus === "paid" || (totalAmount > 0 && paidAmount >= totalAmount);
   }).length;
-  
+
   const duePurchases = purchases.filter((p: Purchase) => {
     const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
     const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
     const paymentStatus = p.paymentStatus;
-    
+
     // Consider as due if explicitly marked as due, or if no payment status and unpaid
     return paymentStatus === "due" || 
            paymentStatus === "overdue" || 
            (!paymentStatus && paidAmount < totalAmount) ||
            (paymentStatus === "partial" && paidAmount < totalAmount);
   }).length;
-  
+
   const totalDueAmount = purchases
     .filter((p: Purchase) => {
       const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
       const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
       const paymentStatus = p.paymentStatus;
-      
+
       return paymentStatus === "due" || 
              paymentStatus === "overdue" || 
              (!paymentStatus && paidAmount < totalAmount) ||
@@ -565,11 +565,11 @@ export default function PurchaseDashboard() {
     }
 
     const totalPaidAmount = currentPaidAmount + newPaymentAmount;
-    
+
     // Determine payment status based on amount paid
     let paymentStatus = 'due';
     let purchaseStatus = selectedPurchaseForPayment.status || 'pending';
-    
+
     if (totalAmount > 0) {
       if (totalPaidAmount >= totalAmount) {
         paymentStatus = 'paid';
@@ -780,15 +780,12 @@ export default function PurchaseDashboard() {
                   <div>
                     <p className="text-sm font-medium text-purple-700">Completed</p>
                     <p className="text-3xl font-bold text-purple-900">{completedPurchases}</p>
-                    <div className="flex items-center mt-2">
-                      <CheckCircle className="w-4 h-4 text-purple-600 mr-1" />
+                    <div>
                       <span className="text-sm text-purple-600 font-medium">
                         {totalPurchases > 0 ? Math.round((completedPurchases / totalPurchases) * 100) : 0}% completion rate
-                        {totalPurchases > 0 && (
-                          <span className="block text-xs text-gray-500 mt-1">
-                            {completedPurchases} of {totalPurchases} orders
-                          </span>
-                        )}
+                      </span>
+                      <span className="block text-xs text-gray-500 mt-1">
+                        {completedPurchases} of {totalPurchases} orders
                       </span>
                     </div>
                   </div>
@@ -1123,14 +1120,14 @@ export default function PurchaseDashboard() {
                                 {(() => {
                                   const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
                                   const paidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
-                                  
+
                                   // Determine payment status based on amounts
                                   let paymentStatus = 'due';
                                   let paymentPercentage = 0;
-                                  
+
                                   if (totalAmount > 0) {
                                     paymentPercentage = (paidAmount / totalAmount) * 100;
-                                    
+
                                     if (paidAmount >= totalAmount) {
                                       paymentStatus = 'paid';
                                     } else if (paidAmount > 0) {
@@ -1146,13 +1143,13 @@ export default function PurchaseDashboard() {
                                       }
                                     }
                                   }
-                                  
+
                                   // Override with stored payment status if it exists and is valid
                                   const storedStatus = purchase.paymentStatus;
                                   if (storedStatus && ['paid', 'partial', 'due', 'overdue'].includes(storedStatus)) {
                                     paymentStatus = storedStatus;
                                   }
-                                  
+
                                   const statusConfig = {
                                     paid: { 
                                       variant: "default" as const, 
@@ -1733,7 +1730,7 @@ export default function PurchaseDashboard() {
                       const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
                       const remaining = totalAmount - paidAmount;
                       const currentPayment = parseFloat(paymentAmount || "0");
-                      
+
                       if (currentPayment > remaining && remaining > 0) {
                         return (
                           <p className="text-xs text-amber-600 mt-1">
@@ -1750,7 +1747,7 @@ export default function PurchaseDashboard() {
                       const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
                       const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
                       const remaining = Math.max(0, totalAmount - paidAmount);
-                      
+
                       if (remaining <= 0) {
                         return (
                           <div className="col-span-2 text-center py-2">
@@ -1760,7 +1757,7 @@ export default function PurchaseDashboard() {
                           </div>
                         );
                       }
-                      
+
                       return (
                         <>
                           <Button
