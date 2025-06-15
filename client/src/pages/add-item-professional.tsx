@@ -871,7 +871,7 @@ export default function AddItemProfessional() {
                                       const hsnValue = e.target.value;
                                       field.onChange(hsnValue);
 
-                                                                            // Auto-suggest GST code based on HSN
+                                      // Auto-suggest GST code based on HSN
                                       let suggestedGst = "";
                                       if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
                                         suggestedGst = "GST 0%";
@@ -903,62 +903,88 @@ export default function AddItemProfessional() {
                                       }
                                     }}
                                   />
-                                  <Select onValueChange={field.onChange} value={field.value}>
+                                  <Select onValueChange={(value) => {
+                                    field.onChange(value);
+                                    // Auto-update GST code when HSN is selected from dropdown
+                                    let suggestedGst = "";
+                                    if (value.includes("10019000") || value.includes("15179010") || value.includes("17019900") || value.includes("21069099")) {
+                                      suggestedGst = "GST 5%";
+                                    } else if (value.includes("04070010") || value.includes("07010000") || value.includes("08010000")) {
+                                      suggestedGst = "GST 0%";
+                                    } else if (value.includes("62019000") || value.includes("62029000") || value.includes("85171200") || value.includes("87120000")) {
+                                      suggestedGst = "GST 12%";
+                                    } else if (value.includes("19059090") || value.includes("64029100") || value.includes("84713000") || value.includes("85285200") || value.includes("33061000") || value.includes("34012000")) {
+                                      suggestedGst = "GST 18%";
+                                    } else if (value.includes("22021000") || value.includes("24021000") || value.includes("87032390") || value.includes("87111000")) {
+                                      suggestedGst = "GST 28%";
+                                    }
+                                    
+                                    if (suggestedGst) {
+                                      form.setValue("gstCode", suggestedGst);
+                                      const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
+                                      if (gstRate > 0) {
+                                        const cgstSgstRate = (gstRate / 2).toString();
+                                        form.setValue("cgstRate", cgstSgstRate);
+                                        form.setValue("sgstRate", cgstSgstRate);
+                                        form.setValue("igstRate", "0");
+                                      }
+                                    }
+                                  }} value={field.value}>
                                     <SelectTrigger>
                                       <SelectValue placeholder="Or select from common HSN codes" />
                                     </SelectTrigger>
-                                  <SelectContent className="max-h-80 overflow-y-auto">
-                                    {/* Food & Beverages - 0% & 5% GST */}
-                                    <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
-                                    <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
-                                    <SelectItem value="17019900">17019900 - Sugar (5%)</SelectItem>
-                                    <SelectItem value="04070010">04070010 - Eggs (0%)</SelectItem>
-                                    <SelectItem value="07010000">07010000 - Fresh Vegetables (0%)</SelectItem>
-                                    <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
-                                    <SelectItem value="19059090">19059090 - Biscuits (18%)</SelectItem>
-                                    <SelectItem value="21069099">21069099 - Spices & Condiments (5%)</SelectItem>
+                                    <SelectContent className="max-h-80 overflow-y-auto">
+                                      {/* Food & Beverages - 0% & 5% GST */}
+                                      <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
+                                      <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
+                                      <SelectItem value="17019900">17019900 - Sugar (5%)</SelectItem>
+                                      <SelectItem value="04070010">04070010 - Eggs (0%)</SelectItem>
+                                      <SelectItem value="07010000">07010000 - Fresh Vegetables (0%)</SelectItem>
+                                      <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
+                                      <SelectItem value="19059090">19059090 - Biscuits (18%)</SelectItem>
+                                      <SelectItem value="21069099">21069099 - Spices & Condiments (5%)</SelectItem>
 
-                                    {/* Textiles & Clothing - 5% & 12% GST */}
-                                    <SelectItem value="62019000">62019000 - Men's Garments (12%)</SelectItem>
-                                    <SelectItem value="62029000">62029000 - Women's Garments (12%)</SelectItem>
-                                    <SelectItem value="63010000">63010000 - Bed Sheets (5%)</SelectItem>
-                                    <SelectItem value="64029100">64029100 - Footwear (18%)</SelectItem>
+                                      {/* Textiles & Clothing - 5% & 12% GST */}
+                                      <SelectItem value="62019000">62019000 - Men's Garments (12%)</SelectItem>
+                                      <SelectItem value="62029000">62029000 - Women's Garments (12%)</SelectItem>
+                                      <SelectItem value="63010000">63010000 - Bed Sheets (5%)</SelectItem>
+                                      <SelectItem value="64029100">64029100 - Footwear (18%)</SelectItem>
 
-                                    {/* Electronics - 12% & 18% GST */}
-                                    <SelectItem value="85171200">85171200 - Mobile Phones (12%)</SelectItem>
-                                    <SelectItem value="84713000">84713000 - Laptops (18%)</SelectItem>
-                                    <SelectItem value="85285200">85285200 - LED TV (18%)</SelectItem>
-                                    <SelectItem value="85287100">85287100 - Set Top Box (18%)</SelectItem>
-                                    <SelectItem value="85044090">85044090 - Mobile Charger (18%)</SelectItem>
+                                      {/* Electronics - 12% & 18% GST */}
+                                      <SelectItem value="85171200">85171200 - Mobile Phones (12%)</SelectItem>
+                                      <SelectItem value="84713000">84713000 - Laptops (18%)</SelectItem>
+                                      <SelectItem value="85285200">85285200 - LED TV (18%)</SelectItem>
+                                      <SelectItem value="85287100">85287100 - Set Top Box (18%)</SelectItem>
+                                      <SelectItem value="85044090">85044090 - Mobile Charger (18%)</SelectItem>
 
-                                    {/* Personal Care - 18% GST */}
-                                    <SelectItem value="33061000">33061000 - Toothpaste (18%)</SelectItem>
-                                    <SelectItem value="34012000">34012000 - Soap (18%)</SelectItem>
-                                    <SelectItem value="33051000">33051000 - Shampoo (18%)</SelectItem>
-                                    <SelectItem value="96031000">96031000 - Toothbrush (18%)</SelectItem>
+                                      {/* Personal Care - 18% GST */}
+                                      <SelectItem value="33061000">33061000 - Toothpaste (18%)</SelectItem>
+                                      <SelectItem value="34012000">34012000 - Soap (18%)</SelectItem>
+                                      <SelectItem value="33051000">33051000 - Shampoo (18%)</SelectItem>
+                                      <SelectItem value="96031000">96031000 - Toothbrush (18%)</SelectItem>
 
-                                    {/* Beverages & Luxury - 28% GST */}
-                                    <SelectItem value="22021000">22021000 - Soft Drinks (28%)</SelectItem>
-                                    <SelectItem value="24021000">24021000 - Cigarettes (28%)</SelectItem>
-                                    <SelectItem value="22030000">22030000 - Beer (28%)</SelectItem>
-                                    <SelectItem value="22084000">22084000 - Wine (28%)</SelectItem>
+                                      {/* Beverages & Luxury - 28% GST */}
+                                      <SelectItem value="22021000">22021000 - Soft Drinks (28%)</SelectItem>
+                                      <SelectItem value="24021000">24021000 - Cigarettes (28%)</SelectItem>
+                                      <SelectItem value="22030000">22030000 - Beer (28%)</SelectItem>
+                                      <SelectItem value="22084000">22084000 - Wine (28%)</SelectItem>
 
-                                    {/* Automobiles - 28% GST */}
-                                    <SelectItem value="87032390">87032390 - Passenger Cars (28%)</SelectItem>
-                                    <SelectItem value="87111000">87111000 - Motorcycles (28%)</SelectItem>
-                                    <SelectItem value="87120000">87120000 - Bicycles (12%)</SelectItem>
+                                      {/* Automobiles - 28% GST */}
+                                      <SelectItem value="87032390">87032390 - Passenger Cars (28%)</SelectItem>
+                                      <SelectItem value="87111000">87111000 - Motorcycles (28%)</SelectItem>
+                                      <SelectItem value="87120000">87120000 - Bicycles (12%)</SelectItem>
 
-                                    {/* Medicines & Healthcare - 5% & 12% GST */}
-                                    <SelectItem value="30049099">30049099 - Medicines (5%)</SelectItem>
-                                    <SelectItem value="90183900">90183900 - Medical Equipment (12%)</SelectItem>
-                                    <SelectItem value="30059090">30059090 - Health Supplements (18%)</SelectItem>
+                                      {/* Medicines & Healthcare - 5% & 12% GST */}
+                                      <SelectItem value="30049099">30049099 - Medicines (5%)</SelectItem>
+                                      <SelectItem value="90183900">90183900 - Medical Equipment (12%)</SelectItem>
+                                      <SelectItem value="30059090">30059090 - Health Supplements (18%)</SelectItem>
 
-                                    {/* Books & Stationery - 5% & 12% GST */}
-                                    <SelectItem value="49019900">49019900 - Books (5%)</SelectItem>
-                                    <SelectItem value="48201000">48201000 - Notebooks (12%)</SelectItem>
-                                    <SelectItem value="96085000">96085000 - Pens (18%)</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                      {/* Books & Stationery - 5% & 12% GST */}
+                                      <SelectItem value="49019900">49019900 - Books (5%)</SelectItem>
+                                      <SelectItem value="48201000">48201000 - Notebooks (12%)</SelectItem>
+                                      <SelectItem value="96085000">96085000 - Pens (18%)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                               </FormControl>
                               <FormMessage />
@@ -977,7 +1003,21 @@ export default function AddItemProfessional() {
                                 </span>
                               </FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <Select onValueChange={(value) => {
+                                  field.onChange(value);
+                                  // Auto-calculate breakdown when GST code changes
+                                  const gstRate = parseFloat(value.replace("GST ", "").replace("%", ""));
+                                  if (gstRate > 0) {
+                                    const cgstSgstRate = (gstRate / 2).toString();
+                                    form.setValue("cgstRate", cgstSgstRate);
+                                    form.setValue("sgstRate", cgstSgstRate);
+                                    form.setValue("igstRate", "0");
+                                  } else {
+                                    form.setValue("cgstRate", "0");
+                                    form.setValue("sgstRate", "0");
+                                    form.setValue("igstRate", "0");
+                                  }
+                                }} value={field.value || ""}>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select GST rate" />
                                   </SelectTrigger>
@@ -1000,7 +1040,35 @@ export default function AddItemProfessional() {
 
                       {/* GST Breakdown Section */}
                       <div className="border-t pt-6">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-4">GST Breakdown & Compliance</h4>
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                          GST Breakdown & Compliance
+                        </h4>
+                        
+                        {/* Tax Summary Display */}
+                        <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="text-center">
+                              <div className="text-blue-700 font-medium">Total GST Rate</div>
+                              <div className="text-lg font-bold text-blue-900">
+                                {form.watch("gstCode") ? form.watch("gstCode").replace("GST ", "") : "0%"}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-blue-700 font-medium">CGST + SGST</div>
+                              <div className="text-lg font-bold text-blue-900">
+                                {form.watch("cgstRate") || "0"}% + {form.watch("sgstRate") || "0"}%
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-blue-700 font-medium">IGST</div>
+                              <div className="text-lg font-bold text-blue-900">
+                                {form.watch("igstRate") || "0"}%
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
                         <div className="grid grid-cols-3 gap-4">
                           <FormField
                             control={form.control}
@@ -1009,7 +1077,19 @@ export default function AddItemProfessional() {
                               <FormItem>
                                 <FormLabel>CGST Rate (%)</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="9.00" type="number" step="0.01" />
+                                  <Input 
+                                    {...field} 
+                                    placeholder="9.00" 
+                                    type="number" 
+                                    step="0.01"
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value);
+                                      // When CGST changes, update SGST to match and clear IGST
+                                      const cgstValue = e.target.value;
+                                      form.setValue("sgstRate", cgstValue);
+                                      form.setValue("igstRate", "0");
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1022,7 +1102,19 @@ export default function AddItemProfessional() {
                               <FormItem>
                                 <FormLabel>SGST Rate (%)</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="9.00" type="number" step="0.01" />
+                                  <Input 
+                                    {...field} 
+                                    placeholder="9.00" 
+                                    type="number" 
+                                    step="0.01"
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value);
+                                      // When SGST changes, update CGST to match and clear IGST
+                                      const sgstValue = e.target.value;
+                                      form.setValue("cgstRate", sgstValue);
+                                      form.setValue("igstRate", "0");
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1035,7 +1127,20 @@ export default function AddItemProfessional() {
                               <FormItem>
                                 <FormLabel>IGST Rate (%)</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="18.00" type="number" step="0.01" />
+                                  <Input 
+                                    {...field} 
+                                    placeholder="18.00" 
+                                    type="number" 
+                                    step="0.01"
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value);
+                                      // When IGST is set, clear CGST and SGST
+                                      if (e.target.value && parseFloat(e.target.value) > 0) {
+                                        form.setValue("cgstRate", "0");
+                                        form.setValue("sgstRate", "0");
+                                      }
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1079,6 +1184,17 @@ export default function AddItemProfessional() {
                             )}
                           />
                         </div>
+
+                        {/* Tax Information Help */}
+                        <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                          <h5 className="font-medium text-yellow-800 mb-1">Tax Information Guidelines</h5>
+                          <ul className="text-sm text-yellow-700 space-y-1">
+                            <li>• For intra-state transactions: Use CGST + SGST</li>
+                            <li>• For inter-state transactions: Use IGST only</li>
+                            <li>• Total GST = CGST + SGST or IGST (whichever applicable)</li>
+                            <li>• HSN codes help determine the correct tax rates automatically</li>
+                          </ul>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-6">
@@ -1108,9 +1224,9 @@ export default function AddItemProfessional() {
                           name="purchaseAbatement"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Purchase Abatement % *</FormLabel>
+                              <FormLabel>Purchase Abatement %</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="0" />
+                                <Input {...field} placeholder="0" type="number" step="0.01" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1133,6 +1249,10 @@ export default function AddItemProfessional() {
                                   <SelectItem value="PIECES">PIECES</SelectItem>
                                   <SelectItem value="KG">KG</SelectItem>
                                   <SelectItem value="LITRE">LITRE</SelectItem>
+                                  <SelectItem value="GRAM">GRAM</SelectItem>
+                                  <SelectItem value="ML">ML</SelectItem>
+                                  <SelectItem value="DOZEN">DOZEN</SelectItem>
+                                  <SelectItem value="PACKET">PACKET</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
@@ -1141,32 +1261,36 @@ export default function AddItemProfessional() {
                         )}
                       />
 
-                      <div className="flex items-center justify-between">
+                      <div className="space-y-4">
                         <FormField
                           control={form.control}
                           name="configItemWithCommodity"
                           render={({ field }) => (
-                            <FormItem className="flex items-center space-x-3">
+                            <FormItem className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <FormLabel className="text-sm font-medium">Config Item With Commodity</FormLabel>
+                                <p className="text-xs text-gray-500">Link this item with commodity exchange rates</p>
+                              </div>
                               <FormControl>
                                 <Switch checked={field.value} onCheckedChange={field.onChange} />
                               </FormControl>
-                              <FormLabel>Config Item With Commodity</FormLabel>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      </div>
 
-                      <div className="flex items-center justify-between">
                         <FormField
                           control={form.control}
                           name="seniorExemptApplicable"
                           render={({ field }) => (
-                            <FormItem className="flex items-center space-x-3">
+                            <FormItem className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <FormLabel className="text-sm font-medium">Senior Citizen Tax Exemption</FormLabel>
+                                <p className="text-xs text-gray-500">Apply tax exemptions for senior citizens</p>
+                              </div>
                               <FormControl>
                                 <Switch checked={field.value} onCheckedChange={field.onChange} />
                               </FormControl>
-                              <FormLabel>Senior Exempt Applicable</FormLabel>
                               <FormMessage />
                             </FormItem>
                           )}
