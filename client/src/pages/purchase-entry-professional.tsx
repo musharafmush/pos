@@ -1541,7 +1541,9 @@ export default function PurchaseEntryProfessional() {
         
         // Check if item has meaningful data
         return hasProduct && hasValidQuantity && hasCost;
-      });</old_str>
+      });
+
+      console.log('Validating items:', {</old_str>
 
       console.log('Validating items:', {
         totalItems: data.items.length,
