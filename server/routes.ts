@@ -2552,28 +2552,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updatedPurchase.status !== 'completed') {
         
         console.log('🔄 Auto-updating purchase status to completed (fully paid)');
+        console.log('📊 Status update conditions:', {
+          paymentStatus: calculatedPaymentStatus,
+          purchaseTotal,
+          finalPaidAmount,
+          currentStatus: updatedPurchase.status,
+          shouldUpdate: true
+        });
         
-        // Check if received_date column exists
-        const statusUpdateFields = ['status = ?'];
-        const statusUpdateValues = ['completed'];
-        
-        if (columnNames.includes('received_date')) {
-          statusUpdateFields.push('received_date = CURRENT_TIMESTAMP');
+        try {
+          // Check if received_date column exists
+          const statusUpdateFields = ['status = ?'];
+          const statusUpdateValues = ['completed'];
+          
+          if (columnNames.includes('received_date')) {
+            statusUpdateFields.push('received_date = CURRENT_TIMESTAMP');
+          }
+          if (columnNames.includes('updated_at')) {
+            statusUpdateFields.push('updated_at = CURRENT_TIMESTAMP');
+          }
+          
+          const updateStatusQuery = `UPDATE purchases SET ${statusUpdateFields.join(', ')} WHERE id = ?`;
+          statusUpdateValues.push(id);
+          
+          console.log('🔧 Status update query:', updateStatusQuery);
+          console.log('📊 Status update values:', statusUpdateValues);
+          
+          const statusResult = sqlite.prepare(updateStatusQuery).run(...statusUpdateValues);
+          
+          if (statusResult.changes > 0) {
+            finalStatus = 'completed';
+            statusAutoUpdated = true;
+            console.log('✅ Auto-updated purchase status to completed');
+          } else {
+            console.error('❌ Status update failed - no changes made');
+          }
+        } catch (statusUpdateError) {
+          console.error('❌ Error during status auto-update:', statusUpdateError);
         }
-        if (columnNames.includes('updated_at')) {
-          statusUpdateFields.push('updated_at = CURRENT_TIMESTAMP');
-        }
-        
-        const updateStatusQuery = `UPDATE purchases SET ${statusUpdateFields.join(', ')} WHERE id = ?`;
-        statusUpdateValues.push(id);
-        
-        const statusResult = sqlite.prepare(updateStatusQuery).run(...statusUpdateValues);
-        
-        if (statusResult.changes > 0) {
-          finalStatus = 'completed';
-          statusAutoUpdated = true;
-          console.log('✅ Auto-updated purchase status to completed');
-        }
+      } else {
+        console.log('ℹ️ Status auto-update skipped:', {
+          paymentStatus: calculatedPaymentStatus,
+          isPaid: calculatedPaymentStatus === 'paid',
+          hasTotal: purchaseTotal > 0,
+          isFullyPaid: finalPaidAmount >= purchaseTotal,
+          notCompleted: updatedPurchase.status !== 'completed'
+        });
       }
 
       // Get final updated purchase

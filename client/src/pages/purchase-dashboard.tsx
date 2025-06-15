@@ -287,22 +287,26 @@ export default function PurchaseDashboard() {
     onSuccess: async (data, variables) => {
       console.log('✅ Payment mutation successful:', data);
 
-      // Check if payment is now fully paid and auto-update status to completed
-      if (data.purchase && selectedPurchaseForPayment) {
+      // Auto-update purchase status to completed if fully paid
+      if (selectedPurchaseForPayment) {
         const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
-        const newPaidAmount = parseFloat(data.totalPaid?.toString() || data.purchase.paid_amount?.toString() || "0");
+        const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+        const newPaymentAmount = parseFloat(paymentAmount || "0");
+        const finalPaidAmount = currentPaidAmount + newPaymentAmount;
 
         console.log('💰 Payment status check:', {
           totalAmount,
-          newPaidAmount,
+          currentPaidAmount,
+          newPaymentAmount,
+          finalPaidAmount,
           currentStatus: selectedPurchaseForPayment.status,
-          paymentStatus: data.purchase.payment_status
+          shouldComplete: finalPaidAmount >= totalAmount && selectedPurchaseForPayment.status !== 'completed'
         });
 
         // If fully paid and status is not already completed, auto-update to completed
-        if (newPaidAmount >= totalAmount && 
-            selectedPurchaseForPayment.status !== 'completed' && 
-            data.purchase.payment_status === 'paid') {
+        if (finalPaidAmount >= totalAmount && 
+            totalAmount > 0 &&
+            selectedPurchaseForPayment.status !== 'completed') {
 
           console.log('🔄 Auto-updating purchase status to completed (fully paid)');
 
@@ -321,13 +325,20 @@ export default function PurchaseDashboard() {
             if (statusResponse.ok) {
               console.log('✅ Auto-updated purchase status to completed');
               toast({
-                title: "Status Updated",
-                description: "Purchase automatically marked as completed (fully paid)",
+                title: "Order Completed! 🎉",
+                description: "Purchase order automatically marked as completed (fully paid)",
               });
+            } else {
+              console.error('❌ Failed to auto-update status - server response not ok');
             }
           } catch (statusError) {
             console.error('⚠️ Failed to auto-update status:', statusError);
-            // Don't throw error, payment was successful
+            // Show manual completion option if auto-update fails
+            toast({
+              title: "Payment Recorded",
+              description: "Payment successful, but please manually update status to Completed",
+              variant: "destructive",
+            });
           }
         }
       }
@@ -846,8 +857,7 @@ export default function PurchaseDashboard() {
                         {totalPurchases > 0 ? Math.round((completedPurchases / totalPurchases) * 100) : 0}% completion rate
                       </span>
                       <span className="block text-xs text-gray-500 mt-1">
-                        {completedPurchases} of {totalPurchases} orders
-                      </span>
+                        {completedPurchases} of {totalPurchases} orders                      </span>
                     </div>
                   </div>
                   <div className="w-14 h-14 bg-purple-200 rounded-full flex items-center justify-center">
