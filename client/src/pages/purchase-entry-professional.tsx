@@ -1253,27 +1253,6 @@ export default function PurchaseEntryProfessional() {
     openAddItemModal();
   };
 
-  // Validate item costs
-  const validateItemCosts = () => {
-    const items = form.getValues("items") || [];
-    const issues = [];
-    
-    items.forEach((item, index) => {
-      if (item.productId > 0) {
-        if (!item.unitCost || item.unitCost <= 0) {
-          issues.push(`Item ${index + 1}: Cost is required and must be greater than 0`);
-        }
-        if (!item.receivedQty || item.receivedQty <= 0) {
-          issues.push(`Item ${index + 1}: Received quantity is required and must be greater than 0`);
-        }
-      }
-    });
-    
-    return issues;
-  };
-
-  // Enhanced remove item function with better validation</old_str>
-
   // Enhanced remove item function with better validation
   const removeItem = (index: number) => {
     if (fields.length > 1) {
@@ -1522,28 +1501,15 @@ export default function PurchaseEntryProfessional() {
         return;
       }
 
-      // Validate costs first
-      const costIssues = validateItemCosts();
-      if (costIssues.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "Cost Validation Error",
-          description: costIssues[0], // Show first issue
-        });
-        return;
-      }
-
       // Filter and validate items with more flexible validation
       const validItems = data.items.filter(item => {
         const hasProduct = item.productId && item.productId > 0;
         const hasValidQuantity = (Number(item.receivedQty) || Number(item.quantity) || 0) > 0;
-        const hasCost = (Number(item.unitCost) || 0) > 0; // Changed to > 0 instead of >= 0
+        const hasCost = (Number(item.unitCost) || 0) >= 0;
         
         // Check if item has meaningful data
         return hasProduct && hasValidQuantity && hasCost;
       });
-
-      console.log('Validating items:', {</old_str>
 
       console.log('Validating items:', {
         totalItems: data.items.length,
@@ -2413,46 +2379,30 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      value={form.watch(`items.${index}.unitCost`) || 0}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        console.log(`Setting cost for item ${index}:`, value);
-                                        
-                                        // Set the unit cost value
-                                        form.setValue(`items.${index}.unitCost`, value);
+                                      {...form.register(`items.${index}.unitCost`, { 
+                                        valueAsNumber: true,
+                                        onChange: (e) => {
+                                          const value = parseFloat(e.target.value) || 0;
+                                          form.setValue(`items.${index}.unitCost`, value);
 
-                                        // Auto-calculate net amount using receivedQty
-                                        const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                        const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
+                                          // Auto-calculate net amount using receivedQty
+                                          const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                          const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
 
-                                        const subtotal = value * receivedQty;
-                                        const taxableAmount = subtotal - discount;
-                                        const tax = (taxableAmount * taxPercentage) / 100;
-                                        const netAmount = taxableAmount + tax;
+                                          const subtotal = value * receivedQty;
+                                          const taxableAmount = subtotal - discount;
+                                          const tax = (taxableAmount * taxPercentage) / 100;
+                                          const netAmount = taxableAmount + tax;
 
-                                        console.log(`Calculated net amount for item ${index}:`, netAmount);
-                                        form.setValue(`items.${index}.netAmount`, netAmount);
+                                          form.setValue(`items.${index}.netAmount`, netAmount);
 
-                                        // Update selling price if not set (auto-suggest with 20% markup)
-                                        const currentSellingPrice = form.getValues(`items.${index}.sellingPrice`) || 0;
-                                        if (currentSellingPrice === 0 && value > 0) {
-                                          const suggestedSellingPrice = value * 1.2;
-                                          form.setValue(`items.${index}.sellingPrice`, suggestedSellingPrice);
+                                          // Trigger form validation
+                                          setTimeout(() => form.trigger(`items.${index}`), 50);
                                         }
-
-                                        // Update MRP if not set (auto-suggest with 30% markup)
-                                        const currentMrp = form.getValues(`items.${index}.mrp`) || 0;
-                                        if (currentMrp === 0 && value > 0) {
-                                          const suggestedMrp = value * 1.3;
-                                          form.setValue(`items.${index}.mrp`, suggestedMrp);
-                                        }
-
-                                        // Trigger form validation
-                                        setTimeout(() => form.trigger(`items.${index}`), 50);
-                                      }}
+                                      })}
                                       className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
+                                      placeholder="0"
                                       onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                           // Move to next row's product field or add new row
@@ -2470,7 +2420,7 @@ export default function PurchaseEntryProfessional() {
                                       }}
                                     />
                                   </div>
-                                </TableCell></old_str>
+                                </TableCell>
 
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
@@ -3054,58 +3004,36 @@ export default function PurchaseEntryProfessional() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="modal-cost">Unit Cost *</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
-                  <Input
-                    id="modal-cost"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={modalData.unitCost || ''}
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value) || 0;
-                      console.log('Modal cost changed:', value);
-                      
-                      const newModalData = { ...modalData, unitCost: value };
-                      setModalData(newModalData);
-                      
-                      if (editingItemIndex !== null) {
-                        form.setValue(`items.${editingItemIndex}.unitCost`, value);
+                <Label htmlFor="modal-cost">Cost *</Label>
+                <Input
+                  id="modal-cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={modalData.unitCost}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, unitCost: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.unitCost`, value);
 
-                        // Recalculate net amount in real-time
-                        const qty = modalData.receivedQty || 0;
-                        const discount = modalData.discountAmount || 0;
-                        const taxPercent = modalData.taxPercentage || 0;
-                        const subtotal = qty * value;
-                        const taxableAmount = subtotal - discount;
-                        const tax = (taxableAmount * taxPercent) / 100;
-                        const netAmount = taxableAmount + tax;
+                      // Recalculate net amount in real-time
+                      const qty = modalData.receivedQty;
+                      const discount = modalData.discountAmount;
+                      const taxPercent = modalData.taxPercentage;
+                      const subtotal = qty * value;
+                      const taxableAmount = subtotal - discount;
+                      const tax = (taxableAmount * taxPercent) / 100;
+                      const netAmount = taxableAmount + tax;
 
-                        form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                        
-                        // Auto-suggest selling price and MRP if not set
-                        if (!modalData.sellingPrice || modalData.sellingPrice === 0) {
-                          const suggestedSellingPrice = value * 1.2;
-                          setModalData(prev => ({ ...prev, sellingPrice: suggestedSellingPrice }));
-                          form.setValue(`items.${editingItemIndex}.sellingPrice`, suggestedSellingPrice);
-                        }
-                        
-                        if (!modalData.mrp || modalData.mrp === 0) {
-                          const suggestedMrp = value * 1.3;
-                          setModalData(prev => ({ ...prev, mrp: suggestedMrp }));
-                          form.setValue(`items.${editingItemIndex}.mrp`, suggestedMrp);
-                        }
-                        
-                        form.trigger(`items.${editingItemIndex}`);
-                      }
-                    }}
-                    className="pl-8"
-                    placeholder="0.00"
-                  />
-                </div>
-                <p className="text-xs text-gray-500">Enter the cost price per unit</p>
-              </div></old_str>
+                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                      form.trigger(`items.${editingItemIndex}`);
+                    }
+                  }}
+                  placeholder="0"
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="modal-hsnCode">HSN Code</Label>
