@@ -722,6 +722,33 @@ export default function PurchaseEntryProfessional() {
             // Find the product details to get name and sku
             const product = products.find(p => p.id === (item.productId || item.product_id));
 
+            // Calculate selling price and MRP if not available from database
+            let sellingPrice = Number(item.sellingPrice || item.selling_price) || 0;
+            let mrp = Number(item.mrp) || 0;
+            
+            // If selling price is not set, try to get from product or calculate from cost
+            if (sellingPrice === 0) {
+              if (product?.price && parseFloat(product.price) > 0) {
+                sellingPrice = parseFloat(product.price);
+              } else {
+                const unitCost = Number(item.unitCost || item.unit_cost || item.cost) || 0;
+                if (unitCost > 0) {
+                  // Apply standard retail markup (30-50% depending on category)
+                  sellingPrice = Math.round(unitCost * 1.4 * 100) / 100;
+                }
+              }
+            }
+            
+            // If MRP is not set, try to get from product or calculate from selling price
+            if (mrp === 0) {
+              if (product?.mrp && parseFloat(product.mrp) > 0) {
+                mrp = parseFloat(product.mrp);
+              } else if (sellingPrice > 0) {
+                // Apply standard MRP markup (20-25% above selling price)
+                mrp = Math.round(sellingPrice * 1.2 * 100) / 100;
+              }
+            }
+
             return {
               productId: item.productId || item.product_id || 0,
               code: item.code || product?.sku || "",
@@ -730,8 +757,8 @@ export default function PurchaseEntryProfessional() {
               receivedQty: Number(item.receivedQty || item.received_qty || item.quantity) || Number(item.quantity) || 1,
               freeQty: Number(item.freeQty || item.free_qty) || 0,
               unitCost: Number(item.unitCost || item.unit_cost || item.cost) || 0,
-              sellingPrice: Number(item.sellingPrice || item.selling_price) || 0,
-              mrp: Number(item.mrp) || 0,
+              sellingPrice: sellingPrice,
+              mrp: mrp,
               hsnCode: item.hsnCode || item.hsn_code || product?.hsnCode || "",
               taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent) || 18,
               discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
@@ -2736,7 +2763,10 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      value={form.watch(`items.${index}.sellingPrice`) || 0}
+                                      {...form.register(`items.${index}.sellingPrice`, { 
+                                        valueAsNumber: true,
+                                        setValueAs: (value) => value || 0
+                                      })}
                                       onChange={(e) => {
                                         const value = parseFloat(e.target.value) || 0;
                                         form.setValue(`items.${index}.sellingPrice`, value);
@@ -2781,7 +2811,10 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      value={form.watch(`items.${index}.mrp`) || 0}
+                                      {...form.register(`items.${index}.mrp`, { 
+                                        valueAsNumber: true,
+                                        setValueAs: (value) => value || 0
+                                      })}
                                       onChange={(e) => {
                                         const value = parseFloat(e.target.value) || 0;
                                         form.setValue(`items.${index}.mrp`, value);
