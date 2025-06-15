@@ -284,6 +284,8 @@ interface Product {
   sku: string;
   description: string;
   price: string;
+  cost?: string;
+  mrp?: string;
   hsnCode?: string;
   cgstRate?: string;
   sgstRate?: string;
@@ -955,9 +957,15 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`items.${index}.productId`, productId);
       form.setValue(`items.${index}.code`, product.sku || "");
       form.setValue(`items.${index}.description`, product.description || product.name);
-      form.setValue(`items.${index}.unitCost`, parseFloat(product.price) || 0);
-      form.setValue(`items.${index}.mrp`, parseFloat(product.price) * 1.2 || 0); // Auto-calculate MRP with 20% markup
-      form.setValue(`items.${index}.sellingPrice`, parseFloat(product.price) || 0);
+      
+      // Use cost price from product if available, otherwise use selling price
+      const costPrice = parseFloat(product.cost || product.price) || 0;
+      const sellingPrice = parseFloat(product.price) || 0;
+      const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
+      
+      form.setValue(`items.${index}.unitCost`, costPrice);
+      form.setValue(`items.${index}.sellingPrice`, sellingPrice);
+      form.setValue(`items.${index}.mrp`, mrpPrice);
       form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
 
       // Set default received quantity if not set
@@ -976,11 +984,10 @@ export default function PurchaseEntryProfessional() {
         form.setValue(`items.${index}.taxPercentage`, totalGst);
       }
 
-      // Calculate net amount
+      // Calculate net amount using the correct cost price
       const qty = form.getValues(`items.${index}.receivedQty`) || 1;
-      const cost = parseFloat(product.price) || 0;
       const taxPercent = totalGst || 18;
-      const subtotal = qty * cost;
+      const subtotal = qty * costPrice;
       const tax = (subtotal * taxPercent) / 100;
       const netAmount = subtotal + tax;
       
@@ -991,7 +998,7 @@ export default function PurchaseEntryProfessional() {
 
       toast({
         title: "Product Selected! 🎯",
-        description: `${product.name} added with auto-populated details.`,
+        description: `${product.name} added with cost price ₹${costPrice.toFixed(2)}`,
       });
     }
   };
@@ -1197,6 +1204,11 @@ export default function PurchaseEntryProfessional() {
         } else {
           // Add as new item if first occurrence
           const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
+          
+          // Use cost price from product if available, otherwise use selling price
+          const costPrice = parseFloat(product.cost || product.price) || 0;
+          const sellingPrice = parseFloat(product.price) || 0;
+          const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
 
           append({
             productId: product.id,
@@ -1205,9 +1217,9 @@ export default function PurchaseEntryProfessional() {
             quantity: 1,
             receivedQty: 1,
             freeQty: 0,
-            unitCost: parseFloat(product.price) || 0,
-            sellingPrice: parseFloat(product.price) || 0,
-            mrp: parseFloat(product.price) * 1.2 || 0,
+            unitCost: costPrice,
+            sellingPrice: sellingPrice,
+            mrp: mrpPrice,
             hsnCode: product.hsnCode || "",
             taxPercentage: 18,
             discountAmount: 0,
@@ -1217,7 +1229,7 @@ export default function PurchaseEntryProfessional() {
             netCost: 0,
             roiPercent: 0,
             grossProfitPercent: 0,
-            netAmount: parseFloat(product.price) || 0,
+            netAmount: costPrice,
             cashPercent: 0,
             cashAmount: 0,
             location: "",
@@ -2794,14 +2806,19 @@ export default function PurchaseEntryProfessional() {
                   <ProductSearchWithSuggestions
                     products={products}
                     onProductSelect={(product) => {
+                      // Use cost price from product if available, otherwise use selling price
+                      const costPrice = parseFloat(product.cost || product.price) || 0;
+                      const sellingPrice = parseFloat(product.price) || 0;
+                      const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
+                      
                       const newModalData = {
                         ...modalData,
                         productId: product.id,
                         code: product.sku || "",
                         description: product.description || product.name,
-                        unitCost: parseFloat(product.price) || 0,
-                        mrp: parseFloat(product.price) * 1.2 || 0,
-                        sellingPrice: parseFloat(product.price) || 0,
+                        unitCost: costPrice,
+                        mrp: mrpPrice,
+                        sellingPrice: sellingPrice,
                         hsnCode: product.hsnCode || "",
                       };
                       setModalData(newModalData);
@@ -2822,14 +2839,19 @@ export default function PurchaseEntryProfessional() {
                       const productId = parseInt(value);
                       const product = products.find(p => p.id === productId);
                       if (product) {
+                        // Use cost price from product if available, otherwise use selling price
+                        const costPrice = parseFloat(product.cost || product.price) || 0;
+                        const sellingPrice = parseFloat(product.price) || 0;
+                        const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
+                        
                         const newModalData = {
                           ...modalData,
                           productId,
                           code: product.sku || "",
                           description: product.description || product.name,
-                          unitCost: parseFloat(product.price) || 0,
-                          mrp: parseFloat(product.price) * 1.2 || 0,
-                          sellingPrice: parseFloat(product.price) || 0,
+                          unitCost: costPrice,
+                          mrp: mrpPrice,
+                          sellingPrice: sellingPrice,
                           hsnCode: product.hsnCode || "",
                         };
                         setModalData(newModalData);
