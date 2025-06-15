@@ -2305,7 +2305,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           s.name as supplier_name,
           s.email as supplier_email,
           s.phone as supplier_phone,
-          u.name as user_name
+          u.name as user_name,
+          (SELECT COUNT(*) FROM purchase_items pi WHERE pi.purchase_id = p.id) as item_count
         FROM purchases p
         LEFT JOIN suppliers s ON p.supplier_id = s.id
         LEFT JOIN users u ON p.user_id = u.id
@@ -2332,6 +2333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentStatus: purchase.payment_status || 'due',
         paidAmount: purchase.paid_amount || '0',
         paymentMethod: purchase.payment_method || 'cash',
+        itemCount: purchase.item_count || 0, // Add the actual item count from database
         supplier: purchase.supplier_name ? {
           id: purchase.supplier_id,
           name: purchase.supplier_name,
