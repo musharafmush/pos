@@ -287,64 +287,8 @@ export default function PurchaseDashboard() {
     onSuccess: async (data, variables) => {
       console.log('✅ Payment mutation successful:', data);
 
-      // Auto-update purchase status to completed if fully paid
-      if (selectedPurchaseForPayment) {
-        const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
-        const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
-        const newPaymentAmount = parseFloat(paymentAmount || "0");
-        const finalPaidAmount = currentPaidAmount + newPaymentAmount;
-
-        console.log('💰 Payment status check:', {
-          totalAmount,
-          currentPaidAmount,
-          newPaymentAmount,
-          finalPaidAmount,
-          currentStatus: selectedPurchaseForPayment.status,
-          shouldComplete: finalPaidAmount >= totalAmount && selectedPurchaseForPayment.status !== 'completed'
-        });
-
-        // If fully paid and status is not already completed, auto-update to completed
-        if (finalPaidAmount >= totalAmount && 
-            totalAmount > 0 &&
-            selectedPurchaseForPayment.status !== 'completed') {
-
-          console.log('🔄 Auto-updating purchase status to completed (fully paid)');
-
-          try {
-            const statusResponse = await fetch(`/api/purchases/${selectedPurchaseForPayment.id}/status`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                status: 'completed',
-                receivedDate: new Date().toISOString()
-              }),
-            });
-
-            if (statusResponse.ok) {
-              console.log('✅ Auto-updated purchase status to completed');
-              toast({
-                title: "Order Completed! 🎉",
-                description: "Purchase order automatically marked as completed (fully paid)",
-              });
-            } else {
-              console.error('❌ Failed to auto-update status - server response not ok');
-            }
-          } catch (statusError) {
-            console.error('⚠️ Failed to auto-update status:', statusError);
-            // Show manual completion option if auto-update fails
-            toast({
-              title: "Payment Recorded",
-              description: "Payment successful, but please manually update status to Completed",
-              variant: "destructive",
-            });
-          }
-        }
-      }
-
-      // Invalidate and refetch purchase data
-      queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      // Invalidate and refetch purchase data immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
 
       // Enhanced success message based on completion status
       let successTitle = "Payment Recorded";
@@ -354,11 +298,13 @@ export default function PurchaseDashboard() {
         successTitle = "Purchase Order Completed! 🎉";
         successDescription = `Payment recorded and purchase order automatically marked as completed. Total paid: ${formatCurrency(data.totalPaid || 0)}`;
       } else if (data.paymentStatus === 'paid') {
-        successTitle = "Payment Completed";
-        successDescription = `Full payment of ${formatCurrency(data.paymentRecorded || 0)} recorded successfully. Purchase is now fully paid.`;
+        successTitle = "Payment Completed ✅";
+        successDescription = `Full payment of ${formatCurrency(data.paymentRecorded || 0)} recorded successfully. Purchase order status updated.`;
       } else if (data.paymentStatus === 'partial') {
         successTitle = "Partial Payment Recorded";
-        successDescription = `Payment of ${formatCurrency(data.paymentRecorded || 0)} recorded. Remaining: ${formatCurrency(data.remainingAmount || 0)}`;
+        const remainingAmount = selectedPurchaseForPayment ? 
+          parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0") - (data.totalPaid || 0) : 0;
+        successDescription = `Payment of ${formatCurrency(data.paymentRecorded || 0)} recorded. Remaining: ${formatCurrency(remainingAmount)}`;
       }
 
       toast({
@@ -541,17 +487,26 @@ export default function PurchaseDashboard() {
   };
 
   const handleMarkAsPaid = (purchase: Purchase) => {
-    const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
+    const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
+    const currentPaidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
+    const remainingAmount = Math.max(0, totalAmount - currentPaidAmount);
+    
     const paymentData = {
       paymentStatus: 'paid',
-      paymentAmount: totalAmount,
-      totalPaidAmount: totalAmount,
+      paymentAmount: remainingAmount, // Pay only the remaining amount
+      totalPaidAmount: totalAmount, // Set total paid to full amount
       paymentMethod: 'cash',
       paymentDate: new Date().toISOString(),
-      notes: 'Marked as paid from dashboard',
-      updatePurchaseStatus: true,
-      newPurchaseStatus: 'completed'
+      notes: 'Marked as fully paid from purchase dashboard'
     };
+
+    console.log('💰 Marking as paid:', {
+      orderNumber: purchase.orderNumber,
+      totalAmount: formatCurrency(totalAmount),
+      currentPaid: formatCurrency(currentPaidAmount),
+      remainingAmount: formatCurrency(remainingAmount),
+      paymentData
+    });
 
     updatePaymentStatus.mutate({ 
       purchaseId: purchase.id, 
@@ -623,7 +578,7 @@ export default function PurchaseDashboard() {
       return;
     }
 
-    const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
+    const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0");
     const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
 
     // Check if payment amount is reasonable
@@ -636,18 +591,17 @@ export default function PurchaseDashboard() {
       return;
     }
 
-    const totalPaidAmount = currentPaidAmount + newPaymentAmount;
+    const totalPaidAfterPayment = currentPaidAmount + newPaymentAmount;
 
     // Determine payment status based on amount paid
     let paymentStatus = 'due';
-    let purchaseStatus = selectedPurchaseForPayment.status || 'pending';
+    let shouldUpdatePurchaseStatus = false;
 
     if (totalAmount > 0) {
-      if (totalPaidAmount >= totalAmount) {
+      if (totalPaidAfterPayment >= totalAmount) {
         paymentStatus = 'paid';
-        // Auto-complete purchase when fully paid
-        purchaseStatus = 'completed';
-      } else if (totalPaidAmount > 0) {
+        shouldUpdatePurchaseStatus = true;
+      } else if (totalPaidAfterPayment > 0) {
         paymentStatus = 'partial';
       } else {
         paymentStatus = 'due';
@@ -667,13 +621,10 @@ export default function PurchaseDashboard() {
     const paymentData = {
       paymentStatus,
       paymentAmount: newPaymentAmount,
-      totalPaidAmount: totalPaidAmount,
+      totalPaidAmount: totalPaidAfterPayment,
       paymentMethod: paymentMethod.trim(),
       paymentDate: new Date().toISOString(),
-      notes: paymentNotes?.trim() || `Payment of ${formatCurrency(newPaymentAmount)} recorded via dashboard using ${paymentMethod}`,
-      // Include purchase status update if payment is complete
-      updatePurchaseStatus: paymentStatus === 'paid',
-      newPurchaseStatus: purchaseStatus
+      notes: paymentNotes?.trim() || `Payment of ${formatCurrency(newPaymentAmount)} recorded via dashboard using ${paymentMethod}`
     };
 
     console.log('🔄 Confirming payment with validated data:', paymentData);
@@ -682,11 +633,10 @@ export default function PurchaseDashboard() {
       totalAmount: formatCurrency(totalAmount),
       currentPaid: formatCurrency(currentPaidAmount),
       newPayment: formatCurrency(newPaymentAmount),
-      totalAfterPayment: formatCurrency(totalPaidAmount),
-      remainingBalance: formatCurrency(Math.max(0, totalAmount - totalPaidAmount)),
+      totalAfterPayment: formatCurrency(totalPaidAfterPayment),
+      remainingBalance: formatCurrency(Math.max(0, totalAmount - totalPaidAfterPayment)),
       paymentStatus: paymentStatus,
-      purchaseStatus: purchaseStatus,
-      willAutoComplete: paymentStatus === 'paid'
+      willAutoComplete: shouldUpdatePurchaseStatus
     });
 
     // Show loading state with completion info
