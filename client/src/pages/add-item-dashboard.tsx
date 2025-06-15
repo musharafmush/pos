@@ -325,41 +325,67 @@ export default function AddItemDashboard() {
         throw new Error('No product selected for editing');
       }
 
-      // Validate required fields before processing
+      // Enhanced validation for required fields
+      const validationErrors = [];
+
       if (!data.name?.trim()) {
-        throw new Error('Product name is required');
+        validationErrors.push('Product name is required');
       }
 
       if (!data.itemCode?.trim()) {
-        throw new Error('Item code is required');
+        validationErrors.push('Item code (SKU) is required');
       }
 
       if (!data.price || isNaN(parseFloat(data.price)) || parseFloat(data.price) <= 0) {
-        throw new Error('Valid price greater than 0 is required');
+        validationErrors.push('Valid price greater than 0 is required');
       }
 
-      // Ensure all required fields are present and properly formatted
+      // Check for duplicate SKU (excluding current product)
+      const existingProduct = products.find(p => 
+        p.sku.toLowerCase() === data.itemCode.trim().toLowerCase() && 
+        p.id !== editingProduct.id
+      );
+      if (existingProduct) {
+        validationErrors.push('Item code already exists for another product');
+      }
+
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join('; '));
+      }
+
+      // Prepare update data with proper field mapping and validation
       const updateData = {
         name: data.name.trim(),
         sku: data.itemCode.trim(),
-        description: data.aboutProduct || '',
+        description: data.aboutProduct?.trim() || '',
         price: parseFloat(data.price),
-        cost: parseFloat(data.cost) || 0,
-        mrp: parseFloat(data.mrp) || parseFloat(data.price),
-        stockQuantity: parseInt(data.stockQuantity) || 0,
-        alertThreshold: parseInt(data.alertThreshold) || 5,
-        categoryId: data.categoryId ? parseInt(data.categoryId) : null,
-        hsnCode: data.hsnCode || '',
-        barcode: data.barcode || '',
-        cgstRate: parseFloat(data.cgstRate) || 0,
-        sgstRate: parseFloat(data.sgstRate) || 0,
-        igstRate: parseFloat(data.igstRate) || 0,
-        cessRate: parseFloat(data.cessRate) || 0,
+        cost: data.cost ? parseFloat(data.cost) : 0,
+        mrp: data.mrp ? parseFloat(data.mrp) : parseFloat(data.price),
+        stockQuantity: data.stockQuantity ? parseInt(data.stockQuantity) : 0,
+        alertThreshold: data.alertThreshold ? parseInt(data.alertThreshold) : 5,
+        categoryId: data.categoryId && data.categoryId !== "" ? parseInt(data.categoryId) : null,
+        hsnCode: data.hsnCode?.trim() || '',
+        barcode: data.barcode?.trim() || '',
+        cgstRate: data.cgstRate ? parseFloat(data.cgstRate) : 0,
+        sgstRate: data.sgstRate ? parseFloat(data.sgstRate) : 0,
+        igstRate: data.igstRate ? parseFloat(data.igstRate) : 0,
+        cessRate: data.cessRate ? parseFloat(data.cessRate) : 0,
         taxCalculationMethod: data.taxType === 'Tax Inclusive' ? 'inclusive' : 'exclusive',
-        weight: parseFloat(data.weight) || null,
+        weight: data.weight ? parseFloat(data.weight) : null,
         weightUnit: data.weightUnit || 'kg',
-        active: data.active !== undefined ? data.active : true
+        active: data.active !== undefined ? Boolean(data.active) : true
       };
+
+      // Validate numeric fields
+      if (isNaN(updateData.price) || updateData.price < 0) {
+        throw new Error('Price must be a valid positive number');
+      }
+      if (isNaN(updateData.cost) || updateData.cost < 0) {
+        throw new Error('Cost must be a valid positive number');
+      }
+      if (isNaN(updateData.stockQuantity) || updateData.stockQuantity < 0) {
+        throw new Error('Stock quantity must be a valid positive number');
+      }
 
       console.log('Formatted update data:', updateData);
 
@@ -375,37 +401,71 @@ export default function AddItemDashboard() {
         console.log('Update response status:', response.status);
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Update error response:', errorText);
-
           let errorMessage = 'Failed to update product';
+          
           try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } catch {
-            if (response.status === 404) {
-              errorMessage = 'Product not found';
-            } else if (response.status === 400) {
-              errorMessage = 'Invalid product data provided';
-            } else if (response.status === 500) {
-              errorMessage = 'Server error occurred';
-            } else {
-              errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            const errorText = await response.text();
+            console.error('Update error response:', errorText);
+            
+            // Try to parse as JSON first
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch (parseError) {
+              // Handle plain text error responses
+              if (errorText.trim()) {
+                errorMessage = errorText.trim();
+              } else {
+                // Fallback to HTTP status messages
+                switch (response.status) {
+                  case 400:
+                    errorMessage = 'Invalid product data provided';
+                    break;
+                  case 404:
+                    errorMessage = 'Product not found';
+                    break;
+                  case 409:
+                    errorMessage = 'Product with this SKU already exists';
+                    break;
+                  case 500:
+                    errorMessage = 'Internal server error occurred';
+                    break;
+                  default:
+                    errorMessage = `Server error: ${response.status} ${response.statusText}`;
+                }
+              }
             }
+          } catch (responseError) {
+            console.error('Error reading response:', responseError);
+            errorMessage = `HTTP ${response.status}: Unable to read server response`;
           }
 
           throw new Error(errorMessage);
         }
 
-        const result = await response.json();
-        console.log('Update success result:', result);
+        let result;
+        try {
+          result = await response.json();
+          console.log('Update success result:', result);
+        } catch (parseError) {
+          console.warn('Could not parse success response as JSON, assuming success');
+          result = { message: 'Product updated successfully' };
+        }
+
         return result;
       } catch (networkError) {
         console.error('Network error during update:', networkError);
-        if (networkError.message.includes('fetch')) {
-          throw new Error('Network error: Unable to connect to server');
+        
+        if (networkError.name === 'TypeError' && networkError.message.includes('fetch')) {
+          throw new Error('Network error: Unable to connect to server. Please check your connection.');
         }
-        throw networkError;
+        
+        // Re-throw our custom errors
+        if (networkError.message.includes('Product') || networkError.message.includes('Server error')) {
+          throw networkError;
+        }
+        
+        throw new Error('Unexpected error occurred while updating product. Please try again.');
       }
     },
     onSuccess: (result) => {
@@ -507,34 +567,101 @@ export default function AddItemDashboard() {
   const handleUpdateProduct = () => {
     console.log('Handling product update with form data:', editForm);
 
-    // Comprehensive validation
+    // Comprehensive validation with better error messages
     const validationErrors = [];
 
+    // Required field validation
     if (!editForm.name?.trim()) {
       validationErrors.push("Product name is required");
+    } else if (editForm.name.trim().length < 2) {
+      validationErrors.push("Product name must be at least 2 characters long");
     }
 
     if (!editForm.itemCode?.trim()) {
       validationErrors.push("Item Code (SKU) is required");
+    } else if (editForm.itemCode.trim().length < 3) {
+      validationErrors.push("Item Code must be at least 3 characters long");
     }
 
-    if (!editForm.price || isNaN(parseFloat(editForm.price)) || parseFloat(editForm.price) <= 0) {
-      validationErrors.push("Valid price greater than 0 is required");
+    // Price validation
+    if (!editForm.price?.trim()) {
+      validationErrors.push("Price is required");
+    } else {
+      const price = parseFloat(editForm.price);
+      if (isNaN(price) || price <= 0) {
+        validationErrors.push("Price must be a valid number greater than 0");
+      } else if (price > 999999) {
+        validationErrors.push("Price cannot exceed ₹999,999");
+      }
     }
 
-    if (editForm.cost && isNaN(parseFloat(editForm.cost))) {
-      validationErrors.push("Cost must be a valid number");
+    // Cost validation
+    if (editForm.cost?.trim()) {
+      const cost = parseFloat(editForm.cost);
+      if (isNaN(cost) || cost < 0) {
+        validationErrors.push("Cost must be a valid positive number");
+      } else if (cost > 999999) {
+        validationErrors.push("Cost cannot exceed ₹999,999");
+      }
     }
 
-    if (editForm.stockQuantity && isNaN(parseInt(editForm.stockQuantity))) {
-      validationErrors.push("Stock quantity must be a valid number");
+    // MRP validation
+    if (editForm.mrp?.trim()) {
+      const mrp = parseFloat(editForm.mrp);
+      const price = parseFloat(editForm.price || "0");
+      if (isNaN(mrp) || mrp < 0) {
+        validationErrors.push("MRP must be a valid positive number");
+      } else if (mrp < price) {
+        validationErrors.push("MRP cannot be less than selling price");
+      }
+    }
+
+    // Stock quantity validation
+    if (editForm.stockQuantity?.trim()) {
+      const stock = parseInt(editForm.stockQuantity);
+      if (isNaN(stock) || stock < 0) {
+        validationErrors.push("Stock quantity must be a valid positive number");
+      } else if (stock > 999999) {
+        validationErrors.push("Stock quantity cannot exceed 999,999");
+      }
+    }
+
+    // Alert threshold validation
+    if (editForm.alertThreshold?.trim()) {
+      const threshold = parseInt(editForm.alertThreshold);
+      if (isNaN(threshold) || threshold < 0) {
+        validationErrors.push("Alert threshold must be a valid positive number");
+      }
+    }
+
+    // GST rate validation
+    if (editForm.cgstRate?.trim()) {
+      const cgst = parseFloat(editForm.cgstRate);
+      if (isNaN(cgst) || cgst < 0 || cgst > 50) {
+        validationErrors.push("CGST rate must be between 0 and 50");
+      }
+    }
+
+    if (editForm.sgstRate?.trim()) {
+      const sgst = parseFloat(editForm.sgstRate);
+      if (isNaN(sgst) || sgst < 0 || sgst > 50) {
+        validationErrors.push("SGST rate must be between 0 and 50");
+      }
+    }
+
+    if (editForm.igstRate?.trim()) {
+      const igst = parseFloat(editForm.igstRate);
+      if (isNaN(igst) || igst < 0 || igst > 50) {
+        validationErrors.push("IGST rate must be between 0 and 50");
+      }
     }
 
     if (validationErrors.length > 0) {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: validationErrors.join(", "),
+        description: validationErrors.slice(0, 3).join("; ") + 
+          (validationErrors.length > 3 ? `... and ${validationErrors.length - 3} more errors` : ""),
       });
       return;
     }
@@ -544,7 +671,25 @@ export default function AddItemDashboard() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No product selected for editing.",
+        description: "No product selected for editing. Please close and reopen the edit dialog.",
+      });
+      return;
+    }
+
+    // Check if form data has actually changed
+    const hasChanges = (
+      editForm.name !== editingProduct.name ||
+      editForm.itemCode !== editingProduct.sku ||
+      parseFloat(editForm.price || "0") !== parseFloat(editingProduct.price.toString()) ||
+      parseFloat(editForm.cost || "0") !== parseFloat(editingProduct.cost?.toString() || "0") ||
+      parseInt(editForm.stockQuantity || "0") !== editingProduct.stockQuantity ||
+      editForm.aboutProduct !== (editingProduct.description || "")
+    );
+
+    if (!hasChanges) {
+      toast({
+        title: "No Changes",
+        description: "No changes detected to update.",
       });
       return;
     }
@@ -553,22 +698,11 @@ export default function AddItemDashboard() {
     const updateData = {
       ...editForm,
       id: editingProduct.id,
-      // Ensure numeric values are properly converted
-      price: parseFloat(editForm.price),
-      cost: parseFloat(editForm.cost) || 0,
-      mrp: parseFloat(editForm.mrp) || parseFloat(editForm.price),
-      stockQuantity: parseInt(editForm.stockQuantity) || 0,
-      alertThreshold: parseInt(editForm.alertThreshold) || 5,
-      cgstRate: parseFloat(editForm.cgstRate) || 0,
-      sgstRate: parseFloat(editForm.sgstRate) || 0,
-      igstRate: parseFloat(editForm.igstRate) || 0,
-      cessRate: parseFloat(editForm.cessRate) || 0,
-      weight: parseFloat(editForm.weight) || null,
-      // Ensure boolean values
-      active: editForm.active !== undefined ? editForm.active : true,
     };
 
     console.log('Submitting update data:', updateData);
+    
+    // Show loading state
     updateProductMutation.mutate(updateData);
   };
 
