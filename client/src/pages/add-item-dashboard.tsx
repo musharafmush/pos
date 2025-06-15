@@ -148,6 +148,7 @@ export default function AddItemDashboard() {
 
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState("item-info");
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
@@ -317,26 +318,122 @@ export default function AddItemDashboard() {
 
   // Update product mutation
   const updateProductMutation = useMutation({
-    mutationFn: async (data: { id: number; updates: Partial<Product> }) => {
-      const response = await apiRequest("PATCH", `/api/products/${data.id}`, data.updates);
-      return response.json();
+    mutationFn: async (data: any) => {
+      console.log('Updating product with data:', data);
+
+      // Ensure all required fields are present and properly formatted
+      const updateData = {
+        name: data.name || editingProduct?.name || '',
+        sku: data.sku || editingProduct?.sku || '',
+        description: data.description || editingProduct?.description || '',
+        price: parseFloat(data.price) || parseFloat(editingProduct?.price) || 0,
+        cost: parseFloat(data.cost) || parseFloat(editingProduct?.cost) || 0,
+        mrp: parseFloat(data.mrp) || parseFloat(editingProduct?.mrp) || 0,
+        stockQuantity: parseInt(data.stockQuantity) || parseInt(editingProduct?.stockQuantity) || 0,
+        alertThreshold: parseInt(data.alertThreshold) || parseInt(editingProduct?.alertThreshold) || 5,
+        categoryId: data.categoryId || editingProduct?.categoryId || null,
+        brandId: data.brandId || editingProduct?.brandId || null,
+        unitId: data.unitId || editingProduct?.unitId || null,
+        hsnCode: data.hsnCode || editingProduct?.hsnCode || '',
+        barcode: data.barcode || editingProduct?.barcode || '',
+        cgstRate: parseFloat(data.cgstRate) || 0,
+        sgstRate: parseFloat(data.sgstRate) || 0,
+        igstRate: parseFloat(data.igstRate) || 0,
+        cessRate: parseFloat(data.cessRate) || 0,
+        taxCalculationMethod: data.taxCalculationMethod || editingProduct?.taxCalculationMethod || 'exclusive',
+        weight: parseFloat(data.weight) || 0,
+        discountPercent: parseFloat(data.discountPercent) || 0,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+        trackInventory: data.trackInventory !== undefined ? data.trackInventory : true,
+        allowOutOfStock: data.allowOutOfStock !== undefined ? data.allowOutOfStock : false
+      };
+
+      console.log('Formatted update data:', updateData);
+
+      const response = await fetch(`/api/products/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      console.log('Update response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Update error response:', errorText);
+
+        let errorMessage = 'Failed to update product';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      console.log('Update success result:', result);
+      return result;
     },
-    onSuccess: (data) => {
-      console.log('Update successful, response:', data);
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.refetchQueries({ queryKey: ["/api/products"] });
-      setIsEditDialogOpen(false);
-      setSelectedProduct(null);
+    onSuccess: (result) => {
+      console.log('Product update successful:', result);
       toast({
-        title: "Success",
-        description: "Product updated successfully",
+        title: "Product updated successfully! ✅",
+        description: "The product has been updated with new information.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setIsEditDialogOpen(false);
+      setEditingProduct(null);
+
+      // Reset edit form
+      setEditForm({
+        itemCode: "",
+        name: '',
+        manufacturerName: "",
+        supplierName: "",
+        alias: "",
+        aboutProduct: "",
+        categoryId: '',
+        taxRate: '',
+        hsnCode: '',
+        gstCode: 'GST 18%',
+        cgstRate: '0',
+        sgstRate: '0',
+        igstRate: '0',
+        cessRate: '0',
+        taxType: 'Tax Inclusive',
+        barcode: '',
+        packingType: '',
+        packingSize: '',
+        weight: '',
+        weightUnit: 'kg',
+        dimensions: '',
+        color: '',
+        size: '',
+        price: '',
+        mrp: '',
+        cost: '',
+        discountPercent: '',
+        stockQuantity: '',
+        alertThreshold: '',
+        reorderLevel: '',
+        maxStockLevel: '',
+        preferredSupplier: '',
+        leadTime: '',
+        minimumOrderQty: '',
+        active: true
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Product update error:', error);
       toast({
-        title: "Error",
-        description: "Failed to update product",
         variant: "destructive",
+        title: "Error updating product",
+        description: error.message || "An unexpected error occurred while updating the product.",
       });
     },
   });
@@ -349,64 +446,8 @@ export default function AddItemDashboard() {
 
   const handleEditProduct = (product: Product) => {
     console.log("Editing product:", product); // Debug log
+    openEditModal(product);
     setSelectedProduct(product);
-    setEditForm({
-      // Basic Information - Use actual product data
-      itemCode: product.sku || `${product.name.replace(/\s+/g, '').toUpperCase()}001`,
-      name: product.name,
-      manufacturerName: "Select manufacturer",
-      supplierName: "Select supplier", 
-      alias: product.name.split(' ')[0] || "",
-      aboutProduct: product.description || "",
-
-      // Category Information
-      categoryId: product.categoryId.toString(),
-
-      // Tax Information
-      taxRate: "18",
-      hsnCode: "",
-      gstCode: product.gstCode || "GST 18%",
-      cgstRate: product.cgstRate || "0",
-      sgstRate: product.sgstRate || "0",
-      igstRate: product.igstRate || "0",
-      cessRate: product.cessRate || "0",
-      taxType: product.taxType || "Tax Inclusive",
-
-      // EAN Code/Barcode
-      barcode: product.barcode || "",
-
-      // Packing
-      packingType: "Box",
-      packingSize: "1",
-
-      // Item Properties
-      weight: product.weight || "1",
-      weightUnit: product.weightUnit || "kg",
-      dimensions: "",
-      color: "",
-      size: "",
-
-      // Pricing - Convert string prices to display properly
-      price: typeof product.price === 'string' ? product.price : product.price.toString(),
-      mrp: product.mrp ? (typeof product.mrp === 'string' ? product.mrp : product.mrp.toString()) : (typeof product.price === 'string' ? product.price : product.price.toString()),
-      cost: product.cost ? (typeof product.cost === 'string' ? product.cost : product.cost.toString()) : "0",
-      discountPercent: "0",
-
-      // Reorder Configurations
-      stockQuantity: product.stockQuantity.toString(),
-      alertThreshold: product.alertThreshold?.toString() || "5",
-      reorderLevel: "10",
-      maxStockLevel: "100",
-
-      // Purchase Order
-      preferredSupplier: "Primary Supplier",
-      leadTime: "7",
-      minimumOrderQty: "1",
-
-      // Status
-      active: product.active,
-    });
-    setIsEditDialogOpen(true);
   };
 
   const handleDeleteProduct = async (productId: number) => {
@@ -433,46 +474,146 @@ export default function AddItemDashboard() {
     }
   };
 
-  const handleUpdateProduct = async () => {
-    if (!selectedProduct) return;
+  const handleUpdateProduct = () => {
+    console.log('Handling product update with form data:', editForm);
 
     // Validate required fields
-    if (!editForm.name || !editForm.itemCode || !editForm.categoryId) {
+    if (!editForm.name?.trim()) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
         variant: "destructive",
+        title: "Validation Error",
+        description: "Product name is required.",
       });
       return;
     }
 
-    const updateData = {
-          name: editForm.name,
-          description: editForm.aboutProduct,
-          price: parseFloat(editForm.price),
-          mrp: parseFloat(editForm.mrp),
-          cost: parseFloat(editForm.cost) || 0,
-          weight: editForm.weight ? parseFloat(editForm.weight) : null,
-          weightUnit: editForm.weightUnit,
-          categoryId: parseInt(editForm.categoryId),
-          stockQuantity: parseInt(editForm.stockQuantity),
-          alertThreshold: parseInt(editForm.alertThreshold) || 5,
-          barcode: editForm.barcode,
-          active: editForm.active,
-          taxRate: editForm.gstCode?.match(/\d+/)?.[0] || "18",
-          hsnCode: editForm.hsnCode,
-          // Enhanced tax data synchronization
-          gstCode: editForm.gstCode,
-          cgstRate: editForm.cgstRate,
-          sgstRate: editForm.sgstRate,
-          igstRate: editForm.igstRate,
-          cessRate: editForm.cessRate,
-          taxType: editForm.taxType,
-          taxCalculationMethod: editForm.taxType === "Tax Inclusive" ? "inclusive" : "exclusive"
-        };
+    if (!editForm.itemCode?.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Item Code is required.",
+      });
+      return;
+    }
 
-    console.log('Updating product with data:', updateData);
-    updateProductMutation.mutate({ id: selectedProduct.id, updates: updateData });
+    if (!editForm.categoryId?.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Category is required.",
+      });
+      return;
+    }
+
+    if (!editForm.price || parseFloat(editForm.price) < 0) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Valid price is required.",
+      });
+      return;
+    }
+
+    // Check if editing product exists
+    if (!editingProduct || !editingProduct.id) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No product selected for editing.",
+      });
+      return;
+    }
+
+    // Prepare the update data
+    const updateData = {
+      ...editForm,
+      id: editingProduct.id,
+      // Ensure numeric values are properly converted
+      price: parseFloat(editForm.price) || 0,
+      cost: parseFloat(editForm.cost) || 0,
+      mrp: parseFloat(editForm.mrp) || 0,
+      stockQuantity: parseInt(editForm.stockQuantity) || 0,
+      alertThreshold: parseInt(editForm.alertThreshold) || 5,
+      cgstRate: parseFloat(editForm.cgstRate) || 0,
+      sgstRate: parseFloat(editForm.sgstRate) || 0,
+      igstRate: parseFloat(editForm.igstRate) || 0,
+      cessRate: parseFloat(editForm.cessRate) || 0,
+      weight: parseFloat(editForm.weight) || 0,
+      discountPercent: parseFloat(editForm.discountPercent) || 0,
+      // Ensure boolean values
+      active: editForm.active !== undefined ? editForm.active : true,
+    };
+
+    console.log('Submitting update data:', updateData);
+    updateProductMutation.mutate(updateData);
+  };
+
+  const openEditModal = (product: any) => {
+    console.log('Opening edit modal for product:', product);
+    setEditingProduct(product);
+
+    // Calculate total GST rate
+    const cgstRate = parseFloat(product.cgstRate || '0');
+    const sgstRate = parseFloat(product.sgstRate || '0');
+    const igstRate = parseFloat(product.igstRate || '0');
+    const totalGst = cgstRate + sgstRate + igstRate;
+
+    // Determine GST code based on total rate
+    let gstCode = 'GST 18%';
+    if (totalGst === 0) gstCode = 'GST 0%';
+    else if (totalGst === 5) gstCode = 'GST 5%';
+    else if (totalGst === 12) gstCode = 'GST 12%';
+    else if (totalGst === 18) gstCode = 'GST 18%';
+    else if (totalGst === 28) gstCode = 'GST 28%';
+
+    // Populate form with existing product data
+    setEditForm({
+      itemCode: product.sku || `${product.name.replace(/\s+/g, '').toUpperCase()}001`,
+      name: product.name || '',
+      manufacturerName: "Select manufacturer",
+      supplierName: "Select supplier",
+      alias: product.name.split(' ')[0] || "",
+      aboutProduct: product.description || '',
+      categoryId: product.categoryId?.toString() || '',
+      taxRate: totalGst.toString(),
+      hsnCode: product.hsnCode || '',
+      gstCode: gstCode,
+      cgstRate: cgstRate.toString(),
+      sgstRate: sgstRate.toString(),
+      igstRate: igstRate.toString(),
+      cessRate: product.cessRate?.toString() || '0',
+      taxType: product.taxCalculationMethod || 'Tax Inclusive',
+      barcode: product.barcode || '',
+      packingType: "Box",
+      packingSize: "1",
+      weight: product.weight?.toString() || '1',
+      weightUnit: product.weightUnit || 'kg',
+      dimensions: '',
+      color: '',
+      size: '',
+      price: product.price?.toString() || '0',
+      mrp: product.mrp?.toString() || product.price?.toString() || '0',
+      cost: product.cost?.toString() || '0',
+      discountPercent: '0',
+      stockQuantity: product.stockQuantity?.toString() || '0',
+      alertThreshold: product.alertThreshold?.toString() || '5',
+      reorderLevel: "10",
+      maxStockLevel: "100",
+      preferredSupplier: "Primary Supplier",
+      leadTime: "7",
+      minimumOrderQty: "1",
+      active: product.active !== undefined ? product.active : true,
+    });
+
+    console.log('Edit form populated with:', {
+      name: product.name,
+      sku: product.sku,
+      price: product.price,
+      gstCode: gstCode,
+      totalGst: totalGst
+    });
+
+    setIsEditDialogOpen(true);
   };
 
   // Calculate statistics
@@ -746,7 +887,8 @@ export default function AddItemDashboard() {
                       <span className="text-sm font-medium">Home & Garden</span>
                       <div className="flex items-center gap-2">
                         <div className="w-20 h-2 bg-gray-200 rounded-full">
-                          <div className="w-1/4 h-2 bg-purple-600 rounded-full"></div>
+                          <div className="w-1/4 h-2 bg-purple```tool_code
+-600 rounded-full"></div>
                         </div>
                         <span className="text-sm text-gray-600">25%</span>
                       </div>
@@ -2045,11 +2187,11 @@ export default function AddItemDashboard() {
                       </div>
                     </div>
 
-                    
+
                       {/* Tax Information Section */}
                     <div id="tax-info" className="bg-white rounded-lg border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Tax Information</h3>
-                      
+
                       <div className="space-y-6">
                         <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
@@ -2061,7 +2203,7 @@ export default function AddItemDashboard() {
                                 const rate = selectedValue.match(/\d+/)?.[0] || "18";
                                 const cgst = (parseFloat(rate) / 2).toString();
                                 const sgst = (parseFloat(rate) / 2).toString();
-                                
+
                                 setEditForm({ 
                                   ...editForm, 
                                   gstCode: selectedValue,
@@ -2207,13 +2349,13 @@ export default function AddItemDashboard() {
                         )}
                       </div>
                     </div>
-                                
-                              
-                            
-                          
-                        
-                      
-                    
+
+
+
+
+
+
+
 
                     {/* EAN Code/Barcode */}
                     <div id="barcode-info" className="bg-white rounded-lg border border-gray-200 p-6">
