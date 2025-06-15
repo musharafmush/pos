@@ -21,6 +21,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X, QrCode as QrCodeIcon } from "lucide-react";
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { DollarSign as DollarSignIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 // Product Search with Suggestions Component
 const ProductSearchWithSuggestions = ({ 
@@ -503,7 +505,7 @@ export default function PurchaseEntryProfessional() {
 
     const updatedHeldPurchases = [...heldPurchases, heldPurchase];
     setHeldPurchases(updatedHeldPurchases);
-    
+
     // Persist to localStorage
     try {
       localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
@@ -630,13 +632,13 @@ export default function PurchaseEntryProfessional() {
       // Remove from held purchases and update localStorage
       const updatedHeldPurchases = heldPurchases.filter(p => p.id !== heldPurchase.id);
       setHeldPurchases(updatedHeldPurchases);
-      
+
       try {
         localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
       } catch (error) {
         console.error('Failed to update localStorage:', error);
       }
-      
+
       setShowHeldPurchases(false);
 
       // Switch to details tab
@@ -659,13 +661,13 @@ export default function PurchaseEntryProfessional() {
   const deleteHeldPurchase = (holdId: string) => {
     const updatedHeldPurchases = heldPurchases.filter(p => p.id !== holdId);
     setHeldPurchases(updatedHeldPurchases);
-    
+
     try {
       localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
     } catch (error) {
       console.error('Failed to update localStorage:', error);
     }
-    
+
     toast({
       title: "Held Purchase Deleted",
       description: `Held purchase order has been deleted.`,
@@ -824,8 +826,7 @@ export default function PurchaseEntryProfessional() {
     const taxCalculationMethod = form.getValues("taxCalculationMethod") || "exclusive";
 
     let totalItems = 0;
-    let totalQuantity = 0;
-    let subtotal = 0;
+    let totalQuantity = 0;    let subtotal = 0;
     let totalDiscount = 0;
     let totalTax = 0;
 
@@ -957,12 +958,12 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`items.${index}.productId`, productId);
       form.setValue(`items.${index}.code`, product.sku || "");
       form.setValue(`items.${index}.description`, product.description || product.name);
-      
+
       // Use cost price from product if available, otherwise use selling price
       const costPrice = parseFloat(product.cost || product.price) || 0;
       const sellingPrice = parseFloat(product.price) || 0;
       const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
-      
+
       form.setValue(`items.${index}.unitCost`, costPrice);
       form.setValue(`items.${index}.sellingPrice`, sellingPrice);
       form.setValue(`items.${index}.mrp`, mrpPrice);
@@ -990,7 +991,7 @@ export default function PurchaseEntryProfessional() {
       const subtotal = qty * costPrice;
       const tax = (subtotal * taxPercent) / 100;
       const netAmount = subtotal + tax;
-      
+
       form.setValue(`items.${index}.netAmount`, netAmount);
 
       // Trigger form validation and update
@@ -1204,7 +1205,7 @@ export default function PurchaseEntryProfessional() {
         } else {
           // Add as new item if first occurrence
           const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
-          
+
           // Use cost price from product if available, otherwise use selling price
           const costPrice = parseFloat(product.cost || product.price) || 0;
           const sellingPrice = parseFloat(product.price) || 0;
@@ -1287,7 +1288,7 @@ export default function PurchaseEntryProfessional() {
     mutationFn: async (data: PurchaseFormData) => {
       try {
         console.log('🔄 Starting purchase save/update process...');
-        
+
         const url = isEditMode ? `/api/purchases/${editId}` : "/api/purchases";
         const method = isEditMode ? "PUT" : "POST";
 
@@ -1341,20 +1342,20 @@ export default function PurchaseEntryProfessional() {
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
           let errorMessage = isEditMode ? "Failed to update purchase order" : "Failed to create purchase order";
-          
+
           if (contentType && contentType.includes('application/json')) {
             try {
               const errorData = await response.json();
               console.error('❌ Server error response:', errorData);
-              
+
               // Use the most specific error message available
               errorMessage = errorData.error || errorData.message || errorMessage;
-              
+
               // Add technical details if available
               if (errorData.technical && errorData.technical !== errorMessage) {
                 console.error('🔧 Technical details:', errorData.technical);
               }
-              
+
             } catch (jsonError) {
               console.error('❌ Failed to parse error JSON:', jsonError);
               errorMessage = `Server error: ${response.status} ${response.statusText}`;
@@ -1364,7 +1365,7 @@ export default function PurchaseEntryProfessional() {
             try {
               const errorText = await response.text();
               console.error('❌ Server returned non-JSON response:', errorText.substring(0, 500));
-              
+
               if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
                 errorMessage = `Server error (${response.status}). The server returned an error page instead of data.`;
               } else {
@@ -1375,7 +1376,7 @@ export default function PurchaseEntryProfessional() {
               errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
           }
-          
+
           throw new Error(errorMessage);
         }
 
@@ -1396,15 +1397,15 @@ export default function PurchaseEntryProfessional() {
         }
 
         return result;
-        
+
       } catch (error) {
         console.error('💥 Purchase save/update error:', error);
-        
+
         // Re-throw with enhanced error context
         if (error instanceof TypeError && error.message.includes('fetch')) {
           throw new Error('Network error: Unable to connect to server. Please check your connection and try again.');
         }
-        
+
         throw error;
       }
     },
@@ -1474,7 +1475,7 @@ export default function PurchaseEntryProfessional() {
             }
           ],
         });
-        
+
         // Force form to re-render with clean state
         setTimeout(() => {
           setActiveTab("details");
@@ -1518,7 +1519,7 @@ export default function PurchaseEntryProfessional() {
         const hasProduct = item.productId && item.productId > 0;
         const hasValidQuantity = (Number(item.receivedQty) || Number(item.quantity) || 0) > 0;
         const hasCost = (Number(item.unitCost) || 0) >= 0;
-        
+
         // Check if item has meaningful data
         return hasProduct && hasValidQuantity && hasCost;
       });
@@ -1706,13 +1707,14 @@ export default function PurchaseEntryProfessional() {
               onClick={holdPurchase}
               className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
             >
-              <Archive className="mr-2 h-4 w-4" />
+              <Archive className="mr-2 h-4```text
+ w-4" />
               Hold
             </Button>
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => {
+              onClick={()={() => {
                 toast({
                   title: "Print Feature",
                   description: "Print functionality will be available after saving the purchase order.",
@@ -1981,1402 +1983,346 @@ export default function PurchaseEntryProfessional() {
                 </CardContent>
               </Card>
 
-              {/* Invoice Details Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Invoice Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                      <Input
-                        {...form.register("invoiceNumber")}
-                        placeholder="Enter invoice number"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="invoiceDate">Invoice Date</Label>
-                      <Input
-                        type="date"
-                        {...form.register("invoiceDate")}
-                        placeholder="dd-mm-yyyy"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="invoiceAmount">Invoice Amount</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...form.register("invoiceAmount", { valueAsNumber: true })}
-                        placeholder="0"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="lrNumber">LR Number</Label>
-                      <Input
-                        {...form.register("lrNumber")}
-                        placeholder="Enter LR number"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="shippingAddress">Shipping Address</Label>
-                      <Textarea
-                        {...form.register(`shippingAddress`)}
-                        placeholder="Enter shipping address..."
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="billingAddress">Billing Address</Label>
-                      <Textarea
-                        {...form.register("billingAddress")}
-                        placeholder="Enter billing address..."
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="remarks">Public Remarks</Label>
-                      <Textarea
-                        {...form.register("remarks")}
-                        placeholder="Remarks visible to supplier..."
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="internalNotes">Internal Notes</Label>
-                      <Textarea
-                        {...form.register("internalNotes")}
-                        placeholder="Internal notes (not visible to supplier)..."
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Line Items Tab */}
-            <TabsContent value="items" className="space-y-4">
-              {/* Barcode Scanner Section */}
-              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold text-blue-800 flex items-center gap-2">
-                    <QrCodeIcon className="h-5 w-5" />
-                    Quick Barcode Entry
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 relative">
-                      <QrCodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
-                      <Input
-                        placeholder="Scan barcode or type product code to quickly add items..."
-                        value={barcodeInput}
-                        onChange={(e) => setBarcodeInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleBarcodeSubmit();
-                          }
-                        }}
-                        className="pl-10 text-sm border-blue-300 focus:border-blue-500 focus:ring-blue-500"
-                      />
-                    </div>
-                    <Button
-                      onClick={handleBarcodeSubmit}
-                      disabled={!barcodeInput.trim()}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add to Purchase
-                    </Button>
-                  </div>
-                  <p className="text-xs text-blue-600 mt-2">
-                    💡 Tip: Use a barcode scanner or manually enter product barcodes for instant item addition
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="w-full">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-semibold">Line Items</CardTitle>
-                    <div className="flex gap-2">
-                      <Button onClick={addItem} size="sm" variant="outline" className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Item
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="w-full overflow-x-auto border border-gray-200 rounded-lg">
-                    <div className="min-w-[3200px] bg-white shadow-sm">
-                      <Table className="text-sm border-collapse">
-                        <TableHeader>
-                          <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-300">
-                            <TableHead className="w-20 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">No</TableHead>
-                            <TableHead className="w-40 font-bold border-r border-blue-200 px-4 py-4 text-sm">Code</TableHead>
-                            <TableHead className="min-w-[280px] font-bold border-r border-blue-200 px-4 py-4 text-sm">Product Name</TableHead>
-                            <TableHead className="min-w-[200px] font-bold border-r border-blue-200 px-4 py-4 text-sm">Description</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Previous Stock</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Received Qty</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Free Qty</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cost</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">HSN Code</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Tax %</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Disc Amt</TableHead>
-                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Exp. Date</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Net Cost</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">ROI %</TableHead>
-                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Gross Profit %</TableHead>
-                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Selling Price</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">MRP</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Amount</TableHead>
-                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Net Amount</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cash %</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cash Amt</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Batch No</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Location</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Unit</TableHead>
-                            <TableHead className="w-28 text-center font-bold px-4 py-4 text-sm">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {fields.map((field, index) => {
-                            const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-
-                            // Calculate values
-                            const qty = form.watch(`items.${index}.receivedQty`) || 0;
-                            const freeQty = form.watch(`items.${index}.freeQty`) || 0;
-                            const cost = form.watch(`items.${index}.unitCost`) || 0;
-                            const discountAmount = form.watch(`items.${index}.discountAmount`) || 0;
-                            const taxPercent = form.watch(`items.${index}.taxPercentage`) || 0;
-                            const cashPercent = form.watch(`items.${index}.cashPercent`) || 0;
-                            const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-
-                            const amount = qty * cost;
-                            const netCost = cost + (cost * taxPercent / 100) - discountAmount;
-                            const netAmount = amount - discountAmount + (amount * taxPercent / 100);
-                            const cashAmount = amount * cashPercent / 100;
-                            const roiPercent = sellingPrice > 0 && netCost > 0 ? ((sellingPrice - netCost) / netCost) * 100 : 0;
-                            const grossProfitPercent = sellingPrice > 0 ? ((sellingPrice - netCost) / sellingPrice) * 100 : 0;
-
-                            return (
-                              <TableRow key={field.id} className="hover:bg-blue-50 border-b border-gray-200 transition-colors">
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <div className="flex items-center justify-center h-8">
-                                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
-                                      {index + 1}
-                                    </span>
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <Input
-                                    {...form.register(`items.${index}.code`)}
-                                    className="w-full text-sm"
-                                    placeholder="Code/SKU (Press Enter to search)"
-                                    onChange={(e) => {
-                                      form.setValue(`items.${index}.code`, e.target.value);
-                                      syncTableToModal(index);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        const searchCode = e.currentTarget.value.toLowerCase().trim();
-                                        if (searchCode) {
-                                          const matchedProduct = products.find(p => 
-                                            p.sku?.toLowerCase() === searchCode ||
-                                            p.sku?.toLowerCase().includes(searchCode)
-                                          );
-                                          if (matchedProduct) {
-                                            handleProductSelection(index, matchedProduct.id);
-                                            toast({
-                                              title: "Product Found by Code! 🎯",
-                                              description: `${matchedProduct.name} (${matchedProduct.sku}) selected.`,
-                                            });
-                                          } else {
-                                            toast({
-                                              variant: "destructive",
-                                              title: "Code Not Found",
-                                              description: `No product found with code: ${searchCode}`,
-                                            });
-                                          }
-                                        }
-                                      }
-                                    }}
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2 relative">
-                                  <div className="space-y-2 relative">
-                                    {/* Enhanced Product search with auto-suggestion dropdown */}
-                                    <div className="relative">
-                                      <ProductSearchWithSuggestions 
-                                        products={products}
-                                        onProductSelect={(product) => handleProductSelection(index, product.id)}
-                                        placeholder="🔍 Search products..."
-                                      />
-                                    </div>
-
-                                    <Select 
-                                      onValueChange={(value) => handleProductSelection(index, parseInt(value))}
-                                      value={form.watch(`items.${index}.productId`)?.toString() || ""}
-                                    >
-                                      <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="📋 Select from List">
-                                          {selectedProduct ? (
-                                            <div className="flex flex-col text-left">
-                                              <span className="font-medium text-sm">{selectedProduct.name}</span>
-                                              <span className="text-xs text-gray-500">{selectedProduct.sku}</span>
-                                            </div>
-                                          ) : "📋 Select from List"}
-                                        </SelectValue>
-                                      </SelectTrigger>
-                                      <SelectContent className="max-h-[300px] overflow-y-auto">
-                                        {products.length === 0 ? (
-                                          <div className="p-4 text-center text-gray-500">
-                                            <span>No products available</span>
-                                          </div>
-                                        ) : (
-                                          products.map((product) => (
-                                            <SelectItem key={product.id} value={product.id.toString()}>
-                                              <div className="flex flex-col w-full">
-                                                <div className="flex items-center justify-between w-full">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium text-sm">{product.name}</span>
-                                                    <span className="text-xs text-gray-500">{product.sku} | ₹{product.price}</span>
-                                                  </div>
-                                                  <div className="flex flex-col items-end ml-2">
-                                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                                      (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
-                                                        ? 'bg-red-100 text-red-700' 
-                                                        : (product.stockQuantity || 0) > 50
-                                                          ? 'bg-green-100 text-green-700'
-                                                          : 'bg-yellow-100 text-yellow-700'
-                                                    }`}>
-                                                      {product.stockQuantity || 0}
-                                                    </span>
-                                                    {(product.stockQuantity || 0) <= (product.alertThreshold || 5) && (
-                                                      <span className="text-xs text-red-600 font-medium">Low Stock!</span>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </SelectItem>
-                                          ))
-                                        )}
-                                      </SelectContent>
-                                    </Select>
-
-                                    {/* Enhanced Stock indicator with more details */}
-                                    {selectedProduct && (
-                                      <div className="bg-gray-50 rounded p-2 border">
-                                        <div className="flex items-center justify-between text-xs">
-                                          <span className="text-gray-600">Current Stock:</span>
-                                          <span className={`font-bold ${
-                                            (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
-                                              ? 'text-red-600' 
-                                              : 'text-green-600'
-                                          }`}>
-                                            {selectedProduct.stockQuantity || 0} units
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-xs mt-1">
-                                          <span className="text-gray-600">Price:</span>
-                                          <span className="font-medium text-blue-600">₹{selectedProduct.price}</span>
-                                        </div>
-                                        {(selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) && (
-                                          <div className="text-xs text-red-600 font-medium mt-1 flex items-center">
-                                            <span>⚠️ Low Stock Alert!</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <Input
-                                    {...form.register(`items.${index}.description`)}
-                                    className="w-full text-sm"
-                                    placeholder="Description"
-                                    onChange={(e) => {
-                                      form.setValue(`items.${index}.description`, e.target.value);
-                                      syncTableToModal(index);
-                                    }}
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg text-sm h-12">
-                                    {selectedProduct ? (
-                                      <span className={`font-medium ${
-                                        (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
-                                          ? 'text-red-600' 
-                                          : 'text-green-600'
-                                      }`}>
-                                        {selectedProduct.stockQuantity || 0}
-                                      </span>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    {...form.register(`items.${index}.receivedQty`, { 
-                                      valueAsNumber: true,
-                                      onChange: (e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.receivedQty`, value);
-
-                                        // Recalculate net amount when quantity changes
-                                        const unitCost = form.getValues(`items.${index}.unitCost`) || 0;
-                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                        const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
-
-                                        const subtotal = value * unitCost;
-                                        const taxableAmount = subtotal - discount;
-                                        const tax = (taxableAmount * taxPercentage) / 100;
-                                        const netAmount = taxableAmount + tax;
-
-                                        form.setValue(`items.${index}.netAmount`, netAmount);
-
-                                        // Trigger form validation
-                                        setTimeout(() => form.trigger(`items.${index}`), 50);
-                                      }
-                                    })}
-                                    className="w-full text-center text-xs"
-                                    placeholder="0"
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        // Move to cost field
-                                        const nextField = document.querySelector(`input[name="items.${index}.unitCost"]`) as HTMLInputElement;
-                                        nextField?.focus();
-                                      }
-                                    }}
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    {...form.register(`items.${index}.freeQty`, { valueAsNumber: true })}
-                                    className="w-full text-center text-xs"
-                                    placeholder="0"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      value={form.watch(`items.${index}.unitCost`) || 0}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.unitCost`, value);
-
-                                        // Auto-calculate net amount using receivedQty
-                                        const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                        const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
-
-                                        const subtotal = value * receivedQty;
-                                        const taxableAmount = subtotal - discount;
-                                        const tax = (taxableAmount * taxPercentage) / 100;
-                                        const netAmount = taxableAmount + tax;
-
-                                        form.setValue(`items.${index}.netAmount`, netAmount);
-
-                                        // Trigger form validation
-                                        setTimeout(() => form.trigger(`items.${index}`), 50);
-                                      }}
-                                      className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          // Move to next row's product field or add new row
-                                          if (index === fields.length - 1) {
-                                            addItem();
-                                            setTimeout(() => {
-                                              const newRowCodeField = document.querySelector(`input[name="items.${index + 1}.code"]`) as HTMLInputElement;
-                                              newRowCodeField?.focus();
-                                            }, 100);
-                                          } else {
-                                            const nextRowCodeField = document.querySelector(`input[name="items.${index + 1}.code"]`) as HTMLInputElement;
-                                            nextRowCodeField?.focus();
-                                          }
-                                        }
-                                      }}
-                                    />
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <div className="space-y-2">
-                                    <Input
-                                      {...form.register(`items.${index}.hsnCode`)}
-                                      className="w-full text-center text-xs"
-                                      placeholder="HSN Code"
-                                    />
-                                    {/* Barcode Display */}
-                                    {selectedProduct?.barcode && (
-                                      <div className="flex flex-col items-center p-2 bg-gray-50 rounded border">
-                                        <img
-                                          src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${selectedProduct.barcode}`}
-                                          alt="Product Barcode"
-                                          className="w-12 h-12 mb-1"
-                                        />
-                                        <span className="text-xs font-mono text-gray-600">
-                                          {selectedProduct.barcode}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="0.01"
-                                    {...form.register(`items.${index}.taxPercentage`, { valueAsNumber: true })}
-                                    className="w-full text-center text-xs"
-                                    placeholder="0"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.discountAmount`, { valueAsNumber: true })}
-                                      className="w-full text-right text-xs pl-6"
-                                      placeholder="0"
-                                    />
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="date"
-                                    {...form.register(`items.${index}.expiryDate`)}
-                                    className="w-full text-xs"
-                                    placeholder="dd-mm-yyyy"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                    <span className="text-xs">₹</span>
-                                    <span className="ml-1 font-medium">{netCost.toFixed(0)}</span>
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                    <span className="font-medium">{roiPercent.toFixed(2)}</span>
-                                    <span className="text-xs ml-1">%</span>
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                                                   <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
-                                    <span className="text-xs ml-1">%</span>
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.sellingPrice`, { valueAsNumber: true })}
-                                      className="w-full text-right text-xs pl-6"
-                                      placeholder="0"
-                                    />
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.mrp`, { valueAsNumber: true })}
-                                      className="w-full text-right text-xs pl-6"
-                                      placeholder="0"
-                                    />
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-blue-50 rounded text-xs">
-                                    {amount > 0 ? (
-                                      <>
-                                        <span className="text-xs font-medium text-blue-700">₹</span>
-                                        <span className="font-medium text-blue-700 ml-1">{amount.toFixed(0)}</span>
-                                      </>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-green-50 rounded text-xs">
-                                    {form.watch(`items.${index}.netAmount`) > 0 ? (
-                                      <>
-                                        <span className="text-xs font-medium text-green-700">₹</span>
-                                        <span className="font-medium text-green-700 ml-1">{Math.round(form.watch(`items.${index}.netAmount`))}</span>
-                                      </>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="0.01"
-                                    {...form.register(`items.${index}.cashPercent`, { valueAsNumber: true })}
-                                    className="w-full text-center text-xs"
-                                    placeholder="0"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                    {cashAmount > 0 ? (
-                                      <>
-                                        <span className="text-xs">₹</span>
-                                        <span className="font-medium ml-1">{cashAmount.toFixed(0)}</span>
-                                      </>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    {...form.register(`items.${index}.batchNumber`)}
-                                    className="w-full text-xs"
-                                    placeholder="Batch #"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    {...form.register(`items.${index}.location`)}
-                                    className="w-full text-xs"
-                                    placeholder="Location"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Select onValueChange={(value) => form.setValue(`items.${index}.unit`, value)} defaultValue="PCS">
-                                    <SelectTrigger className="w-full text-xs">
-                                      <SelectValue placeholder="Unit" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="PCS">PCS</SelectItem>
-                                      <SelectItem value="KG">KG</SelectItem>
-                                      <SelectItem value="LTR">LTR</SelectItem>
-                                      <SelectItem value="BOX">BOX</SelectItem>
-                                      <SelectItem value="PACK">PACK</SelectItem>
-                                      <SelectItem value="DOZEN">DOZEN</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-
-                                <TableCell className="px-3 py-3">
-                                  <div className="flex items-center justify-center gap-1">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => openAddItemModal(index)}
-                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 h-8 w-8 rounded-full"
-                                      title="Edit item"
-                                    >
-                                      <Edit2 className="h-4 w-4" />
-                                    </Button>
-                                    {fields.length > 1 ? (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => removeItem(index)}
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-8 w-8 rounded-full"
-                                        title="Delete item"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        disabled
-                                        className="text-gray-300 p-1 h-8 w-8 rounded-full cursor-not-allowed"
-                                        title="Cannot delete the last item"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Summary Tab */}
-            <TabsContent value="summary" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Purchase Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <div className="grid grid-cols-2 gap-8">
-                      {/* Order Details */}
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4 text-gray-800">Order Details</h3>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Order Number:</span>
-                            <span className="font-medium">{form.watch("orderNumber") || "PO-32232115"}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Order Date:</span>
-                            <span className="font-medium">{form.watch("orderDate") || "2025-05-26"}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Payment Terms:</span>
-                            <span className="font-medium">{form.watch("paymentTerms") || "Net 30"}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Tax Calculation:</span>
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                              {(() => {
-                                const method = form.watch("taxCalculationMethod") || "exclusive";
-                                switch (method) {
-                                  case "inclusive": return "Tax Inclusive";
-                                  case "compound": return "Compound Tax";
-                                  default: return "Tax Exclusive";
-                                }
-                              })()}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Status:</span>
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                              {form.watch("status") || "Pending"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Financial Summary */}
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4 text-gray-800">Financial Summary</h3>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Total Items:</span>
-                            <span className="font-medium">{summary.totalItems}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Total Quantity:</span>
-                            <span className="font-medium">{summary.totalQuantity}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Subtotal:</span>
-                            <span className="font-medium">{formatCurrency(summary.subtotal)}</span>
-                          </div>
-                          <div className="flex justify-between text-red-600">
-                            <span>Total Discount:</span>
-                            <span className="font-medium">{formatCurrency(summary.totalDiscount)}</span>
-                          </div>
-                          <div className="flex justify-between text-green-600">
-                            <span>Total Tax (GST):</span>
-                            <span className="font-medium">+{formatCurrency(summary.totalTax)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Freight Charges:</span>
-                            <span className="font-medium">+{formatCurrency(summary.freightCharges)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Surcharge:</span>
-                            <span className="font-medium">+{formatCurrency(Number(form.watch("surchargeAmount")) || 0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Packing Charges:</span>
-                            <span className="font-medium">+{formatCurrency(Number(form.watch("packingCharges")) || 0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Other Charges:</span>
-                            <span className="font-medium">+{formatCurrency(Number(form.watch("otherCharges")) || 0)}</span>
-                          </div>
-                          <div className="flex justify-between text-red-600">
-                            <span>Additional Discount:</span>
-                            <span className="font-medium">-{formatCurrency(Number(form.watch("additionalDiscount")) || 0)}</span>
-                          </div>
-
-                          <div className="border-t pt-3 mt-4">
-                            <div className="flex justify-between text-xl font-bold text-blue-600">
-                              <span>Grand Total:</span>
-                              <span>{formatCurrency(summary.grandTotal)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {form.watch("remarks") && (
-                    <div className="space-y-2">
-                      <h3 className="font-semibold">Remarks</h3>
-                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                        {form.watch("remarks")}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Add Item Modal */}
-        <Dialog open={isAddItemModalOpen} onOpenChange={setIsAddItemModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingItemIndex !== null ? 'Edit Item' : 'Add New Item'}
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="modal-product">Product Name *</Label>
-
-                {/* Enhanced search with suggestions for modal */}
-                <div className="space-y-2">
-                  <ProductSearchWithSuggestions
-                    products={products}
-                    onProductSelect={(product) => {
-                      // Use cost price from product if available, otherwise use selling price
-                      const costPrice = parseFloat(product.cost || product.price) || 0;
-                      const sellingPrice = parseFloat(product.price) || 0;
-                      const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
-                      
-                      const newModalData = {
-                        ...modalData,
-                        productId: product.id,
-                        code: product.sku || "",
-                        description: product.description || product.name,
-                        unitCost: costPrice,
-                        mrp: mrpPrice,
-                        sellingPrice: sellingPrice,
-                        hsnCode: product.hsnCode || "",
-                      };
-                      setModalData(newModalData);
-                      if (editingItemIndex !== null) {
-                        syncModalToTable();
-                      }
-
-                      toast({
-                        title: "Product Selected! 🎯",
-                        description: `${product.name} selected with auto-populated details.`,
-                      });
-                    }}
-                    placeholder="🔍 Search products by name, SKU, or description..."
-                  />
-
-                  <Select 
-                    onValueChange={(value) => {
-                      const productId = parseInt(value);
-                      const product = products.find(p => p.id === productId);
-                      if (product) {
-                        // Use cost price from product if available, otherwise use selling price
-                        const costPrice = parseFloat(product.cost || product.price) || 0;
-                        const sellingPrice = parseFloat(product.price) || 0;
-                        const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
-                        
-                        const newModalData = {
-                          ...modalData,
-                          productId,
-                          code: product.sku || "",
-                          description: product.description || product.name,
-                          unitCost: costPrice,
-                          mrp: mrpPrice,
-                          sellingPrice: sellingPrice,
-                          hsnCode: product.hsnCode || "",
-                        };
-                        setModalData(newModalData);
-                        if (editingItemIndex !== null) {
-                          syncModalToTable();
-                        }
-                      }
-                    }}
-                    value={modalData.productId?.toString() || ""}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Or browse all products from dropdown" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[250px] overflow-y-auto">
-                      {(showBulkItemsOnly ? bulkItems : products).length === 0 ? (
-                          <div className="p-4 text-center text-gray-500">
-                            <span>{showBulkItemsOnly ? "No bulk items available" : "No products available"}</span>
-                            {showBulkItemsOnly && (
-                              <div className="text-xs text-gray-400 mt-2">
-                                Products with "BULK" in their name are considered bulk items
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          (showBulkItemsOnly ? bulkItems : products).map((product) => (
-                          <SelectItem key={product.id} value={product.id.toString()}>
-                            <div className="flex flex-col w-full">
-                              <div className="flex items-center justify-between w-full">
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{product.name}</span>
-                                  <span className="text-xs text-gray-500">{product.sku} | ₹{product.price}</span>
-                                </div>
-                                <div className="flex flex-col items-end ml-2">
-                                  <span className={`text-xs px-2 py-1 rounded-full ${
-                                    (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
-                                      ? 'bg-red-100 text-red-700' 
-                                      : (product.stockQuantity || 0) > 50
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-yellow-100 text-yellow-700'
-                                  }`}>
-                                    {product.stockQuantity || 0}
-                                  </span>
-                                  {(product.stockQuantity || 0) <= (product.alertThreshold || 5) && (
-                                    <span className="text-xs text-red-600 font-medium">Low!</span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                   <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowBulkItemsOnly(!showBulkItemsOnly)}
-                      className="mt-2 w-full"
-                    >
-                      {showBulkItemsOnly ? "Show All Products" : "Show Bulk Items Only"}
-                    </Button>
-                </div>
-              </div>
-
-              {/* Current Stock Display */}
-              {modalData.productId > 0 && (
-                <div className="space-y-2">
-                  <Label>Current Stock</Label>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                    <span className="font-medium text-gray-700">Available Quantity:</span>
-                    <span className={`font-bold text-lg px-3 py-1 rounded ${
-                      (() => {
-                        const product = products.find(p => p.id === modalData.productId);
-                        const stock = product?.stockQuantity || 0;
-                        const threshold = product?.alertThreshold || 5;
-                        return stock <= threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
-                      })()
-                    }`}>
-                      {(() => {
-                        const product = products.find(p => p.id === modalData.productId);
-                        return product?.stockQuantity || 0;
-})()} units
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-code">Code</Label>
-                <Input
-                  id="modal-code"
-                  value={modalData.code}
-                  onChange={(e) => {
-                    const newModalData = { ...modalData, code: e.target.value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.code`, e.target.value);
-                    }
-                  }}
-                  placeholder="Product code"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-description">Description</Label>
-                <Input
-                  id="modal-description"
-                  value={modalData.description}
-                  onChange={(e) => {
-                    const newModalData = { ...modalData, description: e.target.value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.description`, e.target.value);
-                    }
-                  }}
-                  placeholder="Product description"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-receivedQty">Received Qty *</Label>
-                <Input
-                  id="modal-receivedQty"
-                  type="number"
-                  min="0"
-                  value={modalData.receivedQty}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, receivedQty: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.receivedQty`, value);
-                      form.setValue(`items.${editingItemIndex}.quantity`, value);
-
-                      // Recalculate net amount in real-time
-                      const cost = modalData.unitCost;
-                      const discount = modalData.discountAmount;
-                      const taxPercent = modalData.taxPercentage;
-                      const subtotal = value * cost;
-                      const taxableAmount = subtotal - discount;
-                      const tax = (taxableAmount * taxPercent) / 100;
-                      const netAmount = taxableAmount + tax;
-
-                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-freeQty">Free Qty</Label>
-                <Input
-                  id="modal-freeQty"
-                  type="number"
-                  min="0"
-                  value={modalData.freeQty}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, freeQty: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.freeQty`, value);
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-cost">Cost *</Label>
-                <Input
-                  id="modal-cost"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={modalData.unitCost || ''}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, unitCost: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.unitCost`, value);
-
-                      // Recalculate net amount in real-time
-                      const qty = modalData.receivedQty;
-                      const discount = modalData.discountAmount;
-                      const taxPercent = modalData.taxPercentage;
-                      const subtotal = qty * value;
-                      const taxableAmount = subtotal - discount;
-                      const tax = (taxableAmount * taxPercent) / 100;
-                      const netAmount = taxableAmount + tax;
-
-                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-hsnCode">HSN Code</Label>
-                <Input
-                  id="modal-hsnCode"
-                  value={modalData.hsnCode}
-                  onChange={(e) => {
-                    const newModalData = { ...modalData, hsnCode: e.target.value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.hsnCode`, e.target.value);
-                    }
-                  }}
-                  placeholder="HSN Code"
-                />
-              </div>
-
-              {/* Barcode Display Section */}
-              {modalData.productId > 0 && (
-                <div className="space-y-2 col-span-2">
-                  <Label>Product Barcode</Label>
-                  <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg border">
-                    {(() => {
-                      const product = products.find(p => p.id === modalData.productId);
-                      if (product?.barcode) {
-                        return (
-                          <div className="flex flex-col items-center">
-                            <img
-                              src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${product.barcode}`}
-                              alt="Product Barcode"
-                              className="w-16 h-16 mb-2"
+              {/* Tax Information Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <DollarSignIcon className="h-5 w-5" />
+                        Tax Information & GST Configuration
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* HSN Code and GST Code */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="defaultHsnCode">Default HSN Code</Label>
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="Enter HSN Code manually (e.g., 10019000)"
+                              className="text-gray-900"
                             />
-                            <span className="text-sm font-mono text-gray-700 bg-white px-3 py-1 rounded border">
-                              {product.barcode}
+                            <Select>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Or select from common HSN codes" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-80 overflow-y-auto">
+                                {/* Food & Beverages - 0% & 5% GST */}
+                                <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
+                                <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
+                                <SelectItem value="17019900">17019900 - Sugar (5%)</SelectItem>
+                                <SelectItem value="04070010">04070010 - Eggs (0%)</SelectItem>
+                                <SelectItem value="07010000">07010000 - Fresh Vegetables (0%)</SelectItem>
+                                <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
+                                <SelectItem value="19059090">19059090 - Biscuits (18%)</SelectItem>
+                                <SelectItem value="21069099">21069099 - Spices & Condiments (5%)</SelectItem>
+
+                                {/* Textiles & Clothing - 5% & 12% GST */}
+                                <SelectItem value="62019000">62019000 - Men's Garments (12%)</SelectItem>
+                                <SelectItem value="62029000">62029000 - Women's Garments (12%)</SelectItem>
+                                <SelectItem value="63010000">63010000 - Bed Sheets (5%)</SelectItem>
+                                <SelectItem value="64029100">64029100 - Footwear (18%)</SelectItem>
+
+                                {/* Electronics - 12% & 18% GST */}
+                                <SelectItem value="85171200">85171200 - Mobile Phones (12%)</SelectItem>
+                                <SelectItem value="84713000">84713000 - Laptops (18%)</SelectItem>
+                                <SelectItem value="85285200">85285200 - LED TV (18%)</SelectItem>
+                                <SelectItem value="85287100">85287100 - Set Top Box (18%)</SelectItem>
+                                <SelectItem value="85044090">85044090 - Mobile Charger (18%)</SelectItem>
+
+                                {/* Personal Care - 18% GST */}
+                                <SelectItem value="33061000">33061000 - Toothpaste (18%)</SelectItem>
+                                <SelectItem value="34012000">34012000 - Soap (18%)</SelectItem>
+                                <SelectItem value="33051000">33051000 - Shampoo (18%)</SelectItem>
+                                <SelectItem value="96031000">96031000 - Toothbrush (18%)</SelectItem>
+
+                                {/* Beverages & Luxury - 28% GST */}
+                                <SelectItem value="22021000">22021000 - Soft Drinks (28%)</SelectItem>
+                                <SelectItem value="24021000">24021000 - Cigarettes (28%)</SelectItem>
+                                <SelectItem value="22030000">22030000 - Beer (28%)</SelectItem>
+                                <SelectItem value="22084000">22084000 - Wine (28%)</SelectItem>
+
+                                {/* Automobiles - 28% GST */}
+                                <SelectItem value="87032390">87032390 - Passenger Cars (28%)</SelectItem>
+                                <SelectItem value="87111000">87111000 - Motorcycles (28%)</SelectItem>
+                                <SelectItem value="87120000">87120000 - Bicycles (12%)</SelectItem>
+
+                                {/* Medicines & Healthcare - 5% & 12% GST */}
+                                <SelectItem value="30049099">30049099 - Medicines (5%)</SelectItem>
+                                <SelectItem value="90183900">90183900 - Medical Equipment (12%)</SelectItem>
+                                <SelectItem value="30059090">30059090 - Health Supplements (18%)</SelectItem>
+
+                                {/* Books & Stationery - 5% & 12% GST */}
+                                <SelectItem value="49019900">49019900 - Books (5%)</SelectItem>
+                                <SelectItem value="48201000">48201000 - Notebooks (12%)</SelectItem>
+                                <SelectItem value="96085000">96085000 - Pens (18%)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2">
+                            GST Code *
+                            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                              Auto-updated from HSN
                             </span>
-                            <span className="text-xs text-gray-500 mt-1">Scan this code for quick entry</span>
+                          </Label>
+                          <Select defaultValue="GST 18%">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select GST rate" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="GST 0%">GST 0% - Nil Rate (Basic necessities)</SelectItem>
+                              <SelectItem value="GST 5%">GST 5% - Essential goods (Food grains, medicines)</SelectItem>
+                              <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
+                              <SelectItem value="GST 18%">GST 18% - Standard rate (Most goods & services)</SelectItem>
+                              <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
+                              <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
+                              <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* GST Breakdown & Compliance */}
+                      <div className="border-t pt-6">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4">GST Breakdown & Compliance</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>CGST Rate (%)</Label>
+                            <Input placeholder="9.00" type="number" step="0.01" defaultValue="9" />
                           </div>
-                        );
-                      } else {
-                        return (
-                          <div className="text-center text-gray-500">
-                            <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center mb-2 mx-auto">
-                              <span className="text-xs">No Barcode</span>
-                            </div>
-                            <span className="text-sm">No barcode available for this product</span>
+                          <div className="space-y-2">
+                            <Label>SGST Rate (%)</Label>
+                            <Input placeholder="9.00" type="number" step="0.01" defaultValue="9" />
                           </div>
-                        );
-                      }
-                    })()}
-                  </div>
-                </div>
-              )}
+                          <div className="space-y-2">
+                            <Label>IGST Rate (%)</Label>
+                            <Input placeholder="0.00" type="number" step="0.01" defaultValue="0" />
+                          </div>
+                        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="modal-taxPercentage">Tax %</Label>
-                <Input
-                  id="modal-taxPercentage"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={modalData.taxPercentage}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, taxPercentage: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
+                        <div className="grid grid-cols-2 gap-6 mt-4">
+                          <div className="space-y-2">
+                            <Label>Tax Calculation Method</Label>
+                            <Select defaultValue="exclusive">
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select method" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="inclusive">Tax Inclusive</SelectItem>
+                                <SelectItem value="exclusive">Tax Exclusive</SelectItem>
+                                <SelectItem value="compound">Compound Tax</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Cess Rate (%) - Optional</Label>
+                            <Input placeholder="0.00" type="number" step="0.01" />
+                          </div>
+                        </div>
+                      </div>
 
-                      // Recalculate net amount in real-time
-                      const qty = modalData.receivedQty;
-                      const cost = modalData.unitCost;
-                      const discount = modalData.discountAmount;
-                      const subtotal = qty * cost;
-                      const taxableAmount = subtotal - value;
-                      const tax = (taxableAmount * value) / 100;
-                      const netAmount = taxableAmount + tax;
+                      {/* Purchase GST Configuration */}
+                      <div className="border-t pt-6">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4">Purchase GST Configuration</h4>
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <Label>Purchase GST Calculated On</Label>
+                            <Select defaultValue="MRP">
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="MRP">MRP</SelectItem>
+                                <SelectItem value="Cost">Cost</SelectItem>
+                                <SelectItem value="Selling Price">Selling Price</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Purchase Abatement %</Label>
+                            <Input placeholder="0" type="number" step="0.01" />
+                          </div>
+                        </div>
 
-                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="18"
-                />
-              </div>
+                        <div className="space-y-2 mt-4">
+                          <Label>GST UOM (Unit of Measurement)</Label>
+                          <Select defaultValue="PIECES">
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PIECES">PIECES</SelectItem>
+                              <SelectItem value="KG">KG (Kilograms)</SelectItem>
+                              <SelectItem value="LITRE">LITRE (Litres)</SelectItem>
+                              <SelectItem value="METER">METER (Meters)</SelectItem>
+                              <SelectItem value="GRAMS">GRAMS</SelectItem>
+                              <SelectItem value="DOZEN">DOZEN</SelectItem>
+                              <SelectItem value="PACKETS">PACKETS</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="modal-discountAmount">Discount Amount</Label>
-                <Input
-                  id="modal-discountAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={modalData.discountAmount}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, discountAmount: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.discountAmount`, value);
-
-                      // Recalculate net amount in real-time
-                      const qty = modalData.receivedQty;
-                      const cost = modalData.unitCost;
-                      const taxPercent = modalData.taxPercentage;
-                      const subtotal = qty * cost;
-                      const taxableAmount = subtotal - value;
-                      const tax = (taxableAmount * taxPercent) / 100;
-                      const netAmount = taxableAmount + tax;
-
-                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-expiryDate">Exp. Date</Label>
-                <Input
-                  id="modal-expiryDate"
-                  type="date"
-                  value={modalData.expiryDate}
-                  onChange={(e) => {
-                    const newModalData = { ...modalData, expiryDate: e.target.value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.expiryDate`, e.target.value);
-                    }
-                  }}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-batchNumber">Batch Number</Label>
-                <Input
-                  id="modal-batchNumber"
-                  value={modalData.batchNumber}
-                  onChange={(e) => {
-                    const newModalData = { ...modalData, batchNumber: e.target.value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.batchNumber`, e.target.value);
-                    }
-                  }}
-                  placeholder="Batch number"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-location">Location</Label>
-                <Input
-                  id="modal-location"
-                  value={modalData.location}
-                  onChange={(e) => {
-                    const newModalData = { ...modalData, location: e.target.value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.location`, e.target.value);
-                    }
-                  }}
-                  placeholder="Storage location"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setIsAddItemModalOpen(false);
-                  setEditingItemIndex(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={saveModalItem}>
-                {editingItemIndex !== null ? 'Update Item' : 'Add Item'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Held Purchases Dialog */}
-        <Dialog open={showHeldPurchases} onOpenChange={setShowHeldPurchases}>
-          <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
-            <DialogHeader className="pb-4">
-              <DialogTitle className="flex items-center gap-2 text-xl">
-                <Archive className="h-6 w-6 text-purple-600" />
-                Held Purchase Orders ({heldPurchases.length})
-              </DialogTitle>
-              <p className="text-sm text-gray-600">
-                Manage your saved purchase orders. You can recall them to continue editing or delete them if no longer needed.
-              </p>
-            </DialogHeader>
-
-            <div className="flex-1 overflow-y-auto">
-              {heldPurchases.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                    <FileText className="h-10 w-10 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No Held Purchase Orders</h3>
-                  <p className="text-gray-500 text-sm max-w-md mx-auto">
-                    When you hold a purchase order, it will appear here. This allows you to save your work and continue later without losing any data.
-                  </p>
-                  <div className="mt-4 text-xs text-gray-400">
-                    💡 Tip: Use the "Hold" button in the main toolbar to save your current purchase order
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {heldPurchases.map((heldPurchase, index) => (
-                    <Card key={heldPurchase.id} className="hover:shadow-md transition-all duration-200 border-l-4 border-l-purple-400">
-                      <div className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
-                                  #{index + 1}
-                                </span>
-                                <h4 className="font-semibold text-gray-900 text-lg">
-                                  {heldPurchase.orderNumber}
-                                </h4>
-                              </div>
-                              <div className="flex gap-2">
-                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                  {heldPurchase.itemsCount} {heldPurchase.itemsCount === 1 ? 'item' : 'items'}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                                  Held
-                                </Badge>
-                              </div>
+                      {/* Tax Compliance Switches */}
+                      <div className="border-t pt-6">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4">Tax Compliance & Special Cases</h4>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <Label className="text-sm font-medium">Config Item With Commodity</Label>
+                              <p className="text-xs text-gray-600">Enable for commodity-based tax calculations</p>
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-gray-500 font-medium">Supplier:</span>
-                                  <span className="text-gray-900">
-                                    {heldPurchase.supplier?.name || "No supplier selected"}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-gray-500 font-medium">Status:</span>
-                                  <span className="text-gray-900">
-                                    {heldPurchase.formData.status || "Pending"}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-gray-500 font-medium">Held at:</span>
-                                  <span className="text-gray-900">
-                                    {new Date(heldPurchase.timestamp).toLocaleDateString()} {new Date(heldPurchase.timestamp).toLocaleTimeString()}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-gray-500 font-medium">Expected:</span>
-                                  <span className="text-gray-900">
-                                    {heldPurchase.formData.expectedDate || "Not set"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {heldPurchase.formData.remarks && (
-                              <div className="bg-gray-50 rounded p-2 text-xs text-gray-600 mb-3">
-                                <span className="font-medium">Remarks:</span> {heldPurchase.formData.remarks}
-                              </div>
-                            )}
+                            <Switch />
                           </div>
 
-                          <div className="text-right ml-4 flex-shrink-0">
-                            <div className="text-2xl font-bold text-green-600 mb-3">
-                              {formatCurrency(heldPurchase.totalValue || heldPurchase.summary?.grandTotal || 0)}
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <Label className="text-sm font-medium">Senior Citizen Exemption Applicable</Label>
+                              <p className="text-xs text-gray-600">Apply senior citizen tax exemptions where applicable</p>
                             </div>
-                            <div className="flex flex-col gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => recallHeldPurchase(heldPurchase)}
-                                className="bg-purple-600 hover:bg-purple-700 text-white w-full"
-                              >
-                                <Download className="h-4 w-4 mr-2" />
-                                Recall & Edit
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => deleteHeldPurchase(heldPurchase.id)}
-                                className="text-red-600 hover:bg-red-50 border-red-200 w-full"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </Button>
+                            <Switch />
+                          </div>
+
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <Label className="text-sm font-medium">Reverse Charge Mechanism</Label>
+                              <p className="text-xs text-gray-600">Apply reverse charge for specific transactions</p>
+                            </div>
+                            <Switch />
+                          </div>
+
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <Label className="text-sm font-medium">Zero Tax Rate</Label>
+                              <p className="text-xs text-gray-600">Apply zero tax rate for exempt items</p>
+                            </div>
+                            <Switch />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tax Summary Display */}
+                      <div className="border-t pt-6">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <h4 className="font-medium text-blue-900 mb-2">Tax Calculation Summary</h4>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="space-y-1">
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Total CGST (9%):</span>
+                                <span className="font-medium">₹0.00</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Total SGST (9%):</span>
+                                <span className="font-medium">₹0.00</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Total IGST (0%):</span>
+                                <span className="font-medium">₹0.00</span>
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Total Tax Amount:</span>
+                                <span className="font-medium">₹0.00</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Tax Percentage:</span>
+                                <span className="font-medium">18%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Tax Method:</span>
+                                <span className="font-medium">Exclusive</span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
+                    </CardContent>
+                  </Card>
 
-            <div className="flex justify-between items-center pt-4 border-t">
-              <div className="text-sm text-gray-500">
-                {heldPurchases.length > 0 && (
-                  <span>Total held orders: {heldPurchases.length}</span>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => setShowHeldPurchases(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </DashboardLayout>
-  );
-};
+                  {/* Invoice Details Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Invoice Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                          <Input
+                            {...form.register("invoiceNumber")}
+                            placeholder="Enter invoice number"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="invoiceDate">Invoice Date</Label>
+                          <Input
+                            type="date"
+                            {...form.register("invoiceDate")}
+                            placeholder="dd-mm-yyyy"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="invoiceAmount">Invoice Amount</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            {...form.register("invoiceAmount", { valueAsNumber: true })}
+                            placeholder="0"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="lrNumber">LR Number</Label>
+                          <Input
+                            {...form.register("lrNumber")}
+                            placeholder="Enter LR number"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="shippingAddress">Shipping Address</Label>
+                          <Textarea
+                            {...form.register(`shippingAddress`)}
+                            placeholder="Enter shipping address..."
+                            rows={3}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="billingAddress">Billing Address</Label>
+                          <Textarea
+                            {...form.register("billingAddress")}
+                            placeholder="Enter billing address..."
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="remarks">Public Remarks</Label>
+                          <Textarea
+                            {...form.register("remarks")}
+                            placeholder="Remarks visible to supplier..."
+                            rows={3}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="internalNotes">Internal Notes</Label>
+                          <Textarea
+                            {...form.register("internalNotes")}
+                            placeholder="Internal notes (not visible to supplier)..."
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
