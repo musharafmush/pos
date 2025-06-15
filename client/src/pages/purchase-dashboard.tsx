@@ -172,7 +172,7 @@ export default function PurchaseDashboard() {
 
       if (!response.ok) {
         let errorMessage = `Failed to update status. Status: ${response.status}`;
-        
+
         try {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
@@ -185,7 +185,7 @@ export default function PurchaseDashboard() {
         } catch (parseError) {
           console.error('Error parsing response:', parseError);
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -193,9 +193,9 @@ export default function PurchaseDashboard() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-      
+
       const successMessage = data.message || `Purchase order status updated to ${newStatus}`;
-      
+
       toast({
         title: "Status Updated",
         description: successMessage,
@@ -206,14 +206,14 @@ export default function PurchaseDashboard() {
     },
     onError: (error: Error) => {
       console.error('❌ Status update error:', error);
-      
+
       let userMessage = error.message;
       if (error.message.includes('no such column')) {
         userMessage = 'Database schema issue. Please refresh the page and try again.';
       } else if (error.message.includes('SQLITE_')) {
         userMessage = 'Database error. Please try again in a moment.';
       }
-      
+
       toast({
         title: "Status Update Failed",
         description: userMessage,
@@ -551,7 +551,7 @@ export default function PurchaseDashboard() {
   const handleQuickPaymentStatusChange = (purchase: Purchase, newStatus: string) => {
     const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
     const currentPaidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
-    
+
     let paymentData: any = {
       paymentStatus: newStatus,
       paymentMethod: purchase.paymentMethod || 'cash',
@@ -1181,12 +1181,12 @@ export default function PurchaseDashboard() {
                                                      purchase.items?.length || 
                                                      purchase.purchase_items?.length || 
                                                      0;
-                                      
+
                                       // If no items found, try to get from itemCount property
                                       if (itemCount === 0 && purchase.itemCount) {
                                         itemCount = purchase.itemCount;
                                       }
-                                      
+
                                       // If still no items, show placeholder
                                       return itemCount || 'N/A';
                                     })()} items
@@ -1312,7 +1312,7 @@ export default function PurchaseDashboard() {
                                           </DropdownMenuItem>
                                         </DropdownMenuContent>
                                       </DropdownMenu>
-                                      
+
                                       {paymentStatus === 'partial' && (
                                         <div className="text-xs text-gray-600">
                                           Paid: {formatCurrency(paidAmount)} / {formatCurrency(totalAmount)}
@@ -1824,16 +1824,35 @@ export default function PurchaseDashboard() {
                     </div>
                   </div>
                   {(() => {
-                    const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
-                    const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
-                    const remaining = totalAmount - paidAmount;
-                    return remaining > 0 ? (
-                      <div className="mt-3 pt-3 border-t border-blue-200">
-                        <span className="font-medium text-blue-800">Outstanding Amount:</span>
-                        <div className="text-lg font-bold text-blue-900">{formatCurrency(remaining)}</div>
-                      </div>
-                    ) : null;
-                  })()}
+                      const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
+                      const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+                      const remaining = Math.max(0, totalAmount - paidAmount);
+                      const isFullyPaid = paidAmount >= totalAmount && totalAmount > 0;
+
+                      if (isFullyPaid) {
+                        return (
+                          <div className="mt-3 pt-3 border-t border-green-200 bg-green-50 rounded-lg p-3">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-5 h-5 text-green-600" />
+                              <span className="font-medium text-green-800">This order is already fully paid</span>
+                            </div>
+                            <div className="text-sm text-green-700 mt-1">
+                              Payment completed on {selectedPurchaseForPayment.paymentDate ? format(new Date(selectedPurchaseForPayment.paymentDate), 'MMM dd, yyyy') : 'N/A'}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return remaining > 0 ? (
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <span className="font-medium text-blue-800">Outstanding Amount:</span>
+                          <div className="text-lg font-bold text-blue-900">{formatCurrency(remaining)}</div>
+                          <div className="text-sm text-blue-600 mt-1">
+                            Payment Progress: {Math.round((paidAmount / totalAmount) * 100)}% completed
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
                 </div>
 
                 <div className="space-y-4">
