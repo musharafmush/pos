@@ -404,31 +404,34 @@ export default function AddItemDashboard() {
           let errorMessage = 'Failed to update product';
           
           try {
-            const errorText = await response.text();
-            console.error('Update error response:', errorText);
+            const contentType = response.headers.get('content-type');
+            let errorText = '';
             
-            // Try to parse as JSON first
-            try {
-              const errorData = JSON.parse(errorText);
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await response.json();
               errorMessage = errorData.error || errorData.message || errorMessage;
-            } catch (parseError) {
-              // Handle plain text error responses
+            } else {
+              errorText = await response.text();
+              
               if (errorText.trim()) {
                 errorMessage = errorText.trim();
               } else {
                 // Fallback to HTTP status messages
                 switch (response.status) {
                   case 400:
-                    errorMessage = 'Invalid product data provided';
+                    errorMessage = 'Invalid product data provided. Please check all required fields.';
                     break;
                   case 404:
-                    errorMessage = 'Product not found';
+                    errorMessage = 'Product not found. Please refresh and try again.';
                     break;
                   case 409:
-                    errorMessage = 'Product with this SKU already exists';
+                    errorMessage = 'Product with this SKU already exists. Please use a different item code.';
+                    break;
+                  case 422:
+                    errorMessage = 'Validation error. Please check your input data.';
                     break;
                   case 500:
-                    errorMessage = 'Internal server error occurred';
+                    errorMessage = 'Internal server error. Please try again later.';
                     break;
                   default:
                     errorMessage = `Server error: ${response.status} ${response.statusText}`;
@@ -445,7 +448,14 @@ export default function AddItemDashboard() {
 
         let result;
         try {
-          result = await response.json();
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            result = await response.json();
+          } else {
+            result = { message: 'Product updated successfully' };
+          }
+          
           console.log('Update success result:', result);
         } catch (parseError) {
           console.warn('Could not parse success response as JSON, assuming success');
@@ -457,11 +467,15 @@ export default function AddItemDashboard() {
         console.error('Network error during update:', networkError);
         
         if (networkError.name === 'TypeError' && networkError.message.includes('fetch')) {
-          throw new Error('Network error: Unable to connect to server. Please check your connection.');
+          throw new Error('Network connection failed. Please check your internet connection and try again.');
         }
         
-        // Re-throw our custom errors
-        if (networkError.message.includes('Product') || networkError.message.includes('Server error')) {
+        // Re-throw our custom errors with context
+        if (networkError.message.includes('Product') || 
+            networkError.message.includes('Server error') ||
+            networkError.message.includes('Invalid') ||
+            networkError.message.includes('not found') ||
+            networkError.message.includes('already exists')) {
           throw networkError;
         }
         
