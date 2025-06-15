@@ -73,6 +73,13 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Product } from "@shared/schema";
 import { Link } from "wouter";
 import { ProductsTable } from "@/components/products-table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function AddItemDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,6 +104,12 @@ export default function AddItemDashboard() {
     // Tax Information
     taxRate: "",
     hsnCode: "",
+    gstCode: "GST 18%",
+    cgstRate: "0",
+    sgstRate: "0",
+    igstRate: "0",
+    cessRate: "0",
+    taxType: "Tax Inclusive",
 
     // EAN Code/Barcode
     barcode: "",
@@ -352,6 +365,12 @@ export default function AddItemDashboard() {
       // Tax Information
       taxRate: "18",
       hsnCode: "",
+      gstCode: product.gstCode || "GST 18%",
+      cgstRate: product.cgstRate || "0",
+      sgstRate: product.sgstRate || "0",
+      igstRate: product.igstRate || "0",
+      cessRate: product.cessRate || "0",
+      taxType: product.taxType || "Tax Inclusive",
 
       // EAN Code/Barcode
       barcode: product.barcode || "",
@@ -427,24 +446,33 @@ export default function AddItemDashboard() {
       return;
     }
 
-    const updates = {
-      name: editForm.name.trim(),
-      description: editForm.aboutProduct?.trim() || '',
-      sku: editForm.itemCode.trim(),
-      price: parseFloat(editForm.price) || 0,
-      mrp: parseFloat(editForm.mrp) || 0,
-      cost: parseFloat(editForm.cost) || 0,
-      stockQuantity: parseInt(editForm.stockQuantity) || 0,
-      alertThreshold: parseInt(editForm.alertThreshold) || 5,
-      barcode: editForm.barcode?.trim() || null,
-      weight: editForm.weight ? (typeof editForm.weight === 'string' ? editForm.weight.trim() : editForm.weight.toString()) : null,
-      weightUnit: editForm.weightUnit || null,
-      categoryId: parseInt(editForm.categoryId),
-      active: editForm.active,
-    };
+    const updateData = {
+          name: editForm.name,
+          description: editForm.aboutProduct,
+          price: parseFloat(editForm.price),
+          mrp: parseFloat(editForm.mrp),
+          cost: parseFloat(editForm.cost) || 0,
+          weight: editForm.weight ? parseFloat(editForm.weight) : null,
+          weightUnit: editForm.weightUnit,
+          categoryId: parseInt(editForm.categoryId),
+          stockQuantity: parseInt(editForm.stockQuantity),
+          alertThreshold: parseInt(editForm.alertThreshold) || 5,
+          barcode: editForm.barcode,
+          active: editForm.active,
+          taxRate: editForm.gstCode?.match(/\d+/)?.[0] || "18",
+          hsnCode: editForm.hsnCode,
+          // Enhanced tax data synchronization
+          gstCode: editForm.gstCode,
+          cgstRate: editForm.cgstRate,
+          sgstRate: editForm.sgstRate,
+          igstRate: editForm.igstRate,
+          cessRate: editForm.cessRate,
+          taxType: editForm.taxType,
+          taxCalculationMethod: editForm.taxType === "Tax Inclusive" ? "inclusive" : "exclusive"
+        };
 
-    console.log('Updating product with data:', updates);
-    updateProductMutation.mutate({ id: selectedProduct.id, updates });
+    console.log('Updating product with data:', updateData);
+    updateProductMutation.mutate({ id: selectedProduct.id, updates: updateData });
   };
 
   // Calculate statistics
@@ -1638,7 +1666,7 @@ export default function AddItemDashboard() {
 
                     <div 
                       onClick={() => scrollToSection('reorder-info')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer${
                         activeSection === 'reorder-info' 
                           ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
                           : 'text-gray-600 hover:bg-gray-50'
@@ -2017,84 +2045,66 @@ export default function AddItemDashboard() {
                       </div>
                     </div>
 
-                    {/* Tax Information */}
-                    <div id="tax-info" className="bg-white rounded-lg border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Tax Information</h3>
-                      <div className="grid grid-cols-3 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700">GST Rate (%)</label>
-                          <select
-                            value={editForm.taxRate}
-                            onChange={(e) => setEditForm({ ...editForm, taxRate: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="0">0% - Nil Rate</option>
-                            <option value="5">5% - Essential goods</option>
-                            <option value="12">12% - Standard rate</option>
-                            <option value="18">18% - Standard rate</option>
-                            <option value="28">28% - Luxury goods</option>
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700">HSN Code</label>
-                          <Input
-                            value={editForm.hsnCode}
-                            onChange={(e) => setEditForm({ ...editForm, hsnCode: e.target.value })}
-                            placeholder="e.g., 25010010"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700">Tax Type</label>
-                          <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="inclusive">Tax Inclusive</option>
-                            <option value="exclusive">Tax Exclusive</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* GST Breakdown */}
-                      <div className="mt-6">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-3">GST Breakdown</h4>
-                        <div className="grid grid-cols-4 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-gray-600">CGST (%)</label>
-                            <Input
-                              type="number"
-                              placeholder="9.00"
-                              step="0.01"
-                              className="text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-gray-600">SGST (%)</label>
-                            <Input
-                              type="number"
-                              placeholder="9.00"
-                              step="0.01"
-                              className="text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-gray-600">IGST (%)</label>
-                            <Input
-                              type="number"
-                              placeholder="18.00"
-                              step="0.01"
-                              className="text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-gray-600">Cess (%)</label>
-                            <Input
-                              type="number"
-                              placeholder="0.00"
-                              step="0.01"
-                              className="text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    
+                      {/* Tax Information Section */}
+                      
+                        
+                          
+                            
+                              GST Rate (%)
+                              
+                                
+                                  Select GST rate
+                                
+                                
+                                  GST 0% - Nil Rate
+                                  GST 5% - Essential goods
+                                  GST 12% - Standard rate
+                                  GST 18% - Standard rate
+                                  GST 28% - Luxury goods
+                                
+                              
+                            
+                            
+                              HSN Code
+                              
+                            
+                          
+  
+                          
+                            GST Breakdown
+                            
+                              
+                                CGST Rate (%)
+                                
+                              
+                              
+                                SGST Rate (%)
+                                
+                              
+                              
+                                IGST Rate (%)
+                                
+                              
+                            
+                          
+  
+                          
+                            Tax Type
+                            
+                              
+                                Select tax type
+                                
+                                
+                                  Tax Inclusive
+                                  Tax Exclusive
+                                
+                              
+                            
+                          
+                        
+                      
+                    
 
                     {/* EAN Code/Barcode */}
                     <div id="barcode-info" className="bg-white rounded-lg border border-gray-200 p-6">
