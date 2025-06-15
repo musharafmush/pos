@@ -2047,57 +2047,166 @@ export default function AddItemDashboard() {
 
                     
                       {/* Tax Information Section */}
+                    <div id="tax-info" className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Tax Information</h3>
                       
-                        
-                          
-                            
-                              GST Rate (%)
-                              
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">GST Rate (%)</label>
+                            <select
+                              value={editForm.gstCode}
+                              onChange={(e) => {
+                                const selectedValue = e.target.value;
+                                const rate = selectedValue.match(/\d+/)?.[0] || "18";
+                                const cgst = (parseFloat(rate) / 2).toString();
+                                const sgst = (parseFloat(rate) / 2).toString();
                                 
-                                  Select GST rate
-                                
-                                
-                                  GST 0% - Nil Rate
-                                  GST 5% - Essential goods
-                                  GST 12% - Standard rate
-                                  GST 18% - Standard rate
-                                  GST 28% - Luxury goods
-                                
-                              
-                            
-                            
-                              HSN Code
-                              
-                            
-                          
-  
-                          
-                            GST Breakdown
-                            
-                              
-                                CGST Rate (%)
-                                
-                              
-                              
-                                SGST Rate (%)
-                                
-                              
-                              
-                                IGST Rate (%)
-                                
-                              
-                            
-                          
-  
-                          
-                            Tax Type
-                            
-                              
-                                Select tax type
-                                
-                                
-                                  Tax Inclusive
-                                  Tax Exclusive
+                                setEditForm({ 
+                                  ...editForm, 
+                                  gstCode: selectedValue,
+                                  taxRate: rate,
+                                  cgstRate: cgst,
+                                  sgstRate: sgst,
+                                  igstRate: "0"
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Select GST rate</option>
+                              <option value="GST 0%">GST 0% - Nil Rate</option>
+                              <option value="GST 5%">GST 5% - Essential goods</option>
+                              <option value="GST 12%">GST 12% - Standard rate</option>
+                              <option value="GST 18%">GST 18% - Standard rate</option>
+                              <option value="GST 28%">GST 28% - Luxury goods</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">HSN Code</label>
+                            <Input
+                              value={editForm.hsnCode}
+                              onChange={(e) => setEditForm({ ...editForm, hsnCode: e.target.value })}
+                              placeholder="Enter HSN code"
+                              className="font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h4 className="text-md font-medium text-gray-800">GST Breakdown</h4>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">CGST Rate (%)</label>
+                              <Input
+                                type="number"
+                                value={editForm.cgstRate}
+                                onChange={(e) => setEditForm({ ...editForm, cgstRate: e.target.value })}
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="50"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">SGST Rate (%)</label>
+                              <Input
+                                type="number"
+                                value={editForm.sgstRate}
+                                onChange={(e) => setEditForm({ ...editForm, sgstRate: e.target.value })}
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="50"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">IGST Rate (%)</label>
+                              <Input
+                                type="number"
+                                value={editForm.igstRate}
+                                onChange={(e) => setEditForm({ ...editForm, igstRate: e.target.value })}
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Tax Type</label>
+                            <select
+                              value={editForm.taxType}
+                              onChange={(e) => setEditForm({ ...editForm, taxType: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Select tax type</option>
+                              <option value="Tax Inclusive">Tax Inclusive</option>
+                              <option value="Tax Exclusive">Tax Exclusive</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">CESS Rate (%)</label>
+                            <Input
+                              type="number"
+                              value={editForm.cessRate}
+                              onChange={(e) => setEditForm({ ...editForm, cessRate: e.target.value })}
+                              placeholder="0"
+                              step="0.1"
+                              min="0"
+                              max="100"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Tax Calculation Display */}
+                        {editForm.price && editForm.gstCode && (
+                          <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                            <h4 className="font-medium text-green-900 mb-2">Tax Calculation</h4>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-green-700">Total GST:</span>
+                                <span className="font-medium ml-2">
+                                  {editForm.taxType === "Tax Inclusive" 
+                                    ? `₹${((parseFloat(editForm.price) * parseFloat(editForm.taxRate || "0")) / (100 + parseFloat(editForm.taxRate || "0"))).toFixed(2)}`
+                                    : `₹${((parseFloat(editForm.price) * parseFloat(editForm.taxRate || "0")) / 100).toFixed(2)}`
+                                  }
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-green-700">Base Price:</span>
+                                <span className="font-medium ml-2">
+                                  {editForm.taxType === "Tax Inclusive"
+                                    ? `₹${(parseFloat(editForm.price) - ((parseFloat(editForm.price) * parseFloat(editForm.taxRate || "0")) / (100 + parseFloat(editForm.taxRate || "0")))).toFixed(2)}`
+                                    : `₹${parseFloat(editForm.price).toFixed(2)}`
+                                  }
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-green-700">CGST Amount:</span>
+                                <span className="font-medium ml-2">
+                                  ₹{editForm.taxType === "Tax Inclusive"
+                                    ? ((parseFloat(editForm.price) * parseFloat(editForm.cgstRate || "0")) / (100 + parseFloat(editForm.taxRate || "0"))).toFixed(2)
+                                    : ((parseFloat(editForm.price) * parseFloat(editForm.cgstRate || "0")) / 100).toFixed(2)
+                                  }
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-green-700">SGST Amount:</span>
+                                <span className="font-medium ml-2">
+                                  ₹{editForm.taxType === "Tax Inclusive"
+                                    ? ((parseFloat(editForm.price) * parseFloat(editForm.sgstRate || "0")) / (100 + parseFloat(editForm.taxRate || "0"))).toFixed(2)
+                                    : ((parseFloat(editForm.price) * parseFloat(editForm.sgstRate || "0")) / 100).toFixed(2)
+                                  }
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                                 
                               
                             
