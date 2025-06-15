@@ -1025,7 +1025,18 @@ export default function PurchaseEntryProfessional() {
       // Use cost price from product if available, otherwise use selling price
       const costPrice = parseFloat(product.cost || product.price) || 0;
       const sellingPrice = parseFloat(product.price) || 0;
-      const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
+      
+      // Calculate MRP: use product MRP if available, otherwise calculate from selling price
+      let mrpPrice = 0;
+      if (product.mrp && parseFloat(product.mrp) > 0) {
+        mrpPrice = parseFloat(product.mrp);
+      } else if (sellingPrice > 0) {
+        // Standard retail markup is typically 20-25%
+        mrpPrice = Math.round(sellingPrice * 1.2 * 100) / 100;
+      } else if (costPrice > 0) {
+        // If no selling price, calculate from cost with typical markup
+        mrpPrice = Math.round(costPrice * 1.5 * 100) / 100;
+      }
       
       form.setValue(`items.${index}.unitCost`, costPrice);
       form.setValue(`items.${index}.sellingPrice`, sellingPrice);
@@ -1076,10 +1087,10 @@ export default function PurchaseEntryProfessional() {
       // Trigger form validation and update
       form.trigger(`items.${index}`);
 
-      // Show success toast with tax information
+      // Show success toast with enhanced information
       toast({
         title: "Product Selected! 🎯",
-        description: `${product.name} added with cost ₹${costPrice.toFixed(2)} | HSN: ${taxData.hsnCode} | GST: ${taxData.total}%`,
+        description: `${product.name} added - Cost: ₹${costPrice.toFixed(2)}, Selling: ₹${sellingPrice.toFixed(2)}, MRP: ₹${mrpPrice.toFixed(2)}`,
       });
     }
   };
@@ -2725,11 +2736,42 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      {...form.register(`items.${index}.sellingPrice`, { valueAsNumber: true })}
+                                      value={form.watch(`items.${index}.sellingPrice`) || 0}
+                                      onChange={(e) => {
+                                        const value = parseFloat(e.target.value) || 0;
+                                        form.setValue(`items.${index}.sellingPrice`, value);
+                                        
+                                        // Auto-calculate MRP if not set (typical markup is 20-25%)
+                                        const currentMrp = form.getValues(`items.${index}.mrp`) || 0;
+                                        if (currentMrp === 0 && value > 0) {
+                                          const suggestedMrp = Math.round(value * 1.2 * 100) / 100; // 20% markup
+                                          form.setValue(`items.${index}.mrp`, suggestedMrp);
+                                        }
+                                        
+                                        form.trigger(`items.${index}`);
+                                      }}
                                       className="w-full text-right text-xs pl-6"
-                                      placeholder="0"
+                                      placeholder="0.00"
+                                      onFocus={(e) => e.target.select()}
                                     />
                                   </div>
+                                  {/* Selling Price Indicator */}
+                                  {(() => {
+                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
+                                    const unitCost = form.watch(`items.${index}.unitCost`) || 0;
+                                    const margin = unitCost > 0 ? ((sellingPrice - unitCost) / unitCost) * 100 : 0;
+                                    
+                                    if (sellingPrice > 0 && unitCost > 0) {
+                                      return (
+                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
+                                          margin > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                                        }`}>
+                                          {margin > 0 ? '+' : ''}{margin.toFixed(1)}% margin
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
@@ -2739,11 +2781,34 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      {...form.register(`items.${index}.mrp`, { valueAsNumber: true })}
+                                      value={form.watch(`items.${index}.mrp`) || 0}
+                                      onChange={(e) => {
+                                        const value = parseFloat(e.target.value) || 0;
+                                        form.setValue(`items.${index}.mrp`, value);
+                                        form.trigger(`items.${index}`);
+                                      }}
                                       className="w-full text-right text-xs pl-6"
-                                      placeholder="0"
+                                      placeholder="0.00"
+                                      onFocus={(e) => e.target.select()}
                                     />
                                   </div>
+                                  {/* MRP vs Selling Price Indicator */}
+                                  {(() => {
+                                    const mrp = form.watch(`items.${index}.mrp`) || 0;
+                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
+                                    
+                                    if (mrp > 0 && sellingPrice > 0) {
+                                      const discount = ((mrp - sellingPrice) / mrp) * 100;
+                                      return (
+                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
+                                          discount > 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
+                                        }`}>
+                                          {discount > 0 ? `${discount.toFixed(1)}% off MRP` : 'Above MRP'}
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
@@ -3260,6 +3325,75 @@ export default function PurchaseEntryProfessional() {
                   }}
                   placeholder="0.00"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-sellingPrice">Selling Price</Label>
+                <Input
+                  id="modal-sellingPrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={modalData.sellingPrice || ''}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, sellingPrice: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.sellingPrice`, value);
+                      
+                      // Auto-calculate MRP if not set (typical markup is 20-25%)
+                      if (!modalData.mrp || modalData.mrp === 0) {
+                        const suggestedMrp = Math.round(value * 1.2 * 100) / 100;
+                        const updatedModalData = { ...newModalData, mrp: suggestedMrp };
+                        setModalData(updatedModalData);
+                        form.setValue(`items.${editingItemIndex}.mrp`, suggestedMrp);
+                      }
+                      
+                      form.trigger(`items.${editingItemIndex}`);
+                    }
+                  }}
+                  placeholder="0.00"
+                />
+                {modalData.unitCost > 0 && modalData.sellingPrice > 0 && (
+                  <div className="text-xs text-gray-600">
+                    Margin: {(((modalData.sellingPrice - modalData.unitCost) / modalData.unitCost) * 100).toFixed(1)}%
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-mrp">MRP (Maximum Retail Price)</Label>
+                <Input
+                  id="modal-mrp"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={modalData.mrp || ''}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, mrp: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.mrp`, value);
+                      form.trigger(`items.${editingItemIndex}`);
+                    }
+                  }}
+                  placeholder="0.00"
+                />
+                {modalData.mrp > 0 && modalData.sellingPrice > 0 && (
+                  <div className="text-xs text-gray-600">
+                    {modalData.sellingPrice <= modalData.mrp ? (
+                      <span className="text-green-600">
+                        Discount: {(((modalData.mrp - modalData.sellingPrice) / modalData.mrp) * 100).toFixed(1)}% off MRP
+                      </span>
+                    ) : (
+                      <span className="text-orange-600">
+                        Warning: Selling price is above MRP
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
