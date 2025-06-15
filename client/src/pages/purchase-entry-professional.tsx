@@ -1270,7 +1270,9 @@ export default function PurchaseEntryProfessional() {
     });
     
     return issues;
-  };</old_str>
+  };
+
+  // Enhanced remove item function with better validation</old_str>
 
   // Enhanced remove item function with better validation
   const removeItem = (index: number) => {
