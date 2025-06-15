@@ -976,7 +976,7 @@ export default function PurchaseEntryProfessional() {
     });
   }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, form]);
 
-  // Enhanced tax field syncing utility
+  // Enhanced tax field syncing utility with detailed breakdown
   const syncTaxFieldsFromProduct = (product: Product, index: number) => {
     // Extract tax rates from product with fallback logic
     const cgstRate = parseFloat(product.cgstRate || "0");
@@ -986,10 +986,20 @@ export default function PurchaseEntryProfessional() {
     
     // Calculate total GST (CGST + SGST for intra-state, IGST for inter-state)
     let totalGst = 0;
+    let gstBreakdown = {
+      cgst: 0,
+      sgst: 0,
+      igst: 0,
+      cess: cessRate
+    };
+
     if (igstRate > 0) {
       totalGst = igstRate; // Inter-state transaction
-    } else {
+      gstBreakdown.igst = igstRate;
+    } else if (cgstRate > 0 || sgstRate > 0) {
       totalGst = cgstRate + sgstRate; // Intra-state transaction
+      gstBreakdown.cgst = cgstRate;
+      gstBreakdown.sgst = sgstRate;
     }
 
     // Auto-detect HSN code and suggest GST rate if missing
@@ -997,24 +1007,37 @@ export default function PurchaseEntryProfessional() {
     let suggestedGstRate = totalGst;
 
     // HSN-based GST rate suggestion if product doesn't have tax rates
-    if (!hsnCode && product.name) {
+    if ((!hsnCode || totalGst === 0) && product.name) {
       // Auto-suggest HSN based on product name/category
       const productName = product.name.toLowerCase();
       if (productName.includes('rice') || productName.includes('wheat') || productName.includes('sugar')) {
-        hsnCode = "10019000"; // Food grains - 5%
+        hsnCode = hsnCode || "10019000"; // Food grains - 5%
         suggestedGstRate = totalGst || 5;
       } else if (productName.includes('oil') || productName.includes('edible')) {
-        hsnCode = "15179010"; // Edible oil - 5%
+        hsnCode = hsnCode || "15179010"; // Edible oil - 5%
         suggestedGstRate = totalGst || 5;
       } else if (productName.includes('biscuit') || productName.includes('snack')) {
-        hsnCode = "19059090"; // Biscuits - 18%
+        hsnCode = hsnCode || "19059090"; // Biscuits - 18%
         suggestedGstRate = totalGst || 18;
       } else if (productName.includes('soap') || productName.includes('shampoo')) {
-        hsnCode = "34012000"; // Personal care - 18%
+        hsnCode = hsnCode || "34012000"; // Personal care - 18%
         suggestedGstRate = totalGst || 18;
       } else if (productName.includes('phone') || productName.includes('mobile')) {
-        hsnCode = "85171200"; // Mobile phones - 12%
+        hsnCode = hsnCode || "85171200"; // Mobile phones - 12%
         suggestedGstRate = totalGst || 12;
+      } else {
+        hsnCode = hsnCode || "19059090"; // Default general goods
+        suggestedGstRate = totalGst || 18;
+      }
+
+      // If we're suggesting a rate and don't have breakdown, create default breakdown
+      if (totalGst === 0) {
+        if (suggestedGstRate > 0) {
+          // Default to intra-state (CGST + SGST)
+          gstBreakdown.cgst = suggestedGstRate / 2;
+          gstBreakdown.sgst = suggestedGstRate / 2;
+          gstBreakdown.igst = 0;
+        }
       }
     }
 
@@ -1030,14 +1053,18 @@ export default function PurchaseEntryProfessional() {
     form.setValue(`items.${index}.hsnCode`, hsnCode);
     form.setValue(`items.${index}.taxPercentage`, suggestedGstRate);
 
-    return {
-      cgst: cgstRate || (igstRate > 0 ? 0 : suggestedGstRate / 2),
-      sgst: sgstRate || (igstRate > 0 ? 0 : suggestedGstRate / 2),
-      igst: igstRate || (cgstRate > 0 || sgstRate > 0 ? 0 : suggestedGstRate),
-      cess: cessRate,
+    // Store detailed tax breakdown for display
+    const taxBreakdown = {
+      cgst: gstBreakdown.cgst,
+      sgst: gstBreakdown.sgst,
+      igst: gstBreakdown.igst,
+      cess: gstBreakdown.cess,
       total: suggestedGstRate,
-      hsnCode
+      hsnCode: hsnCode,
+      taxType: igstRate > 0 ? 'IGST' : 'CGST+SGST'
     };
+
+    return taxBreakdown;
   };
 
   // Dynamic product selection handler with enhanced tax syncing
@@ -2657,21 +2684,58 @@ export default function PurchaseEntryProfessional() {
                                       placeholder="0"
                                     />
                                     
-                                    {/* Tax Breakdown Display */}
+                                    {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
                                     {form.watch(`items.${index}.taxPercentage`) > 0 && (
-                                      <div className="text-xs bg-blue-50 p-1 rounded border">
+                                      <div className="text-xs bg-blue-50 p-2 rounded border space-y-1">
                                         {(() => {
                                           const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
-                                          const cgst = totalTax / 2;
-                                          const sgst = totalTax / 2;
+                                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
+                                          
+                                          // Use product tax breakdown if available
+                                          let cgstRate = 0;
+                                          let sgstRate = 0;
+                                          let igstRate = 0;
+                                          
+                                          if (selectedProduct) {
+                                            cgstRate = parseFloat(selectedProduct.cgstRate || "0");
+                                            sgstRate = parseFloat(selectedProduct.sgstRate || "0");
+                                            igstRate = parseFloat(selectedProduct.igstRate || "0");
+                                          }
+                                          
+                                          // If product doesn't have breakdown, use default
+                                          if (cgstRate === 0 && sgstRate === 0 && igstRate === 0 && totalTax > 0) {
+                                            cgstRate = totalTax / 2;
+                                            sgstRate = totalTax / 2;
+                                          }
+                                          
                                           return (
                                             <div className="text-center">
-                                              <div className="text-blue-700 font-medium">GST {totalTax}%</div>
-                                              {totalTax > 0 && totalTax <= 28 && (
-                                                <div className="text-blue-600 text-xs">
-                                                  CGST: {cgst}% + SGST: {sgst}%
+                                              <div className="text-blue-700 font-medium text-xs mb-1">
+                                                Total GST: {totalTax}%
+                                              </div>
+                                              
+                                              {/* GST Breakdown */}
+                                              {totalTax > 0 && (
+                                                <div className="grid grid-cols-3 gap-1 text-xs">
+                                                  <div className="bg-green-100 text-green-700 px-1 py-0.5 rounded">
+                                                    <div className="font-medium">CGST</div>
+                                                    <div>{cgstRate}%</div>
+                                                  </div>
+                                                  <div className="bg-orange-100 text-orange-700 px-1 py-0.5 rounded">
+                                                    <div className="font-medium">SGST</div>
+                                                    <div>{sgstRate}%</div>
+                                                  </div>
+                                                  <div className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
+                                                    <div className="font-medium">IGST</div>
+                                                    <div>{igstRate}%</div>
+                                                  </div>
                                                 </div>
                                               )}
+                                              
+                                              {/* Tax Type Indicator */}
+                                              <div className="text-xs text-gray-600 mt-1">
+                                                {igstRate > 0 ? 'Inter-State' : 'Intra-State'}
+                                              </div>
                                             </div>
                                           );
                                         })()}
@@ -3481,37 +3545,117 @@ export default function PurchaseEntryProfessional() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="modal-taxPercentage">Tax %</Label>
-                <Input
-                  id="modal-taxPercentage"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={modalData.taxPercentage}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, taxPercentage: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
+              {/* Enhanced Tax Information Section */}
+              <div className="space-y-2 col-span-2">
+                <Label>Tax Information</Label>
+                <div className="bg-gray-50 border rounded-lg p-4 space-y-4">
+                  {/* GST Rate Selection */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="modal-taxPercentage">Total GST Rate (%)</Label>
+                      <select
+                        id="modal-taxPercentage"
+                        value={modalData.taxPercentage || 18}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0;
+                          const newModalData = { ...modalData, taxPercentage: value };
+                          setModalData(newModalData);
+                          if (editingItemIndex !== null) {
+                            form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
 
-                      // Recalculate net amount in real-time
-                      const qty = modalData.receivedQty;
-                      const cost = modalData.unitCost;
-                      const discount = modalData.discountAmount;
-                      const subtotal = qty * cost;
-                      const taxableAmount = subtotal - value;
-                      const tax = (taxableAmount * value) / 100;
-                      const netAmount = taxableAmount + tax;
+                            // Recalculate net amount in real-time
+                            const qty = modalData.receivedQty;
+                            const cost = modalData.unitCost;
+                            const discount = modalData.discountAmount;
+                            const subtotal = qty * cost;
+                            const taxableAmount = subtotal - discount;
+                            const tax = (taxableAmount * value) / 100;
+                            const netAmount = taxableAmount + tax;
 
-                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="18"
-                />
+                            form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                            form.trigger(`items.${editingItemIndex}`);
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="0">GST 0% - Nil Rate</option>
+                        <option value="5">GST 5% - Essential Items</option>
+                        <option value="12">GST 12% - Standard Items</option>
+                        <option value="18">GST 18% - General Items</option>
+                        <option value="28">GST 28% - Luxury Items</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Tax Type</Label>
+                      <select 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        defaultValue="tax-inclusive"
+                      >
+                        <option value="tax-inclusive">Tax Inclusive</option>
+                        <option value="tax-exclusive">Tax Exclusive</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* GST Breakdown */}
+                  {modalData.taxPercentage > 0 && (
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700">GST Breakdown</Label>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-green-50 border border-green-200 rounded p-3 text-center">
+                          <div className="text-xs font-medium text-green-700 mb-1">CGST Rate (%)</div>
+                          <div className="text-lg font-bold text-green-800">
+                            {(modalData.taxPercentage / 2).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="bg-orange-50 border border-orange-200 rounded p-3 text-center">
+                          <div className="text-xs font-medium text-orange-700 mb-1">SGST Rate (%)</div>
+                          <div className="text-lg font-bold text-orange-800">
+                            {(modalData.taxPercentage / 2).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 border border-purple-200 rounded p-3 text-center">
+                          <div className="text-xs font-medium text-purple-700 mb-1">IGST Rate (%)</div>
+                          <div className="text-lg font-bold text-purple-800">0%</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tax Calculation Display */}
+                  {modalData.taxPercentage > 0 && modalData.unitCost > 0 && modalData.receivedQty > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                      <h4 className="font-medium text-blue-900 mb-2 text-sm">Tax Calculation</h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-blue-700">Base Amount:</span>
+                          <span className="font-medium ml-2">
+                            ₹{(modalData.receivedQty * modalData.unitCost).toFixed(2)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-blue-700">Total GST:</span>
+                          <span className="font-medium ml-2">
+                            ₹{(((modalData.receivedQty * modalData.unitCost - modalData.discountAmount) * modalData.taxPercentage) / 100).toFixed(2)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-blue-700">CGST Amount:</span>
+                          <span className="font-medium ml-2">
+                            ₹{(((modalData.receivedQty * modalData.unitCost - modalData.discountAmount) * modalData.taxPercentage) / 200).toFixed(2)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-blue-700">SGST Amount:</span>
+                          <span className="font-medium ml-2">
+                            ₹{(((modalData.receivedQty * modalData.unitCost - modalData.discountAmount) * modalData.taxPercentage) / 200).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
