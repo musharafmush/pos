@@ -852,7 +852,7 @@ export default function AddItemProfessional() {
                                       <SelectItem value="Dabur">Dabur</SelectItem>
                                       <SelectItem value="Haldiram's">Haldiram's</SelectItem>
                                       <SelectItem value="MTR">MTR</SelectItem>
-                                      <SelectItem value="Everest">Everest</SelectItem>
+                                      <SelectItem                                      <SelectItem value="Everest">Everest</SelectItem>
                                       <SelectItem value="MDH">MDH</SelectItem>
                                       <SelectItem value="Catch">Catch</SelectItem>
                                       <SelectItem value="Generic">Generic</SelectItem>
@@ -1592,9 +1592,8 @@ export default function AddItemProfessional() {
                             </div>
                           </div>
                         </div>
-                      </div>
+                  </div>
                     </CardContent>
-                  ```javascript
                   </Card>
                 )}
 
@@ -2410,4 +2409,187 @@ export default function AddItemProfessional() {
                       {currentSection === "purchase-order" && (
                         <Card>
                           <CardHeader>
-                            <CardTitle className="flex items-center
+                            <CardTitle className="flex items-center gap-2">
+                              <ShoppingCartIcon className="w-5 h-5" />
+                              Purchase Order Configuration
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <FormField
+                              control={form.control}
+                              name="gateKeeperMargin"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Gate Keeper Margin</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <div className="bg-yellow-50 p-4 rounded-lg">
+                              <h3 className="font-medium mb-3">Purchase Order Parameters</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-sm font-medium">Lead Time (Days)</label>
+                                  <Input placeholder="7" type="number" />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">Safety Stock Level</label>
+                                  <Input placeholder="5" type="number" />
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Approval Configurations Section */}
+                      {currentSection === "mobile-app-config" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <SettingsIcon className="w-5 h-5" />
+                              Mobile App Configuration
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <div className="space-y-4">
+                              <FormField
+                                control={form.control}
+                                name="showOnMobileDashboard"
+                                render={({ field }) => (
+                                  <FormItem className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div>
+                                      <FormLabel className="text-sm font-medium">Show on Mobile Dashboard</FormLabel>
+                                      <p className="text-xs text-gray-500">Display this item on the mobile app dashboard</p>
+                                    </div>
+                                    <FormControl>
+                                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="enableMobileNotifications"
+                                render={({ field }) => (
+                                  <FormItem className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div>
+                                      <FormLabel className="text-sm font-medium">Enable Mobile Notifications</FormLabel>
+                                      <p className="text-xs text-gray-500">Send notifications to users about this item</p>
+                                    </div>
+                                    <FormControl>
+                                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="quickAddToCart"
+                                render={({ field }) => (
+                                  <FormItem className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div>
+                                      <FormLabel className="text-sm font-medium">Quick Add to Cart</FormLabel>
+                                      <p className="text-xs text-gray-500">Enable quick add to cart functionality</p>
+                                    </div>
+                                    <FormControl>
+                                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Other Information Section */}
+                      {currentSection === "other-information" && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <InfoIcon className="w-5 h-5" />
+                              Other Information
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <FormField
+                              control={form.control}
+                              name="itemIngredients"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Item Ingredients</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} placeholder="List all ingredients" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="active"
+                              render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-3 border rounded-lg">
+                                  <div>
+                                    <FormLabel className="text-sm font-medium">Active</FormLabel>
+                                    <p className="text-xs text-gray-500">Set item as active or inactive</p>
+                                  </div>
+                                  <FormControl>
+                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </CardContent>
+                        </Card>
+                      )}
+
+                <div className="flex justify-between">
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    onClick={() => {
+                      const sections = sidebarSections.map(s => s.id);
+                      const currentIndex = sections.indexOf(currentSection);
+                      const prevIndex = (currentIndex - 1 + sections.length) % sections.length;
+                      setCurrentSection(sections[prevIndex]);
+                    }}
+                    disabled={sidebarSections.findIndex(s => s.id === currentSection) === 0}
+                  >
+                    Previous
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={createProductMutation.isPending}
+                  >
+                    {createProductMutation.isPending ? (
+                      <>
+                        Saving...
+                        <svg className="animate-spin h-5 w-5 ml-2" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                        </svg>
+                      </>
+                    ) : (
+                      isEditMode ? "Update Item" : "Create Item"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
