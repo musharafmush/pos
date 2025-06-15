@@ -722,33 +722,6 @@ export default function PurchaseEntryProfessional() {
             // Find the product details to get name and sku
             const product = products.find(p => p.id === (item.productId || item.product_id));
 
-            // Calculate selling price and MRP if not available from database
-            let sellingPrice = Number(item.sellingPrice || item.selling_price) || 0;
-            let mrp = Number(item.mrp) || 0;
-            
-            // If selling price is not set, try to get from product or calculate from cost
-            if (sellingPrice === 0) {
-              if (product?.price && parseFloat(product.price) > 0) {
-                sellingPrice = parseFloat(product.price);
-              } else {
-                const unitCost = Number(item.unitCost || item.unit_cost || item.cost) || 0;
-                if (unitCost > 0) {
-                  // Apply standard retail markup (30-50% depending on category)
-                  sellingPrice = Math.round(unitCost * 1.4 * 100) / 100;
-                }
-              }
-            }
-            
-            // If MRP is not set, try to get from product or calculate from selling price
-            if (mrp === 0) {
-              if (product?.mrp && parseFloat(product.mrp) > 0) {
-                mrp = parseFloat(product.mrp);
-              } else if (sellingPrice > 0) {
-                // Apply standard MRP markup (20-25% above selling price)
-                mrp = Math.round(sellingPrice * 1.2 * 100) / 100;
-              }
-            }
-
             return {
               productId: item.productId || item.product_id || 0,
               code: item.code || product?.sku || "",
@@ -757,8 +730,8 @@ export default function PurchaseEntryProfessional() {
               receivedQty: Number(item.receivedQty || item.received_qty || item.quantity) || Number(item.quantity) || 1,
               freeQty: Number(item.freeQty || item.free_qty) || 0,
               unitCost: Number(item.unitCost || item.unit_cost || item.cost) || 0,
-              sellingPrice: sellingPrice,
-              mrp: mrp,
+              sellingPrice: Number(item.sellingPrice || item.selling_price) || 0,
+              mrp: Number(item.mrp) || 0,
               hsnCode: item.hsnCode || item.hsn_code || product?.hsnCode || "",
               taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent) || 18,
               discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
@@ -976,7 +949,7 @@ export default function PurchaseEntryProfessional() {
     });
   }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, form]);
 
-  // Enhanced tax field syncing utility with detailed breakdown
+  // Enhanced tax field syncing utility
   const syncTaxFieldsFromProduct = (product: Product, index: number) => {
     // Extract tax rates from product with fallback logic
     const cgstRate = parseFloat(product.cgstRate || "0");
@@ -986,20 +959,10 @@ export default function PurchaseEntryProfessional() {
     
     // Calculate total GST (CGST + SGST for intra-state, IGST for inter-state)
     let totalGst = 0;
-    let gstBreakdown = {
-      cgst: 0,
-      sgst: 0,
-      igst: 0,
-      cess: cessRate
-    };
-
     if (igstRate > 0) {
       totalGst = igstRate; // Inter-state transaction
-      gstBreakdown.igst = igstRate;
-    } else if (cgstRate > 0 || sgstRate > 0) {
+    } else {
       totalGst = cgstRate + sgstRate; // Intra-state transaction
-      gstBreakdown.cgst = cgstRate;
-      gstBreakdown.sgst = sgstRate;
     }
 
     // Auto-detect HSN code and suggest GST rate if missing
@@ -1007,37 +970,24 @@ export default function PurchaseEntryProfessional() {
     let suggestedGstRate = totalGst;
 
     // HSN-based GST rate suggestion if product doesn't have tax rates
-    if ((!hsnCode || totalGst === 0) && product.name) {
+    if (!hsnCode && product.name) {
       // Auto-suggest HSN based on product name/category
       const productName = product.name.toLowerCase();
       if (productName.includes('rice') || productName.includes('wheat') || productName.includes('sugar')) {
-        hsnCode = hsnCode || "10019000"; // Food grains - 5%
+        hsnCode = "10019000"; // Food grains - 5%
         suggestedGstRate = totalGst || 5;
       } else if (productName.includes('oil') || productName.includes('edible')) {
-        hsnCode = hsnCode || "15179010"; // Edible oil - 5%
+        hsnCode = "15179010"; // Edible oil - 5%
         suggestedGstRate = totalGst || 5;
       } else if (productName.includes('biscuit') || productName.includes('snack')) {
-        hsnCode = hsnCode || "19059090"; // Biscuits - 18%
+        hsnCode = "19059090"; // Biscuits - 18%
         suggestedGstRate = totalGst || 18;
       } else if (productName.includes('soap') || productName.includes('shampoo')) {
-        hsnCode = hsnCode || "34012000"; // Personal care - 18%
+        hsnCode = "34012000"; // Personal care - 18%
         suggestedGstRate = totalGst || 18;
       } else if (productName.includes('phone') || productName.includes('mobile')) {
-        hsnCode = hsnCode || "85171200"; // Mobile phones - 12%
+        hsnCode = "85171200"; // Mobile phones - 12%
         suggestedGstRate = totalGst || 12;
-      } else {
-        hsnCode = hsnCode || "19059090"; // Default general goods
-        suggestedGstRate = totalGst || 18;
-      }
-
-      // If we're suggesting a rate and don't have breakdown, create default breakdown
-      if (totalGst === 0) {
-        if (suggestedGstRate > 0) {
-          // Default to intra-state (CGST + SGST)
-          gstBreakdown.cgst = suggestedGstRate / 2;
-          gstBreakdown.sgst = suggestedGstRate / 2;
-          gstBreakdown.igst = 0;
-        }
       }
     }
 
@@ -1053,18 +1003,14 @@ export default function PurchaseEntryProfessional() {
     form.setValue(`items.${index}.hsnCode`, hsnCode);
     form.setValue(`items.${index}.taxPercentage`, suggestedGstRate);
 
-    // Store detailed tax breakdown for display
-    const taxBreakdown = {
-      cgst: gstBreakdown.cgst,
-      sgst: gstBreakdown.sgst,
-      igst: gstBreakdown.igst,
-      cess: gstBreakdown.cess,
+    return {
+      cgst: cgstRate || (igstRate > 0 ? 0 : suggestedGstRate / 2),
+      sgst: sgstRate || (igstRate > 0 ? 0 : suggestedGstRate / 2),
+      igst: igstRate || (cgstRate > 0 || sgstRate > 0 ? 0 : suggestedGstRate),
+      cess: cessRate,
       total: suggestedGstRate,
-      hsnCode: hsnCode,
-      taxType: igstRate > 0 ? 'IGST' : 'CGST+SGST'
+      hsnCode
     };
-
-    return taxBreakdown;
   };
 
   // Dynamic product selection handler with enhanced tax syncing
@@ -1079,18 +1025,7 @@ export default function PurchaseEntryProfessional() {
       // Use cost price from product if available, otherwise use selling price
       const costPrice = parseFloat(product.cost || product.price) || 0;
       const sellingPrice = parseFloat(product.price) || 0;
-      
-      // Calculate MRP: use product MRP if available, otherwise calculate from selling price
-      let mrpPrice = 0;
-      if (product.mrp && parseFloat(product.mrp) > 0) {
-        mrpPrice = parseFloat(product.mrp);
-      } else if (sellingPrice > 0) {
-        // Standard retail markup is typically 20-25%
-        mrpPrice = Math.round(sellingPrice * 1.2 * 100) / 100;
-      } else if (costPrice > 0) {
-        // If no selling price, calculate from cost with typical markup
-        mrpPrice = Math.round(costPrice * 1.5 * 100) / 100;
-      }
+      const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
       
       form.setValue(`items.${index}.unitCost`, costPrice);
       form.setValue(`items.${index}.sellingPrice`, sellingPrice);
@@ -1141,10 +1076,10 @@ export default function PurchaseEntryProfessional() {
       // Trigger form validation and update
       form.trigger(`items.${index}`);
 
-      // Show success toast with enhanced information
+      // Show success toast with tax information
       toast({
         title: "Product Selected! 🎯",
-        description: `${product.name} added - Cost: ₹${costPrice.toFixed(2)}, Selling: ₹${sellingPrice.toFixed(2)}, MRP: ₹${mrpPrice.toFixed(2)}`,
+        description: `${product.name} added with cost ₹${costPrice.toFixed(2)} | HSN: ${taxData.hsnCode} | GST: ${taxData.total}%`,
       });
     }
   };
@@ -2684,58 +2619,21 @@ export default function PurchaseEntryProfessional() {
                                       placeholder="0"
                                     />
                                     
-                                    {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
+                                    {/* Tax Breakdown Display */}
                                     {form.watch(`items.${index}.taxPercentage`) > 0 && (
-                                      <div className="text-xs bg-blue-50 p-2 rounded border space-y-1">
+                                      <div className="text-xs bg-blue-50 p-1 rounded border">
                                         {(() => {
                                           const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
-                                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                                          
-                                          // Use product tax breakdown if available
-                                          let cgstRate = 0;
-                                          let sgstRate = 0;
-                                          let igstRate = 0;
-                                          
-                                          if (selectedProduct) {
-                                            cgstRate = parseFloat(selectedProduct.cgstRate || "0");
-                                            sgstRate = parseFloat(selectedProduct.sgstRate || "0");
-                                            igstRate = parseFloat(selectedProduct.igstRate || "0");
-                                          }
-                                          
-                                          // If product doesn't have breakdown, use default
-                                          if (cgstRate === 0 && sgstRate === 0 && igstRate === 0 && totalTax > 0) {
-                                            cgstRate = totalTax / 2;
-                                            sgstRate = totalTax / 2;
-                                          }
-                                          
+                                          const cgst = totalTax / 2;
+                                          const sgst = totalTax / 2;
                                           return (
                                             <div className="text-center">
-                                              <div className="text-blue-700 font-medium text-xs mb-1">
-                                                Total GST: {totalTax}%
-                                              </div>
-                                              
-                                              {/* GST Breakdown */}
-                                              {totalTax > 0 && (
-                                                <div className="grid grid-cols-3 gap-1 text-xs">
-                                                  <div className="bg-green-100 text-green-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">CGST</div>
-                                                    <div>{cgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-orange-100 text-orange-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">SGST</div>
-                                                    <div>{sgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">IGST</div>
-                                                    <div>{igstRate}%</div>
-                                                  </div>
+                                              <div className="text-blue-700 font-medium">GST {totalTax}%</div>
+                                              {totalTax > 0 && totalTax <= 28 && (
+                                                <div className="text-blue-600 text-xs">
+                                                  CGST: {cgst}% + SGST: {sgst}%
                                                 </div>
                                               )}
-                                              
-                                              {/* Tax Type Indicator */}
-                                              <div className="text-xs text-gray-600 mt-1">
-                                                {igstRate > 0 ? 'Inter-State' : 'Intra-State'}
-                                              </div>
                                             </div>
                                           );
                                         })()}
@@ -2827,45 +2725,11 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      {...form.register(`items.${index}.sellingPrice`, { 
-                                        valueAsNumber: true,
-                                        setValueAs: (value) => value || 0
-                                      })}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.sellingPrice`, value);
-                                        
-                                        // Auto-calculate MRP if not set (typical markup is 20-25%)
-                                        const currentMrp = form.getValues(`items.${index}.mrp`) || 0;
-                                        if (currentMrp === 0 && value > 0) {
-                                          const suggestedMrp = Math.round(value * 1.2 * 100) / 100; // 20% markup
-                                          form.setValue(`items.${index}.mrp`, suggestedMrp);
-                                        }
-                                        
-                                        form.trigger(`items.${index}`);
-                                      }}
+                                      {...form.register(`items.${index}.sellingPrice`, { valueAsNumber: true })}
                                       className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
-                                      onFocus={(e) => e.target.select()}
+                                      placeholder="0"
                                     />
                                   </div>
-                                  {/* Selling Price Indicator */}
-                                  {(() => {
-                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-                                    const unitCost = form.watch(`items.${index}.unitCost`) || 0;
-                                    const margin = unitCost > 0 ? ((sellingPrice - unitCost) / unitCost) * 100 : 0;
-                                    
-                                    if (sellingPrice > 0 && unitCost > 0) {
-                                      return (
-                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
-                                          margin > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                                        }`}>
-                                          {margin > 0 ? '+' : ''}{margin.toFixed(1)}% margin
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
@@ -2875,37 +2739,11 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      {...form.register(`items.${index}.mrp`, { 
-                                        valueAsNumber: true,
-                                        setValueAs: (value) => value || 0
-                                      })}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.mrp`, value);
-                                        form.trigger(`items.${index}`);
-                                      }}
+                                      {...form.register(`items.${index}.mrp`, { valueAsNumber: true })}
                                       className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
-                                      onFocus={(e) => e.target.select()}
+                                      placeholder="0"
                                     />
                                   </div>
-                                  {/* MRP vs Selling Price Indicator */}
-                                  {(() => {
-                                    const mrp = form.watch(`items.${index}.mrp`) || 0;
-                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-                                    
-                                    if (mrp > 0 && sellingPrice > 0) {
-                                      const discount = ((mrp - sellingPrice) / mrp) * 100;
-                                      return (
-                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
-                                          discount > 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
-                                        }`}>
-                                          {discount > 0 ? `${discount.toFixed(1)}% off MRP` : 'Above MRP'}
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
@@ -3425,75 +3263,6 @@ export default function PurchaseEntryProfessional() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="modal-sellingPrice">Selling Price</Label>
-                <Input
-                  id="modal-sellingPrice"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={modalData.sellingPrice || ''}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, sellingPrice: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.sellingPrice`, value);
-                      
-                      // Auto-calculate MRP if not set (typical markup is 20-25%)
-                      if (!modalData.mrp || modalData.mrp === 0) {
-                        const suggestedMrp = Math.round(value * 1.2 * 100) / 100;
-                        const updatedModalData = { ...newModalData, mrp: suggestedMrp };
-                        setModalData(updatedModalData);
-                        form.setValue(`items.${editingItemIndex}.mrp`, suggestedMrp);
-                      }
-                      
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="0.00"
-                />
-                {modalData.unitCost > 0 && modalData.sellingPrice > 0 && (
-                  <div className="text-xs text-gray-600">
-                    Margin: {(((modalData.sellingPrice - modalData.unitCost) / modalData.unitCost) * 100).toFixed(1)}%
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-mrp">MRP (Maximum Retail Price)</Label>
-                <Input
-                  id="modal-mrp"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={modalData.mrp || ''}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, mrp: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.mrp`, value);
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="0.00"
-                />
-                {modalData.mrp > 0 && modalData.sellingPrice > 0 && (
-                  <div className="text-xs text-gray-600">
-                    {modalData.sellingPrice <= modalData.mrp ? (
-                      <span className="text-green-600">
-                        Discount: {(((modalData.mrp - modalData.sellingPrice) / modalData.mrp) * 100).toFixed(1)}% off MRP
-                      </span>
-                    ) : (
-                      <span className="text-orange-600">
-                        Warning: Selling price is above MRP
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="modal-hsnCode">HSN Code</Label>
                 <Input
                   id="modal-hsnCode"
@@ -3545,117 +3314,37 @@ export default function PurchaseEntryProfessional() {
                 </div>
               )}
 
-              {/* Enhanced Tax Information Section */}
-              <div className="space-y-2 col-span-2">
-                <Label>Tax Information</Label>
-                <div className="bg-gray-50 border rounded-lg p-4 space-y-4">
-                  {/* GST Rate Selection */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="modal-taxPercentage">Total GST Rate (%)</Label>
-                      <select
-                        id="modal-taxPercentage"
-                        value={modalData.taxPercentage || 18}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value) || 0;
-                          const newModalData = { ...modalData, taxPercentage: value };
-                          setModalData(newModalData);
-                          if (editingItemIndex !== null) {
-                            form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
+              <div className="space-y-2">
+                <Label htmlFor="modal-taxPercentage">Tax %</Label>
+                <Input
+                  id="modal-taxPercentage"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={modalData.taxPercentage}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, taxPercentage: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
 
-                            // Recalculate net amount in real-time
-                            const qty = modalData.receivedQty;
-                            const cost = modalData.unitCost;
-                            const discount = modalData.discountAmount;
-                            const subtotal = qty * cost;
-                            const taxableAmount = subtotal - discount;
-                            const tax = (taxableAmount * value) / 100;
-                            const netAmount = taxableAmount + tax;
+                      // Recalculate net amount in real-time
+                      const qty = modalData.receivedQty;
+                      const cost = modalData.unitCost;
+                      const discount = modalData.discountAmount;
+                      const subtotal = qty * cost;
+                      const taxableAmount = subtotal - value;
+                      const tax = (taxableAmount * value) / 100;
+                      const netAmount = taxableAmount + tax;
 
-                            form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                            form.trigger(`items.${editingItemIndex}`);
-                          }
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="0">GST 0% - Nil Rate</option>
-                        <option value="5">GST 5% - Essential Items</option>
-                        <option value="12">GST 12% - Standard Items</option>
-                        <option value="18">GST 18% - General Items</option>
-                        <option value="28">GST 28% - Luxury Items</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Tax Type</Label>
-                      <select 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        defaultValue="tax-inclusive"
-                      >
-                        <option value="tax-inclusive">Tax Inclusive</option>
-                        <option value="tax-exclusive">Tax Exclusive</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* GST Breakdown */}
-                  {modalData.taxPercentage > 0 && (
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium text-gray-700">GST Breakdown</Label>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-green-50 border border-green-200 rounded p-3 text-center">
-                          <div className="text-xs font-medium text-green-700 mb-1">CGST Rate (%)</div>
-                          <div className="text-lg font-bold text-green-800">
-                            {(modalData.taxPercentage / 2).toFixed(1)}%
-                          </div>
-                        </div>
-                        <div className="bg-orange-50 border border-orange-200 rounded p-3 text-center">
-                          <div className="text-xs font-medium text-orange-700 mb-1">SGST Rate (%)</div>
-                          <div className="text-lg font-bold text-orange-800">
-                            {(modalData.taxPercentage / 2).toFixed(1)}%
-                          </div>
-                        </div>
-                        <div className="bg-purple-50 border border-purple-200 rounded p-3 text-center">
-                          <div className="text-xs font-medium text-purple-700 mb-1">IGST Rate (%)</div>
-                          <div className="text-lg font-bold text-purple-800">0%</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tax Calculation Display */}
-                  {modalData.taxPercentage > 0 && modalData.unitCost > 0 && modalData.receivedQty > 0 && (
-                    <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                      <h4 className="font-medium text-blue-900 mb-2 text-sm">Tax Calculation</h4>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <span className="text-blue-700">Base Amount:</span>
-                          <span className="font-medium ml-2">
-                            ₹{(modalData.receivedQty * modalData.unitCost).toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-blue-700">Total GST:</span>
-                          <span className="font-medium ml-2">
-                            ₹{(((modalData.receivedQty * modalData.unitCost - modalData.discountAmount) * modalData.taxPercentage) / 100).toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-blue-700">CGST Amount:</span>
-                          <span className="font-medium ml-2">
-                            ₹{(((modalData.receivedQty * modalData.unitCost - modalData.discountAmount) * modalData.taxPercentage) / 200).toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-blue-700">SGST Amount:</span>
-                          <span className="font-medium ml-2">
-                            ₹{(((modalData.receivedQty * modalData.unitCost - modalData.discountAmount) * modalData.taxPercentage) / 200).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                      form.trigger(`items.${editingItemIndex}`);
+                    }
+                  }}
+                  placeholder="18"
+                />
               </div>
 
               <div className="space-y-2">
