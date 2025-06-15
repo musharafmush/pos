@@ -2474,6 +2474,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // If payment status is explicitly provided, use it
+      if (paymentStatus) {
+        calculatedPaymentStatus = paymentStatus;
+        
+        // Adjust paid amount based on status if needed
+        if (paymentStatus === 'paid' && finalPaidAmount < purchaseTotal) {
+          // If marking as paid but amount is less than total, set to full amount
+          const adjustedFinalAmount = purchaseTotal;
+          console.log(`📊 Adjusting paid amount from ${finalPaidAmount} to ${adjustedFinalAmount} for 'paid' status`);
+        } else if (paymentStatus === 'due' && finalPaidAmount > 0 && !paymentAmount) {
+          // If marking as due but there's paid amount, keep the paid amount
+          console.log(`📊 Keeping existing paid amount ${finalPaidAmount} for 'due' status`);
+        }
+      }
+
       // Build dynamic update query
       const updateFields = [];
       const updateValues = [];

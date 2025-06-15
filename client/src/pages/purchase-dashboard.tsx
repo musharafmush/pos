@@ -530,13 +530,48 @@ export default function PurchaseDashboard() {
   };
 
   const handleMarkAsPaid = (purchase: Purchase) => {
+    const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
     const paymentData = {
       paymentStatus: 'paid',
-      paymentAmount: parseFloat(purchase.totalAmount?.toString() || "0"),
+      paymentAmount: totalAmount,
+      totalPaidAmount: totalAmount,
       paymentMethod: 'cash',
       paymentDate: new Date().toISOString(),
-      notes: 'Marked as paid from dashboard'
+      notes: 'Marked as paid from dashboard',
+      updatePurchaseStatus: true,
+      newPurchaseStatus: 'completed'
     };
+
+    updatePaymentStatus.mutate({ 
+      purchaseId: purchase.id, 
+      paymentData 
+    });
+  };
+
+  const handleQuickPaymentStatusChange = (purchase: Purchase, newStatus: string) => {
+    const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
+    const currentPaidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
+    
+    let paymentData: any = {
+      paymentStatus: newStatus,
+      paymentMethod: purchase.paymentMethod || 'cash',
+      paymentDate: new Date().toISOString(),
+      notes: `Payment status changed to ${newStatus} from dashboard`
+    };
+
+    // Set payment amounts based on status
+    if (newStatus === 'paid') {
+      paymentData.paymentAmount = totalAmount - currentPaidAmount;
+      paymentData.totalPaidAmount = totalAmount;
+      paymentData.updatePurchaseStatus = true;
+      paymentData.newPurchaseStatus = 'completed';
+    } else if (newStatus === 'partial') {
+      paymentData.paymentAmount = totalAmount * 0.5; // 50% payment
+      paymentData.totalPaidAmount = currentPaidAmount + (totalAmount * 0.5);
+    } else if (newStatus === 'due') {
+      paymentData.paymentAmount = 0;
+      paymentData.totalPaidAmount = currentPaidAmount;
+    }
 
     updatePaymentStatus.mutate({ 
       purchaseId: purchase.id, 
@@ -1228,11 +1263,56 @@ export default function PurchaseDashboard() {
                                   const outstandingAmount = Math.max(0, totalAmount - paidAmount);
 
                                   return (
-                                    <div className="space-y-1">
-                                      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border ${config.color}`}>
-                                        <Icon className="w-3.5 h-3.5" />
-                                        {config.label}
-                                      </div>
+                                    <div className="space-y-2">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className={`justify-start gap-2 px-3 py-1.5 h-auto text-xs font-medium border cursor-pointer hover:opacity-75 ${config.color}`}
+                                          >
+                                            <Icon className="w-3.5 h-3.5" />
+                                            {config.label}
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start" className="w-48">
+                                          <DropdownMenuLabel>Change Payment Status</DropdownMenuLabel>
+                                          <DropdownMenuSeparator />
+                                          {paymentStatus !== 'paid' && (
+                                            <DropdownMenuItem 
+                                              onClick={() => handleQuickPaymentStatusChange(purchase, 'paid')}
+                                              className="text-green-600"
+                                            >
+                                              <CheckCircle className="w-4 h-4 mr-2" />
+                                              Mark as Fully Paid
+                                            </DropdownMenuItem>
+                                          )}
+                                          {paymentStatus !== 'partial' && paymentStatus !== 'paid' && (
+                                            <DropdownMenuItem 
+                                              onClick={() => handleQuickPaymentStatusChange(purchase, 'partial')}
+                                              className="text-blue-600"
+                                            >
+                                              <Clock className="w-4 h-4 mr-2" />
+                                              Mark as Partial Payment
+                                            </DropdownMenuItem>
+                                          )}
+                                          {paymentStatus !== 'due' && (
+                                            <DropdownMenuItem 
+                                              onClick={() => handleQuickPaymentStatusChange(purchase, 'due')}
+                                              className="text-orange-600"
+                                            >
+                                              <AlertCircle className="w-4 h-4 mr-2" />
+                                              Mark as Payment Due
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem onClick={() => handleRecordPayment(purchase)}>
+                                            <CreditCard className="w-4 h-4 mr-2" />
+                                            Record Custom Payment
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                      
                                       {paymentStatus === 'partial' && (
                                         <div className="text-xs text-gray-600">
                                           Paid: {formatCurrency(paidAmount)} / {formatCurrency(totalAmount)}
