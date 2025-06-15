@@ -309,6 +309,12 @@ export default function AddItemProfessional() {
         unit: "PCS",
         hsnCode: data.hsnCode?.trim() || "",
         taxRate: data.gstCode?.match(/\d+/)?.[0] || "18",
+        // Enhanced tax breakdown for better synchronization
+        cgstRate: data.cgstRate || "0",
+        sgstRate: data.sgstRate || "0", 
+        igstRate: data.igstRate || "0",
+        cessRate: data.cessRate || "0",
+        taxCalculationMethod: data.taxCalculationMethod || "exclusive",
         trackInventory: true,
         allowNegativeStock: false,
       };

@@ -949,11 +949,75 @@ export default function PurchaseEntryProfessional() {
     });
   }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, form]);
 
-  // Dynamic product selection handler
+  // Enhanced tax field syncing utility
+  const syncTaxFieldsFromProduct = (product: Product, index: number) => {
+    // Extract tax rates from product with fallback logic
+    const cgstRate = parseFloat(product.cgstRate || "0");
+    const sgstRate = parseFloat(product.sgstRate || "0");
+    const igstRate = parseFloat(product.igstRate || "0");
+    const cessRate = parseFloat(product.cessRate || "0");
+    
+    // Calculate total GST (CGST + SGST for intra-state, IGST for inter-state)
+    let totalGst = 0;
+    if (igstRate > 0) {
+      totalGst = igstRate; // Inter-state transaction
+    } else {
+      totalGst = cgstRate + sgstRate; // Intra-state transaction
+    }
+
+    // Auto-detect HSN code and suggest GST rate if missing
+    let hsnCode = product.hsnCode || "";
+    let suggestedGstRate = totalGst;
+
+    // HSN-based GST rate suggestion if product doesn't have tax rates
+    if (!hsnCode && product.name) {
+      // Auto-suggest HSN based on product name/category
+      const productName = product.name.toLowerCase();
+      if (productName.includes('rice') || productName.includes('wheat') || productName.includes('sugar')) {
+        hsnCode = "10019000"; // Food grains - 5%
+        suggestedGstRate = totalGst || 5;
+      } else if (productName.includes('oil') || productName.includes('edible')) {
+        hsnCode = "15179010"; // Edible oil - 5%
+        suggestedGstRate = totalGst || 5;
+      } else if (productName.includes('biscuit') || productName.includes('snack')) {
+        hsnCode = "19059090"; // Biscuits - 18%
+        suggestedGstRate = totalGst || 18;
+      } else if (productName.includes('soap') || productName.includes('shampoo')) {
+        hsnCode = "34012000"; // Personal care - 18%
+        suggestedGstRate = totalGst || 18;
+      } else if (productName.includes('phone') || productName.includes('mobile')) {
+        hsnCode = "85171200"; // Mobile phones - 12%
+        suggestedGstRate = totalGst || 12;
+      }
+    }
+
+    // If still no HSN, use generic HSN based on suggested rate
+    if (!hsnCode && suggestedGstRate > 0) {
+      if (suggestedGstRate <= 5) hsnCode = "10019000";
+      else if (suggestedGstRate <= 12) hsnCode = "85171200";
+      else if (suggestedGstRate <= 18) hsnCode = "19059090";
+      else hsnCode = "22021000";
+    }
+
+    // Set tax fields with proper breakdown
+    form.setValue(`items.${index}.hsnCode`, hsnCode);
+    form.setValue(`items.${index}.taxPercentage`, suggestedGstRate);
+
+    return {
+      cgst: cgstRate || (igstRate > 0 ? 0 : suggestedGstRate / 2),
+      sgst: sgstRate || (igstRate > 0 ? 0 : suggestedGstRate / 2),
+      igst: igstRate || (cgstRate > 0 || sgstRate > 0 ? 0 : suggestedGstRate),
+      cess: cessRate,
+      total: suggestedGstRate,
+      hsnCode
+    };
+  };
+
+  // Dynamic product selection handler with enhanced tax syncing
   const handleProductSelection = (index: number, productId: number) => {
     const product = products.find(p => p.id === productId);
     if (product) {
-      // Auto-populate fields based on selected product
+      // Auto-populate basic fields
       form.setValue(`items.${index}.productId`, productId);
       form.setValue(`items.${index}.code`, product.sku || "");
       form.setValue(`items.${index}.description`, product.description || product.name);
@@ -966,7 +1030,6 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`items.${index}.unitCost`, costPrice);
       form.setValue(`items.${index}.sellingPrice`, sellingPrice);
       form.setValue(`items.${index}.mrp`, mrpPrice);
-      form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
 
       // Set default received quantity if not set
       if (!form.getValues(`items.${index}.receivedQty`) || form.getValues(`items.${index}.receivedQty`) === 0) {
@@ -974,31 +1037,49 @@ export default function PurchaseEntryProfessional() {
         form.setValue(`items.${index}.quantity`, 1);
       }
 
-      // Calculate GST automatically
-      const cgstRate = parseFloat(product.cgstRate || "0");
-      const sgstRate = parseFloat(product.sgstRate || "0");
-      const igstRate = parseFloat(product.igstRate || "0");
-      const totalGst = cgstRate + sgstRate + igstRate;
+      // Sync tax fields with enhanced logic
+      const taxData = syncTaxFieldsFromProduct(product, index);
 
-      if (totalGst > 0) {
-        form.setValue(`items.${index}.taxPercentage`, totalGst);
-      }
-
-      // Calculate net amount using the correct cost price
+      // Calculate net amount with accurate tax calculation
       const qty = form.getValues(`items.${index}.receivedQty`) || 1;
-      const taxPercent = totalGst || 18;
+      const taxCalculationMethod = form.getValues("taxCalculationMethod") || "exclusive";
+      const discountAmount = form.getValues(`items.${index}.discountAmount`) || 0;
+      
+      let netAmount = 0;
       const subtotal = qty * costPrice;
-      const tax = (subtotal * taxPercent) / 100;
-      const netAmount = subtotal + tax;
+      
+      switch (taxCalculationMethod) {
+        case "inclusive":
+          // Tax included in cost price
+          const baseAmount = subtotal / (1 + (taxData.total / 100));
+          const taxAmount = subtotal - baseAmount;
+          netAmount = subtotal - discountAmount;
+          break;
+        case "compound":
+          // Compound tax calculation
+          const taxableAmount = subtotal - discountAmount;
+          const primaryTax = (taxableAmount * taxData.total) / 100;
+          const compoundTax = (primaryTax * taxData.total) / 100;
+          netAmount = taxableAmount + primaryTax + compoundTax;
+          break;
+        case "exclusive":
+        default:
+          // Standard exclusive tax calculation
+          const taxableAmountExclusive = subtotal - discountAmount;
+          const tax = (taxableAmountExclusive * taxData.total) / 100;
+          netAmount = taxableAmountExclusive + tax;
+          break;
+      }
       
       form.setValue(`items.${index}.netAmount`, netAmount);
 
       // Trigger form validation and update
       form.trigger(`items.${index}`);
 
+      // Show success toast with tax information
       toast({
         title: "Product Selected! 🎯",
-        description: `${product.name} added with cost price ₹${costPrice.toFixed(2)}`,
+        description: `${product.name} added with cost ₹${costPrice.toFixed(2)} | HSN: ${taxData.hsnCode} | GST: ${taxData.total}%`,
       });
     }
   };
@@ -2438,7 +2519,62 @@ export default function PurchaseEntryProfessional() {
                                       {...form.register(`items.${index}.hsnCode`)}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
+                                      onChange={(e) => {
+                                        const hsnValue = e.target.value;
+                                        form.setValue(`items.${index}.hsnCode`, hsnValue);
+
+                                        // Auto-suggest GST rate based on HSN code
+                                        if (hsnValue.length >= 4) {
+                                          let suggestedGst = 0;
+                                          if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
+                                            suggestedGst = 0; // Fresh produce
+                                          } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17")) {
+                                            suggestedGst = 5; // Food grains, oils, sugar
+                                          } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("87120")) {
+                                            suggestedGst = 12; // Textiles, phones, bicycles
+                                          } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("19")) {
+                                            suggestedGst = 18; // Personal care, biscuits
+                                          } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032")) {
+                                            suggestedGst = 28; // Beverages, tobacco, cars
+                                          } else {
+                                            suggestedGst = 18; // Default rate
+                                          }
+
+                                          if (suggestedGst !== form.getValues(`items.${index}.taxPercentage`)) {
+                                            form.setValue(`items.${index}.taxPercentage`, suggestedGst);
+                                            
+                                            // Recalculate net amount with new tax rate
+                                            const qty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                            const cost = form.getValues(`items.${index}.unitCost`) || 0;
+                                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                            const subtotal = qty * cost;
+                                            const taxableAmount = subtotal - discount;
+                                            const tax = (taxableAmount * suggestedGst) / 100;
+                                            const netAmount = taxableAmount + tax;
+                                            
+                                            form.setValue(`items.${index}.netAmount`, netAmount);
+                                            form.trigger(`items.${index}`);
+
+                                            toast({
+                                              title: "Tax Rate Updated! 📊",
+                                              description: `GST rate auto-updated to ${suggestedGst}% based on HSN ${hsnValue}`,
+                                            });
+                                          }
+                                        }
+                                      }}
                                     />
+                                    
+                                    {/* HSN Code Validation Indicator */}
+                                    {form.watch(`items.${index}.hsnCode`) && (
+                                      <div className={`text-xs px-2 py-1 rounded text-center ${
+                                        form.watch(`items.${index}.hsnCode`).length >= 6 
+                                          ? 'bg-green-100 text-green-700 border border-green-300' 
+                                          : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                      }`}>
+                                        {form.watch(`items.${index}.hsnCode`).length >= 6 ? '✓ Valid HSN' : '⚠ Incomplete'}
+                                      </div>
+                                    )}
+
                                     {/* Barcode Display */}
                                     {selectedProduct?.barcode && (
                                       <div className="flex flex-col items-center p-2 bg-gray-50 rounded border">
@@ -2456,15 +2592,86 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="0.01"
-                                    {...form.register(`items.${index}.taxPercentage`, { valueAsNumber: true })}
-                                    className="w-full text-center text-xs"
-                                    placeholder="0"
-                                  />
+                                  <div className="space-y-1">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      step="0.01"
+                                      value={form.watch(`items.${index}.taxPercentage`) || 0}
+                                      onChange={(e) => {
+                                        const taxRate = parseFloat(e.target.value) || 0;
+                                        form.setValue(`items.${index}.taxPercentage`, taxRate);
+                                        
+                                        // Recalculate net amount when tax changes
+                                        const qty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                        const cost = form.getValues(`items.${index}.unitCost`) || 0;
+                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                        const subtotal = qty * cost;
+                                        const taxableAmount = subtotal - discount;
+                                        const tax = (taxableAmount * taxRate) / 100;
+                                        const netAmount = taxableAmount + tax;
+                                        
+                                        form.setValue(`items.${index}.netAmount`, netAmount);
+                                        form.trigger(`items.${index}`);
+                                      }}
+                                      className="w-full text-center text-xs"
+                                      placeholder="0"
+                                    />
+                                    
+                                    {/* Tax Breakdown Display */}
+                                    {form.watch(`items.${index}.taxPercentage`) > 0 && (
+                                      <div className="text-xs bg-blue-50 p-1 rounded border">
+                                        {(() => {
+                                          const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
+                                          const cgst = totalTax / 2;
+                                          const sgst = totalTax / 2;
+                                          return (
+                                            <div className="text-center">
+                                              <div className="text-blue-700 font-medium">GST {totalTax}%</div>
+                                              {totalTax > 0 && totalTax <= 28 && (
+                                                <div className="text-blue-600 text-xs">
+                                                  CGST: {cgst}% + SGST: {sgst}%
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })()}
+                                      </div>
+                                    )}
+                                    
+                                    {/* Quick Tax Rate Buttons */}
+                                    <div className="flex flex-wrap gap-1">
+                                      {[0, 5, 12, 18, 28].map((rate) => (
+                                        <button
+                                          key={rate}
+                                          type="button"
+                                          onClick={() => {
+                                            form.setValue(`items.${index}.taxPercentage`, rate);
+                                            
+                                            // Recalculate net amount
+                                            const qty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                            const cost = form.getValues(`items.${index}.unitCost`) || 0;
+                                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                            const subtotal = qty * cost;
+                                            const taxableAmount = subtotal - discount;
+                                            const tax = (taxableAmount * rate) / 100;
+                                            const netAmount = taxableAmount + tax;
+                                            
+                                            form.setValue(`items.${index}.netAmount`, netAmount);
+                                            form.trigger(`items.${index}`);
+                                          }}
+                                          className={`px-1 py-0.5 text-xs rounded border ${
+                                            form.watch(`items.${index}.taxPercentage`) === rate
+                                              ? 'bg-blue-500 text-white border-blue-500'
+                                              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                                          }`}
+                                        >
+                                          {rate}%
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
