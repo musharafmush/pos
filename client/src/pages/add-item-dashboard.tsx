@@ -321,31 +321,31 @@ export default function AddItemDashboard() {
     mutationFn: async (data: any) => {
       console.log('Updating product with data:', data);
 
+      if (!editingProduct || !editingProduct.id) {
+        throw new Error('No product selected for editing');
+      }
+
       // Ensure all required fields are present and properly formatted
       const updateData = {
         name: data.name || editingProduct?.name || '',
-        sku: data.sku || editingProduct?.sku || '',
-        description: data.description || editingProduct?.description || '',
-        price: parseFloat(data.price) || parseFloat(editingProduct?.price) || 0,
-        cost: parseFloat(data.cost) || parseFloat(editingProduct?.cost) || 0,
-        mrp: parseFloat(data.mrp) || parseFloat(editingProduct?.mrp) || 0,
-        stockQuantity: parseInt(data.stockQuantity) || parseInt(editingProduct?.stockQuantity) || 0,
-        alertThreshold: parseInt(data.alertThreshold) || parseInt(editingProduct?.alertThreshold) || 5,
-        categoryId: data.categoryId || editingProduct?.categoryId || null,
-        brandId: data.brandId || editingProduct?.brandId || null,
-        unitId: data.unitId || editingProduct?.unitId || null,
-        hsnCode: data.hsnCode || editingProduct?.hsnCode || '',
-        barcode: data.barcode || editingProduct?.barcode || '',
+        sku: data.itemCode || editingProduct?.sku || '',
+        description: data.aboutProduct || editingProduct?.description || '',
+        price: parseFloat(data.price) || 0,
+        cost: parseFloat(data.cost) || 0,
+        mrp: parseFloat(data.mrp) || parseFloat(data.price) || 0,
+        stockQuantity: parseInt(data.stockQuantity) || 0,
+        alertThreshold: parseInt(data.alertThreshold) || 5,
+        categoryId: data.categoryId ? parseInt(data.categoryId) : null,
+        hsnCode: data.hsnCode || '',
+        barcode: data.barcode || '',
         cgstRate: parseFloat(data.cgstRate) || 0,
         sgstRate: parseFloat(data.sgstRate) || 0,
         igstRate: parseFloat(data.igstRate) || 0,
         cessRate: parseFloat(data.cessRate) || 0,
-        taxCalculationMethod: data.taxCalculationMethod || editingProduct?.taxCalculationMethod || 'exclusive',
+        taxCalculationMethod: data.taxType === 'Tax Inclusive' ? 'inclusive' : 'exclusive',
         weight: parseFloat(data.weight) || 0,
-        discountPercent: parseFloat(data.discountPercent) || 0,
-        isActive: data.isActive !== undefined ? data.isActive : true,
-        trackInventory: data.trackInventory !== undefined ? data.trackInventory : true,
-        allowOutOfStock: data.allowOutOfStock !== undefined ? data.allowOutOfStock : false
+        weightUnit: data.weightUnit || 'kg',
+        isActive: data.active !== undefined ? data.active : true
       };
 
       console.log('Formatted update data:', updateData);
@@ -386,6 +386,7 @@ export default function AddItemDashboard() {
         description: "The product has been updated with new information.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/products"] });
       setIsEditDialogOpen(false);
       setEditingProduct(null);
 
@@ -432,8 +433,8 @@ export default function AddItemDashboard() {
       console.error('Product update error:', error);
       toast({
         variant: "destructive",
-        title: "Error updating product",
-        description: error.message || "An unexpected error occurred while updating the product.",
+        title: "Failed to update product",
+        description: error.message || "An unexpected error occurred while updating the product. Please check the form fields and try again.",
       });
     },
   });
@@ -491,25 +492,16 @@ export default function AddItemDashboard() {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Item Code is required.",
+        description: "Item Code (SKU) is required.",
       });
       return;
     }
 
-    if (!editForm.categoryId?.trim()) {
+    if (!editForm.price || parseFloat(editForm.price) <= 0) {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Category is required.",
-      });
-      return;
-    }
-
-    if (!editForm.price || parseFloat(editForm.price) < 0) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description: "Valid price is required.",
+        description: "Valid price greater than 0 is required.",
       });
       return;
     }
@@ -524,14 +516,14 @@ export default function AddItemDashboard() {
       return;
     }
 
-    // Prepare the update data
+    // Prepare the update data with proper field mapping
     const updateData = {
       ...editForm,
       id: editingProduct.id,
       // Ensure numeric values are properly converted
       price: parseFloat(editForm.price) || 0,
       cost: parseFloat(editForm.cost) || 0,
-      mrp: parseFloat(editForm.mrp) || 0,
+      mrp: parseFloat(editForm.mrp) || parseFloat(editForm.price) || 0,
       stockQuantity: parseInt(editForm.stockQuantity) || 0,
       alertThreshold: parseInt(editForm.alertThreshold) || 5,
       cgstRate: parseFloat(editForm.cgstRate) || 0,
@@ -539,7 +531,6 @@ export default function AddItemDashboard() {
       igstRate: parseFloat(editForm.igstRate) || 0,
       cessRate: parseFloat(editForm.cessRate) || 0,
       weight: parseFloat(editForm.weight) || 0,
-      discountPercent: parseFloat(editForm.discountPercent) || 0,
       // Ensure boolean values
       active: editForm.active !== undefined ? editForm.active : true,
     };
