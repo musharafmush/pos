@@ -2379,30 +2379,28 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      {...form.register(`items.${index}.unitCost`, { 
-                                        valueAsNumber: true,
-                                        onChange: (e) => {
-                                          const value = parseFloat(e.target.value) || 0;
-                                          form.setValue(`items.${index}.unitCost`, value);
+                                      value={form.watch(`items.${index}.unitCost`) || 0}
+                                      onChange={(e) => {
+                                        const value = parseFloat(e.target.value) || 0;
+                                        form.setValue(`items.${index}.unitCost`, value);
 
-                                          // Auto-calculate net amount using receivedQty
-                                          const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                          const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
+                                        // Auto-calculate net amount using receivedQty
+                                        const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                        const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
 
-                                          const subtotal = value * receivedQty;
-                                          const taxableAmount = subtotal - discount;
-                                          const tax = (taxableAmount * taxPercentage) / 100;
-                                          const netAmount = taxableAmount + tax;
+                                        const subtotal = value * receivedQty;
+                                        const taxableAmount = subtotal - discount;
+                                        const tax = (taxableAmount * taxPercentage) / 100;
+                                        const netAmount = taxableAmount + tax;
 
-                                          form.setValue(`items.${index}.netAmount`, netAmount);
+                                        form.setValue(`items.${index}.netAmount`, netAmount);
 
-                                          // Trigger form validation
-                                          setTimeout(() => form.trigger(`items.${index}`), 50);
-                                        }
-                                      })}
+                                        // Trigger form validation
+                                        setTimeout(() => form.trigger(`items.${index}`), 50);
+                                      }}
                                       className="w-full text-right text-xs pl-6"
-                                      placeholder="0"
+                                      placeholder="0.00"
                                       onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                           // Move to next row's product field or add new row
@@ -3010,7 +3008,7 @@ export default function PurchaseEntryProfessional() {
                   type="number"
                   min="0"
                   step="0.01"
-                  value={modalData.unitCost}
+                  value={modalData.unitCost || ''}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value) || 0;
                     const newModalData = { ...modalData, unitCost: value };
@@ -3031,7 +3029,7 @@ export default function PurchaseEntryProfessional() {
                       form.trigger(`items.${editingItemIndex}`);
                     }
                   }}
-                  placeholder="0"
+                  placeholder="0.00"
                 />
               </div>
 
