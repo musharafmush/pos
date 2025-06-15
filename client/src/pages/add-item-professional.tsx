@@ -1987,9 +1987,25 @@ export default function AddItemProfessional() {
                                   name="cost"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Cost Price</FormLabel>
+                                      <FormLabel>Cost Price *</FormLabel>
                                       <FormControl>
-                                        <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                        <Input 
+                                          {...field} 
+                                          placeholder="0.00" 
+                                          type="number" 
+                                          step="0.01"
+                                          onChange={(e) => {
+                                            const value = e.target.value;
+                                            field.onChange(value);
+                                            // Auto-update selling price if not set
+                                            const currentSellingPrice = form.getValues("price");
+                                            if (!currentSellingPrice || currentSellingPrice === "0" || currentSellingPrice === "") {
+                                              const costValue = parseFloat(value) || 0;
+                                              const suggestedPrice = costValue * 1.2; // 20% markup
+                                              form.setValue("price", suggestedPrice.toString());
+                                            }
+                                          }}
+                                        />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
