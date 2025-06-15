@@ -1015,17 +1015,24 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`${itemPath}.batchNumber`, modalData.batchNumber);
       form.setValue(`${itemPath}.sellingPrice`, modalData.sellingPrice);
       form.setValue(`${itemPath}.mrp`, modalData.mrp);
-      form.setValue(`${itemPath}.netAmount`, modalData.netAmount);
       form.setValue(`${itemPath}.location`, modalData.location);
       form.setValue(`${itemPath}.unit`, modalData.unit);
 
-      // Recalculate net amount based on modal data
-      const subtotal = modalData.receivedQty * modalData.unitCost;
-      const taxableAmount = subtotal - modalData.discountAmount;
-      const tax = (taxableAmount * modalData.taxPercentage) / 100;
+      // Recalculate net amount based on modal data with proper validation
+      const qty = Number(modalData.receivedQty) || 0;
+      const cost = Number(modalData.unitCost) || 0;
+      const discount = Number(modalData.discountAmount) || 0;
+      const taxPercent = Number(modalData.taxPercentage) || 0;
+      
+      const subtotal = qty * cost;
+      const taxableAmount = subtotal - discount;
+      const tax = (taxableAmount * taxPercent) / 100;
       const calculatedNetAmount = taxableAmount + tax;
 
       form.setValue(`${itemPath}.netAmount`, calculatedNetAmount);
+
+      // Update modal data to match calculated amount
+      setModalData(prev => ({ ...prev, netAmount: calculatedNetAmount }));
 
       // Trigger form validation and force re-render
       form.trigger(`items.${editingItemIndex}`);
@@ -1035,31 +1042,33 @@ export default function PurchaseEntryProfessional() {
         form.trigger('items');
       }, 100);
     }
-  };
+  };</old_str>
 
   const syncTableToModal = (index: number) => {
     if (editingItemIndex === index) {
       const item = form.getValues(`items.${index}`);
-      setModalData({
+      const updatedModalData = {
         productId: item.productId || 0,
         code: item.code || "",
         description: item.description || "",
-        receivedQty: item.receivedQty || 0,
-        freeQty: item.freeQty || 0,
-        unitCost: item.unitCost || 0,
+        receivedQty: Number(item.receivedQty) || 0,
+        freeQty: Number(item.freeQty) || 0,
+        unitCost: Number(item.unitCost) || 0,
         hsnCode: item.hsnCode || "",
-        taxPercentage: item.taxPercentage || 18,
-        discountAmount: item.discountAmount || 0,
+        taxPercentage: Number(item.taxPercentage) || 18,
+        discountAmount: Number(item.discountAmount) || 0,
         expiryDate: item.expiryDate || "",
         batchNumber: item.batchNumber || "",
-        sellingPrice: item.sellingPrice || 0,
-        mrp: item.mrp || 0,
-        netAmount: item.netAmount || 0,
+        sellingPrice: Number(item.sellingPrice) || 0,
+        mrp: Number(item.mrp) || 0,
+        netAmount: Number(item.netAmount) || 0,
         location: item.location || "",
         unit: item.unit || "PCS",
-      });
+      };
+      
+      setModalData(updatedModalData);
     }
-  };
+  };</old_str>
 
   const openAddItemModal = (index?: number) => {
     if (index !== undefined) {
@@ -2384,6 +2393,11 @@ export default function PurchaseEntryProfessional() {
                                         const value = parseFloat(e.target.value) || 0;
                                         form.setValue(`items.${index}.unitCost`, value);
 
+                                        // Sync with modal if this item is being edited
+                                        if (editingItemIndex === index) {
+                                          setModalData(prev => ({ ...prev, unitCost: value }));
+                                        }
+
                                         // Auto-calculate net amount using receivedQty
                                         const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
                                         const discount = form.getValues(`items.${index}.discountAmount`) || 0;
@@ -2418,7 +2432,7 @@ export default function PurchaseEntryProfessional() {
                                       }}
                                     />
                                   </div>
-                                </TableCell>
+                                </TableCell></old_str>
 
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
@@ -3013,25 +3027,29 @@ export default function PurchaseEntryProfessional() {
                     const value = parseFloat(e.target.value) || 0;
                     const newModalData = { ...modalData, unitCost: value };
                     setModalData(newModalData);
+                    
                     if (editingItemIndex !== null) {
+                      // Update form immediately
                       form.setValue(`items.${editingItemIndex}.unitCost`, value);
 
                       // Recalculate net amount in real-time
-                      const qty = modalData.receivedQty;
-                      const discount = modalData.discountAmount;
-                      const taxPercent = modalData.taxPercentage;
+                      const qty = newModalData.receivedQty || 0;
+                      const discount = newModalData.discountAmount || 0;
+                      const taxPercent = newModalData.taxPercentage || 0;
                       const subtotal = qty * value;
                       const taxableAmount = subtotal - discount;
                       const tax = (taxableAmount * taxPercent) / 100;
                       const netAmount = taxableAmount + tax;
 
+                      // Update both modal and form
+                      setModalData(prev => ({ ...prev, unitCost: value, netAmount: netAmount }));
                       form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
                       form.trigger(`items.${editingItemIndex}`);
                     }
                   }}
                   placeholder="0.00"
                 />
-              </div>
+              </div></old_str>
 
               <div className="space-y-2">
                 <Label htmlFor="modal-hsnCode">HSN Code</Label>
