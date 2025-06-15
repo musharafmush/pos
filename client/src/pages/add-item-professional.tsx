@@ -852,8 +852,7 @@ export default function AddItemProfessional() {
                                       <SelectItem value="Dabur">Dabur</SelectItem>
                                       <SelectItem value="Haldiram's">Haldiram's</SelectItem>
                                       <SelectItem value="MTR">MTR</SelectItem>
-                                      <SelectItem value="Everest">Everest```
-SelectItem>
+                                      <SelectItem value="Everest">Everest</SelectItem>
                                       <SelectItem value="MDH">MDH</SelectItem>
                                       <SelectItem value="Catch">Catch</SelectItem>
                                       <SelectItem value="Generic">Generic</SelectItem>
