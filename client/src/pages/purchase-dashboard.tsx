@@ -1139,7 +1139,26 @@ export default function PurchaseDashboard() {
                               <TableCell className="py-4">
                                 <div className="flex items-center gap-2">
                                   <Package className="w-4 h-4 text-gray-400" />
-                                  <span className="font-medium">{purchase.items?.length || 0} items</span>
+                                  <span className="font-medium">
+                                    {(() => {
+                                      // Try different possible item arrays
+                                      const itemCount = purchase.purchaseItems?.length || 
+                                                       purchase.items?.length || 
+                                                       purchase.purchase_items?.length || 
+                                                       0;
+                                      return itemCount;
+                                    })()} items
+                                  </span>
+                                  {/* Debug info for development */}
+                                  {process.env.NODE_ENV === 'development' && (
+                                    <span className="text-xs text-gray-500 ml-1">
+                                      (Debug: {JSON.stringify({
+                                        purchaseItems: purchase.purchaseItems?.length || 0,
+                                        items: purchase.items?.length || 0,
+                                        purchase_items: purchase.purchase_items?.length || 0
+                                      })})
+                                    </span>
+                                  )}
                                 </div>
                               </TableCell>
                               <TableCell className="py-4">
