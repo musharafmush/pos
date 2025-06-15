@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -140,6 +140,9 @@ export default function AddItemProfessional() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [currentSection, setCurrentSection] = useState("item-information");
+  const { id } = useParams(); // Get the product ID from the URL
+  const isEditMode = !!id; // Determine if we are in edit mode
+  const [isLoading, setIsLoading] = useState(false);
 
   // Generate sequential item code
   const generateItemCode = () => {
@@ -273,6 +276,46 @@ export default function AddItemProfessional() {
     },
   });
 
+    // Load product data for editing if in edit mode
+    useEffect(() => {
+      if (isEditMode && id) {
+        setIsLoading(true);
+        fetch(`/api/products/${id}`)
+          .then(res => {
+            if (!res.ok) {
+              throw new Error(`Failed to fetch product: ${res.status} ${res.statusText}`);
+            }
+            return res.json();
+          })
+          .then(product => {
+            // Populate form with fetched product data
+            form.setValue("itemCode", product.sku);
+            form.setValue("itemName", product.name);
+            form.setValue("aboutProduct", product.description || "");
+            form.setValue("price", product.price?.toString() || "");
+            form.setValue("mrp", product.mrp?.toString() || "");
+            form.setValue("cost", product.cost?.toString() || "");
+            form.setValue("weight", product.weight?.toString() || "");
+            form.setValue("weightUnit", product.weightUnit || "kg");
+            form.setValue("stockQuantity", product.stockQuantity?.toString() || "0");
+            form.setValue("categoryId", product.categoryId);
+            form.setValue("active", product.active);
+            // Set other fields as needed based on your product structure
+
+            setIsLoading(false);
+          })
+          .catch(error => {
+            console.error("Failed to load product for editing:", error);
+            toast({
+              title: "Error Loading Product",
+              description: error.message || "Failed to load product details",
+              variant: "destructive",
+            });
+            setIsLoading(false);
+          });
+      }
+    }, [isEditMode, id, form, toast]);
+
   // Update item code when products data loads
   useEffect(() => {
     if (allProducts && allProducts.length > 0) {
@@ -319,14 +362,22 @@ export default function AddItemProfessional() {
         allowNegativeStock: false,
       };
 
-      const res = await apiRequest("POST", "/api/products", productData);
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to create product");
-      }
-
-      return await res.json();
+        // If in edit mode, update the product instead of creating a new one
+        if (isEditMode && id) {
+          const res = await apiRequest("PUT", `/api/products/${id}`, productData);
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Failed to update product");
+          }
+          return await res.json();
+        } else {
+          const res = await apiRequest("POST", "/api/products", productData);
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Failed to create product");
+          }
+          return await res.json();
+        }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -394,7 +445,7 @@ export default function AddItemProfessional() {
 
       toast({
         title: "Success! 🎉", 
-        description: `Product "${data.name}" created successfully with SKU: ${data.sku}`,
+        description: `Product "${data.name}" ${isEditMode ? "updated" : "created"} successfully with SKU: ${data.sku}`,
         action: (
           <Button 
             variant="outline" 
@@ -439,9 +490,9 @@ export default function AddItemProfessional() {
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <PackageIcon className="w-4 h-4 text-blue-600" />
               </div>
-              <h1 className="text-xl font-semibold">Add Item</h1>
+              <h1 className="text-xl font-semibold">{isEditMode ? "Edit Item" : "Add Item"}</h1>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setLocation("/")}>
+            <Button variant="outline" size="sm" onClick={() => setLocation(isEditMode ? "/add-item-dashboard" : "/")}>
               <XIcon className="w-4 h-4 mr-2" />
               Close
             </Button>
@@ -503,6 +554,9 @@ export default function AddItemProfessional() {
 
           {/* Main Content */}
           <div className="flex-1 p-6">
+          {isLoading ? (
+            <p>Loading product details...</p>
+          ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit((data) => {
                 console.log("Form submission data:", data);
@@ -798,7 +852,8 @@ export default function AddItemProfessional() {
                                       <SelectItem value="Dabur">Dabur</SelectItem>
                                       <SelectItem value="Haldiram's">Haldiram's</SelectItem>
                                       <SelectItem value="MTR">MTR</SelectItem>
-                                      <SelectItem value="Everest">Everest</SelectItem>
+                                      <SelectItem value="Everest">Everest```
+SelectItem>
                                       <SelectItem value="MDH">MDH</SelectItem>
                                       <SelectItem value="Catch">Catch</SelectItem>
                                       <SelectItem value="Generic">Generic</SelectItem>
@@ -918,7 +973,7 @@ export default function AddItemProfessional() {
                                     } else if (value.includes("22021000") || value.includes("24021000") || value.includes("87032390") || value.includes("87111000")) {
                                       suggestedGst = "GST 28%";
                                     }
-                                    
+
                                     if (suggestedGst) {
                                       form.setValue("gstCode", suggestedGst);
                                       const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
@@ -1044,7 +1099,7 @@ export default function AddItemProfessional() {
                           <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
                           GST Breakdown & Compliance
                         </h4>
-                        
+
                         {/* Tax Summary Display */}
                         <div className="bg-blue-50 p-4 rounded-lg mb-4">
                           <div className="grid grid-cols-3 gap-4 text-sm">
@@ -1068,7 +1123,7 @@ export default function AddItemProfessional() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-3 gap-4">
                           <FormField
                             control={form.control}
@@ -1540,6 +1595,7 @@ export default function AddItemProfessional() {
                         </div>
                       </div>
                     </CardContent>
+                  ```javascript
                   </Card>
                 )}
 
@@ -2355,229 +2411,4 @@ export default function AddItemProfessional() {
                       {currentSection === "purchase-order" && (
                         <Card>
                           <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                              <ShoppingCartIcon className="w-5 h-5" />
-                              Purchase Order
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-6">
-                            <FormField
-                              control={form.control}
-                              name="gateKeeperMargin"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Gate Keeper Margin %</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} placeholder="0" type="number" />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <div className="bg-blue-50 p-4 rounded-lg">
-                              <h3 className="font-medium mb-3">Purchase Settings</h3>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="text-sm font-medium">Default Supplier</label>
-                                  <Select>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select supplier" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="supplier1">Supplier 1</SelectItem>
-                                      <SelectItem value="supplier2">Supplier 2</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium">Lead Time (Days)</label>
-                                  <Input placeholder="7" type="number" />
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {/* Other Information Section */}
-                      {currentSection === "other-information" && (
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                              <InfoIcon className="w-5 h-5" />
-                              Other Information
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-6">
-                            <FormField
-                              control={form.control}
-                              name="itemIngredients"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Item Ingredients</FormLabel>
-                                  <FormControl>
-                                    <Textarea {...field} placeholder="Enter item ingredients if applicable" rows={4} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                              <h3 className="font-medium mb-3">Additional Notes</h3>
-                              <Textarea placeholder="Any additional notes or special instructions for this product..." rows={3} />
-                            </div>
-
-                            <div className="bg-yellow-50 p-4 rounded-lg">
-                              <h3 className="font-medium mb-3">Compliance Information</h3>
-                              <div className="space-y-3">
-                                <FormField
-                                  control={form.control}
-                                  name="fdaApproved"
-                                  render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between">
-                                      <FormLabel className="text-sm">FDA Approved</FormLabel>
-                                      <FormControl>
-                                        <Switch 
-                                          checked={field.value || false} 
-                                          onCheckedChange={field.onChange} 
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="bisCertified"
-                                  render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between">
-                                      <FormLabel className="text-sm">BIS Certified</FormLabel>
-                                      <FormControl>
-                                        <Switch 
-                                          checked={field.value || false} 
-                                          onCheckedChange={field.onChange} 
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="organicCertified"
-                                  render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between">
-                                      <FormLabel className="text-sm">Organic Certified</FormLabel>
-                                      <FormControl>
-                                        <Switch 
-                                          checked={field.value || false} 
-                                          onCheckedChange={field.onChange} 
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {/* Mobile App Config Section */}
-                      {currentSection === "mobile-app-config" && (
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                              <SettingsIcon className="w-5 h-5" />
-                              Mobile App Config
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-6">
-                            <div className="bg-blue-50 p-4 rounded-lg">
-                              <h3 className="font-medium mb-3">Mobile App Settings</h3>
-                              <p className="text-sm text-gray-600 mb-4">
-                                Configure mobile application specific settings for this product.
-                              </p>
-                              <div className="space-y-3">
-                                <FormField
-                                  control={form.control}
-                                  name="showOnMobileDashboard"
-                                  render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between">
-                                      <FormLabel className="text-sm">Show on Mobile Dashboard</FormLabel>
-                                      <FormControl>
-                                        <Switch 
-                                          checked={field.value || false} 
-                                          onCheckedChange={field.onChange} 
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="enableMobileNotifications"
-                                  render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between">
-                                      <FormLabel className="text-sm">Enable Mobile Notifications</FormLabel>
-                                      <FormControl>
-                                        <Switch 
-                                          checked={field.value || false} 
-                                          onCheckedChange={field.onChange} 
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="quickAddToCart"
-                                  render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between">
-                                      <FormLabel className="text-sm">Quick Add to Cart</FormLabel>
-                                      <FormControl>
-                                        <Switch 
-                                          checked={field.value || false} 
-                                          onCheckedChange={field.onChange} 
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {/* Action Buttons */}
-                      <div className="flex justify-end gap-4 pt-6 border-t">
-                        <Button 
-                          type="button" 
-                          variant="outline"
-                          onClick={() => form.reset()}
-                        >
-                          Reset
-                        </Button>
-                        <Button 
-                          type="submit" 
-                          disabled={createProductMutation.isPending} 
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          {createProductMutation.isPending ? "Adding..." : "Add"}
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </div>
-              </div>
-            </div>
-          </DashboardLayout>
-        );
-      }
+                            <CardTitle className="flex items-center

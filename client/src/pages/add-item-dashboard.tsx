@@ -550,8 +550,8 @@ export default function AddItemDashboard() {
 
   const handleEditProduct = (product: Product) => {
     console.log("Editing product:", product); // Debug log
-    openEditModal(product);
-    setSelectedProduct(product);
+    // Redirect to professional edit mode
+    setLocation(`/add-item-professional?edit=${product.id}`);
   };
 
   const handleDeleteProduct = async (productId: number) => {
