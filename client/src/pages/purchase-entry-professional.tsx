@@ -1714,7 +1714,7 @@ export default function PurchaseEntryProfessional() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={()={() => {
+              onClick={() => {
                 toast({
                   title: "Print Feature",
                   description: "Print functionality will be available after saving the purchase order.",
