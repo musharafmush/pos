@@ -325,14 +325,27 @@ export default function AddItemDashboard() {
         throw new Error('No product selected for editing');
       }
 
+      // Validate required fields before processing
+      if (!data.name?.trim()) {
+        throw new Error('Product name is required');
+      }
+
+      if (!data.itemCode?.trim()) {
+        throw new Error('Item code is required');
+      }
+
+      if (!data.price || isNaN(parseFloat(data.price)) || parseFloat(data.price) <= 0) {
+        throw new Error('Valid price greater than 0 is required');
+      }
+
       // Ensure all required fields are present and properly formatted
       const updateData = {
-        name: data.name || editingProduct?.name || '',
-        sku: data.itemCode || editingProduct?.sku || '',
-        description: data.aboutProduct || editingProduct?.description || '',
-        price: parseFloat(data.price) || 0,
+        name: data.name.trim(),
+        sku: data.itemCode.trim(),
+        description: data.aboutProduct || '',
+        price: parseFloat(data.price),
         cost: parseFloat(data.cost) || 0,
-        mrp: parseFloat(data.mrp) || parseFloat(data.price) || 0,
+        mrp: parseFloat(data.mrp) || parseFloat(data.price),
         stockQuantity: parseInt(data.stockQuantity) || 0,
         alertThreshold: parseInt(data.alertThreshold) || 5,
         categoryId: data.categoryId ? parseInt(data.categoryId) : null,
@@ -343,41 +356,57 @@ export default function AddItemDashboard() {
         igstRate: parseFloat(data.igstRate) || 0,
         cessRate: parseFloat(data.cessRate) || 0,
         taxCalculationMethod: data.taxType === 'Tax Inclusive' ? 'inclusive' : 'exclusive',
-        weight: parseFloat(data.weight) || 0,
+        weight: parseFloat(data.weight) || null,
         weightUnit: data.weightUnit || 'kg',
-        isActive: data.active !== undefined ? data.active : true
+        active: data.active !== undefined ? data.active : true
       };
 
       console.log('Formatted update data:', updateData);
 
-      const response = await fetch(`/api/products/${editingProduct.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      });
+      try {
+        const response = await fetch(`/api/products/${editingProduct.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updateData),
+        });
 
-      console.log('Update response status:', response.status);
+        console.log('Update response status:', response.status);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Update error response:', errorText);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Update error response:', errorText);
 
-        let errorMessage = 'Failed to update product';
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+          let errorMessage = 'Failed to update product';
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch {
+            if (response.status === 404) {
+              errorMessage = 'Product not found';
+            } else if (response.status === 400) {
+              errorMessage = 'Invalid product data provided';
+            } else if (response.status === 500) {
+              errorMessage = 'Server error occurred';
+            } else {
+              errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+          }
+
+          throw new Error(errorMessage);
         }
 
-        throw new Error(errorMessage);
+        const result = await response.json();
+        console.log('Update success result:', result);
+        return result;
+      } catch (networkError) {
+        console.error('Network error during update:', networkError);
+        if (networkError.message.includes('fetch')) {
+          throw new Error('Network error: Unable to connect to server');
+        }
+        throw networkError;
       }
-
-      const result = await response.json();
-      console.log('Update success result:', result);
-      return result;
     },
     onSuccess: (result) => {
       console.log('Product update successful:', result);
@@ -478,30 +507,34 @@ export default function AddItemDashboard() {
   const handleUpdateProduct = () => {
     console.log('Handling product update with form data:', editForm);
 
-    // Validate required fields
+    // Comprehensive validation
+    const validationErrors = [];
+
     if (!editForm.name?.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description: "Product name is required.",
-      });
-      return;
+      validationErrors.push("Product name is required");
     }
 
     if (!editForm.itemCode?.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description: "Item Code (SKU) is required.",
-      });
-      return;
+      validationErrors.push("Item Code (SKU) is required");
     }
 
-    if (!editForm.price || parseFloat(editForm.price) <= 0) {
+    if (!editForm.price || isNaN(parseFloat(editForm.price)) || parseFloat(editForm.price) <= 0) {
+      validationErrors.push("Valid price greater than 0 is required");
+    }
+
+    if (editForm.cost && isNaN(parseFloat(editForm.cost))) {
+      validationErrors.push("Cost must be a valid number");
+    }
+
+    if (editForm.stockQuantity && isNaN(parseInt(editForm.stockQuantity))) {
+      validationErrors.push("Stock quantity must be a valid number");
+    }
+
+    if (validationErrors.length > 0) {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Valid price greater than 0 is required.",
+        description: validationErrors.join(", "),
       });
       return;
     }
@@ -521,16 +554,16 @@ export default function AddItemDashboard() {
       ...editForm,
       id: editingProduct.id,
       // Ensure numeric values are properly converted
-      price: parseFloat(editForm.price) || 0,
+      price: parseFloat(editForm.price),
       cost: parseFloat(editForm.cost) || 0,
-      mrp: parseFloat(editForm.mrp) || parseFloat(editForm.price) || 0,
+      mrp: parseFloat(editForm.mrp) || parseFloat(editForm.price),
       stockQuantity: parseInt(editForm.stockQuantity) || 0,
       alertThreshold: parseInt(editForm.alertThreshold) || 5,
       cgstRate: parseFloat(editForm.cgstRate) || 0,
       sgstRate: parseFloat(editForm.sgstRate) || 0,
       igstRate: parseFloat(editForm.igstRate) || 0,
       cessRate: parseFloat(editForm.cessRate) || 0,
-      weight: parseFloat(editForm.weight) || 0,
+      weight: parseFloat(editForm.weight) || null,
       // Ensure boolean values
       active: editForm.active !== undefined ? editForm.active : true,
     };
