@@ -336,11 +336,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products API
   app.get('/api/products', async (req, res) => {
     try {
-      const products = await storage.listProducts();
-      res.json(products);
+      console.log('📦 Fetching products from database...');
+      
+      // Try storage method first
+      try {
+        const products = await storage.listProducts();
+        console.log(`✅ Storage method returned ${products.length} products`);
+        res.json(products);
+        return;
+      } catch (storageError) {
+        console.log('⚠️ Storage method failed, trying direct query:', storageError.message);
+      }
+
+      // Fallback to direct SQLite query
+      const { sqlite } = await import('../db/index.js');
+
+      // Check if products table exists
+      const tableCheck = sqlite.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='products'
+      `).get();
+
+      if (!tableCheck) {
+        console.log('❌ Products table does not exist');
+        return res.json([]);
+      }
+
+      // Get table structure
+      const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
+      const columnNames = tableInfo.map((col: any) => col.name);
+      console.log('📋 Available columns in products table:', columnNames);
+
+      // Build dynamic query based on available columns
+      const baseColumns = ['id', 'name', 'sku', 'price'];
+      const optionalColumns = [
+        'description', 'mrp', 'cost', 'weight', 'weight_unit', 'category_id',
+        'stock_quantity', 'alert_threshold', 'barcode', 'image', 'active',
+        'hsn_code', 'gst_code', 'cgst_rate', 'sgst_rate', 'igst_rate', 'cess_rate',
+        'tax_calculation_method', 'created_at', 'updated_at'
+      ];
+
+      const availableColumns = baseColumns.concat(
+        optionalColumns.filter(col => columnNames.includes(col))
+      );
+
+      const query = `
+        SELECT 
+          p.${availableColumns.join(', p.')},
+          c.name as category_name,
+          c.description as category_description,
+          c.created_at as category_created_at
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.active = 1 OR p.active IS NULL
+        ORDER BY ${columnNames.includes('created_at') ? 'p.created_at' : 'p.id'} DESC
+      `;
+
+      console.log('🔍 Executing products query');
+      const productsData = sqlite.prepare(query).all();
+
+      // Format the results to match expected structure
+      const formattedProducts = productsData.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        description: product.description || '',
+        price: product.price,
+        mrp: product.mrp || product.price,
+        cost: product.cost || '0',
+        weight: product.weight || null,
+        weightUnit: product.weight_unit || 'kg',
+        categoryId: product.category_id || 1,
+        stockQuantity: product.stock_quantity || 0,
+        alertThreshold: product.alert_threshold || 5,
+        barcode: product.barcode || '',
+        image: product.image || null,
+        hsnCode: product.hsn_code || '',
+        gstCode: product.gst_code || '',
+        cgstRate: product.cgst_rate || '0',
+        sgstRate: product.sgst_rate || '0',
+        igstRate: product.igst_rate || '0',
+        cessRate: product.cess_rate || '0',
+        taxCalculationMethod: product.tax_calculation_method || 'inclusive',
+        active: product.active !== 0,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at,
+        category: product.category_name ? {
+          id: product.category_id,
+          name: product.category_name,
+          description: product.category_description,
+          createdAt: product.category_created_at
+        } : null
+      }));
+
+      console.log(`✅ Found ${formattedProducts.length} products via direct query`);
+      res.json(formattedProducts);
     } catch (error) {
-      console.error('Error fetching products:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching products:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch products',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
