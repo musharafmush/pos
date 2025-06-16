@@ -224,6 +224,43 @@ export default function AddItemProfessional() {
     },
   });
 
+  // Load tax settings from localStorage
+  const [taxSettings, setTaxSettings] = useState({
+    defaultTaxRate: 18,
+    taxCalculationMethod: 'afterDiscount',
+    pricesIncludeTax: false,
+    enableMultipleTaxRates: true,
+    taxCategories: [
+      { id: 1, name: 'Food & Groceries', rate: 5, hsn: '1001-2000', description: 'Essential food items and groceries' },
+      { id: 2, name: 'General Merchandise', rate: 18, hsn: '3001-9999', description: 'Standard consumer goods' },
+      { id: 3, name: 'Luxury Items', rate: 28, hsn: '8701-8800', description: 'High-end consumer products' },
+      { id: 4, name: 'Essential Services', rate: 0, hsn: '9801-9900', description: 'Tax-exempt essential services' }
+    ]
+  });
+
+  // Load tax settings on component mount
+  useEffect(() => {
+    const savedTaxSettings = localStorage.getItem('taxSettings');
+    if (savedTaxSettings) {
+      try {
+        const settings = JSON.parse(savedTaxSettings);
+        setTaxSettings(prev => ({ 
+          ...prev, 
+          ...settings,
+          taxCategories: settings.taxCategories?.map((cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            rate: cat.rate || 0,
+            hsn: cat.hsn || '',
+            description: cat.description || ''
+          })) || prev.taxCategories
+        }));
+      } catch (error) {
+        console.error('Error loading tax settings:', error);
+      }
+    }
+  }, []);
+
   // Filter bulk items from all products
   const bulkItems = allProducts.filter((product: any) => 
     product.name && (
@@ -975,9 +1012,24 @@ export default function AddItemProfessional() {
                 {currentSection === "tax-information" && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <DollarSignIcon className="w-5 h-5" />
-                        Tax Information
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <DollarSignIcon className="w-5 h-5" />
+                          Tax Information
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Open settings in new window/tab to not lose current form data
+                            window.open('/settings?tab=tax', '_blank');
+                          }}
+                          className="text-xs"
+                        >
+                          <SettingsIcon className="w-3 h-3 mr-1" />
+                          Manage Tax Settings
+                        </Button>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -1127,6 +1179,11 @@ export default function AddItemProfessional() {
                                 <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
                                   Auto-updated from HSN
                                 </span>
+                                {taxSettings.taxCategories.length > 4 && (
+                                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                                    +{taxSettings.taxCategories.length - 4} custom
+                                  </span>
+                                )}
                               </FormLabel>
                               <FormControl>
                                 <Select onValueChange={(value) => {
@@ -1147,7 +1204,9 @@ export default function AddItemProfessional() {
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select GST rate" />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="max-h-80 overflow-y-auto">
+                                    {/* Standard GST Rates */}
+                                    <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-100">Standard GST Rates</div>
                                     <SelectItem value="GST 0%">GST 0% - Nil Rate (Basic necessities)</SelectItem>
                                     <SelectItem value="GST 5%">GST 5% - Essential goods (Food grains, medicines)</SelectItem>
                                     <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
@@ -1155,6 +1214,27 @@ export default function AddItemProfessional() {
                                     <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
                                     <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
                                     <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
+                                    
+                                    {/* Custom Tax Categories from Settings */}
+                                    {taxSettings.taxCategories.length > 0 && (
+                                      <>
+                                        <div className="px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-50 border-t">Custom Tax Categories</div>
+                                        {taxSettings.taxCategories.map((category) => (
+                                          <SelectItem 
+                                            key={category.id} 
+                                            value={`GST ${category.rate}%`}
+                                            className="pl-4"
+                                          >
+                                            <div className="flex items-center justify-between w-full">
+                                              <span>GST {category.rate}% - {category.name}</span>
+                                              <span className="text-xs text-gray-500 ml-2">
+                                                {category.hsn && `HSN: ${category.hsn}`}
+                                              </span>
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </>
+                                    )}
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -1311,6 +1391,34 @@ export default function AddItemProfessional() {
                           />
                         </div>
 
+                        {/* Tax Category Information */}
+                        {taxSettings.taxCategories.length > 0 && (
+                          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <h5 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                              <SettingsIcon className="h-4 w-4" />
+                              Available Tax Categories ({taxSettings.taxCategories.length})
+                            </h5>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                              {taxSettings.taxCategories.slice(0, 8).map((category) => (
+                                <div key={category.id} className="flex justify-between items-center p-2 bg-white rounded border text-xs">
+                                  <span className="font-medium text-blue-900 truncate">{category.name}</span>
+                                  <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-mono">
+                                    {category.rate}%
+                                  </span>
+                                </div>
+                              ))}
+                              {taxSettings.taxCategories.length > 8 && (
+                                <div className="flex items-center justify-center p-2 bg-gray-100 rounded border text-xs text-gray-600">
+                                  +{taxSettings.taxCategories.length - 8} more
+                                </div>
+                              )}
+                            </div>
+                            <div className="mt-2 text-xs text-blue-600">
+                              💡 Manage tax categories in Settings → Tax Settings
+                            </div>
+                          </div>
+                        )}
+
                         {/* Tax Information Help */}
                         <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                           <h5 className="font-medium text-yellow-800 mb-1">Tax Information Guidelines</h5>
@@ -1319,6 +1427,7 @@ export default function AddItemProfessional() {
                             <li>• For inter-state transactions: Use IGST only</li>
                             <li>• Total GST = CGST + SGST or IGST (whichever applicable)</li>
                             <li>• HSN codes help determine the correct tax rates automatically</li>
+                            <li>• Custom tax categories are loaded from Settings → Tax Settings</li>
                           </ul>
                         </div>
                       </div>
