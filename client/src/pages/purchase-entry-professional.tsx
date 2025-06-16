@@ -2807,13 +2807,17 @@ export default function PurchaseEntryProfessional() {
                                       min="0"
                                       max="100"
                                       step="0.01"
-                                      value={form.watch(`items.${index}.taxPercentage`) || 0}
+                                      value={form.watch(`items.${index}.taxPercentage`) || ""}
                                       onChange={(e) => {
                                         const inputValue = e.target.value;
                                         const taxRate = inputValue === "" ? 0 : parseFloat(inputValue) || 0;
                                         
-                                        // Update the tax percentage immediately
-                                        form.setValue(`items.${index}.taxPercentage`, taxRate);
+                                        // Update the tax percentage immediately with proper validation
+                                        form.setValue(`items.${index}.taxPercentage`, taxRate, {
+                                          shouldValidate: true,
+                                          shouldDirty: true,
+                                          shouldTouch: true
+                                        });
                                         
                                         // Recalculate net amount when tax changes
                                         const qty = form.getValues(`items.${index}.receivedQty`) || 0;
@@ -2824,17 +2828,27 @@ export default function PurchaseEntryProfessional() {
                                         const tax = (taxableAmount * taxRate) / 100;
                                         const netAmount = taxableAmount + tax;
                                         
-                                        form.setValue(`items.${index}.netAmount`, netAmount);
+                                        form.setValue(`items.${index}.netAmount`, netAmount, {
+                                          shouldValidate: true,
+                                          shouldDirty: true
+                                        });
                                         
-                                        // Trigger validation
-                                        form.trigger(`items.${index}.taxPercentage`);
-                                        form.trigger(`items.${index}.netAmount`);
+                                        // Force trigger validation and update
+                                        setTimeout(() => {
+                                          form.trigger(`items.${index}.taxPercentage`);
+                                          form.trigger(`items.${index}.netAmount`);
+                                          form.trigger('items');
+                                        }, 10);
                                       }}
                                       className="w-full text-center text-xs"
                                       placeholder="0"
                                       onFocus={(e) => {
                                         // Select all text on focus for easier editing
                                         e.target.select();
+                                      }}
+                                      onBlur={() => {
+                                        // Ensure form updates are applied on blur
+                                        form.trigger(`items.${index}.taxPercentage`);
                                       }}
                                     />
                                     
