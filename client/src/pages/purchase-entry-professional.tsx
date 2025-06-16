@@ -2706,7 +2706,7 @@ export default function PurchaseEntryProfessional() {
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     <Input
-                                      value={form.watch(`items.${index}.hsnCode`) || ""}
+                                      {...form.register(`items.${index}.hsnCode`)}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
                                       onChange={(e) => {
@@ -2756,7 +2756,7 @@ export default function PurchaseEntryProfessional() {
                                         // Trigger form validation
                                         form.trigger(`items.${index}.hsnCode`);
                                       }}
-                                    />
+                                    /></old_str>
                                     
                                     {/* HSN Code Validation Indicator */}
                                     {form.watch(`items.${index}.hsnCode`) && (
@@ -2765,9 +2765,9 @@ export default function PurchaseEntryProfessional() {
                                           ? 'bg-green-100 text-green-700 border border-green-300' 
                                           : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
                                       }`}>
-                                        {(form.watch(`items.${index}.hsnCode`) || "").length >= 6 ? '✓ Valid HSN' : '⚠ Incomplete'}
+                                        {(form.watch(`items.${index}.hsnCode`) || "").length >= 6 ? `✓ HSN: ${form.watch(`items.${index}.hsnCode`)}` : '⚠ Incomplete HSN'}
                                       </div>
-                                    )}
+                                    )}</old_str>
 
                                     {/* Barcode Display */}
                                     {selectedProduct?.barcode && (
@@ -2792,26 +2792,28 @@ export default function PurchaseEntryProfessional() {
                                       min="0"
                                       max="100"
                                       step="0.01"
-                                      value={form.watch(`items.${index}.taxPercentage`) || 0}
-                                      onChange={(e) => {
-                                        const taxRate = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.taxPercentage`, taxRate);
-                                        
-                                        // Recalculate net amount when tax changes
-                                        const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                        const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                        const subtotal = qty * cost;
-                                        const taxableAmount = subtotal - discount;
-                                        const tax = (taxableAmount * taxRate) / 100;
-                                        const netAmount = taxableAmount + tax;
-                                        
-                                        form.setValue(`items.${index}.netAmount`, netAmount);
-                                        form.trigger(`items.${index}`);
-                                      }}
+                                      {...form.register(`items.${index}.taxPercentage`, { 
+                                        valueAsNumber: true,
+                                        onChange: (e) => {
+                                          const taxRate = parseFloat(e.target.value) || 0;
+                                          form.setValue(`items.${index}.taxPercentage`, taxRate);
+                                          
+                                          // Recalculate net amount when tax changes
+                                          const qty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                          const cost = form.getValues(`items.${index}.unitCost`) || 0;
+                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                          const subtotal = qty * cost;
+                                          const taxableAmount = subtotal - discount;
+                                          const tax = (taxableAmount * taxRate) / 100;
+                                          const netAmount = taxableAmount + tax;
+                                          
+                                          form.setValue(`items.${index}.netAmount`, netAmount);
+                                          form.trigger(`items.${index}`);
+                                        }
+                                      })}
                                       className="w-full text-center text-xs"
                                       placeholder="0"
-                                    />
+                                    /></old_str>
                                     
                                     {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
                                     {form.watch(`items.${index}.taxPercentage`) > 0 && (
