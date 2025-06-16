@@ -181,6 +181,14 @@ export const storage = {
     barcode?: string;
     image?: string;
     active?: boolean;
+    gstCode?: string;
+    hsnCode?: string;
+    cgstRate?: string;
+    sgstRate?: string;
+    igstRate?: string;
+    cessRate?: string;
+    taxCalculationMethod?: string;
+    taxSelectionMode?: string;
   }): Promise<Product> {
     try {
       // Import SQLite database directly
@@ -190,8 +198,10 @@ export const storage = {
         INSERT INTO products (
           name, description, sku, price, mrp, cost, weight, weight_unit, category_id, 
           stock_quantity, alert_threshold, barcode, image, active,
+          gst_code, hsn_code, cgst_rate, sgst_rate, igst_rate, cess_rate,
+          tax_calculation_method, tax_selection_mode,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
 
       const result = insertProduct.run(
@@ -208,7 +218,15 @@ export const storage = {
         product.alertThreshold || 5,
         product.barcode || null,
         product.image || null,
-        product.active !== false ? 1 : 0
+        product.active !== false ? 1 : 0,
+        product.gstCode || '',
+        product.hsnCode || '',
+        product.cgstRate || '0',
+        product.sgstRate || '0',
+        product.igstRate || '0',
+        product.cessRate || '0',
+        product.taxCalculationMethod || 'exclusive',
+        product.taxSelectionMode || 'auto'
       );
 
       // Fetch the created product
@@ -257,12 +275,14 @@ export const storage = {
         stockQuantity: productData.stockQuantity !== undefined ? parseInt(productData.stockQuantity.toString()) : existingProduct.stock_quantity,
         alertThreshold: productData.alertThreshold !== undefined ? parseInt(productData.alertThreshold.toString()) : existingProduct.alert_threshold || 5,
         barcode: productData.barcode?.toString().trim() || existingProduct.barcode || '',
+        gstCode: productData.gstCode?.toString().trim() || existingProduct.gst_code || '',
         hsnCode: productData.hsnCode?.toString().trim() || existingProduct.hsn_code || '',
         cgstRate: productData.cgstRate !== undefined ? productData.cgstRate?.toString() : existingProduct.cgst_rate || '0',
         sgstRate: productData.sgstRate !== undefined ? productData.sgstRate?.toString() : existingProduct.sgst_rate || '0',
         igstRate: productData.igstRate !== undefined ? productData.igstRate?.toString() : existingProduct.igst_rate || '0',
         cessRate: productData.cessRate !== undefined ? productData.cessRate?.toString() : existingProduct.cess_rate || '0',
         taxCalculationMethod: productData.taxCalculationMethod?.toString() || existingProduct.tax_calculation_method || 'exclusive',
+        taxSelectionMode: productData.taxSelectionMode?.toString() || existingProduct.tax_selection_mode || 'auto',
         active: productData.active !== undefined ? (productData.active ? 1 : 0) : existingProduct.active,
         updatedAt: new Date().toISOString()
       };
@@ -301,17 +321,33 @@ export const storage = {
         }
       }
 
-      // Add missing GST code column if it doesn't exist in database
+      // Ensure all tax-related columns exist in the database
       try {
         const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
-        const hasGstCode = tableInfo.some((col: any) => col.name === 'gst_code');
+        const existingColumns = tableInfo.map((col: any) => col.name);
+        
+        const requiredTaxColumns = [
+          { name: 'gst_code', type: 'TEXT', default: '' },
+          { name: 'hsn_code', type: 'TEXT', default: '' },
+          { name: 'cgst_rate', type: 'TEXT', default: '0' },
+          { name: 'sgst_rate', type: 'TEXT', default: '0' },
+          { name: 'igst_rate', type: 'TEXT', default: '0' },
+          { name: 'cess_rate', type: 'TEXT', default: '0' },
+          { name: 'tax_calculation_method', type: 'TEXT', default: 'exclusive' },
+          { name: 'tax_selection_mode', type: 'TEXT', default: 'auto' }
+        ];
 
-        if (!hasGstCode) {
-          console.log('📝 Adding missing gst_code column to products table');
-          sqlite.prepare('ALTER TABLE products ADD COLUMN gst_code TEXT DEFAULT ""').run();
+        for (const column of requiredTaxColumns) {
+          if (!existingColumns.includes(column.name)) {
+            console.log(`📝 Adding missing ${column.name} column to products table`);
+            sqlite.prepare(`ALTER TABLE products ADD COLUMN ${column.name} ${column.type} DEFAULT '${column.default}'`).run();
+            
+            // Update existing records with default value
+            sqlite.prepare(`UPDATE products SET ${column.name} = '${column.default}' WHERE ${column.name} IS NULL`).run();
+          }
         }
       } catch (alterError) {
-        console.log('⚠️ Could not add gst_code column (may already exist):', alterError.message);
+        console.log('⚠️ Could not add tax columns:', alterError.message);
       }
 
       console.log('Formatted update data:', updateData);
@@ -331,12 +367,14 @@ export const storage = {
           stock_quantity = ?,
           alert_threshold = ?,
           barcode = ?,
+          gst_code = ?,
           hsn_code = ?,
           cgst_rate = ?,
           sgst_rate = ?,
           igst_rate = ?,
           cess_rate = ?,
           tax_calculation_method = ?,
+          tax_selection_mode = ?,
           active = ?,
           updated_at = ?
         WHERE id = ?
@@ -355,12 +393,14 @@ export const storage = {
         updateData.stockQuantity,
         updateData.alertThreshold,
         updateData.barcode,
+        updateData.gstCode,
         updateData.hsnCode,
         updateData.cgstRate,
         updateData.sgstRate,
         updateData.igstRate,
         updateData.cessRate,
         updateData.taxCalculationMethod,
+        updateData.taxSelectionMode,
         updateData.active,
         updateData.updatedAt,
         id
@@ -398,12 +438,14 @@ export const storage = {
           stockQuantity: updatedProduct.stock_quantity,
           alertThreshold: updatedProduct.alert_threshold,
           barcode: updatedProduct.barcode,
+          gstCode: updatedProduct.gst_code,
           hsnCode: updatedProduct.hsn_code,
           cgstRate: updatedProduct.cgst_rate,
           sgstRate: updatedProduct.sgst_rate,
           igstRate: updatedProduct.igst_rate,
           cessRate: updatedProduct.cess_rate,
           taxCalculationMethod: updatedProduct.tax_calculation_method,
+          taxSelectionMode: updatedProduct.tax_selection_mode,
           active: Boolean(updatedProduct.active),
           createdAt: new Date(updatedProduct.created_at),
           updatedAt: new Date(updatedProduct.updated_at),
