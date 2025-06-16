@@ -2807,36 +2807,37 @@ export default function PurchaseEntryProfessional() {
                                       min="0"
                                       max="100"
                                       step="0.01"
-                                      {...form.register(`items.${index}.taxPercentage`, { 
-                                        valueAsNumber: true,
-                                        onChange: (e) => {
-                                          const taxRate = parseFloat(e.target.value) || 0;
-                                          form.setValue(`items.${index}.taxPercentage`, taxRate, { 
-                                            shouldValidate: true, 
-                                            shouldDirty: true 
-                                          });
-                                          
-                                          // Recalculate net amount when tax changes
-                                          const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                          const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                          const subtotal = qty * cost;
-                                          const taxableAmount = subtotal - discount;
-                                          const tax = (taxableAmount * taxRate) / 100;
-                                          const netAmount = taxableAmount + tax;
-                                          
-                                          form.setValue(`items.${index}.netAmount`, netAmount, { 
-                                            shouldValidate: true, 
-                                            shouldDirty: true 
-                                          });
-                                          
-                                          // Force form validation and update
-                                          setTimeout(() => {
-                                            form.trigger(`items.${index}`);
-                                            form.trigger('items');
-                                          }, 50);
-                                        }
-                                      })}
+                                      value={form.watch(`items.${index}.taxPercentage`) || 0}
+                                      onChange={(e) => {
+                                        const taxRate = parseFloat(e.target.value) || 0;
+                                        
+                                        // Update the tax percentage
+                                        form.setValue(`items.${index}.taxPercentage`, taxRate, { 
+                                          shouldValidate: true, 
+                                          shouldDirty: true 
+                                        });
+                                        
+                                        // Recalculate net amount when tax changes
+                                        const qty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                        const cost = form.getValues(`items.${index}.unitCost`) || 0;
+                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                        const subtotal = qty * cost;
+                                        const taxableAmount = subtotal - discount;
+                                        const tax = (taxableAmount * taxRate) / 100;
+                                        const netAmount = taxableAmount + tax;
+                                        
+                                        form.setValue(`items.${index}.netAmount`, netAmount, { 
+                                          shouldValidate: true, 
+                                          shouldDirty: true 
+                                        });
+                                        
+                                        // Force form validation and update
+                                        setTimeout(() => {
+                                          form.trigger(`items.${index}.taxPercentage`);
+                                          form.trigger(`items.${index}.netAmount`);
+                                          form.trigger('items');
+                                        }, 50);
+                                      }}
                                       className="w-full text-center text-xs"
                                       placeholder="0"
                                       onBlur={() => {
