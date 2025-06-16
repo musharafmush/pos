@@ -714,49 +714,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/products/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log('Product update request for ID:', id, 'Data:', req.body);
+      console.log('Product update request for ID:', id, 'Data keys:', Object.keys(req.body));
 
       if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ message: 'Invalid product ID' });
+        return res.status(400).json({ 
+          message: 'Invalid product ID',
+          error: 'Product ID must be a positive number'
+        });
       }
 
-      // Process the request data to ensure all fields are properly handled
+      // Enhanced request data processing with validation
       const productData = {
         ...req.body,
-        // Ensure tax information is properly formatted
+        // Ensure proper field mapping and defaults
+        name: req.body.name || req.body.itemName || '',
+        sku: req.body.sku || req.body.itemCode || '',
+        description: req.body.description || req.body.aboutProduct || '',
+        price: req.body.price || '0',
+        mrp: req.body.mrp || req.body.price || '0',
+        cost: req.body.cost || '0',
+        weight: req.body.weight || req.body.weightInGms || null,
+        weightUnit: req.body.weightUnit || 'kg',
+        categoryId: req.body.categoryId || 1,
+        stockQuantity: req.body.stockQuantity || '0',
+        alertThreshold: req.body.alertThreshold || 5,
+        barcode: req.body.barcode || '',
+        active: req.body.active !== false,
+        
+        // Enhanced tax information handling
         hsnCode: req.body.hsnCode || req.body.hsn_code || '',
-        gstCode: req.body.gstCode || req.body.gst_code || '',
+        gstCode: req.body.gstCode || req.body.gst_code || 'GST 18%',
         cgstRate: req.body.cgstRate || req.body.cgst_rate || '0',
-        sgstRate: req.body.sgstRate || req.body.sgst_rate || '0', 
+        sgstRate: req.body.sgstRate || req.body.sgst_rate || '0',
         igstRate: req.body.igstRate || req.body.igst_rate || '0',
         cessRate: req.body.cessRate || req.body.cess_rate || '0',
         taxCalculationMethod: req.body.taxCalculationMethod || req.body.tax_calculation_method || 'exclusive',
         taxSelectionMode: req.body.taxSelectionMode || req.body.tax_selection_mode || 'auto'
       };
+
+      console.log('Processed product data for update:', {
+        id,
+        name: productData.name,
+        price: productData.price,
+        categoryId: productData.categoryId,
+        gstCode: productData.gstCode
+      });
+
+      // Validate required fields
+      if (!productData.name || !productData.sku || !productData.price || !productData.categoryId) {
+        return res.status(400).json({
+          message: 'Missing required fields',
+          error: 'Name, SKU, price, and category are required',
+          missingFields: {
+            name: !productData.name,
+            sku: !productData.sku,
+            price: !productData.price,
+            categoryId: !productData.categoryId
+          }
+        });
+      }
       
       const product = await storage.updateProduct(id, productData);
 
       if (!product) {
-        return res.status(404).json({ message: 'Product not found' });
+        return res.status(404).json({ 
+          message: 'Product not found',
+          error: `No product found with ID ${id}`
+        });
       }
 
       console.log('Product updated successfully:', product.id);
       res.json({
         ...product,
-        message: 'Product updated successfully'
+        message: 'Product updated successfully',
+        timestamp: new Date().toISOString()
       });
     } catch (error) {
       console.error('Error updating product:', error);
       
-      // Provide more specific error messages
+      // Enhanced error handling with specific error types
       let errorMessage = 'Internal server error';
-      if (error.message) {
+      let statusCode = 500;
+      
+      if (error.message?.includes('not found')) {
+        statusCode = 404;
+        errorMessage = error.message;
+      } else if (error.message?.includes('validation') || error.message?.includes('required')) {
+        statusCode = 400;
+        errorMessage = error.message;
+      } else if (error.message?.includes('duplicate') || error.message?.includes('UNIQUE')) {
+        statusCode = 409;
+        errorMessage = 'Product with this SKU already exists';
+      } else if (error.message) {
         errorMessage = error.message;
       }
       
-      res.status(500).json({ 
+      res.status(statusCode).json({ 
         message: errorMessage,
-        error: 'Failed to update product'
+        error: 'Failed to update product',
+        timestamp: new Date().toISOString(),
+        productId: req.params.id
       });
     }
   });
