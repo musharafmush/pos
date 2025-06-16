@@ -160,7 +160,12 @@ export default function AddItemProfessional() {
       console.log('Fetching product with ID:', editId);
 
       try {
-        const response = await apiRequest('GET', `/api/products/${editId}`);
+        const response = await fetch(`/api/products/${editId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -181,7 +186,7 @@ export default function AddItemProfessional() {
         }
 
         const product = await response.json();
-        console.log('Fetched product:', product);
+        console.log('Fetched product for edit:', product);
 
         // Validate product data
         if (!product || !product.id) {
@@ -195,7 +200,7 @@ export default function AddItemProfessional() {
       }
     },
     enabled: !!editId,
-    retry: 3,
+    retry: 2,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
@@ -384,7 +389,9 @@ export default function AddItemProfessional() {
 
   // Update form with existing product data when in edit mode
   useEffect(() => {
-    if (isEditMode && editingProduct && !isLoadingProduct) {
+    if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0) {
+      console.log('Populating form with product data:', editingProduct);
+      
       // Calculate total GST rate
       const cgstRate = parseFloat(editingProduct.cgstRate || '0');
       const sgstRate = parseFloat(editingProduct.sgstRate || '0');
@@ -402,19 +409,19 @@ export default function AddItemProfessional() {
       // Find category by ID
       const category = categories.find((cat: any) => cat.id === editingProduct.categoryId);
 
-      form.reset({
+      const formData = {
         itemCode: editingProduct.sku || "",
         itemName: editingProduct.name || "",
-        manufacturerName: "",
-        supplierName: "",
-        alias: "",
+        manufacturerName: editingProduct.manufacturerName || "",
+        supplierName: editingProduct.supplierName || "",
+        alias: editingProduct.alias || "",
         aboutProduct: editingProduct.description || "",
         itemProductType: "Standard",
-        department: "",
+        department: editingProduct.department || "",
         mainCategory: category?.name || "",
-        subCategory: "",
-        brand: "",
-        buyer: "",
+        subCategory: editingProduct.subCategory || "",
+        brand: editingProduct.brand || "",
+        buyer: editingProduct.buyer || "",
         hsnCode: editingProduct.hsnCode || "",
         gstCode: gstCode,
         purchaseGstCalculatedOn: "MRP",
@@ -466,9 +473,18 @@ export default function AddItemProfessional() {
         cgstRate: editingProduct.cgstRate || "",
         sgstRate: editingProduct.sgstRate || "",
         igstRate: editingProduct.igstRate || "",
-        cessRate: "",
-        taxCalculationMethod: "exclusive",
-      });
+        cessRate: editingProduct.cessRate || "",
+        taxCalculationMethod: editingProduct.taxCalculationMethod || "exclusive",
+        taxSelectionMode: "auto",
+      };
+
+      console.log('Setting form data:', formData);
+      form.reset(formData);
+      
+      // Force trigger validation after setting data
+      setTimeout(() => {
+        form.trigger();
+      }, 100);
     }
   }, [isEditMode, editingProduct, isLoadingProduct, categories, form]);
 
@@ -563,7 +579,7 @@ export default function AddItemProfessional() {
         categoryId: Number(data.categoryId),
         barcode: data.barcode?.trim() || null,
         active: Boolean(data.active),
-        alertThreshold: 5,
+        alertThreshold: editingProduct?.alertThreshold || 5,
         hsnCode: data.hsnCode?.trim() || null,
         // Properly formatted tax rates
         cgstRate: data.cgstRate?.trim() || "0",
@@ -571,6 +587,12 @@ export default function AddItemProfessional() {
         igstRate: data.igstRate?.trim() || "0",
         cessRate: data.cessRate?.trim() || "0",
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
+        // Additional fields for edit mode
+        ...(isEditMode && editingProduct && {
+          id: editingProduct.id,
+          createdAt: editingProduct.createdAt,
+          updatedAt: new Date().toISOString(),
+        })
       };
 
       console.log('Final product data for submission:', productData);
@@ -640,6 +662,7 @@ export default function AddItemProfessional() {
         if (isEditMode) {
           // Invalidate specific product query
           queryClient.invalidateQueries({ queryKey: ["/api/products", editId] });
+          queryClient.invalidateQueries({ queryKey: ["/api/products"] });
 
           toast({
             title: "Success! 🎉", 
@@ -655,10 +678,10 @@ export default function AddItemProfessional() {
             ),
           });
 
-          // Redirect to dashboard after a short delay
+          // Redirect to dashboard immediately for edit mode
           setTimeout(() => {
             setLocation("/add-item-dashboard");
-          }, 2000);
+          }, 1500);
 
         } else {
           // Reset form for new entry
@@ -1044,6 +1067,8 @@ export default function AddItemProfessional() {
                   }
 
                   console.log("Validation passed, submitting to mutation...");
+                  console.log('Form data being submitted:', data);
+                  console.log('Edit mode:', isEditMode, 'Edit ID:', editId);
                   createProductMutation.mutate(data);
 
                 } catch (validationError) {
@@ -1122,7 +1147,14 @@ export default function AddItemProfessional() {
                           <FormItem>
                             <FormLabel>Item Name *</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="Enter product name" />
+                              <Input 
+                                {...field} 
+                                placeholder="Enter product name"
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  console.log('Item name changed to:', e.target.value);
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1229,7 +1261,16 @@ export default function AddItemProfessional() {
                               <FormItem>
                                 <FormLabel>Selling Price *</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                  <Input 
+                                    {...field} 
+                                    placeholder="0.00" 
+                                    type="number" 
+                                    step="0.01"
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value);
+                                      console.log('Price changed to:', e.target.value);
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
