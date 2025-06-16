@@ -148,17 +148,27 @@ export default function AddItemProfessional() {
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get('edit');
   const isEditMode = !!editId;
+  
+  console.log('Edit mode:', isEditMode, 'Edit ID:', editId); // Debug log
 
   // Fetch product data if in edit mode
-  const { data: editingProduct, isLoading: isLoadingProduct } = useQuery({
+  const { data: editingProduct, isLoading: isLoadingProduct, error: productError } = useQuery({
     queryKey: ["/api/products", editId],
     queryFn: async () => {
       if (!editId) return null;
+      console.log('Fetching product with ID:', editId);
       const response = await fetch(`/api/products/${editId}`);
-      if (!response.ok) throw new Error("Failed to fetch product");
-      return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to fetch product:', response.status, errorText);
+        throw new Error(`Failed to fetch product: ${response.status}`);
+      }
+      const product = await response.json();
+      console.log('Fetched product:', product);
+      return product;
     },
     enabled: !!editId,
+    retry: 1,
   });
 
   // Generate sequential item code
@@ -570,6 +580,26 @@ export default function AddItemProfessional() {
             <Loader2Icon className="w-8 h-8 animate-spin mx-auto mb-4" />
             <h2 className="text-lg font-semibold">Loading Product Data...</h2>
             <p className="text-gray-600">Please wait while we fetch the product information.</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error state if product fetch failed
+  if (isEditMode && productError) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <XIcon className="w-4 h-4 text-red-600" />
+            </div>
+            <h2 className="text-lg font-semibold text-red-800">Failed to Load Product</h2>
+            <p className="text-gray-600 mb-4">Could not fetch product data for editing.</p>
+            <Button onClick={() => setLocation("/add-item-dashboard")} variant="outline">
+              Back to Dashboard
+            </Button>
           </div>
         </div>
       </DashboardLayout>
@@ -2630,14 +2660,18 @@ export default function AddItemProfessional() {
                           type="button" 
                           variant="outline"
                           onClick={() => {
+                            console.log('Cancel/Reset button clicked');
                             if (isEditMode) {
                               setLocation("/add-item-dashboard");
                             } else {
                               form.reset();
+                              // Generate new item code for next item
+                              const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
+                              form.setValue('itemCode', newCode);
                             }
                           }}
                         >
-                          {isEditMode ? "Cancel" : "Reset"}
+                          {isEditMode ? "Cancel Edit" : "Reset Form"}
                         </Button>
                         <Button 
                           type="submit" 
