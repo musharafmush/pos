@@ -379,7 +379,7 @@ export default function AddItemProfessional() {
         price: editingProduct.price?.toString() || "",
         mrp: editingProduct.mrp?.toString() || "",
         cost: editingProduct.cost?.toString() || "",
-        weight: editingProduct.weight?.toString() || "",
+        weight: editingProduct.weight ? editingProduct.weight.toString() : "",
         weightUnit: editingProduct.weightUnit || "kg",
         categoryId: editingProduct.categoryId || categories[0]?.id || 1,
         stockQuantity: editingProduct.stockQuantity?.toString() || "0",
@@ -627,9 +627,16 @@ export default function AddItemProfessional() {
                 )}
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setLocation("/add-item-dashboard")}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                console.log('Closing and returning to dashboard');
+                setLocation("/add-item-dashboard");
+              }}
+            >
               <XIcon className="w-4 h-4 mr-2" />
-              Close
+              {isEditMode ? "Cancel Edit" : "Close"}
             </Button>
           </div>
         </div>

@@ -95,6 +95,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
+import { useLocation } from "wouter";
 
 export default function AddItemDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -107,6 +108,7 @@ export default function AddItemDashboard() {
   const [activeSection, setActiveSection] = useState("item-info");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [currentEditSection, setCurrentEditSection] = useState("item-information");
+  const [, setLocation] = useLocation();
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
@@ -161,7 +163,7 @@ export default function AddItemDashboard() {
   });
 
   const { toast } = useToast();
-  
+
 
   // Fetch products with better error handling
   const { data: products = [], isLoading: productsLoading, refetch: refetchProducts, error: productsError } = useQuery({
@@ -498,7 +500,7 @@ export default function AddItemDashboard() {
       setEditingProduct(null);
 
       // Reset edit form
-      
+
     },
     onError: (error) => {
       console.error('Product update error:', error);
@@ -711,7 +713,7 @@ export default function AddItemDashboard() {
     else if (totalGst === 28) gstCode = 'GST 28%';
 
     // Populate form with existing product data
-    
+
     setIsEditDialogOpen(true);
   };
 
@@ -893,8 +895,7 @@ export default function AddItemDashboard() {
                     {products.filter((p: Product) => 
                       p.name.toLowerCase().includes('bulk') ||
                       p.name.toLowerCase().includes('bag') ||
-                      p.name.toLowerCase().includes('container') ||
-                      p.name.toLowerCase().includes('kg') ||
+                      p.name.toLowerCase().includes('container') ||                      p.name.toLowerCase().includes('kg') ||
                       p.name.toLowerCase().includes('ltr') ||
                       p.name.toLowerCase().includes('wholesale') ||
                       p.name.toLowerCase().includes('sack') ||
@@ -1164,10 +1165,14 @@ export default function AddItemDashboard() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => handleEditProduct(product)}
+                                onClick={() => {
+                                  console.log('Navigating to edit page for product:', product.id);
+                                  setLocation(`/add-item-professional?edit=${product.id}`);
+                                }}
                                 title="Edit Product"
+                                className="h-8 w-8 p-0 hover:bg-orange-100"
                               >
-                                <EditIcon className="w-4 h-4" />
+                                <EditIcon className="w-4 h-4 text-orange-600" />
                               </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -1527,7 +1532,10 @@ export default function AddItemDashboard() {
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
-                                  onClick={() => handleEditProduct(product)}
+                                  onClick={() => {
+                                    console.log('Navigating to edit page for product:', product.id);
+                                    setLocation(`/add-item-professional?edit=${product.id}`);
+                                  }}
                                   title="Edit Product"
                                   className="h-8 w-8 p-0 hover:bg-orange-100"
                                 >
@@ -1972,7 +1980,7 @@ export default function AddItemDashboard() {
               {/* Main Content Area - Dynamic sections based on selection */}
               <div className="flex-1 p-6 overflow-y-auto">
                 {editingProduct && (
-                  
+
                   <Form {...editForm}>
                     <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-6">
 
@@ -2573,8 +2581,7 @@ export default function AddItemDashboard() {
                                     <FormLabel>Sell By</FormLabel>
                                     <FormControl>
                                       <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger>
-                                          <SelectValue />
+                                        <SelectTrigger>                                          <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                           <SelectItem value="None">None</SelectItem>
