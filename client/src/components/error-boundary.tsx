@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +26,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     console.error('Error caught by boundary:', error, errorInfo);
   }
 
+  handleReset = () => {
+    this.setState({ hasError: false, error: undefined });
+    // Force a page reload to reset state
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
       return (
@@ -45,7 +50,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 The application encountered an error. Please try refreshing the page.
               </p>
               <Button 
-                onClick={() => window.location.reload()} 
+                onClick={this.handleReset} 
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
@@ -70,3 +75,5 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return this.props.children;
   }
 }
+
+export default ErrorBoundary;
