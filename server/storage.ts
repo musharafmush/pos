@@ -251,7 +251,7 @@ export const storage = {
         mrp: productData.mrp ? parseFloat(productData.mrp.toString()) : parseFloat(existingProduct.mrp || 0),
         weight: productData.weight !== undefined ? 
           (productData.weight === null || productData.weight === '' || productData.weight === 'null' ? null : parseFloat(productData.weight.toString())) 
-          : existingProduct.weight,
+          : (existingProduct.weight ? parseFloat(existingProduct.weight.toString()) : null),
         weightUnit: productData.weightUnit?.toString() || existingProduct.weight_unit || 'kg',
         categoryId: productData.categoryId ? parseInt(productData.categoryId.toString()) : existingProduct.category_id,
         stockQuantity: productData.stockQuantity !== undefined ? parseInt(productData.stockQuantity.toString()) : existingProduct.stock_quantity,
@@ -276,10 +276,23 @@ export const storage = {
         throw new Error('Invalid price: must be a valid positive number');
       }
 
-      // Check for duplicate SKU (excluding current product)
-      const duplicateSku = sqlite.prepare('SELECT id FROM products WHERE LOWER(sku) = LOWER(?) AND id != ?').get(updateData.sku, id);
-      if (duplicateSku) {
-        throw new Error('Product with this SKU already exists');
+      // Auto-extract weight from product name if weight is null
+      if (updateData.weight === null && updateData.name) {
+        const weightMatch = updateData.name.match(/(\d+(?:\.\d+)?)\s*(kg|g|gm|gram|grams|kilogram|kilograms)/i);
+        if (weightMatch) {
+          const weightValue = parseFloat(weightMatch[1]);
+          const weightUnit = weightMatch[2].toLowerCase();
+
+          // Convert to grams for consistent storage
+          if (weightUnit.startsWith('k')) {
+            updateData.weight = weightValue * 1000; // kg to grams
+            updateData.weightUnit = 'g';
+          } else {
+            updateData.weight = weightValue;
+            updateData.weightUnit = 'g';
+          }
+          console.log(`📏 Auto-extracted weight: ${updateData.weight}${updateData.weightUnit} from product name "${updateData.name}"`);
+        }
       }
 
       console.log('Formatted update data:', updateData);
