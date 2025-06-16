@@ -1025,13 +1025,19 @@ export default function AddItemProfessional() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <InfoIcon className="w-5 h-5" />
-                        Item Information
-                        {isEditMode && (
-                          <Badge variant="outline" className="ml-2 text-xs">
-                            Editing: {editingProduct?.name}
+                        {isEditMode ? "Edit Item Information" : "Item Information"}
+                        {isEditMode && editingProduct && (
+                          <Badge variant="outline" className="ml-2 text-xs bg-orange-100 text-orange-700">
+                            <EditIcon className="w-3 h-3 mr-1" />
+                            Editing: {editingProduct.name}
                           </Badge>
                         )}
                       </CardTitle>
+                      {isEditMode && editingProduct && (
+                        <div className="text-sm text-gray-600 mt-2">
+                          Product ID: {editingProduct.id} • SKU: {editingProduct.sku} • Last Updated: {new Date(editingProduct.updatedAt || editingProduct.createdAt).toLocaleDateString()}
+                        </div>
+                      )}
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="grid grid-cols-2 gap-6">
