@@ -242,7 +242,7 @@ export const productInsertSchema = createInsertSchema(products, {
   price: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
   mrp: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
   cost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
-  weight: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  weight: (schema) => z.union([z.string(), z.number()]).transform(val => val === null || val === '' || val === 'null' ? null : val.toString()).optional().nullable(),
   weightUnit: (schema) => schema.optional(),
   stockQuantity: (schema) => schema.min(0, "Stock quantity must be at least 0"),
   alertThreshold: (schema) => schema.min(0, "Alert threshold must be at least 0"),

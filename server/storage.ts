@@ -249,7 +249,9 @@ export const storage = {
         price: productData.price ? parseFloat(productData.price.toString()) : parseFloat(existingProduct.price || 0),
         cost: productData.cost ? parseFloat(productData.cost.toString()) : parseFloat(existingProduct.cost || 0),
         mrp: productData.mrp ? parseFloat(productData.mrp.toString()) : parseFloat(existingProduct.mrp || 0),
-        weight: productData.weight ? parseFloat(productData.weight.toString()) : existingProduct.weight,
+        weight: productData.weight !== undefined ? 
+          (productData.weight === null || productData.weight === '' || productData.weight === 'null' ? null : parseFloat(productData.weight.toString())) 
+          : existingProduct.weight,
         weightUnit: productData.weightUnit?.toString() || existingProduct.weight_unit || 'kg',
         categoryId: productData.categoryId ? parseInt(productData.categoryId.toString()) : existingProduct.category_id,
         stockQuantity: productData.stockQuantity !== undefined ? parseInt(productData.stockQuantity.toString()) : existingProduct.stock_quantity,
@@ -1892,7 +1894,7 @@ export const storage = {
             SUM(CAST(s.total AS REAL)) as total_revenue,
             AVG(CAST(s.total AS REAL)) as avg_order_value,
             COUNT(s.id) as total_orders
-          FROM customers c
+          FROM customersc
           LEFT JOIN sales s ON c.id = s.customer_id
           WHERE s.created_at >= ? OR s.created_at IS NULL
           GROUP BY c.id
