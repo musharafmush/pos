@@ -72,20 +72,28 @@ export default function AddItemDashboard() {
     queryFn: async () => {
       console.log('Fetching products...');
       try {
-        const response = await fetch("/api/products");
+        const response = await fetch("/api/products", {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
         if (!response.ok) {
-          throw new Error(`Failed to fetch products: ${response.status}`);
+          throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
         console.log('Fetched products:', data);
-        return data;
+        return Array.isArray(data) ? data : [];
       } catch (error) {
         console.error('Error fetching products:', error);
         throw error;
       }
     },
-    retry: 3,
+    retry: 2,
+    retryDelay: 1000,
     staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 
   // Fetch categories
@@ -125,8 +133,9 @@ export default function AddItemDashboard() {
     },
   });
 
-  // Filter products based on search and filters
-  const filteredProducts = products.filter((product: Product) => {
+  // Filter products based on search and filters (with safety check)
+  const safeProducts = Array.isArray(products) ? products : [];
+  const filteredProducts = safeProducts.filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -147,21 +156,21 @@ export default function AddItemDashboard() {
   });
 
   // Calculate statistics
-  const totalProducts = products.length;
-  const activeItems = products.filter((p: Product) => p.active).length;
-  const lowStockItems = products.filter((p: Product) => {
+  const totalProducts = safeProducts.length;
+  const activeItems = safeProducts.filter((p: Product) => p.active).length;
+  const lowStockItems = safeProducts.filter((p: Product) => {
     const stock = p.stockQuantity || 0;
     const threshold = p.alertThreshold || 10;
     return stock > 0 && stock <= threshold;
   }).length;
-  const bulkItems = products.filter((p: Product) => {
+  const bulkItems = safeProducts.filter((p: Product) => {
     const weight = parseFloat(p.weight?.toString() || "0");
     return weight >= 1 || (p.stockQuantity || 0) > 10;
   }).length;
-  const repackagedItems = products.filter((p: Product) => 
+  const repackagedItems = safeProducts.filter((p: Product) => 
     p.sku.includes("REPACK") || p.name.toLowerCase().includes("repack")
   ).length;
-  const totalValue = products.reduce((sum: number, p: Product) => {
+  const totalValue = safeProducts.reduce((sum: number, p: Product) => {
     const price = parseFloat(p.price?.toString() || "0");
     const stock = p.stockQuantity || 0;
     return sum + (price * stock);
@@ -214,17 +223,27 @@ export default function AddItemDashboard() {
 
   // Error state
   if (productsError) {
+    console.error('Products error details:', productsError);
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
+          <div className="text-center max-w-md">
             <AlertTriangleIcon className="w-8 h-8 text-red-500 mx-auto mb-4" />
             <h2 className="text-lg font-semibold text-red-800">Failed to Load Products</h2>
-            <p className="text-gray-600 mb-4">There was an error loading your product data.</p>
-            <Button onClick={refreshData} variant="outline">
-              <RefreshCwIcon className="w-4 h-4 mr-2" />
-              Try Again
-            </Button>
+            <p className="text-gray-600 mb-2">There was an error loading your product data.</p>
+            <p className="text-sm text-gray-500 mb-4">
+              Error: {productsError?.message || 'Unknown error occurred'}
+            </p>
+            <div className="space-x-2">
+              <Button onClick={refreshData} variant="outline">
+                <RefreshCwIcon className="w-4 h-4 mr-2" />
+                Try Again
+              </Button>
+              <Button onClick={() => setLocation("/add-item-professional")} variant="default">
+                <PlusIcon className="w-4 h-4 mr-2" />
+                Add New Item
+              </Button>
+            </div>
           </div>
         </div>
       </DashboardLayout>
