@@ -478,166 +478,256 @@ export default function AddItemProfessional() {
   // Create/Update product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      // Validate required fields
-      if (!data.itemName || !data.itemCode || !data.price) {
-        throw new Error("Please fill in all required fields: Item Name, Item Code, and Price");
+      console.log('Starting product mutation with data:', data);
+      
+      // Enhanced validation with more specific error messages
+      const validationErrors = [];
+      
+      if (!data.itemName?.trim()) {
+        validationErrors.push("Item Name is required");
+      }
+      
+      if (!data.itemCode?.trim()) {
+        validationErrors.push("Item Code is required");
+      }
+      
+      if (!data.price?.trim()) {
+        validationErrors.push("Price is required");
       }
 
-      // Validate numeric fields
-      const price = parseFloat(data.price);
-      const mrp = data.mrp ? parseFloat(data.mrp) : price;
-      const cost = data.cost ? parseFloat(data.cost) : 0;
-      const stockQuantity = data.stockQuantity ? parseInt(data.stockQuantity) : 0;
+      if (!data.categoryId || data.categoryId === 0) {
+        validationErrors.push("Category selection is required");
+      }
 
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join(", "));
+      }
+
+      // Enhanced numeric validation with better error handling
+      const price = parseFloat(data.price);
+      const mrp = data.mrp?.trim() ? parseFloat(data.mrp) : price;
+      const cost = data.cost?.trim() ? parseFloat(data.cost) : 0;
+      const stockQuantity = data.stockQuantity?.trim() ? parseInt(data.stockQuantity) : 0;
+      const weight = data.weight?.trim() ? parseFloat(data.weight) : null;
+
+      // Validate parsed numbers
       if (isNaN(price) || price <= 0) {
         throw new Error("Price must be a valid positive number");
       }
 
-      if (isNaN(stockQuantity) || stockQuantity < 0) {
-        throw new Error("Stock quantity must be a valid positive number");
+      if (data.mrp?.trim() && (isNaN(mrp) || mrp < 0)) {
+        throw new Error("MRP must be a valid positive number");
       }
 
+      if (data.cost?.trim() && (isNaN(cost) || cost < 0)) {
+        throw new Error("Cost must be a valid positive number");
+      }
+
+      if (isNaN(stockQuantity) || stockQuantity < 0) {
+        throw new Error("Stock quantity must be a valid non-negative number");
+      }
+
+      if (data.weight?.trim() && (isNaN(weight) || weight <= 0)) {
+        throw new Error("Weight must be a valid positive number");
+      }
+
+      // Enhanced product data with proper null handling
       const productData = {
         name: data.itemName.trim(),
         sku: data.itemCode.trim(),
         description: data.aboutProduct?.trim() || "",
-        price: price,
-        mrp: mrp,
-        cost: cost,
-        weight: data.weight ? parseFloat(data.weight) : null,
+        price: Number(price.toFixed(2)),
+        mrp: Number(mrp.toFixed(2)),
+        cost: Number(cost.toFixed(2)),
+        weight: weight,
         weightUnit: data.weightUnit || "kg",
         stockQuantity: stockQuantity,
-        categoryId: data.categoryId || null,
-        barcode: data.barcode?.trim() || "",
-        active: data.active !== undefined ? data.active : true,
+        categoryId: Number(data.categoryId),
+        barcode: data.barcode?.trim() || null,
+        active: Boolean(data.active),
         alertThreshold: 5,
-        hsnCode: data.hsnCode?.trim() || "",
-        // Enhanced tax breakdown for better synchronization
-        cgstRate: data.cgstRate || "0",
-        sgstRate: data.sgstRate || "0", 
-        igstRate: data.igstRate || "0",
-        cessRate: data.cessRate || "0",
+        hsnCode: data.hsnCode?.trim() || null,
+        // Properly formatted tax rates
+        cgstRate: data.cgstRate?.trim() || "0",
+        sgstRate: data.sgstRate?.trim() || "0", 
+        igstRate: data.igstRate?.trim() || "0",
+        cessRate: data.cessRate?.trim() || "0",
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
       };
 
-      console.log('Submitting product data:', productData);
+      console.log('Final product data for submission:', productData);
 
+      // Enhanced API call with better error handling
       const method = isEditMode ? "PUT" : "POST";
       const url = isEditMode ? `/api/products/${editId}` : "/api/products";
 
       try {
+        console.log(`Making ${method} request to ${url}`);
+        
         const res = await apiRequest(method, url, productData);
+        
+        console.log('API Response status:', res.status, res.statusText);
 
         if (!res.ok) {
           let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} product`;
+          let errorDetails = '';
+          
           try {
-            const errorData = await res.json();
-            errorMessage = errorData.message || errorMessage;
-          } catch {
+            const errorText = await res.text();
+            console.error('API Error Response:', errorText);
+            
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.message || errorData.error || errorMessage;
+              errorDetails = errorData.details || '';
+            } catch {
+              errorMessage = errorText || errorMessage;
+            }
+          } catch (parseError) {
+            console.error('Failed to parse error response:', parseError);
             errorMessage = `HTTP ${res.status}: ${res.statusText}`;
           }
-          throw new Error(errorMessage);
+          
+          throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
         }
 
-        return await res.json();
-      } catch (error) {
-        console.error('Product operation error:', error);
-        throw error;
+        const result = await res.json();
+        console.log('Product operation successful:', result);
+        return result;
+        
+      } catch (networkError) {
+        console.error('Network/API error:', networkError);
+        
+        if (networkError.message?.includes('Failed to fetch')) {
+          throw new Error('Network connection error. Please check your internet connection and try again.');
+        }
+        
+        throw networkError;
       }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      console.log("Product operation successful:", data);
+      
+      try {
+        // Invalidate related queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/products/all"] });
+        
+        if (isEditMode) {
+          // Invalidate specific product query
+          queryClient.invalidateQueries({ queryKey: ["/api/products", editId] });
+          
+          toast({
+            title: "Success! 🎉", 
+            description: `Product "${data.name || data.itemName}" updated successfully`,
+            action: (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setLocation("/add-item-dashboard")}
+              >
+                View Dashboard
+              </Button>
+            ),
+          });
+          
+          // Redirect to dashboard after a short delay
+          setTimeout(() => {
+            setLocation("/add-item-dashboard");
+          }, 2000);
+          
+        } else {
+          // Reset form for new entry
+          const newItemCode = allProducts ? generateItemCode() : generateFallbackItemCode();
+          
+          form.reset({
+            itemCode: newItemCode,
+            itemName: "",
+            manufacturerName: "",
+            supplierName: "",
+            alias: "",
+            aboutProduct: "",
+            itemProductType: "Standard",
+            department: "",
+            mainCategory: "",
+            subCategory: "",
+            brand: "",
+            buyer: "",
+            hsnCode: "",
+            gstCode: "GST 12%",
+            purchaseGstCalculatedOn: "MRP",
+            gstUom: "PIECES",
+            purchaseAbatement: "",
+            configItemWithCommodity: false,
+            seniorExemptApplicable: false,
+            eanCodeRequired: false,
+            barcode: "",
+            weightsPerUnit: "1",
+            batchExpiryDetails: "Not Required",
+            itemPreparationsStatus: "Trade As Is",
+            grindingCharge: "",
+            weightInGms: "",
+            bulkItemName: "",
+            repackageUnits: "",
+            repackageType: "",
+            packagingMaterial: "",
+            decimalPoint: "0",
+            productType: "NA",
+            sellBy: "None",
+            itemPerUnit: "1",
+            maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
+            batchSelection: "Not Applicable",
+            isWeighable: false,
+            skuType: "Put Away",
+            indentType: "Manual",
+            gateKeeperMargin: "",
+            allowItemFree: false,
+            showOnMobileDashboard: false,
+            enableMobileNotifications: false,
+            quickAddToCart: false,
+            perishableItem: false,
+            temperatureControlled: false,
+            fragileItem: false,
+            trackSerialNumbers: false,
+            fdaApproved: false,
+            bisCertified: false,
+            organicCertified: false,
+            itemIngredients: "",
+            price: "",
+            mrp: "",
+            cost: "",
+            weight: "",
+            weightUnit: "kg",
+            categoryId: categories[0]?.id || 1,
+            stockQuantity: "0",
+            active: true,
+            cgstRate: "",
+            sgstRate: "",
+            igstRate: "",
+            cessRate: "",
+            taxCalculationMethod: "exclusive",
+          });
 
-      if (isEditMode) {
+          toast({
+            title: "Success! 🎉", 
+            description: `Product "${data.name || data.itemName}" created successfully with SKU: ${data.sku || data.itemCode}`,
+            action: (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setLocation("/add-item-dashboard")}
+              >
+                View Dashboard
+              </Button>
+            ),
+          });
+        }
+      } catch (successError) {
+        console.error("Error in success handler:", successError);
+        // Still show success since the main operation worked
         toast({
-          title: "Success! 🎉", 
-          description: `Product "${data.name}" updated successfully`,
-          action: (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setLocation("/add-item-dashboard")}
-            >
-              View Dashboard
-            </Button>
-          ),
-        });
-      } else {
-        form.reset({
-          itemCode: allProducts ? generateItemCode() : generateFallbackItemCode(),
-          itemName: "",
-          manufacturerName: "",
-          supplierName: "",
-          alias: "",
-          aboutProduct: "",
-          itemProductType: "Standard",
-          department: "",
-          mainCategory: "",
-          subCategory: "",
-          brand: "",
-          buyer: "",
-          hsnCode: "",
-          gstCode: "GST 12%",
-          purchaseGstCalculatedOn: "MRP",
-          gstUom: "PIECES",
-          purchaseAbatement: "",
-          configItemWithCommodity: false,
-          seniorExemptApplicable: false,
-          eanCodeRequired: false,
-          barcode: "",
-          weightsPerUnit: "1",
-          batchExpiryDetails: "Not Required",
-          itemPreparationsStatus: "Trade As Is",
-          grindingCharge: "",
-          weightInGms: "",
-          bulkItemName: "",
-          repackageUnits: "",
-          repackageType: "",
-          packagingMaterial: "",
-          decimalPoint: "0",
-          productType: "NA",
-          sellBy: "None",
-          itemPerUnit: "1",
-          maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
-          batchSelection: "Not Applicable",
-          isWeighable: false,
-          skuType: "Put Away",
-          indentType: "Manual",
-          gateKeeperMargin: "",
-          allowItemFree: false,
-          showOnMobileDashboard: false,
-          enableMobileNotifications: false,
-          quickAddToCart: false,
-          perishableItem: false,
-          temperatureControlled: false,
-          fragileItem: false,
-          trackSerialNumbers: false,
-          fdaApproved: false,
-          bisCertified: false,
-          organicCertified: false,
-          itemIngredients: "",
-          price: "",
-          mrp: "",
-          cost: "",
-          weight: "",
-          weightUnit: "kg",
-          categoryId: categories[0]?.id || 1,
-          stockQuantity: "0",
-          active: true,
-        });
-
-        toast({
-          title: "Success! 🎉", 
-          description: `Product "${data.name}" created successfully with SKU: ${data.sku}`,
-          action: (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setLocation("/add-item-dashboard")}
-            >
-              View Dashboard
-            </Button>
-          ),
+          title: "Product Saved Successfully",
+          description: "The product was saved but there was an issue refreshing the interface.",
         });
       }
     },
@@ -646,24 +736,50 @@ export default function AddItemProfessional() {
       
       let errorMessage = error.message || "Please check all required fields and try again";
       let errorTitle = `Error ${isEditMode ? 'Updating' : 'Creating'} Product`;
+      let actionButton = null;
       
-      // Handle specific error types
+      // Handle specific error types with more detailed responses
       if (error.message?.includes('readonly') || error.message?.includes('READONLY')) {
         errorTitle = "Database Access Error";
         errorMessage = "Cannot save product data. Database permissions issue detected. Please contact administrator.";
-      } else if (error.message?.includes('SKU already exists')) {
-        errorTitle = "Duplicate SKU Error";
+      } else if (error.message?.includes('SKU already exists') || error.message?.includes('UNIQUE constraint failed')) {
+        errorTitle = "Duplicate Item Code";
         errorMessage = "This item code already exists. Please use a different item code.";
-      } else if (error.message?.includes('required fields')) {
+        actionButton = (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
+              form.setValue('itemCode', newCode);
+            }}
+          >
+            Generate New Code
+          </Button>
+        );
+      } else if (error.message?.includes('required fields') || error.message?.includes('Missing Required')) {
         errorTitle = "Missing Required Information";
-        errorMessage = "Please fill in all required fields: Item Name, Item Code, and Price.";
+        errorMessage = "Please fill in all required fields: Item Name, Item Code, Price, and Category.";
+      } else if (error.message?.includes('Network connection error')) {
+        errorTitle = "Connection Error";
+        errorMessage = "Unable to connect to the server. Please check your internet connection and try again.";
+      } else if (error.message?.includes('categoryId') || error.message?.includes('category')) {
+        errorTitle = "Category Selection Required";
+        errorMessage = "Please select a valid category for this product.";
+      } else if (error.message?.includes('price') || error.message?.includes('Price')) {
+        errorTitle = "Invalid Price";
+        errorMessage = "Please enter a valid price greater than 0.";
+      } else if (error.message?.includes('stock') || error.message?.includes('Stock')) {
+        errorTitle = "Invalid Stock Quantity";
+        errorMessage = "Please enter a valid stock quantity (0 or greater).";
       }
       
       toast({
         title: errorTitle,
         description: errorMessage,
         variant: "destructive",
-        duration: 5000, // Show error longer
+        duration: 7000, // Show error longer for reading
+        action: actionButton,
       });
     },
   });
@@ -828,29 +944,78 @@ export default function AddItemProfessional() {
           <div className="flex-1 p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit((data) => {
-                console.log("Form submission data:", data);
+                console.log("Form submission started with data:", data);
 
-                // Additional validation for repackaging
-                if (data.itemPreparationsStatus === "Repackage") {
-                  if (!data.bulkItemName) {
+                try {
+                  // Enhanced validation for repackaging
+                  if (data.itemPreparationsStatus === "Repackage") {
+                    if (!data.bulkItemName?.trim()) {
+                      toast({
+                        title: "Validation Error",
+                        description: "Please select a bulk item for repackaging",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    if (!data.weightInGms?.trim()) {
+                      toast({
+                        title: "Validation Error", 
+                        description: "Please specify the weight for repackaged units",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                  }
+
+                  // Validate required fields before submission
+                  const requiredFieldErrors = [];
+                  
+                  if (!data.itemName?.trim()) requiredFieldErrors.push("Item Name");
+                  if (!data.itemCode?.trim()) requiredFieldErrors.push("Item Code");
+                  if (!data.price?.trim()) requiredFieldErrors.push("Price");
+                  if (!data.categoryId || data.categoryId === 0) requiredFieldErrors.push("Category");
+
+                  if (requiredFieldErrors.length > 0) {
                     toast({
-                      title: "Validation Error",
-                      description: "Please select a bulk item for repackaging",
+                      title: "Missing Required Fields",
+                      description: `Please fill in: ${requiredFieldErrors.join(", ")}`,
                       variant: "destructive",
                     });
                     return;
                   }
-                  if (!data.weightInGms) {
+
+                  // Additional numeric validation
+                  const priceValue = parseFloat(data.price);
+                  if (isNaN(priceValue) || priceValue <= 0) {
                     toast({
-                      title: "Validation Error", 
-                      description: "Please specify the weight for repackaged units",
+                      title: "Invalid Price",
+                      description: "Please enter a valid price greater than 0",
                       variant: "destructive",
                     });
                     return;
                   }
+
+                  const stockValue = parseInt(data.stockQuantity || "0");
+                  if (isNaN(stockValue) || stockValue < 0) {
+                    toast({
+                      title: "Invalid Stock Quantity",
+                      description: "Please enter a valid stock quantity",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  console.log("Validation passed, submitting to mutation...");
+                  createProductMutation.mutate(data);
+                  
+                } catch (validationError) {
+                  console.error("Form validation error:", validationError);
+                  toast({
+                    title: "Validation Error",
+                    description: validationError.message || "Please check your form data and try again",
+                    variant: "destructive",
+                  });
                 }
-
-                createProductMutation.mutate(data);
               })} className="space-y-6">
 
                 {/* Item Information Section */}
@@ -1355,16 +1520,21 @@ export default function AddItemProfessional() {
                                 <FormLabel>CGST Rate (%)</FormLabel>
                                 <FormControl>
                                   <Input 
-                                    {...field} 
+                                    value={field.value || ""}
                                     placeholder="9.00" 
                                     type="number" 
                                     step="0.01"
                                     onChange={(e) => {
-                                      field.onChange(e.target.value);
-                                      // When CGST changes, update SGST to match and clear IGST
-                                      const cgstValue = e.target.value;
-                                      form.setValue("sgstRate", cgstValue);
-                                      form.setValue("igstRate", "0");
+                                      const value = e.target.value;
+                                      field.onChange(value);
+                                      
+                                      // Auto-sync SGST when CGST changes (for intra-state)
+                                      if (!isEditMode || form.getValues("taxSelectionMode") === "auto") {
+                                        form.setValue("sgstRate", value, { shouldValidate: true, shouldDirty: true });
+                                        if (value && parseFloat(value) > 0) {
+                                          form.setValue("igstRate", "0", { shouldValidate: true, shouldDirty: true });
+                                        }
+                                      }
                                     }}
                                   />
                                 </FormControl>
@@ -1380,16 +1550,21 @@ export default function AddItemProfessional() {
                                 <FormLabel>SGST Rate (%)</FormLabel>
                                 <FormControl>
                                   <Input 
-                                    {...field} 
+                                    value={field.value || ""}
                                     placeholder="9.00" 
                                     type="number" 
                                     step="0.01"
                                     onChange={(e) => {
-                                      field.onChange(e.target.value);
-                                      // When SGST changes, update CGST to match and clear IGST
-                                      const sgstValue = e.target.value;
-                                      form.setValue("cgstRate", sgstValue);
-                                      form.setValue("igstRate", "0");
+                                      const value = e.target.value;
+                                      field.onChange(value);
+                                      
+                                      // Auto-sync CGST when SGST changes (for intra-state)
+                                      if (!isEditMode || form.getValues("taxSelectionMode") === "auto") {
+                                        form.setValue("cgstRate", value, { shouldValidate: true, shouldDirty: true });
+                                        if (value && parseFloat(value) > 0) {
+                                          form.setValue("igstRate", "0", { shouldValidate: true, shouldDirty: true });
+                                        }
+                                      }
                                     }}
                                   />
                                 </FormControl>
@@ -1405,16 +1580,20 @@ export default function AddItemProfessional() {
                                 <FormLabel>IGST Rate (%)</FormLabel>
                                 <FormControl>
                                   <Input 
-                                    {...field} 
+                                    value={field.value || ""}
                                     placeholder="18.00" 
                                     type="number" 
                                     step="0.01"
                                     onChange={(e) => {
-                                      field.onChange(e.target.value);
-                                      // When IGST is set, clear CGST and SGST
-                                      if (e.target.value && parseFloat(e.target.value) > 0) {
-                                        form.setValue("cgstRate", "0");
-                                        form.setValue("sgstRate", "0");
+                                      const value = e.target.value;
+                                      field.onChange(value);
+                                      
+                                      // Clear CGST/SGST when IGST is set (for inter-state)
+                                      if (!isEditMode || form.getValues("taxSelectionMode") === "auto") {
+                                        if (value && parseFloat(value) > 0) {
+                                          form.setValue("cgstRate", "0", { shouldValidate: true, shouldDirty: true });
+                                          form.setValue("sgstRate", "0", { shouldValidate: true, shouldDirty: true });
+                                        }
                                       }
                                     }}
                                   />
