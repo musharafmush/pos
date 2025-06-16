@@ -749,26 +749,63 @@ export default function PurchaseEntryProfessional() {
               }
             }
 
-            // Enhanced HSN Code mapping with multiple fallbacks
+            // Enhanced HSN Code mapping with multiple fallbacks and debug logging
             let hsnCode = "";
-            if (item.hsnCode && item.hsnCode.trim() !== "") {
-              hsnCode = item.hsnCode.trim();
-            } else if (item.hsn_code && item.hsn_code.trim() !== "") {
-              hsnCode = item.hsn_code.trim();
-            } else if (item.hsnSacCode && item.hsnSacCode.trim() !== "") {
-              hsnCode = item.hsnSacCode.trim();
-            } else if (item.hsn && item.hsn.trim() !== "") {
-              hsnCode = item.hsn.trim();
-            } else if (item.hsnSacCode && item.hsnSacCode.trim() !== "") {
-              hsnCode = item.hsnSacCode.trim();
-            } else if (item.gstCode && item.gstCode.trim() !== "") {
-              // Extract HSN from GST code if available
+            console.log(`HSN mapping for item ${item.productId}:`, {
+              itemHsnCode: item.hsnCode,
+              itemHsn_code: item.hsn_code,
+              itemHsnSacCode: item.hsnSacCode,
+              itemHsn: item.hsn,
+              itemGstCode: item.gstCode,
+              productHsnCode: product?.hsnCode,
+              itemId: item.id || item.itemId,
+              productId: item.productId || item.product_id
+            });
+
+            // Try different HSN field variations
+            const hsnFields = [
+              item.hsnCode, 
+              item.hsn_code, 
+              item.hsnSacCode, 
+              item.hsn_sac_code,
+              item.hsn, 
+              item.hsnCode,
+              item.taxCode,
+              item.tax_code,
+              product?.hsnCode
+            ];
+
+            // Find first valid HSN code
+            for (const field of hsnFields) {
+              if (field && typeof field === 'string' && field.trim() !== "") {
+                hsnCode = field.trim();
+                console.log(`Found HSN code: ${hsnCode} from field:`, field);
+                break;
+              }
+            }
+
+            // If still no HSN code, try to extract from GST code
+            if (!hsnCode && item.gstCode && item.gstCode.trim() !== "") {
               const gstCodeMatch = item.gstCode.match(/(\d{4,8})/);
               if (gstCodeMatch) {
                 hsnCode = gstCodeMatch[1];
+                console.log(`Extracted HSN from GST code: ${hsnCode}`);
               }
-            } else if (product?.hsnCode && product.hsnCode.trim() !== "") {
-              hsnCode = product.hsnCode.trim();
+            }
+
+            // Default HSN codes based on common products if still empty
+            if (!hsnCode && product?.name) {
+              const productName = product.name.toLowerCase();
+              if (productName.includes('oil')) {
+                hsnCode = "15179010"; // Edible oil
+              } else if (productName.includes('rice') || productName.includes('grain')) {
+                hsnCode = "10019000"; // Food grains
+              } else if (productName.includes('soap') || productName.includes('shampoo')) {
+                hsnCode = "34012000"; // Personal care
+              } else {
+                hsnCode = "19059090"; // General goods
+              }
+              console.log(`Assigned default HSN code: ${hsnCode} for product: ${product.name}`);
             }
 
             console.log(`Item ${item.productId} HSN mapping:`, {
