@@ -158,36 +158,36 @@ export default function AddItemProfessional() {
     queryFn: async () => {
       if (!editId) return null;
       console.log('Fetching product with ID:', editId);
-      
+
       try {
         const response = await apiRequest('GET', `/api/products/${editId}`);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error('Failed to fetch product:', response.status, errorText);
-          
+
           // Check if product exists in the products list
           const allProductsResponse = await fetch('/api/products');
           if (allProductsResponse.ok) {
             const allProducts = await allProductsResponse.json();
             const productExists = allProducts.find((p: any) => p.id === parseInt(editId));
-            
+
             if (!productExists) {
               throw new Error(`Product with ID ${editId} not found in database`);
             }
           }
-          
+
           throw new Error(`Failed to fetch product: ${response.status} - ${errorText}`);
         }
-        
+
         const product = await response.json();
         console.log('Fetched product:', product);
-        
+
         // Validate product data
         if (!product || !product.id) {
           throw new Error('Invalid product data received');
         }
-        
+
         return product;
       } catch (error) {
         console.error('Product fetch error:', error);
@@ -479,18 +479,18 @@ export default function AddItemProfessional() {
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
       console.log('Starting product mutation with data:', data);
-      
+
       // Enhanced validation with more specific error messages
       const validationErrors = [];
-      
+
       if (!data.itemName?.trim()) {
         validationErrors.push("Item Name is required");
       }
-      
+
       if (!data.itemCode?.trim()) {
         validationErrors.push("Item Code is required");
       }
-      
+
       if (!data.price?.trim()) {
         validationErrors.push("Price is required");
       }
@@ -563,19 +563,19 @@ export default function AddItemProfessional() {
 
       try {
         console.log(`Making ${method} request to ${url}`);
-        
+
         const res = await apiRequest(method, url, productData);
-        
+
         console.log('API Response status:', res.status, res.statusText);
 
         if (!res.ok) {
           let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} product`;
           let errorDetails = '';
-          
+
           try {
             const errorText = await res.text();
             console.error('API Error Response:', errorText);
-            
+
             try {
               const errorData = JSON.parse(errorText);
               errorMessage = errorData.message || errorData.error || errorMessage;
@@ -587,36 +587,36 @@ export default function AddItemProfessional() {
             console.error('Failed to parse error response:', parseError);
             errorMessage = `HTTP ${res.status}: ${res.statusText}`;
           }
-          
+
           throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
         }
 
         const result = await res.json();
         console.log('Product operation successful:', result);
         return result;
-        
+
       } catch (networkError) {
         console.error('Network/API error:', networkError);
-        
+
         if (networkError.message?.includes('Failed to fetch')) {
           throw new Error('Network connection error. Please check your internet connection and try again.');
         }
-        
+
         throw networkError;
       }
     },
     onSuccess: (data) => {
       console.log("Product operation successful:", data);
-      
+
       try {
         // Invalidate related queries to refresh data
         queryClient.invalidateQueries({ queryKey: ["/api/products"] });
         queryClient.invalidateQueries({ queryKey: ["/api/products/all"] });
-        
+
         if (isEditMode) {
           // Invalidate specific product query
           queryClient.invalidateQueries({ queryKey: ["/api/products", editId] });
-          
+
           toast({
             title: "Success! 🎉", 
             description: `Product "${data.name || data.itemName}" updated successfully`,
@@ -630,16 +630,16 @@ export default function AddItemProfessional() {
               </Button>
             ),
           });
-          
+
           // Redirect to dashboard after a short delay
           setTimeout(() => {
             setLocation("/add-item-dashboard");
           }, 2000);
-          
+
         } else {
           // Reset form for new entry
           const newItemCode = allProducts ? generateItemCode() : generateFallbackItemCode();
-          
+
           form.reset({
             itemCode: newItemCode,
             itemName: "",
@@ -733,11 +733,11 @@ export default function AddItemProfessional() {
     },
     onError: (error: Error) => {
       console.error("Product operation error:", error);
-      
+
       let errorMessage = error.message || "Please check all required fields and try again";
       let errorTitle = `Error ${isEditMode ? 'Updating' : 'Creating'} Product`;
       let actionButton = null;
-      
+
       // Handle specific error types with more detailed responses
       if (error.message?.includes('readonly') || error.message?.includes('READONLY')) {
         errorTitle = "Database Access Error";
@@ -773,7 +773,7 @@ export default function AddItemProfessional() {
         errorTitle = "Invalid Stock Quantity";
         errorMessage = "Please enter a valid stock quantity (0 or greater).";
       }
-      
+
       toast({
         title: errorTitle,
         description: errorMessage,
@@ -836,6 +836,7 @@ export default function AddItemProfessional() {
               <Button onClick={() => setLocation("/add-item-dashboard")} variant="outline">
                 Back to Dashboard
               </Button>
+              ```python
               <Button 
                 onClick={() => {
                   console.log('Retrying product fetch...');
@@ -969,7 +970,7 @@ export default function AddItemProfessional() {
 
                   // Validate required fields before submission
                   const requiredFieldErrors = [];
-                  
+
                   if (!data.itemName?.trim()) requiredFieldErrors.push("Item Name");
                   if (!data.itemCode?.trim()) requiredFieldErrors.push("Item Code");
                   if (!data.price?.trim()) requiredFieldErrors.push("Price");
@@ -1007,7 +1008,7 @@ export default function AddItemProfessional() {
 
                   console.log("Validation passed, submitting to mutation...");
                   createProductMutation.mutate(data);
-                  
+
                 } catch (validationError) {
                   console.error("Form validation error:", validationError);
                   toast({
@@ -1042,7 +1043,12 @@ export default function AddItemProfessional() {
                               <FormLabel>Item Code *</FormLabel>
                               <FormControl>
                                 <div className="flex gap-2">
-                                  <Input {...field} placeholder="Auto-generated code" />
+                                  <Input 
+                                    {...field} 
+                                    placeholder="Auto-generated code"
+                                    readOnly={isEditMode}
+                                    className={isEditMode ? "bg-gray-100" : ""}
+                                  />
                                   {!isEditMode && (
                                     <Button 
                                       type="button" 
@@ -1073,9 +1079,26 @@ export default function AddItemProfessional() {
                           <FormItem>
                             <FormLabel>Item Name *</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="BUCKET 4" />
+                              <Input {...field} placeholder="Enter product name" />
                             </FormControl>
-```python
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="aboutProduct"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>About Product</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                {...field} 
+                                placeholder="Enter product description"
+                                rows={3}
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1087,9 +1110,9 @@ export default function AddItemProfessional() {
                           name="manufacturerName"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Manufacturer Name *</FormLabel>
+                              <FormLabel>Manufacturer Name</FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select manufacturer" />
                                   </SelectTrigger>
@@ -1111,9 +1134,9 @@ export default function AddItemProfessional() {
                           name="supplierName"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Supplier Name *</FormLabel>
+                              <FormLabel>Supplier Name</FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select supplier" />
                                   </SelectTrigger>
@@ -1130,6 +1153,72 @@ export default function AddItemProfessional() {
                             </FormItem>
                           )}
                         />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="alias"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Alias</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Alternative name or code" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div />
+                      </div>
+
+                      {/* Basic Pricing in Item Information for quick access */}
+                      <div className="border-t pt-6">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                          Basic Pricing Information
+                        </h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="price"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Selling Price *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="mrp"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>MRP *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0.00" type="number" step="0.01" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="stockQuantity"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Stock Quantity *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="0" type="number" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -1527,7 +1616,7 @@ export default function AddItemProfessional() {
                                     onChange={(e) => {
                                       const value = e.target.value;
                                       field.onChange(value);
-                                      
+
                                       // Auto-sync SGST when CGST changes (for intra-state)
                                       if (!isEditMode || form.getValues("taxSelectionMode") === "auto") {
                                         form.setValue("sgstRate", value, { shouldValidate: true, shouldDirty: true });
@@ -1557,7 +1646,7 @@ export default function AddItemProfessional() {
                                     onChange={(e) => {
                                       const value = e.target.value;
                                       field.onChange(value);
-                                      
+
                                       // Auto-sync CGST when SGST changes (for intra-state)
                                       if (!isEditMode || form.getValues("taxSelectionMode") === "auto") {
                                         form.setValue("cgstRate", value, { shouldValidate: true, shouldDirty: true });
@@ -1587,7 +1676,7 @@ export default function AddItemProfessional() {
                                     onChange={(e) => {
                                       const value = e.target.value;
                                       field.onChange(value);
-                                      
+
                                       // Clear CGST/SGST when IGST is set (for inter-state)
                                       if (!isEditMode || form.getValues("taxSelectionMode") === "auto") {
                                         if (value && parseFloat(value) > 0) {
