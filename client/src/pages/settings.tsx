@@ -23,24 +23,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTheme } from "@/components/ui/theme-provider";
 import { apiRequest } from "@/lib/queryClient";
-import { 
-  InfoIcon,
-  TagIcon,
-  DollarSignIcon,
-  BoxIcon,
-  SettingsIcon,
-  PackageIcon,
-  ShoppingCartIcon,
-  BarChart3Icon,
-  CheckIcon,
-  XIcon,
-  EditIcon,
-  Loader2Icon,
-  PlusIcon,
-  WandIcon,
-  EyeIcon,
-  DatabaseIcon
-} from "lucide-react";
 
 // Tax Settings Component
 function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
@@ -50,8 +32,6 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
     taxCalculationMethod: 'afterDiscount',
     pricesIncludeTax: false,
     enableMultipleTaxRates: true,
-    enableManualTaxSelection: false,
-    enableItemWiseTaxOverride: false,
     taxCategories: [
       { id: 1, name: 'Food & Groceries', rate: 5, hsn: '1001-2000', description: 'Essential food items and groceries' },
       { id: 2, name: 'General Merchandise', rate: 18, hsn: '3001-9999', description: 'Standard consumer goods' },
@@ -168,7 +148,7 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
 
   const removeTaxCategory = (id: number) => {
     const categoryToRemove = taxSettings.taxCategories.find(cat => cat.id === id);
-
+    
     setTaxSettings(prev => {
       const updated = {
         ...prev,
@@ -298,34 +278,6 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
         </p>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="manualTaxSelection">Enable manual tax selection</Label>
-          <Switch 
-            id="manualTaxSelection" 
-            checked={taxSettings.enableManualTaxSelection || false}
-            onCheckedChange={(checked) => updateTaxSetting('enableManualTaxSelection', checked)}
-          />
-        </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Allow setting custom tax rates for individual items, overriding defaults
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="itemWiseTax">Enable item-wise tax override</Label>
-          <Switch 
-            id="itemWiseTax" 
-            checked={taxSettings.enableItemWiseTaxOverride || false}
-            onCheckedChange={(checked) => updateTaxSetting('enableItemWiseTaxOverride', checked)}
-          />
-        </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Allow each product to have its own tax configuration independent of category
-        </p>
-      </div>
-
       {taxSettings.enableMultipleTaxRates && (
         <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
           <div className="flex justify-between items-center mb-6">
@@ -400,7 +352,7 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
                     </div>
                   </div>
                 </div>
-
+                
                 <div className="mt-3 space-y-2">
                   <Label htmlFor={`cat-desc-${category.id}`}>Description</Label>
                   <Textarea
@@ -426,172 +378,69 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
               </div>
             ))}
 
-            {/* Add new tax category form */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-              <PlusIcon className="h-4 w-4" />
-              Add New Tax Category
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="newCategoryName">Category Name *</Label>
-                <Input
-                  id="newCategoryName"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="e.g., Medical Supplies"
-                  className="border-blue-200 focus:border-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newCategoryRate">Tax Rate (%) *</Label>
-                <Input
-                  id="newCategoryRate"
-                  type="number"
-                  value={newCategoryRate.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                    if (!isNaN(value) && value >= 0 && value <= 50) {
-                      setNewCategoryRate(value);
-                    }
-                  }}
-                  placeholder="Tax rate"
-                  min="0"
-                  max="50"
-                  step="0.01"
-                  className="border-blue-200 focus:border-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newCategoryHsn">HSN Code Range</Label>
-                <Input
-                  id="newCategoryHsn"
-                  value={newCategoryHsn}
-                  onChange={(e) => setNewCategoryHsn(e.target.value)}
-                  placeholder="e.g., 3001-3999"
-                  className="border-blue-200 focus:border-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newCategoryDescription">Description</Label>
-                <Input
-                  id="newCategoryDescription"
-                  value={newCategoryDescription}
-                  onChange={(e) => setNewCategoryDescription(e.target.value)}
-                  placeholder="Category description"
-                  className="border-blue-200 focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Quick Tax Rate Buttons */}
-            <div className="mt-4">
-              <Label className="text-sm text-gray-600 dark:text-gray-400 mb-2 block">Quick Rate Selection:</Label>
-              <div className="flex flex-wrap gap-2">
-                {[0, 5, 12, 18, 28].map(rate => (
-                  <Button
-                    key={rate}
-                    type="button"
-                    variant={newCategoryRate === rate ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setNewCategoryRate(rate);
-                      // Auto-generate category name and HSN based on rate
-                      if (rate === 0) {
-                        setNewCategoryName(newCategoryName || 'Essential Items');
-                        setNewCategoryHsn(newCategoryHsn || '0000-1000');
-                        setNewCategoryDescription(newCategoryDescription || 'Tax-exempt essential items');
-                      } else if (rate === 5) {
-                        setNewCategoryName(newCategoryName || 'Basic Necessities');
-                        setNewCategoryHsn(newCategoryHsn || '1001-2000');
-                        setNewCategoryDescription(newCategoryDescription || 'Basic food items and necessities');
-                      } else if (rate === 12) {
-                        setNewCategoryName(newCategoryName || 'Standard Items');
-                        setNewCategoryHsn(newCategoryHsn || '6001-8000');
-                        setNewCategoryDescription(newCategoryDescription || 'Standard consumer goods');
-                      } else if (rate === 18) {
-                        setNewCategoryName(newCategoryName || 'General Merchandise');
-                        setNewCategoryHsn(newCategoryHsn || '3001-9999');
-                        setNewCategoryDescription(newCategoryDescription || 'General consumer products');
-                      } else if (rate === 28) {
-                        setNewCategoryName(newCategoryName || 'Luxury Items');
-                        setNewCategoryHsn(newCategoryHsn || '8701-8800');
-                        setNewCategoryDescription(newCategoryDescription || 'High-end luxury products');
+            {/* Add New Category Form */}
+            <div className="p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <h4 className="text-md font-medium mb-4 text-gray-700 dark:text-gray-300">Add New Tax Category</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-category-name">Category Name *</Label>
+                  <Input
+                    id="new-category-name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="e.g., Electronics, Clothing"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-category-rate">Tax Rate (%) *</Label>
+                  <Input
+                    id="new-category-rate"
+                    type="number"
+                    value={newCategoryRate.toString()}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                      if (!isNaN(value) && value >= 0 && value <= 50) {
+                        setNewCategoryRate(value);
                       }
                     }}
-                    className={rate === newCategoryRate ? "bg-blue-600 text-white" : ""}
-                  >
-                    {rate}%
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 flex gap-2">
-              <Button 
-                onClick={addTaxCategory}
-                disabled={!newCategoryName || newCategoryRate < 0}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Add Tax Category
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  setNewCategoryName('');
-                  setNewCategoryRate(18);
-                  setNewCategoryHsn('');
-                  setNewCategoryDescription('');
-                }}
-              >
-                Clear Form
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  // Generate a custom tax category
-                  const customName = `Custom Tax ${Math.floor(Math.random() * 1000)}`;
-                  setNewCategoryName(customName);
-                  setNewCategoryRate(15);
-                  setNewCategoryHsn('9000-9999');
-                  setNewCategoryDescription('Custom tax category');
-                }}
-                className="border-orange-300 text-orange-600 hover:bg-orange-50"
-              >
-                <WandIcon className="h-4 w-4 mr-2" />
-                Generate Sample
-              </Button>
-            </div>
-
-            {/* Preview of new category */}
-            {(newCategoryName || newCategoryRate > 0) && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <h5 className="font-medium text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
-                  <EyeIcon className="h-4 w-4" />
-                  Preview New Category
-                </h5>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                  <div>
-                    <span className="text-blue-600 dark:text-blue-400 font-medium">Name:</span>
-                    <div className="text-blue-800 dark:text-blue-200">{newCategoryName || 'Unnamed'}</div>
-                  </div>
-                  <div>
-                    <span className="text-blue-600 dark:text-blue-400 font-medium">Rate:</span>
-                    <div className="text-blue-800 dark:text-blue-200">{newCategoryRate}%</div>
-                  </div>
-                  <div>
-                    <span className="text-blue-600 dark:text-blue-400 font-medium">HSN:</span>
-                    <div className="text-blue-800 dark:text-blue-200">{newCategoryHsn || 'Not specified'}</div>
-                  </div>
-                  <div>
-                    <span className="text-blue-600 dark:text-blue-400 font-medium">Description:</span>
-                    <div className="text-blue-800 dark:text-blue-200">{newCategoryDescription || 'No description'}</div>
-                  </div>
+                    placeholder="18"
+                    min="0"
+                    max="50"
+                    step="0.01"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-category-hsn">HSN Code Range</Label>
+                  <Input
+                    id="new-category-hsn"
+                    value={newCategoryHsn}
+                    onChange={(e) => setNewCategoryHsn(e.target.value)}
+                    placeholder="e.g., 8501-8600"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-category-description">Description</Label>
+                  <Input
+                    id="new-category-description"
+                    value={newCategoryDescription}
+                    onChange={(e) => setNewCategoryDescription(e.target.value)}
+                    placeholder="Brief description"
+                  />
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="flex justify-end">
+                <Button 
+                  onClick={addTaxCategory}
+                  disabled={!newCategoryName.trim() || newCategoryRate < 0}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Tax Category
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -717,8 +566,7 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
 
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/use-auth";
-import { PrinterIcon, BellIcon, ShieldIcon, UserIcon } from 'lucide-react';
+import { PrinterIcon, DollarSignIcon, BellIcon, ShieldIcon, UserIcon, DatabaseIcon } from 'lucide-react';
 import ReceiptSettings from './receipt-settings';
 
 const profileFormSchema = z.object({
@@ -736,17 +584,8 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function Settings() {
-  const { toast } = useToast();
   const { theme, setTheme } = useTheme();
-  const { data: user } = useAuth();
-
-  // Check URL parameters for direct navigation
-  const [activeTab, setActiveTab] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get('tab');
-    return tabParam === 'tax' ? 'tax-settings' : 'business-settings';
-  });
-
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [showReceiptSettings, setShowReceiptSettings] = useState(false);
@@ -1114,15 +953,13 @@ ${receiptSettings.receiptFooter}
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Settings</h2>
         </div>
 
-<Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="profile" className="mb-6">
+          <TabsList className="mb-4">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            <TabsTrigger value="receipt-settings">Receipt Settings</TabsTrigger>
-            <TabsTrigger value="tax-settings" className={activeTab === 'tax-settings' ? 'bg-blue-100 text-blue-700' : ''}>
-              Tax Settings
-            </TabsTrigger>
-            <TabsTrigger value="data-management">Data Management</TabsTrigger>
+            <TabsTrigger value="receipts">Receipt Settings</TabsTrigger>
+            <TabsTrigger value="tax">Tax Settings</TabsTrigger>
+            <TabsTrigger value="data">Data Management</TabsTrigger>
           </TabsList>
 
           {/* Profile Settings */}
@@ -1330,7 +1167,7 @@ ${receiptSettings.receiptFooter}
           </TabsContent>
 
           {/* Receipt Settings */}
-          <TabsContent value="receipt-settings">
+          <TabsContent value="receipts">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -1494,7 +1331,7 @@ ${receiptSettings.receiptFooter}
           </TabsContent>
 
           {/* Data Management */}
-          <TabsContent value="data-management" className="space-y-6">
+          <TabsContent value="data" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1712,7 +1549,7 @@ ${receiptSettings.receiptFooter}
           </TabsContent>
 
           {/* Tax Settings */}
-          <TabsContent value="tax-settings">
+          <TabsContent value="tax">
             <Card>
               <CardHeader>
                 <CardTitle>Tax Settings</CardTitle>
@@ -1742,5 +1579,20 @@ ${receiptSettings.receiptFooter}
   );
 }
 
-
-
+// Placeholder icon to make the page compile
+function PlusIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
