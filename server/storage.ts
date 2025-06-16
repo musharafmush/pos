@@ -259,6 +259,33 @@ export const storage = {
         return null;
       }
 
+      // Ensure all required tax columns exist
+      const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
+      const columnNames = tableInfo.map((col: any) => col.name);
+      
+      // Add missing tax columns if they don't exist
+      const requiredColumns = [
+        { name: 'gst_code', sql: 'ALTER TABLE products ADD COLUMN gst_code TEXT DEFAULT ""' },
+        { name: 'hsn_code', sql: 'ALTER TABLE products ADD COLUMN hsn_code TEXT DEFAULT ""' },
+        { name: 'cgst_rate', sql: 'ALTER TABLE products ADD COLUMN cgst_rate TEXT DEFAULT "0"' },
+        { name: 'sgst_rate', sql: 'ALTER TABLE products ADD COLUMN sgst_rate TEXT DEFAULT "0"' },
+        { name: 'igst_rate', sql: 'ALTER TABLE products ADD COLUMN igst_rate TEXT DEFAULT "0"' },
+        { name: 'cess_rate', sql: 'ALTER TABLE products ADD COLUMN cess_rate TEXT DEFAULT "0"' },
+        { name: 'tax_calculation_method', sql: 'ALTER TABLE products ADD COLUMN tax_calculation_method TEXT DEFAULT "exclusive"' },
+        { name: 'tax_selection_mode', sql: 'ALTER TABLE products ADD COLUMN tax_selection_mode TEXT DEFAULT "auto"' }
+      ];
+
+      for (const column of requiredColumns) {
+        if (!columnNames.includes(column.name)) {
+          try {
+            sqlite.exec(column.sql);
+            console.log(`✅ Added missing column: ${column.name}`);
+          } catch (error) {
+            console.log(`⚠️ Column ${column.name} may already exist:`, error.message);
+          }
+        }
+      }
+
       // Prepare update data with proper type conversion and validation
       const updateData = {
         name: productData.name?.toString().trim() || existingProduct.name,
@@ -275,12 +302,17 @@ export const storage = {
         stockQuantity: productData.stockQuantity !== undefined ? parseInt(productData.stockQuantity.toString()) : existingProduct.stock_quantity,
         alertThreshold: productData.alertThreshold !== undefined ? parseInt(productData.alertThreshold.toString()) : existingProduct.alert_threshold || 5,
         barcode: productData.barcode?.toString().trim() || existingProduct.barcode || '',
+        
+        // Enhanced tax information handling
         hsnCode: productData.hsnCode?.toString().trim() || existingProduct.hsn_code || '',
+        gstCode: productData.gstCode?.toString().trim() || existingProduct.gst_code || '',
         cgstRate: productData.cgstRate !== undefined ? productData.cgstRate?.toString() : existingProduct.cgst_rate || '0',
         sgstRate: productData.sgstRate !== undefined ? productData.sgstRate?.toString() : existingProduct.sgst_rate || '0',
         igstRate: productData.igstRate !== undefined ? productData.igstRate?.toString() : existingProduct.igst_rate || '0',
         cessRate: productData.cessRate !== undefined ? productData.cessRate?.toString() : existingProduct.cess_rate || '0',
         taxCalculationMethod: productData.taxCalculationMethod?.toString() || existingProduct.tax_calculation_method || 'exclusive',
+        taxSelectionMode: productData.taxSelectionMode?.toString() || existingProduct.tax_selection_mode || 'auto',
+        
         active: productData.active !== undefined ? (productData.active ? 1 : 0) : existingProduct.active,
         updatedAt: new Date().toISOString()
       };
@@ -334,7 +366,7 @@ export const storage = {
 
       console.log('Formatted update data:', updateData);
 
-      // Perform the update using correct column names
+      // Perform the update using correct column names with all tax fields
       const updateStmt = sqlite.prepare(`
         UPDATE products SET 
           name = ?,
@@ -350,11 +382,13 @@ export const storage = {
           alert_threshold = ?,
           barcode = ?,
           hsn_code = ?,
+          gst_code = ?,
           cgst_rate = ?,
           sgst_rate = ?,
           igst_rate = ?,
           cess_rate = ?,
           tax_calculation_method = ?,
+          tax_selection_mode = ?,
           active = ?,
           updated_at = ?
         WHERE id = ?
@@ -374,11 +408,13 @@ export const storage = {
         updateData.alertThreshold,
         updateData.barcode,
         updateData.hsnCode,
+        updateData.gstCode,
         updateData.cgstRate,
         updateData.sgstRate,
         updateData.igstRate,
         updateData.cessRate,
         updateData.taxCalculationMethod,
+        updateData.taxSelectionMode,
         updateData.active,
         updateData.updatedAt,
         id
@@ -417,11 +453,13 @@ export const storage = {
           alertThreshold: updatedProduct.alert_threshold,
           barcode: updatedProduct.barcode,
           hsnCode: updatedProduct.hsn_code,
+          gstCode: updatedProduct.gst_code,
           cgstRate: updatedProduct.cgst_rate,
           sgstRate: updatedProduct.sgst_rate,
           igstRate: updatedProduct.igst_rate,
           cessRate: updatedProduct.cess_rate,
           taxCalculationMethod: updatedProduct.tax_calculation_method,
+          taxSelectionMode: updatedProduct.tax_selection_mode,
           active: Boolean(updatedProduct.active),
           createdAt: new Date(updatedProduct.created_at),
           updatedAt: new Date(updatedProduct.updated_at),

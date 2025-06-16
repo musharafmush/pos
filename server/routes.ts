@@ -720,8 +720,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid product ID' });
       }
 
-      // For updates, we allow partial data, so don't use strict schema validation
-      const productData = req.body;
+      // Process the request data to ensure all fields are properly handled
+      const productData = {
+        ...req.body,
+        // Ensure tax information is properly formatted
+        hsnCode: req.body.hsnCode || req.body.hsn_code || '',
+        gstCode: req.body.gstCode || req.body.gst_code || '',
+        cgstRate: req.body.cgstRate || req.body.cgst_rate || '0',
+        sgstRate: req.body.sgstRate || req.body.sgst_rate || '0', 
+        igstRate: req.body.igstRate || req.body.igst_rate || '0',
+        cessRate: req.body.cessRate || req.body.cess_rate || '0',
+        taxCalculationMethod: req.body.taxCalculationMethod || req.body.tax_calculation_method || 'exclusive',
+        taxSelectionMode: req.body.taxSelectionMode || req.body.tax_selection_mode || 'auto'
+      };
       
       const product = await storage.updateProduct(id, productData);
 
