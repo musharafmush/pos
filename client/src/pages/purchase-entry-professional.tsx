@@ -2581,38 +2581,31 @@ export default function PurchaseEntryProfessional() {
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     <Input
-                                      value={form.watch(`items.${index}.hsnCode`) || ""}
+                                      {...form.register(`items.${index}.hsnCode`)}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
                                       onChange={(e) => {
-                                        const hsnValue = e.target.value.trim();
+                                        const hsnValue = e.target.value;
                                         form.setValue(`items.${index}.hsnCode`, hsnValue);
 
                                         // Auto-suggest GST rate based on HSN code
                                         if (hsnValue.length >= 4) {
                                           let suggestedGst = 0;
-                                          
-                                          // Common HSN code patterns and their GST rates
                                           if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
                                             suggestedGst = 0; // Fresh produce
-                                          } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17") || hsnValue.startsWith("21")) {
-                                            suggestedGst = 5; // Food grains, oils, sugar, miscellaneous edible preparations
-                                          } else if (hsnValue.startsWith("30") && (hsnValue.includes("3002") || hsnValue.includes("3003") || hsnValue.includes("3004"))) {
-                                            suggestedGst = 5; // Life-saving drugs
-                                          } else if (hsnValue.startsWith("48") || hsnValue.startsWith("49") || hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("87120")) {
-                                            suggestedGst = 12; // Paper, textiles, phones, bicycles
-                                          } else if (hsnValue.startsWith("90") && hsnValue.includes("9018")) {
-                                            suggestedGst = 12; // Medical equipment
-                                          } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("19") || hsnValue.startsWith("84") || hsnValue.startsWith("85")) {
-                                            suggestedGst = 18; // Personal care, biscuits, machinery
-                                          } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032") || hsnValue.startsWith("87111")) {
-                                            suggestedGst = 28; // Beverages, tobacco, cars, motorcycles
+                                          } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17")) {
+                                            suggestedGst = 5; // Food grains, oils, sugar
+                                          } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("87120")) {
+                                            suggestedGst = 12; // Textiles, phones, bicycles
+                                          } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("19")) {
+                                            suggestedGst = 18; // Personal care, biscuits
+                                          } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032")) {
+                                            suggestedGst = 28; // Beverages, tobacco, cars
                                           } else {
-                                            suggestedGst = 18; // Default rate for most goods
+                                            suggestedGst = 18; // Default rate
                                           }
 
-                                          const currentTaxRate = form.getValues(`items.${index}.taxPercentage`) || 0;
-                                          if (suggestedGst !== currentTaxRate) {
+                                          if (suggestedGst !== form.getValues(`items.${index}.taxPercentage`)) {
                                             form.setValue(`items.${index}.taxPercentage`, suggestedGst);
                                             
                                             // Recalculate net amount with new tax rate
@@ -2628,20 +2621,10 @@ export default function PurchaseEntryProfessional() {
                                             form.trigger(`items.${index}`);
 
                                             toast({
-                                              title: "HSN & Tax Updated! 📊",
-                                              description: `HSN ${hsnValue} set with ${suggestedGst}% GST rate`,
+                                              title: "Tax Rate Updated! 📊",
+                                              description: `GST rate auto-updated to ${suggestedGst}% based on HSN ${hsnValue}`,
                                             });
                                           }
-                                        }
-                                        
-                                        // Trigger form validation
-                                        form.trigger(`items.${index}.hsnCode`);
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          // Move to next field (tax percentage)
-                                          const nextField = document.querySelector(`input[name="items.${index}.taxPercentage"]`) as HTMLInputElement;
-                                          nextField?.focus();
                                         }
                                       }}
                                     />
@@ -2656,49 +2639,6 @@ export default function PurchaseEntryProfessional() {
                                         {form.watch(`items.${index}.hsnCode`).length >= 6 ? '✓ Valid HSN' : '⚠ Incomplete'}
                                       </div>
                                     )}
-
-                                    {/* Quick HSN Suggestions */}
-                                    <div className="flex flex-wrap gap-1">
-                                      {[
-                                        { code: "10019000", label: "Rice-5%", rate: 5 },
-                                        { code: "15179010", label: "Oil-5%", rate: 5 },
-                                        { code: "19059090", label: "Biscuit-18%", rate: 18 },
-                                        { code: "34012000", label: "Soap-18%", rate: 18 }
-                                      ].map((hsn) => (
-                                        <button
-                                          key={hsn.code}
-                                          type="button"
-                                          onClick={() => {
-                                            form.setValue(`items.${index}.hsnCode`, hsn.code);
-                                            form.setValue(`items.${index}.taxPercentage`, hsn.rate);
-                                            
-                                            // Recalculate net amount
-                                            const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                            const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                            const subtotal = qty * cost;
-                                            const taxableAmount = subtotal - discount;
-                                            const tax = (taxableAmount * hsn.rate) / 100;
-                                            const netAmount = taxableAmount + tax;
-                                            
-                                            form.setValue(`items.${index}.netAmount`, netAmount);
-                                            form.trigger(`items.${index}`);
-
-                                            toast({
-                                              title: "HSN Applied! ✅",
-                                              description: `${hsn.label} - ${hsn.code}`,
-                                            });
-                                          }}
-                                          className={`px-1 py-0.5 text-xs rounded border ${
-                                            form.watch(`items.${index}.hsnCode`) === hsn.code
-                                              ? 'bg-blue-500 text-white border-blue-500'
-                                              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                                          }`}
-                                        >
-                                          {hsn.label}
-                                        </button>
-                                      ))}
-                                    </div>
 
                                     {/* Barcode Display */}
                                     {selectedProduct?.barcode && (
@@ -3555,124 +3495,18 @@ export default function PurchaseEntryProfessional() {
 
               <div className="space-y-2">
                 <Label htmlFor="modal-hsnCode">HSN Code</Label>
-                <div className="space-y-2">
-                  <Input
-                    id="modal-hsnCode"
-                    value={modalData.hsnCode || ""}
-                    onChange={(e) => {
-                      const hsnValue = e.target.value.trim();
-                      const newModalData = { ...modalData, hsnCode: hsnValue };
-                      setModalData(newModalData);
-                      
-                      if (editingItemIndex !== null) {
-                        form.setValue(`items.${editingItemIndex}.hsnCode`, hsnValue);
-                        
-                        // Auto-suggest GST rate based on HSN
-                        if (hsnValue.length >= 4) {
-                          let suggestedGst = 0;
-                          
-                          if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
-                            suggestedGst = 0; // Fresh produce
-                          } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17") || hsnValue.startsWith("21")) {
-                            suggestedGst = 5; // Food grains, oils, sugar
-                          } else if (hsnValue.startsWith("48") || hsnValue.startsWith("49") || hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("87120")) {
-                            suggestedGst = 12; // Paper, textiles, phones, bicycles
-                          } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("19") || hsnValue.startsWith("84") || hsnValue.startsWith("85")) {
-                            suggestedGst = 18; // Personal care, biscuits, machinery
-                          } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032") || hsnValue.startsWith("87111")) {
-                            suggestedGst = 28; // Beverages, tobacco, cars
-                          } else {
-                            suggestedGst = 18; // Default rate
-                          }
-                          
-                          if (suggestedGst !== modalData.taxPercentage) {
-                            const updatedModalData = { ...newModalData, taxPercentage: suggestedGst };
-                            setModalData(updatedModalData);
-                            form.setValue(`items.${editingItemIndex}.taxPercentage`, suggestedGst);
-                            
-                            // Recalculate net amount
-                            const qty = modalData.receivedQty || 0;
-                            const cost = modalData.unitCost || 0;
-                            const discount = modalData.discountAmount || 0;
-                            const subtotal = qty * cost;
-                            const taxableAmount = subtotal - discount;
-                            const tax = (taxableAmount * suggestedGst) / 100;
-                            const netAmount = taxableAmount + tax;
-                            
-                            form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                            form.trigger(`items.${editingItemIndex}`);
-                          }
-                        }
-                      }
-                    }}
-                    placeholder="Enter HSN Code (e.g., 10019000)"
-                  />
-                  
-                  {/* Quick HSN Selection Buttons */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { code: "10019000", label: "Rice - 5%", rate: 5 },
-                      { code: "15179010", label: "Edible Oil - 5%", rate: 5 },
-                      { code: "19059090", label: "Biscuits - 18%", rate: 18 },
-                      { code: "34012000", label: "Soap - 18%", rate: 18 },
-                      { code: "22021000", label: "Beverages - 28%", rate: 28 },
-                      { code: "85171200", label: "Mobile - 12%", rate: 12 }
-                    ].map((hsn) => (
-                      <button
-                        key={hsn.code}
-                        type="button"
-                        onClick={() => {
-                          const updatedModalData = { 
-                            ...modalData, 
-                            hsnCode: hsn.code, 
-                            taxPercentage: hsn.rate 
-                          };
-                          setModalData(updatedModalData);
-                          
-                          if (editingItemIndex !== null) {
-                            form.setValue(`items.${editingItemIndex}.hsnCode`, hsn.code);
-                            form.setValue(`items.${editingItemIndex}.taxPercentage`, hsn.rate);
-                            
-                            // Recalculate net amount
-                            const qty = modalData.receivedQty || 0;
-                            const cost = modalData.unitCost || 0;
-                            const discount = modalData.discountAmount || 0;
-                            const subtotal = qty * cost;
-                            const taxableAmount = subtotal - discount;
-                            const tax = (taxableAmount * hsn.rate) / 100;
-                            const netAmount = taxableAmount + tax;
-                            
-                            form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                            form.trigger(`items.${editingItemIndex}`);
-                          }
-                          
-                          toast({
-                            title: "HSN Code Applied! ✅",
-                            description: `${hsn.label} - ${hsn.code}`,
-                          });
-                        }}
-                        className={`px-2 py-1 text-xs rounded border text-left ${
-                          modalData.hsnCode === hsn.code
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {hsn.label}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {/* HSN Validation */}
-                  {modalData.hsnCode && (
-                    <div className={`text-xs px-2 py-1 rounded text-center ${
-                      modalData.hsnCode.length >= 6 
-                        ? 'bg-green-100 text-green-700 border border-green-300' 
-                        : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                    }`}>
-                      {modalData.hsnCode.length >= 6 ? '✓ Valid HSN Code' : '⚠ HSN Code should be 6-8 digits'}
-                    </div>
-                  )}
-                </div>
+                <Input
+                  id="modal-hsnCode"
+                  value={modalData.hsnCode}
+                  onChange={(e) => {
+                    const newModalData = { ...modalData, hsnCode: e.target.value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.hsnCode`, e.target.value);
+                    }
+                  }}
+                  placeholder="HSN Code"
+                />
               </div>
 
               {/* Barcode Display Section */}
