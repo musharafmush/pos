@@ -759,8 +759,8 @@ export default function PurchaseEntryProfessional() {
               unitCost: Number(item.unitCost || item.unit_cost || item.cost) || 0,
               sellingPrice: sellingPrice,
               mrp: mrp,
-              hsnCode: item.hsnCode || item.hsn_code || product?.hsnCode || "",
-              taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent) || 18,
+              hsnCode: item.hsnCode || item.hsn_code || item.hsnSacCode || product?.hsnCode || "",
+              taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent || item.gstRate) || 18,
               discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
               discountPercent: Number(item.discountPercent || item.discount_percent) || 0,
               expiryDate: item.expiryDate || item.expiry_date || "",
@@ -1235,7 +1235,7 @@ export default function PurchaseEntryProfessional() {
         mrp: item.mrp || 0,
         netAmount: item.netAmount || 0,
         location: item.location || "",
-        unit: "PCS",
+        unit: item.unit || "PCS",
       });
     } else {
       // Add new item
@@ -2594,7 +2594,7 @@ export default function PurchaseEntryProfessional() {
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     <Input
-                                      {...form.register(`items.${index}.hsnCode`)}
+                                      value={form.watch(`items.${index}.hsnCode`) || ""}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
                                       onChange={(e) => {
@@ -2639,6 +2639,9 @@ export default function PurchaseEntryProfessional() {
                                             });
                                           }
                                         }
+                                        
+                                        // Trigger form validation
+                                        form.trigger(`items.${index}.hsnCode`);
                                       }}
                                     />
                                     
@@ -3510,16 +3513,23 @@ export default function PurchaseEntryProfessional() {
                 <Label htmlFor="modal-hsnCode">HSN Code</Label>
                 <Input
                   id="modal-hsnCode"
-                  value={modalData.hsnCode}
+                  value={modalData.hsnCode || ""}
                   onChange={(e) => {
-                    const newModalData = { ...modalData, hsnCode: e.target.value };
+                    const hsnValue = e.target.value;
+                    const newModalData = { ...modalData, hsnCode: hsnValue };
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.hsnCode`, e.target.value);
+                      form.setValue(`items.${editingItemIndex}.hsnCode`, hsnValue);
+                      form.trigger(`items.${editingItemIndex}.hsnCode`);
                     }
                   }}
-                  placeholder="HSN Code"
+                  placeholder="Enter HSN/SAC Code (e.g., 15179010)"
                 />
+                {modalData.hsnCode && modalData.hsnCode.length >= 4 && (
+                  <div className="text-xs text-blue-600">
+                    ✓ HSN Code: {modalData.hsnCode}
+                  </div>
+                )}
               </div>
 
               {/* Barcode Display Section */}
