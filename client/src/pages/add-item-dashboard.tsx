@@ -2698,7 +2698,7 @@ export default function AddItemDashboard() {
                         </Button>
                       </div>
                     </form>
-                  
+                  </Form>
                 )}
               </div>
               {/* Sidebar Navigation */}
