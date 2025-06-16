@@ -2807,31 +2807,42 @@ export default function PurchaseEntryProfessional() {
                                       min="0"
                                       max="100"
                                       step="0.01"
-                                      value={form.watch(`items.${index}.taxPercentage`) || 0}
-                                      onChange={(e) => {
-                                        const taxRate = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.taxPercentage`, taxRate);
-                                        
-                                        // Recalculate net amount when tax changes
-                                        const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                        const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                        const subtotal = qty * cost;
-                                        const taxableAmount = subtotal - discount;
-                                        const tax = (taxableAmount * taxRate) / 100;
-                                        const netAmount = taxableAmount + tax;
-                                        
-                                        form.setValue(`items.${index}.netAmount`, netAmount);
-                                        form.trigger(`items.${index}`);
-                                        
-                                        // Force form validation and update
-                                        setTimeout(() => {
-                                          form.trigger('items');
-                                        }, 50);
-                                      }}
+                                      {...form.register(`items.${index}.taxPercentage`, { 
+                                        valueAsNumber: true,
+                                        onChange: (e) => {
+                                          const taxRate = parseFloat(e.target.value) || 0;
+                                          form.setValue(`items.${index}.taxPercentage`, taxRate, { 
+                                            shouldValidate: true, 
+                                            shouldDirty: true 
+                                          });
+                                          
+                                          // Recalculate net amount when tax changes
+                                          const qty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                          const cost = form.getValues(`items.${index}.unitCost`) || 0;
+                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                          const subtotal = qty * cost;
+                                          const taxableAmount = subtotal - discount;
+                                          const tax = (taxableAmount * taxRate) / 100;
+                                          const netAmount = taxableAmount + tax;
+                                          
+                                          form.setValue(`items.${index}.netAmount`, netAmount, { 
+                                            shouldValidate: true, 
+                                            shouldDirty: true 
+                                          });
+                                          
+                                          // Force form validation and update
+                                          setTimeout(() => {
+                                            form.trigger(`items.${index}`);
+                                            form.trigger('items');
+                                          }, 50);
+                                        }
+                                      })}
                                       className="w-full text-center text-xs"
                                       placeholder="0"
-                                      key={`tax-${index}-${form.watch(`items.${index}.taxPercentage`)}`}
+                                      onBlur={() => {
+                                        // Additional trigger on blur to ensure updates
+                                        form.trigger(`items.${index}.taxPercentage`);
+                                      }}
                                     />
                                     
                                     {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
@@ -2899,7 +2910,10 @@ export default function PurchaseEntryProfessional() {
                                           key={rate}
                                           type="button"
                                           onClick={() => {
-                                            form.setValue(`items.${index}.taxPercentage`, rate);
+                                            form.setValue(`items.${index}.taxPercentage`, rate, { 
+                                              shouldValidate: true, 
+                                              shouldDirty: true 
+                                            });
                                             
                                             // Recalculate net amount
                                             const qty = form.getValues(`items.${index}.receivedQty`) || 0;
@@ -2910,8 +2924,17 @@ export default function PurchaseEntryProfessional() {
                                             const tax = (taxableAmount * rate) / 100;
                                             const netAmount = taxableAmount + tax;
                                             
-                                            form.setValue(`items.${index}.netAmount`, netAmount);
-                                            form.trigger(`items.${index}`);
+                                            form.setValue(`items.${index}.netAmount`, netAmount, { 
+                                              shouldValidate: true, 
+                                              shouldDirty: true 
+                                            });
+                                            
+                                            // Force trigger validation and re-render
+                                            form.trigger(`items.${index}.taxPercentage`);
+                                            form.trigger(`items.${index}.netAmount`);
+                                            setTimeout(() => {
+                                              form.trigger('items');
+                                            }, 50);
                                           }}
                                           className={`px-1 py-0.5 text-xs rounded border ${
                                             form.watch(`items.${index}.taxPercentage`) === rate
