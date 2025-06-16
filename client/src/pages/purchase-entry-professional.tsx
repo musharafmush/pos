@@ -939,6 +939,10 @@ export default function PurchaseEntryProfessional() {
           form.setValue(`items.${index}.description`, item.description);
           form.setValue(`items.${index}.unitCost`, item.unitCost);
           form.setValue(`items.${index}.receivedQty`, item.receivedQty);
+          
+          // Force trigger individual field validation for tax fields
+          form.trigger(`items.${index}.taxPercentage`);
+          form.trigger(`items.${index}.hsnCode`);
         });
         
         // Set supplier value
@@ -948,6 +952,17 @@ export default function PurchaseEntryProfessional() {
         
         // Force trigger form validation
         form.trigger();
+        
+        // Additional force update for tax fields specifically
+        setTimeout(() => {
+          mappedItems.forEach((item, index) => {
+            form.setValue(`items.${index}.taxPercentage`, item.taxPercentage, { 
+              shouldValidate: true, 
+              shouldDirty: true 
+            });
+          });
+          form.trigger('items');
+        }, 200);
       }, 100);
 
       toast({
@@ -2808,9 +2823,15 @@ export default function PurchaseEntryProfessional() {
                                         
                                         form.setValue(`items.${index}.netAmount`, netAmount);
                                         form.trigger(`items.${index}`);
+                                        
+                                        // Force form validation and update
+                                        setTimeout(() => {
+                                          form.trigger('items');
+                                        }, 50);
                                       }}
                                       className="w-full text-center text-xs"
                                       placeholder="0"
+                                      key={`tax-${index}-${form.watch(`items.${index}.taxPercentage`)}`}
                                     />
                                     
                                     {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
@@ -3751,6 +3772,11 @@ export default function PurchaseEntryProfessional() {
 
                             form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
                             form.trigger(`items.${editingItemIndex}`);
+                            
+                            // Force update the table display
+                            setTimeout(() => {
+                              form.trigger('items');
+                            }, 100);
                           }
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
