@@ -2213,44 +2213,78 @@ export default function AddItemProfessional() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
-                              <FormField
-                                control={form.control}
-                                name="weightsPerUnit"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Weight Per Unit</FormLabel>
-                                    <FormControl>
-                                      <Input {...field} placeholder="1" type="number" step="0.001" />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="batchExpiryDetails"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Batch/Expiry Date Details</FormLabel>
-                                    <FormControl>
-                                      <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Not Required" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="Not Required">Not Required</SelectItem>
-                                          <SelectItem value="Batch Only">Batch Only</SelectItem>
-                                          <SelectItem value="Expiry Only">Expiry Only</SelectItem>
-                                          <SelectItem value="Both Required">Both Required</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
+                            <div className="grid grid-cols-3 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="weight"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Product Weight</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  placeholder="0" 
+                                  type="number" 
+                                  step="0.001"
+                                  onChange={(e) => {
+                                    field.onChange(e.target.value);
+                                    console.log('Weight changed to:', e.target.value);
+                                  }}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="weightUnit"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Weight Unit</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                                    <SelectItem value="g">Grams (g)</SelectItem>
+                                    <SelectItem value="lb">Pounds (lb)</SelectItem>
+                                    <SelectItem value="oz">Ounces (oz)</SelectItem>
+                                    <SelectItem value="l">Liters (l)</SelectItem>
+                                    <SelectItem value="ml">Milliliters (ml)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="batchExpiryDetails"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Batch/Expiry Date Details</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Not Required" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Not Required">Not Required</SelectItem>
+                                    <SelectItem value="Batch Only">Batch Only</SelectItem>
+                                    <SelectItem value="Expiry Only">Expiry Only</SelectItem>
+                                    <SelectItem value="Both Required">Both Required</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
                             <div className="space-y-6">
                               <FormField
