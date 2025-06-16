@@ -749,6 +749,29 @@ export default function PurchaseEntryProfessional() {
               }
             }
 
+            // Enhanced HSN Code mapping with multiple fallbacks
+            let hsnCode = "";
+            if (item.hsnCode && item.hsnCode.trim() !== "") {
+              hsnCode = item.hsnCode.trim();
+            } else if (item.hsn_code && item.hsn_code.trim() !== "") {
+              hsnCode = item.hsn_code.trim();
+            } else if (item.hsnSacCode && item.hsnSacCode.trim() !== "") {
+              hsnCode = item.hsnSacCode.trim();
+            } else if (item.hsn && item.hsn.trim() !== "") {
+              hsnCode = item.hsn.trim();
+            } else if (product?.hsnCode && product.hsnCode.trim() !== "") {
+              hsnCode = product.hsnCode.trim();
+            }
+
+            console.log(`Item ${item.productId} HSN mapping:`, {
+              itemHsnCode: item.hsnCode,
+              itemHsn_code: item.hsn_code,
+              itemHsnSacCode: item.hsnSacCode,
+              itemHsn: item.hsn,
+              productHsnCode: product?.hsnCode,
+              finalHsnCode: hsnCode
+            });
+
             return {
               productId: item.productId || item.product_id || 0,
               code: item.code || product?.sku || "",
@@ -759,7 +782,7 @@ export default function PurchaseEntryProfessional() {
               unitCost: Number(item.unitCost || item.unit_cost || item.cost) || 0,
               sellingPrice: sellingPrice,
               mrp: mrp,
-              hsnCode: item.hsnCode || item.hsn_code || item.hsnSacCode || product?.hsnCode || "",
+              hsnCode: hsnCode,
               taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent || item.gstRate) || 18,
               discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
               discountPercent: Number(item.discountPercent || item.discount_percent) || 0,
@@ -2594,7 +2617,7 @@ export default function PurchaseEntryProfessional() {
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     <Input
-                                      {...form.register(`items.${index}.hsnCode`)}
+                                      value={form.watch(`items.${index}.hsnCode`) || ""}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
                                       onChange={(e) => {
@@ -3520,6 +3543,42 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.hsnCode`, hsnValue);
+                      
+                      // Auto-suggest GST rate based on HSN code in modal
+                      if (hsnValue.length >= 4) {
+                        let suggestedGst = 0;
+                        if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
+                          suggestedGst = 0; // Fresh produce
+                        } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17")) {
+                          suggestedGst = 5; // Food grains, oils, sugar
+                        } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("87120")) {
+                          suggestedGst = 12; // Textiles, phones, bicycles
+                        } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("19")) {
+                          suggestedGst = 18; // Personal care, biscuits
+                        } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032")) {
+                          suggestedGst = 28; // Beverages, tobacco, cars
+                        } else {
+                          suggestedGst = 18; // Default rate
+                        }
+
+                        if (suggestedGst !== modalData.taxPercentage) {
+                          const updatedModalData = { ...newModalData, taxPercentage: suggestedGst };
+                          setModalData(updatedModalData);
+                          form.setValue(`items.${editingItemIndex}.taxPercentage`, suggestedGst);
+                          
+                          // Recalculate net amount
+                          const qty = modalData.receivedQty;
+                          const cost = modalData.unitCost;
+                          const discount = modalData.discountAmount;
+                          const subtotal = qty * cost;
+                          const taxableAmount = subtotal - discount;
+                          const tax = (taxableAmount * suggestedGst) / 100;
+                          const netAmount = taxableAmount + tax;
+                          
+                          form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                        }
+                      }
+                      
                       form.trigger(`items.${editingItemIndex}.hsnCode`);
                     }
                   }}
