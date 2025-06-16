@@ -66,6 +66,7 @@ const productFormSchema = z.object({
   igstRate: z.string().optional(),
   cessRate: z.string().optional(),
   taxCalculationMethod: z.string().optional(),
+  taxSelectionMode: z.string().default("auto"),
 
   // EAN Code/Barcode
   eanCodeRequired: z.boolean().default(false),
@@ -148,7 +149,7 @@ export default function AddItemProfessional() {
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get('edit');
   const isEditMode = !!editId;
-  
+
   console.log('Edit mode:', isEditMode, 'Edit ID:', editId); // Debug log
 
   // Fetch product data if in edit mode
@@ -337,6 +338,12 @@ export default function AddItemProfessional() {
       categoryId: categories[0]?.id || 1,
       stockQuantity: "0",
       active: true,
+      cgstRate: "",
+      sgstRate: "",
+      igstRate: "",
+      cessRate: "",
+      taxCalculationMethod: "exclusive",
+      taxSelectionMode: "auto",
     },
   });
 
@@ -840,6 +847,7 @@ export default function AddItemProfessional() {
                             <FormControl>
                               <Input {...field} placeholder="BUCKET 4" />
                             </FormControl>
+```python
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1096,7 +1104,7 @@ export default function AddItemProfessional() {
                                     } else if (value.includes("22021000") || value.includes("24021000") || value.includes("87032390") || value.includes("87111000")) {
                                       suggestedGst = "GST 28%";
                                     }
-                                    
+
                                     if (suggestedGst) {
                                       form.setValue("gstCode", suggestedGst);
                                       const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
@@ -1214,7 +1222,7 @@ export default function AddItemProfessional() {
                                     <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
                                     <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
                                     <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
-                                    
+
                                     {/* Custom Tax Categories from Settings */}
                                     {taxSettings.taxCategories.length > 0 && (
                                       <>
@@ -1250,7 +1258,7 @@ export default function AddItemProfessional() {
                           <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
                           GST Breakdown & Compliance
                         </h4>
-                        
+
                         {/* Tax Summary Display */}
                         <div className="bg-blue-50 p-4 rounded-lg mb-4">
                           <div className="grid grid-cols-3 gap-4 text-sm">
@@ -1274,7 +1282,7 @@ export default function AddItemProfessional() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-3 gap-4">
                           <FormField
                             control={form.control}

@@ -50,6 +50,8 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
     taxCalculationMethod: 'afterDiscount',
     pricesIncludeTax: false,
     enableMultipleTaxRates: true,
+    enableManualTaxSelection: false,
+    enableItemWiseTaxOverride: false,
     taxCategories: [
       { id: 1, name: 'Food & Groceries', rate: 5, hsn: '1001-2000', description: 'Essential food items and groceries' },
       { id: 2, name: 'General Merchandise', rate: 18, hsn: '3001-9999', description: 'Standard consumer goods' },
@@ -293,6 +295,34 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Allow different tax rates for different product categories
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="manualTaxSelection">Enable manual tax selection</Label>
+          <Switch 
+            id="manualTaxSelection" 
+            checked={taxSettings.enableManualTaxSelection || false}
+            onCheckedChange={(checked) => updateTaxSetting('enableManualTaxSelection', checked)}
+          />
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Allow setting custom tax rates for individual items, overriding defaults
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="itemWiseTax">Enable item-wise tax override</Label>
+          <Switch 
+            id="itemWiseTax" 
+            checked={taxSettings.enableItemWiseTaxOverride || false}
+            onCheckedChange={(checked) => updateTaxSetting('enableItemWiseTaxOverride', checked)}
+          />
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Allow each product to have its own tax configuration independent of category
         </p>
       </div>
 
