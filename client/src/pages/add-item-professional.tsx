@@ -581,12 +581,15 @@ export default function AddItemProfessional() {
         active: Boolean(data.active),
         alertThreshold: editingProduct?.alertThreshold || 5,
         hsnCode: data.hsnCode?.trim() || null,
+        // Add GST code field
+        gstCode: data.gstCode?.trim() || "GST 18%",
         // Properly formatted tax rates
         cgstRate: data.cgstRate?.trim() || "0",
         sgstRate: data.sgstRate?.trim() || "0", 
         igstRate: data.igstRate?.trim() || "0",
         cessRate: data.cessRate?.trim() || "0",
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
+        taxSelectionMode: data.taxSelectionMode || "auto",
         // Additional fields for edit mode
         ...(isEditMode && editingProduct && {
           id: editingProduct.id,
@@ -883,7 +886,6 @@ export default function AddItemProfessional() {
               <Button onClick={() => setLocation("/add-item-dashboard")} variant="outline">
                 Back to Dashboard
               </Button>
-              ```python
               <Button 
                 onClick={() => {
                   console.log('Retrying product fetch...');
@@ -2412,7 +2414,7 @@ export default function AddItemProfessional() {
                                             <span className="bg-gray-100 px-2 py-1 rounded text-center text-xs">
                                               {form.watch("bulkItemName")?.toUpperCase()}
                                             </span>
-                                          </div>
+                                                                         </div>
 
                                           <div className="grid grid-cols-2 gap-2">
                                             <span className="font-medium text-gray-700">Available Stock:</span>

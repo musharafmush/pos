@@ -413,3 +413,15 @@ export const settingsInsertSchema = createInsertSchema(settings, {
 export type SettingsInsert = z.infer<typeof settingsInsertSchema>;
 export const settingsSelectSchema = createSelectSchema(settings);
 export type Settings = z.infer<typeof settingsSelectSchema>;
+
+export const insertProductSchema = createInsertSchema(products).extend({
+  categoryId: z.number(),
+  price: z.number().positive(),
+  mrp: z.number().positive().optional(),
+  cost: z.number().min(0).optional(),
+  stockQuantity: z.number().min(0),
+  weight: z.number().min(0).optional(),
+  alertThreshold: z.number().min(0).optional(),
+  gstCode: z.string().optional(),
+  taxSelectionMode: z.string().optional(),
+});
