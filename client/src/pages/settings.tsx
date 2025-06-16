@@ -803,8 +803,7 @@ export default function Settings() {
   const [receiptSettings, setReceiptSettings] = useState({
     businessName: "LARAVEL POS SYSTEM",
     address: "1234 Main Street\nCity, State 12345",
-    phone: "(123)```text
-456-7890",
+    phone: "(123) 456-7890",
     taxId: "",
     receiptFooter: "Thank you for shopping with us!",
     showLogo: false,
