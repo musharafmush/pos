@@ -158,18 +158,45 @@ export default function AddItemProfessional() {
     queryFn: async () => {
       if (!editId) return null;
       console.log('Fetching product with ID:', editId);
-      const response = await fetch(`/api/products/${editId}`);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Failed to fetch product:', response.status, errorText);
-        throw new Error(`Failed to fetch product: ${response.status}`);
+      
+      try {
+        const response = await apiRequest('GET', `/api/products/${editId}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Failed to fetch product:', response.status, errorText);
+          
+          // Check if product exists in the products list
+          const allProductsResponse = await fetch('/api/products');
+          if (allProductsResponse.ok) {
+            const allProducts = await allProductsResponse.json();
+            const productExists = allProducts.find((p: any) => p.id === parseInt(editId));
+            
+            if (!productExists) {
+              throw new Error(`Product with ID ${editId} not found in database`);
+            }
+          }
+          
+          throw new Error(`Failed to fetch product: ${response.status} - ${errorText}`);
+        }
+        
+        const product = await response.json();
+        console.log('Fetched product:', product);
+        
+        // Validate product data
+        if (!product || !product.id) {
+          throw new Error('Invalid product data received');
+        }
+        
+        return product;
+      } catch (error) {
+        console.error('Product fetch error:', error);
+        throw error;
       }
-      const product = await response.json();
-      console.log('Fetched product:', product);
-      return product;
     },
     enabled: !!editId,
-    retry: 1,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Generate sequential item code
@@ -675,15 +702,34 @@ export default function AddItemProfessional() {
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <XIcon className="w-4 h-4 text-red-600" />
+          <div className="text-center max-w-md mx-auto p-6">
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <XIcon className="w-6 h-6 text-red-600" />
             </div>
-            <h2 className="text-lg font-semibold text-red-800">Failed to Load Product</h2>
-            <p className="text-gray-600 mb-4">Could not fetch product data for editing.</p>
-            <Button onClick={() => setLocation("/add-item-dashboard")} variant="outline">
-              Back to Dashboard
-            </Button>
+            <h2 className="text-xl font-semibold text-red-800 mb-2">Failed to Load Product</h2>
+            <p className="text-gray-600 mb-4">
+              {productError.message?.includes('not found') 
+                ? `Product with ID ${editId} was not found in the database.`
+                : 'Could not fetch product data for editing. Please try again.'
+              }
+            </p>
+            <div className="text-xs text-gray-500 mb-4 p-3 bg-gray-100 rounded border font-mono">
+              Error: {productError.message}
+            </div>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => setLocation("/add-item-dashboard")} variant="outline">
+                Back to Dashboard
+              </Button>
+              <Button 
+                onClick={() => {
+                  console.log('Retrying product fetch...');
+                  window.location.reload();
+                }} 
+                variant="default"
+              >
+                Retry
+              </Button>
+            </div>
           </div>
         </div>
       </DashboardLayout>

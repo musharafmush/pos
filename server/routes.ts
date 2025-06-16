@@ -477,16 +477,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/products/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const product = await storage.getProductById(id);
+      console.log('🔍 Fetching product with ID:', id);
 
-      if (!product) {
-        return res.status(404).json({ message: 'Product not found' });
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ 
+          message: 'Invalid product ID',
+          error: 'Product ID must be a positive number'
+        });
       }
 
-      res.json(product);
+      // Try storage method first
+      try {
+        const product = await storage.getProductById(id);
+        
+        if (product) {
+          console.log('✅ Found product via storage method:', product.name);
+          return res.json(product);
+        }
+      } catch (storageError) {
+        console.log('⚠️ Storage method failed, trying direct query:', storageError.message);
+      }
+
+      // Fallback to direct SQLite query
+      const { sqlite } = await import('../db/index.js');
+
+      // Check if products table exists
+      const tableCheck = sqlite.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='products'
+      `).get();
+
+      if (!tableCheck) {
+        console.log('❌ Products table does not exist');
+        return res.status(404).json({ 
+          message: 'Product not found',
+          error: 'Products table does not exist'
+        });
+      }
+
+      // Get table structure
+      const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
+      const columnNames = tableInfo.map((col: any) => col.name);
+      console.log('📋 Available columns in products table:', columnNames);
+
+      // Build dynamic query based on available columns
+      const baseColumns = ['id', 'name', 'sku', 'price'];
+      const optionalColumns = [
+        'description', 'mrp', 'cost', 'weight', 'weight_unit', 'category_id',
+        'stock_quantity', 'alert_threshold', 'barcode', 'image', 'active',
+        'hsn_code', 'gst_code', 'cgst_rate', 'sgst_rate', 'igst_rate', 'cess_rate',
+        'tax_calculation_method', 'created_at', 'updated_at'
+      ];
+
+      const availableColumns = baseColumns.concat(
+        optionalColumns.filter(col => columnNames.includes(col))
+      );
+
+      const query = `
+        SELECT 
+          p.${availableColumns.join(', p.')},
+          c.name as category_name,
+          c.description as category_description
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = ?
+      `;
+
+      console.log('🔍 Executing product query for ID:', id);
+      const productData = sqlite.prepare(query).get(id);
+
+      if (!productData) {
+        console.log('❌ Product not found in database');
+        
+        // Check if any products exist
+        const totalProducts = sqlite.prepare('SELECT COUNT(*) as count FROM products').get();
+        console.log(`📊 Total products in database: ${totalProducts.count}`);
+        
+        return res.status(404).json({ 
+          message: 'Product not found',
+          error: `No product found with ID ${id}`,
+          totalProducts: totalProducts.count
+        });
+      }
+
+      // Format the result to match expected structure
+      const formattedProduct = {
+        id: productData.id,
+        name: productData.name,
+        sku: productData.sku,
+        description: productData.description || '',
+        price: productData.price,
+        mrp: productData.mrp || productData.price,
+        cost: productData.cost || '0',
+        weight: productData.weight || null,
+        weightUnit: productData.weight_unit || 'kg',
+        categoryId: productData.category_id || 1,
+        stockQuantity: productData.stock_quantity || 0,
+        alertThreshold: productData.alert_threshold || 5,
+        barcode: productData.barcode || '',
+        image: productData.image || null,
+        hsnCode: productData.hsn_code || '',
+        gstCode: productData.gst_code || '',
+        cgstRate: productData.cgst_rate || '0',
+        sgstRate: productData.sgst_rate || '0',
+        igstRate: productData.igst_rate || '0',
+        cessRate: productData.cess_rate || '0',
+        taxCalculationMethod: productData.tax_calculation_method || 'inclusive',
+        active: productData.active !== 0,
+        createdAt: productData.created_at,
+        updatedAt: productData.updated_at,
+        category: productData.category_name ? {
+          id: productData.category_id,
+          name: productData.category_name,
+          description: productData.category_description
+        } : null
+      };
+
+      console.log('✅ Found product via direct query:', formattedProduct.name);
+      res.json(formattedProduct);
+
     } catch (error) {
-      console.error('Error fetching product:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching product:', error);
+      res.status(500).json({ 
+        message: 'Internal server error',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
