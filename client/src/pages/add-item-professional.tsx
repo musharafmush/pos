@@ -616,10 +616,27 @@ export default function AddItemProfessional() {
     },
     onError: (error: Error) => {
       console.error("Product operation error:", error);
+      
+      let errorMessage = error.message || "Please check all required fields and try again";
+      let errorTitle = `Error ${isEditMode ? 'Updating' : 'Creating'} Product`;
+      
+      // Handle specific error types
+      if (error.message?.includes('readonly') || error.message?.includes('READONLY')) {
+        errorTitle = "Database Access Error";
+        errorMessage = "Cannot save product data. Database permissions issue detected. Please contact administrator.";
+      } else if (error.message?.includes('SKU already exists')) {
+        errorTitle = "Duplicate SKU Error";
+        errorMessage = "This item code already exists. Please use a different item code.";
+      } else if (error.message?.includes('required fields')) {
+        errorTitle = "Missing Required Information";
+        errorMessage = "Please fill in all required fields: Item Name, Item Code, and Price.";
+      }
+      
       toast({
-        title: `Error ${isEditMode ? 'Updating' : 'Creating'} Product`,
-        description: error.message || "Please check all required fields and try again",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
+        duration: 5000, // Show error longer
       });
     },
   });
