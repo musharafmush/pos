@@ -2807,14 +2807,16 @@ export default function PurchaseEntryProfessional() {
                                       min="0"
                                       max="100"
                                       step="0.01"
-                                      value={form.watch(`items.${index}.taxPercentage`) || 0}
+                                      value={form.watch(`items.${index}.taxPercentage`) || ""}
                                       onChange={(e) => {
-                                        const taxRate = parseFloat(e.target.value) || 0;
+                                        const inputValue = e.target.value;
+                                        const taxRate = inputValue === "" ? 0 : parseFloat(inputValue) || 0;
                                         
-                                        // Update the tax percentage
+                                        // Update the tax percentage with immediate form state update
                                         form.setValue(`items.${index}.taxPercentage`, taxRate, { 
                                           shouldValidate: true, 
-                                          shouldDirty: true 
+                                          shouldDirty: true,
+                                          shouldTouch: true
                                         });
                                         
                                         // Recalculate net amount when tax changes
@@ -2828,21 +2830,30 @@ export default function PurchaseEntryProfessional() {
                                         
                                         form.setValue(`items.${index}.netAmount`, netAmount, { 
                                           shouldValidate: true, 
-                                          shouldDirty: true 
+                                          shouldDirty: true,
+                                          shouldTouch: true
                                         });
                                         
-                                        // Force form validation and update
+                                        // Force immediate form validation and re-render
+                                        form.trigger(`items.${index}.taxPercentage`);
+                                        form.trigger(`items.${index}.netAmount`);
+                                        
+                                        // Additional async trigger to ensure state consistency
                                         setTimeout(() => {
-                                          form.trigger(`items.${index}.taxPercentage`);
-                                          form.trigger(`items.${index}.netAmount`);
                                           form.trigger('items');
-                                        }, 50);
+                                        }, 10);
                                       }}
                                       className="w-full text-center text-xs"
                                       placeholder="0"
                                       onBlur={() => {
-                                        // Additional trigger on blur to ensure updates
+                                        // Ensure final validation on blur
                                         form.trigger(`items.${index}.taxPercentage`);
+                                        form.trigger(`items.${index}.netAmount`);
+                                        form.trigger('items');
+                                      }}
+                                      onFocus={(e) => {
+                                        // Select all text on focus for easier editing
+                                        e.target.select();
                                       }}
                                     />
                                     
@@ -2911,9 +2922,11 @@ export default function PurchaseEntryProfessional() {
                                           key={rate}
                                           type="button"
                                           onClick={() => {
+                                            // Set tax percentage with proper state management
                                             form.setValue(`items.${index}.taxPercentage`, rate, { 
                                               shouldValidate: true, 
-                                              shouldDirty: true 
+                                              shouldDirty: true,
+                                              shouldTouch: true
                                             });
                                             
                                             // Recalculate net amount
@@ -2927,17 +2940,21 @@ export default function PurchaseEntryProfessional() {
                                             
                                             form.setValue(`items.${index}.netAmount`, netAmount, { 
                                               shouldValidate: true, 
-                                              shouldDirty: true 
+                                              shouldDirty: true,
+                                              shouldTouch: true
                                             });
                                             
-                                            // Force trigger validation and re-render
+                                            // Immediate validation and state update
                                             form.trigger(`items.${index}.taxPercentage`);
                                             form.trigger(`items.${index}.netAmount`);
+                                            form.trigger('items');
+                                            
+                                            // Force component re-render
                                             setTimeout(() => {
-                                              form.trigger('items');
-                                            }, 50);
+                                              form.trigger(`items.${index}`);
+                                            }, 10);
                                           }}
-                                          className={`px-1 py-0.5 text-xs rounded border ${
+                                          className={`px-1 py-0.5 text-xs rounded border transition-colors ${
                                             form.watch(`items.${index}.taxPercentage`) === rate
                                               ? 'bg-blue-500 text-white border-blue-500'
                                               : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
