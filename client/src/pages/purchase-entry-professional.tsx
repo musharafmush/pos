@@ -759,6 +759,14 @@ export default function PurchaseEntryProfessional() {
               hsnCode = item.hsnSacCode.trim();
             } else if (item.hsn && item.hsn.trim() !== "") {
               hsnCode = item.hsn.trim();
+            } else if (item.hsnSacCode && item.hsnSacCode.trim() !== "") {
+              hsnCode = item.hsnSacCode.trim();
+            } else if (item.gstCode && item.gstCode.trim() !== "") {
+              // Extract HSN from GST code if available
+              const gstCodeMatch = item.gstCode.match(/(\d{4,8})/);
+              if (gstCodeMatch) {
+                hsnCode = gstCodeMatch[1];
+              }
             } else if (product?.hsnCode && product.hsnCode.trim() !== "") {
               hsnCode = product.hsnCode.trim();
             }
@@ -768,6 +776,7 @@ export default function PurchaseEntryProfessional() {
               itemHsn_code: item.hsn_code,
               itemHsnSacCode: item.hsnSacCode,
               itemHsn: item.hsn,
+              itemGstCode: item.gstCode,
               productHsnCode: product?.hsnCode,
               finalHsnCode: hsnCode
             });
@@ -2617,7 +2626,7 @@ export default function PurchaseEntryProfessional() {
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     <Input
-                                      value={form.watch(`items.${index}.hsnCode`) || ""}
+                                      {...form.register(`items.${index}.hsnCode`)}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
                                       onChange={(e) => {
