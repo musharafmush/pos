@@ -749,18 +749,8 @@ export default function PurchaseEntryProfessional() {
               }
             }
 
-            // Enhanced HSN Code mapping with multiple fallbacks and debug logging
+            // Enhanced HSN Code mapping with multiple fallbacks
             let hsnCode = "";
-            console.log(`HSN mapping for item ${item.productId}:`, {
-              itemHsnCode: item.hsnCode,
-              itemHsn_code: item.hsn_code,
-              itemHsnSacCode: item.hsnSacCode,
-              itemHsn: item.hsn,
-              itemGstCode: item.gstCode,
-              productHsnCode: product?.hsnCode,
-              itemId: item.id || item.itemId,
-              productId: item.productId || item.product_id
-            });
 
             // Try different HSN field variations with proper string conversion
             const hsnFields = [
@@ -771,24 +761,23 @@ export default function PurchaseEntryProfessional() {
               item.hsn, 
               item.taxCode,
               item.tax_code,
+              item.gstCode,
               product?.hsnCode
             ];
 
             // Find first valid HSN code
             for (const field of hsnFields) {
-              if (field && String(field).trim() !== "") {
-                hsnCode = String(field).trim();
-                console.log(`Found HSN code: ${hsnCode} from field:`, field);
-                break;
-              }
-            }
-
-            // If still no HSN code, try to extract from GST code
-            if (!hsnCode && item.gstCode && String(item.gstCode).trim() !== "") {
-              const gstCodeMatch = String(item.gstCode).match(/(\d{4,8})/);
-              if (gstCodeMatch) {
-                hsnCode = gstCodeMatch[1];
-                console.log(`Extracted HSN from GST code: ${hsnCode}`);
+              if (field && String(field).trim() !== "" && String(field).trim() !== "null" && String(field).trim() !== "undefined") {
+                const cleanField = String(field).trim();
+                // Extract numeric HSN codes (4-8 digits)
+                const hsnMatch = cleanField.match(/(\d{4,8})/);
+                if (hsnMatch) {
+                  hsnCode = hsnMatch[1];
+                  break;
+                } else if (/^\d{4,8}$/.test(cleanField)) {
+                  hsnCode = cleanField;
+                  break;
+                }
               }
             }
 
@@ -804,18 +793,7 @@ export default function PurchaseEntryProfessional() {
               } else {
                 hsnCode = "19059090"; // General goods
               }
-              console.log(`Assigned default HSN code: ${hsnCode} for product: ${product.name}`);
             }
-
-            console.log(`Item ${item.productId} HSN mapping:`, {
-              itemHsnCode: item.hsnCode,
-              itemHsn_code: item.hsn_code,
-              itemHsnSacCode: item.hsnSacCode,
-              itemHsn: item.hsn,
-              itemGstCode: item.gstCode,
-              productHsnCode: product?.hsnCode,
-              finalHsnCode: hsnCode
-            });
 
             return {
               productId: item.productId || item.product_id || 0,
@@ -2670,7 +2648,7 @@ export default function PurchaseEntryProfessional() {
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     <Input
-                                      value={form.watch(`items.${index}.hsnCode`) || ""}
+                                      {...form.register(`items.${index}.hsnCode`)}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
                                       onChange={(e) => {
@@ -2755,7 +2733,10 @@ export default function PurchaseEntryProfessional() {
                                       min="0"
                                       max="100"
                                       step="0.01"
-                                      value={form.watch(`items.${index}.taxPercentage`) || 0}
+                                      {...form.register(`items.${index}.taxPercentage`, { 
+                                        valueAsNumber: true,
+                                        setValueAs: (value) => value || 0
+                                      })}
                                       onChange={(e) => {
                                         const taxRate = parseFloat(e.target.value) || 0;
                                         form.setValue(`items.${index}.taxPercentage`, taxRate);
