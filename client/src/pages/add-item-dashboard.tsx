@@ -27,6 +27,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   PackageIcon, 
   PlusIcon, 
@@ -65,6 +73,8 @@ export default function AddItemDashboard() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [deleteProductId, setDeleteProductId] = useState<number | null>(null);
+  const [viewProduct, setViewProduct] = useState<Product | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   // Fetch products with error handling
   const { data: products = [], isLoading: isLoadingProducts, error: productsError, refetch: refetchProducts } = useQuery({
@@ -192,10 +202,8 @@ export default function AddItemDashboard() {
   };
 
   const handleViewProduct = (product: Product) => {
-    toast({
-      title: "Product Details",
-      description: `${product.name} - SKU: ${product.sku} - Stock: ${product.stockQuantity}`,
-    });
+    setViewProduct(product);
+    setIsViewDialogOpen(true);
   };
 
   const refreshData = () => {
@@ -714,6 +722,241 @@ export default function AddItemDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* View Product Details Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <EyeIcon className="w-5 h-5" />
+                Product Details
+              </DialogTitle>
+              <DialogDescription>
+                Complete information about the selected product
+              </DialogDescription>
+            </DialogHeader>
+            
+            {viewProduct && (
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Product Name</label>
+                    <p className="text-lg font-semibold">{viewProduct.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">SKU</label>
+                    <p className="font-mono text-sm bg-white px-2 py-1 rounded border">
+                      {viewProduct.sku}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Category</label>
+                    <p className="text-sm">
+                      <Badge variant="outline">
+                        {categories.find(c => c.id === viewProduct.categoryId)?.name || 'Uncategorized'}
+                      </Badge>
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Status</label>
+                    <p className="text-sm">
+                      <Badge variant={viewProduct.active ? "default" : "secondary"}>
+                        {viewProduct.active ? "Active" : "Inactive"}
+                      </Badge>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {viewProduct.description && (
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <label className="text-sm font-medium text-gray-600">Description</label>
+                    <p className="text-sm mt-1">{viewProduct.description}</p>
+                  </div>
+                )}
+
+                {/* Pricing Information */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <label className="text-sm font-medium text-gray-600">Selling Price</label>
+                    <p className="text-xl font-bold text-green-600">
+                      ₹{parseFloat(viewProduct.price?.toString() || "0").toFixed(2)}
+                    </p>
+                  </div>
+                  {viewProduct.mrp && (
+                    <div className="p-4 border rounded-lg">
+                      <label className="text-sm font-medium text-gray-600">MRP</label>
+                      <p className="text-xl font-bold text-blue-600">
+                        ₹{parseFloat(viewProduct.mrp?.toString() || "0").toFixed(2)}
+                      </p>
+                    </div>
+                  )}
+                  {viewProduct.cost && (
+                    <div className="p-4 border rounded-lg">
+                      <label className="text-sm font-medium text-gray-600">Cost Price</label>
+                      <p className="text-xl font-bold text-orange-600">
+                        ₹{parseFloat(viewProduct.cost?.toString() || "0").toFixed(2)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Stock Information */}
+                <div className="grid grid-cols-3 gap-4 p-4 bg-yellow-50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Stock Quantity</label>
+                    <p className="text-2xl font-bold">{viewProduct.stockQuantity}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Alert Threshold</label>
+                    <p className="text-lg">{viewProduct.alertThreshold || 10}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Stock Status</label>
+                    <p className="text-sm">
+                      {(() => {
+                        const stock = viewProduct.stockQuantity || 0;
+                        const threshold = viewProduct.alertThreshold || 10;
+                        if (stock === 0) return <Badge variant="destructive">Out of Stock</Badge>;
+                        if (stock <= threshold) return <Badge variant="outline" className="border-orange-300 text-orange-600">Low Stock</Badge>;
+                        return <Badge variant="default" className="bg-green-100 text-green-700">In Stock</Badge>;
+                      })()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Physical Properties */}
+                {(viewProduct.weight || viewProduct.weightUnit) && (
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50 rounded-lg">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Weight</label>
+                      <p className="text-lg">{viewProduct.weight || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Weight Unit</label>
+                      <p className="text-lg">{viewProduct.weightUnit || 'N/A'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tax Information */}
+                <div className="grid grid-cols-4 gap-4 p-4 bg-red-50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">CGST Rate</label>
+                    <p className="text-lg">{viewProduct.cgstRate || 0}%</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">SGST Rate</label>
+                    <p className="text-lg">{viewProduct.sgstRate || 0}%</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">IGST Rate</label>
+                    <p className="text-lg">{viewProduct.igstRate || 0}%</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">CESS Rate</label>
+                    <p className="text-lg">{viewProduct.cessRate || 0}%</p>
+                  </div>
+                </div>
+
+                {/* Additional Information */}
+                <div className="grid grid-cols-2 gap-4">
+                  {viewProduct.hsnCode && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">HSN Code</label>
+                      <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                        {viewProduct.hsnCode}
+                      </p>
+                    </div>
+                  )}
+                  {viewProduct.gstCode && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">GST Code</label>
+                      <p className="text-sm">
+                        <Badge variant="outline">{viewProduct.gstCode}</Badge>
+                      </p>
+                    </div>
+                  )}
+                  {viewProduct.brand && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Brand</label>
+                      <p className="text-sm">{viewProduct.brand}</p>
+                    </div>
+                  )}
+                  {viewProduct.manufacturerName && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Manufacturer</label>
+                      <p className="text-sm">{viewProduct.manufacturerName}</p>
+                    </div>
+                  )}
+                  {viewProduct.supplierName && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Supplier</label>
+                      <p className="text-sm">{viewProduct.supplierName}</p>
+                    </div>
+                  )}
+                  {viewProduct.buyer && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Buyer</label>
+                      <p className="text-sm">{viewProduct.buyer}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Calculated Values */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-green-50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Stock Value</label>
+                    <p className="text-xl font-bold text-green-600">
+                      ₹{(parseFloat(viewProduct.price?.toString() || "0") * (viewProduct.stockQuantity || 0)).toFixed(2)}
+                    </p>
+                  </div>
+                  {viewProduct.mrp && viewProduct.price && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Profit Margin</label>
+                      <p className="text-xl font-bold text-blue-600">
+                        {(((parseFloat(viewProduct.mrp.toString()) - parseFloat(viewProduct.price.toString())) / parseFloat(viewProduct.mrp.toString())) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Timestamps */}
+                <div className="text-xs text-gray-500 space-y-1 p-3 bg-gray-100 rounded">
+                  <p><strong>Product ID:</strong> {viewProduct.id}</p>
+                  {viewProduct.createdAt && (
+                    <p><strong>Created:</strong> {new Date(viewProduct.createdAt).toLocaleString()}</p>
+                  )}
+                  {viewProduct.updatedAt && (
+                    <p><strong>Last Updated:</strong> {new Date(viewProduct.updatedAt).toLocaleString()}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsViewDialogOpen(false)}
+              >
+                Close
+              </Button>
+              {viewProduct && (
+                <Button 
+                  onClick={() => {
+                    setIsViewDialogOpen(false);
+                    handleEditProduct(viewProduct);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <EditIcon className="w-4 h-4 mr-2" />
+                  Edit Product
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteProductId !== null} onOpenChange={() => setDeleteProductId(null)}>
