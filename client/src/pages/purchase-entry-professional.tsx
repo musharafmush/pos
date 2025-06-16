@@ -762,14 +762,13 @@ export default function PurchaseEntryProfessional() {
               productId: item.productId || item.product_id
             });
 
-            // Try different HSN field variations
+            // Try different HSN field variations with proper string conversion
             const hsnFields = [
               item.hsnCode, 
               item.hsn_code, 
               item.hsnSacCode, 
               item.hsn_sac_code,
               item.hsn, 
-              item.hsnCode,
               item.taxCode,
               item.tax_code,
               product?.hsnCode
@@ -777,16 +776,16 @@ export default function PurchaseEntryProfessional() {
 
             // Find first valid HSN code
             for (const field of hsnFields) {
-              if (field && typeof field === 'string' && field.trim() !== "") {
-                hsnCode = field.trim();
+              if (field && String(field).trim() !== "") {
+                hsnCode = String(field).trim();
                 console.log(`Found HSN code: ${hsnCode} from field:`, field);
                 break;
               }
             }
 
             // If still no HSN code, try to extract from GST code
-            if (!hsnCode && item.gstCode && item.gstCode.trim() !== "") {
-              const gstCodeMatch = item.gstCode.match(/(\d{4,8})/);
+            if (!hsnCode && item.gstCode && String(item.gstCode).trim() !== "") {
+              const gstCodeMatch = String(item.gstCode).match(/(\d{4,8})/);
               if (gstCodeMatch) {
                 hsnCode = gstCodeMatch[1];
                 console.log(`Extracted HSN from GST code: ${hsnCode}`);
@@ -829,7 +828,7 @@ export default function PurchaseEntryProfessional() {
               sellingPrice: sellingPrice,
               mrp: mrp,
               hsnCode: hsnCode,
-              taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent || item.gstRate) || 18,
+              taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent || item.gstRate || item.cgstRate || item.sgstRate || item.igstRate) || 18,
               discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
               discountPercent: Number(item.discountPercent || item.discount_percent) || 0,
               expiryDate: item.expiryDate || item.expiry_date || "",
@@ -900,6 +899,9 @@ export default function PurchaseEntryProfessional() {
       // Populate form with existing data
       form.reset(formData);
 
+      console.log('Form reset with data:', formData);
+      console.log('Items data for debugging:', formData.items);
+
       // Also set the supplier value in the select component
       if (formData.supplierId) {
         setTimeout(() => {
@@ -907,9 +909,14 @@ export default function PurchaseEntryProfessional() {
         }, 100);
       }
 
+      // Force trigger form validation after loading data
+      setTimeout(() => {
+        form.trigger();
+      }, 200);
+
       toast({
         title: "Editing purchase order",
-        description: `Loaded purchase order ${formData.orderNumber}`,
+        description: `Loaded purchase order ${formData.orderNumber} with ${formData.items.length} items`,
       });
     }
   }, [existingPurchase, isEditMode, form, today, toast, products]);
@@ -2663,7 +2670,7 @@ export default function PurchaseEntryProfessional() {
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     <Input
-                                      {...form.register(`items.${index}.hsnCode`)}
+                                      value={form.watch(`items.${index}.hsnCode`) || ""}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
                                       onChange={(e) => {
@@ -2717,11 +2724,11 @@ export default function PurchaseEntryProfessional() {
                                     {/* HSN Code Validation Indicator */}
                                     {form.watch(`items.${index}.hsnCode`) && (
                                       <div className={`text-xs px-2 py-1 rounded text-center ${
-                                        form.watch(`items.${index}.hsnCode`).length >= 6 
+                                        (form.watch(`items.${index}.hsnCode`) || "").length >= 6 
                                           ? 'bg-green-100 text-green-700 border border-green-300' 
                                           : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
                                       }`}>
-                                        {form.watch(`items.${index}.hsnCode`).length >= 6 ? '✓ Valid HSN' : '⚠ Incomplete'}
+                                        {(form.watch(`items.${index}.hsnCode`) || "").length >= 6 ? '✓ Valid HSN' : '⚠ Incomplete'}
                                       </div>
                                     )}
 
@@ -3630,7 +3637,7 @@ export default function PurchaseEntryProfessional() {
                   }}
                   placeholder="Enter HSN/SAC Code (e.g., 15179010)"
                 />
-                {modalData.hsnCode && modalData.hsnCode.length >= 4 && (
+                {modalData.hsnCode && String(modalData.hsnCode).length >= 4 && (
                   <div className="text-xs text-blue-600">
                     ✓ HSN Code: {modalData.hsnCode}
                   </div>
