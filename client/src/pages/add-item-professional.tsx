@@ -302,10 +302,18 @@ export default function AddItemProfessional() {
     )
   );
 
+  // Set up form with proper default values
+  const getDefaultCategoryId = () => {
+    if (categories && categories.length > 0) {
+      return categories[0].id;
+    }
+    return 1; // fallback
+  };
+
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
-      itemCode: "",
+      itemCode: !isEditMode ? (allProducts ? generateItemCode() : generateFallbackItemCode()) : "",
       itemName: "",
       manufacturerName: "",
       supplierName: "",
@@ -318,7 +326,7 @@ export default function AddItemProfessional() {
       brand: "",
       buyer: "",
       hsnCode: "",
-      gstCode: "GST 12%",
+      gstCode: "GST 18%",
       purchaseGstCalculatedOn: "MRP",
       gstUom: "PIECES",
       purchaseAbatement: "",
@@ -362,13 +370,13 @@ export default function AddItemProfessional() {
       cost: "",
       weight: "",
       weightUnit: "kg",
-      categoryId: categories[0]?.id || 1,
+      categoryId: getDefaultCategoryId(),
       stockQuantity: "0",
       active: true,
-      cgstRate: "",
-      sgstRate: "",
-      igstRate: "",
-      cessRate: "",
+      cgstRate: "9",
+      sgstRate: "9",
+      igstRate: "0",
+      cessRate: "0",
       taxCalculationMethod: "exclusive",
       taxSelectionMode: "auto",
     },
@@ -475,6 +483,16 @@ export default function AddItemProfessional() {
     }
   }, [isEditMode, allProducts, form]);
 
+  // Update categoryId when categories are loaded
+  useEffect(() => {
+    if (!isEditMode && categories && categories.length > 0) {
+      const currentCategoryId = form.getValues('categoryId');
+      if (!currentCategoryId || currentCategoryId === 1) {
+        form.setValue('categoryId', categories[0].id);
+      }
+    }
+  }, [isEditMode, categories, form]);
+
   // Create/Update product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
@@ -564,7 +582,13 @@ export default function AddItemProfessional() {
       try {
         console.log(`Making ${method} request to ${url}`);
 
-        const res = await apiRequest(method, url, productData);
+        const res = await fetch(url, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(productData),
+        });
 
         console.log('API Response status:', res.status, res.statusText);
 
@@ -1004,6 +1028,19 @@ export default function AddItemProfessional() {
                       variant: "destructive",
                     });
                     return;
+                  }
+
+                  // Validate MRP if provided
+                  if (data.mrp?.trim()) {
+                    const mrpValue = parseFloat(data.mrp);
+                    if (isNaN(mrpValue) || mrpValue < priceValue) {
+                      toast({
+                        title: "Invalid MRP",
+                        description: "MRP must be greater than or equal to selling price",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
                   }
 
                   console.log("Validation passed, submitting to mutation...");
