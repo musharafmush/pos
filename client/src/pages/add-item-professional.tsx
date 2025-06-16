@@ -391,7 +391,7 @@ export default function AddItemProfessional() {
   useEffect(() => {
     if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0) {
       console.log('Populating form with product data:', editingProduct);
-      
+
       // Calculate total GST rate
       const cgstRate = parseFloat(editingProduct.cgstRate || '0');
       const sgstRate = parseFloat(editingProduct.sgstRate || '0');
@@ -480,7 +480,7 @@ export default function AddItemProfessional() {
 
       console.log('Setting form data:', formData);
       form.reset(formData);
-      
+
       // Force trigger validation after setting data
       setTimeout(() => {
         form.trigger();
