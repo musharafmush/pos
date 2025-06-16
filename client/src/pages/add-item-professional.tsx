@@ -861,7 +861,7 @@ export default function AddItemProfessional() {
                                       <SelectItem value="Home & Garden">Home & Garden</SelectItem>
                                       <SelectItem value="Health & Beauty">Health & Beauty</SelectItem>
                                       <SelectItem value="Sports & Fitness">Sports & Fitness</SelectItem>
-                                      <SelectItem                                      <SelectItem value="Automotive">Automotive</SelectItem>
+                                      <SelectItem value="Automotive">Automotive</SelectItem>
                                       <SelectItem value="Books & Stationery">Books & Stationery</SelectItem>
                                       <SelectItem value="Toys & Games">Toys & Games</SelectItem>
                                     </SelectContent>
