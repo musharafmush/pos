@@ -1888,7 +1888,7 @@ export const storage = {
 
   async getCustomerDemographics(startDate: Date): Promise<any[]> {
     try {
-      const { sqlite = await import('../db/index.js');
+      const { sqlite } = await import('../db/index.js');
       const query = sqlite.prepare(`
         SELECT
           CASE 
