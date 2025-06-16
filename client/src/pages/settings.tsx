@@ -687,6 +687,7 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
 
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import { PrinterIcon, BellIcon, ShieldIcon, UserIcon } from 'lucide-react';
 import ReceiptSettings from './receipt-settings';
 
