@@ -2594,7 +2594,7 @@ export default function PurchaseEntryProfessional() {
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     <Input
-                                      value={form.watch(`items.${index}.hsnCode`) || ""}
+                                      {...form.register(`items.${index}.hsnCode`)}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
                                       onChange={(e) => {
