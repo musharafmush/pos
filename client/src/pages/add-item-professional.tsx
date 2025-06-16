@@ -25,12 +25,14 @@ import {
   ShoppingCartIcon,
   BarChart3Icon,
   CheckIcon,
-  XIcon
+  XIcon,
+  EditIcon,
+  Loader2Icon
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Category, Supplier } from "@shared/schema";
+import type { Category, Supplier, Product } from "@shared/schema";
 
 const productFormSchema = z.object({
   // Item Information
@@ -67,6 +69,7 @@ const productFormSchema = z.object({
 
   // EAN Code/Barcode
   eanCodeRequired: z.boolean().default(false),
+  barcode: z.string().optional(),
 
   // Weight & Packing (Enhanced for Bulk Items)
   weightsPerUnit: z.string().default("1"),
@@ -141,6 +144,23 @@ export default function AddItemProfessional() {
   const [, setLocation] = useLocation();
   const [currentSection, setCurrentSection] = useState("item-information");
 
+  // Extract edit ID from URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get('edit');
+  const isEditMode = !!editId;
+
+  // Fetch product data if in edit mode
+  const { data: editingProduct, isLoading: isLoadingProduct } = useQuery({
+    queryKey: ["/api/products", editId],
+    queryFn: async () => {
+      if (!editId) return null;
+      const response = await fetch(`/api/products/${editId}`);
+      if (!response.ok) throw new Error("Failed to fetch product");
+      return response.json();
+    },
+    enabled: !!editId,
+  });
+
   // Generate sequential item code
   const generateItemCode = () => {
     // Get all existing products to find the highest item code number
@@ -210,7 +230,7 @@ export default function AddItemProfessional() {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
-      itemCode: allProducts ? generateItemCode() : generateFallbackItemCode(),
+      itemCode: "",
       itemName: "",
       manufacturerName: "",
       supplierName: "",
@@ -273,18 +293,108 @@ export default function AddItemProfessional() {
     },
   });
 
-  // Update item code when products data loads
+  // Update form with existing product data when in edit mode
   useEffect(() => {
-    if (allProducts && allProducts.length > 0) {
+    if (isEditMode && editingProduct && !isLoadingProduct) {
+      // Calculate total GST rate
+      const cgstRate = parseFloat(editingProduct.cgstRate || '0');
+      const sgstRate = parseFloat(editingProduct.sgstRate || '0');
+      const igstRate = parseFloat(editingProduct.igstRate || '0');
+      const totalGst = cgstRate + sgstRate + igstRate;
+
+      // Determine GST code based on total rate
+      let gstCode = 'GST 18%';
+      if (totalGst === 0) gstCode = 'GST 0%';
+      else if (totalGst === 5) gstCode = 'GST 5%';
+      else if (totalGst === 12) gstCode = 'GST 12%';
+      else if (totalGst === 18) gstCode = 'GST 18%';
+      else if (totalGst === 28) gstCode = 'GST 28%';
+
+      // Find category by ID
+      const category = categories.find((cat: any) => cat.id === editingProduct.categoryId);
+
+      form.reset({
+        itemCode: editingProduct.sku || "",
+        itemName: editingProduct.name || "",
+        manufacturerName: "",
+        supplierName: "",
+        alias: "",
+        aboutProduct: editingProduct.description || "",
+        itemProductType: "Standard",
+        department: "",
+        mainCategory: category?.name || "",
+        subCategory: "",
+        brand: "",
+        buyer: "",
+        hsnCode: editingProduct.hsnCode || "",
+        gstCode: gstCode,
+        purchaseGstCalculatedOn: "MRP",
+        gstUom: "PIECES",
+        purchaseAbatement: "",
+        configItemWithCommodity: false,
+        seniorExemptApplicable: false,
+        eanCodeRequired: false,
+        barcode: editingProduct.barcode || "",
+        weightsPerUnit: "1",
+        batchExpiryDetails: "Not Required",
+        itemPreparationsStatus: "Trade As Is",
+        grindingCharge: "",
+        weightInGms: "",
+        bulkItemName: "",
+        repackageUnits: "",
+        repackageType: "",
+        packagingMaterial: "",
+        decimalPoint: "0",
+        productType: "NA",
+        sellBy: "None",
+        itemPerUnit: "1",
+        maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
+        batchSelection: "Not Applicable",
+        isWeighable: false,
+        skuType: "Put Away",
+        indentType: "Manual",
+        gateKeeperMargin: "",
+        allowItemFree: false,
+        showOnMobileDashboard: false,
+        enableMobileNotifications: false,
+        quickAddToCart: false,
+        perishableItem: false,
+        temperatureControlled: false,
+        fragileItem: false,
+        trackSerialNumbers: false,
+        fdaApproved: false,
+        bisCertified: false,
+        organicCertified: false,
+        itemIngredients: "",
+        price: editingProduct.price?.toString() || "",
+        mrp: editingProduct.mrp?.toString() || "",
+        cost: editingProduct.cost?.toString() || "",
+        weight: editingProduct.weight?.toString() || "",
+        weightUnit: editingProduct.weightUnit || "kg",
+        categoryId: editingProduct.categoryId || categories[0]?.id || 1,
+        stockQuantity: editingProduct.stockQuantity?.toString() || "0",
+        active: editingProduct.active !== false,
+        cgstRate: editingProduct.cgstRate || "",
+        sgstRate: editingProduct.sgstRate || "",
+        igstRate: editingProduct.igstRate || "",
+        cessRate: "",
+        taxCalculationMethod: "exclusive",
+      });
+    }
+  }, [isEditMode, editingProduct, isLoadingProduct, categories, form]);
+
+  // Update item code when products data loads (only for create mode)
+  useEffect(() => {
+    if (!isEditMode && allProducts && allProducts.length > 0) {
       const currentItemCode = form.getValues('itemCode');
-      // Only update if current code is a fallback code (contains timestamp)
-      if (currentItemCode.length === 9 && !currentItemCode.startsWith('ITM0')) {
+      // Only update if current code is a fallback code (contains timestamp) or empty
+      if (!currentItemCode || (currentItemCode.length === 9 && !currentItemCode.startsWith('ITM0'))) {
         form.setValue('itemCode', generateItemCode());
       }
     }
-  }, [allProducts, form]);
+  }, [isEditMode, allProducts, form]);
 
-  // Create product mutation
+  // Create/Update product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
       // Validate required fields
@@ -319,97 +429,118 @@ export default function AddItemProfessional() {
         allowNegativeStock: false,
       };
 
-      const res = await apiRequest("POST", "/api/products", productData);
+      const method = isEditMode ? "PUT" : "POST";
+      const url = isEditMode ? `/api/products/${editId}` : "/api/products";
+
+      const res = await apiRequest(method, url, productData);
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to create product");
+        throw new Error(errorData.message || `Failed to ${isEditMode ? 'update' : 'create'} product`);
       }
 
       return await res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      form.reset({
-        itemCode: allProducts ? generateItemCode() : generateFallbackItemCode(),
-        itemName: "",
-        manufacturerName: "",
-        supplierName: "",
-        alias: "",
-        aboutProduct: "",
-        itemProductType: "Standard",
-        department: "",
-        mainCategory: "",
-        subCategory: "",
-        brand: "",
-        buyer: "",
-        hsnCode: "",
-        gstCode: "GST 12%",
-        purchaseGstCalculatedOn: "MRP",
-        gstUom: "PIECES",
-        purchaseAbatement: "",
-        configItemWithCommodity: false,
-        seniorExemptApplicable: false,
-        eanCodeRequired: false,
-        weightsPerUnit: "1",
-        batchExpiryDetails: "Not Required",
-        itemPreparationsStatus: "Trade As Is",
-        grindingCharge: "",
-        weightInGms: "",
-        bulkItemName: "",
-        repackageUnits: "",
-        repackageType: "",
-        packagingMaterial: "",
-        decimalPoint: "0",
-        productType: "NA",
-        sellBy: "None",
-        itemPerUnit: "1",
-        maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
-        batchSelection: "Not Applicable",
-        isWeighable: false,
-        skuType: "Put Away",
-        indentType: "Manual",
-        gateKeeperMargin: "",
-        allowItemFree: false,
-        showOnMobileDashboard: false,
-        enableMobileNotifications: false,
-        quickAddToCart: false,
-        perishableItem: false,
-        temperatureControlled: false,
-        fragileItem: false,
-        trackSerialNumbers: false,
-        fdaApproved: false,
-        bisCertified: false,
-        organicCertified: false,
-        itemIngredients: "",
-        price: "",
-        mrp: "",
-        cost: "",
-        weight: "",
-        weightUnit: "kg",
-        categoryId: categories[0]?.id || 1,
-        stockQuantity: "0",
-        active: true,
-      });
 
-      toast({
-        title: "Success! 🎉", 
-        description: `Product "${data.name}" created successfully with SKU: ${data.sku}`,
-        action: (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setLocation("/add-item-dashboard")}
-          >
-            View Dashboard
-          </Button>
-        ),
-      });
+      if (isEditMode) {
+        toast({
+          title: "Success! 🎉", 
+          description: `Product "${data.name}" updated successfully`,
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setLocation("/add-item-dashboard")}
+            >
+              View Dashboard
+            </Button>
+          ),
+        });
+      } else {
+        form.reset({
+          itemCode: allProducts ? generateItemCode() : generateFallbackItemCode(),
+          itemName: "",
+          manufacturerName: "",
+          supplierName: "",
+          alias: "",
+          aboutProduct: "",
+          itemProductType: "Standard",
+          department: "",
+          mainCategory: "",
+          subCategory: "",
+          brand: "",
+          buyer: "",
+          hsnCode: "",
+          gstCode: "GST 12%",
+          purchaseGstCalculatedOn: "MRP",
+          gstUom: "PIECES",
+          purchaseAbatement: "",
+          configItemWithCommodity: false,
+          seniorExemptApplicable: false,
+          eanCodeRequired: false,
+          barcode: "",
+          weightsPerUnit: "1",
+          batchExpiryDetails: "Not Required",
+          itemPreparationsStatus: "Trade As Is",
+          grindingCharge: "",
+          weightInGms: "",
+          bulkItemName: "",
+          repackageUnits: "",
+          repackageType: "",
+          packagingMaterial: "",
+          decimalPoint: "0",
+          productType: "NA",
+          sellBy: "None",
+          itemPerUnit: "1",
+          maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
+          batchSelection: "Not Applicable",
+          isWeighable: false,
+          skuType: "Put Away",
+          indentType: "Manual",
+          gateKeeperMargin: "",
+          allowItemFree: false,
+          showOnMobileDashboard: false,
+          enableMobileNotifications: false,
+          quickAddToCart: false,
+          perishableItem: false,
+          temperatureControlled: false,
+          fragileItem: false,
+          trackSerialNumbers: false,
+          fdaApproved: false,
+          bisCertified: false,
+          organicCertified: false,
+          itemIngredients: "",
+          price: "",
+          mrp: "",
+          cost: "",
+          weight: "",
+          weightUnit: "kg",
+          categoryId: categories[0]?.id || 1,
+          stockQuantity: "0",
+          active: true,
+        });
+
+        toast({
+          title: "Success! 🎉", 
+          description: `Product "${data.name}" created successfully with SKU: ${data.sku}`,
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setLocation("/add-item-dashboard")}
+            >
+              View Dashboard
+            </Button>
+          ),
+        });
+      }
     },
     onError: (error: Error) => {
-      console.error("Product creation error:", error);
+      console.error("Product operation error:", error);
       toast({
-        title: "Error Creating Product",
+        title: `Error ${isEditMode ? 'Updating' : 'Creating'} Product`,
         description: error.message || "Please check all required fields and try again",
         variant: "destructive",
       });
@@ -430,6 +561,21 @@ export default function AddItemProfessional() {
     { id: "other-information", label: "Other Information", icon: <InfoIcon className="w-4 h-4" /> },
   ];
 
+  // Show loading state when fetching product data
+  if (isEditMode && isLoadingProduct) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2Icon className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <h2 className="text-lg font-semibold">Loading Product Data...</h2>
+            <p className="text-gray-600">Please wait while we fetch the product information.</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
@@ -437,11 +583,21 @@ export default function AddItemProfessional() {
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <PackageIcon className="w-4 h-4 text-blue-600" />
+                {isEditMode ? <EditIcon className="w-4 h-4 text-blue-600" /> : <PackageIcon className="w-4 h-4 text-blue-600" />}
               </div>
-              <h1 className="text-xl font-semibold">Add Item</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-semibold">
+                  {isEditMode ? "Edit Item" : "Add Item"}
+                </h1>
+                {isEditMode && (
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                    <EditIcon className="w-3 h-3 mr-1" />
+                    Edit Mode
+                  </Badge>
+                )}
+              </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setLocation("/")}>
+            <Button variant="outline" size="sm" onClick={() => setLocation("/add-item-dashboard")}>
               <XIcon className="w-4 h-4 mr-2" />
               Close
             </Button>
@@ -537,6 +693,11 @@ export default function AddItemProfessional() {
                       <CardTitle className="flex items-center gap-2">
                         <InfoIcon className="w-5 h-5" />
                         Item Information
+                        {isEditMode && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            Editing: {editingProduct?.name}
+                          </Badge>
+                        )}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -550,18 +711,20 @@ export default function AddItemProfessional() {
                               <FormControl>
                                 <div className="flex gap-2">
                                   <Input {...field} placeholder="Auto-generated code" />
-                                  <Button 
-                                    type="button" 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => {
-                                      const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
-                                      field.onChange(newCode);
-                                    }}
-                                    className="whitespace-nowrap"
-                                  >
-                                    Generate New
-                                  </Button>
+                                  {!isEditMode && (
+                                    <Button 
+                                      type="button" 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => {
+                                        const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
+                                        field.onChange(newCode);
+                                      }}
+                                      className="whitespace-nowrap"
+                                    >
+                                      Generate New
+                                    </Button>
+                                  )}
                                 </div>
                               </FormControl>
                               <FormMessage />
@@ -698,7 +861,7 @@ export default function AddItemProfessional() {
                                       <SelectItem value="Home & Garden">Home & Garden</SelectItem>
                                       <SelectItem value="Health & Beauty">Health & Beauty</SelectItem>
                                       <SelectItem value="Sports & Fitness">Sports & Fitness</SelectItem>
-                                      <SelectItem value="Automotive">Automotive</SelectItem>
+                                      <SelectItem                                      <SelectItem value="Automotive">Automotive</SelectItem>
                                       <SelectItem value="Books & Stationery">Books & Stationery</SelectItem>
                                       <SelectItem value="Toys & Games">Toys & Games</SelectItem>
                                     </SelectContent>
@@ -743,103 +906,6 @@ export default function AddItemProfessional() {
                             )}
                           />
                         </div>
-
-                        <div className="grid grid-cols-2 gap-6 mt-4">
-                          <FormField
-                            control={form.control}
-                            name="subCategory"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium text-gray-700">SUB CATEGORY</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger className="h-10">
-                                      <SelectValue placeholder="Select sub category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Food & Beverages">Food & Beverages</SelectItem>
-                                      <SelectItem value="Personal Care">Personal Care</SelectItem>
-                                      <SelectItem value="Household Items">Household Items</SelectItem>
-                                      <SelectItem value="Dairy Products">Dairy Products</SelectItem>
-                                      <SelectItem value="Snacks & Confectionery">Snacks & Confectionery</SelectItem>
-                                      <SelectItem value="Beverages">Beverages</SelectItem>
-                                      <SelectItem value="Spices & Seasonings">Spices & Seasonings</SelectItem>
-                                      <SelectItem value="Packaged Foods">Packaged Foods</SelectItem>
-                                      <SelectItem value="Cleaning Supplies">Cleaning Supplies</SelectItem>
-                                      <SelectItem value="Health Supplements">Health Supplements</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="brand"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium text-gray-700">BRAND</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger className="h-10">
-                                      <SelectValue placeholder="Select brand" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Amul">Amul</SelectItem>
-                                      <SelectItem value="Britannia">Britannia</SelectItem>
-                                      <SelectItem value="Parle">Parle</SelectItem>
-                                      <SelectItem value="ITC">ITC</SelectItem>
-                                      <SelectItem value="Nestle">Nestle</SelectItem>
-                                      <SelectItem value="Tata">Tata</SelectItem>
-                                      <SelectItem value="Hindustan Unilever">Hindustan Unilever</SelectItem>
-                                      <SelectItem value="Patanjali">Patanjali</SelectItem>
-                                      <SelectItem value="Mother Dairy">Mother Dairy</SelectItem>
-                                      <SelectItem value="Dabur">Dabur</SelectItem>
-                                      <SelectItem value="Haldiram's">Haldiram's</SelectItem>
-                                      <SelectItem value="MTR">MTR</SelectItem>
-                                      <SelectItem value="Everest">Everest</SelectItem>
-                                      <SelectItem value="MDH">MDH</SelectItem>
-                                      <SelectItem value="Catch">Catch</SelectItem>
-                                      <SelectItem value="Generic">Generic</SelectItem>
-                                      <SelectItem value="Store Brand">Store Brand</SelectItem>
-                                      <SelectItem value="Other">Other</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <FormField
-                          control={form.control}
-                          name="buyer"
-                          render={({ field }) => (
-                            <FormItem className="mt-4">
-                              <FormLabel className="text-sm font-medium text-gray-700">BUYER *</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger className="h-10">
-                                    <SelectValue placeholder="Select buyer" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Primary Buyer">Primary Buyer</SelectItem>
-                                    <SelectItem value="Secondary Buyer">Secondary Buyer</SelectItem>
-                                    <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
-                                    <SelectItem value="Purchase Head">Purchase Head</SelectItem>
-                                    <SelectItem value="Store Manager">Store Manager</SelectItem>
-                                    <SelectItem value="Category Manager">Category Manager</SelectItem>
-                                    <SelectItem value="Regional Buyer">Regional Buyer</SelectItem>
-                                    <SelectItem value="Local Supplier">Local Supplier</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -1727,7 +1793,7 @@ export default function AddItemProfessional() {
                                     <FormMessage />
                                   </FormItem>
                                 )}
-                              />
+                                  />
                                   </div>
 
                                   {/* Right Side - Bulk Item Details */}
@@ -2127,12 +2193,14 @@ export default function AddItemProfessional() {
                                           onChange={(e) => {
                                             const value = e.target.value;
                                             field.onChange(value);
-                                            // Auto-update selling price if not set
-                                            const currentSellingPrice = form.getValues("price");
-                                            if (!currentSellingPrice || currentSellingPrice === "0" || currentSellingPrice === "") {
-                                              const costValue = parseFloat(value) || 0;
-                                              const suggestedPrice = costValue * 1.2; // 20% markup
-                                              form.setValue("price", suggestedPrice.toString());
+                                            // Auto-update selling price if not set and not in edit mode
+                                            if (!isEditMode) {
+                                              const currentSellingPrice = form.getValues("price");
+                                              if (!currentSellingPrice || currentSellingPrice === "0" || currentSellingPrice === "") {
+                                                const costValue = parseFloat(value) || 0;
+                                                const suggestedPrice = costValue * 1.2; // 20% markup
+                                                form.setValue("price", suggestedPrice.toString());
+                                              }
                                             }
                                           }}
                                         />
@@ -2561,16 +2629,29 @@ export default function AddItemProfessional() {
                         <Button 
                           type="button" 
                           variant="outline"
-                          onClick={() => form.reset()}
+                          onClick={() => {
+                            if (isEditMode) {
+                              setLocation("/add-item-dashboard");
+                            } else {
+                              form.reset();
+                            }
+                          }}
                         >
-                          Reset
+                          {isEditMode ? "Cancel" : "Reset"}
                         </Button>
                         <Button 
                           type="submit" 
                           disabled={createProductMutation.isPending} 
                           className="bg-blue-600 hover:bg-blue-700"
                         >
-                          {createProductMutation.isPending ? "Adding..." : "Add"}
+                          {createProductMutation.isPending ? (
+                            <>
+                              <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
+                              {isEditMode ? "Updating..." : "Adding..."}
+                            </>
+                          ) : (
+                            isEditMode ? "Update Product" : "Add Product"
+                          )}
                         </Button>
                       </div>
                     </form>
