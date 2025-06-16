@@ -795,6 +795,51 @@ export default function PurchaseEntryProfessional() {
               }
             }
 
+            // Enhanced tax percentage calculation with better fallbacks
+            let taxPercentage = 18; // Default tax rate
+            
+            // Try to get tax percentage from various database fields
+            const taxFields = [
+              item.taxPercentage,
+              item.tax_percentage,
+              item.taxPercent,
+              item.tax_percent,
+              item.gstRate,
+              item.totalGstRate,
+              item.total_gst_rate
+            ];
+            
+            for (const field of taxFields) {
+              const taxValue = Number(field);
+              if (!isNaN(taxValue) && taxValue >= 0 && taxValue <= 100) {
+                taxPercentage = taxValue;
+                break;
+              }
+            }
+            
+            // If still no valid tax rate, try to get from product or calculate from HSN
+            if (taxPercentage === 18 && !item.taxPercentage && !item.tax_percentage) {
+              if (product && (product.cgstRate || product.sgstRate || product.igstRate)) {
+                const cgstRate = parseFloat(product.cgstRate || "0");
+                const sgstRate = parseFloat(product.sgstRate || "0");
+                const igstRate = parseFloat(product.igstRate || "0");
+                taxPercentage = igstRate > 0 ? igstRate : (cgstRate + sgstRate);
+              } else if (hsnCode) {
+                // Auto-suggest tax rate based on HSN code
+                if (hsnCode.startsWith("04") || hsnCode.startsWith("07") || hsnCode.startsWith("08")) {
+                  taxPercentage = 0; // Fresh produce
+                } else if (hsnCode.startsWith("10") || hsnCode.startsWith("15") || hsnCode.startsWith("17")) {
+                  taxPercentage = 5; // Food grains, oils, sugar
+                } else if (hsnCode.startsWith("62") || hsnCode.startsWith("85171") || hsnCode.startsWith("87120")) {
+                  taxPercentage = 12; // Textiles, phones, bicycles
+                } else if (hsnCode.startsWith("33") || hsnCode.startsWith("34") || hsnCode.startsWith("19")) {
+                  taxPercentage = 18; // Personal care, biscuits
+                } else if (hsnCode.startsWith("22") || hsnCode.startsWith("24") || hsnCode.startsWith("87032")) {
+                  taxPercentage = 28; // Beverages, tobacco, cars
+                }
+              }
+            }
+
             return {
               productId: item.productId || item.product_id || 0,
               code: item.code || product?.sku || "",
@@ -806,7 +851,7 @@ export default function PurchaseEntryProfessional() {
               sellingPrice: sellingPrice,
               mrp: mrp,
               hsnCode: hsnCode,
-              taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent || item.gstRate || item.cgstRate || item.sgstRate || item.igstRate) || 18,
+              taxPercentage: taxPercentage,
               discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
               discountPercent: Number(item.discountPercent || item.discount_percent) || 0,
               expiryDate: item.expiryDate || item.expiry_date || "",
@@ -873,24 +918,37 @@ export default function PurchaseEntryProfessional() {
       };
 
       console.log('Form data to populate:', formData);
+      console.log('Items with HSN and Tax data:', mappedItems.map(item => ({
+        description: item.description,
+        hsnCode: item.hsnCode,
+        taxPercentage: item.taxPercentage
+      })));
 
-      // Populate form with existing data
-      form.reset(formData);
-
-      console.log('Form reset with data:', formData);
-      console.log('Items data for debugging:', formData.items);
-
-      // Also set the supplier value in the select component
-      if (formData.supplierId) {
-        setTimeout(() => {
-          form.setValue("supplierId", formData.supplierId);
-        }, 100);
-      }
-
-      // Force trigger form validation after loading data
+      // Clear form first to ensure clean state
+      form.reset();
+      
+      // Wait a moment then populate with new data
       setTimeout(() => {
+        form.reset(formData);
+        
+        // Force update each field to ensure proper registration
+        mappedItems.forEach((item, index) => {
+          form.setValue(`items.${index}.hsnCode`, item.hsnCode);
+          form.setValue(`items.${index}.taxPercentage`, item.taxPercentage);
+          form.setValue(`items.${index}.productId`, item.productId);
+          form.setValue(`items.${index}.description`, item.description);
+          form.setValue(`items.${index}.unitCost`, item.unitCost);
+          form.setValue(`items.${index}.receivedQty`, item.receivedQty);
+        });
+        
+        // Set supplier value
+        if (formData.supplierId) {
+          form.setValue("supplierId", formData.supplierId);
+        }
+        
+        // Force trigger form validation
         form.trigger();
-      }, 200);
+      }, 100);
 
       toast({
         title: "Editing purchase order",
@@ -2648,7 +2706,7 @@ export default function PurchaseEntryProfessional() {
                                 <TableCell className="border-r border-gray-200 px-2 py-2">
                                   <div className="space-y-2">
                                     <Input
-                                      {...form.register(`items.${index}.hsnCode`)}
+                                      value={form.watch(`items.${index}.hsnCode`) || ""}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
                                       onChange={(e) => {
@@ -2672,7 +2730,8 @@ export default function PurchaseEntryProfessional() {
                                             suggestedGst = 18; // Default rate
                                           }
 
-                                          if (suggestedGst !== form.getValues(`items.${index}.taxPercentage`)) {
+                                          const currentTax = form.getValues(`items.${index}.taxPercentage`) || 0;
+                                          if (suggestedGst !== currentTax) {
                                             form.setValue(`items.${index}.taxPercentage`, suggestedGst);
                                             
                                             // Recalculate net amount with new tax rate
@@ -2733,10 +2792,7 @@ export default function PurchaseEntryProfessional() {
                                       min="0"
                                       max="100"
                                       step="0.01"
-                                      {...form.register(`items.${index}.taxPercentage`, { 
-                                        valueAsNumber: true,
-                                        setValueAs: (value) => value || 0
-                                      })}
+                                      value={form.watch(`items.${index}.taxPercentage`) || 0}
                                       onChange={(e) => {
                                         const taxRate = parseFloat(e.target.value) || 0;
                                         form.setValue(`items.${index}.taxPercentage`, taxRate);
@@ -3610,6 +3666,11 @@ export default function PurchaseEntryProfessional() {
                           const netAmount = taxableAmount + tax;
                           
                           form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                          
+                          toast({
+                            title: "Tax Rate Updated! 📊",
+                            description: `GST rate auto-updated to ${suggestedGst}% based on HSN ${hsnValue}`,
+                          });
                         }
                       }
                       
