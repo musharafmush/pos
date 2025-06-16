@@ -408,48 +408,71 @@ export default function AddItemProfessional() {
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
       // Validate required fields
-      if (!data.itemName || !data.itemCode || !data.price || !data.stockQuantity) {
-        throw new Error("Please fill in all required fields");
+      if (!data.itemName || !data.itemCode || !data.price) {
+        throw new Error("Please fill in all required fields: Item Name, Item Code, and Price");
+      }
+
+      // Validate numeric fields
+      const price = parseFloat(data.price);
+      const mrp = data.mrp ? parseFloat(data.mrp) : price;
+      const cost = data.cost ? parseFloat(data.cost) : 0;
+      const stockQuantity = data.stockQuantity ? parseInt(data.stockQuantity) : 0;
+
+      if (isNaN(price) || price <= 0) {
+        throw new Error("Price must be a valid positive number");
+      }
+
+      if (isNaN(stockQuantity) || stockQuantity < 0) {
+        throw new Error("Stock quantity must be a valid positive number");
       }
 
       const productData = {
         name: data.itemName.trim(),
         sku: data.itemCode.trim(),
         description: data.aboutProduct?.trim() || "",
-        price: parseFloat(data.price),
-        mrp: parseFloat(data.mrp),
-        cost: data.cost ? parseFloat(data.cost) : 0,
+        price: price,
+        mrp: mrp,
+        cost: cost,
         weight: data.weight ? parseFloat(data.weight) : null,
-        weightUnit: data.weightUnit,
-        stockQuantity: parseInt(data.stockQuantity),
-        categoryId: data.categoryId,
+        weightUnit: data.weightUnit || "kg",
+        stockQuantity: stockQuantity,
+        categoryId: data.categoryId || null,
         barcode: data.barcode?.trim() || "",
-        active: data.active,
+        active: data.active !== undefined ? data.active : true,
         alertThreshold: 5,
-        unit: "PCS",
         hsnCode: data.hsnCode?.trim() || "",
-        taxRate: data.gstCode?.match(/\d+/)?.[0] || "18",
         // Enhanced tax breakdown for better synchronization
         cgstRate: data.cgstRate || "0",
         sgstRate: data.sgstRate || "0", 
         igstRate: data.igstRate || "0",
         cessRate: data.cessRate || "0",
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
-        trackInventory: true,
-        allowNegativeStock: false,
       };
+
+      console.log('Submitting product data:', productData);
 
       const method = isEditMode ? "PUT" : "POST";
       const url = isEditMode ? `/api/products/${editId}` : "/api/products";
 
-      const res = await apiRequest(method, url, productData);
+      try {
+        const res = await apiRequest(method, url, productData);
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || `Failed to ${isEditMode ? 'update' : 'create'} product`);
+        if (!res.ok) {
+          let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} product`;
+          try {
+            const errorData = await res.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch {
+            errorMessage = `HTTP ${res.status}: ${res.statusText}`;
+          }
+          throw new Error(errorMessage);
+        }
+
+        return await res.json();
+      } catch (error) {
+        console.error('Product operation error:', error);
+        throw error;
       }
-
-      return await res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });

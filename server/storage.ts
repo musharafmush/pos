@@ -227,23 +227,126 @@ export const storage = {
     }
   },
 
-  async updateProduct(id: number, data: Partial<any>): Promise<Product> {
+  async updateProduct(id: number, productData: any): Promise<Product | null> {
     try {
-      const [updatedProduct] = await db.update(products)
-        .set({
-          ...data,
-          updatedAt: new Date()
-        })
-        .where(eq(products.id, id))
-        .returning();
+      console.log('Updating product with ID:', id, 'Data:', productData);
 
-      if (!updatedProduct) {
-        throw new Error('Product not found');
+      // First check if product exists
+      const existingProduct = this.db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+      if (!existingProduct) {
+        console.log('Product not found with ID:', id);
+        return null;
       }
 
-      return updatedProduct;
+      // Prepare update data with proper type conversion and validation
+      const updateData = {
+        name: productData.name?.toString().trim() || existingProduct.name,
+        description: productData.description?.toString().trim() || existingProduct.description || '',
+        sku: productData.sku?.toString().trim() || existingProduct.sku,
+        price: productData.price ? parseFloat(productData.price.toString()) : parseFloat(existingProduct.price || 0),
+        cost: productData.cost ? parseFloat(productData.cost.toString()) : parseFloat(existingProduct.cost || 0),
+        mrp: productData.mrp ? parseFloat(productData.mrp.toString()) : existingProduct.mrp,
+        weight: productData.weight ? parseFloat(productData.weight.toString()) : existingProduct.weight,
+        weightUnit: productData.weightUnit?.toString() || existingProduct.weightUnit || 'kg',
+        categoryId: productData.categoryId ? parseInt(productData.categoryId.toString()) : existingProduct.categoryId,
+        stockQuantity: productData.stockQuantity !== undefined ? parseInt(productData.stockQuantity.toString()) : existingProduct.stockQuantity,
+        alertThreshold: productData.alertThreshold !== undefined ? parseInt(productData.alertThreshold.toString()) : existingProduct.alertThreshold || 5,
+        barcode: productData.barcode?.toString().trim() || existingProduct.barcode || '',
+        hsnCode: productData.hsnCode?.toString().trim() || existingProduct.hsnCode || '',
+        cgstRate: productData.cgstRate !== undefined ? productData.cgstRate?.toString() : existingProduct.cgstRate || '0',
+        sgstRate: productData.sgstRate !== undefined ? productData.sgstRate?.toString() : existingProduct.sgstRate || '0',
+        igstRate: productData.igstRate !== undefined ? productData.igstRate?.toString() : existingProduct.igstRate || '0',
+        cessRate: productData.cessRate !== undefined ? productData.cessRate?.toString() : existingProduct.cessRate || '0',
+        taxCalculationMethod: productData.taxCalculationMethod?.toString() || existingProduct.taxCalculationMethod || 'exclusive',
+        active: productData.active !== undefined ? (productData.active ? 1 : 0) : existingProduct.active,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Validate required fields
+      if (!updateData.name || !updateData.sku) {
+        throw new Error('Invalid product data: name and sku are required');
+      }
+
+      if (isNaN(updateData.price) || updateData.price < 0) {
+        throw new Error('Invalid price: must be a valid positive number');
+      }
+
+      // Check for duplicate SKU (excluding current product)
+      const duplicateSku = this.db.prepare('SELECT id FROM products WHERE LOWER(sku) = LOWER(?) AND id != ?').get(updateData.sku, id);
+      if (duplicateSku) {
+        throw new Error('Product with this SKU already exists');
+      }
+
+      console.log('Formatted update data:', updateData);
+
+      // Perform the update
+      const updateStmt = this.db.prepare(`
+        UPDATE products SET 
+          name = ?,
+          description = ?,
+          sku = ?,
+          price = ?,
+          cost = ?,
+          mrp = ?,
+          weight = ?,
+          weightUnit = ?,
+          categoryId = ?,
+          stockQuantity = ?,
+          alertThreshold = ?,
+          barcode = ?,
+          hsnCode = ?,
+          cgstRate = ?,
+          sgstRate = ?,
+          igstRate = ?,
+          cessRate = ?,
+          taxCalculationMethod = ?,
+          active = ?,
+          updatedAt = ?
+        WHERE id = ?
+      `);
+
+      const result = updateStmt.run(
+        updateData.name,
+        updateData.description,
+        updateData.sku,
+        updateData.price,
+        updateData.cost,
+        updateData.mrp,
+        updateData.weight,
+        updateData.weightUnit,
+        updateData.categoryId,
+        updateData.stockQuantity,
+        updateData.alertThreshold,
+        updateData.barcode,
+        updateData.hsnCode,
+        updateData.cgstRate,
+        updateData.sgstRate,
+        updateData.igstRate,
+        updateData.cessRate,
+        updateData.taxCalculationMethod,
+        updateData.active,
+        updateData.updatedAt,
+        id
+      );
+
+      if (result.changes === 0) {
+        console.log('No changes made to product:', id);
+        // Still return the existing product instead of null
+      }
+
+      console.log('Product updated successfully:', result);
+
+      // Fetch and return the updated product with category
+      const updatedProduct = this.db.prepare(`
+        SELECT p.*, c.name as categoryName 
+        FROM products p 
+        LEFT JOIN categories c ON p.categoryId = c.id 
+        WHERE p.id = ?
+      `).get(id);
+
+      return this.formatProduct(updatedProduct);
     } catch (error) {
-      console.error('Error updating product:', error);
+      console.error('Error in updateProduct:', error);
       throw error;
     }
   },
@@ -416,7 +519,7 @@ export const storage = {
   async deleteSupplier(id: number): Promise<boolean> {
     try {
       console.log('Storage: Attempting to delete supplier with ID:', id);
-      
+
       // Check if supplier exists first
       const existingSupplier = await this.getSupplierById(id);
       if (!existingSupplier) {
