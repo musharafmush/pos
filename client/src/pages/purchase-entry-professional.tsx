@@ -1430,7 +1430,7 @@ export default function PurchaseEntryProfessional() {
 
   // Submit purchase order (create or update)
   const savePurchaseMutation = useMutation({
-    mutationFn: async (data: PurchaseFormData) => {
+    mutationFn: async (data: any) => {
       try {
         console.log('🔄 Starting purchase save/update process...');
         
@@ -1465,10 +1465,46 @@ export default function PurchaseEntryProfessional() {
           throw new Error('Please add at least one valid item with quantity and cost');
         }
 
-        // Update data with only valid items
+        // Create clean request data
         const requestData = {
-          ...data,
-          items: validItems
+          supplierId: Number(data.supplierId),
+          orderNumber: data.orderNumber.trim(),
+          orderDate: data.orderDate,
+          expectedDate: data.expectedDate || data.orderDate,
+          dueDate: data.expectedDate || data.orderDate,
+          paymentMethod: data.paymentMethod || "Credit",
+          paymentTerms: data.paymentTerms || "Net 30",
+          status: data.status || "Pending",
+          taxCalculationMethod: data.taxCalculationMethod || "exclusive",
+          invoiceNumber: data.invoiceNumber || "",
+          invoiceDate: data.invoiceDate || "",
+          invoiceAmount: Number(data.invoiceAmount) || 0,
+          remarks: data.remarks || "",
+          internalNotes: data.internalNotes || "",
+          freightAmount: Number(data.freightAmount) || 0,
+          surchargeAmount: Number(data.surchargeAmount) || 0,
+          packingCharges: Number(data.packingCharges) || 0,
+          otherCharges: Number(data.otherCharges) || 0,
+          additionalDiscount: Number(data.additionalDiscount) || 0,
+          items: validItems.map(item => ({
+            productId: Number(item.productId),
+            quantity: Number(item.quantity) || Number(item.receivedQty) || 1,
+            receivedQty: Number(item.receivedQty) || Number(item.quantity) || 1,
+            freeQty: Number(item.freeQty) || 0,
+            unitCost: Number(item.unitCost) || 0,
+            cost: Number(item.unitCost) || 0,
+            hsnCode: item.hsnCode || "",
+            taxPercentage: Number(item.taxPercentage) || 0,
+            discountAmount: Number(item.discountAmount) || 0,
+            discountPercent: Number(item.discountPercent) || 0,
+            expiryDate: item.expiryDate || "",
+            batchNumber: item.batchNumber || "",
+            sellingPrice: Number(item.sellingPrice) || 0,
+            mrp: Number(item.mrp) || 0,
+            netAmount: Number(item.netAmount) || 0,
+            location: item.location || "",
+            unit: item.unit || "PCS"
+          }))
         };
 
         console.log(`✅ Validation passed. Sending ${validItems.length} valid items`);
@@ -1482,76 +1518,44 @@ export default function PurchaseEntryProfessional() {
         });
 
         console.log(`📥 Response status: ${response.status} ${response.statusText}`);
-        console.log('📄 Response content-type:', response.headers.get('content-type'));
 
         if (!response.ok) {
-          const contentType = response.headers.get('content-type');
-          let errorMessage = isEditMode ? "Failed to update purchase order" : "Failed to create purchase order";
+          let errorMessage = `Server error: ${response.status} ${response.statusText}`;
           
-          if (contentType && contentType.includes('application/json')) {
-            try {
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
               const errorData = await response.json();
               console.error('❌ Server error response:', errorData);
-              
-              // Use the most specific error message available
               errorMessage = errorData.error || errorData.message || errorMessage;
-              
-              // Add technical details if available
-              if (errorData.technical && errorData.technical !== errorMessage) {
-                console.error('🔧 Technical details:', errorData.technical);
-              }
-              
-            } catch (jsonError) {
-              console.error('❌ Failed to parse error JSON:', jsonError);
-              errorMessage = `Server error: ${response.status} ${response.statusText}`;
-            }
-          } else {
-            // Handle non-JSON responses
-            try {
+            } else {
               const errorText = await response.text();
-              console.error('❌ Server returned non-JSON response:', errorText.substring(0, 500));
-              
-              if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
-                errorMessage = `Server error (${response.status}). The server returned an error page instead of data.`;
-              } else {
-                errorMessage = `Server error: ${response.status}. ${errorText.substring(0, 100)}`;
+              console.error('❌ Server returned non-JSON response:', errorText.substring(0, 200));
+              if (errorText.length > 0 && !errorText.includes('<!DOCTYPE')) {
+                errorMessage = `Server error: ${errorText.substring(0, 100)}`;
               }
-            } catch (textError) {
-              console.error('❌ Failed to read error response:', textError);
-              errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
+          } catch (parseError) {
+            console.error('❌ Failed to parse error response:', parseError);
           }
           
           throw new Error(errorMessage);
         }
 
-        // Validate response content type
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const responseText = await response.text();
-          console.error('❌ Expected JSON but got:', responseText.substring(0, 500));
-          throw new Error('Server returned invalid response format. Expected JSON data.');
-        }
-
         const result = await response.json();
         console.log('✅ Success response:', result);
-
-        // Validate response structure
-        if (isEditMode && !result.success && !result.purchase && !result.id) {
-          console.warn('⚠️ Unexpected response structure for update:', result);
-        }
-
         return result;
         
       } catch (error) {
         console.error('💥 Purchase save/update error:', error);
         
-        // Re-throw with enhanced error context
         if (error instanceof TypeError && error.message.includes('fetch')) {
           throw new Error('Network error: Unable to connect to server. Please check your connection and try again.');
         }
         
         throw error;
+      } finally {
+        setIsSaving(false);
       }
     },
     onSuccess: (data) => {
@@ -1628,23 +1632,45 @@ export default function PurchaseEntryProfessional() {
       }
     },
     onError: (error: any) => {
+      console.error('❌ Mutation error:', error);
       toast({
         title: isEditMode ? "Error updating purchase order" : "Error creating purchase order",
-        description: error.message || "An unexpected error occurred.",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+      setIsSaving(false);
     },
   });
 
   // Handle form submission
   const onSubmit = (data: PurchaseFormData) => {
     try {
+      console.log('🔄 Starting form submission with data:', data);
+
       // Validate required fields
       if (!data.supplierId || data.supplierId === 0) {
         toast({
           variant: "destructive",
           title: "Validation Error",
           description: "Please select a supplier.",
+        });
+        return;
+      }
+
+      if (!data.orderNumber || data.orderNumber.trim() === '') {
+        toast({
+          variant: "destructive",
+          title: "Validation Error", 
+          description: "Order number is required.",
+        });
+        return;
+      }
+
+      if (!data.orderDate) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: "Order date is required.",
         });
         return;
       }
@@ -1669,17 +1695,11 @@ export default function PurchaseEntryProfessional() {
         return hasProduct && hasValidQuantity && hasCost;
       });
 
-      console.log('Validating items:', {
+      console.log('📋 Validating items:', {
         totalItems: data.items.length,
         validItems: validItems.length,
         editMode: isEditMode,
-        editId: editId,
-        itemsData: data.items.map(item => ({
-          productId: item.productId,
-          receivedQty: item.receivedQty,
-          quantity: item.quantity,
-          unitCost: item.unitCost
-        }))
+        editId: editId
       });
 
       if (validItems.length === 0) {
@@ -1706,18 +1726,11 @@ export default function PurchaseEntryProfessional() {
         return;
       }
 
-      // Calculate total purchase value
-      const totalValue = validItems.reduce((total, item) => {
-        const receivedQty = Number(item.receivedQty) || Number(item.quantity) || 0;
-        const cost = Number(item.unitCost) || 0;
-        return total + (receivedQty * cost);
-      }, 0);
-
       // Create purchase data with proper structure for backend compatibility
       const purchaseData = {
         // Core purchase details
         supplierId: Number(data.supplierId),
-        orderNumber: data.orderNumber,
+        orderNumber: data.orderNumber?.trim() || '',
         orderDate: data.orderDate,
         expectedDate: data.expectedDate || data.orderDate,
         dueDate: data.expectedDate || data.orderDate,
@@ -1727,10 +1740,11 @@ export default function PurchaseEntryProfessional() {
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
 
         // Invoice details
-        invoiceNumber: data.invoiceNumber || "",
+        invoiceNumber: data.invoiceNumber?.trim() || "",
         invoiceDate: data.invoiceDate || "",
         invoiceAmount: Number(data.invoiceAmount) || 0,
-        remarks: data.remarks || "",
+        remarks: data.remarks?.trim() || "",
+        internalNotes: data.internalNotes?.trim() || "",
 
         // Additional charges
         freightAmount: Number(data.freightAmount) || 0,
@@ -1745,26 +1759,26 @@ export default function PurchaseEntryProfessional() {
           const receivedQty = Math.max(Number(item.receivedQty) || 0, 0);
           const quantity = Math.max(Number(item.quantity) || receivedQty || 1, 0);
           const finalQty = receivedQty > 0 ? receivedQty : quantity;
-
-          console.log(`Mapping item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Final Quantity: ${finalQty}`);
+          const unitCost = Number(item.unitCost) || 0;
+          const netAmount = Number(item.netAmount) || (finalQty * unitCost);
 
           return {
             productId: Number(item.productId),
             quantity: finalQty,
             receivedQty: receivedQty,
             freeQty: Number(item.freeQty) || 0,
-            unitCost: Number(item.unitCost) || 0,
-            cost: Number(item.unitCost) || 0,
-            hsnCode: item.hsnCode || "",
+            unitCost: unitCost,
+            cost: unitCost,
+            hsnCode: item.hsnCode?.trim() || "",
             taxPercentage: Number(item.taxPercentage) || 0,
             discountAmount: Number(item.discountAmount) || 0,
             discountPercent: Number(item.discountPercent) || 0,
             expiryDate: item.expiryDate || "",
-            batchNumber: item.batchNumber || "",
+            batchNumber: item.batchNumber?.trim() || "",
             sellingPrice: Number(item.sellingPrice) || 0,
             mrp: Number(item.mrp) || 0,
-            netAmount: Number(item.netAmount) || 0,
-            location: item.location || "",
+            netAmount: netAmount,
+            location: item.location?.trim() || "",
             unit: item.unit || "PCS",
             roiPercent: Number(item.roiPercent) || 0,
             grossProfitPercent: Number(item.grossProfitPercent) || 0,
@@ -1774,7 +1788,7 @@ export default function PurchaseEntryProfessional() {
         })
       };
 
-      console.log("Submitting professional purchase data:", purchaseData);
+      console.log("✅ Submitting purchase data:", purchaseData);
 
       // Set saving state
       setIsSaving(true);
@@ -1782,13 +1796,12 @@ export default function PurchaseEntryProfessional() {
       // Submit the purchase data using the standard API endpoint
       savePurchaseMutation.mutate(purchaseData);
     } catch (error) {
-      console.error("Error preparing purchase data:", error);
+      console.error("❌ Error preparing purchase data:", error);
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Submission Error",
         description: "Failed to prepare purchase data. Please check your entries and try again.",
       });
-    } finally {
       setIsSaving(false);
     }
   };
