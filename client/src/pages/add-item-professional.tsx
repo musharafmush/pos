@@ -392,19 +392,21 @@ export default function AddItemProfessional() {
     if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0) {
       console.log('Populating form with product data:', editingProduct);
 
-      // Calculate total GST rate
-      const cgstRate = parseFloat(editingProduct.cgstRate || '0');
-      const sgstRate = parseFloat(editingProduct.sgstRate || '0');
-      const igstRate = parseFloat(editingProduct.igstRate || '0');
+      // Calculate total GST rate with proper parsing
+      const cgstRate = parseFloat(editingProduct.cgstRate?.toString() || '0');
+      const sgstRate = parseFloat(editingProduct.sgstRate?.toString() || '0');
+      const igstRate = parseFloat(editingProduct.igstRate?.toString() || '0');
       const totalGst = cgstRate + sgstRate + igstRate;
 
       // Determine GST code based on total rate
-      let gstCode = 'GST 18%';
-      if (totalGst === 0) gstCode = 'GST 0%';
-      else if (totalGst === 5) gstCode = 'GST 5%';
-      else if (totalGst === 12) gstCode = 'GST 12%';
-      else if (totalGst === 18) gstCode = 'GST 18%';
-      else if (totalGst === 28) gstCode = 'GST 28%';
+      let gstCode = editingProduct.gstCode || 'GST 18%';
+      if (!editingProduct.gstCode) {
+        if (totalGst === 0) gstCode = 'GST 0%';
+        else if (totalGst === 5) gstCode = 'GST 5%';
+        else if (totalGst === 12) gstCode = 'GST 12%';
+        else if (totalGst === 18) gstCode = 'GST 18%';
+        else if (totalGst === 28) gstCode = 'GST 28%';
+      }
 
       // Find category by ID
       const category = categories.find((cat: any) => cat.id === editingProduct.categoryId);
@@ -462,20 +464,20 @@ export default function AddItemProfessional() {
         bisCertified: false,
         organicCertified: false,
         itemIngredients: "",
-        price: editingProduct.price?.toString() || "",
-        mrp: editingProduct.mrp?.toString() || "",
-        cost: editingProduct.cost?.toString() || "",
+        price: (editingProduct.price || 0).toString(),
+        mrp: (editingProduct.mrp || editingProduct.price || 0).toString(),
+        cost: (editingProduct.cost || 0).toString(),
         weight: editingProduct.weight ? editingProduct.weight.toString() : "",
         weightUnit: editingProduct.weightUnit || "kg",
         categoryId: editingProduct.categoryId || categories[0]?.id || 1,
-        stockQuantity: editingProduct.stockQuantity?.toString() || "0",
+        stockQuantity: (editingProduct.stockQuantity || 0).toString(),
         active: editingProduct.active !== false,
-        cgstRate: editingProduct.cgstRate || "",
-        sgstRate: editingProduct.sgstRate || "",
-        igstRate: editingProduct.igstRate || "",
-        cessRate: editingProduct.cessRate || "",
+        cgstRate: (editingProduct.cgstRate || "0").toString(),
+        sgstRate: (editingProduct.sgstRate || "0").toString(),
+        igstRate: (editingProduct.igstRate || "0").toString(),
+        cessRate: (editingProduct.cessRate || "0").toString(),
         taxCalculationMethod: editingProduct.taxCalculationMethod || "exclusive",
-        taxSelectionMode: "auto",
+        taxSelectionMode: editingProduct.taxSelectionMode || "auto",
       };
 
       console.log('Setting form data:', formData);
@@ -579,7 +581,7 @@ export default function AddItemProfessional() {
         categoryId: Number(data.categoryId),
         barcode: data.barcode?.trim() || null,
         active: Boolean(data.active),
-        alertThreshold: editingProduct?.alertThreshold || 5,
+        alertThreshold: isEditMode ? (editingProduct?.alertThreshold || 5) : 5,
         hsnCode: data.hsnCode?.trim() || null,
         // Add GST code field
         gstCode: data.gstCode?.trim() || "GST 18%",
@@ -590,7 +592,7 @@ export default function AddItemProfessional() {
         cessRate: data.cessRate?.trim() || "0",
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
         taxSelectionMode: data.taxSelectionMode || "auto",
-        // Additional fields for edit mode
+        // Additional fields for edit mode - preserve original timestamps
         ...(isEditMode && editingProduct && {
           id: editingProduct.id,
           createdAt: editingProduct.createdAt,

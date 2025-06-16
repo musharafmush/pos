@@ -276,6 +276,12 @@ export const storage = {
         throw new Error('Invalid price: must be a valid positive number');
       }
 
+      // Check for duplicate SKU (excluding current product)
+      const duplicateSku = sqlite.prepare('SELECT id FROM products WHERE LOWER(sku) = LOWER(?) AND id != ?').get(updateData.sku, id);
+      if (duplicateSku) {
+        throw new Error('Product with this SKU already exists');
+      }
+
       // Auto-extract weight from product name if weight is null
       if (updateData.weight === null && updateData.name) {
         const weightMatch = updateData.name.match(/(\d+(?:\.\d+)?)\s*(kg|g|gm|gram|grams|kilogram|kilograms)/i);
@@ -293,6 +299,19 @@ export const storage = {
           }
           console.log(`📏 Auto-extracted weight: ${updateData.weight}${updateData.weightUnit} from product name "${updateData.name}"`);
         }
+      }
+
+      // Add missing GST code column if it doesn't exist in database
+      try {
+        const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
+        const hasGstCode = tableInfo.some((col: any) => col.name === 'gst_code');
+
+        if (!hasGstCode) {
+          console.log('📝 Adding missing gst_code column to products table');
+          sqlite.prepare('ALTER TABLE products ADD COLUMN gst_code TEXT DEFAULT ""').run();
+        }
+      } catch (alterError) {
+        console.log('⚠️ Could not add gst_code column (may already exist):', alterError.message);
       }
 
       console.log('Formatted update data:', updateData);
@@ -1869,7 +1888,7 @@ export const storage = {
 
   async getCustomerDemographics(startDate: Date): Promise<any[]> {
     try {
-      const { sqlite } = await import('../db/index.js');
+      const { sqlite = await import('../db/index.js');
       const query = sqlite.prepare(`
         SELECT
           CASE 
@@ -1907,7 +1926,7 @@ export const storage = {
             SUM(CAST(s.total AS REAL)) as total_revenue,
             AVG(CAST(s.total AS REAL)) as avg_order_value,
             COUNT(s.id) as total_orders
-          FROM customersc
+          FROM customers c
           LEFT JOIN sales s ON c.id = s.customer_id
           WHERE s.created_at >= ? OR s.created_at IS NULL
           GROUP BY c.id
