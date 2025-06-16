@@ -231,8 +231,11 @@ export const storage = {
     try {
       console.log('Updating product with ID:', id, 'Data:', productData);
 
+      // Import SQLite database directly for reliable operations
+      const { sqlite } = await import('../db/index.js');
+
       // First check if product exists
-      const existingProduct = this.db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+      const existingProduct = sqlite.prepare('SELECT * FROM products WHERE id = ?').get(id);
       if (!existingProduct) {
         console.log('Product not found with ID:', id);
         return null;
@@ -245,19 +248,19 @@ export const storage = {
         sku: productData.sku?.toString().trim() || existingProduct.sku,
         price: productData.price ? parseFloat(productData.price.toString()) : parseFloat(existingProduct.price || 0),
         cost: productData.cost ? parseFloat(productData.cost.toString()) : parseFloat(existingProduct.cost || 0),
-        mrp: productData.mrp ? parseFloat(productData.mrp.toString()) : existingProduct.mrp,
+        mrp: productData.mrp ? parseFloat(productData.mrp.toString()) : parseFloat(existingProduct.mrp || 0),
         weight: productData.weight ? parseFloat(productData.weight.toString()) : existingProduct.weight,
-        weightUnit: productData.weightUnit?.toString() || existingProduct.weightUnit || 'kg',
-        categoryId: productData.categoryId ? parseInt(productData.categoryId.toString()) : existingProduct.categoryId,
-        stockQuantity: productData.stockQuantity !== undefined ? parseInt(productData.stockQuantity.toString()) : existingProduct.stockQuantity,
-        alertThreshold: productData.alertThreshold !== undefined ? parseInt(productData.alertThreshold.toString()) : existingProduct.alertThreshold || 5,
+        weightUnit: productData.weightUnit?.toString() || existingProduct.weight_unit || 'kg',
+        categoryId: productData.categoryId ? parseInt(productData.categoryId.toString()) : existingProduct.category_id,
+        stockQuantity: productData.stockQuantity !== undefined ? parseInt(productData.stockQuantity.toString()) : existingProduct.stock_quantity,
+        alertThreshold: productData.alertThreshold !== undefined ? parseInt(productData.alertThreshold.toString()) : existingProduct.alert_threshold || 5,
         barcode: productData.barcode?.toString().trim() || existingProduct.barcode || '',
-        hsnCode: productData.hsnCode?.toString().trim() || existingProduct.hsnCode || '',
-        cgstRate: productData.cgstRate !== undefined ? productData.cgstRate?.toString() : existingProduct.cgstRate || '0',
-        sgstRate: productData.sgstRate !== undefined ? productData.sgstRate?.toString() : existingProduct.sgstRate || '0',
-        igstRate: productData.igstRate !== undefined ? productData.igstRate?.toString() : existingProduct.igstRate || '0',
-        cessRate: productData.cessRate !== undefined ? productData.cessRate?.toString() : existingProduct.cessRate || '0',
-        taxCalculationMethod: productData.taxCalculationMethod?.toString() || existingProduct.taxCalculationMethod || 'exclusive',
+        hsnCode: productData.hsnCode?.toString().trim() || existingProduct.hsn_code || '',
+        cgstRate: productData.cgstRate !== undefined ? productData.cgstRate?.toString() : existingProduct.cgst_rate || '0',
+        sgstRate: productData.sgstRate !== undefined ? productData.sgstRate?.toString() : existingProduct.sgst_rate || '0',
+        igstRate: productData.igstRate !== undefined ? productData.igstRate?.toString() : existingProduct.igst_rate || '0',
+        cessRate: productData.cessRate !== undefined ? productData.cessRate?.toString() : existingProduct.cess_rate || '0',
+        taxCalculationMethod: productData.taxCalculationMethod?.toString() || existingProduct.tax_calculation_method || 'exclusive',
         active: productData.active !== undefined ? (productData.active ? 1 : 0) : existingProduct.active,
         updatedAt: new Date().toISOString()
       };
@@ -272,15 +275,15 @@ export const storage = {
       }
 
       // Check for duplicate SKU (excluding current product)
-      const duplicateSku = this.db.prepare('SELECT id FROM products WHERE LOWER(sku) = LOWER(?) AND id != ?').get(updateData.sku, id);
+      const duplicateSku = sqlite.prepare('SELECT id FROM products WHERE LOWER(sku) = LOWER(?) AND id != ?').get(updateData.sku, id);
       if (duplicateSku) {
         throw new Error('Product with this SKU already exists');
       }
 
       console.log('Formatted update data:', updateData);
 
-      // Perform the update
-      const updateStmt = this.db.prepare(`
+      // Perform the update using correct column names
+      const updateStmt = sqlite.prepare(`
         UPDATE products SET 
           name = ?,
           description = ?,
@@ -289,19 +292,19 @@ export const storage = {
           cost = ?,
           mrp = ?,
           weight = ?,
-          weightUnit = ?,
-          categoryId = ?,
-          stockQuantity = ?,
-          alertThreshold = ?,
+          weight_unit = ?,
+          category_id = ?,
+          stock_quantity = ?,
+          alert_threshold = ?,
           barcode = ?,
-          hsnCode = ?,
-          cgstRate = ?,
-          sgstRate = ?,
-          igstRate = ?,
-          cessRate = ?,
-          taxCalculationMethod = ?,
+          hsn_code = ?,
+          cgst_rate = ?,
+          sgst_rate = ?,
+          igst_rate = ?,
+          cess_rate = ?,
+          tax_calculation_method = ?,
           active = ?,
-          updatedAt = ?
+          updated_at = ?
         WHERE id = ?
       `);
 
@@ -309,9 +312,9 @@ export const storage = {
         updateData.name,
         updateData.description,
         updateData.sku,
-        updateData.price,
-        updateData.cost,
-        updateData.mrp,
+        updateData.price.toString(),
+        updateData.cost.toString(),
+        updateData.mrp.toString(),
         updateData.weight,
         updateData.weightUnit,
         updateData.categoryId,
@@ -331,20 +334,53 @@ export const storage = {
 
       if (result.changes === 0) {
         console.log('No changes made to product:', id);
-        // Still return the existing product instead of null
       }
 
       console.log('Product updated successfully:', result);
 
       // Fetch and return the updated product with category
-      const updatedProduct = this.db.prepare(`
-        SELECT p.*, c.name as categoryName 
+      const updatedProduct = sqlite.prepare(`
+        SELECT 
+          p.*,
+          c.name as categoryName 
         FROM products p 
-        LEFT JOIN categories c ON p.categoryId = c.id 
+        LEFT JOIN categories c ON p.category_id = c.id 
         WHERE p.id = ?
       `).get(id);
 
-      return this.formatProduct(updatedProduct);
+      // Format the product response to match expected structure
+      if (updatedProduct) {
+        return {
+          id: updatedProduct.id,
+          name: updatedProduct.name,
+          description: updatedProduct.description,
+          sku: updatedProduct.sku,
+          price: updatedProduct.price,
+          mrp: updatedProduct.mrp,
+          cost: updatedProduct.cost,
+          weight: updatedProduct.weight,
+          weightUnit: updatedProduct.weight_unit,
+          categoryId: updatedProduct.category_id,
+          stockQuantity: updatedProduct.stock_quantity,
+          alertThreshold: updatedProduct.alert_threshold,
+          barcode: updatedProduct.barcode,
+          hsnCode: updatedProduct.hsn_code,
+          cgstRate: updatedProduct.cgst_rate,
+          sgstRate: updatedProduct.sgst_rate,
+          igstRate: updatedProduct.igst_rate,
+          cessRate: updatedProduct.cess_rate,
+          taxCalculationMethod: updatedProduct.tax_calculation_method,
+          active: Boolean(updatedProduct.active),
+          createdAt: new Date(updatedProduct.created_at),
+          updatedAt: new Date(updatedProduct.updated_at),
+          category: {
+            id: updatedProduct.category_id,
+            name: updatedProduct.categoryName || 'Uncategorized'
+          }
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error in updateProduct:', error);
       throw error;
