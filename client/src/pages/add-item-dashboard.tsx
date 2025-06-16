@@ -723,215 +723,303 @@ export default function AddItemDashboard() {
           </TabsContent>
         </Tabs>
 
-        {/* View Product Details Dialog */}
+        {/* Enhanced View Product Details Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <EyeIcon className="w-5 h-5" />
-                Product Details
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="border-b pb-4">
+              <DialogTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <EyeIcon className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <span className="block">Product Details</span>
+                  <span className="text-sm font-normal text-gray-500">
+                    {viewProduct?.name || "Product Information"}
+                  </span>
+                </div>
               </DialogTitle>
-              <DialogDescription>
-                Complete information about the selected product
-              </DialogDescription>
             </DialogHeader>
             
             {viewProduct && (
-              <div className="space-y-6">
-                {/* Basic Information */}
-                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Product Name</label>
-                    <p className="text-lg font-semibold">{viewProduct.name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">SKU</label>
-                    <p className="font-mono text-sm bg-white px-2 py-1 rounded border">
-                      {viewProduct.sku}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Category</label>
-                    <p className="text-sm">
-                      <Badge variant="outline">
-                        {categories.find(c => c.id === viewProduct.categoryId)?.name || 'Uncategorized'}
-                      </Badge>
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Status</label>
-                    <p className="text-sm">
-                      <Badge variant={viewProduct.active ? "default" : "secondary"}>
-                        {viewProduct.active ? "Active" : "Inactive"}
-                      </Badge>
-                    </p>
+              <div className="space-y-6 pt-4">
+                {/* Product Header Card */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-100 border border-blue-200 rounded-xl p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <h2 className="text-2xl font-bold text-gray-900">{viewProduct.name}</h2>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="font-mono text-xs bg-white">
+                          SKU: {viewProduct.sku}
+                        </Badge>
+                        <Badge variant={viewProduct.active ? "default" : "secondary"} className="text-xs">
+                          {viewProduct.active ? "Active" : "Inactive"}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {categories.find(c => c.id === viewProduct.categoryId)?.name || 'Uncategorized'}
+                        </Badge>
+                      </div>
+                      {viewProduct.description && (
+                        <p className="text-gray-700 mt-3 bg-white/60 p-3 rounded-lg">{viewProduct.description}</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-blue-600">
+                        ₹{parseFloat(viewProduct.price?.toString() || "0").toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-600">Selling Price</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Description */}
-                {viewProduct.description && (
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <label className="text-sm font-medium text-gray-600">Description</label>
-                    <p className="text-sm mt-1">{viewProduct.description}</p>
-                  </div>
-                )}
-
-                {/* Pricing Information */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <label className="text-sm font-medium text-gray-600">Selling Price</label>
-                    <p className="text-xl font-bold text-green-600">
-                      ₹{parseFloat(viewProduct.price?.toString() || "0").toFixed(2)}
-                    </p>
-                  </div>
+                {/* Price & Financial Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card className="border-green-200 bg-green-50">
+                    <CardContent className="p-4 text-center">
+                      <DollarSignIcon className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-green-700">
+                        ₹{parseFloat(viewProduct.price?.toString() || "0").toFixed(2)}
+                      </div>
+                      <div className="text-xs text-green-600 font-medium">Selling Price</div>
+                    </CardContent>
+                  </Card>
+                  
                   {viewProduct.mrp && (
-                    <div className="p-4 border rounded-lg">
-                      <label className="text-sm font-medium text-gray-600">MRP</label>
-                      <p className="text-xl font-bold text-blue-600">
-                        ₹{parseFloat(viewProduct.mrp?.toString() || "0").toFixed(2)}
-                      </p>
-                    </div>
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardContent className="p-4 text-center">
+                        <TagIcon className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                        <div className="text-2xl font-bold text-blue-700">
+                          ₹{parseFloat(viewProduct.mrp?.toString() || "0").toFixed(2)}
+                        </div>
+                        <div className="text-xs text-blue-600 font-medium">MRP</div>
+                      </CardContent>
+                    </Card>
                   )}
+                  
                   {viewProduct.cost && (
-                    <div className="p-4 border rounded-lg">
-                      <label className="text-sm font-medium text-gray-600">Cost Price</label>
-                      <p className="text-xl font-bold text-orange-600">
-                        ₹{parseFloat(viewProduct.cost?.toString() || "0").toFixed(2)}
-                      </p>
-                    </div>
+                    <Card className="border-orange-200 bg-orange-50">
+                      <CardContent className="p-4 text-center">
+                        <BarChart3Icon className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+                        <div className="text-2xl font-bold text-orange-700">
+                          ₹{parseFloat(viewProduct.cost?.toString() || "0").toFixed(2)}
+                        </div>
+                        <div className="text-xs text-orange-600 font-medium">Cost Price</div>
+                      </CardContent>
+                    </Card>
                   )}
+
+                  <Card className="border-purple-200 bg-purple-50">
+                    <CardContent className="p-4 text-center">
+                      <TrendingUpIcon className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-purple-700">
+                        ₹{(parseFloat(viewProduct.price?.toString() || "0") * (viewProduct.stockQuantity || 0)).toFixed(0)}
+                      </div>
+                      <div className="text-xs text-purple-600 font-medium">Stock Value</div>
+                    </CardContent>
+                  </Card>
                 </div>
 
                 {/* Stock Information */}
-                <div className="grid grid-cols-3 gap-4 p-4 bg-yellow-50 rounded-lg">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Stock Quantity</label>
-                    <p className="text-2xl font-bold">{viewProduct.stockQuantity}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Alert Threshold</label>
-                    <p className="text-lg">{viewProduct.alertThreshold || 10}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Stock Status</label>
-                    <p className="text-sm">
-                      {(() => {
-                        const stock = viewProduct.stockQuantity || 0;
-                        const threshold = viewProduct.alertThreshold || 10;
-                        if (stock === 0) return <Badge variant="destructive">Out of Stock</Badge>;
-                        if (stock <= threshold) return <Badge variant="outline" className="border-orange-300 text-orange-600">Low Stock</Badge>;
-                        return <Badge variant="default" className="bg-green-100 text-green-700">In Stock</Badge>;
-                      })()}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Physical Properties */}
-                {(viewProduct.weight || viewProduct.weightUnit) && (
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50 rounded-lg">
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Weight</label>
-                      <p className="text-lg">{viewProduct.weight || 'N/A'}</p>
+                <Card className="border-l-4 border-l-yellow-400">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <PackageIcon className="w-5 h-5 text-yellow-600" />
+                      Stock Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="text-3xl font-bold text-gray-800">{viewProduct.stockQuantity}</div>
+                        <div className="text-sm text-gray-600 mt-1">Current Stock</div>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="text-3xl font-bold text-gray-800">{viewProduct.alertThreshold || 10}</div>
+                        <div className="text-sm text-gray-600 mt-1">Alert Threshold</div>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="text-lg font-semibold">
+                          {(() => {
+                            const stock = viewProduct.stockQuantity || 0;
+                            const threshold = viewProduct.alertThreshold || 10;
+                            if (stock === 0) return <Badge variant="destructive" className="text-sm">Out of Stock</Badge>;
+                            if (stock <= threshold) return <Badge variant="outline" className="border-orange-300 text-orange-600 text-sm">Low Stock</Badge>;
+                            return <Badge variant="default" className="bg-green-500 text-white text-sm">In Stock</Badge>;
+                          })()}
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">Stock Status</div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Weight Unit</label>
-                      <p className="text-lg">{viewProduct.weightUnit || 'N/A'}</p>
-                    </div>
-                  </div>
-                )}
+                  </CardContent>
+                </Card>
 
-                {/* Tax Information */}
-                <div className="grid grid-cols-4 gap-4 p-4 bg-red-50 rounded-lg">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">CGST Rate</label>
-                    <p className="text-lg">{viewProduct.cgstRate || 0}%</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">SGST Rate</label>
-                    <p className="text-lg">{viewProduct.sgstRate || 0}%</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">IGST Rate</label>
-                    <p className="text-lg">{viewProduct.igstRate || 0}%</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">CESS Rate</label>
-                    <p className="text-lg">{viewProduct.cessRate || 0}%</p>
-                  </div>
+                {/* Physical Properties & Tax Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Physical Properties */}
+                  {(viewProduct.weight || viewProduct.weightUnit) && (
+                    <Card className="border-l-4 border-l-purple-400">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <BarChart3Icon className="w-5 h-5 text-purple-600" />
+                          Physical Properties
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-purple-50 p-3 rounded-lg">
+                            <div className="text-sm font-medium text-purple-700">Weight</div>
+                            <div className="text-lg font-semibold text-purple-900">{viewProduct.weight || 'N/A'}</div>
+                          </div>
+                          <div className="bg-purple-50 p-3 rounded-lg">
+                            <div className="text-sm font-medium text-purple-700">Unit</div>
+                            <div className="text-lg font-semibold text-purple-900">{viewProduct.weightUnit || 'N/A'}</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Tax Information */}
+                  <Card className="border-l-4 border-l-red-400">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <DollarSignIcon className="w-5 h-5 text-red-600" />
+                        Tax Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-red-50 p-3 rounded-lg text-center">
+                          <div className="text-sm font-medium text-red-700">CGST</div>
+                          <div className="text-lg font-bold text-red-900">{viewProduct.cgstRate || 0}%</div>
+                        </div>
+                        <div className="bg-red-50 p-3 rounded-lg text-center">
+                          <div className="text-sm font-medium text-red-700">SGST</div>
+                          <div className="text-lg font-bold text-red-900">{viewProduct.sgstRate || 0}%</div>
+                        </div>
+                        <div className="bg-red-50 p-3 rounded-lg text-center">
+                          <div className="text-sm font-medium text-red-700">IGST</div>
+                          <div className="text-lg font-bold text-red-900">{viewProduct.igstRate || 0}%</div>
+                        </div>
+                        <div className="bg-red-50 p-3 rounded-lg text-center">
+                          <div className="text-sm font-medium text-red-700">CESS</div>
+                          <div className="text-lg font-bold text-red-900">{viewProduct.cessRate || 0}%</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
 
                 {/* Additional Information */}
-                <div className="grid grid-cols-2 gap-4">
-                  {viewProduct.hsnCode && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">HSN Code</label>
-                      <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                        {viewProduct.hsnCode}
-                      </p>
+                <Card className="border-l-4 border-l-indigo-400">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <TagIcon className="w-5 h-5 text-indigo-600" />
+                      Additional Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {viewProduct.hsnCode && (
+                        <div className="bg-indigo-50 p-3 rounded-lg">
+                          <div className="text-sm font-medium text-indigo-700">HSN Code</div>
+                          <div className="font-mono text-sm bg-white px-2 py-1 rounded border mt-1">
+                            {viewProduct.hsnCode}
+                          </div>
+                        </div>
+                      )}
+                      {viewProduct.gstCode && (
+                        <div className="bg-indigo-50 p-3 rounded-lg">
+                          <div className="text-sm font-medium text-indigo-700">GST Code</div>
+                          <div className="mt-1">
+                            <Badge variant="outline">{viewProduct.gstCode}</Badge>
+                          </div>
+                        </div>
+                      )}
+                      {viewProduct.brand && (
+                        <div className="bg-indigo-50 p-3 rounded-lg">
+                          <div className="text-sm font-medium text-indigo-700">Brand</div>
+                          <div className="text-sm font-semibold text-indigo-900 mt-1">{viewProduct.brand}</div>
+                        </div>
+                      )}
+                      {viewProduct.manufacturerName && (
+                        <div className="bg-indigo-50 p-3 rounded-lg">
+                          <div className="text-sm font-medium text-indigo-700">Manufacturer</div>
+                          <div className="text-sm font-semibold text-indigo-900 mt-1">{viewProduct.manufacturerName}</div>
+                        </div>
+                      )}
+                      {viewProduct.supplierName && (
+                        <div className="bg-indigo-50 p-3 rounded-lg">
+                          <div className="text-sm font-medium text-indigo-700">Supplier</div>
+                          <div className="text-sm font-semibold text-indigo-900 mt-1">{viewProduct.supplierName}</div>
+                        </div>
+                      )}
+                      {viewProduct.buyer && (
+                        <div className="bg-indigo-50 p-3 rounded-lg">
+                          <div className="text-sm font-medium text-indigo-700">Buyer</div>
+                          <div className="text-sm font-semibold text-indigo-900 mt-1">{viewProduct.buyer}</div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {viewProduct.gstCode && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">GST Code</label>
-                      <p className="text-sm">
-                        <Badge variant="outline">{viewProduct.gstCode}</Badge>
-                      </p>
-                    </div>
-                  )}
-                  {viewProduct.brand && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Brand</label>
-                      <p className="text-sm">{viewProduct.brand}</p>
-                    </div>
-                  )}
-                  {viewProduct.manufacturerName && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Manufacturer</label>
-                      <p className="text-sm">{viewProduct.manufacturerName}</p>
-                    </div>
-                  )}
-                  {viewProduct.supplierName && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Supplier</label>
-                      <p className="text-sm">{viewProduct.supplierName}</p>
-                    </div>
-                  )}
-                  {viewProduct.buyer && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Buyer</label>
-                      <p className="text-sm">{viewProduct.buyer}</p>
-                    </div>
-                  )}
-                </div>
+                  </CardContent>
+                </Card>
 
-                {/* Calculated Values */}
-                <div className="grid grid-cols-2 gap-4 p-4 bg-green-50 rounded-lg">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Stock Value</label>
-                    <p className="text-xl font-bold text-green-600">
-                      ₹{(parseFloat(viewProduct.price?.toString() || "0") * (viewProduct.stockQuantity || 0)).toFixed(2)}
-                    </p>
-                  </div>
-                  {viewProduct.mrp && viewProduct.price && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Profit Margin</label>
-                      <p className="text-xl font-bold text-blue-600">
-                        {(((parseFloat(viewProduct.mrp.toString()) - parseFloat(viewProduct.price.toString())) / parseFloat(viewProduct.mrp.toString())) * 100).toFixed(1)}%
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {/* Performance Metrics */}
+                {viewProduct.mrp && viewProduct.price && (
+                  <Card className="border-l-4 border-l-emerald-400">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <TrendingUpIcon className="w-5 h-5 text-emerald-600" />
+                        Performance Metrics
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-emerald-50 p-4 rounded-lg text-center">
+                          <div className="text-sm font-medium text-emerald-700">Profit Margin</div>
+                          <div className="text-2xl font-bold text-emerald-900">
+                            {(((parseFloat(viewProduct.mrp.toString()) - parseFloat(viewProduct.price.toString())) / parseFloat(viewProduct.mrp.toString())) * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="bg-emerald-50 p-4 rounded-lg text-center">
+                          <div className="text-sm font-medium text-emerald-700">Profit per Unit</div>
+                          <div className="text-2xl font-bold text-emerald-900">
+                            ₹{(parseFloat(viewProduct.mrp.toString()) - parseFloat(viewProduct.price.toString())).toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-                {/* Timestamps */}
-                <div className="text-xs text-gray-500 space-y-1 p-3 bg-gray-100 rounded">
-                  <p><strong>Product ID:</strong> {viewProduct.id}</p>
-                  {viewProduct.createdAt && (
-                    <p><strong>Created:</strong> {new Date(viewProduct.createdAt).toLocaleString()}</p>
-                  )}
-                  {viewProduct.updatedAt && (
-                    <p><strong>Last Updated:</strong> {new Date(viewProduct.updatedAt).toLocaleString()}</p>
-                  )}
-                </div>
+                {/* System Information */}
+                <Card className="bg-gray-50 border-gray-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-sm text-gray-600">
+                      <PackageIcon className="w-4 h-4" />
+                      System Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-gray-600">
+                      <div>
+                        <div className="font-medium">Product ID</div>
+                        <div className="font-mono">{viewProduct.id}</div>
+                      </div>
+                      {viewProduct.createdAt && (
+                        <div>
+                          <div className="font-medium">Created</div>
+                          <div>{new Date(viewProduct.createdAt).toLocaleString()}</div>
+                        </div>
+                      )}
+                      {viewProduct.updatedAt && (
+                        <div>
+                          <div className="font-medium">Last Updated</div>
+                          <div>{new Date(viewProduct.updatedAt).toLocaleString()}</div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
 
