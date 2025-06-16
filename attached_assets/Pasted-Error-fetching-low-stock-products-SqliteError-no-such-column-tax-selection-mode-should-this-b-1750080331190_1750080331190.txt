@@ -1,0 +1,31 @@
+Error fetching low stock products: SqliteError: no such column: "tax_selection_mode" - should this be a string literal in single-quotes?
+    at Database.prepare (/home/runner/workspace/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at BetterSQLiteSession.prepareQuery (/home/runner/workspace/node_modules/src/better-sqlite3/session.ts:50:28)
+    at QueryPromise._prepare (/home/runner/workspace/node_modules/src/sqlite-core/query-builders/query.ts:147:78)
+    at QueryPromise.executeRaw (/home/runner/workspace/node_modules/src/sqlite-core/query-builders/query.ts:193:15)
+    at QueryPromise.execute (/home/runner/workspace/node_modules/src/sqlite-core/query-builders/query.ts:197:15)
+    at QueryPromise.then (/home/runner/workspace/node_modules/src/query-promise.ts:31:15)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at process.processImmediate (node:internal/timers:454:9) {
+  code: 'SQLITE_ERROR'
+}
+Error fetching low stock products: SqliteError: no such column: "tax_selection_mode" - should this be a string literal in single-quotes?
+    at Database.prepare (/home/runner/workspace/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at BetterSQLiteSession.prepareQuery (/home/runner/workspace/node_modules/src/better-sqlite3/session.ts:50:28)
+    at QueryPromise._prepare (/home/runner/workspace/node_modules/src/sqlite-core/query-builders/query.ts:147:78)
+    at QueryPromise.executeRaw (/home/runner/workspace/node_modules/src/sqlite-core/query-builders/query.ts:193:15)
+    at QueryPromise.execute (/home/runner/workspace/node_modules/src/sqlite-core/query-builders/query.ts:197:15)
+    at QueryPromise.then (/home/runner/workspace/node_modules/src/query-promise.ts:31:15)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at process.processImmediate (node:internal/timers:454:9) {
+  code: 'SQLITE_ERROR'
+}
+Error fetching dashboard stats: SqliteError: no such column: "tax_selection_mode" - should this be a string literal in single-quotes?
+    at Database.prepare (/home/runner/workspace/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at BetterSQLiteSession.prepareQuery (/home/runner/workspace/node_modules/src/better-sqlite3/session.ts:50:28)
+    at QueryPromise._prepare (/home/runner/workspace/node_modules/src/sqlite-core/query-builders/query.ts:147:78)
+    at QueryPromise.executeRaw (/home/runner/workspace/node_modules/src/sqlite-core/query-builders/query.ts:193:15)
+    at QueryPromise.execute (/home/runner/workspace/node_modules/src/sqlite-core/query-builders/query.ts:197:15)
+    at QueryPromise.then (/home/runner/workspace/node_modules/src/query-promise.ts:31:15) {
+  code: 'SQLITE_ERROR'
+}
