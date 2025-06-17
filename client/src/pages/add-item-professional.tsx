@@ -794,10 +794,7 @@ export default function AddItemProfessional() {
     { id: "tax-information", label: "Tax Information", icon: <DollarSignIcon className="w-4 h-4" /> },
     { id: "ean-code-barcode", label: "EAN Code/Barcode", icon: <BarChart3Icon className="w-4 h-4" /> },
     { id: "packing", label: "Packing", icon: <BoxIcon className="w-4 h-4" /> },
-    { id: "item-properties", label: "Item Properties", icon: <SettingsIcon className="w-4 h-4" /><previous_generation>
-/previous_generation>
-
-,
+    { id: "item-properties", label: "Item Properties", icon: <SettingsIcon className="w-4 h-4" /> },
     { id: "pricing", label: "Pricing", icon: <DollarSignIcon className="w-4 h-4" /> },
     { id: "reorder-configurations", label: "Reorder Configurations", icon: <PackageIcon className="w-4 h-4" /> },
     { id: "purchase-order", label: "Purchase Order", icon: <ShoppingCartIcon className="w-4 h-4" /> },
