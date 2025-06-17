@@ -787,7 +787,8 @@ export default function AddItemProfessional() {
           allowItemFree: false,
           showOnMobileDashboard: false,
           enableMobileNotifications: false,
-          quickAddToCart: false,
+          quick```text
+AddToCart: false,
           perishableItem: false,
           temperatureControlled: false,
           fragileItem: false,
@@ -2388,7 +2389,7 @@ export default function AddItemProfessional() {
                             {/* Repackaging Preview */}
                             {form.watch("weightInGms") && form.watch("repackageUnits") && (
                               <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
-                                <h5 className="font-medium text-green-800 mb-2">Repackaging Preview</h5>
+                                                               <h5 className="font-medium text-green-800 mb-2">Repackaging Preview</h5>
                                 <div className="text-sm text-green-700">
                                   <p>• Each unit: {form.watch("weightInGms")}g</p>
                                   <p>• Total units: {form.watch("repackageUnits") || 0}</p>
@@ -2998,11 +2999,15 @@ export default function AddItemProfessional() {
                           </Button>
                         </div>
                       </div>
-                    </form>
-                  </Form>
-                </div>
-              </div>
-            </div>
-          </DashboardLayout>
-        );
-      }
+                    </CardContent>
+                  </Card>
+                )}
+
+              </form>
+            </Form>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
