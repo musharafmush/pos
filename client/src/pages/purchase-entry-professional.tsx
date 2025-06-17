@@ -1102,8 +1102,15 @@ export default function PurchaseEntryProfessional() {
         form.setValue(`items.${index}.quantity`, 1);
       }
 
-      // Sync tax fields with enhanced logic
-      const taxData = syncTaxFieldsFromProduct(product, index);
+      // Calculate total GST percentage from product's GST rates
+      const cgstRate = parseFloat(product.cgstRate || "0");
+      const sgstRate = parseFloat(product.sgstRate || "0");
+      const igstRate = parseFloat(product.igstRate || "0");
+      const totalGstRate = cgstRate + sgstRate + igstRate;
+
+      // Set HSN code and tax percentage from product
+      form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
+      form.setValue(`items.${index}.taxPercentage`, totalGstRate);
 
       // Calculate net amount with accurate tax calculation
       const qty = form.getValues(`items.${index}.receivedQty`) || 1;
@@ -1116,22 +1123,22 @@ export default function PurchaseEntryProfessional() {
       switch (taxCalculationMethod) {
         case "inclusive":
           // Tax included in cost price
-          const baseAmount = subtotal / (1 + (taxData.total / 100));
+          const baseAmount = subtotal / (1 + (totalGstRate / 100));
           const taxAmount = subtotal - baseAmount;
           netAmount = subtotal - discountAmount;
           break;
         case "compound":
           // Compound tax calculation
           const taxableAmount = subtotal - discountAmount;
-          const primaryTax = (taxableAmount * taxData.total) / 100;
-          const compoundTax = (primaryTax * taxData.total) / 100;
+          const primaryTax = (taxableAmount * totalGstRate) / 100;
+          const compoundTax = (primaryTax * totalGstRate) / 100;
           netAmount = taxableAmount + primaryTax + compoundTax;
           break;
         case "exclusive":
         default:
           // Standard exclusive tax calculation
           const taxableAmountExclusive = subtotal - discountAmount;
-          const tax = (taxableAmountExclusive * taxData.total) / 100;
+          const tax = (taxableAmountExclusive * totalGstRate) / 100;
           netAmount = taxableAmountExclusive + tax;
           break;
       }
@@ -1356,6 +1363,12 @@ export default function PurchaseEntryProfessional() {
           const sellingPrice = parseFloat(product.price) || 0;
           const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
 
+          // Calculate total GST percentage from product's GST rates
+          const cgstRate = parseFloat(product.cgstRate || "0");
+          const sgstRate = parseFloat(product.sgstRate || "0");
+          const igstRate = parseFloat(product.igstRate || "0");
+          const totalGstRate = cgstRate + sgstRate + igstRate;
+
           append({
             productId: product.id,
             code: product.sku || "",
@@ -1367,7 +1380,7 @@ export default function PurchaseEntryProfessional() {
             sellingPrice: sellingPrice,
             mrp: mrpPrice,
             hsnCode: product.hsnCode || "",
-            taxPercentage: 18,
+            taxPercentage: totalGstRate,
             discountAmount: 0,
             discountPercent: 0,
             expiryDate: "",
