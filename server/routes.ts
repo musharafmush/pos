@@ -397,9 +397,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Product creation request body:', req.body);
 
-      // Ensure required fields have default values if missing
+      // Enhanced comprehensive product data handling
       const requestData = {
         ...req.body,
+        // Basic Information
         name: req.body.name || req.body.itemName || '',
         sku: req.body.sku || req.body.itemCode || '',
         description: req.body.description || req.body.aboutProduct || '',
@@ -414,14 +415,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         active: req.body.active !== false,
         barcode: req.body.barcode || req.body.eanCode || '',
 
-        // GST and tax information
+        // Tax Information - Enhanced GST compliance
         hsnCode: req.body.hsnCode || '',
         gstCode: req.body.gstCode || '',
         cgstRate: req.body.cgstRate || '0',
         sgstRate: req.body.sgstRate || '0',
         igstRate: req.body.igstRate || '0',
         cessRate: req.body.cessRate || '0',
-        taxCalculationMethod: req.body.taxCalculationMethod || 'exclusive'
+        taxCalculationMethod: req.body.taxCalculationMethod || 'exclusive',
+
+        // Supplier & Manufacturer Information
+        manufacturerName: req.body.manufacturerName || '',
+        supplierName: req.body.supplierName || '',
+        manufacturerId: req.body.manufacturerId || null,
+        supplierId: req.body.supplierId || null,
+
+        // Product Classification
+        alias: req.body.alias || '',
+        itemProductType: req.body.itemProductType || 'Standard',
+        department: req.body.department || '',
+        brand: req.body.brand || '',
+        buyer: req.body.buyer || '',
+        purchaseGstCalculatedOn: req.body.purchaseGstCalculatedOn || 'MRP',
+        gstUom: req.body.gstUom || 'PIECES',
+        purchaseAbatement: req.body.purchaseAbatement || '',
+
+        // Configuration Options
+        configItemWithCommodity: req.body.configItemWithCommodity || false,
+        seniorExemptApplicable: req.body.seniorExemptApplicable || false,
+        eanCodeRequired: req.body.eanCodeRequired || false,
+        weightsPerUnit: req.body.weightsPerUnit || '1',
+        batchExpiryDetails: req.body.batchExpiryDetails || 'Not Required',
+        itemPreparationsStatus: req.body.itemPreparationsStatus || 'Trade As Is',
+
+        // Pricing & Charges
+        grindingCharge: req.body.grindingCharge || '',
+        weightInGms: req.body.weightInGms || '',
+        bulkItemName: req.body.bulkItemName || '',
+        repackageUnits: req.body.repackageUnits || '',
+        repackageType: req.body.repackageType || '',
+        packagingMaterial: req.body.packagingMaterial || '',
+        decimalPoint: req.body.decimalPoint || '0',
+        productType: req.body.productType || 'NA',
+        sellBy: req.body.sellBy || 'None',
+        itemPerUnit: req.body.itemPerUnit || '1',
+        maintainSellingMrpBy: req.body.maintainSellingMrpBy || 'Multiple Selling Price & Multiple MRP',
+        batchSelection: req.body.batchSelection || 'Not Applicable',
+
+        // Item Properties
+        isWeighable: req.body.isWeighable || false,
+        skuType: req.body.skuType || 'Put Away',
+        indentType: req.body.indentType || 'Manual',
+        gateKeeperMargin: req.body.gateKeeperMargin || '',
+        allowItemFree: req.body.allowItemFree || false,
+        showOnMobileDashboard: req.body.showOnMobileDashboard || false,
+        enableMobileNotifications: req.body.enableMobileNotifications || false,
+        quickAddToCart: req.body.quickAddToCart || false,
+        perishableItem: req.body.perishableItem || false,
+        temperatureControlled: req.body.temperatureControlled || false,
+        fragileItem: req.body.fragileItem || false,
+        trackSerialNumbers: req.body.trackSerialNumbers || false,
+        fdaApproved: req.body.fdaApproved || false,
+        bisCertified: req.body.bisCertified || false,
+        organicCertified: req.body.organicCertified || false,
+        itemIngredients: req.body.itemIngredients || ''
       };
 
       console.log('Processed product data:', requestData);

@@ -48,6 +48,62 @@ export const products = pgTable('products', {
   cessRate: decimal('cess_rate', { precision: 5, scale: 2 }),
   taxCalculationMethod: text('tax_calculation_method'),
 
+  // Supplier & Manufacturer Information
+  manufacturerName: text('manufacturer_name'),
+  supplierName: text('supplier_name'),
+  manufacturerId: integer('manufacturer_id'),
+  supplierId: integer('supplier_id'),
+
+  // Product Classification
+  alias: text('alias'),
+  itemProductType: text('item_product_type'),
+  department: text('department'),
+  brand: text('brand'),
+  buyer: text('buyer'),
+  purchaseGstCalculatedOn: text('purchase_gst_calculated_on'),
+  gstUom: text('gst_uom'),
+  purchaseAbatement: text('purchase_abatement'),
+
+  // Configuration Options
+  configItemWithCommodity: boolean('config_item_with_commodity').default(false),
+  seniorExemptApplicable: boolean('senior_exempt_applicable').default(false),
+  eanCodeRequired: boolean('ean_code_required').default(false),
+  weightsPerUnit: text('weights_per_unit'),
+  batchExpiryDetails: text('batch_expiry_details'),
+  itemPreparationsStatus: text('item_preparations_status'),
+
+  // Pricing & Charges
+  grindingCharge: text('grinding_charge'),
+  weightInGms: text('weight_in_gms'),
+  bulkItemName: text('bulk_item_name'),
+  repackageUnits: text('repackage_units'),
+  repackageType: text('repackage_type'),
+  packagingMaterial: text('packaging_material'),
+  decimalPoint: text('decimal_point'),
+  productType: text('product_type'),
+  sellBy: text('sell_by'),
+  itemPerUnit: text('item_per_unit'),
+  maintainSellingMrpBy: text('maintain_selling_mrp_by'),
+  batchSelection: text('batch_selection'),
+
+  // Item Properties
+  isWeighable: boolean('is_weighable').default(false),
+  skuType: text('sku_type'),
+  indentType: text('indent_type'),
+  gateKeeperMargin: text('gate_keeper_margin'),
+  allowItemFree: boolean('allow_item_free').default(false),
+  showOnMobileDashboard: boolean('show_on_mobile_dashboard').default(false),
+  enableMobileNotifications: boolean('enable_mobile_notifications').default(false),
+  quickAddToCart: boolean('quick_add_to_cart').default(false),
+  perishableItem: boolean('perishable_item').default(false),
+  temperatureControlled: boolean('temperature_controlled').default(false),
+  fragileItem: boolean('fragile_item').default(false),
+  trackSerialNumbers: boolean('track_serial_numbers').default(false),
+  fdaApproved: boolean('fda_approved').default(false),
+  bisCertified: boolean('bis_certified').default(false),
+  organicCertified: boolean('organic_certified').default(false),
+  itemIngredients: text('item_ingredients'),
+
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()

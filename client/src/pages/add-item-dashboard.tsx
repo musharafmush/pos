@@ -781,8 +781,7 @@ export default function AddItemDashboard() {
         return matchesSearch && (
           product.name.toLowerCase().includes('bulk') ||
           product.name.toLowerCase().includes('bag') ||
-          product.name.toLowerCase().includes('container') ||
-          product.name.toLowerCase().includes('kg') ||
+          product.name.toLowerCase().includes('container') ||                      p.name.toLowerCase().includes('kg') ||
           product.name.toLowerCase().includes('ltr') ||
           product.name.toLowerCase().includes('wholesale') ||
           product.name.toLowerCase().includes('sack') ||
@@ -815,6 +814,142 @@ export default function AddItemDashboard() {
     setCurrentPage(1);
   };
 
+  // Mock data for demonstration - replace with real API calls
+  const stats = {
+    totalProducts: products.length,
+    activeProducts: products.filter(p => p.active).length,
+    lowStockItems: products.filter(p => p.stockQuantity <= p.alertThreshold).length,
+    totalValue: products.reduce((sum, p) => sum + (parseFloat(p.price.toString()) * p.stockQuantity), 0)
+  };
+
+  // Function to save comprehensive product data to backend
+  const saveProductToDatabase = async (productData: any) => {
+    try {
+      console.log('🔄 Saving comprehensive product data:', productData);
+
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Product saved successfully:', result);
+
+      // Refresh the products list
+      await refetchProducts();
+
+      toast({
+        title: "Success! 🎉",
+        description: `Product "${productData.name}" saved successfully with SKU: ${productData.sku}`,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('❌ Error saving product:', error);
+      toast({
+        title: "Error Saving Product",
+        description: error.message || "Failed to save product to database",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Function to create the example product
+  const createExampleProduct = async () => {
+    const exampleProductData = {
+      // Basic Information
+      name: 'oil 1l',
+      sku: 'ITM912756138',
+      description: '',
+      price: 100,
+      mrp: 120,
+      cost: 90,
+      weight: null,
+      weightUnit: 'kg',
+      stockQuantity: 0,
+      categoryId: 1,
+      barcode: '2178850459134',
+      active: true,
+      alertThreshold: 5,
+
+      // Tax Information
+      hsnCode: '24021000',
+      cgstRate: '14',
+      sgstRate: '14',
+      igstRate: '0',
+      cessRate: '0',
+      taxCalculationMethod: 'exclusive',
+      gstCode: '',
+
+      // Supplier Information
+      manufacturerName: 'Tech Distributors Ltd',
+      supplierName: 'Tech Distributors Ltd',
+      manufacturerId: 1,
+      supplierId: 1,
+
+      // Product Classification
+      alias: '',
+      itemProductType: 'Standard',
+      department: 'Grocery',
+      brand: '',
+      buyer: '',
+      purchaseGstCalculatedOn: 'MRP',
+      gstUom: 'PIECES',
+      purchaseAbatement: '',
+
+      // Configuration Options
+      configItemWithCommodity: false,
+      seniorExemptApplicable: false,
+      eanCodeRequired: false,
+      weightsPerUnit: '1',
+      batchExpiryDetails: 'Not Required',
+      itemPreparationsStatus: 'Trade As Is',
+
+      // Pricing & Charges
+      grindingCharge: '',
+      weightInGms: '',
+      bulkItemName: '',
+      repackageUnits: '',
+      repackageType: '',
+      packagingMaterial: '',
+      decimalPoint: '0',
+      productType: 'NA',
+      sellBy: 'None',
+      itemPerUnit: '1',
+      maintainSellingMrpBy: 'Multiple Selling Price & Multiple MRP',
+      batchSelection: 'Not Applicable',
+
+      // Item Properties
+      isWeighable: false,
+      skuType: 'Put Away',
+      indentType: 'Manual',
+      gateKeeperMargin: '',
+      allowItemFree: false,
+      showOnMobileDashboard: false,
+      enableMobileNotifications: false,
+      quickAddToCart: false,
+      perishableItem: false,
+      temperatureControlled: false,
+      fragileItem: false,
+      trackSerialNumbers: false,
+      fdaApproved: false,
+      bisCertified: false,
+      organicCertified: false,
+      itemIngredients: ''
+    };
+
+    await saveProductToDatabase(exampleProductData);
+  };
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-6">
@@ -834,12 +969,19 @@ export default function AddItemDashboard() {
                 <RefreshCcwIcon className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
-              <Link href="/add-item-professional">
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  Add New Item
-                </Button>
-              </Link>
+                  <Button 
+                    onClick={createExampleProduct}
+                    className="bg-green-600 hover:bg-green-700 mr-2"
+                  >
+                    <PlusIcon className="w-4 h-4 mr-2" />
+                    Save Example Product
+                  </Button>
+                  <Link href="/add-item-professional">
+                    <Button className="bg-blue-600 hover:bg-blue-700">
+                      <PlusIcon className="w-4 h-4 mr-2" />
+                      Add New Item
+                    </Button>
+                  </Link>
             </div>
           </div>
         </div>
@@ -1856,7 +1998,7 @@ export default function AddItemDashboard() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-3 gap-4 mt-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Sell By</label>
@@ -1954,7 +2096,7 @@ export default function AddItemDashboard() {
                         <p className="text-gray-800">{selectedProduct.batchSelection || "Not Applicable"}</p>
                       </div>
                     </div>
-                    
+
                     <div className="mt-4 bg-green-50 p-3 rounded">
                       <label className="text-sm font-medium text-green-700">Total Inventory Value</label>
                       <p className="text-2xl font-bold text-green-800">
@@ -2290,8 +2432,7 @@ export default function AddItemDashboard() {
                     <div 
                       onClick={() => scrollToSection('properties-info')}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
-                        activeSection === 'properties-info' 
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
+                        activeSection === 'properties-info'                           ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700' 
                           : 'text-gray-600 hover:bg-gray-50'
                       }`}
                     >
