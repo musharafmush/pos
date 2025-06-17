@@ -72,7 +72,15 @@ import {
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Product } from "@shared/schema";
+import type { Product, Category, Supplier } from "@shared/schema";
+import { 
+  calculateGSTBreakdown, 
+  suggestGSTRate, 
+  generateAlias as autoGenerateAlias, 
+  HSN_CODE_DATABASE, 
+  formatGSTBreakdown,
+  validateHSNCode
+} from "@/lib/gst-calculator";
 import { Link } from "wouter";
 import { ProductsTable } from "@/components/products-table";
 import {

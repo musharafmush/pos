@@ -34,6 +34,14 @@ import { RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Category, Supplier, Product } from "@shared/schema";
+import { 
+  calculateGSTBreakdown, 
+  suggestGSTRate, 
+  generateAlias as autoGenerateAlias, 
+  HSN_CODE_DATABASE, 
+  formatGSTBreakdown,
+  validateHSNCode
+} from "@/lib/gst-calculator";
 
 const productFormSchema = z.object({
   // Item Information
@@ -325,6 +333,10 @@ export default function AddItemProfessional() {
   );
 
 
+  // State for dynamic GST calculations
+  const [gstBreakdown, setGstBreakdown] = useState({ cgst: 0, sgst: 0, igst: 0, cess: 0, total: 0, isInterState: false });
+  const [isIntraState, setIsIntraState] = useState(true);
+
   // Dynamic GST calculation and display
   const calculateTotalGST = () => {
     const cgst = parseFloat(watchedValues.cgstRate || '0');
@@ -336,6 +348,50 @@ export default function AddItemProfessional() {
       return igst + cess;
     } else {
       return cgst + sgst + cess;
+    }
+  };
+
+  // Auto-calculate GST based on HSN code
+  const handleHSNCodeChange = (hsnCode: string) => {
+    if (validateHSNCode(hsnCode)) {
+      const suggestedRate = suggestGSTRate(hsnCode);
+      const amount = parseFloat(watchedValues.price || '0');
+      
+      if (amount > 0) {
+        const breakdown = calculateGSTBreakdown(amount, suggestedRate, "MH", "MH");
+        setGstBreakdown(breakdown);
+        
+        if (breakdown.isInterState) {
+          form.setValue('igstRate', breakdown.igst.toString());
+          form.setValue('cgstRate', '0');
+          form.setValue('sgstRate', '0');
+        } else {
+          form.setValue('cgstRate', breakdown.cgst.toString());
+          form.setValue('sgstRate', breakdown.sgst.toString());
+          form.setValue('igstRate', '0');
+        }
+      }
+    }
+  };
+
+  // Toggle between Intra-State and Inter-State GST
+  const toggleGSTType = () => {
+    const newIsIntraState = !isIntraState;
+    setIsIntraState(newIsIntraState);
+    
+    const totalRate = calculateTotalGST();
+    
+    if (newIsIntraState) {
+      // Split into CGST + SGST
+      const half = totalRate / 2;
+      form.setValue('cgstRate', half.toString());
+      form.setValue('sgstRate', half.toString());
+      form.setValue('igstRate', '0');
+    } else {
+      // Combine into IGST
+      form.setValue('igstRate', totalRate.toString());
+      form.setValue('cgstRate', '0');
+      form.setValue('sgstRate', '0');
     }
   };
 
