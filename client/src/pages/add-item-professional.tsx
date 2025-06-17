@@ -1543,7 +1543,7 @@ export default function AddItemProfessional() {
                                       {/* Food & Beverages */}
                                       <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
                                       <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
-                                      <SelectItem      <SelectItem value="17019900">1701990 - Sugar (5%)</SelectItem>
+                                      <SelectItem value="17019900">17019900 - Sugar (5%)</SelectItem>
                                       <SelectItem value="04070010">04070010 - Eggs (0%)</SelectItem>
                                       <SelectItem value="07010000">07010000 - Fresh Vegetables (0%)</SelectItem>
                                       <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
