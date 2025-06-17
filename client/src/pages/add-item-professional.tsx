@@ -25,12 +25,14 @@ import {
   ShoppingCartIcon,
   BarChart3Icon,
   CheckIcon,
-  XIcon
+  XIcon,
+  EditIcon,
+  Loader2Icon
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Category, Supplier } from "@shared/schema";
+import type { Category, Supplier, Product } from "@shared/schema";
 
 const productFormSchema = z.object({
   // Item Information
@@ -67,6 +69,7 @@ const productFormSchema = z.object({
 
   // EAN Code/Barcode
   eanCodeRequired: z.boolean().default(false),
+  barcode: z.string().optional(),
 
   // Weight & Packing (Enhanced for Bulk Items)
   weightsPerUnit: z.string().default("1"),
@@ -141,6 +144,33 @@ export default function AddItemProfessional() {
   const [, setLocation] = useLocation();
   const [currentSection, setCurrentSection] = useState("item-information");
 
+  // Extract edit ID from URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get('edit');
+  const isEditMode = !!editId;
+  
+  console.log('Edit mode:', isEditMode, 'Edit ID:', editId); // Debug log
+
+  // Fetch product data if in edit mode
+  const { data: editingProduct, isLoading: isLoadingProduct, error: productError } = useQuery({
+    queryKey: ["/api/products", editId],
+    queryFn: async () => {
+      if (!editId) return null;
+      console.log('Fetching product with ID:', editId);
+      const response = await fetch(`/api/products/${editId}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to fetch product:', response.status, errorText);
+        throw new Error(`Failed to fetch product: ${response.status}`);
+      }
+      const product = await response.json();
+      console.log('Fetched product:', product);
+      return product;
+    },
+    enabled: !!editId,
+    retry: 1,
+  });
+
   // Generate sequential item code
   const generateItemCode = () => {
     // Get all existing products to find the highest item code number
@@ -174,15 +204,18 @@ export default function AddItemProfessional() {
     queryKey: ["/api/categories"],
   });
 
-  // Fetch suppliers
-  const { data: suppliers = [] } = useQuery({
+  // Fetch suppliers with enhanced debugging
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ["/api/suppliers"],
     queryFn: async () => {
+      console.log('🏭 Fetching suppliers data...');
       const response = await fetch("/api/suppliers");
       if (!response.ok) throw new Error("Failed to fetch suppliers");
-      return response.json();
+      const suppliersData = await response.json();
+      console.log('✅ Suppliers data loaded:', suppliersData.length, 'suppliers');
+      return suppliersData;
     },
-  }) as { data: Supplier[] };
+  }) as { data: Supplier[], isLoading: boolean };
 
   // Fetch all products for bulk item selection
   const { data: allProducts = [] } = useQuery({
@@ -210,7 +243,7 @@ export default function AddItemProfessional() {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
-      itemCode: allProducts ? generateItemCode() : generateFallbackItemCode(),
+      itemCode: "",
       itemName: "",
       manufacturerName: "",
       supplierName: "",
@@ -273,137 +306,428 @@ export default function AddItemProfessional() {
     },
   });
 
-  // Update item code when products data loads
+  // Enhanced dynamic data uploading and form synchronization for edit mode
   useEffect(() => {
-    if (allProducts && allProducts.length > 0) {
+    if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0 && suppliers.length > 0) {
+      console.log('🔄 Dynamic data upload - Populating edit form with product data:', editingProduct);
+      
+      // Enhanced GST calculation with better accuracy
+      const cgstRate = parseFloat(editingProduct.cgstRate || '0');
+      const sgstRate = parseFloat(editingProduct.sgstRate || '0');
+      const igstRate = parseFloat(editingProduct.igstRate || '0');
+      const totalGst = cgstRate + sgstRate + igstRate;
+
+      // Dynamic GST code determination with better mapping
+      let gstCode = 'GST 18%'; // Default
+      if (totalGst === 0) gstCode = 'GST 0%';
+      else if (totalGst === 5) gstCode = 'GST 5%';
+      else if (totalGst === 12) gstCode = 'GST 12%';
+      else if (totalGst === 18) gstCode = 'GST 18%';
+      else if (totalGst === 28) gstCode = 'GST 28%';
+      else if (totalGst > 0) gstCode = `GST ${totalGst}%`; // Custom rate
+
+      // Dynamic category resolution
+      const category = categories.find((cat: any) => cat.id === editingProduct.categoryId);
+      console.log('📂 Dynamic category mapping:', { categoryId: editingProduct.categoryId, category: category?.name });
+
+      // Enhanced manufacturer and supplier resolution
+      const matchedManufacturer = suppliers.find((sup: any) => 
+        sup.name === editingProduct.manufacturerName || 
+        sup.id === editingProduct.manufacturerId
+      );
+      const matchedSupplier = suppliers.find((sup: any) => 
+        sup.name === editingProduct.supplierName || 
+        sup.id === editingProduct.supplierId
+      );
+      
+      console.log('🏭 Dynamic manufacturer/supplier mapping:', { 
+        manufacturerName: editingProduct.manufacturerName,
+        supplierName: editingProduct.supplierName,
+        matchedManufacturer: matchedManufacturer?.name,
+        matchedSupplier: matchedSupplier?.name 
+      });
+
+      // Comprehensive form data with enhanced field mapping
+      const formData = {
+        // Item Information - Enhanced with proper supplier matching
+        itemCode: editingProduct.sku || "",
+        itemName: editingProduct.name || "",
+        manufacturerName: matchedManufacturer?.name || editingProduct.manufacturerName || "",
+        supplierName: matchedSupplier?.name || editingProduct.supplierName || "",
+        alias: editingProduct.alias || "",
+        aboutProduct: editingProduct.description || "",
+
+        // Category Information - Dynamic
+        itemProductType: editingProduct.itemProductType || "Standard",
+        department: editingProduct.department || "",
+        mainCategory: category?.name || "",
+        subCategory: editingProduct.subCategory || "",
+        brand: editingProduct.brand || "",
+        buyer: editingProduct.buyer || "",
+
+        // Tax Information - Enhanced with dynamic calculation
+        hsnCode: editingProduct.hsnCode || "",
+        gstCode: gstCode,
+        purchaseGstCalculatedOn: editingProduct.purchaseGstCalculatedOn || "MRP",
+        gstUom: editingProduct.gstUom || "PIECES",
+        purchaseAbatement: editingProduct.purchaseAbatement || "",
+        configItemWithCommodity: editingProduct.configItemWithCommodity || false,
+        seniorExemptApplicable: editingProduct.seniorExemptApplicable || false,
+        cgstRate: editingProduct.cgstRate || "0",
+        sgstRate: editingProduct.sgstRate || "0",
+        igstRate: editingProduct.igstRate || "0",
+        cessRate: editingProduct.cessRate || "0",
+        taxCalculationMethod: editingProduct.taxCalculationMethod || "exclusive",
+
+        // EAN Code/Barcode - Enhanced
+        eanCodeRequired: editingProduct.eanCodeRequired || false,
+        barcode: editingProduct.barcode || "",
+        barcodeType: editingProduct.barcodeType || "ean13",
+
+        // Weight & Packing - Comprehensive
+        weightsPerUnit: editingProduct.weightsPerUnit || "1",
+        bulkWeight: editingProduct.bulkWeight || "",
+        bulkWeightUnit: editingProduct.bulkWeightUnit || "kg",
+        packingType: editingProduct.packingType || "Bulk",
+        unitsPerPack: editingProduct.unitsPerPack || "1",
+        batchExpiryDetails: editingProduct.batchExpiryDetails || "Not Required",
+        itemPreparationsStatus: editingProduct.itemPreparationsStatus || "Trade As Is",
+        grindingCharge: editingProduct.grindingCharge || "",
+        weightInGms: editingProduct.weightInGms || "",
+        bulkItemName: editingProduct.bulkItemName || "",
+        repackageUnits: editingProduct.repackageUnits || "",
+        repackageType: editingProduct.repackageType || "",
+        packagingMaterial: editingProduct.packagingMaterial || "",
+
+        // Item Properties - Enhanced
+        decimalPoint: editingProduct.decimalPoint || "0",
+        productType: editingProduct.productType || "NA",
+        perishableItem: editingProduct.perishableItem || false,
+        temperatureControlled: editingProduct.temperatureControlled || false,
+        fragileItem: editingProduct.fragileItem || false,
+        trackSerialNumbers: editingProduct.trackSerialNumbers || false,
+
+        // Pricing - Dynamic calculation support
+        sellBy: editingProduct.sellBy || "None",
+        itemPerUnit: editingProduct.itemPerUnit || "1",
+        maintainSellingMrpBy: editingProduct.maintainSellingMrpBy || "Multiple Selling Price & Multiple MRP",
+        batchSelection: editingProduct.batchSelection || "Not Applicable",
+        isWeighable: editingProduct.isWeighable || false,
+        price: editingProduct.price?.toString() || "",
+        mrp: editingProduct.mrp?.toString() || "",
+        cost: editingProduct.cost?.toString() || "",
+
+        // Reorder Configurations
+        skuType: editingProduct.skuType || "Put Away",
+        indentType: editingProduct.indentType || "Manual",
+        gateKeeperMargin: editingProduct.gateKeeperMargin || "",
+        allowItemFree: editingProduct.allowItemFree || false,
+
+        // Mobile App Configurations
+        showOnMobileDashboard: editingProduct.showOnMobileDashboard || false,
+        enableMobileNotifications: editingProduct.enableMobileNotifications || false,
+        quickAddToCart: editingProduct.quickAddToCart || false,
+
+        // Compliance Information
+        fdaApproved: editingProduct.fdaApproved || false,
+        bisCertified: editingProduct.bisCertified || false,
+        organicCertified: editingProduct.organicCertified || false,
+
+        // Additional Information
+        itemIngredients: editingProduct.itemIngredients || "",
+        weight: editingProduct.weight ? editingProduct.weight.toString() : "",
+        weightUnit: editingProduct.weightUnit || "kg",
+        categoryId: editingProduct.categoryId || categories[0]?.id || 1,
+        stockQuantity: editingProduct.stockQuantity?.toString() || "0",
+        active: editingProduct.active !== false,
+      };
+
+      console.log('✅ Dynamic form data prepared:', formData);
+      console.log('🔄 Uploading overall data dynamically to form...');
+      
+      // Apply the dynamic data upload
+      form.reset(formData);
+      
+      // Trigger reactive updates for dependent fields
+      setTimeout(() => {
+        console.log('🔄 Triggering reactive field updates...');
+        // Ensure category selection triggers dependent updates
+        if (category?.name) {
+          form.setValue("mainCategory", category.name);
+          form.setValue("categoryId", category.id);
+        }
+        
+        // Update GST breakdown display
+        form.setValue("gstCode", gstCode);
+        
+        console.log('✅ Dynamic data upload completed successfully');
+      }, 100);
+    }
+  }, [isEditMode, editingProduct, isLoadingProduct, categories, suppliers, form]);
+
+  // Dynamic data synchronization watcher
+  useEffect(() => {
+    if (isEditMode && editingProduct) {
+      console.log('🔄 Dynamic data sync active for product ID:', editId);
+      
+      // Watch for form changes and log them
+      const subscription = form.watch((value, { name, type }) => {
+        if (type === 'change' && name) {
+          console.log(`📝 Dynamic field update: ${name} = ${value[name]}`);
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    }
+  }, [isEditMode, editingProduct, form, editId]);
+
+  // Update item code when products data loads (only for create mode)
+  useEffect(() => {
+    if (!isEditMode && allProducts && allProducts.length > 0) {
       const currentItemCode = form.getValues('itemCode');
-      // Only update if current code is a fallback code (contains timestamp)
-      if (currentItemCode.length === 9 && !currentItemCode.startsWith('ITM0')) {
+      // Only update if current code is a fallback code (contains timestamp) or empty
+      if (!currentItemCode || (currentItemCode.length === 9 && !currentItemCode.startsWith('ITM0'))) {
         form.setValue('itemCode', generateItemCode());
       }
     }
-  }, [allProducts, form]);
+  }, [isEditMode, allProducts, form]);
 
-  // Create product mutation
+  // Enhanced Create/Update product mutation with dynamic data handling
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      // Validate required fields
-      if (!data.itemName || !data.itemCode || !data.price || !data.stockQuantity) {
-        throw new Error("Please fill in all required fields");
+      console.log('🚀 Starting product mutation with enhanced data:', data);
+      console.log(`📊 ${isEditMode ? 'Updating' : 'Creating'} product with dynamic validation...`);
+      
+      // Enhanced validation for required fields with better error messages
+      const requiredFields = [];
+      if (!data.itemName?.trim()) requiredFields.push("Item Name");
+      if (!data.itemCode?.trim()) requiredFields.push("Item Code");
+      if (!data.price?.trim()) requiredFields.push("Price");
+      
+      if (requiredFields.length > 0) {
+        throw new Error(`Please fill in all required fields: ${requiredFields.join(", ")}`);
       }
 
+      // Enhanced numeric validation with dynamic checks
+      const price = parseFloat(data.price);
+      const mrp = data.mrp ? parseFloat(data.mrp) : price;
+      const cost = data.cost ? parseFloat(data.cost) : 0;
+      const stockQuantity = data.stockQuantity ? parseInt(data.stockQuantity) : 0;
+
+      // Dynamic validation checks
+      const validationErrors = [];
+      if (isNaN(price) || price <= 0) validationErrors.push("Price must be a valid positive number");
+      if (isNaN(stockQuantity) || stockQuantity < 0) validationErrors.push("Stock quantity must be a valid positive number");
+      if (mrp > 0 && mrp < price) validationErrors.push("MRP cannot be less than selling price");
+      if (cost > 0 && price < cost) validationErrors.push("Selling price should typically be higher than cost price");
+      
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join("; "));
+      }
+
+      console.log('✅ Dynamic validation passed successfully');
+
+      // Enhanced product data with all form fields
       const productData = {
         name: data.itemName.trim(),
         sku: data.itemCode.trim(),
         description: data.aboutProduct?.trim() || "",
-        price: parseFloat(data.price),
-        mrp: parseFloat(data.mrp),
-        cost: data.cost ? parseFloat(data.cost) : 0,
+        price: price,
+        mrp: mrp,
+        cost: cost,
         weight: data.weight ? parseFloat(data.weight) : null,
-        weightUnit: data.weightUnit,
-        stockQuantity: parseInt(data.stockQuantity),
-        categoryId: data.categoryId,
+        weightUnit: data.weightUnit || "kg",
+        stockQuantity: stockQuantity,
+        categoryId: data.categoryId || null,
         barcode: data.barcode?.trim() || "",
-        active: data.active,
+        active: data.active !== undefined ? data.active : true,
         alertThreshold: 5,
-        unit: "PCS",
         hsnCode: data.hsnCode?.trim() || "",
-        taxRate: data.gstCode?.match(/\d+/)?.[0] || "18",
-        trackInventory: true,
-        allowNegativeStock: false,
+        
+        // Enhanced tax breakdown for better synchronization
+        cgstRate: data.cgstRate || "0",
+        sgstRate: data.sgstRate || "0", 
+        igstRate: data.igstRate || "0",
+        cessRate: data.cessRate || "0",
+        taxCalculationMethod: data.taxCalculationMethod || "exclusive",
+        
+        // Enhanced fields for comprehensive data storage with supplier ID resolution
+        manufacturerName: data.manufacturerName?.trim() || "",
+        supplierName: data.supplierName?.trim() || "",
+        manufacturerId: suppliers.find((sup: any) => sup.name === data.manufacturerName?.trim())?.id || null,
+        supplierId: suppliers.find((sup: any) => sup.name === data.supplierName?.trim())?.id || null,
+        alias: data.alias?.trim() || "",
+        itemProductType: data.itemProductType || "Standard",
+        department: data.department?.trim() || "",
+        brand: data.brand?.trim() || "",
+        buyer: data.buyer?.trim() || "",
+        purchaseGstCalculatedOn: data.purchaseGstCalculatedOn || "MRP",
+        gstUom: data.gstUom || "PIECES",
+        purchaseAbatement: data.purchaseAbatement?.trim() || "",
+        configItemWithCommodity: data.configItemWithCommodity || false,
+        seniorExemptApplicable: data.seniorExemptApplicable || false,
+        eanCodeRequired: data.eanCodeRequired || false,
+        weightsPerUnit: data.weightsPerUnit || "1",
+        batchExpiryDetails: data.batchExpiryDetails || "Not Required",
+        itemPreparationsStatus: data.itemPreparationsStatus || "Trade As Is",
+        grindingCharge: data.grindingCharge?.trim() || "",
+        weightInGms: data.weightInGms?.trim() || "",
+        bulkItemName: data.bulkItemName?.trim() || "",
+        repackageUnits: data.repackageUnits?.trim() || "",
+        repackageType: data.repackageType?.trim() || "",
+        packagingMaterial: data.packagingMaterial?.trim() || "",
+        decimalPoint: data.decimalPoint || "0",
+        productType: data.productType || "NA",
+        sellBy: data.sellBy || "None",
+        itemPerUnit: data.itemPerUnit || "1",
+        maintainSellingMrpBy: data.maintainSellingMrpBy || "Multiple Selling Price & Multiple MRP",
+        batchSelection: data.batchSelection || "Not Applicable",
+        isWeighable: data.isWeighable || false,
+        skuType: data.skuType || "Put Away",
+        indentType: data.indentType || "Manual",
+        gateKeeperMargin: data.gateKeeperMargin?.trim() || "",
+        allowItemFree: data.allowItemFree || false,
+        showOnMobileDashboard: data.showOnMobileDashboard || false,
+        enableMobileNotifications: data.enableMobileNotifications || false,
+        quickAddToCart: data.quickAddToCart || false,
+        perishableItem: data.perishableItem || false,
+        temperatureControlled: data.temperatureControlled || false,
+        fragileItem: data.fragileItem || false,
+        trackSerialNumbers: data.trackSerialNumbers || false,
+        fdaApproved: data.fdaApproved || false,
+        bisCertified: data.bisCertified || false,
+        organicCertified: data.organicCertified || false,
+        itemIngredients: data.itemIngredients?.trim() || "",
       };
 
-      const res = await apiRequest("POST", "/api/products", productData);
+      console.log('Submitting enhanced product data:', productData);
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to create product");
+      const method = isEditMode ? "PUT" : "POST";
+      const url = isEditMode ? `/api/products/${editId}` : "/api/products";
+
+      try {
+        const res = await apiRequest(method, url, productData);
+
+        if (!res.ok) {
+          let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} product`;
+          try {
+            const errorData = await res.json();
+            errorMessage = errorData.message || errorMessage;
+            console.error('Server error response:', errorData);
+          } catch {
+            errorMessage = `HTTP ${res.status}: ${res.statusText}`;
+          }
+          throw new Error(errorMessage);
+        }
+
+        const result = await res.json();
+        console.log('Product operation successful:', result);
+        return result;
+      } catch (error) {
+        console.error('Product operation error:', error);
+        throw error;
       }
-
-      return await res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      form.reset({
-        itemCode: allProducts ? generateItemCode() : generateFallbackItemCode(),
-        itemName: "",
-        manufacturerName: "",
-        supplierName: "",
-        alias: "",
-        aboutProduct: "",
-        itemProductType: "Standard",
-        department: "",
-        mainCategory: "",
-        subCategory: "",
-        brand: "",
-        buyer: "",
-        hsnCode: "",
-        gstCode: "GST 12%",
-        purchaseGstCalculatedOn: "MRP",
-        gstUom: "PIECES",
-        purchaseAbatement: "",
-        configItemWithCommodity: false,
-        seniorExemptApplicable: false,
-        eanCodeRequired: false,
-        weightsPerUnit: "1",
-        batchExpiryDetails: "Not Required",
-        itemPreparationsStatus: "Trade As Is",
-        grindingCharge: "",
-        weightInGms: "",
-        bulkItemName: "",
-        repackageUnits: "",
-        repackageType: "",
-        packagingMaterial: "",
-        decimalPoint: "0",
-        productType: "NA",
-        sellBy: "None",
-        itemPerUnit: "1",
-        maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
-        batchSelection: "Not Applicable",
-        isWeighable: false,
-        skuType: "Put Away",
-        indentType: "Manual",
-        gateKeeperMargin: "",
-        allowItemFree: false,
-        showOnMobileDashboard: false,
-        enableMobileNotifications: false,
-        quickAddToCart: false,
-        perishableItem: false,
-        temperatureControlled: false,
-        fragileItem: false,
-        trackSerialNumbers: false,
-        fdaApproved: false,
-        bisCertified: false,
-        organicCertified: false,
-        itemIngredients: "",
-        price: "",
-        mrp: "",
-        cost: "",
-        weight: "",
-        weightUnit: "kg",
-        categoryId: categories[0]?.id || 1,
-        stockQuantity: "0",
-        active: true,
-      });
 
-      toast({
-        title: "Success! 🎉", 
-        description: `Product "${data.name}" created successfully with SKU: ${data.sku}`,
-        action: (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setLocation("/add-item-dashboard")}
-          >
-            View Dashboard
-          </Button>
-        ),
-      });
+      if (isEditMode) {
+        toast({
+          title: "Success! 🎉", 
+          description: `Product "${data.name}" updated successfully`,
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setLocation("/add-item-dashboard")}
+            >
+              View Dashboard
+            </Button>
+          ),
+        });
+      } else {
+        form.reset({
+          itemCode: allProducts ? generateItemCode() : generateFallbackItemCode(),
+          itemName: "",
+          manufacturerName: "",
+          supplierName: "",
+          alias: "",
+          aboutProduct: "",
+          itemProductType: "Standard",
+          department: "",
+          mainCategory: "",
+          subCategory: "",
+          brand: "",
+          buyer: "",
+          hsnCode: "",
+          gstCode: "GST 12%",
+          purchaseGstCalculatedOn: "MRP",
+          gstUom: "PIECES",
+          purchaseAbatement: "",
+          configItemWithCommodity: false,
+          seniorExemptApplicable: false,
+          eanCodeRequired: false,
+          barcode: "",
+          weightsPerUnit: "1",
+          batchExpiryDetails: "Not Required",
+          itemPreparationsStatus: "Trade As Is",
+          grindingCharge: "",
+          weightInGms: "",
+          bulkItemName: "",
+          repackageUnits: "",
+          repackageType: "",
+          packagingMaterial: "",
+          decimalPoint: "0",
+          productType: "NA",
+          sellBy: "None",
+          itemPerUnit: "1",
+          maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
+          batchSelection: "Not Applicable",
+          isWeighable: false,
+          skuType: "Put Away",
+          indentType: "Manual",
+          gateKeeperMargin: "",
+          allowItemFree: false,
+          showOnMobileDashboard: false,
+          enableMobileNotifications: false,
+          quickAddToCart: false,
+          perishableItem: false,
+          temperatureControlled: false,
+          fragileItem: false,
+          trackSerialNumbers: false,
+          fdaApproved: false,
+          bisCertified: false,
+          organicCertified: false,
+          itemIngredients: "",
+          price: "",
+          mrp: "",
+          cost: "",
+          weight: "",
+          weightUnit: "kg",
+          categoryId: categories[0]?.id || 1,
+          stockQuantity: "0",
+          active: true,
+        });
+
+        toast({
+          title: "Success! 🎉", 
+          description: `Product "${data.name}" created successfully with SKU: ${data.sku}`,
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setLocation("/add-item-dashboard")}
+            >
+              View Dashboard
+            </Button>
+          ),
+        });
+      }
     },
     onError: (error: Error) => {
-      console.error("Product creation error:", error);
+      console.error("Product operation error:", error);
       toast({
-        title: "Error Creating Product",
+        title: `Error ${isEditMode ? 'Updating' : 'Creating'} Product`,
         description: error.message || "Please check all required fields and try again",
         variant: "destructive",
       });
@@ -424,6 +748,65 @@ export default function AddItemProfessional() {
     { id: "other-information", label: "Other Information", icon: <InfoIcon className="w-4 h-4" /> },
   ];
 
+  // Enhanced loading state with dynamic upload progress
+  if (isEditMode && (isLoadingProduct || isLoadingSuppliers)) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto">
+            <div className="bg-white p-8 rounded-lg shadow-lg border">
+              <Loader2Icon className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
+              <h2 className="text-xl font-semibold mb-2">Loading Product Data...</h2>
+              <p className="text-gray-600 mb-4">Uploading overall data dynamically for edit mode including suppliers</p>
+              
+              {/* Dynamic progress indicator */}
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+              </div>
+              
+              <div className="text-sm text-gray-500 space-y-1">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Fetching product information...</span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span>Preparing dynamic form data...</span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                  <span>Uploading to form sections...</span>
+                </div>
+              </div>
+              
+              <p className="text-xs text-gray-400 mt-4">Product ID: {editId}</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error state if product fetch failed
+  if (isEditMode && productError) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <XIcon className="w-4 h-4 text-red-600" />
+            </div>
+            <h2 className="text-lg font-semibold text-red-800">Failed to Load Product</h2>
+            <p className="text-gray-600 mb-4">Could not fetch product data for editing.</p>
+            <Button onClick={() => setLocation("/add-item-dashboard")} variant="outline">
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
@@ -431,13 +814,30 @@ export default function AddItemProfessional() {
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <PackageIcon className="w-4 h-4 text-blue-600" />
+                {isEditMode ? <EditIcon className="w-4 h-4 text-blue-600" /> : <PackageIcon className="w-4 h-4 text-blue-600" />}
               </div>
-              <h1 className="text-xl font-semibold">Add Item</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-semibold">
+                  {isEditMode ? "Edit Item" : "Add Item"}
+                </h1>
+                {isEditMode && (
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                    <EditIcon className="w-3 h-3 mr-1" />
+                    Edit Mode
+                  </Badge>
+                )}
+              </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setLocation("/")}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                console.log('Closing and returning to dashboard');
+                setLocation("/add-item-dashboard");
+              }}
+            >
               <XIcon className="w-4 h-4 mr-2" />
-              Close
+              {isEditMode ? "Cancel Edit" : "Close"}
             </Button>
           </div>
         </div>
@@ -453,44 +853,76 @@ export default function AddItemProfessional() {
                 </TabsList>
               </Tabs>
 
-              <div className="space-y-1">
-                {sidebarSections.map((section) => {
-                  if (section.id === "packing") {
-                    return (
-                      <button
-                        key={section.id}
-                        onClick={() => setCurrentSection(section.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
-                          currentSection === section.id 
-                            ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700" 
-                            : "text-gray-600 hover:bg-gray-50"
-                        }`}
-                      >
-                        {section.icon}
-                        {section.label}
-                        <div className="w-2 h-2 bg-orange-500 rounded-full ml-auto"></div>
-                      </button>
-                    );
-                  }
+              {/* Progress Indicator */}
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="text-xs text-gray-600 mb-2">
+                  Section {sidebarSections.findIndex(s => s.id === currentSection) + 1} of {sidebarSections.length}
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    style={{
+                      width: `${((sidebarSections.findIndex(s => s.id === currentSection) + 1) / sidebarSections.length) * 100}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
 
+              <div className="space-y-1">
+                {sidebarSections.map((section, index) => {
+                  const isCompleted = sidebarSections.findIndex(s => s.id === currentSection) > index;
+                  const isCurrent = currentSection === section.id;
+                  
                   return (
                     <button
                       key={section.id}
                       onClick={() => setCurrentSection(section.id)}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
-                        currentSection === section.id 
+                        isCurrent 
                           ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700" 
+                          : isCompleted
+                          ? "text-green-600 hover:bg-green-50"
                           : "text-gray-600 hover:bg-gray-50"
-                        }`}
+                      }`}
                     >
                       {section.icon}
-                      {section.label}
-                      {section.id === "item-information" && (
-                        <div className="w-2 h-2 bg-blue-600 rounded-full ml-auto"></div>
+                      <span className="flex-1 text-left">{section.label}</span>
+                      
+                      {/* Section status indicators */}
+                      {isCurrent && (
+                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                      )}
+                      {isCompleted && !isCurrent && (
+                        <CheckIcon className="w-4 h-4 text-green-600" />
+                      )}
+                      {section.id === "packing" && !isCompleted && !isCurrent && (
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                       )}
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Quick Actions */}
+              <div className="mt-6 pt-4 border-t">
+                <div className="text-xs text-gray-500 mb-2">Quick Actions</div>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setCurrentSection("item-information")}
+                    className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded"
+                  >
+                    Go to Start
+                  </button>
+                  <button
+                    onClick={() => {
+                      const lastSection = sidebarSections[sidebarSections.length - 1];
+                      setCurrentSection(lastSection.id);
+                    }}
+                    className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded"
+                  >
+                    Skip to End
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -531,6 +963,11 @@ export default function AddItemProfessional() {
                       <CardTitle className="flex items-center gap-2">
                         <InfoIcon className="w-5 h-5" />
                         Item Information
+                        {isEditMode && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            Editing: {editingProduct?.name}
+                          </Badge>
+                        )}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -544,18 +981,20 @@ export default function AddItemProfessional() {
                               <FormControl>
                                 <div className="flex gap-2">
                                   <Input {...field} placeholder="Auto-generated code" />
-                                  <Button 
-                                    type="button" 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => {
-                                      const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
-                                      field.onChange(newCode);
-                                    }}
-                                    className="whitespace-nowrap"
-                                  >
-                                    Generate New
-                                  </Button>
+                                  {!isEditMode && (
+                                    <Button 
+                                      type="button" 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => {
+                                        const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
+                                        field.onChange(newCode);
+                                      }}
+                                      className="whitespace-nowrap"
+                                    >
+                                      Generate New
+                                    </Button>
+                                  )}
                                 </div>
                               </FormControl>
                               <FormMessage />
@@ -737,103 +1176,6 @@ export default function AddItemProfessional() {
                             )}
                           />
                         </div>
-
-                        <div className="grid grid-cols-2 gap-6 mt-4">
-                          <FormField
-                            control={form.control}
-                            name="subCategory"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium text-gray-700">SUB CATEGORY</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger className="h-10">
-                                      <SelectValue placeholder="Select sub category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Food & Beverages">Food & Beverages</SelectItem>
-                                      <SelectItem value="Personal Care">Personal Care</SelectItem>
-                                      <SelectItem value="Household Items">Household Items</SelectItem>
-                                      <SelectItem value="Dairy Products">Dairy Products</SelectItem>
-                                      <SelectItem value="Snacks & Confectionery">Snacks & Confectionery</SelectItem>
-                                      <SelectItem value="Beverages">Beverages</SelectItem>
-                                      <SelectItem value="Spices & Seasonings">Spices & Seasonings</SelectItem>
-                                      <SelectItem value="Packaged Foods">Packaged Foods</SelectItem>
-                                      <SelectItem value="Cleaning Supplies">Cleaning Supplies</SelectItem>
-                                      <SelectItem value="Health Supplements">Health Supplements</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="brand"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium text-gray-700">BRAND</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger className="h-10">
-                                      <SelectValue placeholder="Select brand" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Amul">Amul</SelectItem>
-                                      <SelectItem value="Britannia">Britannia</SelectItem>
-                                      <SelectItem value="Parle">Parle</SelectItem>
-                                      <SelectItem value="ITC">ITC</SelectItem>
-                                      <SelectItem value="Nestle">Nestle</SelectItem>
-                                      <SelectItem value="Tata">Tata</SelectItem>
-                                      <SelectItem value="Hindustan Unilever">Hindustan Unilever</SelectItem>
-                                      <SelectItem value="Patanjali">Patanjali</SelectItem>
-                                      <SelectItem value="Mother Dairy">Mother Dairy</SelectItem>
-                                      <SelectItem value="Dabur">Dabur</SelectItem>
-                                      <SelectItem value="Haldiram's">Haldiram's</SelectItem>
-                                      <SelectItem value="MTR">MTR</SelectItem>
-                                      <SelectItem value="Everest">Everest</SelectItem>
-                                      <SelectItem value="MDH">MDH</SelectItem>
-                                      <SelectItem value="Catch">Catch</SelectItem>
-                                      <SelectItem value="Generic">Generic</SelectItem>
-                                      <SelectItem value="Store Brand">Store Brand</SelectItem>
-                                      <SelectItem value="Other">Other</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <FormField
-                          control={form.control}
-                          name="buyer"
-                          render={({ field }) => (
-                            <FormItem className="mt-4">
-                              <FormLabel className="text-sm font-medium text-gray-700">BUYER *</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger className="h-10">
-                                    <SelectValue placeholder="Select buyer" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Primary Buyer">Primary Buyer</SelectItem>
-                                    <SelectItem value="Secondary Buyer">Secondary Buyer</SelectItem>
-                                    <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
-                                    <SelectItem value="Purchase Head">Purchase Head</SelectItem>
-                                    <SelectItem value="Store Manager">Store Manager</SelectItem>
-                                    <SelectItem value="Category Manager">Category Manager</SelectItem>
-                                    <SelectItem value="Regional Buyer">Regional Buyer</SelectItem>
-                                    <SelectItem value="Local Supplier">Local Supplier</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -865,7 +1207,7 @@ export default function AddItemProfessional() {
                                       const hsnValue = e.target.value;
                                       field.onChange(hsnValue);
 
-                                                                            // Auto-suggest GST code based on HSN
+                                      // Auto-suggest GST code based on HSN
                                       let suggestedGst = "";
                                       if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
                                         suggestedGst = "GST 0%";
@@ -897,62 +1239,88 @@ export default function AddItemProfessional() {
                                       }
                                     }}
                                   />
-                                  <Select onValueChange={field.onChange} value={field.value}>
+                                  <Select onValueChange={(value) => {
+                                    field.onChange(value);
+                                    // Auto-update GST code when HSN is selected from dropdown
+                                    let suggestedGst = "";
+                                    if (value.includes("10019000") || value.includes("15179010") || value.includes("17019900") || value.includes("21069099")) {
+                                      suggestedGst = "GST 5%";
+                                    } else if (value.includes("04070010") || value.includes("07010000") || value.includes("08010000")) {
+                                      suggestedGst = "GST 0%";
+                                    } else if (value.includes("62019000") || value.includes("62029000") || value.includes("85171200") || value.includes("87120000")) {
+                                      suggestedGst = "GST 12%";
+                                    } else if (value.includes("19059090") || value.includes("64029100") || value.includes("84713000") || value.includes("85285200") || value.includes("33061000") || value.includes("34012000")) {
+                                      suggestedGst = "GST 18%";
+                                    } else if (value.includes("22021000") || value.includes("24021000") || value.includes("87032390") || value.includes("87111000")) {
+                                      suggestedGst = "GST 28%";
+                                    }
+                                    
+                                    if (suggestedGst) {
+                                      form.setValue("gstCode", suggestedGst);
+                                      const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
+                                      if (gstRate > 0) {
+                                        const cgstSgstRate = (gstRate / 2).toString();
+                                        form.setValue("cgstRate", cgstSgstRate);
+                                        form.setValue("sgstRate", cgstSgstRate);
+                                        form.setValue("igstRate", "0");
+                                      }
+                                    }
+                                  }} value={field.value}>
                                     <SelectTrigger>
                                       <SelectValue placeholder="Or select from common HSN codes" />
                                     </SelectTrigger>
-                                  <SelectContent className="max-h-80 overflow-y-auto">
-                                    {/* Food & Beverages - 0% & 5% GST */}
-                                    <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
-                                    <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
-                                    <SelectItem value="17019900">17019900 - Sugar (5%)</SelectItem>
-                                    <SelectItem value="04070010">04070010 - Eggs (0%)</SelectItem>
-                                    <SelectItem value="07010000">07010000 - Fresh Vegetables (0%)</SelectItem>
-                                    <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
-                                    <SelectItem value="19059090">19059090 - Biscuits (18%)</SelectItem>
-                                    <SelectItem value="21069099">21069099 - Spices & Condiments (5%)</SelectItem>
+                                    <SelectContent className="max-h-80 overflow-y-auto">
+                                      {/* Food & Beverages - 0% & 5% GST */}
+                                      <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
+                                      <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
+                                      <SelectItem value="17019900">17019900 - Sugar (5%)</SelectItem>
+                                      <SelectItem value="04070010">04070010 - Eggs (0%)</SelectItem>
+                                      <SelectItem value="07010000">07010000 - Fresh Vegetables (0%)</SelectItem>
+                                      <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
+                                      <SelectItem value="19059090">19059090 - Biscuits (18%)</SelectItem>
+                                      <SelectItem value="21069099">21069099 - Spices & Condiments (5%)</SelectItem>
 
-                                    {/* Textiles & Clothing - 5% & 12% GST */}
-                                    <SelectItem value="62019000">62019000 - Men's Garments (12%)</SelectItem>
-                                    <SelectItem value="62029000">62029000 - Women's Garments (12%)</SelectItem>
-                                    <SelectItem value="63010000">63010000 - Bed Sheets (5%)</SelectItem>
-                                    <SelectItem value="64029100">64029100 - Footwear (18%)</SelectItem>
+                                      {/* Textiles & Clothing - 5% & 12% GST */}
+                                      <SelectItem value="62019000">62019000 - Men's Garments (12%)</SelectItem>
+                                      <SelectItem value="62029000">62029000 - Women's Garments (12%)</SelectItem>
+                                      <SelectItem value="63010000">63010000 - Bed Sheets (5%)</SelectItem>
+                                      <SelectItem value="64029100">64029100 - Footwear (18%)</SelectItem>
 
-                                    {/* Electronics - 12% & 18% GST */}
-                                    <SelectItem value="85171200">85171200 - Mobile Phones (12%)</SelectItem>
-                                    <SelectItem value="84713000">84713000 - Laptops (18%)</SelectItem>
-                                    <SelectItem value="85285200">85285200 - LED TV (18%)</SelectItem>
-                                    <SelectItem value="85287100">85287100 - Set Top Box (18%)</SelectItem>
-                                    <SelectItem value="85044090">85044090 - Mobile Charger (18%)</SelectItem>
+                                      {/* Electronics - 12% & 18% GST */}
+                                      <SelectItem value="85171200">85171200 - Mobile Phones (12%)</SelectItem>
+                                      <SelectItem value="84713000">84713000 - Laptops (18%)</SelectItem>
+                                      <SelectItem value="85285200">85285200 - LED TV (18%)</SelectItem>
+                                      <SelectItem value="85287100">85287100 - Set Top Box (18%)</SelectItem>
+                                      <SelectItem value="85044090">85044090 - Mobile Charger (18%)</SelectItem>
 
-                                    {/* Personal Care - 18% GST */}
-                                    <SelectItem value="33061000">33061000 - Toothpaste (18%)</SelectItem>
-                                    <SelectItem value="34012000">34012000 - Soap (18%)</SelectItem>
-                                    <SelectItem value="33051000">33051000 - Shampoo (18%)</SelectItem>
-                                    <SelectItem value="96031000">96031000 - Toothbrush (18%)</SelectItem>
+                                      {/* Personal Care - 18% GST */}
+                                      <SelectItem value="33061000">33061000 - Toothpaste (18%)</SelectItem>
+                                      <SelectItem value="34012000">34012000 - Soap (18%)</SelectItem>
+                                      <SelectItem value="33051000">33051000 - Shampoo (18%)</SelectItem>
+                                      <SelectItem value="96031000">96031000 - Toothbrush (18%)</SelectItem>
 
-                                    {/* Beverages & Luxury - 28% GST */}
-                                    <SelectItem value="22021000">22021000 - Soft Drinks (28%)</SelectItem>
-                                    <SelectItem value="24021000">24021000 - Cigarettes (28%)</SelectItem>
-                                    <SelectItem value="22030000">22030000 - Beer (28%)</SelectItem>
-                                    <SelectItem value="22084000">22084000 - Wine (28%)</SelectItem>
+                                      {/* Beverages & Luxury - 28% GST */}
+                                      <SelectItem value="22021000">22021000 - Soft Drinks (28%)</SelectItem>
+                                      <SelectItem value="24021000">24021000 - Cigarettes (28%)</SelectItem>
+                                      <SelectItem value="22030000">22030000 - Beer (28%)</SelectItem>
+                                      <SelectItem value="22084000">22084000 - Wine (28%)</SelectItem>
 
-                                    {/* Automobiles - 28% GST */}
-                                    <SelectItem value="87032390">87032390 - Passenger Cars (28%)</SelectItem>
-                                    <SelectItem value="87111000">87111000 - Motorcycles (28%)</SelectItem>
-                                    <SelectItem value="87120000">87120000 - Bicycles (12%)</SelectItem>
+                                      {/* Automobiles - 28% GST */}
+                                      <SelectItem value="87032390">87032390 - Passenger Cars (28%)</SelectItem>
+                                      <SelectItem value="87111000">87111000 - Motorcycles (28%)</SelectItem>
+                                      <SelectItem value="87120000">87120000 - Bicycles (12%)</SelectItem>
 
-                                    {/* Medicines & Healthcare - 5% & 12% GST */}
-                                    <SelectItem value="30049099">30049099 - Medicines (5%)</SelectItem>
-                                    <SelectItem value="90183900">90183900 - Medical Equipment (12%)</SelectItem>
-                                    <SelectItem value="30059090">30059090 - Health Supplements (18%)</SelectItem>
+                                      {/* Medicines & Healthcare - 5% & 12% GST */}
+                                      <SelectItem value="30049099">30049099 - Medicines (5%)</SelectItem>
+                                      <SelectItem value="90183900">90183900 - Medical Equipment (12%)</SelectItem>
+                                      <SelectItem value="30059090">30059090 - Health Supplements (18%)</SelectItem>
 
-                                    {/* Books & Stationery - 5% & 12% GST */}
-                                    <SelectItem value="49019900">49019900 - Books (5%)</SelectItem>
-                                    <SelectItem value="48201000">48201000 - Notebooks (12%)</SelectItem>
-                                    <SelectItem value="96085000">96085000 - Pens (18%)</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                      {/* Books & Stationery - 5% & 12% GST */}
+                                      <SelectItem value="49019900">49019900 - Books (5%)</SelectItem>
+                                      <SelectItem value="48201000">48201000 - Notebooks (12%)</SelectItem>
+                                      <SelectItem value="96085000">96085000 - Pens (18%)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                               </FormControl>
                               <FormMessage />
@@ -971,7 +1339,21 @@ export default function AddItemProfessional() {
                                 </span>
                               </FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <Select onValueChange={(value) => {
+                                  field.onChange(value);
+                                  // Auto-calculate breakdown when GST code changes
+                                  const gstRate = parseFloat(value.replace("GST ", "").replace("%", ""));
+                                  if (gstRate > 0) {
+                                    const cgstSgstRate = (gstRate / 2).toString();
+                                    form.setValue("cgstRate", cgstSgstRate);
+                                    form.setValue("sgstRate", cgstSgstRate);
+                                    form.setValue("igstRate", "0");
+                                  } else {
+                                    form.setValue("cgstRate", "0");
+                                    form.setValue("sgstRate", "0");
+                                    form.setValue("igstRate", "0");
+                                  }
+                                }} value={field.value || ""}>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select GST rate" />
                                   </SelectTrigger>
@@ -994,7 +1376,35 @@ export default function AddItemProfessional() {
 
                       {/* GST Breakdown Section */}
                       <div className="border-t pt-6">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-4">GST Breakdown & Compliance</h4>
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                          GST Breakdown & Compliance
+                        </h4>
+                        
+                        {/* Tax Summary Display */}
+                        <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="text-center">
+                              <div className="text-blue-700 font-medium">Total GST Rate</div>
+                              <div className="text-lg font-bold text-blue-900">
+                                {form.watch("gstCode") ? form.watch("gstCode").replace("GST ", "") : "0%"}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-blue-700 font-medium">CGST + SGST</div>
+                              <div className="text-lg font-bold text-blue-900">
+                                {form.watch("cgstRate") || "0"}% + {form.watch("sgstRate") || "0"}%
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-blue-700 font-medium">IGST</div>
+                              <div className="text-lg font-bold text-blue-900">
+                                {form.watch("igstRate") || "0"}%
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
                         <div className="grid grid-cols-3 gap-4">
                           <FormField
                             control={form.control}
@@ -1003,7 +1413,19 @@ export default function AddItemProfessional() {
                               <FormItem>
                                 <FormLabel>CGST Rate (%)</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="9.00" type="number" step="0.01" />
+                                  <Input 
+                                    {...field} 
+                                    placeholder="9.00" 
+                                    type="number" 
+                                    step="0.01"
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value);
+                                      // When CGST changes, update SGST to match and clear IGST
+                                      const cgstValue = e.target.value;
+                                      form.setValue("sgstRate", cgstValue);
+                                      form.setValue("igstRate", "0");
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1016,7 +1438,19 @@ export default function AddItemProfessional() {
                               <FormItem>
                                 <FormLabel>SGST Rate (%)</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="9.00" type="number" step="0.01" />
+                                  <Input 
+                                    {...field} 
+                                    placeholder="9.00" 
+                                    type="number" 
+                                    step="0.01"
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value);
+                                      // When SGST changes, update CGST to match and clear IGST
+                                      const sgstValue = e.target.value;
+                                      form.setValue("cgstRate", sgstValue);
+                                      form.setValue("igstRate", "0");
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1029,7 +1463,20 @@ export default function AddItemProfessional() {
                               <FormItem>
                                 <FormLabel>IGST Rate (%)</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="18.00" type="number" step="0.01" />
+                                  <Input 
+                                    {...field} 
+                                    placeholder="18.00" 
+                                    type="number" 
+                                    step="0.01"
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value);
+                                      // When IGST is set, clear CGST and SGST
+                                      if (e.target.value && parseFloat(e.target.value) > 0) {
+                                        form.setValue("cgstRate", "0");
+                                        form.setValue("sgstRate", "0");
+                                      }
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1073,6 +1520,17 @@ export default function AddItemProfessional() {
                             )}
                           />
                         </div>
+
+                        {/* Tax Information Help */}
+                        <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                          <h5 className="font-medium text-yellow-800 mb-1">Tax Information Guidelines</h5>
+                          <ul className="text-sm text-yellow-700 space-y-1">
+                            <li>• For intra-state transactions: Use CGST + SGST</li>
+                            <li>• For inter-state transactions: Use IGST only</li>
+                            <li>• Total GST = CGST + SGST or IGST (whichever applicable)</li>
+                            <li>• HSN codes help determine the correct tax rates automatically</li>
+                          </ul>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-6">
@@ -1102,9 +1560,9 @@ export default function AddItemProfessional() {
                           name="purchaseAbatement"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Purchase Abatement % *</FormLabel>
+                              <FormLabel>Purchase Abatement %</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="0" />
+                                <Input {...field} placeholder="0" type="number" step="0.01" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1127,6 +1585,10 @@ export default function AddItemProfessional() {
                                   <SelectItem value="PIECES">PIECES</SelectItem>
                                   <SelectItem value="KG">KG</SelectItem>
                                   <SelectItem value="LITRE">LITRE</SelectItem>
+                                  <SelectItem value="GRAM">GRAM</SelectItem>
+                                  <SelectItem value="ML">ML</SelectItem>
+                                  <SelectItem value="DOZEN">DOZEN</SelectItem>
+                                  <SelectItem value="PACKET">PACKET</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
@@ -1135,32 +1597,36 @@ export default function AddItemProfessional() {
                         )}
                       />
 
-                      <div className="flex items-center justify-between">
+                      <div className="space-y-4">
                         <FormField
                           control={form.control}
                           name="configItemWithCommodity"
                           render={({ field }) => (
-                            <FormItem className="flex items-center space-x-3">
+                            <FormItem className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <FormLabel className="text-sm font-medium">Config Item With Commodity</FormLabel>
+                                <p className="text-xs text-gray-500">Link this item with commodity exchange rates</p>
+                              </div>
                               <FormControl>
                                 <Switch checked={field.value} onCheckedChange={field.onChange} />
                               </FormControl>
-                              <FormLabel>Config Item With Commodity</FormLabel>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      </div>
 
-                      <div className="flex items-center justify-between">
                         <FormField
                           control={form.control}
                           name="seniorExemptApplicable"
                           render={({ field }) => (
-                            <FormItem className="flex items-center space-x-3">
+                            <FormItem className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <FormLabel className="text-sm font-medium">Senior Citizen Tax Exemption</FormLabel>
+                                <p className="text-xs text-gray-500">Apply tax exemptions for senior citizens</p>
+                              </div>
                               <FormControl>
                                 <Switch checked={field.value} onCheckedChange={field.onChange} />
                               </FormControl>
-                              <FormLabel>Senior Exempt Applicable</FormLabel>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1597,7 +2063,7 @@ export default function AddItemProfessional() {
                                     <FormMessage />
                                   </FormItem>
                                 )}
-                              />
+                                  />
                                   </div>
 
                                   {/* Right Side - Bulk Item Details */}
@@ -1997,12 +2463,14 @@ export default function AddItemProfessional() {
                                           onChange={(e) => {
                                             const value = e.target.value;
                                             field.onChange(value);
-                                            // Auto-update selling price if not set
-                                            const currentSellingPrice = form.getValues("price");
-                                            if (!currentSellingPrice || currentSellingPrice === "0" || currentSellingPrice === "") {
-                                              const costValue = parseFloat(value) || 0;
-                                              const suggestedPrice = costValue * 1.2; // 20% markup
-                                              form.setValue("price", suggestedPrice.toString());
+                                            // Auto-update selling price if not set and not in edit mode
+                                            if (!isEditMode) {
+                                              const currentSellingPrice = form.getValues("price");
+                                              if (!currentSellingPrice || currentSellingPrice === "0" || currentSellingPrice === "") {
+                                                const costValue = parseFloat(value) || 0;
+                                                const suggestedPrice = costValue * 1.2; // 20% markup
+                                                form.setValue("price", suggestedPrice.toString());
+                                              }
                                             }
                                           }}
                                         />
@@ -2426,22 +2894,75 @@ export default function AddItemProfessional() {
                         </Card>
                       )}
 
-                      {/* Action Buttons */}
-                      <div className="flex justify-end gap-4 pt-6 border-t">
-                        <Button 
-                          type="button" 
-                          variant="outline"
-                          onClick={() => form.reset()}
-                        >
-                          Reset
-                        </Button>
-                        <Button 
-                          type="submit" 
-                          disabled={createProductMutation.isPending} 
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          {createProductMutation.isPending ? "Adding..." : "Add"}
-                        </Button>
+                      {/* Section Navigation */}
+                      <div className="flex justify-between items-center pt-6 border-t">
+                        <div className="flex gap-2">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const sections = sidebarSections.map(s => s.id);
+                              const currentIndex = sections.indexOf(currentSection);
+                              if (currentIndex > 0) {
+                                setCurrentSection(sections[currentIndex - 1]);
+                              }
+                            }}
+                            disabled={sidebarSections.findIndex(s => s.id === currentSection) === 0}
+                          >
+                            ← Previous
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const sections = sidebarSections.map(s => s.id);
+                              const currentIndex = sections.indexOf(currentSection);
+                              if (currentIndex < sections.length - 1) {
+                                setCurrentSection(sections[currentIndex + 1]);
+                              }
+                            }}
+                            disabled={sidebarSections.findIndex(s => s.id === currentSection) === sidebarSections.length - 1}
+                          >
+                            Next →
+                          </Button>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-4">
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            onClick={() => {
+                              console.log('Cancel/Reset button clicked');
+                              if (isEditMode) {
+                                setLocation("/add-item-dashboard");
+                              } else {
+                                form.reset();
+                                // Generate new item code for next item
+                                const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
+                                form.setValue('itemCode', newCode);
+                              }
+                            }}
+                          >
+                            {isEditMode ? "Cancel Edit" : "Reset Form"}
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            disabled={createProductMutation.isPending} 
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            {createProductMutation.isPending ? (
+                              <>
+                                <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
+                                {isEditMode ? "Updating..." : "Adding..."}
+                              </>
+                            ) : (
+                              isEditMode ? "Update Product" : "Add Product"
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </form>
                   </Form>
