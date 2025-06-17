@@ -305,7 +305,9 @@ export default function AddItemProfessional() {
 
   // Update form with existing product data when in edit mode
   useEffect(() => {
-    if (isEditMode && editingProduct && !isLoadingProduct) {
+    if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0) {
+      console.log('Populating edit form with product data:', editingProduct);
+      
       // Calculate total GST rate
       const cgstRate = parseFloat(editingProduct.cgstRate || '0');
       const sgstRate = parseFloat(editingProduct.sgstRate || '0');
@@ -323,59 +325,60 @@ export default function AddItemProfessional() {
       // Find category by ID
       const category = categories.find((cat: any) => cat.id === editingProduct.categoryId);
 
-      form.reset({
+      // Enhanced form population with existing data preservation
+      const formData = {
         itemCode: editingProduct.sku || "",
         itemName: editingProduct.name || "",
-        manufacturerName: "",
-        supplierName: "",
-        alias: "",
+        manufacturerName: editingProduct.manufacturerName || "",
+        supplierName: editingProduct.supplierName || "",
+        alias: editingProduct.alias || "",
         aboutProduct: editingProduct.description || "",
-        itemProductType: "Standard",
-        department: "",
+        itemProductType: editingProduct.itemProductType || "Standard",
+        department: editingProduct.department || "",
         mainCategory: category?.name || "",
-        subCategory: "",
-        brand: "",
-        buyer: "",
+        subCategory: editingProduct.subCategory || "",
+        brand: editingProduct.brand || "",
+        buyer: editingProduct.buyer || "",
         hsnCode: editingProduct.hsnCode || "",
         gstCode: gstCode,
-        purchaseGstCalculatedOn: "MRP",
-        gstUom: "PIECES",
-        purchaseAbatement: "",
-        configItemWithCommodity: false,
-        seniorExemptApplicable: false,
-        eanCodeRequired: false,
+        purchaseGstCalculatedOn: editingProduct.purchaseGstCalculatedOn || "MRP",
+        gstUom: editingProduct.gstUom || "PIECES",
+        purchaseAbatement: editingProduct.purchaseAbatement || "",
+        configItemWithCommodity: editingProduct.configItemWithCommodity || false,
+        seniorExemptApplicable: editingProduct.seniorExemptApplicable || false,
+        eanCodeRequired: editingProduct.eanCodeRequired || false,
         barcode: editingProduct.barcode || "",
-        weightsPerUnit: "1",
-        batchExpiryDetails: "Not Required",
-        itemPreparationsStatus: "Trade As Is",
-        grindingCharge: "",
-        weightInGms: "",
-        bulkItemName: "",
-        repackageUnits: "",
-        repackageType: "",
-        packagingMaterial: "",
-        decimalPoint: "0",
-        productType: "NA",
-        sellBy: "None",
-        itemPerUnit: "1",
-        maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
-        batchSelection: "Not Applicable",
-        isWeighable: false,
-        skuType: "Put Away",
-        indentType: "Manual",
-        gateKeeperMargin: "",
-        allowItemFree: false,
-        showOnMobileDashboard: false,
-        enableMobileNotifications: false,
-        quickAddToCart: false,
-        perishableItem: false,
-        temperatureControlled: false,
-        fragileItem: false,
-        trackSerialNumbers: false,
-        fdaApproved: false,
-        bisCertified: false,
-        organicCertified: false,
-        itemIngredients: "",
+        weightsPerUnit: editingProduct.weightsPerUnit || "1",
+        batchExpiryDetails: editingProduct.batchExpiryDetails || "Not Required",
+        itemPreparationsStatus: editingProduct.itemPreparationsStatus || "Trade As Is",
+        grindingCharge: editingProduct.grindingCharge || "",
+        weightInGms: editingProduct.weightInGms || "",
+        bulkItemName: editingProduct.bulkItemName || "",
+        repackageUnits: editingProduct.repackageUnits || "",
+        repackageType: editingProduct.repackageType || "",
+        packagingMaterial: editingProduct.packagingMaterial || "",
+        decimalPoint: editingProduct.decimalPoint || "0",
+        productType: editingProduct.productType || "NA",
+        sellBy: editingProduct.sellBy || "None",
+        itemPerUnit: editingProduct.itemPerUnit || "1",
+        maintainSellingMrpBy: editingProduct.maintainSellingMrpBy || "Multiple Selling Price & Multiple MRP",
+        batchSelection: editingProduct.batchSelection || "Not Applicable",
+        isWeighable: editingProduct.isWeighable || false,
+        skuType: editingProduct.skuType || "Put Away",
+        indentType: editingProduct.indentType || "Manual",
+        gateKeeperMargin: editingProduct.gateKeeperMargin || "",
+        allowItemFree: editingProduct.allowItemFree || false,
+        showOnMobileDashboard: editingProduct.showOnMobileDashboard || false,
+        enableMobileNotifications: editingProduct.enableMobileNotifications || false,
+        quickAddToCart: editingProduct.quickAddToCart || false,
+        perishableItem: editingProduct.perishableItem || false,
+        temperatureControlled: editingProduct.temperatureControlled || false,
+        fragileItem: editingProduct.fragileItem || false,
+        trackSerialNumbers: editingProduct.trackSerialNumbers || false,
+        fdaApproved: editingProduct.fdaApproved || false,
+        bisCertified: editingProduct.bisCertified || false,
+        organicCertified: editingProduct.organicCertified || false,
+        itemIngredients: editingProduct.itemIngredients || "",
         price: editingProduct.price?.toString() || "",
         mrp: editingProduct.mrp?.toString() || "",
         cost: editingProduct.cost?.toString() || "",
@@ -387,9 +390,12 @@ export default function AddItemProfessional() {
         cgstRate: editingProduct.cgstRate || "",
         sgstRate: editingProduct.sgstRate || "",
         igstRate: editingProduct.igstRate || "",
-        cessRate: "",
-        taxCalculationMethod: "exclusive",
-      });
+        cessRate: editingProduct.cessRate || "",
+        taxCalculationMethod: editingProduct.taxCalculationMethod || "exclusive",
+      };
+
+      console.log('Setting form data:', formData);
+      form.reset(formData);
     }
   }, [isEditMode, editingProduct, isLoadingProduct, categories, form]);
 
@@ -407,7 +413,9 @@ export default function AddItemProfessional() {
   // Create/Update product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      // Validate required fields
+      console.log('Starting product mutation with data:', data);
+      
+      // Enhanced validation for required fields
       if (!data.itemName || !data.itemCode || !data.price) {
         throw new Error("Please fill in all required fields: Item Name, Item Code, and Price");
       }
@@ -426,6 +434,7 @@ export default function AddItemProfessional() {
         throw new Error("Stock quantity must be a valid positive number");
       }
 
+      // Enhanced product data with all form fields
       const productData = {
         name: data.itemName.trim(),
         sku: data.itemCode.trim(),
@@ -441,15 +450,62 @@ export default function AddItemProfessional() {
         active: data.active !== undefined ? data.active : true,
         alertThreshold: 5,
         hsnCode: data.hsnCode?.trim() || "",
+        
         // Enhanced tax breakdown for better synchronization
         cgstRate: data.cgstRate || "0",
         sgstRate: data.sgstRate || "0", 
         igstRate: data.igstRate || "0",
         cessRate: data.cessRate || "0",
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
+        
+        // Enhanced fields for comprehensive data storage
+        manufacturerName: data.manufacturerName?.trim() || "",
+        supplierName: data.supplierName?.trim() || "",
+        alias: data.alias?.trim() || "",
+        itemProductType: data.itemProductType || "Standard",
+        department: data.department?.trim() || "",
+        brand: data.brand?.trim() || "",
+        buyer: data.buyer?.trim() || "",
+        purchaseGstCalculatedOn: data.purchaseGstCalculatedOn || "MRP",
+        gstUom: data.gstUom || "PIECES",
+        purchaseAbatement: data.purchaseAbatement?.trim() || "",
+        configItemWithCommodity: data.configItemWithCommodity || false,
+        seniorExemptApplicable: data.seniorExemptApplicable || false,
+        eanCodeRequired: data.eanCodeRequired || false,
+        weightsPerUnit: data.weightsPerUnit || "1",
+        batchExpiryDetails: data.batchExpiryDetails || "Not Required",
+        itemPreparationsStatus: data.itemPreparationsStatus || "Trade As Is",
+        grindingCharge: data.grindingCharge?.trim() || "",
+        weightInGms: data.weightInGms?.trim() || "",
+        bulkItemName: data.bulkItemName?.trim() || "",
+        repackageUnits: data.repackageUnits?.trim() || "",
+        repackageType: data.repackageType?.trim() || "",
+        packagingMaterial: data.packagingMaterial?.trim() || "",
+        decimalPoint: data.decimalPoint || "0",
+        productType: data.productType || "NA",
+        sellBy: data.sellBy || "None",
+        itemPerUnit: data.itemPerUnit || "1",
+        maintainSellingMrpBy: data.maintainSellingMrpBy || "Multiple Selling Price & Multiple MRP",
+        batchSelection: data.batchSelection || "Not Applicable",
+        isWeighable: data.isWeighable || false,
+        skuType: data.skuType || "Put Away",
+        indentType: data.indentType || "Manual",
+        gateKeeperMargin: data.gateKeeperMargin?.trim() || "",
+        allowItemFree: data.allowItemFree || false,
+        showOnMobileDashboard: data.showOnMobileDashboard || false,
+        enableMobileNotifications: data.enableMobileNotifications || false,
+        quickAddToCart: data.quickAddToCart || false,
+        perishableItem: data.perishableItem || false,
+        temperatureControlled: data.temperatureControlled || false,
+        fragileItem: data.fragileItem || false,
+        trackSerialNumbers: data.trackSerialNumbers || false,
+        fdaApproved: data.fdaApproved || false,
+        bisCertified: data.bisCertified || false,
+        organicCertified: data.organicCertified || false,
+        itemIngredients: data.itemIngredients?.trim() || "",
       };
 
-      console.log('Submitting product data:', productData);
+      console.log('Submitting enhanced product data:', productData);
 
       const method = isEditMode ? "PUT" : "POST";
       const url = isEditMode ? `/api/products/${editId}` : "/api/products";
@@ -462,13 +518,16 @@ export default function AddItemProfessional() {
           try {
             const errorData = await res.json();
             errorMessage = errorData.message || errorMessage;
+            console.error('Server error response:', errorData);
           } catch {
             errorMessage = `HTTP ${res.status}: ${res.statusText}`;
           }
           throw new Error(errorMessage);
         }
 
-        return await res.json();
+        const result = await res.json();
+        console.log('Product operation successful:', result);
+        return result;
       } catch (error) {
         console.error('Product operation error:', error);
         throw error;
@@ -675,44 +734,76 @@ export default function AddItemProfessional() {
                 </TabsList>
               </Tabs>
 
-              <div className="space-y-1">
-                {sidebarSections.map((section) => {
-                  if (section.id === "packing") {
-                    return (
-                      <button
-                        key={section.id}
-                        onClick={() => setCurrentSection(section.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
-                          currentSection === section.id 
-                            ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700" 
-                            : "text-gray-600 hover:bg-gray-50"
-                        }`}
-                      >
-                        {section.icon}
-                        {section.label}
-                        <div className="w-2 h-2 bg-orange-500 rounded-full ml-auto"></div>
-                      </button>
-                    );
-                  }
+              {/* Progress Indicator */}
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="text-xs text-gray-600 mb-2">
+                  Section {sidebarSections.findIndex(s => s.id === currentSection) + 1} of {sidebarSections.length}
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    style={{
+                      width: `${((sidebarSections.findIndex(s => s.id === currentSection) + 1) / sidebarSections.length) * 100}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
 
+              <div className="space-y-1">
+                {sidebarSections.map((section, index) => {
+                  const isCompleted = sidebarSections.findIndex(s => s.id === currentSection) > index;
+                  const isCurrent = currentSection === section.id;
+                  
                   return (
                     <button
                       key={section.id}
                       onClick={() => setCurrentSection(section.id)}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
-                        currentSection === section.id 
+                        isCurrent 
                           ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700" 
+                          : isCompleted
+                          ? "text-green-600 hover:bg-green-50"
                           : "text-gray-600 hover:bg-gray-50"
-                        }`}
+                      }`}
                     >
                       {section.icon}
-                      {section.label}
-                      {section.id === "item-information" && (
-                        <div className="w-2 h-2 bg-blue-600 rounded-full ml-auto"></div>
+                      <span className="flex-1 text-left">{section.label}</span>
+                      
+                      {/* Section status indicators */}
+                      {isCurrent && (
+                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                      )}
+                      {isCompleted && !isCurrent && (
+                        <CheckIcon className="w-4 h-4 text-green-600" />
+                      )}
+                      {section.id === "packing" && !isCompleted && !isCurrent && (
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                       )}
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Quick Actions */}
+              <div className="mt-6 pt-4 border-t">
+                <div className="text-xs text-gray-500 mb-2">Quick Actions</div>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setCurrentSection("item-information")}
+                    className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded"
+                  >
+                    Go to Start
+                  </button>
+                  <button
+                    onClick={() => {
+                      const lastSection = sidebarSections[sidebarSections.length - 1];
+                      setCurrentSection(lastSection.id);
+                    }}
+                    className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded"
+                  >
+                    Skip to End
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -2684,39 +2775,75 @@ export default function AddItemProfessional() {
                         </Card>
                       )}
 
-                      {/* Action Buttons */}
-                      <div className="flex justify-end gap-4 pt-6 border-t">
-                        <Button 
-                          type="button" 
-                          variant="outline"
-                          onClick={() => {
-                            console.log('Cancel/Reset button clicked');
-                            if (isEditMode) {
-                              setLocation("/add-item-dashboard");
-                            } else {
-                              form.reset();
-                              // Generate new item code for next item
-                              const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
-                              form.setValue('itemCode', newCode);
-                            }
-                          }}
-                        >
-                          {isEditMode ? "Cancel Edit" : "Reset Form"}
-                        </Button>
-                        <Button 
-                          type="submit" 
-                          disabled={createProductMutation.isPending} 
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          {createProductMutation.isPending ? (
-                            <>
-                              <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
-                              {isEditMode ? "Updating..." : "Adding..."}
-                            </>
-                          ) : (
-                            isEditMode ? "Update Product" : "Add Product"
-                          )}
-                        </Button>
+                      {/* Section Navigation */}
+                      <div className="flex justify-between items-center pt-6 border-t">
+                        <div className="flex gap-2">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const sections = sidebarSections.map(s => s.id);
+                              const currentIndex = sections.indexOf(currentSection);
+                              if (currentIndex > 0) {
+                                setCurrentSection(sections[currentIndex - 1]);
+                              }
+                            }}
+                            disabled={sidebarSections.findIndex(s => s.id === currentSection) === 0}
+                          >
+                            ← Previous
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const sections = sidebarSections.map(s => s.id);
+                              const currentIndex = sections.indexOf(currentSection);
+                              if (currentIndex < sections.length - 1) {
+                                setCurrentSection(sections[currentIndex + 1]);
+                              }
+                            }}
+                            disabled={sidebarSections.findIndex(s => s.id === currentSection) === sidebarSections.length - 1}
+                          >
+                            Next →
+                          </Button>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-4">
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            onClick={() => {
+                              console.log('Cancel/Reset button clicked');
+                              if (isEditMode) {
+                                setLocation("/add-item-dashboard");
+                              } else {
+                                form.reset();
+                                // Generate new item code for next item
+                                const newCode = allProducts ? generateItemCode() : generateFallbackItemCode();
+                                form.setValue('itemCode', newCode);
+                              }
+                            }}
+                          >
+                            {isEditMode ? "Cancel Edit" : "Reset Form"}
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            disabled={createProductMutation.isPending} 
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            {createProductMutation.isPending ? (
+                              <>
+                                <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
+                                {isEditMode ? "Updating..." : "Adding..."}
+                              </>
+                            ) : (
+                              isEditMode ? "Update Product" : "Add Product"
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </form>
                   </Form>
