@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,7 +30,9 @@ import {
   EditIcon,
   Loader2Icon,
   CalculatorIcon,
-  RefreshCwIcon
+  RefreshCwIcon,
+  AlertCircleIcon,
+  TrendingUpIcon
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -73,7 +76,7 @@ const productFormSchema = z.object({
   eanCodeRequired: z.boolean().default(false),
   barcode: z.string().optional(),
 
-  // Weight & Packing (Enhanced for Bulk Items)
+  // Weight & Packing
   weightsPerUnit: z.string().default("1"),
   bulkWeight: z.string().optional(),
   bulkWeightUnit: z.string().default("kg"),
@@ -141,7 +144,7 @@ const productFormSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
-// HSN to GST mapping with enhanced data
+// Enhanced HSN to GST mapping with live data structure
 const HSN_GST_MAPPING: Record<string, { gst: number; description: string; category: string }> = {
   // Food & Beverages - 0% & 5% GST
   "10019000": { gst: 5, description: "Rice", category: "Food Grains" },
@@ -212,6 +215,12 @@ export default function AddItemProfessional() {
   const [calculatedAlias, setCalculatedAlias] = useState("");
   const [totalGST, setTotalGST] = useState(0);
   const [isCalculatingGST, setIsCalculatingGST] = useState(false);
+  const [priceInsights, setPriceInsights] = useState({
+    margin: 0,
+    markup: 0,
+    taxAmount: 0,
+    finalPrice: 0
+  });
 
   // Extract edit ID from URL parameters
   const urlParams = new URLSearchParams(window.location.search);
@@ -223,15 +232,15 @@ export default function AddItemProfessional() {
     queryKey: ["/api/products", editId],
     queryFn: async () => {
       if (!editId) return null;
-      console.log('Fetching product with ID:', editId);
+      console.log('🔍 Fetching product with ID:', editId);
       const response = await fetch(`/api/products/${editId}`);
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Failed to fetch product:', response.status, errorText);
+        console.error('❌ Failed to fetch product:', response.status, errorText);
         throw new Error(`Failed to fetch product: ${response.status}`);
       }
       const product = await response.json();
-      console.log('Fetched product:', product);
+      console.log('✅ Fetched product:', product);
       return product;
     },
     enabled: !!editId,
@@ -404,7 +413,7 @@ export default function AddItemProfessional() {
         setTotalGST(gstRate);
 
         toast({
-          title: "GST Auto-Calculated",
+          title: "🎯 GST Auto-Calculated",
           description: `Applied ${gstRate}% GST for ${hsnMapping.description}`,
         });
       } else {
@@ -421,7 +430,7 @@ export default function AddItemProfessional() {
         setTotalGST(defaultRate);
 
         toast({
-          title: "Default GST Applied",
+          title: "📊 Default GST Applied",
           description: `Applied ${defaultRate}% GST based on department`,
           variant: "default",
         });
@@ -431,9 +440,32 @@ export default function AddItemProfessional() {
     }, 500);
   };
 
-  // Watch for changes to calculate alias dynamically
+  // Calculate price insights
+  const calculatePriceInsights = (cost: string, price: string, totalGst: number) => {
+    const costValue = parseFloat(cost || "0");
+    const priceValue = parseFloat(price || "0");
+    
+    if (costValue > 0 && priceValue > 0) {
+      const margin = ((priceValue - costValue) / priceValue) * 100;
+      const markup = ((priceValue - costValue) / costValue) * 100;
+      const taxAmount = (priceValue * totalGst) / 100;
+      const finalPrice = priceValue + taxAmount;
+
+      setPriceInsights({
+        margin: Math.round(margin * 100) / 100,
+        markup: Math.round(markup * 100) / 100,
+        taxAmount: Math.round(taxAmount * 100) / 100,
+        finalPrice: Math.round(finalPrice * 100) / 100
+      });
+    } else {
+      setPriceInsights({ margin: 0, markup: 0, taxAmount: 0, finalPrice: 0 });
+    }
+  };
+
+  // Watch for changes to calculate alias and insights dynamically
   useEffect(() => {
     const subscription = form.watch((value) => {
+      // Calculate alias
       const newAlias = calculateAlias(
         value.itemName || "",
         value.brand || "",
@@ -452,6 +484,9 @@ export default function AddItemProfessional() {
       const cess = parseFloat(value.cessRate || "0");
       const total = cgst + sgst + igst + cess;
       setTotalGST(total);
+
+      // Calculate price insights
+      calculatePriceInsights(value.cost || "0", value.price || "0", total);
     });
 
     return () => subscription.unsubscribe();
@@ -681,7 +716,7 @@ export default function AddItemProfessional() {
 
       if (isEditMode) {
         toast({
-          title: "Success! 🎉", 
+          title: "✅ Success!", 
           description: `Product "${data.name}" updated successfully with live data`,
         });
       } else {
@@ -721,7 +756,7 @@ export default function AddItemProfessional() {
           sellBy: "None",
           itemPerUnit: "1",
           maintainSellingMrpBy: "Multiple Selling Price & Multiple MRP",
-          batchSelection: "NotApplicable",
+          batchSelection: "Not Applicable",
           isWeighable: false,
           skuType: "Put Away",
           indentType: "Manual",
@@ -749,7 +784,7 @@ export default function AddItemProfessional() {
         });
 
         toast({
-          title: "Success! 🎉", 
+          title: "🎉 Success!", 
           description: `Product "${data.name}" created successfully with live backend data`,
         });
       }
@@ -757,7 +792,7 @@ export default function AddItemProfessional() {
     onError: (error: Error) => {
       console.error("Product operation error:", error);
       toast({
-        title: `Error ${isEditMode ? 'Updating' : 'Creating'} Product`,
+        title: `❌ Error ${isEditMode ? 'Updating' : 'Creating'} Product`,
         description: error.message || "Please check all required fields and try again",
         variant: "destructive",
       });
@@ -786,7 +821,7 @@ export default function AddItemProfessional() {
           <div className="text-center max-w-md mx-auto">
             <div className="bg-white p-8 rounded-lg shadow-lg border">
               <Loader2Icon className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
-              <h2 className="text-xl font-semibold mb-2">Loading Live Data...</h2>
+              <h2 className="text-xl font-semibold mb-2">🔄 Loading Live Data...</h2>
               <p className="text-gray-600 mb-4">Syncing with backend for real-time information</p>
 
               <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
@@ -825,7 +860,7 @@ export default function AddItemProfessional() {
             <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
               <XIcon className="w-4 h-4 text-red-600" />
             </div>
-            <h2 className="text-lg font-semibold text-red-800">Failed to Load Product</h2>
+            <h2 className="text-lg font-semibold text-red-800">❌ Failed to Load Product</h2>
             <p className="text-gray-600 mb-4">Could not fetch product data for editing.</p>
             <Button onClick={() => setLocation("/add-item-dashboard")} variant="outline">
               Back to Dashboard
@@ -847,7 +882,7 @@ export default function AddItemProfessional() {
               </div>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-semibold">
-                  {isEditMode ? "Edit Item" : "Add Item"} - Live Data Sync
+                  {isEditMode ? "📝 Edit Item" : "➕ Add Item"} - Live Data Sync
                 </h1>
                 {isEditMode && (
                   <Badge variant="secondary" className="bg-orange-100 text-orange-700">
@@ -865,7 +900,7 @@ export default function AddItemProfessional() {
               {/* Live Data Status */}
               <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-lg border border-green-200">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-green-700">Live Data Active</span>
+                <span className="text-xs text-green-700">🔴 Live Data Active</span>
               </div>
               <Button 
                 variant="outline" 
@@ -906,8 +941,8 @@ export default function AddItemProfessional() {
 
                 {/* Dynamic Alias Display */}
                 {calculatedAlias && (
-                  <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                    Alias: {calculatedAlias}
+                  <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded mb-2">
+                    🏷️ Alias: {calculatedAlias}
                   </div>
                 )}
 
@@ -916,6 +951,14 @@ export default function AddItemProfessional() {
                   <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded mt-1 flex items-center gap-1">
                     <CalculatorIcon className="w-3 h-3" />
                     Total GST: {totalGST}%
+                  </div>
+                )}
+
+                {/* Price Insights */}
+                {priceInsights.finalPrice > 0 && (
+                  <div className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded mt-1 flex items-center gap-1">
+                    <TrendingUpIcon className="w-3 h-3" />
+                    Final Price: ₹{priceInsights.finalPrice}
                   </div>
                 )}
               </div>
@@ -953,7 +996,7 @@ export default function AddItemProfessional() {
 
               {/* Quick Actions */}
               <div className="mt-6 pt-4 border-t">
-                <div className="text-xs text-gray-500 mb-2">Live Data Actions</div>
+                <div className="text-xs text-gray-500 mb-2">🚀 Live Data Actions</div>
                 <div className="space-y-1">
                   <button
                     onClick={() => refetchSuppliers()}
@@ -989,7 +1032,7 @@ export default function AddItemProfessional() {
                         <InfoIcon className="w-5 h-5" />
                         Item Information
                         <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700">
-                          Live Data Sync
+                          🔄 Live Data Sync
                         </Badge>
                         {isEditMode && (
                           <Badge variant="outline" className="ml-2 text-xs">
@@ -1056,7 +1099,7 @@ export default function AddItemProfessional() {
                               <FormLabel className="flex items-center gap-2">
                                 Manufacturer Name *
                                 <Badge variant="outline" className="text-xs">
-                                  {suppliers.length} Live Options
+                                  📊 {suppliers.length} Live Options
                                 </Badge>
                               </FormLabel>
                               <FormControl>
@@ -1092,7 +1135,7 @@ export default function AddItemProfessional() {
                               <FormLabel className="flex items-center gap-2">
                                 Supplier Name *
                                 <Badge variant="outline" className="text-xs">
-                                  {suppliers.length} Live Options
+                                  📊 {suppliers.length} Live Options
                                 </Badge>
                               </FormLabel>
                               <FormControl>
@@ -1131,7 +1174,7 @@ export default function AddItemProfessional() {
                             <FormLabel className="flex items-center gap-2">
                               Product Alias
                               <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                                Auto-Generated
+                                🤖 Auto-Generated
                               </Badge>
                             </FormLabel>
                             <FormControl>
@@ -1174,7 +1217,7 @@ export default function AddItemProfessional() {
                         <TagIcon className="w-5 h-5" />
                         Category Information
                         <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700">
-                          Live Categories: {categories.length}
+                          📊 Live Categories: {categories.length}
                         </Badge>
                       </CardTitle>
                     </CardHeader>
@@ -1206,7 +1249,7 @@ export default function AddItemProfessional() {
                         <div className="flex items-center gap-2 mb-4">
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                           <h3 className="text-blue-600 font-medium">Category Selection</h3>
-                          <Badge variant="outline" className="text-xs">Live Data</Badge>
+                          <Badge variant="outline" className="text-xs">🔄 Live Data</Badge>
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
@@ -1218,7 +1261,7 @@ export default function AddItemProfessional() {
                                 <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                   DEPARTMENT *
                                   <Badge variant="outline" className="text-xs">
-                                    Auto-GST
+                                    🎯 Auto-GST
                                   </Badge>
                                 </FormLabel>
                                 <FormControl>
@@ -1262,7 +1305,7 @@ export default function AddItemProfessional() {
                                 <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                   MAIN CATEGORY
                                   <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                                    {categories.length} Available
+                                    📊 {categories.length} Available
                                   </Badge>
                                 </FormLabel>
                                 <FormControl>
@@ -1341,7 +1384,7 @@ export default function AddItemProfessional() {
                         Tax Information & GST Calculator
                         <Badge variant="outline" className="ml-2 text-xs bg-green-50 text-green-700">
                           <CalculatorIcon className="w-3 h-3 mr-1" />
-                          Auto-Calculate
+                          🤖 Auto-Calculate
                         </Badge>
                       </CardTitle>
                     </CardHeader>
@@ -1355,7 +1398,7 @@ export default function AddItemProfessional() {
                               <FormLabel className="flex items-center gap-2">
                                 HSN Code
                                 <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
-                                  Auto-GST Trigger
+                                  🎯 Auto-GST Trigger
                                 </Badge>
                               </FormLabel>
                               <FormControl>
@@ -1416,7 +1459,7 @@ export default function AddItemProfessional() {
                               <FormLabel className="flex items-center gap-2">
                                 GST Code *
                                 <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                                  Auto-Updated
+                                  🔄 Auto-Updated
                                 </Badge>
                               </FormLabel>
                               <FormControl>
@@ -1461,7 +1504,7 @@ export default function AddItemProfessional() {
                           <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
                           GST Breakdown & Live Calculation
                           <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
-                            Dynamic
+                            🔄 Dynamic
                           </Badge>
                         </h4>
 
@@ -1624,7 +1667,7 @@ export default function AddItemProfessional() {
 
                         {/* Enhanced Tax Information Help */}
                         <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                          <h5 className="font-medium text-yellow-800 mb-1">Live GST Calculation Guidelines</h5>
+                          <h5 className="font-medium text-yellow-800 mb-1">🔄 Live GST Calculation Guidelines</h5>
                           <ul className="text-sm text-yellow-700 space-y-1">
                             <li>• HSN Code automatically calculates GST rates</li>
                             <li>• Department selection applies default GST rates</li>
@@ -1746,7 +1789,7 @@ export default function AddItemProfessional() {
                         <DollarSignIcon className="w-5 h-5" />
                         Pricing Information
                         <Badge variant="outline" className="ml-2 text-xs bg-green-50 text-green-700">
-                          With Tax Calculation
+                          📊 With Tax Calculation
                         </Badge>
                       </CardTitle>
                     </CardHeader>
@@ -1794,12 +1837,42 @@ export default function AddItemProfessional() {
                         />
                       </div>
 
+                      {/* Live Price Insights Display */}
+                      {priceInsights.finalPrice > 0 && (
+                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
+                          <h5 className="font-medium text-purple-800 mb-2 flex items-center gap-2">
+                            <TrendingUpIcon className="w-4 h-4" />
+                            💰 Live Price Analysis
+                          </h5>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <div className="text-purple-700">Profit Margin:</div>
+                              <div className="font-bold text-lg">{priceInsights.margin}%</div>
+                            </div>
+                            <div>
+                              <div className="text-purple-700">Markup:</div>
+                              <div className="font-bold text-lg">{priceInsights.markup}%</div>
+                            </div>
+                            <div>
+                              <div className="text-purple-700">Tax Amount ({totalGST}%):</div>
+                              <div className="font-bold">₹{priceInsights.taxAmount}</div>
+                            </div>
+                            <div>
+                              <div className="text-purple-700">Final Price (Incl. Tax):</div>
+                              <div className="font-bold text-green-600 text-lg">
+                                ₹{priceInsights.finalPrice}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Live Tax Calculation Display */}
                       {(form.watch("price") || form.watch("mrp")) && totalGST > 0 && (
                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                           <h5 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
                             <CalculatorIcon className="w-4 h-4" />
-                            Live Tax Calculation
+                            🔄 Live Tax Calculation
                           </h5>
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
@@ -1995,7 +2068,7 @@ export default function AddItemProfessional() {
                     ) : (
                       <>
                         <CheckIcon className="w-4 h-4 mr-2" />
-                        {isEditMode ? 'Update Product' : 'Create Product'}
+                        {isEditMode ? '💾 Update Product' : '🚀 Create Product'}
                       </>
                     )}
                   </Button>
