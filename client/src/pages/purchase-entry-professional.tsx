@@ -722,124 +722,6 @@ export default function PurchaseEntryProfessional() {
             // Find the product details to get name and sku
             const product = products.find(p => p.id === (item.productId || item.product_id));
 
-            // Calculate selling price and MRP if not available from database
-            let sellingPrice = Number(item.sellingPrice || item.selling_price) || 0;
-            let mrp = Number(item.mrp) || 0;
-            
-            // If selling price is not set, try to get from product or calculate from cost
-            if (sellingPrice === 0) {
-              if (product?.price && parseFloat(product.price) > 0) {
-                sellingPrice = parseFloat(product.price);
-              } else {
-                const unitCost = Number(item.unitCost || item.unit_cost || item.cost) || 0;
-                if (unitCost > 0) {
-                  // Apply standard retail markup (30-50% depending on category)
-                  sellingPrice = Math.round(unitCost * 1.4 * 100) / 100;
-                }
-              }
-            }
-            
-            // If MRP is not set, try to get from product or calculate from selling price
-            if (mrp === 0) {
-              if (product?.mrp && parseFloat(product.mrp) > 0) {
-                mrp = parseFloat(product.mrp);
-              } else if (sellingPrice > 0) {
-                // Apply standard MRP markup (20-25% above selling price)
-                mrp = Math.round(sellingPrice * 1.2 * 100) / 100;
-              }
-            }
-
-            // Enhanced HSN Code mapping with multiple fallbacks
-            let hsnCode = "";
-
-            // Try different HSN field variations with proper string conversion
-            const hsnFields = [
-              item.hsnCode, 
-              item.hsn_code, 
-              item.hsnSacCode, 
-              item.hsn_sac_code,
-              item.hsn, 
-              item.taxCode,
-              item.tax_code,
-              item.gstCode,
-              product?.hsnCode
-            ];
-
-            // Find first valid HSN code
-            for (const field of hsnFields) {
-              if (field && String(field).trim() !== "" && String(field).trim() !== "null" && String(field).trim() !== "undefined") {
-                const cleanField = String(field).trim();
-                // Extract numeric HSN codes (4-8 digits)
-                const hsnMatch = cleanField.match(/(\d{4,8})/);
-                if (hsnMatch) {
-                  hsnCode = hsnMatch[1];
-                  break;
-                } else if (/^\d{4,8}$/.test(cleanField)) {
-                  hsnCode = cleanField;
-                  break;
-                }
-              }
-            }
-
-            // Default HSN codes based on common products if still empty
-            if (!hsnCode && product?.name) {
-              const productName = product.name.toLowerCase();
-              if (productName.includes('oil')) {
-                hsnCode = "15179010"; // Edible oil
-              } else if (productName.includes('rice') || productName.includes('grain')) {
-                hsnCode = "10019000"; // Food grains
-              } else if (productName.includes('soap') || productName.includes('shampoo')) {
-                hsnCode = "34012000"; // Personal care
-              } else {
-                hsnCode = "19059090"; // General goods
-              }
-            }
-
-            // Enhanced tax percentage calculation with better fallbacks
-            let taxPercentage = 18; // Default tax rate
-            
-            // Try to get tax percentage from various database fields
-            const taxFields = [
-              item.taxPercentage,
-              item.tax_percentage,
-              item.taxPercent,
-              item.tax_percent,
-              item.gstRate,
-              item.totalGstRate,
-              item.total_gst_rate
-            ];
-            
-            for (const field of taxFields) {
-              const taxValue = Number(field);
-              if (!isNaN(taxValue) && taxValue >= 0 && taxValue <= 100) {
-                taxPercentage = taxValue;
-                break;
-              }
-            }
-            
-            // If still no valid tax rate, try to get from product or calculate from HSN
-            if (taxPercentage === 18 && !item.taxPercentage && !item.tax_percentage) {
-              if (product && (product.cgstRate || product.sgstRate || product.igstRate)) {
-                const cgstRate = parseFloat(product.cgstRate || "0");
-                const sgstRate = parseFloat(product.sgstRate || "0");
-                const igstRate = parseFloat(product.igstRate || "0");
-                taxPercentage = igstRate > 0 ? igstRate : (cgstRate + sgstRate);
-              } else if (hsnCode) {
-                // Auto-suggest tax rate based on HSN code
-                if (hsnCode.startsWith("04") || hsnCode.startsWith("07") || hsnCode.startsWith("08")) {
-                  taxPercentage = 0; // Fresh produce
-                } else if (hsnCode.startsWith("10") || hsnCode.startsWith("15") || hsnCode.startsWith("17")) {
-                  taxPercentage = 5; // Food grains, oils, sugar
-                } else if (hsnCode.startsWith("62") || hsnCode.startsWith("85171") || hsnCode.startsWith("87120")) {
-                  taxPercentage = 12; // Textiles, phones, bicycles
-                } else if (hsnCode.startsWith("33") || hsnCode.startsWith("34") || hsnCode.startsWith("19")) {
-                  taxPercentage = 18; // Personal care, biscuits
-                } else if (hsnCode.startsWith("22") || hsnCode.startsWith("24") || hsnCode.startsWith("87032")) {
-                  taxPercentage = 28; // Beverages, tobacco, cars
-                }
-              }
-            }
-
             return {
               productId: item.productId || item.product_id || 0,
               code: item.code || product?.sku || "",
@@ -848,10 +730,10 @@ export default function PurchaseEntryProfessional() {
               receivedQty: Number(item.receivedQty || item.received_qty || item.quantity) || Number(item.quantity) || 1,
               freeQty: Number(item.freeQty || item.free_qty) || 0,
               unitCost: Number(item.unitCost || item.unit_cost || item.cost) || 0,
-              sellingPrice: sellingPrice,
-              mrp: mrp,
-              hsnCode: hsnCode,
-              taxPercentage: taxPercentage,
+              sellingPrice: Number(item.sellingPrice || item.selling_price) || 0,
+              mrp: Number(item.mrp) || 0,
+              hsnCode: item.hsnCode || item.hsn_code || product?.hsnCode || "",
+              taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent) || 18,
               discountAmount: Number(item.discountAmount || item.discount_amount) || 0,
               discountPercent: Number(item.discountPercent || item.discount_percent) || 0,
               expiryDate: item.expiryDate || item.expiry_date || "",
@@ -918,41 +800,20 @@ export default function PurchaseEntryProfessional() {
       };
 
       console.log('Form data to populate:', formData);
-      console.log('Items with HSN and Tax data:', mappedItems.map(item => ({
-        description: item.description,
-        hsnCode: item.hsnCode,
-        taxPercentage: item.taxPercentage
-      })));
 
-      // Clear form first to ensure clean state
-      form.reset();
-      
-      // Wait a moment then populate with new data
-      setTimeout(() => {
-        form.reset(formData);
-        
-        // Force update each field to ensure proper registration
-        mappedItems.forEach((item, index) => {
-          form.setValue(`items.${index}.hsnCode`, item.hsnCode);
-          form.setValue(`items.${index}.taxPercentage`, item.taxPercentage);
-          form.setValue(`items.${index}.productId`, item.productId);
-          form.setValue(`items.${index}.description`, item.description);
-          form.setValue(`items.${index}.unitCost`, item.unitCost);
-          form.setValue(`items.${index}.receivedQty`, item.receivedQty);
-        });
-        
-        // Set supplier value
-        if (formData.supplierId) {
+      // Populate form with existing data
+      form.reset(formData);
+
+      // Also set the supplier value in the select component
+      if (formData.supplierId) {
+        setTimeout(() => {
           form.setValue("supplierId", formData.supplierId);
-        }
-        
-        // Force trigger form validation
-        form.trigger();
-      }, 100);
+        }, 100);
+      }
 
       toast({
         title: "Editing purchase order",
-        description: `Loaded purchase order ${formData.orderNumber} with ${formData.items.length} items`,
+        description: `Loaded purchase order ${formData.orderNumber}`,
       });
     }
   }, [existingPurchase, isEditMode, form, today, toast, products]);
@@ -1088,102 +949,11 @@ export default function PurchaseEntryProfessional() {
     });
   }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, form]);
 
-  // Enhanced tax field syncing utility with detailed breakdown
-  const syncTaxFieldsFromProduct = (product: Product, index: number) => {
-    // Extract tax rates from product with fallback logic
-    const cgstRate = parseFloat(product.cgstRate || "0");
-    const sgstRate = parseFloat(product.sgstRate || "0");
-    const igstRate = parseFloat(product.igstRate || "0");
-    const cessRate = parseFloat(product.cessRate || "0");
-    
-    // Calculate total GST (CGST + SGST for intra-state, IGST for inter-state)
-    let totalGst = 0;
-    let gstBreakdown = {
-      cgst: 0,
-      sgst: 0,
-      igst: 0,
-      cess: cessRate
-    };
-
-    if (igstRate > 0) {
-      totalGst = igstRate; // Inter-state transaction
-      gstBreakdown.igst = igstRate;
-    } else if (cgstRate > 0 || sgstRate > 0) {
-      totalGst = cgstRate + sgstRate; // Intra-state transaction
-      gstBreakdown.cgst = cgstRate;
-      gstBreakdown.sgst = sgstRate;
-    }
-
-    // Auto-detect HSN code and suggest GST rate if missing
-    let hsnCode = product.hsnCode || "";
-    let suggestedGstRate = totalGst;
-
-    // HSN-based GST rate suggestion if product doesn't have tax rates
-    if ((!hsnCode || totalGst === 0) && product.name) {
-      // Auto-suggest HSN based on product name/category
-      const productName = product.name.toLowerCase();
-      if (productName.includes('rice') || productName.includes('wheat') || productName.includes('sugar')) {
-        hsnCode = hsnCode || "10019000"; // Food grains - 5%
-        suggestedGstRate = totalGst || 5;
-      } else if (productName.includes('oil') || productName.includes('edible')) {
-        hsnCode = hsnCode || "15179010"; // Edible oil - 5%
-        suggestedGstRate = totalGst || 5;
-      } else if (productName.includes('biscuit') || productName.includes('snack')) {
-        hsnCode = hsnCode || "19059090"; // Biscuits - 18%
-        suggestedGstRate = totalGst || 18;
-      } else if (productName.includes('soap') || productName.includes('shampoo')) {
-        hsnCode = hsnCode || "34012000"; // Personal care - 18%
-        suggestedGstRate = totalGst || 18;
-      } else if (productName.includes('phone') || productName.includes('mobile')) {
-        hsnCode = hsnCode || "85171200"; // Mobile phones - 12%
-        suggestedGstRate = totalGst || 12;
-      } else {
-        hsnCode = hsnCode || "19059090"; // Default general goods
-        suggestedGstRate = totalGst || 18;
-      }
-
-      // If we're suggesting a rate and don't have breakdown, create default breakdown
-      if (totalGst === 0) {
-        if (suggestedGstRate > 0) {
-          // Default to intra-state (CGST + SGST)
-          gstBreakdown.cgst = suggestedGstRate / 2;
-          gstBreakdown.sgst = suggestedGstRate / 2;
-          gstBreakdown.igst = 0;
-        }
-      }
-    }
-
-    // If still no HSN, use generic HSN based on suggested rate
-    if (!hsnCode && suggestedGstRate > 0) {
-      if (suggestedGstRate <= 5) hsnCode = "10019000";
-      else if (suggestedGstRate <= 12) hsnCode = "85171200";
-      else if (suggestedGstRate <= 18) hsnCode = "19059090";
-      else hsnCode = "22021000";
-    }
-
-    // Set tax fields with proper breakdown
-    form.setValue(`items.${index}.hsnCode`, hsnCode);
-    form.setValue(`items.${index}.taxPercentage`, suggestedGstRate);
-
-    // Store detailed tax breakdown for display
-    const taxBreakdown = {
-      cgst: gstBreakdown.cgst,
-      sgst: gstBreakdown.sgst,
-      igst: gstBreakdown.igst,
-      cess: gstBreakdown.cess,
-      total: suggestedGstRate,
-      hsnCode: hsnCode,
-      taxType: igstRate > 0 ? 'IGST' : 'CGST+SGST'
-    };
-
-    return taxBreakdown;
-  };
-
-  // Dynamic product selection handler with enhanced tax syncing
+  // Dynamic product selection handler
   const handleProductSelection = (index: number, productId: number) => {
     const product = products.find(p => p.id === productId);
     if (product) {
-      // Auto-populate basic fields
+      // Auto-populate fields based on selected product
       form.setValue(`items.${index}.productId`, productId);
       form.setValue(`items.${index}.code`, product.sku || "");
       form.setValue(`items.${index}.description`, product.description || product.name);
@@ -1191,22 +961,12 @@ export default function PurchaseEntryProfessional() {
       // Use cost price from product if available, otherwise use selling price
       const costPrice = parseFloat(product.cost || product.price) || 0;
       const sellingPrice = parseFloat(product.price) || 0;
-      
-      // Calculate MRP: use product MRP if available, otherwise calculate from selling price
-      let mrpPrice = 0;
-      if (product.mrp && parseFloat(product.mrp) > 0) {
-        mrpPrice = parseFloat(product.mrp);
-      } else if (sellingPrice > 0) {
-        // Standard retail markup is typically 20-25%
-        mrpPrice = Math.round(sellingPrice * 1.2 * 100) / 100;
-      } else if (costPrice > 0) {
-        // If no selling price, calculate from cost with typical markup
-        mrpPrice = Math.round(costPrice * 1.5 * 100) / 100;
-      }
+      const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
       
       form.setValue(`items.${index}.unitCost`, costPrice);
       form.setValue(`items.${index}.sellingPrice`, sellingPrice);
       form.setValue(`items.${index}.mrp`, mrpPrice);
+      form.setValue(`items.${index}.hsnCode`, product.hsnCode || "");
 
       // Set default received quantity if not set
       if (!form.getValues(`items.${index}.receivedQty`) || form.getValues(`items.${index}.receivedQty`) === 0) {
@@ -1214,49 +974,31 @@ export default function PurchaseEntryProfessional() {
         form.setValue(`items.${index}.quantity`, 1);
       }
 
-      // Sync tax fields with enhanced logic
-      const taxData = syncTaxFieldsFromProduct(product, index);
+      // Calculate GST automatically
+      const cgstRate = parseFloat(product.cgstRate || "0");
+      const sgstRate = parseFloat(product.sgstRate || "0");
+      const igstRate = parseFloat(product.igstRate || "0");
+      const totalGst = cgstRate + sgstRate + igstRate;
 
-      // Calculate net amount with accurate tax calculation
-      const qty = form.getValues(`items.${index}.receivedQty`) || 1;
-      const taxCalculationMethod = form.getValues("taxCalculationMethod") || "exclusive";
-      const discountAmount = form.getValues(`items.${index}.discountAmount`) || 0;
-      
-      let netAmount = 0;
-      const subtotal = qty * costPrice;
-      
-      switch (taxCalculationMethod) {
-        case "inclusive":
-          // Tax included in cost price
-          const baseAmount = subtotal / (1 + (taxData.total / 100));
-          const taxAmount = subtotal - baseAmount;
-          netAmount = subtotal - discountAmount;
-          break;
-        case "compound":
-          // Compound tax calculation
-          const taxableAmount = subtotal - discountAmount;
-          const primaryTax = (taxableAmount * taxData.total) / 100;
-          const compoundTax = (primaryTax * taxData.total) / 100;
-          netAmount = taxableAmount + primaryTax + compoundTax;
-          break;
-        case "exclusive":
-        default:
-          // Standard exclusive tax calculation
-          const taxableAmountExclusive = subtotal - discountAmount;
-          const tax = (taxableAmountExclusive * taxData.total) / 100;
-          netAmount = taxableAmountExclusive + tax;
-          break;
+      if (totalGst > 0) {
+        form.setValue(`items.${index}.taxPercentage`, totalGst);
       }
+
+      // Calculate net amount using the correct cost price
+      const qty = form.getValues(`items.${index}.receivedQty`) || 1;
+      const taxPercent = totalGst || 18;
+      const subtotal = qty * costPrice;
+      const tax = (subtotal * taxPercent) / 100;
+      const netAmount = subtotal + tax;
       
       form.setValue(`items.${index}.netAmount`, netAmount);
 
       // Trigger form validation and update
       form.trigger(`items.${index}`);
 
-      // Show success toast with enhanced information
       toast({
         title: "Product Selected! 🎯",
-        description: `${product.name} added - Cost: ₹${costPrice.toFixed(2)}, Selling: ₹${sellingPrice.toFixed(2)}, MRP: ₹${mrpPrice.toFixed(2)}`,
+        description: `${product.name} added with cost price ₹${costPrice.toFixed(2)}`,
       });
     }
   };
@@ -1347,7 +1089,7 @@ export default function PurchaseEntryProfessional() {
         mrp: item.mrp || 0,
         netAmount: item.netAmount || 0,
         location: item.location || "",
-        unit: item.unit || "PCS",
+        unit: "PCS",
       });
     } else {
       // Add new item
@@ -1542,7 +1284,7 @@ export default function PurchaseEntryProfessional() {
 
   // Submit purchase order (create or update)
   const savePurchaseMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: PurchaseFormData) => {
       try {
         console.log('🔄 Starting purchase save/update process...');
         
@@ -1577,46 +1319,10 @@ export default function PurchaseEntryProfessional() {
           throw new Error('Please add at least one valid item with quantity and cost');
         }
 
-        // Create clean request data
+        // Update data with only valid items
         const requestData = {
-          supplierId: Number(data.supplierId),
-          orderNumber: data.orderNumber.trim(),
-          orderDate: data.orderDate,
-          expectedDate: data.expectedDate || data.orderDate,
-          dueDate: data.expectedDate || data.orderDate,
-          paymentMethod: data.paymentMethod || "Credit",
-          paymentTerms: data.paymentTerms || "Net 30",
-          status: data.status || "Pending",
-          taxCalculationMethod: data.taxCalculationMethod || "exclusive",
-          invoiceNumber: data.invoiceNumber || "",
-          invoiceDate: data.invoiceDate || "",
-          invoiceAmount: Number(data.invoiceAmount) || 0,
-          remarks: data.remarks || "",
-          internalNotes: data.internalNotes || "",
-          freightAmount: Number(data.freightAmount) || 0,
-          surchargeAmount: Number(data.surchargeAmount) || 0,
-          packingCharges: Number(data.packingCharges) || 0,
-          otherCharges: Number(data.otherCharges) || 0,
-          additionalDiscount: Number(data.additionalDiscount) || 0,
-          items: validItems.map(item => ({
-            productId: Number(item.productId),
-            quantity: Number(item.quantity) || Number(item.receivedQty) || 1,
-            receivedQty: Number(item.receivedQty) || Number(item.quantity) || 1,
-            freeQty: Number(item.freeQty) || 0,
-            unitCost: Number(item.unitCost) || 0,
-            cost: Number(item.unitCost) || 0,
-            hsnCode: item.hsnCode || "",
-            taxPercentage: Number(item.taxPercentage) || 0,
-            discountAmount: Number(item.discountAmount) || 0,
-            discountPercent: Number(item.discountPercent) || 0,
-            expiryDate: item.expiryDate || "",
-            batchNumber: item.batchNumber || "",
-            sellingPrice: Number(item.sellingPrice) || 0,
-            mrp: Number(item.mrp) || 0,
-            netAmount: Number(item.netAmount) || 0,
-            location: item.location || "",
-            unit: item.unit || "PCS"
-          }))
+          ...data,
+          items: validItems
         };
 
         console.log(`✅ Validation passed. Sending ${validItems.length} valid items`);
@@ -1630,44 +1336,76 @@ export default function PurchaseEntryProfessional() {
         });
 
         console.log(`📥 Response status: ${response.status} ${response.statusText}`);
+        console.log('📄 Response content-type:', response.headers.get('content-type'));
 
         if (!response.ok) {
-          let errorMessage = `Server error: ${response.status} ${response.statusText}`;
+          const contentType = response.headers.get('content-type');
+          let errorMessage = isEditMode ? "Failed to update purchase order" : "Failed to create purchase order";
           
-          try {
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
+          if (contentType && contentType.includes('application/json')) {
+            try {
               const errorData = await response.json();
               console.error('❌ Server error response:', errorData);
+              
+              // Use the most specific error message available
               errorMessage = errorData.error || errorData.message || errorMessage;
-            } else {
-              const errorText = await response.text();
-              console.error('❌ Server returned non-JSON response:', errorText.substring(0, 200));
-              if (errorText.length > 0 && !errorText.includes('<!DOCTYPE')) {
-                errorMessage = `Server error: ${errorText.substring(0, 100)}`;
+              
+              // Add technical details if available
+              if (errorData.technical && errorData.technical !== errorMessage) {
+                console.error('🔧 Technical details:', errorData.technical);
               }
+              
+            } catch (jsonError) {
+              console.error('❌ Failed to parse error JSON:', jsonError);
+              errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
-          } catch (parseError) {
-            console.error('❌ Failed to parse error response:', parseError);
+          } else {
+            // Handle non-JSON responses
+            try {
+              const errorText = await response.text();
+              console.error('❌ Server returned non-JSON response:', errorText.substring(0, 500));
+              
+              if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
+                errorMessage = `Server error (${response.status}). The server returned an error page instead of data.`;
+              } else {
+                errorMessage = `Server error: ${response.status}. ${errorText.substring(0, 100)}`;
+              }
+            } catch (textError) {
+              console.error('❌ Failed to read error response:', textError);
+              errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
           }
           
           throw new Error(errorMessage);
         }
 
+        // Validate response content type
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text();
+          console.error('❌ Expected JSON but got:', responseText.substring(0, 500));
+          throw new Error('Server returned invalid response format. Expected JSON data.');
+        }
+
         const result = await response.json();
         console.log('✅ Success response:', result);
+
+        // Validate response structure
+        if (isEditMode && !result.success && !result.purchase && !result.id) {
+          console.warn('⚠️ Unexpected response structure for update:', result);
+        }
+
         return result;
         
       } catch (error) {
         console.error('💥 Purchase save/update error:', error);
         
+        // Re-throw with enhanced error context
         if (error instanceof TypeError && error.message.includes('fetch')) {
           throw new Error('Network error: Unable to connect to server. Please check your connection and try again.');
         }
         
         throw error;
-      } finally {
-        setIsSaving(false);
       }
     },
     onSuccess: (data) => {
@@ -1744,45 +1482,23 @@ export default function PurchaseEntryProfessional() {
       }
     },
     onError: (error: any) => {
-      console.error('❌ Mutation error:', error);
       toast({
         title: isEditMode ? "Error updating purchase order" : "Error creating purchase order",
-        description: error.message || "An unexpected error occurred. Please try again.",
+        description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
-      setIsSaving(false);
     },
   });
 
   // Handle form submission
   const onSubmit = (data: PurchaseFormData) => {
     try {
-      console.log('🔄 Starting form submission with data:', data);
-
       // Validate required fields
       if (!data.supplierId || data.supplierId === 0) {
         toast({
           variant: "destructive",
           title: "Validation Error",
           description: "Please select a supplier.",
-        });
-        return;
-      }
-
-      if (!data.orderNumber || data.orderNumber.trim() === '') {
-        toast({
-          variant: "destructive",
-          title: "Validation Error", 
-          description: "Order number is required.",
-        });
-        return;
-      }
-
-      if (!data.orderDate) {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: "Order date is required.",
         });
         return;
       }
@@ -1807,11 +1523,17 @@ export default function PurchaseEntryProfessional() {
         return hasProduct && hasValidQuantity && hasCost;
       });
 
-      console.log('📋 Validating items:', {
+      console.log('Validating items:', {
         totalItems: data.items.length,
         validItems: validItems.length,
         editMode: isEditMode,
-        editId: editId
+        editId: editId,
+        itemsData: data.items.map(item => ({
+          productId: item.productId,
+          receivedQty: item.receivedQty,
+          quantity: item.quantity,
+          unitCost: item.unitCost
+        }))
       });
 
       if (validItems.length === 0) {
@@ -1838,11 +1560,18 @@ export default function PurchaseEntryProfessional() {
         return;
       }
 
+      // Calculate total purchase value
+      const totalValue = validItems.reduce((total, item) => {
+        const receivedQty = Number(item.receivedQty) || Number(item.quantity) || 0;
+        const cost = Number(item.unitCost) || 0;
+        return total + (receivedQty * cost);
+      }, 0);
+
       // Create purchase data with proper structure for backend compatibility
       const purchaseData = {
         // Core purchase details
         supplierId: Number(data.supplierId),
-        orderNumber: data.orderNumber?.trim() || '',
+        orderNumber: data.orderNumber,
         orderDate: data.orderDate,
         expectedDate: data.expectedDate || data.orderDate,
         dueDate: data.expectedDate || data.orderDate,
@@ -1852,11 +1581,10 @@ export default function PurchaseEntryProfessional() {
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
 
         // Invoice details
-        invoiceNumber: data.invoiceNumber?.trim() || "",
+        invoiceNumber: data.invoiceNumber || "",
         invoiceDate: data.invoiceDate || "",
         invoiceAmount: Number(data.invoiceAmount) || 0,
-        remarks: data.remarks?.trim() || "",
-        internalNotes: data.internalNotes?.trim() || "",
+        remarks: data.remarks || "",
 
         // Additional charges
         freightAmount: Number(data.freightAmount) || 0,
@@ -1871,26 +1599,26 @@ export default function PurchaseEntryProfessional() {
           const receivedQty = Math.max(Number(item.receivedQty) || 0, 0);
           const quantity = Math.max(Number(item.quantity) || receivedQty || 1, 0);
           const finalQty = receivedQty > 0 ? receivedQty : quantity;
-          const unitCost = Number(item.unitCost) || 0;
-          const netAmount = Number(item.netAmount) || (finalQty * unitCost);
+
+          console.log(`Mapping item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Final Quantity: ${finalQty}`);
 
           return {
             productId: Number(item.productId),
             quantity: finalQty,
             receivedQty: receivedQty,
             freeQty: Number(item.freeQty) || 0,
-            unitCost: unitCost,
-            cost: unitCost,
-            hsnCode: item.hsnCode?.trim() || "",
+            unitCost: Number(item.unitCost) || 0,
+            cost: Number(item.unitCost) || 0,
+            hsnCode: item.hsnCode || "",
             taxPercentage: Number(item.taxPercentage) || 0,
             discountAmount: Number(item.discountAmount) || 0,
             discountPercent: Number(item.discountPercent) || 0,
             expiryDate: item.expiryDate || "",
-            batchNumber: item.batchNumber?.trim() || "",
+            batchNumber: item.batchNumber || "",
             sellingPrice: Number(item.sellingPrice) || 0,
             mrp: Number(item.mrp) || 0,
-            netAmount: netAmount,
-            location: item.location?.trim() || "",
+            netAmount: Number(item.netAmount) || 0,
+            location: item.location || "",
             unit: item.unit || "PCS",
             roiPercent: Number(item.roiPercent) || 0,
             grossProfitPercent: Number(item.grossProfitPercent) || 0,
@@ -1900,7 +1628,7 @@ export default function PurchaseEntryProfessional() {
         })
       };
 
-      console.log("✅ Submitting purchase data:", purchaseData);
+      console.log("Submitting professional purchase data:", purchaseData);
 
       // Set saving state
       setIsSaving(true);
@@ -1908,12 +1636,13 @@ export default function PurchaseEntryProfessional() {
       // Submit the purchase data using the standard API endpoint
       savePurchaseMutation.mutate(purchaseData);
     } catch (error) {
-      console.error("❌ Error preparing purchase data:", error);
+      console.error("Error preparing purchase data:", error);
       toast({
         variant: "destructive",
-        title: "Submission Error",
+        title: "Error",
         description: "Failed to prepare purchase data. Please check your entries and try again.",
       });
+    } finally {
       setIsSaving(false);
     }
   };
@@ -2709,66 +2438,7 @@ export default function PurchaseEntryProfessional() {
                                       {...form.register(`items.${index}.hsnCode`)}
                                       className="w-full text-center text-xs"
                                       placeholder="HSN Code"
-                                      onChange={(e) => {
-                                        const hsnValue = e.target.value;
-                                        form.setValue(`items.${index}.hsnCode`, hsnValue);
-
-                                        // Auto-suggest GST rate based on HSN code
-                                        if (hsnValue.length >= 4) {
-                                          let suggestedGst = 0;
-                                          if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
-                                            suggestedGst = 0; // Fresh produce
-                                          } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17")) {
-                                            suggestedGst = 5; // Food grains, oils, sugar
-                                          } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("87120")) {
-                                            suggestedGst = 12; // Textiles, phones, bicycles
-                                          } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("19")) {
-                                            suggestedGst = 18; // Personal care, biscuits
-                                          } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032")) {
-                                            suggestedGst = 28; // Beverages, tobacco, cars
-                                          } else {
-                                            suggestedGst = 18; // Default rate
-                                          }
-
-                                          const currentTax = form.getValues(`items.${index}.taxPercentage`) || 0;
-                                          if (suggestedGst !== currentTax) {
-                                            form.setValue(`items.${index}.taxPercentage`, suggestedGst);
-                                            
-                                            // Recalculate net amount with new tax rate
-                                            const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                            const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                            const subtotal = qty * cost;
-                                            const taxableAmount = subtotal - discount;
-                                            const tax = (taxableAmount * suggestedGst) / 100;
-                                            const netAmount = taxableAmount + tax;
-                                            
-                                            form.setValue(`items.${index}.netAmount`, netAmount);
-                                            form.trigger(`items.${index}`);
-
-                                            toast({
-                                              title: "Tax Rate Updated! 📊",
-                                              description: `GST rate auto-updated to ${suggestedGst}% based on HSN ${hsnValue}`,
-                                            });
-                                          }
-                                        }
-                                        
-                                        // Trigger form validation
-                                        form.trigger(`items.${index}.hsnCode`);
-                                      }}
                                     />
-                                    
-                                    {/* HSN Code Validation Indicator */}
-                                    {form.watch(`items.${index}.hsnCode`) && (
-                                      <div className={`text-xs px-2 py-1 rounded text-center ${
-                                        (form.watch(`items.${index}.hsnCode`) || "").length >= 6 
-                                          ? 'bg-green-100 text-green-700 border border-green-300' 
-                                          : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                      }`}>
-                                        {(form.watch(`items.${index}.hsnCode`) || "").length >= 6 ? `✓ HSN: ${form.watch(`items.${index}.hsnCode`)}` : '⚠ Incomplete HSN'}
-                                      </div>
-                                    )}
-
                                     {/* Barcode Display */}
                                     {selectedProduct?.barcode && (
                                       <div className="flex flex-col items-center p-2 bg-gray-50 rounded border">
@@ -2786,423 +2456,15 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
-                                  <div className="space-y-1">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.taxPercentage`, { 
-                                        valueAsNumber: true,
-                                        onChange: (e) => {
-                                          const taxRate = parseFloat(e.target.value) || 0;
-                                          form.setValue(`items.${index}.taxPercentage`, taxRate);
-                                          
-                                          // Recalculate net amount when tax changes
-                                          const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                          const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                          const subtotal = qty * cost;
-                                          const taxableAmount = subtotal - discount;
-                                          const tax = (taxableAmount * taxRate) / 100;
-                                          const netAmount = taxableAmount + tax;
-                                          
-                                          form.setValue(`items.${index}.netAmount`, netAmount);
-                                          form.trigger(`items.${index}`);
-                                        }
-                                      })}
-                                      className="w-full text-center text-xs"
-                                      placeholder="0"
-                                    />
-                                    
-                                    {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
-                                    {form.watch(`items.${index}.taxPercentage`) > 0 && (
-                                      <div className="text-xs bg-blue-50 p-2 rounded border space-y-1">
-                                        {(() => {
-                                          const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
-                                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                                          
-                                          // Use product tax breakdown if available
-                                          let cgstRate = 0;
-                                          let sgstRate = 0;
-                                          let igstRate = 0;
-                                          
-                                          if (selectedProduct) {
-                                            cgstRate = parseFloat(selectedProduct.cgstRate || "0");
-                                            sgstRate = parseFloat(selectedProduct.sgstRate || "0");
-                                            igstRate = parseFloat(selectedProduct.igstRate || "0");
-                                          }
-                                          
-                                          // If product doesn't have breakdown, use default
-                                          if (cgstRate === 0 && sgstRate === 0 && igstRate === 0 && totalTax > 0) {
-                                            cgstRate = totalTax / 2;
-                                            sgstRate = totalTax / 2;
-                                          }
-                                          
-                                          return (
-                                            <div className="text-center">
-                                              <div className="text-blue-700 font-medium text-xs mb-1">
-                                                Total GST: {totalTax}%
-                                              </div>
-                                              
-                                              {/* GST Breakdown */}
-                                              {totalTax > 0 && (
-                                                <div className="grid grid-cols-3 gap-1 text-xs">
-                                                  <div className="bg-green-100 text-green-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">CGST</div>
-                                                    <div>{cgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-orange-100 text-orange-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">SGST</div>
-                                                    <div>{sgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">IGST</div>
-                                                    <div>{igstRate}%</div>
-                                                  </div>
-                                                </div>
-                                              )}
-                                              
-                                              {/* Tax Type Indicator */}
-                                              <div className="text-xs text-gray-600 mt-1">
-                                                {igstRate > 0 ? 'Inter-State' : 'Intra-State'}
-                                              </div>
-                                            </div>
-                                          );
-                                        })()}
-                                      </div>
-                                    )}
-                                    
-                                    {/* Quick Tax Rate Buttons */}
-                                    <div className="flex flex-wrap gap-1">
-                                      {[0, 5, 12, 18, 28].map((rate) => (
-                                        <button
-                                          key={rate}
-                                          type="button"
-                                          onClick={() => {
-                                            form.setValue(`items.${index}.taxPercentage`, rate);
-                                            
-                                            // Recalculate net amount
-                                            const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                            const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                            const subtotal = qty * cost;
-                                            const taxableAmount = subtotal - discount;
-                                            const tax = (taxableAmount * rate) / 100;
-                                            const netAmount = taxableAmount + tax;
-                                            
-                                            form.setValue(`items.${index}.netAmount`, netAmount);
-                                            form.trigger(`items.${index}`);
-                                          }}
-                                          className={`px-1 py-0.5 text-xs rounded border ${
-                                            form.watch(`items.${index}.taxPercentage`) === rate
-                                              ? 'bg-blue-500 text-white border-blue-500'
-                                              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                                          }`}
-                                        >
-                                          {rate}%
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                    
-                                    {/* HSN Code Validation Indicator */}
-                                    {form.watch(`items.${index}.hsnCode`) && (
-                                      <div className={`text-xs px-2 py-1 rounded text-center ${
-                                        (form.watch(`items.${index}.hsnCode`) || "").length >= 6 
-                                          ? 'bg-green-100 text-green-700 border border-green-300' 
-                                          : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                      }`}>
-                                        {(form.watch(`items.${index}.hsnCode`) || "").length >= 6 ? `✓ HSN: ${form.watch(`items.${index}.hsnCode`)}` : '⚠ Incomplete HSN'}
-                                      </div>
-                                    )}
-
-                                    {/* Barcode Display */}
-                                    {selectedProduct?.barcode && (
-                                      <div className="flex flex-col items-center p-2 bg-gray-50 rounded border">
-                                        <img
-                                          src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${selectedProduct.barcode}`}
-                                          alt="Product Barcode"
-                                          className="w-12 h-12 mb-1"
-                                        />
-                                        <span className="text-xs font-mono text-gray-600">
-                                          {selectedProduct.barcode}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="space-y-1">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.taxPercentage`, { 
-                                        valueAsNumber: true,
-                                        onChange: (e) => {
-                                          const taxRate = parseFloat(e.target.value) || 0;
-                                          form.setValue(`items.${index}.taxPercentage`, taxRate);
-                                          
-                                          // Recalculate net amount when tax changes
-                                          const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                          const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                          const subtotal = qty * cost;
-                                          const taxableAmount = subtotal - discount;
-                                          const tax = (taxableAmount * taxRate) / 100;
-                                          const netAmount = taxableAmount + tax;
-                                          
-                                          form.setValue(`items.${index}.netAmount`, netAmount);
-                                          form.trigger(`items.${index}`);
-                                        }
-                                      })}
-                                      className="w-full text-center text-xs"
-                                      placeholder="0"
-                                    />
-                                    
-                                    {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
-                                    {form.watch(`items.${index}.taxPercentage`) > 0 && (
-                                      <div className="text-xs bg-blue-50 p-2 rounded border space-y-1">
-                                        {(() => {
-                                          const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
-                                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                                          
-                                          // Use product tax breakdown if available
-                                          let cgstRate = 0;
-                                          let sgstRate = 0;
-                                          let igstRate = 0;
-                                          
-                                          if (selectedProduct) {
-                                            cgstRate = parseFloat(selectedProduct.cgstRate || "0");
-                                            sgstRate = parseFloat(selectedProduct.sgstRate || "0");
-                                            igstRate = parseFloat(selectedProduct.igstRate || "0");
-                                          }
-                                          
-                                          // If product doesn't have breakdown, use default
-                                          if (cgstRate === 0 && sgstRate === 0 && igstRate === 0 && totalTax > 0) {
-                                            cgstRate = totalTax / 2;
-                                            sgstRate = totalTax / 2;
-                                          }
-                                          
-                                          return (
-                                            <div className="text-center">
-                                              <div className="text-blue-700 font-medium text-xs mb-1">
-                                                Total GST: {totalTax}%
-                                              </div>
-                                              
-                                              {/* GST Breakdown */}
-                                              {totalTax > 0 && (
-                                                <div className="grid grid-cols-3 gap-1 text-xs">
-                                                  <div className="bg-green-100 text-green-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">CGST</div>
-                                                    <div>{cgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-orange-100 text-orange-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">SGST</div>
-                                                    <div>{sgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">IGST</div>
-                                                    <div>{igstRate}%</div>
-                                                  </div>
-                                                </div>
-                                              )}
-                                              
-                                              {/* Tax Type Indicator */}
-                                              <div className="text-xs text-gray-600 mt-1">
-                                                {igstRate > 0 ? 'Inter-State' : 'Intra-State'}
-                                              </div>
-                                            </div>
-                                          );
-                                        })()}
-                                      </div>
-                                    )}
-                                    
-                                    {/* Quick Tax Rate Buttons */}
-                                    <div className="flex flex-wrap gap-1">
-                                      {[0, 5, 12, 18, 28].map((rate) => (
-                                        <button
-                                          key={rate}
-                                          type="button"
-                                          onClick={() => {
-                                            form.setValue(`items.${index}.taxPercentage`, rate);
-                                            
-                                            // Recalculate net amount
-                                            const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                            const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                            const subtotal = qty * cost;
-                                            const taxableAmount = subtotal - discount;
-                                            const tax = (taxableAmount * rate) / 100;
-                                            const netAmount = taxableAmount + tax;
-                                            
-                                            form.setValue(`items.${index}.netAmount`, netAmount);
-                                            form.trigger(`items.${index}`);
-                                          }}
-                                          className={`px-1 py-0.5 text-xs rounded border ${
-                                            form.watch(`items.${index}.taxPercentage`) === rate
-                                              ? 'bg-blue-500 text-white border-blue-500'
-                                              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                                          }`}
-                                        >
-                                          {rate}%
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </TableCell></old_str>
-                                    
-                                    {/* HSN Code Validation Indicator */}
-                                    {form.watch(`items.${index}.hsnCode`) && (
-                                      <div className={`text-xs px-2 py-1 rounded text-center ${
-                                        (form.watch(`items.${index}.hsnCode`) || "").length >= 6 
-                                          ? 'bg-green-100 text-green-700 border border-green-300' 
-                                          : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                      }`}>
-                                        {(form.watch(`items.${index}.hsnCode`) || "").length >= 6 ? `✓ HSN: ${form.watch(`items.${index}.hsnCode`)}` : '⚠ Incomplete HSN'}
-                                      </div>
-                                    )}</old_str>
-
-                                    {/* Barcode Display */}
-                                    {selectedProduct?.barcode && (
-                                      <div className="flex flex-col items-center p-2 bg-gray-50 rounded border">
-                                        <img
-                                          src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${selectedProduct.barcode}`}
-                                          alt="Product Barcode"
-                                          className="w-12 h-12 mb-1"
-                                        />
-                                        <span className="text-xs font-mono text-gray-600">
-                                          {selectedProduct.barcode}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="space-y-1">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.taxPercentage`, { 
-                                        valueAsNumber: true,
-                                        onChange: (e) => {
-                                          const taxRate = parseFloat(e.target.value) || 0;
-                                          form.setValue(`items.${index}.taxPercentage`, taxRate);
-                                          
-                                          // Recalculate net amount when tax changes
-                                          const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                          const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                          const subtotal = qty * cost;
-                                          const taxableAmount = subtotal - discount;
-                                          const tax = (taxableAmount * taxRate) / 100;
-                                          const netAmount = taxableAmount + tax;
-                                          
-                                          form.setValue(`items.${index}.netAmount`, netAmount);
-                                          form.trigger(`items.${index}`);
-                                        }
-                                      })}
-                                      className="w-full text-center text-xs"
-                                      placeholder="0"
-                                    /></old_str>
-                                    
-                                    {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
-                                    {form.watch(`items.${index}.taxPercentage`) > 0 && (
-                                      <div className="text-xs bg-blue-50 p-2 rounded border space-y-1">
-                                        {(() => {
-                                          const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
-                                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                                          
-                                          // Use product tax breakdown if available
-                                          let cgstRate = 0;
-                                          let sgstRate = 0;
-                                          let igstRate = 0;
-                                          
-                                          if (selectedProduct) {
-                                            cgstRate = parseFloat(selectedProduct.cgstRate || "0");
-                                            sgstRate = parseFloat(selectedProduct.sgstRate || "0");
-                                            igstRate = parseFloat(selectedProduct.igstRate || "0");
-                                          }
-                                          
-                                          // If product doesn't have breakdown, use default
-                                          if (cgstRate === 0 && sgstRate === 0 && igstRate === 0 && totalTax > 0) {
-                                            cgstRate = totalTax / 2;
-                                            sgstRate = totalTax / 2;
-                                          }
-                                          
-                                          return (
-                                            <div className="text-center">
-                                              <div className="text-blue-700 font-medium text-xs mb-1">
-                                                Total GST: {totalTax}%
-                                              </div>
-                                              
-                                              {/* GST Breakdown */}
-                                              {totalTax > 0 && (
-                                                <div className="grid grid-cols-3 gap-1 text-xs">
-                                                  <div className="bg-green-100 text-green-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">CGST</div>
-                                                    <div>{cgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-orange-100 text-orange-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">SGST</div>
-                                                    <div>{sgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">IGST</div>
-                                                    <div>{igstRate}%</div>
-                                                  </div>
-                                                </div>
-                                              )}
-                                              
-                                              {/* Tax Type Indicator */}
-                                              <div className="text-xs text-gray-600 mt-1">
-                                                {igstRate > 0 ? 'Inter-State' : 'Intra-State'}
-                                              </div>
-                                            </div>
-                                          );
-                                        })()}
-                                      </div>
-                                    )}
-                                    
-                                    {/* Quick Tax Rate Buttons */}
-                                    <div className="flex flex-wrap gap-1">
-                                      {[0, 5, 12, 18, 28].map((rate) => (
-                                        <button
-                                          key={rate}
-                                          type="button"
-                                          onClick={() => {
-                                            form.setValue(`items.${index}.taxPercentage`, rate);
-                                            
-                                            // Recalculate net amount
-                                            const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                            const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                            const subtotal = qty * cost;
-                                            const taxableAmount = subtotal - discount;
-                                            const tax = (taxableAmount * rate) / 100;
-                                            const netAmount = taxableAmount + tax;
-                                            
-                                            form.setValue(`items.${index}.netAmount`, netAmount);
-                                            form.trigger(`items.${index}`);
-                                          }}
-                                          className={`px-1 py-0.5 text-xs rounded border ${
-                                            form.watch(`items.${index}.taxPercentage`) === rate
-                                              ? 'bg-blue-500 text-white border-blue-500'
-                                              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                                          }`}
-                                        >
-                                          {rate}%
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    {...form.register(`items.${index}.taxPercentage`, { valueAsNumber: true })}
+                                    className="w-full text-center text-xs"
+                                    placeholder="0"
+                                  />
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
@@ -3256,45 +2518,11 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      {...form.register(`items.${index}.sellingPrice`, { 
-                                        valueAsNumber: true,
-                                        setValueAs: (value) => value || 0
-                                      })}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.sellingPrice`, value);
-                                        
-                                        // Auto-calculate MRP if not set (typical markup is 20-25%)
-                                        const currentMrp = form.getValues(`items.${index}.mrp`) || 0;
-                                        if (currentMrp === 0 && value > 0) {
-                                          const suggestedMrp = Math.round(value * 1.2 * 100) / 100; // 20% markup
-                                          form.setValue(`items.${index}.mrp`, suggestedMrp);
-                                        }
-                                        
-                                        form.trigger(`items.${index}`);
-                                      }}
+                                      {...form.register(`items.${index}.sellingPrice`, { valueAsNumber: true })}
                                       className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
-                                      onFocus={(e) => e.target.select()}
+                                      placeholder="0"
                                     />
                                   </div>
-                                  {/* Selling Price Indicator */}
-                                  {(() => {
-                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-                                    const unitCost = form.watch(`items.${index}.unitCost`) || 0;
-                                    const margin = unitCost > 0 ? ((sellingPrice - unitCost) / unitCost) * 100 : 0;
-                                    
-                                    if (sellingPrice > 0 && unitCost > 0) {
-                                      return (
-                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
-                                          margin > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                                        }`}>
-                                          {margin > 0 ? '+' : ''}{margin.toFixed(1)}% margin
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
@@ -3304,37 +2532,11 @@ export default function PurchaseEntryProfessional() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      {...form.register(`items.${index}.mrp`, { 
-                                        valueAsNumber: true,
-                                        setValueAs: (value) => value || 0
-                                      })}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.mrp`, value);
-                                        form.trigger(`items.${index}`);
-                                      }}
+                                      {...form.register(`items.${index}.mrp`, { valueAsNumber: true })}
                                       className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
-                                      onFocus={(e) => e.target.select()}
+                                      placeholder="0"
                                     />
                                   </div>
-                                  {/* MRP vs Selling Price Indicator */}
-                                  {(() => {
-                                    const mrp = form.watch(`items.${index}.mrp`) || 0;
-                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-                                    
-                                    if (mrp > 0 && sellingPrice > 0) {
-                                      const discount = ((mrp - sellingPrice) / mrp) * 100;
-                                      return (
-                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
-                                          discount > 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
-                                        }`}>
-                                          {discount > 0 ? `${discount.toFixed(1)}% off MRP` : 'Above MRP'}
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
@@ -3854,136 +3056,19 @@ export default function PurchaseEntryProfessional() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="modal-sellingPrice">Selling Price</Label>
-                <Input
-                  id="modal-sellingPrice"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={modalData.sellingPrice || ''}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, sellingPrice: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.sellingPrice`, value);
-                      
-                      // Auto-calculate MRP if not set (typical markup is 20-25%)
-                      if (!modalData.mrp || modalData.mrp === 0) {
-                        const suggestedMrp = Math.round(value * 1.2 * 100) / 100;
-                        const updatedModalData = { ...newModalData, mrp: suggestedMrp };
-                        setModalData(updatedModalData);
-                        form.setValue(`items.${editingItemIndex}.mrp`, suggestedMrp);
-                      }
-                      
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="0.00"
-                />
-                {modalData.unitCost > 0 && modalData.sellingPrice > 0 && (
-                  <div className="text-xs text-gray-600">
-                    Margin: {(((modalData.sellingPrice - modalData.unitCost) / modalData.unitCost) * 100).toFixed(1)}%
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modal-mrp">MRP (Maximum Retail Price)</Label>
-                <Input
-                  id="modal-mrp"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={modalData.mrp || ''}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const newModalData = { ...modalData, mrp: value };
-                    setModalData(newModalData);
-                    if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.mrp`, value);
-                      form.trigger(`items.${editingItemIndex}`);
-                    }
-                  }}
-                  placeholder="0.00"
-                />
-                {modalData.mrp > 0 && modalData.sellingPrice > 0 && (
-                  <div className="text-xs text-gray-600">
-                    {modalData.sellingPrice <= modalData.mrp ? (
-                      <span className="text-green-600">
-                        Discount: {(((modalData.mrp - modalData.sellingPrice) / modalData.mrp) * 100).toFixed(1)}% off MRP
-                      </span>
-                    ) : (
-                      <span className="text-orange-600">
-                        Warning: Selling price is above MRP
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="modal-hsnCode">HSN Code</Label>
                 <Input
                   id="modal-hsnCode"
-                  value={modalData.hsnCode || ""}
+                  value={modalData.hsnCode}
                   onChange={(e) => {
-                    const hsnValue = e.target.value;
-                    const newModalData = { ...modalData, hsnCode: hsnValue };
+                    const newModalData = { ...modalData, hsnCode: e.target.value };
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
-                      form.setValue(`items.${editingItemIndex}.hsnCode`, hsnValue);
-                      
-                      // Auto-suggest GST rate based on HSN code in modal
-                      if (hsnValue.length >= 4) {
-                        let suggestedGst = 0;
-                        if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
-                          suggestedGst = 0; // Fresh produce
-                        } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17")) {
-                          suggestedGst = 5; // Food grains, oils, sugar
-                        } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("87120")) {
-                          suggestedGst = 12; // Textiles, phones, bicycles
-                        } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("19")) {
-                          suggestedGst = 18; // Personal care, biscuits
-                        } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032")) {
-                          suggestedGst = 28; // Beverages, tobacco, cars
-                        } else {
-                          suggestedGst = 18; // Default rate
-                        }
-
-                        if (suggestedGst !== modalData.taxPercentage) {
-                          const updatedModalData = { ...newModalData, taxPercentage: suggestedGst };
-                          setModalData(updatedModalData);
-                          form.setValue(`items.${editingItemIndex}.taxPercentage`, suggestedGst);
-                          
-                          // Recalculate net amount
-                          const qty = modalData.receivedQty;
-                          const cost = modalData.unitCost;
-                          const discount = modalData.discountAmount;
-                          const subtotal = qty * cost;
-                          const taxableAmount = subtotal - discount;
-                          const tax = (taxableAmount * suggestedGst) / 100;
-                          const netAmount = taxableAmount + tax;
-                          
-                          form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                          
-                          toast({
-                            title: "Tax Rate Updated! 📊",
-                            description: `GST rate auto-updated to ${suggestedGst}% based on HSN ${hsnValue}`,
-                          });
-                        }
-                      }
-                      
-                      form.trigger(`items.${editingItemIndex}.hsnCode`);
+                      form.setValue(`items.${editingItemIndex}.hsnCode`, e.target.value);
                     }
                   }}
-                  placeholder="Enter HSN/SAC Code (e.g., 15179010)"
+                  placeholder="HSN Code"
                 />
-                {modalData.hsnCode && String(modalData.hsnCode).length >= 4 && (
-                  <div className="text-xs text-blue-600">
-                    ✓ HSN Code: {modalData.hsnCode}
-                  </div>
-                )}
               </div>
 
               {/* Barcode Display Section */}
@@ -4022,117 +3107,37 @@ export default function PurchaseEntryProfessional() {
                 </div>
               )}
 
-              {/* Enhanced Tax Information Section */}
-              <div className="space-y-2 col-span-2">
-                <Label>Tax Information</Label>
-                <div className="bg-gray-50 border rounded-lg p-4 space-y-4">
-                  {/* GST Rate Selection */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="modal-taxPercentage">Total GST Rate (%)</Label>
-                      <select
-                        id="modal-taxPercentage"
-                        value={modalData.taxPercentage || 18}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value) || 0;
-                          const newModalData = { ...modalData, taxPercentage: value };
-                          setModalData(newModalData);
-                          if (editingItemIndex !== null) {
-                            form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
+              <div className="space-y-2">
+                <Label htmlFor="modal-taxPercentage">Tax %</Label>
+                <Input
+                  id="modal-taxPercentage"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={modalData.taxPercentage}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const newModalData = { ...modalData, taxPercentage: value };
+                    setModalData(newModalData);
+                    if (editingItemIndex !== null) {
+                      form.setValue(`items.${editingItemIndex}.taxPercentage`, value);
 
-                            // Recalculate net amount in real-time
-                            const qty = modalData.receivedQty;
-                            const cost = modalData.unitCost;
-                            const discount = modalData.discountAmount;
-                            const subtotal = qty * cost;
-                            const taxableAmount = subtotal - discount;
-                            const tax = (taxableAmount * value) / 100;
-                            const netAmount = taxableAmount + tax;
+                      // Recalculate net amount in real-time
+                      const qty = modalData.receivedQty;
+                      const cost = modalData.unitCost;
+                      const discount = modalData.discountAmount;
+                      const subtotal = qty * cost;
+                      const taxableAmount = subtotal - value;
+                      const tax = (taxableAmount * value) / 100;
+                      const netAmount = taxableAmount + tax;
 
-                            form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
-                            form.trigger(`items.${editingItemIndex}`);
-                          }
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="0">GST 0% - Nil Rate</option>
-                        <option value="5">GST 5% - Essential Items</option>
-                        <option value="12">GST 12% - Standard Items</option>
-                        <option value="18">GST 18% - General Items</option>
-                        <option value="28">GST 28% - Luxury Items</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Tax Type</Label>
-                      <select 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        defaultValue="tax-inclusive"
-                      >
-                        <option value="tax-inclusive">Tax Inclusive</option>
-                        <option value="tax-exclusive">Tax Exclusive</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* GST Breakdown */}
-                  {modalData.taxPercentage > 0 && (
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium text-gray-700">GST Breakdown</Label>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-green-50 border border-green-200 rounded p-3 text-center">
-                          <div className="text-xs font-medium text-green-700 mb-1">CGST Rate (%)</div>
-                          <div className="text-lg font-bold text-green-800">
-                            {(modalData.taxPercentage / 2).toFixed(1)}%
-                          </div>
-                        </div>
-                        <div className="bg-orange-50 border border-orange-200 rounded p-3 text-center">
-                          <div className="text-xs font-medium text-orange-700 mb-1">SGST Rate (%)</div>
-                          <div className="text-lg font-bold text-orange-800">
-                            {(modalData.taxPercentage / 2).toFixed(1)}%
-                          </div>
-                        </div>
-                        <div className="bg-purple-50 border border-purple-200 rounded p-3 text-center">
-                          <div className="text-xs font-medium text-purple-700 mb-1">IGST Rate (%)</div>
-                          <div className="text-lg font-bold text-purple-800">0%</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tax Calculation Display */}
-                  {modalData.taxPercentage > 0 && modalData.unitCost > 0 && modalData.receivedQty > 0 && (
-                    <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                      <h4 className="font-medium text-blue-900 mb-2 text-sm">Tax Calculation</h4>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <span className="text-blue-700">Base Amount:</span>
-                          <span className="font-medium ml-2">
-                            ₹{(modalData.receivedQty * modalData.unitCost).toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-blue-700">Total GST:</span>
-                          <span className="font-medium ml-2">
-                            ₹{(((modalData.receivedQty * modalData.unitCost - modalData.discountAmount) * modalData.taxPercentage) / 100).toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-blue-700">CGST Amount:</span>
-                          <span className="font-medium ml-2">
-                            ₹{(((modalData.receivedQty * modalData.unitCost - modalData.discountAmount) * modalData.taxPercentage) / 200).toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-blue-700">SGST Amount:</span>
-                          <span className="font-medium ml-2">
-                            ₹{(((modalData.receivedQty * modalData.unitCost - modalData.discountAmount) * modalData.taxPercentage) / 200).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                      form.setValue(`items.${editingItemIndex}.netAmount`, netAmount);
+                      form.trigger(`items.${editingItemIndex}`);
+                    }
+                  }}
+                  placeholder="18"
+                />
               </div>
 
               <div className="space-y-2">

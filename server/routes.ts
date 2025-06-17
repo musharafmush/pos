@@ -501,39 +501,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/products/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log('Product update request for ID:', id, 'Data:', req.body);
-
-      if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ message: 'Invalid product ID' });
-      }
-
-      // For updates, we allow partial data, so don't use strict schema validation
-      const productData = req.body;
-      
+      const productData = schema.productInsertSchema.parse(req.body);
       const product = await storage.updateProduct(id, productData);
 
       if (!product) {
         return res.status(404).json({ message: 'Product not found' });
       }
 
-      console.log('Product updated successfully:', product.id);
-      res.json({
-        ...product,
-        message: 'Product updated successfully'
-      });
+      res.json(product);
     } catch (error) {
-      console.error('Error updating product:', error);
-      
-      // Provide more specific error messages
-      let errorMessage = 'Internal server error';
-      if (error.message) {
-        errorMessage = error.message;
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
       }
-      
-      res.status(500).json({ 
-        message: errorMessage,
-        error: 'Failed to update product'
-      });
+      console.error('Error updating product:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
