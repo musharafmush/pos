@@ -204,15 +204,18 @@ export default function AddItemProfessional() {
     queryKey: ["/api/categories"],
   });
 
-  // Fetch suppliers
-  const { data: suppliers = [] } = useQuery({
+  // Fetch suppliers with enhanced debugging
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ["/api/suppliers"],
     queryFn: async () => {
+      console.log('🏭 Fetching suppliers data...');
       const response = await fetch("/api/suppliers");
       if (!response.ok) throw new Error("Failed to fetch suppliers");
-      return response.json();
+      const suppliersData = await response.json();
+      console.log('✅ Suppliers data loaded:', suppliersData.length, 'suppliers');
+      return suppliersData;
     },
-  }) as { data: Supplier[] };
+  }) as { data: Supplier[], isLoading: boolean };
 
   // Fetch all products for bulk item selection
   const { data: allProducts = [] } = useQuery({
@@ -305,7 +308,7 @@ export default function AddItemProfessional() {
 
   // Enhanced dynamic data uploading and form synchronization for edit mode
   useEffect(() => {
-    if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0) {
+    if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0 && suppliers.length > 0) {
       console.log('🔄 Dynamic data upload - Populating edit form with product data:', editingProduct);
       
       // Enhanced GST calculation with better accuracy
@@ -327,13 +330,30 @@ export default function AddItemProfessional() {
       const category = categories.find((cat: any) => cat.id === editingProduct.categoryId);
       console.log('📂 Dynamic category mapping:', { categoryId: editingProduct.categoryId, category: category?.name });
 
+      // Enhanced manufacturer and supplier resolution
+      const matchedManufacturer = suppliers.find((sup: any) => 
+        sup.name === editingProduct.manufacturerName || 
+        sup.id === editingProduct.manufacturerId
+      );
+      const matchedSupplier = suppliers.find((sup: any) => 
+        sup.name === editingProduct.supplierName || 
+        sup.id === editingProduct.supplierId
+      );
+      
+      console.log('🏭 Dynamic manufacturer/supplier mapping:', { 
+        manufacturerName: editingProduct.manufacturerName,
+        supplierName: editingProduct.supplierName,
+        matchedManufacturer: matchedManufacturer?.name,
+        matchedSupplier: matchedSupplier?.name 
+      });
+
       // Comprehensive form data with enhanced field mapping
       const formData = {
-        // Item Information - Enhanced
+        // Item Information - Enhanced with proper supplier matching
         itemCode: editingProduct.sku || "",
         itemName: editingProduct.name || "",
-        manufacturerName: editingProduct.manufacturerName || "",
-        supplierName: editingProduct.supplierName || "",
+        manufacturerName: matchedManufacturer?.name || editingProduct.manufacturerName || "",
+        supplierName: matchedSupplier?.name || editingProduct.supplierName || "",
         alias: editingProduct.alias || "",
         aboutProduct: editingProduct.description || "",
 
@@ -443,7 +463,7 @@ export default function AddItemProfessional() {
         console.log('✅ Dynamic data upload completed successfully');
       }, 100);
     }
-  }, [isEditMode, editingProduct, isLoadingProduct, categories, form]);
+  }, [isEditMode, editingProduct, isLoadingProduct, categories, suppliers, form]);
 
   // Dynamic data synchronization watcher
   useEffect(() => {
@@ -531,9 +551,11 @@ export default function AddItemProfessional() {
         cessRate: data.cessRate || "0",
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
         
-        // Enhanced fields for comprehensive data storage
+        // Enhanced fields for comprehensive data storage with supplier ID resolution
         manufacturerName: data.manufacturerName?.trim() || "",
         supplierName: data.supplierName?.trim() || "",
+        manufacturerId: suppliers.find((sup: any) => sup.name === data.manufacturerName?.trim())?.id || null,
+        supplierId: suppliers.find((sup: any) => sup.name === data.supplierName?.trim())?.id || null,
         alias: data.alias?.trim() || "",
         itemProductType: data.itemProductType || "Standard",
         department: data.department?.trim() || "",
@@ -727,7 +749,7 @@ export default function AddItemProfessional() {
   ];
 
   // Enhanced loading state with dynamic upload progress
-  if (isEditMode && isLoadingProduct) {
+  if (isEditMode && (isLoadingProduct || isLoadingSuppliers)) {
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -735,7 +757,7 @@ export default function AddItemProfessional() {
             <div className="bg-white p-8 rounded-lg shadow-lg border">
               <Loader2Icon className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
               <h2 className="text-xl font-semibold mb-2">Loading Product Data...</h2>
-              <p className="text-gray-600 mb-4">Uploading overall data dynamically for edit mode</p>
+              <p className="text-gray-600 mb-4">Uploading overall data dynamically for edit mode including suppliers</p>
               
               {/* Dynamic progress indicator */}
               <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
