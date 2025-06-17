@@ -2998,11 +2998,13 @@ export default function AddItemProfessional() {
                           </Button>
                         </div>
                       </div>
-                    </form>
-                  </Form>
-                </div>
-              </div>
+                    </CardContent>
+                  </Card>
+                </form>
+              </Form>
             </div>
-          </DashboardLayout>
-        );
-      }
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
