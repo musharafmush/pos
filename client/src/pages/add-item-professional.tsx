@@ -242,57 +242,6 @@ export default function AddItemProfessional() {
     "Toys & Games", "Beverages", "Dairy & Frozen", "Personal Care", "Hardware"
   ];
 
-  // Watch form values for dynamic calculations
-  const watchedValues = form.watch();
-
-  // Dynamic GST calculation and display
-  const calculateTotalGST = () => {
-    const cgst = parseFloat(watchedValues.cgstRate || '0');
-    const sgst = parseFloat(watchedValues.sgstRate || '0'); 
-    const igst = parseFloat(watchedValues.igstRate || '0');
-    const cess = parseFloat(watchedValues.cessRate || '0');
-
-    if (igst > 0) {
-      return igst + cess;
-    } else {
-      return cgst + sgst + cess;
-    }
-  };
-
-  // Dynamic alias generation
-  const generateAlias = (itemName: string, manufacturer: string) => {
-    if (!itemName) return '';
-
-    const nameWords = itemName.split(' ').slice(0, 2);
-    const manufacturerPrefix = manufacturer ? manufacturer.substring(0, 3).toUpperCase() : '';
-
-    return `${manufacturerPrefix}${nameWords.join('')}`.substring(0, 15);
-  };
-
-  // Auto-update alias when item name or manufacturer changes
-  useEffect(() => {
-    const itemName = watchedValues.itemName;
-    const manufacturer = watchedValues.manufacturerName;
-
-    if (itemName && !watchedValues.alias) {
-      const generatedAlias = generateAlias(itemName, manufacturer);
-      form.setValue('alias', generatedAlias);
-    }
-  }, [watchedValues.itemName, watchedValues.manufacturerName, form]);
-
-  // Filter bulk items from all products
-  const bulkItems = allProducts.filter((product: any) => 
-    product.name && (
-      product.name.toLowerCase().includes('bulk') ||
-      product.name.toLowerCase().includes('bag') ||
-      product.name.toLowerCase().includes('container') ||
-      product.name.toLowerCase().includes('kg') ||
-      product.name.toLowerCase().includes('ltr') ||
-      (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg') ||
-      product.stockQuantity > 10
-    )
-  );
-
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
@@ -358,6 +307,58 @@ export default function AddItemProfessional() {
       active: true,
     },
   });
+
+  // Watch form values for dynamic calculations
+  const watchedValues = form.watch();
+
+  // Filter bulk items from all products
+  const bulkItems = allProducts.filter((product: any) => 
+    product.name && (
+      product.name.toLowerCase().includes('bulk') ||
+      product.name.toLowerCase().includes('bag') ||
+      product.name.toLowerCase().includes('container') ||
+      product.name.toLowerCase().includes('kg') ||
+      product.name.toLowerCase().includes('ltr') ||
+      (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg') ||
+      product.stockQuantity > 10
+    )
+  );
+
+
+  // Dynamic GST calculation and display
+  const calculateTotalGST = () => {
+    const cgst = parseFloat(watchedValues.cgstRate || '0');
+    const sgst = parseFloat(watchedValues.sgstRate || '0'); 
+    const igst = parseFloat(watchedValues.igstRate || '0');
+    const cess = parseFloat(watchedValues.cessRate || '0');
+
+    if (igst > 0) {
+      return igst + cess;
+    } else {
+      return cgst + sgst + cess;
+    }
+  };
+
+  // Dynamic alias generation
+  const generateAlias = (itemName: string, manufacturer: string) => {
+    if (!itemName) return '';
+
+    const nameWords = itemName.split(' ').slice(0, 2);
+    const manufacturerPrefix = manufacturer ? manufacturer.substring(0, 3).toUpperCase() : '';
+
+    return `${manufacturerPrefix}${nameWords.join('')}`.substring(0, 15);
+  };
+
+  // Auto-update alias when item name or manufacturer changes
+  useEffect(() => {
+    const itemName = watchedValues.itemName;
+    const manufacturer = watchedValues.manufacturerName;
+
+    if (itemName && !watchedValues.alias) {
+      const generatedAlias = generateAlias(itemName, manufacturer);
+      form.setValue('alias', generatedAlias);
+    }
+  }, [watchedValues.itemName, watchedValues.manufacturerName, form]);
 
   // Enhanced dynamic data uploading and form synchronization for edit mode
   useEffect(() => {
@@ -1482,7 +1483,7 @@ export default function AddItemProfessional() {
                                 <Select onValueChange={(value) => {
                                   field.onChange(value);
                                   // Auto-calculate breakdown when GST code changes
-                                  const gstRate = parseFloat(value.replace("GST ", "").replace("%", ""));
+                                  const gstRate = parseFloat(value.replace("GST ","").replace("%", ""));
                                   if (gstRate > 0) {
                                     const cgstSgstRate = (gstRate / 2).toString();
                                     form.setValue("cgstRate", cgstSgstRate);
@@ -2302,7 +2303,8 @@ export default function AddItemProfessional() {
                                           </div>
 
                                           <div className="grid grid-cols-2 gap-2">
-                                            <span className="font-medium text-gray-700">Available Stock:</span>
+                                            <span className="font```text
+-medium text-gray-700">Available Stock:</span>
                                             <span className="bg-green-100 px-2 py-1 rounded text-center text-xs font-semibold text-green-800">
                                               {form.watch("bulkItemName")?.includes("Rice 1kg (500g Pack)") ? "8" : 
                                                form.watch("bulkItemName")?.includes("Rice 1kg (Repackcd 100g)") ? "4" :
