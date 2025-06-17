@@ -181,6 +181,16 @@ export const storage = {
     barcode?: string;
     image?: string;
     active?: boolean;
+    hsnCode?: string;
+    cgstRate?: string;
+    sgstRate?: string;
+    igstRate?: string;
+    cessRate?: string;
+    taxCalculationMethod?: string;
+    manufacturerName?: string;
+    supplierName?: string;
+    manufacturerId?: number;
+    supplierId?: number;
   }): Promise<Product> {
     try {
       // Import SQLite database directly
@@ -189,9 +199,11 @@ export const storage = {
       const insertProduct = sqlite.prepare(`
         INSERT INTO products (
           name, description, sku, price, mrp, cost, weight, weight_unit, category_id, 
-          stock_quantity, alert_threshold, barcode, image, active,
+          stock_quantity, alert_threshold, barcode, image, active, hsn_code,
+          cgst_rate, sgst_rate, igst_rate, cess_rate, tax_calculation_method,
+          manufacturer_name, supplier_name, manufacturer_id, supplier_id,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
 
       const result = insertProduct.run(
@@ -208,7 +220,17 @@ export const storage = {
         product.alertThreshold || 5,
         product.barcode || null,
         product.image || null,
-        product.active !== false ? 1 : 0
+        product.active !== false ? 1 : 0,
+        product.hsnCode || null,
+        product.cgstRate || '0',
+        product.sgstRate || '0',
+        product.igstRate || '0',
+        product.cessRate || '0',
+        product.taxCalculationMethod || 'exclusive',
+        product.manufacturerName || null,
+        product.supplierName || null,
+        product.manufacturerId || null,
+        product.supplierId || null
       );
 
       // Fetch the created product
