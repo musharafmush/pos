@@ -788,8 +788,7 @@ export default function AddItemProfessional() {
           showOnMobileDashboard: false,
           enableMobileNotifications: false,
           quickAddToCart: false,
-          perishableItem:```text
- false,
+          perishableItem: false,
           temperatureControlled: false,
           fragileItem: false,
           trackSerialNumbers: false,
