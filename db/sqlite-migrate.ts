@@ -99,6 +99,67 @@ export async function initializeDatabase() {
       active INTEGER NOT NULL DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      
+      -- Tax Information - Indian GST Compliance
+      hsn_code TEXT,
+      gst_code TEXT,
+      cgst_rate TEXT DEFAULT '0',
+      sgst_rate TEXT DEFAULT '0',
+      igst_rate TEXT DEFAULT '0',
+      cess_rate TEXT DEFAULT '0',
+      tax_calculation_method TEXT,
+      
+      -- Supplier & Manufacturer Information
+      manufacturer_name TEXT,
+      supplier_name TEXT,
+      manufacturer_id INTEGER,
+      supplier_id INTEGER,
+      
+      -- Product Classification
+      alias TEXT,
+      item_product_type TEXT,
+      department TEXT,
+      brand TEXT,
+      buyer TEXT,
+      purchase_gst_calculated_on TEXT,
+      gst_uom TEXT,
+      purchase_abatement TEXT,
+      
+      -- Configuration Options
+      config_item_with_commodity INTEGER DEFAULT 0,
+      senior_exempt_applicable INTEGER DEFAULT 0,
+      ean_code_required INTEGER DEFAULT 0,
+      weights_per_unit TEXT,
+      batch_expiry_details TEXT,
+      item_preparations_status TEXT,
+      
+      -- Pricing & Charges
+      grinding_charge TEXT,
+      weight_in_gms TEXT,
+      bulk_item_name TEXT,
+      repackage_units TEXT,
+      repackage_type TEXT,
+      packaging_material TEXT,
+      decimal_point TEXT,
+      product_type TEXT,
+      sell_by TEXT,
+      item_per_unit TEXT,
+      maintain_selling_mrp_by TEXT,
+      batch_selection TEXT,
+      
+      -- Item Properties
+      is_weighable INTEGER DEFAULT 0,
+      sku_type TEXT,
+      indent_type TEXT,
+      gate_keeper_margin TEXT,
+      allow_item_free INTEGER DEFAULT 0,
+      show_on_mobile_dashboard INTEGER DEFAULT 0,
+      enable_mobile_notifications INTEGER DEFAULT 0,
+      quick_add_to_cart INTEGER DEFAULT 0,
+      perishable_item INTEGER DEFAULT 0,
+      temperature_controlled INTEGER DEFAULT 0,
+      fragile_item INTEGER DEFAULT 0,
+      
       FOREIGN KEY (category_id) REFERENCES categories(id)
     )
   `);
