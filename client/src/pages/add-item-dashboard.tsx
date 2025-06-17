@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -161,83 +161,6 @@ export default function AddItemDashboard() {
       itemIngredients: "",
     },
   });
-
-  const viewForm = useForm({
-    defaultValues: {
-      hsnCode: "",
-      gstCode: "GST 18%",
-      cgstRate: "0",
-      sgstRate: "0",
-      igstRate: "0",
-      cessRate: "0",
-      taxCalculationMethod: "Exclusive",
-      gstUom: "PIECES",
-    },
-  });
-
-  // Update viewForm when selectedProduct changes
-  useEffect(() => {
-    if (selectedProduct) {
-      viewForm.reset({
-        hsnCode: selectedProduct.hsnCode || "",
-        gstCode: selectedProduct.gstCode || "GST 18%",
-        cgstRate: selectedProduct.cgstRate || "0",
-        sgstRate: selectedProduct.sgstRate || "0",
-        igstRate: selectedProduct.igstRate || "0",
-        cessRate: selectedProduct.cessRate || "0",
-        taxCalculationMethod: selectedProduct.taxCalculationMethod || "Exclusive",
-        gstUom: selectedProduct.gstUom || "PIECES",
-      });
-    }
-  }, [selectedProduct, viewForm]);
-
-  // Update tax details mutation
-  const updateTaxDetailsMutation = useMutation({
-    mutationFn: async (data: any) => {
-      if (!selectedProduct) throw new Error('No product selected');
-
-      const response = await fetch(`/api/products/${selectedProduct.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          hsnCode: data.hsnCode,
-          gstCode: data.gstCode,
-          cgstRate: parseFloat(data.cgstRate) || 0,
-          sgstRate: parseFloat(data.sgstRate) || 0,
-          igstRate: parseFloat(data.igstRate) || 0,
-          cessRate: parseFloat(data.cessRate) || 0,
-          taxCalculationMethod: data.taxCalculationMethod,
-          gstUom: data.gstUom,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update tax details');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      toast({
-        title: "Success",
-        description: "Tax & compliance details updated successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onTaxFormSubmit = (data: any) => {
-    updateTaxDetailsMutation.mutate(data);
-  };
 
   const { toast } = useToast();
 
@@ -2336,176 +2259,42 @@ export default function AddItemDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Form {...viewForm}>
-                      <form className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={viewForm.control}
-                            name="hsnCode"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>HSN Code</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="Enter HSN Code" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={viewForm.control}
-                            name="gstCode"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>GST Code</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select GST rate" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="GST 0%">GST 0%</SelectItem>
-                                      <SelectItem value="GST 5%">GST 5%</SelectItem>
-                                      <SelectItem value="GST 12%">GST 12%</SelectItem>
-                                      <SelectItem value="GST 18%">GST 18%</SelectItem>
-                                      <SelectItem value="GST 28%">GST 28%</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4">
-                          <FormField
-                            control={viewForm.control}
-                            name="cgstRate"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>CGST Rate</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0%" type="number" step="0.01" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={viewForm.control}
-                            name="sgstRate"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>SGST Rate</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0%" type="number" step="0.01" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={viewForm.control}
-                            name="igstRate"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>IGST Rate</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0%" type="number" step="0.01" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={viewForm.control}
-                            name="cessRate"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Cess Rate</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="0%" type="number" step="0.01" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={viewForm.control}
-                            name="taxCalculationMethod"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Tax Method</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select tax method" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Exclusive">Exclusive</SelectItem>
-                                      <SelectItem value="Inclusive">Inclusive</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={viewForm.control}
-                            name="gstUom"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>GST UOM</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select UOM" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="PIECES">PIECES</SelectItem>
-                                      <SelectItem value="KGS">KGS</SelectItem>
-                                      <SelectItem value="LITERS">LITERS</SelectItem>
-                                      <SelectItem value="METERS">METERS</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <div className="flex items-end">
-                            <div className="bg-green-50 p-3 rounded w-full">
-                              <label className="text-sm font-medium text-green-700">Total GST</label>
-                              <p className="text-xl font-bold text-green-800">
-                                {(
-                                  parseFloat(viewForm.watch("cgstRate") || "0") + 
-                                  parseFloat(viewForm.watch("sgstRate") || "0") + 
-                                  parseFloat(viewForm.watch("igstRate") || "0")
-                                ).toFixed(1)}%
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end mt-6">
-                          <Button 
-                            type="button"
-                            onClick={viewForm.handleSubmit(onTaxFormSubmit)}
-                            disabled={updateTaxDetailsMutation.isPending}
-                          >
-                            {updateTaxDetailsMutation.isPending ? "Saving..." : "Save Tax Details"}
-                          </Button>
-                        </div>
-                      </form>
-                    </Form>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">HSN Code</label>
+                        <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedProduct.hsnCode || "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">CGST Rate</label>
+                        <p className="text-gray-800">{selectedProduct.cgstRate || "0"}%</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">SGST Rate</label>
+                        <p className="text-gray-800">{selectedProduct.sgstRate || "0"}%</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">IGST Rate</label>
+                        <p className="text-gray-800">{selectedProduct.igstRate || "0"}%</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Cess Rate</label>
+                        <p className="text-gray-800">{selectedProduct.cessRate || "0"}%</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Tax Method</label>
+                        <p className="text-gray-800 capitalize">{selectedProduct.taxCalculationMethod || "Exclusive"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">GST UOM</label>
+                        <p className="text-gray-800">{selectedProduct.gstUom || "PIECES"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Total GST</label>
+                        <p className="text-gray-800 font-semibold">
+                          {(parseFloat(selectedProduct.cgstRate || "0") + parseFloat(selectedProduct.sgstRate || "0") + parseFloat(selectedProduct.igstRate || "0")).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
