@@ -31,7 +31,6 @@ import {
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Category, Supplier, Product } from "@shared/schema";
 
