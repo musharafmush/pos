@@ -427,10 +427,10 @@ export default function AddItemProfessional() {
         purchaseAbatement: editingProduct.purchaseAbatement || "",
         configItemWithCommodity: editingProduct.configItemWithCommodity || false,
         seniorExemptApplicable: editingProduct.seniorExemptApplicable || false,
-        cgstRate: editingProduct.cgstRate || "0",
-        sgstRate: editingProduct.sgstRate || "0",
-        igstRate: editingProduct.igstRate || "0",
-        cessRate: editingProduct.cessRate || "0",
+        cgstRate: editingProduct.cgstRate?.toString() || "0",
+        sgstRate: editingProduct.sgstRate?.toString() || "0",
+        igstRate: editingProduct.igstRate?.toString() || "0",
+        cessRate: editingProduct.cessRate?.toString() || "0",
         taxCalculationMethod: editingProduct.taxCalculationMethod || "exclusive",
 
         // EAN Code/Barcode - Enhanced
@@ -794,7 +794,10 @@ export default function AddItemProfessional() {
     { id: "tax-information", label: "Tax Information", icon: <DollarSignIcon className="w-4 h-4" /> },
     { id: "ean-code-barcode", label: "EAN Code/Barcode", icon: <BarChart3Icon className="w-4 h-4" /> },
     { id: "packing", label: "Packing", icon: <BoxIcon className="w-4 h-4" /> },
-    { id: "item-properties", label: "Item Properties", icon: <SettingsIcon className="w-4 h-4" /> },
+    { id: "item-properties", label: "Item Properties", icon: <SettingsIcon className="w-4 h-4" /><previous_generation>
+/previous_generation>
+
+,
     { id: "pricing", label: "Pricing", icon: <DollarSignIcon className="w-4 h-4" /> },
     { id: "reorder-configurations", label: "Reorder Configurations", icon: <PackageIcon className="w-4 h-4" /> },
     { id: "purchase-order", label: "Purchase Order", icon: <ShoppingCartIcon className="w-4 h-4" /> },
@@ -1648,23 +1651,29 @@ export default function AddItemProfessional() {
                             control={form.control}
                             name="taxCalculationMethod"
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Tax Calculation Method</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select method" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="inclusive">Tax Inclusive</SelectItem>
-                                      <SelectItem value="exclusive">Tax Exclusive</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                            <FormItem>
+                              <FormLabel>Tax Calculation Method</FormLabel>
+                              <FormControl>
+                                <Select 
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    form.trigger("taxCalculationMethod");
+                                  }} 
+                                  value={field.value || "exclusive"}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select method" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="inclusive">Tax Inclusive</SelectItem>
+                                    <SelectItem value="exclusive">Tax Exclusive</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                           <FormField
                             control={form.control}
                             name="cessRate"
@@ -2303,8 +2312,7 @@ export default function AddItemProfessional() {
                                           </div>
 
                                           <div className="grid grid-cols-2 gap-2">
-                                            <span className="font```text
--medium text-gray-700">Available Stock:</span>
+                                            <span className="font-medium text-gray-700">Available Stock:</span>
                                             <span className="bg-green-100 px-2 py-1 rounded text-center text-xs font-semibold text-green-800">
                                               {form.watch("bulkItemName")?.includes("Rice 1kg (500g Pack)") ? "8" : 
                                                form.watch("bulkItemName")?.includes("Rice 1kg (Repackcd 100g)") ? "4" :
