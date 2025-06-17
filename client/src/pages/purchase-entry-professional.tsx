@@ -2815,7 +2815,7 @@ export default function PurchaseEntryProfessional() {
 
                                 <TableCell className="border-r px-3 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                                                   <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
+                                    <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
                                     <span className="text-xs ml-1">%</span>
                                   </div>
                                 </TableCell>
