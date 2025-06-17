@@ -1543,7 +1543,7 @@ export default function AddItemProfessional() {
                                       {/* Food & Beverages */}
                                       <SelectItem value="10019000">10019000 - Rice (5%)</SelectItem>
                                       <SelectItem value="15179010">15179010 - Edible Oil (5%)</SelectItem>
-                                      <SelectItem value="17019900">1701990 - Sugar (5%)</SelectItem>
+                                      <SelectItem      <SelectItem value="17019900">1701990 - Sugar (5%)</SelectItem>
                                       <SelectItem value="04070010">04070010 - Eggs (0%)</SelectItem>
                                       <SelectItem value="07010000">07010000 - Fresh Vegetables (0%)</SelectItem>
                                       <SelectItem value="08010000">08010000 - Fresh Fruits (0%)</SelectItem>
@@ -2008,7 +2008,7 @@ export default function AddItemProfessional() {
                                   <SelectContent>
                                     <SelectItem value="Not Applicable">Not Applicable</SelectItem>
                                     <SelectItem value="FIFO">FIFO (First In, First Out)</SelectItem>
-                                    <SelectItem value="LIFO">LIFO (Last In, First Out)</SelectItem>
+                                    <SelectItem value="LIFO">LIFO (Last In, Last Out)</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -3001,6 +3001,65 @@ export default function AddItemProfessional() {
                     </CardContent>
                   </Card>
                 )}
+
+                {/* Section Navigation */}
+                <div className="flex items-center justify-between pt-6 border-t">
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const currentIndex = sidebarSections.findIndex(s => s.id === currentSection);
+                        if (currentIndex > 0) {
+                          setCurrentSection(sidebarSections[currentIndex - 1].id);
+                        }
+                      }}
+                      disabled={sidebarSections.findIndex(s => s.id === currentSection) === 0}
+                    >
+                      Previous Section
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const currentIndex = sidebarSections.findIndex(s => s.id === currentSection);
+                        if (currentIndex < sidebarSections.length - 1) {
+                          setCurrentSection(sidebarSections[currentIndex + 1].id);
+                        }
+                      }}
+                      disabled={sidebarSections.findIndex(s => s.id === currentSection) === sidebarSections.length - 1}
+                    >
+                      Next Section
+                    </Button>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setLocation("/add-item-dashboard")}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createProductMutation.isPending}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {createProductMutation.isPending ? (
+                        <>
+                          <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
+                          {isEditMode ? 'Updating...' : 'Creating...'}
+                        </>
+                      ) : (
+                        <>
+                          <CheckIcon className="w-4 h-4 mr-2" />
+                          {isEditMode ? 'Update Product' : 'Create Product'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
 
               </form>
             </Form>
