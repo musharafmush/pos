@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -176,7 +176,7 @@ export default function AddItemDashboard() {
   });
 
   // Update viewForm when selectedProduct changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedProduct) {
       viewForm.reset({
         hsnCode: selectedProduct.hsnCode || "",
@@ -2493,6 +2493,16 @@ export default function AddItemDashboard() {
                               </p>
                             </div>
                           </div>
+                        </div>
+
+                        <div className="flex justify-end mt-6">
+                          <Button 
+                            type="button"
+                            onClick={viewForm.handleSubmit(onTaxFormSubmit)}
+                            disabled={updateTaxDetailsMutation.isPending}
+                          >
+                            {updateTaxDetailsMutation.isPending ? "Saving..." : "Save Tax Details"}
+                          </Button>
                         </div>
                       </form>
                     </Form>
