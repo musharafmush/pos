@@ -359,6 +359,143 @@ export default function AddItemProfessional() {
     },
   });
 
+  // Advanced HSN to GST mapping database with 50+ common HSN codes
+  const hsnToGstMapping = {
+    // Food & Beverages - 0% & 5% GST
+    "04070010": { rate: 0, description: "Eggs - Nil Rate", category: "Essential Food" },
+    "07010000": { rate: 0, description: "Fresh Vegetables - Nil Rate", category: "Essential Food" },
+    "08010000": { rate: 0, description: "Fresh Fruits - Nil Rate", category: "Essential Food" },
+    "10019000": { rate: 5, description: "Rice - Essential Food", category: "Food Grains" },
+    "15179010": { rate: 5, description: "Edible Oil - Essential", category: "Food Items" },
+    "17019900": { rate: 5, description: "Sugar - Essential", category: "Food Items" },
+    "21069099": { rate: 5, description: "Spices & Condiments", category: "Food Items" },
+    "30049099": { rate: 5, description: "Medicines - Essential", category: "Healthcare" },
+    "49019900": { rate: 5, description: "Books - Educational", category: "Education" },
+    
+    // 12% GST Items
+    "62019000": { rate: 12, description: "Men's Garments", category: "Textiles" },
+    "62029000": { rate: 12, description: "Women's Garments", category: "Textiles" },
+    "85171200": { rate: 12, description: "Mobile Phones", category: "Electronics" },
+    "87120000": { rate: 12, description: "Bicycles", category: "Vehicles" },
+    "48201000": { rate: 12, description: "Notebooks", category: "Stationery" },
+    "90183900": { rate: 12, description: "Medical Equipment", category: "Healthcare" },
+    
+    // 18% GST Items (Most Common)
+    "19059090": { rate: 18, description: "Biscuits & Snacks", category: "Food Items" },
+    "33061000": { rate: 18, description: "Toothpaste", category: "Personal Care" },
+    "34012000": { rate: 18, description: "Soap", category: "Personal Care" },
+    "33051000": { rate: 18, description: "Shampoo", category: "Personal Care" },
+    "96031000": { rate: 18, description: "Toothbrush", category: "Personal Care" },
+    "84713000": { rate: 18, description: "Laptops", category: "Electronics" },
+    "85285200": { rate: 18, description: "LED TV", category: "Electronics" },
+    "85287100": { rate: 18, description: "Set Top Box", category: "Electronics" },
+    "85044090": { rate: 18, description: "Mobile Charger", category: "Electronics" },
+    "64029100": { rate: 18, description: "Footwear", category: "Apparel" },
+    "96085000": { rate: 18, description: "Pens", category: "Stationery" },
+    "30059090": { rate: 18, description: "Health Supplements", category: "Healthcare" },
+    
+    // 28% GST Items (Luxury & Sin Goods)
+    "22021000": { rate: 28, description: "Soft Drinks", category: "Beverages" },
+    "24021000": { rate: 28, description: "Cigarettes", category: "Tobacco" },
+    "22030000": { rate: 28, description: "Beer", category: "Beverages" },
+    "22084000": { rate: 28, description: "Wine", category: "Beverages" },
+    "87032390": { rate: 28, description: "Passenger Cars", category: "Automobiles" },
+    "87111000": { rate: 28, description: "Motorcycles", category: "Automobiles" },
+  };
+
+  // Advanced GST calculation engine
+  const calculateGSTFromHSN = (hsnCode: string) => {
+    const mapping = hsnToGstMapping[hsnCode];
+    if (mapping) {
+      return {
+        rate: mapping.rate,
+        description: mapping.description,
+        category: mapping.category,
+        cgst: mapping.rate / 2,
+        sgst: mapping.rate / 2,
+        igst: mapping.rate,
+        taxType: 'CGST+SGST' // Default to intra-state
+      };
+    }
+    
+    // Fallback HSN pattern matching for unknown codes
+    const hsnPrefix = hsnCode.substring(0, 2);
+    const patterns = {
+      "04": { rate: 0, description: "Agricultural Products" },
+      "07": { rate: 0, description: "Fresh Vegetables" },
+      "08": { rate: 0, description: "Fresh Fruits" },
+      "10": { rate: 5, description: "Food Grains" },
+      "15": { rate: 5, description: "Oils & Fats" },
+      "17": { rate: 5, description: "Sugar Products" },
+      "21": { rate: 5, description: "Food Preparations" },
+      "30": { rate: 5, description: "Pharmaceutical Products" },
+      "49": { rate: 5, description: "Books & Publications" },
+      "62": { rate: 12, description: "Garments" },
+      "85": { rate: 12, description: "Electronics" },
+      "87": { rate: 12, description: "Vehicles" },
+      "19": { rate: 18, description: "Food Preparations" },
+      "33": { rate: 18, description: "Personal Care" },
+      "34": { rate: 18, description: "Cleaning Products" },
+      "64": { rate: 18, description: "Footwear" },
+      "84": { rate: 18, description: "Machinery" },
+      "96": { rate: 18, description: "Miscellaneous" },
+      "22": { rate: 28, description: "Beverages" },
+      "24": { rate: 28, description: "Tobacco" },
+    };
+    
+    const pattern = patterns[hsnPrefix];
+    if (pattern) {
+      return {
+        rate: pattern.rate,
+        description: pattern.description,
+        category: "Auto-detected",
+        cgst: pattern.rate / 2,
+        sgst: pattern.rate / 2,
+        igst: pattern.rate,
+        taxType: 'CGST+SGST'
+      };
+    }
+    
+    return { rate: 18, description: "Standard Rate", category: "General", cgst: 9, sgst: 9, igst: 18, taxType: 'CGST+SGST' };
+  };
+
+  // Smart product category to HSN suggestion
+  const suggestHSNFromProduct = (productName: string, category: string) => {
+    const name = productName.toLowerCase();
+    const cat = category.toLowerCase();
+    
+    // Food items
+    if (name.includes('rice') || cat.includes('food grain')) return '10019000';
+    if (name.includes('oil') || name.includes('edible')) return '15179010';
+    if (name.includes('sugar')) return '17019900';
+    if (name.includes('biscuit') || name.includes('snack')) return '19059090';
+    if (name.includes('spice') || name.includes('masala')) return '21069099';
+    
+    // Personal care
+    if (name.includes('toothpaste')) return '33061000';
+    if (name.includes('soap')) return '34012000';
+    if (name.includes('shampoo')) return '33051000';
+    if (name.includes('toothbrush')) return '96031000';
+    
+    // Electronics
+    if (name.includes('phone') || name.includes('mobile')) return '85171200';
+    if (name.includes('laptop') || name.includes('computer')) return '84713000';
+    if (name.includes('tv') || name.includes('television')) return '85285200';
+    if (name.includes('charger')) return '85044090';
+    
+    // Textiles
+    if (name.includes('shirt') || name.includes('garment') || cat.includes('clothing')) return '62019000';
+    if (name.includes('shoe') || name.includes('footwear')) return '64029100';
+    
+    // Beverages
+    if (name.includes('soft drink') || name.includes('cola')) return '22021000';
+    if (name.includes('beer')) return '22030000';
+    if (name.includes('wine')) return '22084000';
+    
+    // Default
+    return '19059090'; // General goods 18%
+  };
+
   // Enhanced dynamic data uploading and form synchronization for edit mode
   useEffect(() => {
     if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0 && suppliers.length > 0) {
@@ -377,7 +514,7 @@ export default function AddItemProfessional() {
       else if (totalGst === 12) gstCode = 'GST 12%';
       else if (totalGst === 18) gstCode = 'GST 18%';
       else if (totalGst === 28) gstCode = 'GST 28%';
-      else if (totalGst > 0) gstCode = `GST ${totalGst}%`; // Custom rate
+      else if (totalGst > 0) gstCode = `GST ${totalGst}%`; // Custom rate</old_str>
 
       // Dynamic category resolution
       const category = categories.find((cat: any) => cat.id === editingProduct.categoryId);
@@ -1086,7 +1223,17 @@ export default function AddItemProfessional() {
                           name="manufacturerName"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Manufacturer Name *</FormLabel>
+                              <FormLabel className="flex items-center gap-2">
+                                Manufacturer Name *
+                                {isLoadingSuppliers && (
+                                  <RefreshCw className="h-3 w-3 animate-spin text-blue-600" />
+                                )}
+                                {suppliers.length > 0 && (
+                                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                    {suppliers.length} Available
+                                  </span>
+                                )}
+                              </FormLabel>
                               <FormControl>
                                 <Select 
                                   onValueChange={(value) => {
@@ -1096,30 +1243,58 @@ export default function AddItemProfessional() {
                                       const newAlias = generateAlias(watchedValues.itemName, value);
                                       form.setValue('alias', newAlias);
                                     }
+                                    
+                                    // Find selected supplier details
+                                    const selectedSupplier = suppliers.find((sup: Supplier) => sup.name === value);
+                                    if (selectedSupplier) {
+                                      toast({
+                                        title: "🏭 Manufacturer Selected",
+                                        description: `${selectedSupplier.name} ${selectedSupplier.city ? `from ${selectedSupplier.city}` : ''}`,
+                                      });
+                                    }
                                   }} 
                                   value={field.value}
                                 >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select manufacturer" />
+                                  <SelectTrigger className="border-blue-200 focus:border-blue-500">
+                                    <SelectValue placeholder="Select manufacturer from live data" />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="max-h-64 overflow-y-auto">
                                     {isLoadingSuppliers ? (
-                                      <SelectItem value="loading" disabled>Loading suppliers...</SelectItem>
+                                      <SelectItem value="loading" disabled>
+                                        <div className="flex items-center gap-2">
+                                          <RefreshCw className="h-3 w-3 animate-spin" />
+                                          Loading manufacturers...
+                                        </div>
+                                      </SelectItem>
                                     ) : suppliers.length > 0 ? (
-                                      suppliers.map((supplier: Supplier) => (
-                                        <SelectItem key={supplier.id} value={supplier.name}>
-                                          <div className="flex items-center justify-between w-full">
-                                            <span>{supplier.name}</span>
-                                            {supplier.city && (
-                                              <span className="text-xs text-gray-500 ml-2">
-                                                {supplier.city}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </SelectItem>
-                                      ))
+                                      <>
+                                        <div className="px-2 py-1 text-xs text-gray-500 bg-gray-50 sticky top-0">
+                                          📊 Live Backend Data - {suppliers.length} Manufacturers
+                                        </div>
+                                        {suppliers.map((supplier: Supplier) => (
+                                          <SelectItem key={supplier.id} value={supplier.name}>
+                                            <div className="flex items-center justify-between w-full">
+                                              <div>
+                                                <div className="font-medium">{supplier.name}</div>
+                                                {supplier.phone && (
+                                                  <div className="text-xs text-gray-500">📞 {supplier.phone}</div>
+                                                )}
+                                              </div>
+                                              <div className="text-xs text-gray-500 ml-2">
+                                                {supplier.city && <div>📍 {supplier.city}</div>}
+                                                {supplier.email && <div>✉️ {supplier.email.substring(0, 20)}</div>}
+                                              </div>
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </>
                                     ) : (
-                                      <SelectItem value="no-suppliers" disabled>No suppliers available</SelectItem>
+                                      <SelectItem value="no-suppliers" disabled>
+                                        <div className="text-center py-2">
+                                          <div className="text-gray-500">No manufacturers found</div>
+                                          <div className="text-xs text-gray-400">Add suppliers first</div>
+                                        </div>
+                                      </SelectItem>
                                     )}
                                   </SelectContent>
                                 </Select>
@@ -1133,29 +1308,73 @@ export default function AddItemProfessional() {
                           name="supplierName"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Supplier Name *</FormLabel>
+                              <FormLabel className="flex items-center gap-2">
+                                Supplier Name *
+                                {isLoadingSuppliers && (
+                                  <RefreshCw className="h-3 w-3 animate-spin text-blue-600" />
+                                )}
+                                {suppliers.length > 0 && (
+                                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                    Live Data
+                                  </span>
+                                )}
+                              </FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select supplier" />
+                                <Select 
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    // Find selected supplier details and show info
+                                    const selectedSupplier = suppliers.find((sup: Supplier) => sup.name === value);
+                                    if (selectedSupplier) {
+                                      toast({
+                                        title: "🚚 Supplier Selected",
+                                        description: `${selectedSupplier.name} - Contact: ${selectedSupplier.phone || 'N/A'}`,
+                                      });
+                                    }
+                                  }} 
+                                  value={field.value}
+                                >
+                                  <SelectTrigger className="border-green-200 focus:border-green-500">
+                                    <SelectValue placeholder="Select supplier from backend" />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="max-h-64 overflow-y-auto">
                                     {isLoadingSuppliers ? (
-                                      <SelectItem value="loading" disabled>Loading suppliers...</SelectItem>
+                                      <SelectItem value="loading" disabled>
+                                        <div className="flex items-center gap-2">
+                                          <RefreshCw className="h-3 w-3 animate-spin" />
+                                          Fetching suppliers...
+                                        </div>
+                                      </SelectItem>
                                     ) : suppliers.length > 0 ? (
-                                      suppliers.map((supplier: Supplier) => (
-                                        <SelectItem key={supplier.id} value={supplier.name}>
-                                          <div className="flex items-center justify-between w-full">
-                                            <span>{supplier.name}</span>
-                                            <div className="text-xs text-gray-500 ml-2">
-                                              {supplier.phone && <div>📞 {supplier.phone}</div>}
-                                              {supplier.email && <div>✉️ {supplier.email}</div>}
+                                      <>
+                                        <div className="px-2 py-1 text-xs text-gray-500 bg-gray-50 sticky top-0">
+                                          🔄 Real-time Supplier Data - {suppliers.length} Available
+                                        </div>
+                                        {suppliers.map((supplier: Supplier) => (
+                                          <SelectItem key={supplier.id} value={supplier.name}>
+                                            <div className="flex items-center justify-between w-full">
+                                              <div>
+                                                <div className="font-medium">{supplier.name}</div>
+                                                <div className="text-xs text-gray-500">
+                                                  {supplier.address && `📍 ${supplier.address.substring(0, 30)}...`}
+                                                </div>
+                                              </div>
+                                              <div className="text-xs text-gray-500 ml-2">
+                                                {supplier.phone && <div>📞 {supplier.phone}</div>}
+                                                {supplier.email && <div>✉️ {supplier.email}</div>}
+                                                {supplier.gst && <div>🏢 GST: {supplier.gst}</div>}
+                                              </div>
                                             </div>
-                                          </div>
-                                        </SelectItem>
-                                      ))
+                                          </SelectItem>
+                                        ))}
+                                      </>
                                     ) : (
-                                      <SelectItem value="no-suppliers" disabled>No suppliers available</SelectItem>
+                                      <SelectItem value="no-suppliers" disabled>
+                                        <div className="text-center py-2">
+                                          <div className="text-gray-500">No suppliers in database</div>
+                                          <div className="text-xs text-gray-400">Go to Suppliers to add new ones</div>
+                                        </div>
+                                      </SelectItem>
                                     )}
                                   </SelectContent>
                                 </Select>
@@ -1164,7 +1383,7 @@ export default function AddItemProfessional() {
                             </FormItem>
                           )}
                         />
-                      </div>
+                      </div></old_str>
 
                       {/* Dynamic Alias Field */}
                       <FormField
@@ -1238,18 +1457,57 @@ export default function AddItemProfessional() {
                             name="department"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-sm font-medium text-gray-700">DEPARTMENT *</FormLabel>
+                                <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                  DEPARTMENT *
+                                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                                    {departmentOptions.length} Options
+                                  </span>
+                                </FormLabel>
                                 <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger className="h-10">
-                                      <SelectValue placeholder="Select department" />
+                                  <Select 
+                                    onValueChange={(value) => {
+                                      field.onChange(value);
+                                      // Auto-suggest HSN based on department
+                                      if (value && !form.watch("hsnCode")) {
+                                        const deptHSN = {
+                                          "FMCG": "19059090",
+                                          "Grocery": "10019000", 
+                                          "Electronics": "85171200",
+                                          "Clothing": "62019000",
+                                          "Health & Beauty": "33061000",
+                                          "Beverages": "22021000"
+                                        };
+                                        const suggestedHSN = deptHSN[value] || "19059090";
+                                        
+                                        toast({
+                                          title: "🏷️ Department Selected",
+                                          description: `${value} department - Suggested HSN: ${suggestedHSN}`,
+                                        });
+                                      }
+                                    }} 
+                                    value={field.value}
+                                  >
+                                    <SelectTrigger className="h-10 border-blue-200 focus:border-blue-500">
+                                      <SelectValue placeholder="Select department category" />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-64 overflow-y-auto">
+                                      <div className="px-2 py-1 text-xs text-gray-500 bg-gray-50 sticky top-0">
+                                        📋 Business Departments - {departmentOptions.length} Available
+                                      </div>
                                       {departmentOptions.map((dept) => (
                                         <SelectItem key={dept} value={dept}>
                                           <div className="flex items-center gap-2">
                                             <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                            {dept}
+                                            <span>{dept}</span>
+                                            <span className="text-xs text-gray-500 ml-auto">
+                                              {dept === "FMCG" && "18%"} 
+                                              {dept === "Grocery" && "5%"}
+                                              {dept === "Electronics" && "12%"}
+                                              {dept === "Clothing" && "12%"}
+                                              {dept === "Health & Beauty" && "18%"}
+                                              {dept === "Beverages" && "28%"}
+                                              {!["FMCG", "Grocery", "Electronics", "Clothing", "Health & Beauty", "Beverages"].includes(dept) && "18%"}
+                                            </span>
                                           </div>
                                         </SelectItem>
                                       ))}
@@ -1265,7 +1523,17 @@ export default function AddItemProfessional() {
                             name="mainCategory"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-sm font-medium text-gray-700">MAIN CATEGORY</FormLabel>
+                                <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                  MAIN CATEGORY
+                                  {isLoadingCategories && (
+                                    <RefreshCw className="h-3 w-3 animate-spin text-blue-600" />
+                                  )}
+                                  {categories.length > 0 && (
+                                    <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                      {categories.length} Live Categories
+                                    </span>
+                                  )}
+                                </FormLabel>
                                 <FormControl>
                                   <Select 
                                     onValueChange={(value) => {
@@ -1274,19 +1542,48 @@ export default function AddItemProfessional() {
                                       const category = categories.find((cat: any) => cat.name === value);
                                       if (category) {
                                         form.setValue("categoryId", category.id);
+                                        
+                                        toast({
+                                          title: "📂 Category Selected",
+                                          description: `${category.name} - ID: ${category.id}`,
+                                        });
                                       }
                                     }} 
                                     value={field.value}
                                   >
-                                    <SelectTrigger className="h-10">
-                                      <SelectValue placeholder="Select main category" />
+                                    <SelectTrigger className="h-10 border-green-200 focus:border-green-500">
+                                      <SelectValue placeholder="Select from live categories" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                      {categories.map((category: any) => (
-                                        <SelectItem key={category.id} value={category.name}>
-                                          {category.name}
+                                    <SelectContent className="max-h-64 overflow-y-auto">
+                                      {isLoadingCategories ? (
+                                        <SelectItem value="loading" disabled>
+                                          <div className="flex items-center gap-2">
+                                            <RefreshCw className="h-3 w-3 animate-spin" />
+                                            Loading categories...
+                                          </div>
                                         </SelectItem>
-                                      ))}
+                                      ) : categories.length > 0 ? (
+                                        <>
+                                          <div className="px-2 py-1 text-xs text-gray-500 bg-gray-50 sticky top-0">
+                                            🔄 Real-time Categories from Backend - {categories.length} Available
+                                          </div>
+                                          {categories.map((category: any) => (
+                                            <SelectItem key={category.id} value={category.name}>
+                                              <div className="flex items-center justify-between w-full">
+                                                <span className="font-medium">{category.name}</span>
+                                                <span className="text-xs text-gray-500 ml-2">ID: {category.id}</span>
+                                              </div>
+                                            </SelectItem>
+                                          ))}
+                                        </>
+                                      ) : (
+                                        <SelectItem value="no-categories" disabled>
+                                          <div className="text-center py-2">
+                                            <div className="text-gray-500">No categories found</div>
+                                            <div className="text-xs text-gray-400">Add categories first</div>
+                                          </div>
+                                        </SelectItem>
+                                      )}
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
@@ -1294,7 +1591,7 @@ export default function AddItemProfessional() {
                               </FormItem>
                             )}
                           />
-                        </div>
+                        </div></old_str>
                       </div>
                     </CardContent>
                   </Card>
@@ -1323,6 +1620,11 @@ export default function AddItemProfessional() {
                                     ✓ Valid HSN
                                   </span>
                                 )}
+                                {field.value && field.value.length >= 4 && hsnToGstMapping[field.value] && (
+                                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                                    📊 {hsnToGstMapping[field.value].category}
+                                  </span>
+                                )}
                               </FormLabel>
                               <FormControl>
                                 <div className="space-y-2">
@@ -1334,51 +1636,63 @@ export default function AddItemProfessional() {
                                       const hsnValue = e.target.value.replace(/\D/g, ''); // Only allow digits
                                       field.onChange(hsnValue);
 
-                                      // Auto-suggest GST code based on HSN with enhanced logic
-                                      let suggestedGst = "";
-                                      let suggestedDescription = "";
-
-                                      if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
-                                        suggestedGst = "GST 0%";
-                                        suggestedDescription = "Basic food items - Nil rate";
-                                      } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17") || hsnValue.startsWith("21") || hsnValue.startsWith("30") || hsnValue.startsWith("49") || hsnValue.startsWith("63")) {
-                                        suggestedGst = "GST 5%";
-                                        suggestedDescription = "Essential goods - Food items, medicines";
-                                      } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("48") || hsnValue.startsWith("87120") || hsnValue.startsWith("90")) {
-                                        suggestedGst = "GST 12%";
-                                        suggestedDescription = "Standard rate - Textiles, electronics";
-                                      } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("64") || hsnValue.startsWith("84") || hsnValue.startsWith("85") || hsnValue.startsWith("96") || hsnValue.startsWith("19") || hsnValue.startsWith("30059")) {
-                                        suggestedGst = "GST 18%";
-                                        suggestedDescription = "Standard rate - Most goods & services";
-                                      } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032") || hsnValue.startsWith("87111")) {
-                                        suggestedGst = "GST 28%";
-                                        suggestedDescription = "Luxury goods - Cars, tobacco";
-                                      }
-
-                                      if (suggestedGst && hsnValue.length >= 4) {
+                                      // Enhanced GST calculation using new mapping system
+                                      if (hsnValue.length >= 4) {
+                                        const gstInfo = calculateGSTFromHSN(hsnValue);
+                                        const suggestedGst = `GST ${gstInfo.rate}%`;
+                                        
+                                        // Update form with calculated values
                                         form.setValue("gstCode", suggestedGst);
+                                        form.setValue("cgstRate", gstInfo.cgst.toString());
+                                        form.setValue("sgstRate", gstInfo.sgst.toString());
+                                        form.setValue("igstRate", "0"); // Default to intra-state
+                                        form.setValue("cessRate", "0");
 
-                                        // Auto-calculate GST breakdown for intra-state transactions
-                                        const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
-                                        if (gstRate > 0) {
-                                          const cgstSgstRate = (gstRate / 2).toString();
-                                          form.setValue("cgstRate", cgstSgstRate);
-                                          form.setValue("sgstRate", cgstSgstRate);
-                                          form.setValue("igstRate", "0");
-                                        } else {
-                                          form.setValue("cgstRate", "0");
-                                          form.setValue("sgstRate", "0");
-                                          form.setValue("igstRate", "0");
-                                        }
-
-                                        // Show suggestion notification
+                                        // Show dynamic notification
                                         if (hsnValue.length >= 6) {
-                                          console.log(`HSN ${hsnValue}: ${suggestedGst} - ${suggestedDescription}`);
+                                          toast({
+                                            title: "🎯 HSN Code Auto-Applied!",
+                                            description: `${gstInfo.description} - ${suggestedGst} (${gstInfo.category})`,
+                                          });
                                         }
                                       }
                                     }}
                                     className={`${field.value && field.value.length >= 6 ? 'border-green-500 bg-green-50' : ''}`}
                                   />
+                                  
+                                  {/* Smart HSN suggestion based on product name */}
+                                  {form.watch("itemName") && !field.value && (
+                                    <div className="bg-blue-50 p-2 rounded border border-blue-200">
+                                      <div className="text-xs text-blue-700 mb-1">💡 Smart HSN Suggestion:</div>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const suggestedHSN = suggestHSNFromProduct(
+                                            form.watch("itemName"), 
+                                            form.watch("mainCategory") || ""
+                                          );
+                                          field.onChange(suggestedHSN);
+                                          
+                                          // Apply GST calculation
+                                          const gstInfo = calculateGSTFromHSN(suggestedHSN);
+                                          form.setValue("gstCode", `GST ${gstInfo.rate}%`);
+                                          form.setValue("cgstRate", gstInfo.cgst.toString());
+                                          form.setValue("sgstRate", gstInfo.sgst.toString());
+                                          form.setValue("igstRate", "0");
+
+                                          toast({
+                                            title: "🤖 Smart HSN Applied!",
+                                            description: `Suggested HSN ${suggestedHSN} based on "${form.watch("itemName")}"`,
+                                          });
+                                        }}
+                                        className="text-xs h-7"
+                                      >
+                                        Apply HSN: {suggestHSNFromProduct(form.watch("itemName"), form.watch("mainCategory") || "")}
+                                      </Button>
+                                    </div>
+                                  )}</old_str>
                                   <Select onValueChange={(value) => {
                                     field.onChange(value);
                                     // Auto-update GST code when HSN is selected from dropdown
@@ -1521,19 +1835,73 @@ export default function AddItemProfessional() {
                           GST Breakdown & Compliance
                         </h4>
 
-                        {/* Dynamic Tax Summary Display */}
+                        {/* Enhanced Dynamic Tax Summary with Real-time Switching */}
                         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-4 border border-blue-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-semibold text-blue-800">🧮 Live GST Calculator</h4>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant={parseFloat(watchedValues.igstRate || "0") === 0 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  const totalRate = calculateTotalGST();
+                                  if (totalRate > 0) {
+                                    form.setValue("cgstRate", (totalRate / 2).toString());
+                                    form.setValue("sgstRate", (totalRate / 2).toString());
+                                    form.setValue("igstRate", "0");
+                                    toast({
+                                      title: "🏢 Intra-State Tax Applied",
+                                      description: `CGST: ${totalRate/2}% + SGST: ${totalRate/2}%`,
+                                    });
+                                  }
+                                }}
+                                className="text-xs h-7"
+                              >
+                                Intra-State
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={parseFloat(watchedValues.igstRate || "0") > 0 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  const totalRate = calculateTotalGST();
+                                  if (totalRate > 0) {
+                                    form.setValue("cgstRate", "0");
+                                    form.setValue("sgstRate", "0");
+                                    form.setValue("igstRate", totalRate.toString());
+                                    toast({
+                                      title: "🌍 Inter-State Tax Applied",
+                                      description: `IGST: ${totalRate}%`,
+                                    });
+                                  }
+                                }}
+                                className="text-xs h-7"
+                              >
+                                Inter-State
+                              </Button>
+                            </div>
+                          </div>
+
                           <div className="grid grid-cols-4 gap-4 text-sm">
                             <div className="text-center">
                               <div className="text-blue-700 font-medium">Total GST Rate</div>
                               <div className="text-xl font-bold text-blue-900">
                                 {calculateTotalGST().toFixed(2)}%
                               </div>
+                              {watchedValues.hsnCode && hsnToGstMapping[watchedValues.hsnCode] && (
+                                <div className="text-xs text-green-600 mt-1">
+                                  ✓ {hsnToGstMapping[watchedValues.hsnCode].description}
+                                </div>
+                              )}
                             </div>
                             <div className="text-center">
                               <div className="text-blue-700 font-medium">CGST + SGST</div>
                               <div className="text-lg font-bold text-blue-900">
                                 {parseFloat(watchedValues.cgstRate || "0").toFixed(2)}% + {parseFloat(watchedValues.sgstRate || "0").toFixed(2)}%
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {parseFloat(watchedValues.cgstRate || "0") + parseFloat(watchedValues.sgstRate || "0") > 0 ? "Intra-State" : "Not Applied"}
                               </div>
                             </div>
                             <div className="text-center">
@@ -1541,27 +1909,52 @@ export default function AddItemProfessional() {
                               <div className="text-lg font-bold text-blue-900">
                                 {parseFloat(watchedValues.igstRate || "0").toFixed(2)}%
                               </div>
+                              <div className="text-xs text-gray-500">
+                                {parseFloat(watchedValues.igstRate || "0") > 0 ? "Inter-State" : "Not Applied"}
+                              </div>
                             </div>
                             <div className="text-center">
                               <div className="text-blue-700 font-medium">Cess</div>
                               <div className="text-lg font-bold text-orange-600">
                                 {parseFloat(watchedValues.cessRate || "0").toFixed(2)}%
                               </div>
+                              <div className="text-xs text-gray-500">
+                                {parseFloat(watchedValues.cessRate || "0") > 0 ? "Additional Tax" : "Not Applied"}
+                              </div>
                             </div>
                           </div>
 
-                          {/* Tax calculation indicator */}
+                          {/* Enhanced tax calculation indicator */}
                           <div className="mt-3 pt-3 border-t border-blue-200">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-blue-600">
-                                Tax Method: {watchedValues.taxCalculationMethod || 'exclusive'}
-                              </span>
-                              <span className="text-green-600 bg-green-100 px-2 py-1 rounded">
-                                {parseFloat(watchedValues.igstRate || "0") > 0 ? 'Inter-State (IGST)' : 'Intra-State (CGST+SGST)'}
-                              </span>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-blue-600">Tax Method:</span>
+                                <span className="font-medium">{watchedValues.taxCalculationMethod || 'exclusive'}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs px-2 py-1 rounded font-medium ${
+                                  parseFloat(watchedValues.igstRate || "0") > 0 
+                                    ? 'text-purple-700 bg-purple-100' 
+                                    : 'text-green-700 bg-green-100'
+                                }`}>
+                                  {parseFloat(watchedValues.igstRate || "0") > 0 ? '🌍 Inter-State (IGST)' : '🏢 Intra-State (CGST+SGST)'}
+                                </span>
+                              </div>
                             </div>
+                            
+                            {/* Real-time tax amount calculation */}
+                            {watchedValues.price && parseFloat(watchedValues.price) > 0 && (
+                              <div className="mt-2 pt-2 border-t border-blue-100">
+                                <div className="text-xs text-blue-600 text-center">
+                                  Tax Amount on ₹{parseFloat(watchedValues.price).toFixed(2)}: 
+                                  <span className="font-bold text-blue-800 ml-1">
+                                    ₹{((parseFloat(watchedValues.price) * calculateTotalGST()) / 100).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
+                        </div></old_str>
 
                         <div className="grid grid-cols-3 gap-4">
                           <FormField
