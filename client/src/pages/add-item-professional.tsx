@@ -787,8 +787,7 @@ export default function AddItemProfessional() {
           allowItemFree: false,
           showOnMobileDashboard: false,
           enableMobileNotifications: false,
-          quick```text
-AddToCart: false,
+          quickAddToCart: false,
           perishableItem: false,
           temperatureControlled: false,
           fragileItem: false,
