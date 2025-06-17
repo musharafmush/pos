@@ -29,6 +29,7 @@ import {
   EditIcon,
   Loader2Icon
 } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -200,12 +201,12 @@ export default function AddItemProfessional() {
   };
 
   // Fetch categories
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], isLoading: isLoadingCategories, error: categoriesError } = useQuery({
     queryKey: ["/api/categories"],
   });
 
   // Fetch suppliers with enhanced debugging
-  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
+  const { data: suppliers = [], isLoading: isLoadingSuppliers, error: suppliersError } = useQuery({
     queryKey: ["/api/suppliers"],
     queryFn: async () => {
       console.log('🏭 Fetching suppliers data...');
@@ -217,6 +218,23 @@ export default function AddItemProfessional() {
     },
   }) as { data: Supplier[], isLoading: boolean };
 
+  // Fetch all products for bulk item selection
+  const { data: allProducts = [], isLoading: isLoadingProducts, error: allProductsError } = useQuery({
+    queryKey: ["/api/products/all"],
+    queryFn: async () => {
+      const response = await fetch("/api/products");
+      if (!response.ok) throw new Error("Failed to fetch products");
+      return response.json();
+    },
+  });
+
+  // Method to refresh all data
+  const refreshAllData = () => {
+    queryClient.invalidateQueries(["/api/categories"]);
+    queryClient.invalidateQueries(["/api/suppliers"]);
+    queryClient.invalidateQueries(["/api/products/all"]);
+  };
+
   // Department options for dynamic selection
   const departmentOptions = [
     "FMCG", "Grocery", "Electronics", "Clothing", "Home & Garden", 
@@ -226,14 +244,14 @@ export default function AddItemProfessional() {
 
   // Watch form values for dynamic calculations
   const watchedValues = form.watch();
-  
+
   // Dynamic GST calculation and display
   const calculateTotalGST = () => {
     const cgst = parseFloat(watchedValues.cgstRate || '0');
     const sgst = parseFloat(watchedValues.sgstRate || '0'); 
     const igst = parseFloat(watchedValues.igstRate || '0');
     const cess = parseFloat(watchedValues.cessRate || '0');
-    
+
     if (igst > 0) {
       return igst + cess;
     } else {
@@ -244,10 +262,10 @@ export default function AddItemProfessional() {
   // Dynamic alias generation
   const generateAlias = (itemName: string, manufacturer: string) => {
     if (!itemName) return '';
-    
+
     const nameWords = itemName.split(' ').slice(0, 2);
     const manufacturerPrefix = manufacturer ? manufacturer.substring(0, 3).toUpperCase() : '';
-    
+
     return `${manufacturerPrefix}${nameWords.join('')}`.substring(0, 15);
   };
 
@@ -255,22 +273,12 @@ export default function AddItemProfessional() {
   useEffect(() => {
     const itemName = watchedValues.itemName;
     const manufacturer = watchedValues.manufacturerName;
-    
+
     if (itemName && !watchedValues.alias) {
       const generatedAlias = generateAlias(itemName, manufacturer);
       form.setValue('alias', generatedAlias);
     }
   }, [watchedValues.itemName, watchedValues.manufacturerName, form]);
-
-  // Fetch all products for bulk item selection
-  const { data: allProducts = [] } = useQuery({
-    queryKey: ["/api/products/all"],
-    queryFn: async () => {
-      const response = await fetch("/api/products");
-      if (!response.ok) throw new Error("Failed to fetch products");
-      return response.json();
-    },
-  });
 
   // Filter bulk items from all products
   const bulkItems = allProducts.filter((product: any) => 
@@ -811,17 +819,20 @@ export default function AddItemProfessional() {
 
               <div className="text-sm text-gray-500 space-y-1">
                 <div className="flex items-center justify-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className={`w-2 h-2 rounded-full ${!isLoadingProduct ? 'bg-green-500' : 'bg-blue-500 animate-pulse'}`}></div>
                   <span>Fetching product information...</span>
                 </div>
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-2 h-2```
- bg-blue-500 rounded-full animate-pulse"></div>
-                  <span>Preparing dynamic form data...</span>
+                <div className={`flex items-center justify-center gap-2`}>
+                  <div className={`w-2 h-2 rounded-full ${!isLoadingSuppliers ? 'bg-green-500' : 'bg-blue-500 animate-pulse'}`}></div>
+                  <span>Loading suppliers data...</span>
+                </div>
+                <div className={`flex items-center justify-center gap-2`}>
+                  <div className={`w-2 h-2 rounded-full ${!isLoadingCategories ? 'bg-green-500' : 'bg-blue-500 animate-pulse'}`}></div>
+                  <span>Loading categories data...</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                  <span>Uploading to form sections...</span>
+                  <span>Preparing dynamic form...</span>
                 </div>
               </div>
 
@@ -874,17 +885,22 @@ export default function AddItemProfessional() {
                 )}
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                console.log('Closing and returning to dashboard');
-                setLocation("/add-item-dashboard");
-              }}
-            >
-              <XIcon className="w-4 h-4 mr-2" />
-              {isEditMode ? "Cancel Edit" : "Close"}
-            </Button>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="text-sm text-gray-500">{isEditMode ? "Edit Mode" : "Add New Item"}</div>
+                <div className="text-lg font-semibold text-blue-600">Professional System</div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshAllData}
+                disabled={isLoadingSuppliers || isLoadingCategories || isLoadingProducts}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoadingSuppliers || isLoadingCategories || isLoadingProducts ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -1321,7 +1337,7 @@ export default function AddItemProfessional() {
                                       // Auto-suggest GST code based on HSN with enhanced logic
                                       let suggestedGst = "";
                                       let suggestedDescription = "";
-                                      
+
                                       if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
                                         suggestedGst = "GST 0%";
                                         suggestedDescription = "Basic food items - Nil rate";
@@ -1354,7 +1370,7 @@ export default function AddItemProfessional() {
                                           form.setValue("sgstRate", "0");
                                           form.setValue("igstRate", "0");
                                         }
-                                        
+
                                         // Show suggestion notification
                                         if (hsnValue.length >= 6) {
                                           console.log(`HSN ${hsnValue}: ${suggestedGst} - ${suggestedDescription}`);
@@ -1533,7 +1549,7 @@ export default function AddItemProfessional() {
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Tax calculation indicator */}
                           <div className="mt-3 pt-3 border-t border-blue-200">
                             <div className="flex items-center justify-between text-xs">
@@ -1860,7 +1876,7 @@ export default function AddItemProfessional() {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Tax inclusive price calculation */}
                         <div className="mt-3 pt-3 border-t border-green-200">
                           <div className="flex items-center justify-between text-xs">
