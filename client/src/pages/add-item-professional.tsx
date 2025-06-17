@@ -787,7 +787,8 @@ export default function AddItemProfessional() {
           allowItemFree: false,
           showOnMobileDashboard: false,
           enableMobileNotifications: false,
-          quickAddToCart: false,
+          quickAddToCart:```text
+false,
           perishableItem: false,
           temperatureControlled: false,
           fragileItem: false,
@@ -2008,7 +2009,7 @@ export default function AddItemProfessional() {
                                   <SelectContent>
                                     <SelectItem value="Not Applicable">Not Applicable</SelectItem>
                                     <SelectItem value="FIFO">FIFO (First In, First Out)</SelectItem>
-                                    <SelectItem value="LIFO">LIFO (Last In, Last Out)</SelectItem>
+                                    <SelectItem value="LIFO">LIFO (Last In, First Out)</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -2388,7 +2389,7 @@ export default function AddItemProfessional() {
                             {/* Repackaging Preview */}
                             {form.watch("weightInGms") && form.watch("repackageUnits") && (
                               <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
-                                                               <h5 className="font-medium text-green-800 mb-2">Repackaging Preview</h5>
+                                                              <h5 className="font-medium text-green-800 mb-2">Repackaging Preview</h5>
                                 <div className="text-sm text-green-700">
                                   <p>• Each unit: {form.watch("weightInGms")}g</p>
                                   <p>• Total units: {form.watch("repackageUnits") || 0}</p>
@@ -2998,74 +2999,64 @@ export default function AddItemProfessional() {
                           </Button>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
+                    
+                  
 
-                {/* Section Navigation */}
-                <div className="flex items-center justify-between pt-6 border-t">
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const currentIndex = sidebarSections.findIndex(s => s.id === currentSection);
-                        if (currentIndex > 0) {
-                          setCurrentSection(sidebarSections[currentIndex - 1].id);
-                        }
-                      }}
-                      disabled={sidebarSections.findIndex(s => s.id === currentSection) === 0}
-                    >
-                      Previous Section
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const currentIndex = sidebarSections.findIndex(s => s.id === currentSection);
-                        if (currentIndex < sidebarSections.length - 1) {
-                          setCurrentSection(sidebarSections[currentIndex + 1].id);
-                        }
-                      }}
-                      disabled={sidebarSections.findIndex(s => s.id === currentSection) === sidebarSections.length - 1}
-                    >
-                      Next Section
-                    </Button>
-                  </div>
+                      {/* Section Navigation */}
+                      <div className="flex items-center justify-between pt-6 border-t">
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              const currentIndex = sidebarSections.findIndex(s => s.id === currentSection);
+                              if (currentIndex > 0) {
+                                setCurrentSection(sidebarSections[currentIndex - 1].id);
+                              }
+                            }}
+                            disabled={sidebarSections.findIndex(s => s.id === currentSection) === 0}
+                          >
+                            Previous Section
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              const currentIndex = sidebarSections.findIndex(s => s.id === currentSection);
+                              if (currentIndex < sidebarSections.length - 1) {
+                                setCurrentSection(sidebarSections[currentIndex + 1].id);
+                              }
+                            }}
+                            disabled={sidebarSections.findIndex(s => s.id === currentSection) === sidebarSections.length - 1}
+                          >
+                            Next Section
+                          </Button>
+                        </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setLocation("/add-item-dashboard")}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={createProductMutation.isPending}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      {createProductMutation.isPending ? (
-                        <>
-                          <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
-                          {isEditMode ? 'Updating...' : 'Creating...'}
-                        </>
-                      ) : (
-                        <>
-                          <CheckIcon className="w-4 h-4 mr-2" />
-                          {isEditMode ? 'Update Product' : 'Create Product'}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-              </form>
-            </Form>
-          </div>
-        </div>
-      </div>
-    </DashboardLayout>
-  );
-}
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setLocation("/add-item-dashboard")}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={createProductMutation.isPending}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {createProductMutation.isPending ? (
+                              <>
+                                <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
+                                {isEditMode ? 'Updating...' : 'Creating...'}
+                              </>
+                            ) : (
+                              <>
+                                <CheckIcon className="w-4 h-4 mr-2" />
+                                {isEditMode ? 'Update Product' : 'Create Product'}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
