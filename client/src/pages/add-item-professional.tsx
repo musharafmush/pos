@@ -2301,7 +2301,7 @@ export default function AddItemProfessional() {
                                       >
                                         1kg → 10×100g
                                       </Button>
-                                      <Button```javascript
+                                      <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
