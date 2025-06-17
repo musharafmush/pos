@@ -171,6 +171,18 @@ export default function AddItemDashboard() {
     queryFn: async () => {
       try {
         console.log('🔄 Fetching products from API...');
+        
+        // Test server connectivity first
+        try {
+          const healthResponse = await fetch("/api/dashboard/stats");
+          if (!healthResponse.ok) {
+            throw new Error('Server connectivity issue');
+          }
+        } catch (healthError) {
+          console.error('🚨 Server connectivity test failed:', healthError);
+          throw new Error('Unable to connect to server. Please check if the application is running properly.');
+        }
+
         const response = await fetch("/api/products");
         
         console.log('📊 Products API Response:', {
@@ -180,9 +192,26 @@ export default function AddItemDashboard() {
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ API Error Response:', errorText);
-          throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`);
+          let errorMessage = `Server Error: ${response.status} ${response.statusText}`;
+          
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (parseError) {
+            const errorText = await response.text();
+            errorMessage = errorText || errorMessage;
+          }
+          
+          console.error('❌ API Error Response:', errorMessage);
+          
+          // Provide specific error messages based on status
+          if (response.status === 500) {
+            throw new Error('Database connection error. Please restart the application.');
+          } else if (response.status === 404) {
+            throw new Error('Products API endpoint not found. Please check server configuration.');
+          } else {
+            throw new Error(errorMessage);
+          }
         }
         
         const data = await response.json();
@@ -202,23 +231,42 @@ export default function AddItemDashboard() {
         return products;
       } catch (error) {
         console.error("💥 Error fetching products:", error);
-        toast({
-          title: "Error Loading Data",
-          description: "Failed to load products. Please check your connection and try again.",
-          variant: "destructive",
-        });
+        
+        // Don't show toast here, let the error boundary handle it
         throw error;
       }
     },
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: true,
-    retry: 3,
+    retry: (failureCount, error) => {
+      // Don't retry server connectivity issues
+      if (error.message.includes('connect to server')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
     onError: (error) => {
       console.error('📊 Query error:', error);
+      
+      let errorTitle = "Failed to Load Data";
+      let errorDescription = error.message;
+      
+      // Customize error messages based on error type
+      if (error.message.includes('connect to server')) {
+        errorTitle = "Server Connection Failed";
+        errorDescription = "Unable to connect to the server. Please ensure the application is running.";
+      } else if (error.message.includes('Database connection')) {
+        errorTitle = "Database Error";
+        errorDescription = "Database connection failed. Please restart the application.";
+      } else if (error.message.includes('API endpoint not found')) {
+        errorTitle = "Configuration Error";
+        errorDescription = "Server configuration issue detected. Please contact support.";
+      }
+      
       toast({
-        title: "Data Loading Failed",
-        description: "Unable to load product data. Please refresh the page.",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
     },

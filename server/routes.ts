@@ -336,11 +336,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products API
   app.get('/api/products', async (req, res) => {
     try {
-      const products = await storage.listProducts();
-      res.json(products);
+      console.log('📦 Products API endpoint called');
+      
+      // Try storage method first
+      try {
+        const products = await storage.listProducts();
+        console.log(`✅ Storage method returned ${products.length} products`);
+        res.json(products);
+        return;
+      } catch (storageError) {
+        console.log('⚠️ Storage method failed, trying direct query:', storageError.message);
+      }
+
+      // Fallback to direct SQLite query
+      const { sqlite } = await import('../db/index.js');
+
+      // Check if products table exists
+      const tableCheck = sqlite.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='products'
+      `).get();
+
+      if (!tableCheck) {
+        console.log('❌ Products table does not exist');
+        return res.json([]);
+      }
+
+      // Get table structure to handle column variations
+      const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
+      const columnNames = tableInfo.map((col: any) => col.name);
+      console.log('📋 Available product columns:', columnNames);
+
+      // Build dynamic query based on available columns
+      const baseColumns = ['id', 'name', 'sku', 'price'];
+      const optionalColumns = [
+        'description', 'mrp', 'cost', 'weight', 'weight_unit', 
+        'category_id', 'stock_quantity', 'alert_threshold', 
+        'barcode', 'image', 'active', 'created_at', 'updated_at'
+      ];
+
+      const availableColumns = baseColumns.concat(
+        optionalColumns.filter(col => columnNames.includes(col))
+      );
+
+      const query = `
+        SELECT ${availableColumns.join(', ')}
+        FROM products 
+        WHERE 1=1
+        ORDER BY ${columnNames.includes('created_at') ? 'created_at' : 'id'} DESC
+      `;
+
+      console.log('🔍 Executing products query');
+      const products = sqlite.prepare(query).all();
+
+      // Format the results to match expected structure
+      const formattedProducts = products.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        description: product.description || '',
+        price: product.price,
+        mrp: product.mrp || product.price,
+        cost: product.cost || '0',
+        weight: product.weight,
+        weightUnit: product.weight_unit || 'kg',
+        categoryId: product.category_id || 1,
+        stockQuantity: product.stock_quantity || 0,
+        alertThreshold: product.alert_threshold || 5,
+        barcode: product.barcode || '',
+        image: product.image || '',
+        active: product.active !== false,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at
+      }));
+
+      console.log(`✅ Found ${formattedProducts.length} products via direct query`);
+      res.json(formattedProducts);
+
     } catch (error) {
-      console.error('Error fetching products:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching products:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch products',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
@@ -3270,6 +3349,37 @@ app.post("/api/customers", async (req, res) => {
     } catch (error) {
       console.error('Error deleting user:', error);
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Database health check endpoint
+  app.get('/api/health', async (req, res) => {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      // Test database connectivity
+      const result = sqlite.prepare('SELECT 1 as test').get();
+      
+      // Test if products table exists
+      const tablesCheck = sqlite.prepare(`
+        SELECT COUNT(*) as count FROM sqlite_master 
+        WHERE type='table' AND name IN ('products', 'sales', 'customers')
+      `).get();
+      
+      res.json({
+        status: 'healthy',
+        database: 'connected',
+        tables: tablesCheck.count >= 3 ? 'available' : 'missing',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Health check failed:', error);
+      res.status(500).json({
+        status: 'unhealthy',
+        database: 'disconnected',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
