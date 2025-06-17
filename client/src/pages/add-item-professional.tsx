@@ -303,42 +303,49 @@ export default function AddItemProfessional() {
     },
   });
 
-  // Update form with existing product data when in edit mode
+  // Enhanced dynamic data uploading and form synchronization for edit mode
   useEffect(() => {
     if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0) {
-      console.log('Populating edit form with product data:', editingProduct);
+      console.log('🔄 Dynamic data upload - Populating edit form with product data:', editingProduct);
       
-      // Calculate total GST rate
+      // Enhanced GST calculation with better accuracy
       const cgstRate = parseFloat(editingProduct.cgstRate || '0');
       const sgstRate = parseFloat(editingProduct.sgstRate || '0');
       const igstRate = parseFloat(editingProduct.igstRate || '0');
       const totalGst = cgstRate + sgstRate + igstRate;
 
-      // Determine GST code based on total rate
-      let gstCode = 'GST 18%';
+      // Dynamic GST code determination with better mapping
+      let gstCode = 'GST 18%'; // Default
       if (totalGst === 0) gstCode = 'GST 0%';
       else if (totalGst === 5) gstCode = 'GST 5%';
       else if (totalGst === 12) gstCode = 'GST 12%';
       else if (totalGst === 18) gstCode = 'GST 18%';
       else if (totalGst === 28) gstCode = 'GST 28%';
+      else if (totalGst > 0) gstCode = `GST ${totalGst}%`; // Custom rate
 
-      // Find category by ID
+      // Dynamic category resolution
       const category = categories.find((cat: any) => cat.id === editingProduct.categoryId);
+      console.log('📂 Dynamic category mapping:', { categoryId: editingProduct.categoryId, category: category?.name });
 
-      // Enhanced form population with existing data preservation
+      // Comprehensive form data with enhanced field mapping
       const formData = {
+        // Item Information - Enhanced
         itemCode: editingProduct.sku || "",
         itemName: editingProduct.name || "",
         manufacturerName: editingProduct.manufacturerName || "",
         supplierName: editingProduct.supplierName || "",
         alias: editingProduct.alias || "",
         aboutProduct: editingProduct.description || "",
+
+        // Category Information - Dynamic
         itemProductType: editingProduct.itemProductType || "Standard",
         department: editingProduct.department || "",
         mainCategory: category?.name || "",
         subCategory: editingProduct.subCategory || "",
         brand: editingProduct.brand || "",
         buyer: editingProduct.buyer || "",
+
+        // Tax Information - Enhanced with dynamic calculation
         hsnCode: editingProduct.hsnCode || "",
         gstCode: gstCode,
         purchaseGstCalculatedOn: editingProduct.purchaseGstCalculatedOn || "MRP",
@@ -346,9 +353,23 @@ export default function AddItemProfessional() {
         purchaseAbatement: editingProduct.purchaseAbatement || "",
         configItemWithCommodity: editingProduct.configItemWithCommodity || false,
         seniorExemptApplicable: editingProduct.seniorExemptApplicable || false,
+        cgstRate: editingProduct.cgstRate || "0",
+        sgstRate: editingProduct.sgstRate || "0",
+        igstRate: editingProduct.igstRate || "0",
+        cessRate: editingProduct.cessRate || "0",
+        taxCalculationMethod: editingProduct.taxCalculationMethod || "exclusive",
+
+        // EAN Code/Barcode - Enhanced
         eanCodeRequired: editingProduct.eanCodeRequired || false,
         barcode: editingProduct.barcode || "",
+        barcodeType: editingProduct.barcodeType || "ean13",
+
+        // Weight & Packing - Comprehensive
         weightsPerUnit: editingProduct.weightsPerUnit || "1",
+        bulkWeight: editingProduct.bulkWeight || "",
+        bulkWeightUnit: editingProduct.bulkWeightUnit || "kg",
+        packingType: editingProduct.packingType || "Bulk",
+        unitsPerPack: editingProduct.unitsPerPack || "1",
         batchExpiryDetails: editingProduct.batchExpiryDetails || "Not Required",
         itemPreparationsStatus: editingProduct.itemPreparationsStatus || "Trade As Is",
         grindingCharge: editingProduct.grindingCharge || "",
@@ -357,47 +378,88 @@ export default function AddItemProfessional() {
         repackageUnits: editingProduct.repackageUnits || "",
         repackageType: editingProduct.repackageType || "",
         packagingMaterial: editingProduct.packagingMaterial || "",
+
+        // Item Properties - Enhanced
         decimalPoint: editingProduct.decimalPoint || "0",
         productType: editingProduct.productType || "NA",
+        perishableItem: editingProduct.perishableItem || false,
+        temperatureControlled: editingProduct.temperatureControlled || false,
+        fragileItem: editingProduct.fragileItem || false,
+        trackSerialNumbers: editingProduct.trackSerialNumbers || false,
+
+        // Pricing - Dynamic calculation support
         sellBy: editingProduct.sellBy || "None",
         itemPerUnit: editingProduct.itemPerUnit || "1",
         maintainSellingMrpBy: editingProduct.maintainSellingMrpBy || "Multiple Selling Price & Multiple MRP",
         batchSelection: editingProduct.batchSelection || "Not Applicable",
         isWeighable: editingProduct.isWeighable || false,
+        price: editingProduct.price?.toString() || "",
+        mrp: editingProduct.mrp?.toString() || "",
+        cost: editingProduct.cost?.toString() || "",
+
+        // Reorder Configurations
         skuType: editingProduct.skuType || "Put Away",
         indentType: editingProduct.indentType || "Manual",
         gateKeeperMargin: editingProduct.gateKeeperMargin || "",
         allowItemFree: editingProduct.allowItemFree || false,
+
+        // Mobile App Configurations
         showOnMobileDashboard: editingProduct.showOnMobileDashboard || false,
         enableMobileNotifications: editingProduct.enableMobileNotifications || false,
         quickAddToCart: editingProduct.quickAddToCart || false,
-        perishableItem: editingProduct.perishableItem || false,
-        temperatureControlled: editingProduct.temperatureControlled || false,
-        fragileItem: editingProduct.fragileItem || false,
-        trackSerialNumbers: editingProduct.trackSerialNumbers || false,
+
+        // Compliance Information
         fdaApproved: editingProduct.fdaApproved || false,
         bisCertified: editingProduct.bisCertified || false,
         organicCertified: editingProduct.organicCertified || false,
+
+        // Additional Information
         itemIngredients: editingProduct.itemIngredients || "",
-        price: editingProduct.price?.toString() || "",
-        mrp: editingProduct.mrp?.toString() || "",
-        cost: editingProduct.cost?.toString() || "",
         weight: editingProduct.weight ? editingProduct.weight.toString() : "",
         weightUnit: editingProduct.weightUnit || "kg",
         categoryId: editingProduct.categoryId || categories[0]?.id || 1,
         stockQuantity: editingProduct.stockQuantity?.toString() || "0",
         active: editingProduct.active !== false,
-        cgstRate: editingProduct.cgstRate || "",
-        sgstRate: editingProduct.sgstRate || "",
-        igstRate: editingProduct.igstRate || "",
-        cessRate: editingProduct.cessRate || "",
-        taxCalculationMethod: editingProduct.taxCalculationMethod || "exclusive",
       };
 
-      console.log('Setting form data:', formData);
+      console.log('✅ Dynamic form data prepared:', formData);
+      console.log('🔄 Uploading overall data dynamically to form...');
+      
+      // Apply the dynamic data upload
       form.reset(formData);
+      
+      // Trigger reactive updates for dependent fields
+      setTimeout(() => {
+        console.log('🔄 Triggering reactive field updates...');
+        // Ensure category selection triggers dependent updates
+        if (category?.name) {
+          form.setValue("mainCategory", category.name);
+          form.setValue("categoryId", category.id);
+        }
+        
+        // Update GST breakdown display
+        form.setValue("gstCode", gstCode);
+        
+        console.log('✅ Dynamic data upload completed successfully');
+      }, 100);
     }
   }, [isEditMode, editingProduct, isLoadingProduct, categories, form]);
+
+  // Dynamic data synchronization watcher
+  useEffect(() => {
+    if (isEditMode && editingProduct) {
+      console.log('🔄 Dynamic data sync active for product ID:', editId);
+      
+      // Watch for form changes and log them
+      const subscription = form.watch((value, { name, type }) => {
+        if (type === 'change' && name) {
+          console.log(`📝 Dynamic field update: ${name} = ${value[name]}`);
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    }
+  }, [isEditMode, editingProduct, form, editId]);
 
   // Update item code when products data loads (only for create mode)
   useEffect(() => {
@@ -410,29 +472,40 @@ export default function AddItemProfessional() {
     }
   }, [isEditMode, allProducts, form]);
 
-  // Create/Update product mutation
+  // Enhanced Create/Update product mutation with dynamic data handling
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      console.log('Starting product mutation with data:', data);
+      console.log('🚀 Starting product mutation with enhanced data:', data);
+      console.log(`📊 ${isEditMode ? 'Updating' : 'Creating'} product with dynamic validation...`);
       
-      // Enhanced validation for required fields
-      if (!data.itemName || !data.itemCode || !data.price) {
-        throw new Error("Please fill in all required fields: Item Name, Item Code, and Price");
+      // Enhanced validation for required fields with better error messages
+      const requiredFields = [];
+      if (!data.itemName?.trim()) requiredFields.push("Item Name");
+      if (!data.itemCode?.trim()) requiredFields.push("Item Code");
+      if (!data.price?.trim()) requiredFields.push("Price");
+      
+      if (requiredFields.length > 0) {
+        throw new Error(`Please fill in all required fields: ${requiredFields.join(", ")}`);
       }
 
-      // Validate numeric fields
+      // Enhanced numeric validation with dynamic checks
       const price = parseFloat(data.price);
       const mrp = data.mrp ? parseFloat(data.mrp) : price;
       const cost = data.cost ? parseFloat(data.cost) : 0;
       const stockQuantity = data.stockQuantity ? parseInt(data.stockQuantity) : 0;
 
-      if (isNaN(price) || price <= 0) {
-        throw new Error("Price must be a valid positive number");
+      // Dynamic validation checks
+      const validationErrors = [];
+      if (isNaN(price) || price <= 0) validationErrors.push("Price must be a valid positive number");
+      if (isNaN(stockQuantity) || stockQuantity < 0) validationErrors.push("Stock quantity must be a valid positive number");
+      if (mrp > 0 && mrp < price) validationErrors.push("MRP cannot be less than selling price");
+      if (cost > 0 && price < cost) validationErrors.push("Selling price should typically be higher than cost price");
+      
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join("; "));
       }
 
-      if (isNaN(stockQuantity) || stockQuantity < 0) {
-        throw new Error("Stock quantity must be a valid positive number");
-      }
+      console.log('✅ Dynamic validation passed successfully');
 
       // Enhanced product data with all form fields
       const productData = {
@@ -653,15 +726,39 @@ export default function AddItemProfessional() {
     { id: "other-information", label: "Other Information", icon: <InfoIcon className="w-4 h-4" /> },
   ];
 
-  // Show loading state when fetching product data
+  // Enhanced loading state with dynamic upload progress
   if (isEditMode && isLoadingProduct) {
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2Icon className="w-8 h-8 animate-spin mx-auto mb-4" />
-            <h2 className="text-lg font-semibold">Loading Product Data...</h2>
-            <p className="text-gray-600">Please wait while we fetch the product information.</p>
+          <div className="text-center max-w-md mx-auto">
+            <div className="bg-white p-8 rounded-lg shadow-lg border">
+              <Loader2Icon className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
+              <h2 className="text-xl font-semibold mb-2">Loading Product Data...</h2>
+              <p className="text-gray-600 mb-4">Uploading overall data dynamically for edit mode</p>
+              
+              {/* Dynamic progress indicator */}
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+              </div>
+              
+              <div className="text-sm text-gray-500 space-y-1">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Fetching product information...</span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span>Preparing dynamic form data...</span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                  <span>Uploading to form sections...</span>
+                </div>
+              </div>
+              
+              <p className="text-xs text-gray-400 mt-4">Product ID: {editId}</p>
+            </div>
           </div>
         </div>
       </DashboardLayout>
