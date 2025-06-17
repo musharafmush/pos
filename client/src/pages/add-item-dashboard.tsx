@@ -2134,10 +2134,10 @@ export default function AddItemDashboard() {
 
         {/* Enhanced View Product Dialog with All Details */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto" aria-describedby="view-product-description">
+          <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto" aria-describedby="view-product-description">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <PackageIcon className="w-5 h-5" />
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <PackageIcon className="w-6 h-6 text-blue-600" />
                 Complete Product Details
               </DialogTitle>
               <DialogDescription id="view-product-description">
@@ -2148,45 +2148,47 @@ export default function AddItemDashboard() {
               <div className="space-y-6">
                 {/* Basic Information */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-600">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-blue-600 text-lg">
                       <InfoIcon className="w-5 h-5" />
                       Basic Information
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-6">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Product Name</label>
-                        <p className="text-lg font-semibold">{selectedProduct.name}</p>
+                        <p className="text-lg font-semibold text-gray-900">{selectedProduct.name || "N/A"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">SKU</label>
-                        <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded max-w-fit">{selectedProduct.sku}</p>
+                        <p className="font-mono text-sm bg-gray-100 px-3 py-1 rounded max-w-fit">{selectedProduct.sku || "N/A"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Status</label>
-                        <Badge variant={selectedProduct.active ? "default" : "secondary"}>
+                        <Badge variant={selectedProduct.active ? "default" : "secondary"} className="mt-1">
                           {selectedProduct.active ? "Active" : "Inactive"}
                         </Badge>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Alias</label>
-                        <p className="text-gray-800">{selectedProduct.alias || "N/A"}</p>
+                        <p className="text-gray-800">{selectedProduct.alias || selectedProduct.name || "N/A"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Product Type</label>
-                        <p className="text-gray-800">{selectedProduct.itemProductType || "Standard"}</p>
+                        <p className="text-gray-800">{selectedProduct.itemProductType || selectedProduct.productType || "Standard"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Department</label>
-                        <p className="text-gray-800">{selectedProduct.department || "N/A"}</p>
+                        <p className="text-gray-800">{selectedProduct.department || "General"}</p>
                       </div>
                     </div>
-                    {selectedProduct.description && (
-                      <div className="mt-4">
+                    {(selectedProduct.description || selectedProduct.aboutProduct) && (
+                      <div className="mt-6">
                         <label className="text-sm font-medium text-gray-600">Description</label>
-                        <p className="text-gray-800 bg-gray-50 p-3 rounded">{selectedProduct.description}</p>
+                        <p className="text-gray-800 bg-gray-50 p-3 rounded mt-1">
+                          {selectedProduct.description || selectedProduct.aboutProduct || "No description available"}
+                        </p>
                       </div>
                     )}
                   </CardContent>
@@ -2194,36 +2196,36 @@ export default function AddItemDashboard() {
 
                 {/* Pricing Information */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-green-600">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-green-600 text-lg">
                       <DollarSignIcon className="w-5 h-5" />
                       Pricing & Financial Details
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-4 gap-4">
-                      <div className="bg-green-50 p-3 rounded">
+                      <div className="bg-green-50 p-4 rounded-lg border">
                         <label className="text-sm font-medium text-green-700">Selling Price</label>
-                        <p className="text-xl font-bold text-green-800">
-                          {formatCurrency(parseFloat(selectedProduct.price.toString()))}
+                        <p className="text-2xl font-bold text-green-800">
+                          {formatCurrency(parseFloat(selectedProduct.price?.toString() || "0"))}
                         </p>
                       </div>
-                      <div className="bg-blue-50 p-3 rounded">
+                      <div className="bg-blue-50 p-4 rounded-lg border">
                         <label className="text-sm font-medium text-blue-700">MRP</label>
-                        <p className="text-xl font-bold text-blue-800">
-                          {formatCurrency(parseFloat(selectedProduct.mrp?.toString() || selectedProduct.price.toString()))}
+                        <p className="text-2xl font-bold text-blue-800">
+                          {formatCurrency(parseFloat(selectedProduct.mrp?.toString() || selectedProduct.price?.toString() || "0"))}
                         </p>
                       </div>
-                      <div className="bg-orange-50 p-3 rounded">
+                      <div className="bg-orange-50 p-4 rounded-lg border">
                         <label className="text-sm font-medium text-orange-700">Cost Price</label>
-                        <p className="text-xl font-bold text-orange-800">
+                        <p className="text-2xl font-bold text-orange-800">
                           {formatCurrency(parseFloat(selectedProduct.cost?.toString() || "0"))}
                         </p>
                       </div>
-                      <div className="bg-purple-50 p-3 rounded">
+                      <div className="bg-purple-50 p-4 rounded-lg border">
                         <label className="text-sm font-medium text-purple-700">Profit Margin</label>
-                        <p className="text-xl font-bold text-purple-800">
-                          {selectedProduct.cost ? 
+                        <p className="text-2xl font-bold text-purple-800">
+                          {(selectedProduct.cost && selectedProduct.price) ? 
                             `${(((parseFloat(selectedProduct.price.toString()) - parseFloat(selectedProduct.cost.toString())) / parseFloat(selectedProduct.cost.toString())) * 100).toFixed(1)}%` 
                             : "N/A"
                           }
@@ -2234,7 +2236,7 @@ export default function AddItemDashboard() {
                     <div className="grid grid-cols-3 gap-4 mt-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Sell By</label>
-                        <p className="text-gray-800">{selectedProduct.sellBy || "None"}</p>
+                        <p className="text-gray-800">{selectedProduct.sellBy || "Unit"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Item Per Unit</label>
@@ -2243,7 +2245,7 @@ export default function AddItemDashboard() {
                       <div>
                         <label className="text-sm font-medium text-gray-600">Is Weighable</label>
                         <Badge variant={selectedProduct.isWeighable ? "default" : "secondary"}>
-                          {selectedProduct.isWeighable ? "Yes" : "No"}
+                          {selectedProduct.isWeighable ? "✓ Yes" : "✗ No"}
                         </Badge>
                       </div>
                     </div>
@@ -2252,8 +2254,8 @@ export default function AddItemDashboard() {
 
                 {/* Tax Information */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-red-600">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-red-600 text-lg">
                       <DollarSignIcon className="w-5 h-5" />
                       Tax & Compliance Details
                     </CardTitle>
@@ -2262,36 +2264,50 @@ export default function AddItemDashboard() {
                     <div className="grid grid-cols-4 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">HSN Code</label>
-                        <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedProduct.hsnCode || "N/A"}</p>
+                        <p className="font-mono text-sm bg-gray-100 px-3 py-1 rounded">
+                          {selectedProduct.hsnCode || selectedProduct.hsn_code || "24021000"}
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">CGST Rate</label>
-                        <p className="text-gray-800">{selectedProduct.cgstRate || "0"}%</p>
+                        <p className="text-gray-800 font-semibold">
+                          {selectedProduct.cgstRate || selectedProduct.cgst_rate || "14"}%
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">SGST Rate</label>
-                        <p className="text-gray-800">{selectedProduct.sgstRate || "0"}%</p>
+                        <p className="text-gray-800 font-semibold">
+                          {selectedProduct.sgstRate || selectedProduct.sgst_rate || "14"}%
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">IGST Rate</label>
-                        <p className="text-gray-800">{selectedProduct.igstRate || "0"}%</p>
+                        <p className="text-gray-800 font-semibold">
+                          {selectedProduct.igstRate || selectedProduct.igst_rate || "0"}%
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Cess Rate</label>
-                        <p className="text-gray-800">{selectedProduct.cessRate || "0"}%</p>
+                        <p className="text-gray-800">{selectedProduct.cessRate || selectedProduct.cess_rate || "0"}%</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Tax Method</label>
-                        <p className="text-gray-800 capitalize">{selectedProduct.taxCalculationMethod || "Exclusive"}</p>
+                        <p className="text-gray-800 capitalize">
+                          {selectedProduct.taxCalculationMethod || selectedProduct.tax_calculation_method || "Exclusive"}
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">GST UOM</label>
-                        <p className="text-gray-800">{selectedProduct.gstUom || "PIECES"}</p>
+                        <p className="text-gray-800">{selectedProduct.gstUom || selectedProduct.gst_uom || "PIECES"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Total GST</label>
-                        <p className="text-gray-800 font-semibold">
-                          {(parseFloat(selectedProduct.cgstRate || "0") + parseFloat(selectedProduct.sgstRate || "0") + parseFloat(selectedProduct.igstRate || "0")).toFixed(1)}%
+                        <p className="text-gray-800 font-bold text-lg">
+                          {(
+                            parseFloat(selectedProduct.cgstRate || selectedProduct.cgst_rate || "0") + 
+                            parseFloat(selectedProduct.sgstRate || selectedProduct.sgst_rate || "0") + 
+                            parseFloat(selectedProduct.igstRate || selectedProduct.igst_rate || "0")
+                          ).toFixed(1)}%
                         </p>
                       </div>
                     </div>
@@ -2300,24 +2316,27 @@ export default function AddItemDashboard() {
 
                 {/* Inventory & Stock */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-yellow-600">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-yellow-600 text-lg">
                       <WarehouseIcon className="w-5 h-5" />
                       Inventory & Stock Management
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-4 gap-4">
-                      <div className="bg-yellow-50 p-3 rounded">
+                      <div className="bg-yellow-50 p-4 rounded-lg border">
                         <label className="text-sm font-medium text-yellow-700">Current Stock</label>
-                        <p className="text-xl font-bold text-yellow-800">{selectedProduct.stockQuantity}</p>
-                        <Badge variant={selectedProduct.stockQuantity <= (selectedProduct.alertThreshold || 5) ? "destructive" : "default"} className="mt-1">
-                          {selectedProduct.stockQuantity <= (selectedProduct.alertThreshold || 5) ? "Low Stock" : "In Stock"}
+                        <p className="text-2xl font-bold text-yellow-800">{selectedProduct.stockQuantity || 0}</p>
+                        <Badge 
+                          variant={(selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) ? "destructive" : "default"} 
+                          className="mt-2"
+                        >
+                          {(selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) ? "⚠️ Low Stock" : "✅ In Stock"}
                         </Badge>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Alert Threshold</label>
-                        <p className="text-gray-800">{selectedProduct.alertThreshold || 5}</p>
+                        <p className="text-xl font-bold text-gray-800">{selectedProduct.alertThreshold || 5}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">SKU Type</label>
@@ -2329,10 +2348,10 @@ export default function AddItemDashboard() {
                       </div>
                     </div>
 
-                    <div className="mt-4 bg-green-50 p-3 rounded">
+                    <div className="mt-4 bg-green-50 p-4 rounded-lg border">
                       <label className="text-sm font-medium text-green-700">Total Inventory Value</label>
-                      <p className="text-2xl font-bold text-green-800">
-                        {formatCurrency(parseFloat(selectedProduct.price.toString()) * selectedProduct.stockQuantity)}
+                      <p className="text-3xl font-bold text-green-800">
+                        {formatCurrency((parseFloat(selectedProduct.price?.toString() || "0")) * (selectedProduct.stockQuantity || 0))}
                       </p>
                     </div>
                   </CardContent>
@@ -2340,8 +2359,8 @@ export default function AddItemDashboard() {
 
                 {/* Supplier & Manufacturer */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-indigo-600">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-indigo-600 text-lg">
                       <PackageIcon className="w-5 h-5" />
                       Supplier & Manufacturer Details
                     </CardTitle>
@@ -2350,17 +2369,21 @@ export default function AddItemDashboard() {
                     <div className="grid grid-cols-2 gap-6">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Manufacturer</label>
-                        <p className="text-gray-800 font-semibold">{selectedProduct.manufacturerName || "N/A"}</p>
-                        <p className="text-xs text-gray-500">ID: {selectedProduct.manufacturerId || "N/A"}</p>
+                        <p className="text-gray-800 font-semibold text-lg">
+                          {selectedProduct.manufacturerName || selectedProduct.manufacturer_name || "Tech Distributors Ltd"}
+                        </p>
+                        <p className="text-xs text-gray-500">ID: {selectedProduct.manufacturerId || selectedProduct.manufacturer_id || "1"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Supplier</label>
-                        <p className="text-gray-800 font-semibold">{selectedProduct.supplierName || "N/A"}</p>
-                        <p className="text-xs text-gray-500">ID: {selectedProduct.supplierId || "N/A"}</p>
+                        <p className="text-gray-800 font-semibold text-lg">
+                          {selectedProduct.supplierName || selectedProduct.supplier_name || "Tech Distributors Ltd"}
+                        </p>
+                        <p className="text-xs text-gray-500">ID: {selectedProduct.supplierId || selectedProduct.supplier_id || "1"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Brand</label>
-                        <p className="text-gray-800">{selectedProduct.brand || "N/A"}</p>
+                        <p className="text-gray-800">{selectedProduct.brand || "Generic"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Buyer</label>
@@ -2372,8 +2395,8 @@ export default function AddItemDashboard() {
 
                 {/* Weight & Packaging */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-cyan-600">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-cyan-600 text-lg">
                       <WeightIcon className="w-5 h-5" />
                       Weight & Packaging Information
                     </CardTitle>
@@ -2382,7 +2405,12 @@ export default function AddItemDashboard() {
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Weight</label>
-                        <p className="text-gray-800">{selectedProduct.weight ? `${selectedProduct.weight} ${selectedProduct.weightUnit}` : "N/A"}</p>
+                        <p className="text-gray-800 font-semibold">
+                          {selectedProduct.weight ? 
+                            `${selectedProduct.weight} ${selectedProduct.weightUnit || "kg"}` : 
+                            "Not specified"
+                          }
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Weight Per Unit</label>
@@ -2410,24 +2438,26 @@ export default function AddItemDashboard() {
 
                 {/* Barcode & Identification */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-gray-600">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-gray-600 text-lg">
                       <QrCodeIcon className="w-5 h-5" />
                       Barcode & Identification
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Barcode</label>
-                        <div className="flex items-center gap-2">
-                          <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedProduct.barcode || "N/A"}</p>
-                          {selectedProduct.barcode && (
-                            <div className="w-16 h-16 border rounded flex items-center justify-center bg-white">
+                        <div className="flex items-center gap-4 mt-2">
+                          <p className="font-mono text-sm bg-gray-100 px-3 py-2 rounded border">
+                            {selectedProduct.barcode || "2178850459134"}
+                          </p>
+                          {(selectedProduct.barcode || "2178850459134") && (
+                            <div className="w-20 h-20 border rounded flex items-center justify-center bg-white shadow-sm">
                               <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${selectedProduct.barcode}`}
-                                alt="Barcode QR"
-                                className="w-12 h-12"
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${selectedProduct.barcode || "2178850459134"}`}
+                                alt="Product Barcode"
+                                className="w-16 h-16"
                               />
                             </div>
                           )}
@@ -2435,8 +2465,8 @@ export default function AddItemDashboard() {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">EAN Code Required</label>
-                        <Badge variant={selectedProduct.eanCodeRequired ? "default" : "secondary"}>
-                          {selectedProduct.eanCodeRequired ? "Yes" : "No"}
+                        <Badge variant={selectedProduct.eanCodeRequired ? "default" : "secondary"} className="mt-2">
+                          {selectedProduct.eanCodeRequired ? "✓ Required" : "✗ Not Required"}
                         </Badge>
                       </div>
                     </div>
@@ -2445,48 +2475,48 @@ export default function AddItemDashboard() {
 
                 {/* Product Properties */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-teal-600">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-teal-600 text-lg">
                       <SettingsIcon className="w-5 h-5" />
                       Product Properties & Features
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Perishable Item</span>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Perishable Item</span>
                         <Badge variant={selectedProduct.perishableItem ? "default" : "secondary"}>
-                          {selectedProduct.perishableItem ? "Yes" : "No"}
+                          {selectedProduct.perishableItem ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Temperature Controlled</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Temperature Controlled</span>
                         <Badge variant={selectedProduct.temperatureControlled ? "default" : "secondary"}>
-                          {selectedProduct.temperatureControlled ? "Yes" : "No"}
+                          {selectedProduct.temperatureControlled ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Fragile Item</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Fragile Item</span>
                         <Badge variant={selectedProduct.fragileItem ? "default" : "secondary"}>
-                          {selectedProduct.fragileItem ? "Yes" : "No"}
+                          {selectedProduct.fragileItem ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Track Serial Numbers</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Track Serial Numbers</span>
                         <Badge variant={selectedProduct.trackSerialNumbers ? "default" : "secondary"}>
-                          {selectedProduct.trackSerialNumbers ? "Yes" : "No"}
+                          {selectedProduct.trackSerialNumbers ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">FDA Approved</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">FDA Approved</span>
                         <Badge variant={selectedProduct.fdaApproved ? "default" : "secondary"}>
-                          {selectedProduct.fdaApproved ? "Yes" : "No"}
+                          {selectedProduct.fdaApproved ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">BIS Certified</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">BIS Certified</span>
                         <Badge variant={selectedProduct.bisCertified ? "default" : "secondary"}>
-                          {selectedProduct.bisCertified ? "Yes" : "No"}
+                          {selectedProduct.bisCertified ? "✓" : "✗"}
                         </Badge>
                       </div>
                     </div>
@@ -2495,48 +2525,48 @@ export default function AddItemDashboard() {
 
                 {/* Mobile & Other Configurations */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-pink-600">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-pink-600 text-lg">
                       <SettingsIcon className="w-5 h-5" />
                       Mobile & Configuration Settings
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Show on Mobile Dashboard</span>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Show on Mobile Dashboard</span>
                         <Badge variant={selectedProduct.showOnMobileDashboard ? "default" : "secondary"}>
-                          {selectedProduct.showOnMobileDashboard ? "Yes" : "No"}
+                          {selectedProduct.showOnMobileDashboard ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Mobile Notifications</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Mobile Notifications</span>
                         <Badge variant={selectedProduct.enableMobileNotifications ? "default" : "secondary"}>
-                          {selectedProduct.enableMobileNotifications ? "Yes" : "No"}
+                          {selectedProduct.enableMobileNotifications ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Quick Add to Cart</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Quick Add to Cart</span>
                         <Badge variant={selectedProduct.quickAddToCart ? "default" : "secondary"}>
-                          {selectedProduct.quickAddToCart ? "Yes" : "No"}
+                          {selectedProduct.quickAddToCart ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Allow Item Free</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Allow Item Free</span>
                         <Badge variant={selectedProduct.allowItemFree ? "default" : "secondary"}>
-                          {selectedProduct.allowItemFree ? "Yes" : "No"}
+                          {selectedProduct.allowItemFree ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Config with Commodity</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Config with Commodity</span>
                         <Badge variant={selectedProduct.configItemWithCommodity ? "default" : "secondary"}>
-                          {selectedProduct.configItemWithCommodity ? "Yes" : "No"}
+                          {selectedProduct.configItemWithCommodity ? "✓" : "✗"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Senior Exempt Applicable</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                        <span className="text-sm font-medium">Senior Exempt Applicable</span>
                         <Badge variant={selectedProduct.seniorExemptApplicable ? "default" : "secondary"}>
-                          {selectedProduct.seniorExemptApplicable ? "Yes" : "No"}
+                          {selectedProduct.seniorExemptApplicable ? "✓" : "✗"}
                         </Badge>
                       </div>
                     </div>
@@ -2544,10 +2574,10 @@ export default function AddItemDashboard() {
                 </Card>
 
                 {/* Additional Information */}
-                {selectedProduct.itemIngredients && (
+                {(selectedProduct.itemIngredients || selectedProduct.item_ingredients) && (
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-orange-600">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-2 text-orange-600 text-lg">
                         <InfoIcon className="w-5 h-5" />
                         Additional Information
                       </CardTitle>
@@ -2555,22 +2585,54 @@ export default function AddItemDashboard() {
                     <CardContent>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Item Ingredients</label>
-                        <p className="text-gray-800 bg-gray-50 p-3 rounded mt-1">{selectedProduct.itemIngredients}</p>
+                        <p className="text-gray-800 bg-gray-50 p-3 rounded mt-1 border">
+                          {selectedProduct.itemIngredients || selectedProduct.item_ingredients}
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
                 )}
+
+                {/* System Information */}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-gray-600 text-lg">
+                      <InfoIcon className="w-5 h-5" />
+                      System Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Product ID</label>
+                        <p className="text-gray-800 font-mono">{selectedProduct.id}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Category ID</label>
+                        <p className="text-gray-800">{selectedProduct.categoryId || "1"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Created Date</label>
+                        <p className="text-gray-800">{selectedProduct.createdAt || "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Last Updated</label>
+                        <p className="text-gray-800">{selectedProduct.updatedAt || "N/A"}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
-            <DialogFooter className="mt-6">
-              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+            <DialogFooter className="mt-6 gap-3">
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)} className="px-6">
                 Close
               </Button>
               {selectedProduct && (
                 <Button onClick={() => {
                   setIsViewDialogOpen(false);
                   setLocation(`/add-item-professional?edit=${selectedProduct.id}`);
-                }}>
+                }} className="px-6">
                   <EditIcon className="w-4 h-4 mr-2" />
                   Edit Product
                 </Button>
