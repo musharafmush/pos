@@ -47,7 +47,6 @@ export const products = pgTable('products', {
   igstRate: decimal('igst_rate', { precision: 5, scale: 2 }),
   cessRate: decimal('cess_rate', { precision: 5, scale: 2 }),
   taxCalculationMethod: text('tax_calculation_method'),
-  taxSelectionMode: text('tax_selection_mode').default('auto'),
 
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -242,7 +241,7 @@ export const productInsertSchema = createInsertSchema(products, {
   price: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
   mrp: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
   cost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
-  weight: (schema) => z.union([z.string(), z.number()]).transform(val => val === null || val === '' || val === 'null' ? null : val.toString()).optional().nullable(),
+  weight: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
   weightUnit: (schema) => schema.optional(),
   stockQuantity: (schema) => schema.min(0, "Stock quantity must be at least 0"),
   alertThreshold: (schema) => schema.min(0, "Alert threshold must be at least 0"),
@@ -413,15 +412,3 @@ export const settingsInsertSchema = createInsertSchema(settings, {
 export type SettingsInsert = z.infer<typeof settingsInsertSchema>;
 export const settingsSelectSchema = createSelectSchema(settings);
 export type Settings = z.infer<typeof settingsSelectSchema>;
-
-export const insertProductSchema = createInsertSchema(products).extend({
-  categoryId: z.number(),
-  price: z.number().positive(),
-  mrp: z.number().positive().optional(),
-  cost: z.number().min(0).optional(),
-  stockQuantity: z.number().min(0),
-  weight: z.number().min(0).optional(),
-  alertThreshold: z.number().min(0).optional(),
-  gstCode: z.string().optional(),
-  taxSelectionMode: z.string().optional(),
-});

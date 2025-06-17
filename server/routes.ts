@@ -336,108 +336,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products API
   app.get('/api/products', async (req, res) => {
     try {
-      console.log('📦 Fetching products from database...');
-      
-      // Try storage method first
-      try {
-        const products = await storage.listProducts();
-        console.log(`✅ Storage method returned ${products.length} products`);
-        res.json(products);
-        return;
-      } catch (storageError) {
-        console.log('⚠️ Storage method failed, trying direct query:', storageError.message);
-      }
-
-      // Fallback to direct SQLite query
-      const { sqlite } = await import('../db/index.js');
-
-      // Check if products table exists
-      const tableCheck = sqlite.prepare(`
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='products'
-      `).get();
-
-      if (!tableCheck) {
-        console.log('❌ Products table does not exist');
-        return res.json([]);
-      }
-
-      // Get table structure
-      const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
-      const columnNames = tableInfo.map((col: any) => col.name);
-      console.log('📋 Available columns in products table:', columnNames);
-
-      // Build dynamic query based on available columns
-      const baseColumns = ['id', 'name', 'sku', 'price'];
-      const optionalColumns = [
-        'description', 'mrp', 'cost', 'weight', 'weight_unit', 'category_id',
-        'stock_quantity', 'alert_threshold', 'barcode', 'image', 'active',
-        'hsn_code', 'gst_code', 'cgst_rate', 'sgst_rate', 'igst_rate', 'cess_rate',
-        'tax_calculation_method', 'created_at', 'updated_at'
-      ];
-
-      const availableColumns = baseColumns.concat(
-        optionalColumns.filter(col => columnNames.includes(col))
-      );
-
-      const query = `
-        SELECT 
-          p.${availableColumns.join(', p.')},
-          c.name as category_name,
-          c.description as category_description,
-          c.created_at as category_created_at
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.active = 1 OR p.active IS NULL
-        ORDER BY ${columnNames.includes('created_at') ? 'p.created_at' : 'p.id'} DESC
-      `;
-
-      console.log('🔍 Executing products query');
-      const productsData = sqlite.prepare(query).all();
-
-      // Format the results to match expected structure
-      const formattedProducts = productsData.map((product: any) => ({
-        id: product.id,
-        name: product.name,
-        sku: product.sku,
-        description: product.description || '',
-        price: product.price,
-        mrp: product.mrp || product.price,
-        cost: product.cost || '0',
-        weight: product.weight || null,
-        weightUnit: product.weight_unit || 'kg',
-        categoryId: product.category_id || 1,
-        stockQuantity: product.stock_quantity || 0,
-        alertThreshold: product.alert_threshold || 5,
-        barcode: product.barcode || '',
-        image: product.image || null,
-        hsnCode: product.hsn_code || '',
-        gstCode: product.gst_code || '',
-        cgstRate: product.cgst_rate || '0',
-        sgstRate: product.sgst_rate || '0',
-        igstRate: product.igst_rate || '0',
-        cessRate: product.cess_rate || '0',
-        taxCalculationMethod: product.tax_calculation_method || 'inclusive',
-        active: product.active !== 0,
-        createdAt: product.created_at,
-        updatedAt: product.updated_at,
-        category: product.category_name ? {
-          id: product.category_id,
-          name: product.category_name,
-          description: product.category_description,
-          createdAt: product.category_created_at
-        } : null
-      }));
-
-      console.log(`✅ Found ${formattedProducts.length} products via direct query`);
-      res.json(formattedProducts);
+      const products = await storage.listProducts();
+      res.json(products);
     } catch (error) {
-      console.error('❌ Error fetching products:', error);
-      res.status(500).json({ 
-        message: 'Failed to fetch products',
-        error: error.message,
-        timestamp: new Date().toISOString()
-      });
+      console.error('Error fetching products:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -477,132 +380,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/products/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log('🔍 Fetching product with ID:', id);
+      const product = await storage.getProductById(id);
 
-      if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ 
-          message: 'Invalid product ID',
-          error: 'Product ID must be a positive number'
-        });
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
       }
 
-      // Try storage method first
-      try {
-        const product = await storage.getProductById(id);
-        
-        if (product) {
-          console.log('✅ Found product via storage method:', product.name);
-          return res.json(product);
-        }
-      } catch (storageError) {
-        console.log('⚠️ Storage method failed, trying direct query:', storageError.message);
-      }
-
-      // Fallback to direct SQLite query
-      const { sqlite } = await import('../db/index.js');
-
-      // Check if products table exists
-      const tableCheck = sqlite.prepare(`
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='products'
-      `).get();
-
-      if (!tableCheck) {
-        console.log('❌ Products table does not exist');
-        return res.status(404).json({ 
-          message: 'Product not found',
-          error: 'Products table does not exist'
-        });
-      }
-
-      // Get table structure
-      const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
-      const columnNames = tableInfo.map((col: any) => col.name);
-      console.log('📋 Available columns in products table:', columnNames);
-
-      // Build dynamic query based on available columns
-      const baseColumns = ['id', 'name', 'sku', 'price'];
-      const optionalColumns = [
-        'description', 'mrp', 'cost', 'weight', 'weight_unit', 'category_id',
-        'stock_quantity', 'alert_threshold', 'barcode', 'image', 'active',
-        'hsn_code', 'gst_code', 'cgst_rate', 'sgst_rate', 'igst_rate', 'cess_rate',
-        'tax_calculation_method', 'created_at', 'updated_at'
-      ];
-
-      const availableColumns = baseColumns.concat(
-        optionalColumns.filter(col => columnNames.includes(col))
-      );
-
-      const query = `
-        SELECT 
-          p.${availableColumns.join(', p.')},
-          c.name as category_name,
-          c.description as category_description
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.id = ?
-      `;
-
-      console.log('🔍 Executing product query for ID:', id);
-      const productData = sqlite.prepare(query).get(id);
-
-      if (!productData) {
-        console.log('❌ Product not found in database');
-        
-        // Check if any products exist
-        const totalProducts = sqlite.prepare('SELECT COUNT(*) as count FROM products').get();
-        console.log(`📊 Total products in database: ${totalProducts.count}`);
-        
-        return res.status(404).json({ 
-          message: 'Product not found',
-          error: `No product found with ID ${id}`,
-          totalProducts: totalProducts.count
-        });
-      }
-
-      // Format the result to match expected structure
-      const formattedProduct = {
-        id: productData.id,
-        name: productData.name,
-        sku: productData.sku,
-        description: productData.description || '',
-        price: productData.price,
-        mrp: productData.mrp || productData.price,
-        cost: productData.cost || '0',
-        weight: productData.weight || null,
-        weightUnit: productData.weight_unit || 'kg',
-        categoryId: productData.category_id || 1,
-        stockQuantity: productData.stock_quantity || 0,
-        alertThreshold: productData.alert_threshold || 5,
-        barcode: productData.barcode || '',
-        image: productData.image || null,
-        hsnCode: productData.hsn_code || '',
-        gstCode: productData.gst_code || '',
-        cgstRate: productData.cgst_rate || '0',
-        sgstRate: productData.sgst_rate || '0',
-        igstRate: productData.igst_rate || '0',
-        cessRate: productData.cess_rate || '0',
-        taxCalculationMethod: productData.tax_calculation_method || 'inclusive',
-        active: productData.active !== 0,
-        createdAt: productData.created_at,
-        updatedAt: productData.updated_at,
-        category: productData.category_name ? {
-          id: productData.category_id,
-          name: productData.category_name,
-          description: productData.category_description
-        } : null
-      };
-
-      console.log('✅ Found product via direct query:', formattedProduct.name);
-      res.json(formattedProduct);
-
+      res.json(product);
     } catch (error) {
-      console.error('❌ Error fetching product:', error);
-      res.status(500).json({ 
-        message: 'Internal server error',
-        error: error.message,
-        timestamp: new Date().toISOString()
-      });
+      console.error('Error fetching product:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -714,106 +501,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/products/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log('Product update request for ID:', id, 'Data keys:', Object.keys(req.body));
+      console.log('Product update request for ID:', id, 'Data:', req.body);
 
       if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ 
-          message: 'Invalid product ID',
-          error: 'Product ID must be a positive number'
-        });
+        return res.status(400).json({ message: 'Invalid product ID' });
       }
 
-      // Enhanced request data processing with validation
-      const productData = {
-        ...req.body,
-        // Ensure proper field mapping and defaults
-        name: req.body.name || req.body.itemName || '',
-        sku: req.body.sku || req.body.itemCode || '',
-        description: req.body.description || req.body.aboutProduct || '',
-        price: req.body.price || '0',
-        mrp: req.body.mrp || req.body.price || '0',
-        cost: req.body.cost || '0',
-        weight: req.body.weight || req.body.weightInGms || null,
-        weightUnit: req.body.weightUnit || 'kg',
-        categoryId: req.body.categoryId || 1,
-        stockQuantity: req.body.stockQuantity || '0',
-        alertThreshold: req.body.alertThreshold || 5,
-        barcode: req.body.barcode || '',
-        active: req.body.active !== false,
-        
-        // Enhanced tax information handling
-        hsnCode: req.body.hsnCode || req.body.hsn_code || '',
-        gstCode: req.body.gstCode || req.body.gst_code || 'GST 18%',
-        cgstRate: req.body.cgstRate || req.body.cgst_rate || '0',
-        sgstRate: req.body.sgstRate || req.body.sgst_rate || '0',
-        igstRate: req.body.igstRate || req.body.igst_rate || '0',
-        cessRate: req.body.cessRate || req.body.cess_rate || '0',
-        taxCalculationMethod: req.body.taxCalculationMethod || req.body.tax_calculation_method || 'exclusive',
-        taxSelectionMode: req.body.taxSelectionMode || req.body.tax_selection_mode || 'auto'
-      };
-
-      console.log('Processed product data for update:', {
-        id,
-        name: productData.name,
-        price: productData.price,
-        categoryId: productData.categoryId,
-        gstCode: productData.gstCode
-      });
-
-      // Validate required fields
-      if (!productData.name || !productData.sku || !productData.price || !productData.categoryId) {
-        return res.status(400).json({
-          message: 'Missing required fields',
-          error: 'Name, SKU, price, and category are required',
-          missingFields: {
-            name: !productData.name,
-            sku: !productData.sku,
-            price: !productData.price,
-            categoryId: !productData.categoryId
-          }
-        });
-      }
+      // For updates, we allow partial data, so don't use strict schema validation
+      const productData = req.body;
       
       const product = await storage.updateProduct(id, productData);
 
       if (!product) {
-        return res.status(404).json({ 
-          message: 'Product not found',
-          error: `No product found with ID ${id}`
-        });
+        return res.status(404).json({ message: 'Product not found' });
       }
 
       console.log('Product updated successfully:', product.id);
       res.json({
         ...product,
-        message: 'Product updated successfully',
-        timestamp: new Date().toISOString()
+        message: 'Product updated successfully'
       });
     } catch (error) {
       console.error('Error updating product:', error);
       
-      // Enhanced error handling with specific error types
+      // Provide more specific error messages
       let errorMessage = 'Internal server error';
-      let statusCode = 500;
-      
-      if (error.message?.includes('not found')) {
-        statusCode = 404;
-        errorMessage = error.message;
-      } else if (error.message?.includes('validation') || error.message?.includes('required')) {
-        statusCode = 400;
-        errorMessage = error.message;
-      } else if (error.message?.includes('duplicate') || error.message?.includes('UNIQUE')) {
-        statusCode = 409;
-        errorMessage = 'Product with this SKU already exists';
-      } else if (error.message) {
+      if (error.message) {
         errorMessage = error.message;
       }
       
-      res.status(statusCode).json({ 
+      res.status(500).json({ 
         message: errorMessage,
-        error: 'Failed to update product',
-        timestamp: new Date().toISOString(),
-        productId: req.params.id
+        error: 'Failed to update product'
       });
     }
   });

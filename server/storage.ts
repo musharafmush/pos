@@ -181,14 +181,6 @@ export const storage = {
     barcode?: string;
     image?: string;
     active?: boolean;
-    hsnCode?: string;
-    gstCode?: string;
-    cgstRate?: string;
-    sgstRate?: string;
-    igstRate?: string;
-    cessRate?: string;
-    taxCalculationMethod?: string;
-    taxSelectionMode?: string;
   }): Promise<Product> {
     try {
       // Import SQLite database directly
@@ -198,10 +190,8 @@ export const storage = {
         INSERT INTO products (
           name, description, sku, price, mrp, cost, weight, weight_unit, category_id, 
           stock_quantity, alert_threshold, barcode, image, active,
-          hsn_code, gst_code, cgst_rate, sgst_rate, igst_rate, cess_rate,
-          tax_calculation_method, tax_selection_mode,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
 
       const result = insertProduct.run(
@@ -218,15 +208,7 @@ export const storage = {
         product.alertThreshold || 5,
         product.barcode || null,
         product.image || null,
-        product.active !== false ? 1 : 0,
-        product.hsnCode || '',
-        product.gstCode || '',
-        product.cgstRate || '0',
-        product.sgstRate || '0',
-        product.igstRate || '0',
-        product.cessRate || '0',
-        product.taxCalculationMethod || 'exclusive',
-        product.taxSelectionMode || 'auto'
+        product.active !== false ? 1 : 0
       );
 
       // Fetch the created product
@@ -259,82 +241,29 @@ export const storage = {
         return null;
       }
 
-      // Ensure all required tax columns exist with better error handling
-      const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
-      const columnNames = tableInfo.map((col: any) => col.name);
-      
-      // Add missing tax columns if they don't exist with improved validation
-      const requiredColumns = [
-        { name: 'gst_code', sql: 'ALTER TABLE products ADD COLUMN gst_code TEXT DEFAULT ""' },
-        { name: 'hsn_code', sql: 'ALTER TABLE products ADD COLUMN hsn_code TEXT DEFAULT ""' },
-        { name: 'cgst_rate', sql: 'ALTER TABLE products ADD COLUMN cgst_rate TEXT DEFAULT "0"' },
-        { name: 'sgst_rate', sql: 'ALTER TABLE products ADD COLUMN sgst_rate TEXT DEFAULT "0"' },
-        { name: 'igst_rate', sql: 'ALTER TABLE products ADD COLUMN igst_rate TEXT DEFAULT "0"' },
-        { name: 'cess_rate', sql: 'ALTER TABLE products ADD COLUMN cess_rate TEXT DEFAULT "0"' },
-        { name: 'tax_calculation_method', sql: 'ALTER TABLE products ADD COLUMN tax_calculation_method TEXT DEFAULT "exclusive"' },
-        { name: 'tax_selection_mode', sql: 'ALTER TABLE products ADD COLUMN tax_selection_mode TEXT DEFAULT "auto"' }
-      ];
-
-      let columnsAdded = 0;
-      for (const column of requiredColumns) {
-        if (!columnNames.includes(column.name)) {
-          try {
-            sqlite.exec(column.sql);
-            console.log(`✅ Added missing column: ${column.name}`);
-            columnsAdded++;
-          } catch (error) {
-            console.log(`⚠️ Column ${column.name} may already exist:`, error.message);
-          }
-        }
-      }
-
-      // Refresh column names if new columns were added
-      if (columnsAdded > 0) {
-        const updatedTableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
-        columnNames.length = 0;
-        columnNames.push(...updatedTableInfo.map((col: any) => col.name));
-        console.log(`✅ Added ${columnsAdded} missing columns, refreshed column list`);
-      }
-
-      // Prepare update data with enhanced validation and fallback handling
+      // Prepare update data with proper type conversion and validation
       const updateData = {
         name: productData.name?.toString().trim() || existingProduct.name,
         description: productData.description?.toString().trim() || existingProduct.description || '',
         sku: productData.sku?.toString().trim() || existingProduct.sku,
         price: productData.price ? parseFloat(productData.price.toString()) : parseFloat(existingProduct.price || 0),
-        cost: productData.cost !== undefined ? parseFloat(productData.cost.toString() || '0') : parseFloat(existingProduct.cost || 0),
-        mrp: productData.mrp !== undefined ? parseFloat(productData.mrp.toString() || '0') : parseFloat(existingProduct.mrp || existingProduct.price || 0),
-        weight: productData.weight !== undefined ? 
-          (productData.weight === null || productData.weight === '' || productData.weight === 'null' ? null : parseFloat(productData.weight.toString())) 
-          : (existingProduct.weight ? parseFloat(existingProduct.weight.toString()) : null),
+        cost: productData.cost ? parseFloat(productData.cost.toString()) : parseFloat(existingProduct.cost || 0),
+        mrp: productData.mrp ? parseFloat(productData.mrp.toString()) : parseFloat(existingProduct.mrp || 0),
+        weight: productData.weight ? parseFloat(productData.weight.toString()) : existingProduct.weight,
         weightUnit: productData.weightUnit?.toString() || existingProduct.weight_unit || 'kg',
-        categoryId: productData.categoryId ? parseInt(productData.categoryId.toString()) : existingProduct.category_id || 1,
-        stockQuantity: productData.stockQuantity !== undefined ? parseInt(productData.stockQuantity.toString() || '0') : existingProduct.stock_quantity || 0,
-        alertThreshold: productData.alertThreshold !== undefined ? parseInt(productData.alertThreshold.toString() || '5') : existingProduct.alert_threshold || 5,
+        categoryId: productData.categoryId ? parseInt(productData.categoryId.toString()) : existingProduct.category_id,
+        stockQuantity: productData.stockQuantity !== undefined ? parseInt(productData.stockQuantity.toString()) : existingProduct.stock_quantity,
+        alertThreshold: productData.alertThreshold !== undefined ? parseInt(productData.alertThreshold.toString()) : existingProduct.alert_threshold || 5,
         barcode: productData.barcode?.toString().trim() || existingProduct.barcode || '',
-        
-        // Enhanced tax information handling with improved defaults
         hsnCode: productData.hsnCode?.toString().trim() || existingProduct.hsn_code || '',
-        gstCode: productData.gstCode?.toString().trim() || existingProduct.gst_code || 'GST 18%',
-        cgstRate: productData.cgstRate !== undefined ? productData.cgstRate?.toString() || '0' : existingProduct.cgst_rate || '0',
-        sgstRate: productData.sgstRate !== undefined ? productData.sgstRate?.toString() || '0' : existingProduct.sgst_rate || '0',
-        igstRate: productData.igstRate !== undefined ? productData.igstRate?.toString() || '0' : existingProduct.igst_rate || '0',
-        cessRate: productData.cessRate !== undefined ? productData.cessRate?.toString() || '0' : existingProduct.cess_rate || '0',
+        cgstRate: productData.cgstRate !== undefined ? productData.cgstRate?.toString() : existingProduct.cgst_rate || '0',
+        sgstRate: productData.sgstRate !== undefined ? productData.sgstRate?.toString() : existingProduct.sgst_rate || '0',
+        igstRate: productData.igstRate !== undefined ? productData.igstRate?.toString() : existingProduct.igst_rate || '0',
+        cessRate: productData.cessRate !== undefined ? productData.cessRate?.toString() : existingProduct.cess_rate || '0',
         taxCalculationMethod: productData.taxCalculationMethod?.toString() || existingProduct.tax_calculation_method || 'exclusive',
-        taxSelectionMode: productData.taxSelectionMode?.toString() || existingProduct.tax_selection_mode || 'auto',
-        
-        active: productData.active !== undefined ? (productData.active ? 1 : 0) : (existingProduct.active || 1),
+        active: productData.active !== undefined ? (productData.active ? 1 : 0) : existingProduct.active,
         updatedAt: new Date().toISOString()
       };
-
-      console.log('Processed update data:', {
-        id,
-        name: updateData.name,
-        price: updateData.price,
-        categoryId: updateData.categoryId,
-        hasGstCode: !!updateData.gstCode,
-        hasTaxRates: !!(updateData.cgstRate || updateData.sgstRate || updateData.igstRate)
-      });
 
       // Validate required fields
       if (!updateData.name || !updateData.sku) {
@@ -351,98 +280,63 @@ export const storage = {
         throw new Error('Product with this SKU already exists');
       }
 
-      // Auto-extract weight from product name if weight is null
-      if (updateData.weight === null && updateData.name) {
-        const weightMatch = updateData.name.match(/(\d+(?:\.\d+)?)\s*(kg|g|gm|gram|grams|kilogram|kilograms)/i);
-        if (weightMatch) {
-          const weightValue = parseFloat(weightMatch[1]);
-          const weightUnit = weightMatch[2].toLowerCase();
-
-          // Convert to grams for consistent storage
-          if (weightUnit.startsWith('k')) {
-            updateData.weight = weightValue * 1000; // kg to grams
-            updateData.weightUnit = 'g';
-          } else {
-            updateData.weight = weightValue;
-            updateData.weightUnit = 'g';
-          }
-          console.log(`📏 Auto-extracted weight: ${updateData.weight}${updateData.weightUnit} from product name "${updateData.name}"`);
-        }
-      }
-
-      // Add missing GST code column if it doesn't exist in database
-      try {
-        const tableInfo = sqlite.prepare("PRAGMA table_info(products)").all();
-        const hasGstCode = tableInfo.some((col: any) => col.name === 'gst_code');
-
-        if (!hasGstCode) {
-          console.log('📝 Adding missing gst_code column to products table');
-          sqlite.prepare('ALTER TABLE products ADD COLUMN gst_code TEXT DEFAULT ""').run();
-        }
-      } catch (alterError) {
-        console.log('⚠️ Could not add gst_code column (may already exist):', alterError.message);
-      }
-
       console.log('Formatted update data:', updateData);
 
-      // Build dynamic update query based on available columns
-      const updateFields = ['name = ?', 'description = ?', 'sku = ?', 'price = ?'];
-      const updateValues = [updateData.name, updateData.description, updateData.sku, updateData.price.toString()];
+      // Perform the update using correct column names
+      const updateStmt = sqlite.prepare(`
+        UPDATE products SET 
+          name = ?,
+          description = ?,
+          sku = ?,
+          price = ?,
+          cost = ?,
+          mrp = ?,
+          weight = ?,
+          weight_unit = ?,
+          category_id = ?,
+          stock_quantity = ?,
+          alert_threshold = ?,
+          barcode = ?,
+          hsn_code = ?,
+          cgst_rate = ?,
+          sgst_rate = ?,
+          igst_rate = ?,
+          cess_rate = ?,
+          tax_calculation_method = ?,
+          active = ?,
+          updated_at = ?
+        WHERE id = ?
+      `);
 
-      // Add optional fields that exist in the table
-      const optionalFields = [
-        { column: 'cost', value: updateData.cost.toString() },
-        { column: 'mrp', value: updateData.mrp.toString() },
-        { column: 'weight', value: updateData.weight },
-        { column: 'weight_unit', value: updateData.weightUnit },
-        { column: 'category_id', value: updateData.categoryId },
-        { column: 'stock_quantity', value: updateData.stockQuantity },
-        { column: 'alert_threshold', value: updateData.alertThreshold },
-        { column: 'barcode', value: updateData.barcode },
-        { column: 'hsn_code', value: updateData.hsnCode },
-        { column: 'gst_code', value: updateData.gstCode },
-        { column: 'cgst_rate', value: updateData.cgstRate },
-        { column: 'sgst_rate', value: updateData.sgstRate },
-        { column: 'igst_rate', value: updateData.igstRate },
-        { column: 'cess_rate', value: updateData.cessRate },
-        { column: 'tax_calculation_method', value: updateData.taxCalculationMethod },
-        { column: 'tax_selection_mode', value: updateData.taxSelectionMode },
-        { column: 'active', value: updateData.active },
-        { column: 'updated_at', value: updateData.updatedAt }
-      ];
+      const result = updateStmt.run(
+        updateData.name,
+        updateData.description,
+        updateData.sku,
+        updateData.price.toString(),
+        updateData.cost.toString(),
+        updateData.mrp.toString(),
+        updateData.weight,
+        updateData.weightUnit,
+        updateData.categoryId,
+        updateData.stockQuantity,
+        updateData.alertThreshold,
+        updateData.barcode,
+        updateData.hsnCode,
+        updateData.cgstRate,
+        updateData.sgstRate,
+        updateData.igstRate,
+        updateData.cessRate,
+        updateData.taxCalculationMethod,
+        updateData.active,
+        updateData.updatedAt,
+        id
+      );
 
-      optionalFields.forEach(field => {
-        if (columnNames.includes(field.column)) {
-          updateFields.push(`${field.column} = ?`);
-          updateValues.push(field.value);
-        }
-      });
-
-      updateValues.push(id); // Add WHERE clause parameter
-
-      const updateQuery = `UPDATE products SET ${updateFields.join(', ')} WHERE id = ?`;
-      console.log('Update query:', updateQuery);
-      console.log('Update values length:', updateValues.length);
-
-      const updateStmt = sqlite.prepare(updateQuery);
-
-      try {
-        const result = updateStmt.run(...updateValues);
-
-        if (result.changes === 0) {
-          console.log('No changes made to product:', id);
-          throw new Error('Product update failed - no rows affected');
-        }
-
-        console.log('Product updated successfully:', {
-          id,
-          changes: result.changes,
-          fieldsUpdated: updateFields.length
-        });
-      } catch (updateError) {
-        console.error('Update execution failed:', updateError);
-        throw new Error(`Failed to update product: ${updateError.message}`);
+      if (result.changes === 0) {
+        console.log('No changes made to product:', id);
       }
+
+      console.log('Product updated successfully:', result);
 
       // Fetch and return the updated product with category
       const updatedProduct = sqlite.prepare(`
@@ -471,13 +365,11 @@ export const storage = {
           alertThreshold: updatedProduct.alert_threshold,
           barcode: updatedProduct.barcode,
           hsnCode: updatedProduct.hsn_code,
-          gstCode: updatedProduct.gst_code,
           cgstRate: updatedProduct.cgst_rate,
           sgstRate: updatedProduct.sgst_rate,
           igstRate: updatedProduct.igst_rate,
           cessRate: updatedProduct.cess_rate,
           taxCalculationMethod: updatedProduct.tax_calculation_method,
-          taxSelectionMode: updatedProduct.tax_selection_mode,
           active: Boolean(updatedProduct.active),
           createdAt: new Date(updatedProduct.created_at),
           updatedAt: new Date(updatedProduct.updated_at),
