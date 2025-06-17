@@ -459,16 +459,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/products/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const product = await storage.getProductById(id);
+      console.log('🔍 Fetching individual product with ID:', id);
 
-      if (!product) {
-        return res.status(404).json({ message: 'Product not found' });
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ 
+          message: 'Invalid product ID', 
+          error: 'Product ID must be a valid positive number' 
+        });
       }
 
-      res.json(product);
+      // Try storage method first
+      try {
+        const product = await storage.getProductById(id);
+
+        if (!product) {
+          console.log('❌ Product not found with ID:', id);
+          return res.status(404).json({ 
+            message: 'Product not found',
+            error: `No product exists with ID ${id}`
+          });
+        }
+
+        console.log('✅ Product found:', product.name);
+        res.json(product);
+        return;
+      } catch (storageError) {
+        console.log('⚠️ Storage method failed, trying direct query:', storageError.message);
+      }
+
+      // Fallback to direct SQLite query
+      const { sqlite } = await import('../db/index.js');
+
+      const productQuery = sqlite.prepare(`
+        SELECT 
+          p.*,
+          c.name as categoryName 
+        FROM products p 
+        LEFT JOIN categories c ON p.category_id = c.id 
+        WHERE p.id = ?
+      `);
+
+      const product = productQuery.get(id);
+
+      if (!product) {
+        console.log('❌ Product not found in direct query with ID:', id);
+        return res.status(404).json({ 
+          message: 'Product not found',
+          error: `No product exists with ID ${id}`
+        });
+      }
+
+      // Format the product response to match expected structure
+      const formattedProduct = {
+        id: product.id,
+        name: product.name,
+        description: product.description || '',
+        sku: product.sku,
+        price: product.price,
+        mrp: product.mrp || product.price,
+        cost: product.cost || '0',
+        weight: product.weight,
+        weightUnit: product.weight_unit || 'kg',
+        categoryId: product.category_id,
+        stockQuantity: product.stock_quantity || 0,
+        alertThreshold: product.alert_threshold || 5,
+        barcode: product.barcode || '',
+        image: product.image || '',
+        hsnCode: product.hsn_code || '',
+        cgstRate: product.cgst_rate || '0',
+        sgstRate: product.sgst_rate || '0',
+        igstRate: product.igst_rate || '0',
+        cessRate: product.cess_rate || '0',
+        taxCalculationMethod: product.tax_calculation_method || 'exclusive',
+        active: Boolean(product.active),
+        createdAt: new Date(product.created_at),
+        updatedAt: new Date(product.updated_at),
+        category: {
+          id: product.category_id,
+          name: product.categoryName || 'Uncategorized'
+        }
+      };
+
+      console.log('✅ Product found via direct query:', formattedProduct.name);
+      res.json(formattedProduct);
+
     } catch (error) {
-      console.error('Error fetching product:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('❌ Error fetching product:', error);
+      res.status(500).json({ 
+        message: 'Internal server error',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 

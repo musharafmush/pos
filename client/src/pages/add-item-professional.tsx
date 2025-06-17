@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Category, Supplier, Product } from "@shared/schema";
 
@@ -148,7 +149,7 @@ export default function AddItemProfessional() {
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get('edit');
   const isEditMode = !!editId;
-  
+
   console.log('Edit mode:', isEditMode, 'Edit ID:', editId); // Debug log
 
   // Fetch product data if in edit mode
@@ -310,7 +311,7 @@ export default function AddItemProfessional() {
   useEffect(() => {
     if (isEditMode && editingProduct && !isLoadingProduct && categories.length > 0 && suppliers.length > 0) {
       console.log('🔄 Dynamic data upload - Populating edit form with product data:', editingProduct);
-      
+
       // Enhanced GST calculation with better accuracy
       const cgstRate = parseFloat(editingProduct.cgstRate || '0');
       const sgstRate = parseFloat(editingProduct.sgstRate || '0');
@@ -339,7 +340,7 @@ export default function AddItemProfessional() {
         sup.name === editingProduct.supplierName || 
         sup.id === editingProduct.supplierId
       );
-      
+
       console.log('🏭 Dynamic manufacturer/supplier mapping:', { 
         manufacturerName: editingProduct.manufacturerName,
         supplierName: editingProduct.supplierName,
@@ -444,10 +445,10 @@ export default function AddItemProfessional() {
 
       console.log('✅ Dynamic form data prepared:', formData);
       console.log('🔄 Uploading overall data dynamically to form...');
-      
+
       // Apply the dynamic data upload
       form.reset(formData);
-      
+
       // Trigger reactive updates for dependent fields
       setTimeout(() => {
         console.log('🔄 Triggering reactive field updates...');
@@ -456,10 +457,10 @@ export default function AddItemProfessional() {
           form.setValue("mainCategory", category.name);
           form.setValue("categoryId", category.id);
         }
-        
+
         // Update GST breakdown display
         form.setValue("gstCode", gstCode);
-        
+
         console.log('✅ Dynamic data upload completed successfully');
       }, 100);
     }
@@ -469,7 +470,7 @@ export default function AddItemProfessional() {
   useEffect(() => {
     if (isEditMode && editingProduct) {
       console.log('🔄 Dynamic data sync active for product ID:', editId);
-      
+
       // Watch for form changes and log them
       const subscription = form.watch((value, { name, type }) => {
         if (type === 'change' && name) {
@@ -497,13 +498,13 @@ export default function AddItemProfessional() {
     mutationFn: async (data: ProductFormValues) => {
       console.log('🚀 Starting product mutation with enhanced data:', data);
       console.log(`📊 ${isEditMode ? 'Updating' : 'Creating'} product with dynamic validation...`);
-      
+
       // Enhanced validation for required fields with better error messages
       const requiredFields = [];
       if (!data.itemName?.trim()) requiredFields.push("Item Name");
       if (!data.itemCode?.trim()) requiredFields.push("Item Code");
       if (!data.price?.trim()) requiredFields.push("Price");
-      
+
       if (requiredFields.length > 0) {
         throw new Error(`Please fill in all required fields: ${requiredFields.join(", ")}`);
       }
@@ -520,7 +521,7 @@ export default function AddItemProfessional() {
       if (isNaN(stockQuantity) || stockQuantity < 0) validationErrors.push("Stock quantity must be a valid positive number");
       if (mrp > 0 && mrp < price) validationErrors.push("MRP cannot be less than selling price");
       if (cost > 0 && price < cost) validationErrors.push("Selling price should typically be higher than cost price");
-      
+
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join("; "));
       }
@@ -543,14 +544,14 @@ export default function AddItemProfessional() {
         active: data.active !== undefined ? data.active : true,
         alertThreshold: 5,
         hsnCode: data.hsnCode?.trim() || "",
-        
+
         // Enhanced tax breakdown for better synchronization
         cgstRate: data.cgstRate || "0",
         sgstRate: data.sgstRate || "0", 
         igstRate: data.igstRate || "0",
         cessRate: data.cessRate || "0",
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
-        
+
         // Enhanced fields for comprehensive data storage with supplier ID resolution
         manufacturerName: data.manufacturerName?.trim() || "",
         supplierName: data.supplierName?.trim() || "",
@@ -758,19 +759,20 @@ export default function AddItemProfessional() {
               <Loader2Icon className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
               <h2 className="text-xl font-semibold mb-2">Loading Product Data...</h2>
               <p className="text-gray-600 mb-4">Uploading overall data dynamically for edit mode including suppliers</p>
-              
+
               {/* Dynamic progress indicator */}
               <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
                 <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
               </div>
-              
+
               <div className="text-sm text-gray-500 space-y-1">
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span>Fetching product information...</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2```
+ bg-blue-500 rounded-full animate-pulse"></div>
                   <span>Preparing dynamic form data...</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
@@ -778,7 +780,7 @@ export default function AddItemProfessional() {
                   <span>Uploading to form sections...</span>
                 </div>
               </div>
-              
+
               <p className="text-xs text-gray-400 mt-4">Product ID: {editId}</p>
             </div>
           </div>
@@ -872,7 +874,7 @@ export default function AddItemProfessional() {
                 {sidebarSections.map((section, index) => {
                   const isCompleted = sidebarSections.findIndex(s => s.id === currentSection) > index;
                   const isCurrent = currentSection === section.id;
-                  
+
                   return (
                     <button
                       key={section.id}
@@ -887,7 +889,7 @@ export default function AddItemProfessional() {
                     >
                       {section.icon}
                       <span className="flex-1 text-left">{section.label}</span>
-                      
+
                       {/* Section status indicators */}
                       {isCurrent && (
                         <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
@@ -1254,7 +1256,7 @@ export default function AddItemProfessional() {
                                     } else if (value.includes("22021000") || value.includes("24021000") || value.includes("87032390") || value.includes("87111000")) {
                                       suggestedGst = "GST 28%";
                                     }
-                                    
+
                                     if (suggestedGst) {
                                       form.setValue("gstCode", suggestedGst);
                                       const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
@@ -1380,7 +1382,7 @@ export default function AddItemProfessional() {
                           <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
                           GST Breakdown & Compliance
                         </h4>
-                        
+
                         {/* Tax Summary Display */}
                         <div className="bg-blue-50 p-4 rounded-lg mb-4">
                           <div className="grid grid-cols-3 gap-4 text-sm">
@@ -1404,7 +1406,7 @@ export default function AddItemProfessional() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-3 gap-4">
                           <FormField
                             control={form.control}
@@ -2300,7 +2302,7 @@ export default function AddItemProfessional() {
                                       >
                                         1kg → 10×100g
                                       </Button>
-                                      <Button
+                                      <Button```javascript
                                         type="button"
                                         variant="outline"
                                         size="sm"
