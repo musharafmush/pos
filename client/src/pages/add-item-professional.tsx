@@ -788,7 +788,8 @@ export default function AddItemProfessional() {
           showOnMobileDashboard: false,
           enableMobileNotifications: false,
           quickAddToCart: false,
-          perishableItem: false,
+          perishableItem:```text
+ false,
           temperatureControlled: false,
           fragileItem: false,
           trackSerialNumbers: false,
@@ -2998,3 +2999,15 @@ export default function AddItemProfessional() {
                           </Button>
                         </div>
                       </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+              </form>
+            </Form>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
