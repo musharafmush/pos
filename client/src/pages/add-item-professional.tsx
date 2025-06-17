@@ -217,6 +217,51 @@ export default function AddItemProfessional() {
     },
   }) as { data: Supplier[], isLoading: boolean };
 
+  // Department options for dynamic selection
+  const departmentOptions = [
+    "FMCG", "Grocery", "Electronics", "Clothing", "Home & Garden", 
+    "Health & Beauty", "Sports & Fitness", "Automotive", "Books & Stationery", 
+    "Toys & Games", "Beverages", "Dairy & Frozen", "Personal Care", "Hardware"
+  ];
+
+  // Watch form values for dynamic calculations
+  const watchedValues = form.watch();
+  
+  // Dynamic GST calculation and display
+  const calculateTotalGST = () => {
+    const cgst = parseFloat(watchedValues.cgstRate || '0');
+    const sgst = parseFloat(watchedValues.sgstRate || '0'); 
+    const igst = parseFloat(watchedValues.igstRate || '0');
+    const cess = parseFloat(watchedValues.cessRate || '0');
+    
+    if (igst > 0) {
+      return igst + cess;
+    } else {
+      return cgst + sgst + cess;
+    }
+  };
+
+  // Dynamic alias generation
+  const generateAlias = (itemName: string, manufacturer: string) => {
+    if (!itemName) return '';
+    
+    const nameWords = itemName.split(' ').slice(0, 2);
+    const manufacturerPrefix = manufacturer ? manufacturer.substring(0, 3).toUpperCase() : '';
+    
+    return `${manufacturerPrefix}${nameWords.join('')}`.substring(0, 15);
+  };
+
+  // Auto-update alias when item name or manufacturer changes
+  useEffect(() => {
+    const itemName = watchedValues.itemName;
+    const manufacturer = watchedValues.manufacturerName;
+    
+    if (itemName && !watchedValues.alias) {
+      const generatedAlias = generateAlias(itemName, manufacturer);
+      form.setValue('alias', generatedAlias);
+    }
+  }, [watchedValues.itemName, watchedValues.manufacturerName, form]);
+
   // Fetch all products for bulk item selection
   const { data: allProducts = [] } = useQuery({
     queryKey: ["/api/products/all"],
@@ -1027,16 +1072,39 @@ export default function AddItemProfessional() {
                             <FormItem>
                               <FormLabel>Manufacturer Name *</FormLabel>
                               <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select 
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    // Auto-update alias when manufacturer changes
+                                    if (watchedValues.itemName) {
+                                      const newAlias = generateAlias(watchedValues.itemName, value);
+                                      form.setValue('alias', newAlias);
+                                    }
+                                  }} 
+                                  value={field.value}
+                                >
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select manufacturer" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {suppliers.map((supplier: Supplier) => (
-                                      <SelectItem key={supplier.id} value={supplier.name}>
-                                        {supplier.name}
-                                      </SelectItem>
-                                    ))}
+                                    {isLoadingSuppliers ? (
+                                      <SelectItem value="loading" disabled>Loading suppliers...</SelectItem>
+                                    ) : suppliers.length > 0 ? (
+                                      suppliers.map((supplier: Supplier) => (
+                                        <SelectItem key={supplier.id} value={supplier.name}>
+                                          <div className="flex items-center justify-between w-full">
+                                            <span>{supplier.name}</span>
+                                            {supplier.city && (
+                                              <span className="text-xs text-gray-500 ml-2">
+                                                {supplier.city}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </SelectItem>
+                                      ))
+                                    ) : (
+                                      <SelectItem value="no-suppliers" disabled>No suppliers available</SelectItem>
+                                    )}
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -1056,11 +1124,23 @@ export default function AddItemProfessional() {
                                     <SelectValue placeholder="Select supplier" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {suppliers.map((supplier: Supplier) => (
-                                      <SelectItem key={supplier.id} value={supplier.name}>
-                                        {supplier.name}
-                                      </SelectItem>
-                                    ))}
+                                    {isLoadingSuppliers ? (
+                                      <SelectItem value="loading" disabled>Loading suppliers...</SelectItem>
+                                    ) : suppliers.length > 0 ? (
+                                      suppliers.map((supplier: Supplier) => (
+                                        <SelectItem key={supplier.id} value={supplier.name}>
+                                          <div className="flex items-center justify-between w-full">
+                                            <span>{supplier.name}</span>
+                                            <div className="text-xs text-gray-500 ml-2">
+                                              {supplier.phone && <div>📞 {supplier.phone}</div>}
+                                              {supplier.email && <div>✉️ {supplier.email}</div>}
+                                            </div>
+                                          </div>
+                                        </SelectItem>
+                                      ))
+                                    ) : (
+                                      <SelectItem value="no-suppliers" disabled>No suppliers available</SelectItem>
+                                    )}
                                   </SelectContent>
                                 </Select>
                               </FormControl>
@@ -1069,6 +1149,30 @@ export default function AddItemProfessional() {
                           )}
                         />
                       </div>
+
+                      {/* Dynamic Alias Field */}
+                      <FormField
+                        control={form.control}
+                        name="alias"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Product Alias
+                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                Auto-generated
+                              </span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                placeholder="Product alias (auto-generated from name + manufacturer)"
+                                className="bg-green-50 border-green-200"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </CardContent>
                   </Card>
                 )}
@@ -1124,17 +1228,15 @@ export default function AddItemProfessional() {
                                     <SelectTrigger className="h-10">
                                       <SelectValue placeholder="Select department" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="FMCG">FMCG</SelectItem>
-                                      <SelectItem value="Grocery">Grocery</SelectItem>
-                                      <SelectItem value="Electronics">Electronics</SelectItem>
-                                      <SelectItem value="Clothing">Clothing</SelectItem>
-                                      <SelectItem value="Home & Garden">Home & Garden</SelectItem>
-                                      <SelectItem value="Health & Beauty">Health & Beauty</SelectItem>
-                                      <SelectItem value="Sports & Fitness">Sports & Fitness</SelectItem>
-                                      <SelectItem value="Automotive">Automotive</SelectItem>
-                                      <SelectItem value="Books & Stationery">Books & Stationery</SelectItem>
-                                      <SelectItem value="Toys & Games">Toys & Games</SelectItem>
+                                    <SelectContent className="max-h-64 overflow-y-auto">
+                                      {departmentOptions.map((dept) => (
+                                        <SelectItem key={dept} value={dept}>
+                                          <div className="flex items-center gap-2">
+                                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                            {dept}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
@@ -1198,28 +1300,43 @@ export default function AddItemProfessional() {
                           name="hsnCode"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>HSN Code</FormLabel>
+                              <FormLabel className="flex items-center gap-2">
+                                HSN Code
+                                {field.value && field.value.length >= 6 && (
+                                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                    ✓ Valid HSN
+                                  </span>
+                                )}
+                              </FormLabel>
                               <FormControl>
                                 <div className="space-y-2">
                                   <Input 
                                     value={field.value || ""}
                                     placeholder="Enter HSN Code manually (e.g., 10019000)" 
+                                    maxLength={8}
                                     onChange={(e) => {
-                                      const hsnValue = e.target.value;
+                                      const hsnValue = e.target.value.replace(/\D/g, ''); // Only allow digits
                                       field.onChange(hsnValue);
 
-                                      // Auto-suggest GST code based on HSN
+                                      // Auto-suggest GST code based on HSN with enhanced logic
                                       let suggestedGst = "";
+                                      let suggestedDescription = "";
+                                      
                                       if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
                                         suggestedGst = "GST 0%";
+                                        suggestedDescription = "Basic food items - Nil rate";
                                       } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17") || hsnValue.startsWith("21") || hsnValue.startsWith("30") || hsnValue.startsWith("49") || hsnValue.startsWith("63")) {
                                         suggestedGst = "GST 5%";
+                                        suggestedDescription = "Essential goods - Food items, medicines";
                                       } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("48") || hsnValue.startsWith("87120") || hsnValue.startsWith("90")) {
                                         suggestedGst = "GST 12%";
+                                        suggestedDescription = "Standard rate - Textiles, electronics";
                                       } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("64") || hsnValue.startsWith("84") || hsnValue.startsWith("85") || hsnValue.startsWith("96") || hsnValue.startsWith("19") || hsnValue.startsWith("30059")) {
                                         suggestedGst = "GST 18%";
+                                        suggestedDescription = "Standard rate - Most goods & services";
                                       } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032") || hsnValue.startsWith("87111")) {
                                         suggestedGst = "GST 28%";
+                                        suggestedDescription = "Luxury goods - Cars, tobacco";
                                       }
 
                                       if (suggestedGst && hsnValue.length >= 4) {
@@ -1237,8 +1354,14 @@ export default function AddItemProfessional() {
                                           form.setValue("sgstRate", "0");
                                           form.setValue("igstRate", "0");
                                         }
+                                        
+                                        // Show suggestion notification
+                                        if (hsnValue.length >= 6) {
+                                          console.log(`HSN ${hsnValue}: ${suggestedGst} - ${suggestedDescription}`);
+                                        }
                                       }
                                     }}
+                                    className={`${field.value && field.value.length >= 6 ? 'border-green-500 bg-green-50' : ''}`}
                                   />
                                   <Select onValueChange={(value) => {
                                     field.onChange(value);
@@ -1382,26 +1505,44 @@ export default function AddItemProfessional() {
                           GST Breakdown & Compliance
                         </h4>
 
-                        {/* Tax Summary Display */}
-                        <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                          <div className="grid grid-cols-3 gap-4 text-sm">
+                        {/* Dynamic Tax Summary Display */}
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-4 border border-blue-200">
+                          <div className="grid grid-cols-4 gap-4 text-sm">
                             <div className="text-center">
                               <div className="text-blue-700 font-medium">Total GST Rate</div>
-                              <div className="text-lg font-bold text-blue-900">
-                                {form.watch("gstCode") ? form.watch("gstCode").replace("GST ", "") : "0%"}
+                              <div className="text-xl font-bold text-blue-900">
+                                {calculateTotalGST().toFixed(2)}%
                               </div>
                             </div>
                             <div className="text-center">
                               <div className="text-blue-700 font-medium">CGST + SGST</div>
                               <div className="text-lg font-bold text-blue-900">
-                                {form.watch("cgstRate") || "0"}% + {form.watch("sgstRate") || "0"}%
+                                {parseFloat(watchedValues.cgstRate || "0").toFixed(2)}% + {parseFloat(watchedValues.sgstRate || "0").toFixed(2)}%
                               </div>
                             </div>
                             <div className="text-center">
                               <div className="text-blue-700 font-medium">IGST</div>
                               <div className="text-lg font-bold text-blue-900">
-                                {form.watch("igstRate") || "0"}%
+                                {parseFloat(watchedValues.igstRate || "0").toFixed(2)}%
                               </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-blue-700 font-medium">Cess</div>
+                              <div className="text-lg font-bold text-orange-600">
+                                {parseFloat(watchedValues.cessRate || "0").toFixed(2)}%
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Tax calculation indicator */}
+                          <div className="mt-3 pt-3 border-t border-blue-200">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-blue-600">
+                                Tax Method: {watchedValues.taxCalculationMethod || 'exclusive'}
+                              </span>
+                              <span className="text-green-600 bg-green-100 px-2 py-1 rounded">
+                                {parseFloat(watchedValues.igstRate || "0") > 0 ? 'Inter-State (IGST)' : 'Intra-State (CGST+SGST)'}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -1683,6 +1824,57 @@ export default function AddItemProfessional() {
                             </FormItem>
                           )}
                         />
+                      </div>
+
+                      {/* Live Pricing Calculations Display */}
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200 mt-4">
+                        <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                          <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                          Live Pricing Calculations
+                        </h4>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <div className="text-green-700 font-medium">Selling Price</div>
+                            <div className="text-lg font-bold text-green-900">
+                              ₹{parseFloat(watchedValues.price || "0").toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-green-700 font-medium">MRP</div>
+                            <div className="text-lg font-bold text-green-900">
+                              ₹{parseFloat(watchedValues.mrp || "0").toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-green-700 font-medium">Profit Margin</div>
+                            <div className="text-lg font-bold text-blue-600">
+                              {(() => {
+                                const cost = parseFloat(watchedValues.cost || "0");
+                                const price = parseFloat(watchedValues.price || "0");
+                                if (cost > 0 && price > 0) {
+                                  const margin = ((price - cost) / cost * 100);
+                                  return `${margin.toFixed(1)}%`;
+                                }
+                                return "0%";
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Tax inclusive price calculation */}
+                        <div className="mt-3 pt-3 border-t border-green-200">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-green-600">Tax Inclusive Price:</span>
+                            <span className="font-bold text-green-800">
+                              ₹{(() => {
+                                const price = parseFloat(watchedValues.price || "0");
+                                const totalGst = calculateTotalGST();
+                                const taxInclusivePrice = price + (price * totalGst / 100);
+                                return taxInclusivePrice.toFixed(2);
+                              })()}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       <FormField
