@@ -2998,8 +2998,8 @@ export default function AddItemProfessional() {
                           </Button>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 )}
 
               </form>
