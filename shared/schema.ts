@@ -42,10 +42,10 @@ export const products = pgTable('products', {
   // Tax Information - Indian GST Compliance
   hsnCode: text('hsn_code'),
   gstCode: text('gst_code'),
-  cgstRate: decimal('cgst_rate', { precision: 5, scale: 2 }),
-  sgstRate: decimal('sgst_rate', { precision: 5, scale: 2 }),
-  igstRate: decimal('igst_rate', { precision: 5, scale: 2 }),
-  cessRate: decimal('cess_rate', { precision: 5, scale: 2 }),
+  cgstRate: text('cgst_rate').default('0'),
+  sgstRate: text('sgst_rate').default('0'),
+  igstRate: text('igst_rate').default('0'),
+  cessRate: text('cess_rate').default('0'),
   taxCalculationMethod: text('tax_calculation_method'),
 
   // Supplier & Manufacturer Information
