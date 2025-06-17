@@ -165,20 +165,48 @@ export default function AddItemDashboard() {
   const { toast } = useToast();
 
 
-  // Fetch products with better error handling
+  // Fetch products with enhanced error handling and debugging
   const { data: products = [], isLoading: productsLoading, refetch: refetchProducts, error: productsError } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
       try {
+        console.log('🔄 Fetching products from API...');
         const response = await fetch("/api/products");
+        
+        console.log('📊 Products API Response:', {
+          status: response.status,
+          ok: response.ok,
+          statusText: response.statusText
+        });
+
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API Error Response:', errorText);
           throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`);
         }
+        
         const data = await response.json();
-        console.log("Fetched products:", data); // Debug log
-        return Array.isArray(data) ? data : [];
+        console.log('📦 Products data received:', {
+          type: Array.isArray(data) ? 'array' : typeof data,
+          length: Array.isArray(data) ? data.length : 'N/A',
+          sample: Array.isArray(data) && data.length > 0 ? [data[0]] : 'No data'
+        });
+        
+        // Ensure we always return an array
+        const products = Array.isArray(data) ? data : [];
+        
+        if (products.length === 0) {
+          console.log('⚠️ No products found in database');
+        }
+        
+        return products;
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("💥 Error fetching products:", error);
+        toast({
+          title: "Error Loading Data",
+          description: "Failed to load products. Please check your connection and try again.",
+          variant: "destructive",
+        });
         throw error;
       }
     },
@@ -186,6 +214,17 @@ export default function AddItemDashboard() {
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    onError: (error) => {
+      console.error('📊 Query error:', error);
+      toast({
+        title: "Data Loading Failed",
+        description: "Unable to load product data. Please refresh the page.",
+        variant: "destructive",
+      });
+    },
+    onSuccess: (data) => {
+      console.log('✅ Products loaded successfully:', data.length, 'items');
+    }
   });
 
   // Fetch categories for the edit form
@@ -764,40 +803,51 @@ export default function AddItemDashboard() {
   }, 0);
 
   // Enhanced product filtering to include bulk and repackaged items
-  const filteredProducts = products.filter((product: Product) => {
+  const filteredProducts = Array.isArray(products) ? products.filter((product: Product) => {
+    // Ensure product object has required properties
+    if (!product || typeof product !== 'object') {
+      console.warn('Invalid product object:', product);
+      return false;
+    }
+
+    const productName = product.name || '';
+    const productSku = product.sku || '';
+    const productDescription = product.description || '';
+    
     const matchesSearch = !searchTerm || 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      productSku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      productDescription.toLowerCase().includes(searchTerm.toLowerCase());
 
     switch (activeTab) {
       case "active":
-        return matchesSearch && product.active;
+        return matchesSearch && product.active !== false;
       case "inactive":
-        return matchesSearch && !product.active;
+        return matchesSearch && product.active === false;
       case "low-stock":
-        return matchesSearch && product.stockQuantity <= (product.alertThreshold || 5);
+        return matchesSearch && (product.stockQuantity || 0) <= (product.alertThreshold || 5);
       case "bulk":
         return matchesSearch && (
-          product.name.toLowerCase().includes('bulk') ||
-          product.name.toLowerCase().includes('bag') ||
-          product.name.toLowerCase().includes('container') ||                      p.name.toLowerCase().includes('kg') ||
-          product.name.toLowerCase().includes('ltr') ||
-          product.name.toLowerCase().includes('wholesale') ||
-          product.name.toLowerCase().includes('sack') ||
+          productName.toLowerCase().includes('bulk') ||
+          productName.toLowerCase().includes('bag') ||
+          productName.toLowerCase().includes('container') ||
+          productName.toLowerCase().includes('kg') ||
+          productName.toLowerCase().includes('ltr') ||
+          productName.toLowerCase().includes('wholesale') ||
+          productName.toLowerCase().includes('sack') ||
           (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg') ||
-          product.stockQuantity > 10
+          (product.stockQuantity || 0) > 10
         );
       case "repackaged":
         return matchesSearch && (
-          product.sku.includes('REPACK') ||
-          product.name.toLowerCase().includes('pack') ||
-          product.description?.toLowerCase().includes('repacked')
+          productSku.includes('REPACK') ||
+          productName.toLowerCase().includes('pack') ||
+          productDescription.toLowerCase().includes('repacked')
         );
       default:
         return matchesSearch;
     }
-  });
+  }) : [];
 
   // Pagination logic
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -961,39 +1011,133 @@ export default function AddItemDashboard() {
               <p className="text-gray-600 mt-2">Manage and overview your product creation activities</p>
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const csvContent = products.map(p => 
+                    `"${p.name}","${p.sku}","${p.price}","${p.stockQuantity}","${p.active ? 'Active' : 'Inactive'}"`
+                  ).join('\n');
+                  const blob = new Blob([`Name,SKU,Price,Stock,Status\n${csvContent}`], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `products-${new Date().toISOString().split('T')[0]}.csv`;
+                  a.click();
+                }}
+                disabled={products.length === 0}
+              >
                 <DownloadIcon className="w-4 h-4 mr-2" />
                 Export Data
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  console.log('🔄 Manual refresh triggered');
+                  refetchProducts();
+                  toast({
+                    title: "Refreshing Data",
+                    description: "Fetching latest product information...",
+                  });
+                }}
+              >
                 <RefreshCcwIcon className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
-                  <Button 
-                    onClick={createExampleProduct}
-                    className="bg-green-600 hover:bg-green-700 mr-2"
-                  >
-                    <PlusIcon className="w-4 h-4 mr-2" />
-                    Save Example Product
-                  </Button>
-                  <Link href="/add-item-professional">
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <PlusIcon className="w-4 h-4 mr-2" />
-                      Add New Item
-                    </Button>
-                  </Link>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={async () => {
+                  console.log('🔍 Testing API connection...');
+                  try {
+                    const response = await fetch('/api/products');
+                    const data = await response.json();
+                    toast({
+                      title: "Connection Test",
+                      description: `API Status: ${response.status}. Found ${Array.isArray(data) ? data.length : 0} products.`,
+                    });
+                    console.log('🔍 API Test Result:', { status: response.status, data });
+                  } catch (error) {
+                    console.error('🔍 API Test Failed:', error);
+                    toast({
+                      title: "Connection Failed",
+                      description: "Unable to connect to API server.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                <AlertTriangleIcon className="w-4 h-4 mr-2" />
+                Test Connection
+              </Button>
+              <Button 
+                onClick={createExampleProduct}
+                className="bg-green-600 hover:bg-green-700 mr-2"
+              >
+                <PlusIcon className="w-4 h-4 mr-2" />
+                Save Example Product
+              </Button>
+              <Link href="/add-item-professional">
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                  Add New Item
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
 
         {/* Enhanced Summary Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
+          {/* Error Display */}
+          {productsError && (
+            <div className="col-span-full mb-4">
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-red-800">
+                    <AlertTriangleIcon className="w-5 h-5" />
+                    <div>
+                      <h3 className="font-semibold">Unable to Load Data</h3>
+                      <p className="text-sm text-red-700">
+                        {productsError.message || "Failed to fetch product data from the server."}
+                      </p>
+                      <div className="mt-2 flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => refetchProducts()}
+                          className="text-red-700 border-red-300 hover:bg-red-100"
+                        >
+                          <RefreshCcwIcon className="w-4 h-4 mr-1" />
+                          Retry
+                        </Button>
+                        <Link href="/add-item-professional">
+                          <Button size="sm" className="bg-red-600 hover:bg-red-700">
+                            Add First Product
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">Total Products</p>
-                  <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+                  {productsLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-6 bg-gray-200 animate-pulse rounded"></div>
+                      <RefreshCcwIcon className="w-4 h-4 animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+                  )}
                 </div>
                 <PackageIcon className="w-6 h-6 text-blue-500" />
               </div>
@@ -1573,20 +1717,60 @@ export default function AddItemDashboard() {
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-2 text-gray-600">Loading active items...</p>
+                    <p className="text-xs text-gray-500 mt-1">Fetching data from database...</p>
+                  </div>
+                ) : productsError ? (
+                  <div className="text-center py-12">
+                    <AlertTriangleIcon className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-red-900 mb-2">Failed to Load Data</h3>
+                    <p className="text-red-600 mb-4">
+                      Unable to fetch product data from the server. Please check your connection.
+                    </p>
+                    <div className="space-x-2">
+                      <Button onClick={() => refetchProducts()} variant="outline">
+                        <RefreshCcwIcon className="w-4 h-4 mr-2" />
+                        Try Again
+                      </Button>
+                      <Link href="/add-item-professional">
+                        <Button>
+                          <PlusIcon className="w-4 h-4 mr-2" />
+                          Add New Item
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 ) : filteredProducts.length === 0 ? (
                   <div className="text-center py-12">
                     <PackageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Items Found</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {products.length === 0 ? "No Items Found" : "No Active Items Found"}
+                    </h3>
                     <p className="text-gray-600 mb-4">
-                      {searchTerm ? "No items match your search criteria." : "You haven't added any active items yet."}
+                      {products.length === 0 
+                        ? "Your inventory is empty. Start by adding your first product."
+                        : searchTerm 
+                        ? "No items match your search criteria." 
+                        : "You haven't added any active items yet."
+                      }
                     </p>
-                    <Link href="/add-item-professional">
-                      <Button>
-                        <PlusIcon className="w-4 h-4 mr-2" />
-                        Add Your First Item
-                      </Button>
-                    </Link>
+                    <div className="space-x-2">
+                      {products.length === 0 && (
+                        <Button 
+                          onClick={createExampleProduct}
+                          variant="outline"
+                          className="mr-2"
+                        >
+                          <PlusIcon className="w-4 h-4 mr-2" />
+                          Add Sample Product
+                        </Button>
+                      )}
+                      <Link href="/add-item-professional">
+                        <Button>
+                          <PlusIcon className="w-4 h-4 mr-2" />
+                          {products.length === 0 ? "Add Your First Item" : "Add New Item"}
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   <>
