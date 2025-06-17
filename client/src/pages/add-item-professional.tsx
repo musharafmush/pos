@@ -366,10 +366,11 @@ export default function AddItemProfessional() {
       console.log('🔄 Dynamic data upload - Populating edit form with product data:', editingProduct);
 
       // Enhanced GST calculation with better accuracy
-      const cgstRate = parseFloat(editingProduct.cgstRate || '0');
-      const sgstRate = parseFloat(editingProduct.sgstRate || '0');
-      const igstRate = parseFloat(editingProduct.igstRate || '0');
-      const totalGst = cgstRate + sgstRate + igstRate;
+      const cgstRate = parseFloat(editingProduct.cgstRate?.toString() || '0');
+      const sgstRate = parseFloat(editingProduct.sgstRate?.toString() || '0');
+      const igstRate = parseFloat(editingProduct.igstRate?.toString() || '0');
+      const cessRate = parseFloat(editingProduct.cessRate?.toString() || '0');
+      const totalGst = cgstRate + sgstRate + igstRate + cessRate;
 
       // Dynamic GST code determination with better mapping
       let gstCode = 'GST 18%'; // Default

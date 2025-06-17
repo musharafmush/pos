@@ -577,12 +577,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Tax Information - Enhanced GST compliance
         hsnCode: req.body.hsnCode || '',
-        gstCode: req.body.gstCode || '',
-        cgstRate: req.body.cgstRate || '0',
-        sgstRate: req.body.sgstRate || '0',
-        igstRate: req.body.igstRate || '0',
-        cessRate: req.body.cessRate || '0',
+        gstCode: req.body.gstCode || 'GST 18%',
+        cgstRate: parseFloat(req.body.cgstRate || '0'),
+        sgstRate: parseFloat(req.body.sgstRate || '0'),
+        igstRate: parseFloat(req.body.igstRate || '0'),
+        cessRate: parseFloat(req.body.cessRate || '0'),
         taxCalculationMethod: req.body.taxCalculationMethod || 'exclusive',
+        gstUom: req.body.gstUom || 'PIECES',
+        purchaseGstCalculatedOn: req.body.purchaseGstCalculatedOn || 'MRP',
+        purchaseAbatement: req.body.purchaseAbatement || '',
+        configItemWithCommodity: req.body.configItemWithCommodity || false,
+        seniorExemptApplicable: req.body.seniorExemptApplicable || false,
 
         // Supplier & Manufacturer Information
         manufacturerName: req.body.manufacturerName || '',
