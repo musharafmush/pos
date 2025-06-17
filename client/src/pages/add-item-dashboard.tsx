@@ -1758,83 +1758,444 @@ export default function AddItemDashboard() {
           </TabsContent>
         </Tabs>
 
-        {/* View Product Dialog */}
+        {/* Enhanced View Product Dialog with All Details */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-2xl" aria-describedby="view-product-description">
+          <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto" aria-describedby="view-product-description">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <PackageIcon className="w-5 h-5" />
-                Product Details
+                Complete Product Details
               </DialogTitle>
               <DialogDescription id="view-product-description">
-                Complete information about this product
+                Comprehensive information about this product including all fields and configurations
               </DialogDescription>
             </DialogHeader>
             {selectedProduct && (
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Product Name</label>
-                    <p className="text-lg font-semibold">{selectedProduct.name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Description</label>
-                    <p className="text-gray-800">{selectedProduct.description || "No description"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">SKU</label>
-                    <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedProduct.sku}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Category</label>
-                    <p className="text-gray-800">{selectedProduct.categoryId}</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Price</label>
-                    <p className="text-lg font-semibold text-green-600">
-                      {formatCurrency(parseFloat(selectedProduct.price.toString()))}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">MRP</label>
-                    <p className="text-lg font-semibold">
-                      {formatCurrency(parseFloat(selectedProduct.mrp?.toString() || selectedProduct.price.toString()))}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Stock Quantity</label>
-                    <div className="flex items-center gap-2">
-                      <p className="text-lg font-semibold">{selectedProduct.stockQuantity}</p>
-                      <Badge variant={selectedProduct.stockQuantity <= 5 ? "destructive" : "secondary"}>
-                        {selectedProduct.stockQuantity <= 5 ? "Low Stock" : "In Stock"}
-                      </Badge>
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-blue-600">
+                      <InfoIcon className="w-5 h-5" />
+                      Basic Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Product Name</label>
+                        <p className="text-lg font-semibold">{selectedProduct.name}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">SKU</label>
+                        <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded max-w-fit">{selectedProduct.sku}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Status</label>
+                        <Badge variant={selectedProduct.active ? "default" : "secondary"}>
+                          {selectedProduct.active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Alias</label>
+                        <p className="text-gray-800">{selectedProduct.alias || "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Product Type</label>
+                        <p className="text-gray-800">{selectedProduct.itemProductType || "Standard"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Department</label>
+                        <p className="text-gray-800">{selectedProduct.department || "N/A"}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Status</label>
-                    <Badge variant={selectedProduct.active ? "default" : "secondary"}>
-                      {selectedProduct.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                  {selectedProduct.weight && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Weight</label>
-                      <p className="text-gray-800">{selectedProduct.weight} {selectedProduct.weightUnit}</p>
+                    {selectedProduct.description && (
+                      <div className="mt-4">
+                        <label className="text-sm font-medium text-gray-600">Description</label>
+                        <p className="text-gray-800 bg-gray-50 p-3 rounded">{selectedProduct.description}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Pricing Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-green-600">
+                      <DollarSignIcon className="w-5 h-5" />
+                      Pricing & Financial Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="bg-green-50 p-3 rounded">
+                        <label className="text-sm font-medium text-green-700">Selling Price</label>
+                        <p className="text-xl font-bold text-green-800">
+                          {formatCurrency(parseFloat(selectedProduct.price.toString()))}
+                        </p>
+                      </div>
+                      <div className="bg-blue-50 p-3 rounded">
+                        <label className="text-sm font-medium text-blue-700">MRP</label>
+                        <p className="text-xl font-bold text-blue-800">
+                          {formatCurrency(parseFloat(selectedProduct.mrp?.toString() || selectedProduct.price.toString()))}
+                        </p>
+                      </div>
+                      <div className="bg-orange-50 p-3 rounded">
+                        <label className="text-sm font-medium text-orange-700">Cost Price</label>
+                        <p className="text-xl font-bold text-orange-800">
+                          {formatCurrency(parseFloat(selectedProduct.cost?.toString() || "0"))}
+                        </p>
+                      </div>
+                      <div className="bg-purple-50 p-3 rounded">
+                        <label className="text-sm font-medium text-purple-700">Profit Margin</label>
+                        <p className="text-xl font-bold text-purple-800">
+                          {selectedProduct.cost ? 
+                            `${(((parseFloat(selectedProduct.price.toString()) - parseFloat(selectedProduct.cost.toString())) / parseFloat(selectedProduct.cost.toString())) * 100).toFixed(1)}%` 
+                            : "N/A"
+                          }
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
+                    
+                    <div className="grid grid-cols-3 gap-4 mt-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Sell By</label>
+                        <p className="text-gray-800">{selectedProduct.sellBy || "None"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Item Per Unit</label>
+                        <p className="text-gray-800">{selectedProduct.itemPerUnit || "1"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Is Weighable</label>
+                        <Badge variant={selectedProduct.isWeighable ? "default" : "secondary"}>
+                          {selectedProduct.isWeighable ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Tax Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-red-600">
+                      <DollarSignIcon className="w-5 h-5" />
+                      Tax & Compliance Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">HSN Code</label>
+                        <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedProduct.hsnCode || "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">CGST Rate</label>
+                        <p className="text-gray-800">{selectedProduct.cgstRate || "0"}%</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">SGST Rate</label>
+                        <p className="text-gray-800">{selectedProduct.sgstRate || "0"}%</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">IGST Rate</label>
+                        <p className="text-gray-800">{selectedProduct.igstRate || "0"}%</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Cess Rate</label>
+                        <p className="text-gray-800">{selectedProduct.cessRate || "0"}%</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Tax Method</label>
+                        <p className="text-gray-800 capitalize">{selectedProduct.taxCalculationMethod || "Exclusive"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">GST UOM</label>
+                        <p className="text-gray-800">{selectedProduct.gstUom || "PIECES"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Total GST</label>
+                        <p className="text-gray-800 font-semibold">
+                          {(parseFloat(selectedProduct.cgstRate || "0") + parseFloat(selectedProduct.sgstRate || "0") + parseFloat(selectedProduct.igstRate || "0")).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Inventory & Stock */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-yellow-600">
+                      <WarehouseIcon className="w-5 h-5" />
+                      Inventory & Stock Management
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="bg-yellow-50 p-3 rounded">
+                        <label className="text-sm font-medium text-yellow-700">Current Stock</label>
+                        <p className="text-xl font-bold text-yellow-800">{selectedProduct.stockQuantity}</p>
+                        <Badge variant={selectedProduct.stockQuantity <= (selectedProduct.alertThreshold || 5) ? "destructive" : "default"} className="mt-1">
+                          {selectedProduct.stockQuantity <= (selectedProduct.alertThreshold || 5) ? "Low Stock" : "In Stock"}
+                        </Badge>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Alert Threshold</label>
+                        <p className="text-gray-800">{selectedProduct.alertThreshold || 5}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">SKU Type</label>
+                        <p className="text-gray-800">{selectedProduct.skuType || "Put Away"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Batch Selection</label>
+                        <p className="text-gray-800">{selectedProduct.batchSelection || "Not Applicable"}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 bg-green-50 p-3 rounded">
+                      <label className="text-sm font-medium text-green-700">Total Inventory Value</label>
+                      <p className="text-2xl font-bold text-green-800">
+                        {formatCurrency(parseFloat(selectedProduct.price.toString()) * selectedProduct.stockQuantity)}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Supplier & Manufacturer */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-indigo-600">
+                      <PackageIcon className="w-5 h-5" />
+                      Supplier & Manufacturer Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Manufacturer</label>
+                        <p className="text-gray-800 font-semibold">{selectedProduct.manufacturerName || "N/A"}</p>
+                        <p className="text-xs text-gray-500">ID: {selectedProduct.manufacturerId || "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Supplier</label>
+                        <p className="text-gray-800 font-semibold">{selectedProduct.supplierName || "N/A"}</p>
+                        <p className="text-xs text-gray-500">ID: {selectedProduct.supplierId || "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Brand</label>
+                        <p className="text-gray-800">{selectedProduct.brand || "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Buyer</label>
+                        <p className="text-gray-800">{selectedProduct.buyer || "N/A"}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Weight & Packaging */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-cyan-600">
+                      <WeightIcon className="w-5 h-5" />
+                      Weight & Packaging Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Weight</label>
+                        <p className="text-gray-800">{selectedProduct.weight ? `${selectedProduct.weight} ${selectedProduct.weightUnit}` : "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Weight Per Unit</label>
+                        <p className="text-gray-800">{selectedProduct.weightsPerUnit || "1"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Decimal Point</label>
+                        <p className="text-gray-800">{selectedProduct.decimalPoint || "0"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Item Preparation</label>
+                        <p className="text-gray-800">{selectedProduct.itemPreparationsStatus || "Trade As Is"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Batch/Expiry</label>
+                        <p className="text-gray-800">{selectedProduct.batchExpiryDetails || "Not Required"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Weight in Grams</label>
+                        <p className="text-gray-800">{selectedProduct.weightInGms || "N/A"}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Barcode & Identification */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-gray-600">
+                      <QrCodeIcon className="w-5 h-5" />
+                      Barcode & Identification
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Barcode</label>
+                        <div className="flex items-center gap-2">
+                          <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedProduct.barcode || "N/A"}</p>
+                          {selectedProduct.barcode && (
+                            <div className="w-16 h-16 border rounded flex items-center justify-center bg-white">
+                              <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${selectedProduct.barcode}`}
+                                alt="Barcode QR"
+                                className="w-12 h-12"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">EAN Code Required</label>
+                        <Badge variant={selectedProduct.eanCodeRequired ? "default" : "secondary"}>
+                          {selectedProduct.eanCodeRequired ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Product Properties */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-teal-600">
+                      <SettingsIcon className="w-5 h-5" />
+                      Product Properties & Features
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Perishable Item</span>
+                        <Badge variant={selectedProduct.perishableItem ? "default" : "secondary"}>
+                          {selectedProduct.perishableItem ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Temperature Controlled</span>
+                        <Badge variant={selectedProduct.temperatureControlled ? "default" : "secondary"}>
+                          {selectedProduct.temperatureControlled ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Fragile Item</span>
+                        <Badge variant={selectedProduct.fragileItem ? "default" : "secondary"}>
+                          {selectedProduct.fragileItem ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Track Serial Numbers</span>
+                        <Badge variant={selectedProduct.trackSerialNumbers ? "default" : "secondary"}>
+                          {selectedProduct.trackSerialNumbers ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">FDA Approved</span>
+                        <Badge variant={selectedProduct.fdaApproved ? "default" : "secondary"}>
+                          {selectedProduct.fdaApproved ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">BIS Certified</span>
+                        <Badge variant={selectedProduct.bisCertified ? "default" : "secondary"}>
+                          {selectedProduct.bisCertified ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Mobile & Other Configurations */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-pink-600">
+                      <SettingsIcon className="w-5 h-5" />
+                      Mobile & Configuration Settings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Show on Mobile Dashboard</span>
+                        <Badge variant={selectedProduct.showOnMobileDashboard ? "default" : "secondary"}>
+                          {selectedProduct.showOnMobileDashboard ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Mobile Notifications</span>
+                        <Badge variant={selectedProduct.enableMobileNotifications ? "default" : "secondary"}>
+                          {selectedProduct.enableMobileNotifications ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Quick Add to Cart</span>
+                        <Badge variant={selectedProduct.quickAddToCart ? "default" : "secondary"}>
+                          {selectedProduct.quickAddToCart ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Allow Item Free</span>
+                        <Badge variant={selectedProduct.allowItemFree ? "default" : "secondary"}>
+                          {selectedProduct.allowItemFree ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Config with Commodity</span>
+                        <Badge variant={selectedProduct.configItemWithCommodity ? "default" : "secondary"}>
+                          {selectedProduct.configItemWithCommodity ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">Senior Exempt Applicable</span>
+                        <Badge variant={selectedProduct.seniorExemptApplicable ? "default" : "secondary"}>
+                          {selectedProduct.seniorExemptApplicable ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Additional Information */}
+                {selectedProduct.itemIngredients && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-orange-600">
+                        <InfoIcon className="w-5 h-5" />
+                        Additional Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Item Ingredients</label>
+                        <p className="text-gray-800 bg-gray-50 p-3 rounded mt-1">{selectedProduct.itemIngredients}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
-            <DialogFooter>
+            <DialogFooter className="mt-6">
               <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                 Close
               </Button>
               {selectedProduct && (
                 <Button onClick={() => {
                   setIsViewDialogOpen(false);
-                  handleEditProduct(selectedProduct);
+                  setLocation(`/add-item-professional?edit=${selectedProduct.id}`);
                 }}>
                   <EditIcon className="w-4 h-4 mr-2" />
                   Edit Product
