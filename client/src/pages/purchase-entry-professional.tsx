@@ -1150,8 +1150,14 @@ export default function PurchaseEntryProfessional() {
 
       // Show success toast with enhanced information
       toast({
-        title: "Product Selected! 🎯",
-        description: `${product.name} added - Cost: ₹${costPrice.toFixed(2)}, Selling: ₹${sellingPrice.toFixed(2)}, MRP: ₹${mrpPrice.toFixed(2)}`,
+        title: "Product Selected",
+        description: `${product.name} added - Cost: ₹${costPrice.toFixed(2)}, Tax: ${totalGstRate}%`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Product Not Found",
+        description: "Selected product not found in database",
       });
     }
   };
@@ -1421,21 +1427,68 @@ export default function PurchaseEntryProfessional() {
 
   // Enhanced dynamic add item function
   const addItem = () => {
-    openAddItemModal();
+    try {
+      append({
+        productId: 0,
+        code: "",
+        description: "",
+        quantity: 1,
+        receivedQty: 1,
+        freeQty: 0,
+        unitCost: 0,
+        sellingPrice: 0,
+        mrp: 0,
+        hsnCode: "",
+        taxPercentage: 18,
+        discountAmount: 0,
+        discountPercent: 0,
+        expiryDate: "",
+        batchNumber: "",
+        netCost: 0,
+        roiPercent: 0,
+        grossProfitPercent: 0,
+        netAmount: 0,
+        cashPercent: 0,
+        cashAmount: 0,
+        location: "",
+        unit: "PCS",
+      });
+      
+      toast({
+        title: "Item Added",
+        description: `New line item ${fields.length + 1} added successfully.`,
+      });
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add new item. Please try again.",
+      });
+    }
   };
 
   // Enhanced remove item function with better validation
   const removeItem = (index: number) => {
     if (fields.length > 1) {
-      remove(index);
-      toast({
-        title: "Item Removed! 🗑️",
-        description: `Line item ${index + 1} removed successfully. Totals updated automatically.`,
-      });
+      try {
+        remove(index);
+        toast({
+          title: "Item Removed",
+          description: `Line item ${index + 1} removed successfully.`,
+        });
+      } catch (error) {
+        console.error('Error removing item:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to remove item. Please try again.",
+        });
+      }
     } else {
       toast({
         variant: "destructive",
-        title: "Cannot Remove! ⚠️",
+        title: "Cannot Remove",
         description: "At least one line item is required for the purchase order.",
       });
     }
@@ -1680,6 +1733,13 @@ export default function PurchaseEntryProfessional() {
         
         // Check if item has meaningful data
         return hasProduct && hasValidQuantity && hasCost;
+      });
+
+      // Ensure each valid item has proper receivedQty value
+      validItems.forEach(item => {
+        if (!item.receivedQty || item.receivedQty === 0) {
+          item.receivedQty = item.quantity || 1;
+        }
       });
 
       console.log('Validating items:', {
