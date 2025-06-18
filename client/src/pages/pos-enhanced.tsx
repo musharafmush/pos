@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,11 @@ import {
   FileText,
   Download,
   Settings,
-  Printer
+  Printer,
+  Wifi,
+  WifiOff,
+  Activity,
+  BarChart3
 } from "lucide-react";
 
 interface Product {
@@ -87,6 +91,16 @@ export default function POSEnhanced() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
   const [discount, setDiscount] = useState(0);
+  
+  // Real-time connection and data states
+  const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline'>('online');
+  const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
+  const [pendingSales, setPendingSales] = useState<number>(0);
+  const [realtimeStats, setRealtimeStats] = useState({
+    todaySales: 0,
+    totalTransactions: 0,
+    averageSale: 0
+  });
   const [showOceanDialog, setShowOceanDialog] = useState(false);
   const [oceanFreight, setOceanFreight] = useState({
     containerNumber: "",
