@@ -48,6 +48,7 @@ import {
   TrendingUpIcon,
   BarChart3Icon,
   Search,
+  RefreshCw,
   Filter,
   Calendar,
   PlusIcon,
@@ -1500,6 +1501,74 @@ export default function RepackingDashboardProfessional() {
                       value={repackFormData.mrp}
                       onChange={(e) => setRepackFormData({ ...repackFormData, mrp: e.target.value })}
                     />
+                  </div>
+                </div>
+
+                {/* Advanced Pricing Controls */}
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <h4 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
+                    <TrendingUpIcon className="w-4 h-4" />
+                    Smart Pricing Configuration
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="margin-percentage">Selling Price Margin (%)</Label>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          id="margin-percentage"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={repackFormData.marginPercentage}
+                          onChange={(e) => {
+                            setRepackFormData({ ...repackFormData, marginPercentage: e.target.value });
+                            if (selectedBulkProduct && repackFormData.unitWeight) {
+                              recalculateRepackData(repackFormData.unitWeight, false);
+                            }
+                          }}
+                          className="flex-1"
+                        />
+                        <span className="text-sm text-gray-500">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mrp-margin-percentage">MRP Margin (%)</Label>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          id="mrp-margin-percentage"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={repackFormData.mrpMarginPercentage}
+                          onChange={(e) => {
+                            setRepackFormData({ ...repackFormData, mrpMarginPercentage: e.target.value });
+                            if (selectedBulkProduct && repackFormData.unitWeight) {
+                              recalculateRepackData(repackFormData.unitWeight, false);
+                            }
+                          }}
+                          className="flex-1"
+                        />
+                        <span className="text-sm text-gray-500">%</span>
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (selectedBulkProduct && repackFormData.unitWeight) {
+                            recalculateRepackData(repackFormData.unitWeight, false);
+                          }
+                        }}
+                        className="w-full"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Recalculate Prices with New Margins
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
