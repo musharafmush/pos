@@ -292,9 +292,19 @@ export default function SaleReturn() {
         {/* Find Sale Transaction Section */}
         <Card className="shadow-lg border-0 bg-white">
           <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
-            <CardTitle className="flex items-center gap-3">
-              <Search className="h-6 w-6" />
-              Find Sale Transaction
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Search className="h-6 w-6" />
+                Find Sale Transaction
+              </div>
+              <Button
+                onClick={() => window.open('/pos-enhanced', '_blank')}
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                size="sm"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                New Sale
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">

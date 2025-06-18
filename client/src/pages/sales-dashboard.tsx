@@ -64,7 +64,9 @@ import {
   CalendarIcon,
   PercentIcon,
   ArrowUpIcon,
-  ArrowDownIcon
+  ArrowDownIcon,
+  ArrowLeftRight,
+  RefreshCw
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -164,7 +166,9 @@ export default function SalesDashboard() {
     },
     retry: 2,
     retryDelay: 1000,
-    refetchInterval: 10000 // Refresh every 10 seconds for live data
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time data
+    refetchOnWindowFocus: true,
+    staleTime: 2000 // Data considered fresh for 2 seconds
   });
 
   // Fetch detailed customer billing data with enhanced information
@@ -780,10 +784,33 @@ export default function SalesDashboard() {
               <p className="text-gray-600 dark:text-gray-400">Monitor your sales performance and trends • Real-time POS integration</p>
             </div>
             <div className="flex items-center space-x-3">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                Live Data
-              </Badge>
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                  Live Data - Updates every 5s
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    refetchSales();
+                    refetchCustomerBilling();
+                  }}
+                  className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700"
+                  title="Refresh data manually"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/sale-return', '_blank')}
+                className="flex items-center space-x-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300"
+              >
+                <ArrowLeftRight className="h-4 w-4" />
+                <span>Returns</span>
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
