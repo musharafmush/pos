@@ -842,43 +842,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Data backup and management endpoints
   app.post('/api/backup/create', async (req, res) => {
     try {
-      console.log('🔄 Creating data backup...');
+      console.log('🔄 Creating comprehensive data backup...');
 
       const { sqlite } = await import('@db');
 
-      // Create backup data structure
-      const backupData = {
-        timestamp: new Date().toISOString(),
-        version: '1.0',
-        data: {
-          users: sqlite.prepare('SELECT * FROM users').all(),
-          categories: sqlite.prepare('SELECT * FROM categories').all(),
-          suppliers: sqlite.prepare('SELECT * FROM suppliers').all(),
-          customers: sqlite.prepare('SELECT * FROM customers').all(),
-          products: sqlite.prepare('SELECT * FROM products').all(),
-          sales: sqlite.prepare('SELECT * FROM sales').all(),
-          sale_items: sqlite.prepare('SELECT * FROM sale_items').all(),
-          purchases: sqlite.prepare('SELECT * FROM purchases').all(),
-          purchase_items: sqlite.prepare('SELECT * FROM purchase_items').all(),
-          settings: sqlite.prepare('SELECT * FROM settings').all()
+      // Helper function to safely query tables
+      const safeTableQuery = (tableName: string) => {
+        try {
+          // First check if table exists
+          const tableExists = sqlite.prepare(`
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name=?
+          `).get(tableName);
+
+          if (!tableExists) {
+            console.log(`⚠️ Table ${tableName} does not exist, skipping...`);
+            return [];
+          }
+
+          const data = sqlite.prepare(`SELECT * FROM ${tableName}`).all();
+          console.log(`✅ Backed up ${data.length} records from ${tableName}`);
+          return data;
+        } catch (error) {
+          console.error(`❌ Error backing up ${tableName}:`, error.message);
+          return [];
         }
       };
 
-      // Store backup temporarily for download
-      global.latestBackup = JSON.stringify(backupData, null, 2);
+      // Create comprehensive backup data structure
+      const backupData = {
+        timestamp: new Date().toISOString(),
+        version: '2.0',
+        source: 'Awesome Shop POS',
+        data: {
+          // Core system data
+          users: safeTableQuery('users'),
+          categories: safeTableQuery('categories'),
+          suppliers: safeTableQuery('suppliers'),
+          customers: safeTableQuery('customers'),
+          products: safeTableQuery('products'),
+          
+          // Transaction data
+          sales: safeTableQuery('sales'),
+          sale_items: safeTableQuery('sale_items'),
+          purchases: safeTableQuery('purchases'),
+          purchase_items: safeTableQuery('purchase_items'),
+          
+          // System configuration
+          settings: safeTableQuery('settings'),
+          
+          // Additional tables if they exist
+          returns: safeTableQuery('returns'),
+          return_items: safeTableQuery('return_items'),
+          inventory_adjustments: safeTableQuery('inventory_adjustments'),
+          payment_methods: safeTableQuery('payment_methods'),
+          discount_rules: safeTableQuery('discount_rules'),
+          tax_rates: safeTableQuery('tax_rates')
+        },
+        metadata: {
+          created_at: new Date().toISOString(),
+          total_tables: 0,
+          total_records: 0,
+          database_size: 0
+        }
+      };
 
-      console.log('✅ Backup created successfully');
+      // Calculate metadata
+      let totalRecords = 0;
+      let totalTables = 0;
+      
+      Object.keys(backupData.data).forEach(table => {
+        const records = backupData.data[table];
+        if (Array.isArray(records) && records.length > 0) {
+          totalRecords += records.length;
+          totalTables++;
+        }
+      });
+
+      backupData.metadata.total_tables = totalTables;
+      backupData.metadata.total_records = totalRecords;
+
+      // Get database file size if possible
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const dbPath = path.join(process.cwd(), 'pos-data.db');
+        if (fs.existsSync(dbPath)) {
+          const stats = fs.statSync(dbPath);
+          backupData.metadata.database_size = stats.size;
+        }
+      } catch (sizeError) {
+        console.log('⚠️ Could not determine database size:', sizeError.message);
+      }
+
+      // Store backup temporarily for download
+      const backupJson = JSON.stringify(backupData, null, 2);
+      global.latestBackup = backupJson;
+
+      console.log('✅ Comprehensive backup created successfully');
+      console.log(`📊 Backup summary: ${totalTables} tables, ${totalRecords} records`);
+      
       res.json({ 
         success: true, 
-        message: 'Backup created successfully',
-        timestamp: backupData.timestamp
+        message: 'Complete backup created successfully',
+        timestamp: backupData.timestamp,
+        summary: {
+          tables: totalTables,
+          records: totalRecords,
+          size: Math.round(backupJson.length / 1024) + ' KB'
+        }
       });
 
     } catch (error) {
       console.error('❌ Error creating backup:', error);
       res.status(500).json({ 
         error: 'Failed to create backup',
-        message: error.message 
+        message: error.message,
+        details: 'Please check server logs for more information'
       });
     }
   });
@@ -886,19 +966,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/backup/download', async (req, res) => {
     try {
       if (!global.latestBackup) {
-        return res.status(404).json({ error: 'No backup available for download' });
+        return res.status(404).json({ 
+          error: 'No backup available for download',
+          message: 'Please create a backup first before downloading'
+        });
       }
 
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `awesome-pos-backup-${timestamp}.json`;
+
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="pos-backup-${new Date().toISOString().split('T')[0]}.json"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', Buffer.byteLength(global.latestBackup, 'utf8'));
       res.send(global.latestBackup);
 
+      console.log(`✅ Backup downloaded successfully: ${filename}`);
+      
       // Clear the backup from memory after download
       global.latestBackup = null;
 
     } catch (error) {
       console.error('❌ Error downloading backup:', error);
-      res.status(500).json({ error: 'Failed to download backup' });
+      res.status(500).json({ 
+        error: 'Failed to download backup',
+        message: error.message 
+      });
     }
   });
 
