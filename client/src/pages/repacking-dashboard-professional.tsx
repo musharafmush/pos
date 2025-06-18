@@ -58,7 +58,8 @@ import {
   DollarSignIcon,
   TrashIcon,
   SaveIcon,
-  Scissors
+  Scissors,
+  Package
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
@@ -339,25 +340,50 @@ export default function RepackingDashboardProfessional() {
     setIsRepackDialogOpen(true);
   };
 
-  // Repack mutation
+  // Repack mutation with enhanced validation
   const repackMutation = useMutation({
     mutationFn: async (data: typeof repackFormData) => {
+      // Comprehensive validation
       if (!selectedBulkProduct) throw new Error("No bulk product selected");
+      if (!data.unitWeight || parseFloat(data.unitWeight) <= 0) throw new Error("Valid unit weight is required");
+      if (!data.targetQuantity || parseInt(data.targetQuantity) <= 0) throw new Error("Valid target quantity is required");
+      if (!data.sourceQuantity || parseFloat(data.sourceQuantity) <= 0) throw new Error("Valid source quantity is required");
+      if (parseFloat(data.sourceQuantity) > selectedBulkProduct.stockQuantity) {
+        throw new Error(`Insufficient bulk stock. Available: ${selectedBulkProduct.stockQuantity}, Required: ${data.sourceQuantity}`);
+      }
 
-      // Create new repacked product
+      console.log('🔄 Repack Data Validation Passed:', data);
+      console.log('📦 Selected Bulk Product:', selectedBulkProduct);
+
+      // Create new repacked product with proper data formatting
       const repackedProduct = {
-        name: data.targetName,
-        description: `Repacked from bulk item: ${selectedBulkProduct.name}. Original weight: ${selectedBulkProduct.weight}${selectedBulkProduct.weightUnit}`,
-        sku: data.targetSku,
-        price: data.sellingPrice,
-        mrp: data.mrp,
-        cost: data.costPrice,
-        weight: data.unitWeight,
+        name: data.targetName || `${selectedBulkProduct.name} (${data.unitWeight}g Pack)`,
+        description: `Repacked from bulk item: ${selectedBulkProduct.name}. Weight per unit: ${data.unitWeight}g`,
+        sku: data.targetSku || `${selectedBulkProduct.sku}-REPACK-${data.unitWeight}G-${Date.now()}`,
+        price: parseFloat(data.sellingPrice || "0"),
+        mrp: parseFloat(data.mrp || data.sellingPrice || "0"),
+        cost: parseFloat(data.costPrice || "0"),
+        weight: parseFloat(data.unitWeight || "250"),
         weightUnit: "g",
         categoryId: selectedBulkProduct.categoryId || 1,
-        stockQuantity: parseInt(data.targetQuantity),
+        stockQuantity: parseInt(data.targetQuantity || "1"),
         alertThreshold: 5,
         barcode: "",
+        hsnCode: selectedBulkProduct.hsnCode || "",
+        cgstRate: selectedBulkProduct.cgstRate || "6",
+        sgstRate: selectedBulkProduct.sgstRate || "6",
+        igstRate: selectedBulkProduct.igstRate || "0",
+        cessRate: selectedBulkProduct.cessRate || "0",
+        taxCalculationMethod: selectedBulkProduct.taxCalculationMethod || "exclusive",
+        // Weight & Packaging Information
+        weightsPerUnit: "1",
+        batchExpiryDetails: "Expiry Only", 
+        itemPreparationsStatus: "Repacked",
+        weightInGms: data.unitWeight || "250",
+        decimalPoint: "2",
+        sellBy: "Weight",
+        itemPerUnit: "1",
+        isWeighable: true,
         active: true,
       };
 
@@ -369,23 +395,42 @@ export default function RepackingDashboardProfessional() {
 
       if (!response.ok) throw new Error("Failed to create repacked product");
 
-      // Update bulk product stock
-      const bulkUnitsUsed = parseFloat(data.sourceQuantity);
+      // Update bulk product stock with proper data formatting
+      const bulkUnitsUsed = parseFloat(data.sourceQuantity || "1");
       const newBulkStock = Math.max(0, selectedBulkProduct.stockQuantity - bulkUnitsUsed);
 
+      const bulkUpdateData = {
+        name: selectedBulkProduct.name,
+        description: selectedBulkProduct.description || "",
+        sku: selectedBulkProduct.sku,
+        price: parseFloat(selectedBulkProduct.price.toString()),
+        mrp: parseFloat(selectedBulkProduct.mrp.toString()),
+        cost: parseFloat(selectedBulkProduct.cost.toString()),
+        weight: selectedBulkProduct.weight || null,
+        weightUnit: selectedBulkProduct.weightUnit || "kg",
+        categoryId: selectedBulkProduct.categoryId || 1,
+        stockQuantity: newBulkStock,
+        alertThreshold: selectedBulkProduct.alertThreshold || 5,
+        barcode: selectedBulkProduct.barcode || "",
+        hsnCode: selectedBulkProduct.hsnCode || "",
+        cgstRate: selectedBulkProduct.cgstRate || "6",
+        sgstRate: selectedBulkProduct.sgstRate || "6",
+        igstRate: selectedBulkProduct.igstRate || "0",
+        cessRate: selectedBulkProduct.cessRate || "0",
+        taxCalculationMethod: selectedBulkProduct.taxCalculationMethod || "exclusive",
+        active: selectedBulkProduct.active !== false
+      };
+
       const updateResponse = await fetch(`/api/products/${selectedBulkProduct.id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...selectedBulkProduct,
-          stockQuantity: newBulkStock,
-          price: selectedBulkProduct.price.toString(),
-          cost: selectedBulkProduct.cost.toString(),
-          mrp: selectedBulkProduct.mrp.toString()
-        }),
+        body: JSON.stringify(bulkUpdateData),
       });
 
-      if (!updateResponse.ok) throw new Error("Failed to update bulk product stock");
+      if (!updateResponse.ok) {
+        const errorText = await updateResponse.text();
+        throw new Error(`Failed to update bulk product stock: ${errorText}`);
+      }
 
       return await response.json();
     },
