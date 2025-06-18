@@ -1528,7 +1528,7 @@ ${receiptSettings.receiptFooter}
                       </div>
                     </div>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                      Permanently delete all data from the system and reset your POS to factory settings. This operation cannot be reversed.
+                      Permanently delete all business data while preserving your login credentials. This clears products, sales, purchases, customers, and suppliers but keeps user accounts intact.
                     </p>
                     <div className="space-y-4">
                       <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4 border border-red-200 dark:border-red-700">

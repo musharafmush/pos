@@ -1397,6 +1397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('📋 Available tables:', tables);
 
           // Clear data in safe order (children first to avoid FK violations)
+          // NOTE: Excluding 'users' table to preserve login credentials
           const tablesToClear = [
             'return_items',
             'returns', 
