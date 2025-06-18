@@ -580,7 +580,7 @@ export default function RepackingDashboardProfessional() {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell>₹{product.price.toFixed(2)}</TableCell>
+                            <TableCell>₹{Number(product.price).toFixed(2)}</TableCell>
                             <TableCell>
                               <Badge variant={product.active ? "default" : "secondary"}>
                                 {product.active ? "Active" : "Inactive"}
@@ -679,8 +679,8 @@ export default function RepackingDashboardProfessional() {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell>₹{product.price.toFixed(2)}</TableCell>
-                            <TableCell>₹{product.mrp.toFixed(2)}</TableCell>
+                            <TableCell>₹{Number(product.price).toFixed(2)}</TableCell>
+                            <TableCell>₹{Number(product.mrp).toFixed(2)}</TableCell>
                             <TableCell>
                               <Badge variant={product.active ? "default" : "secondary"}>
                                 {product.active ? "Active" : "Inactive"}
