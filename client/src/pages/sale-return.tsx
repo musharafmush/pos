@@ -302,7 +302,94 @@ export default function SalesDashboard() {
           </div>
         </div>
 
-        {/* Find Sale Transaction Section */}
+        {/* Real-Time Sales Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">Today's Sales</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {salesStats ? formatCurrency(salesStats.todaySales || 0) : formatCurrency(0)}
+                  </p>
+                </div>
+                <div className="h-12 w-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="flex items-center mt-2 text-xs">
+                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                <span className="text-green-600">Live Data</span>
+                {statsLoading && <RefreshCw className="h-3 w-3 animate-spin ml-2 text-blue-500" />}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600">Total Transactions</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    {salesStats ? salesStats.totalTransactions || 0 : 0}
+                  </p>
+                </div>
+                <div className="h-12 w-12 bg-green-500 rounded-lg flex items-center justify-center">
+                  <ShoppingCart className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="flex items-center mt-2 text-xs">
+                <BarChart3 className="h-3 w-3 text-green-500 mr-1" />
+                <span className="text-green-600">Real-time</span>
+                {statsLoading && <RefreshCw className="h-3 w-3 animate-spin ml-2 text-green-500" />}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-600">Average Sale</p>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {salesStats ? formatCurrency(salesStats.averageSale || 0) : formatCurrency(0)}
+                  </p>
+                </div>
+                <div className="h-12 w-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="flex items-center mt-2 text-xs">
+                <Calendar className="h-3 w-3 text-purple-500 mr-1" />
+                <span className="text-purple-600">Updated</span>
+                {statsLoading && <RefreshCw className="h-3 w-3 animate-spin ml-2 text-purple-500" />}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-600">Active Customers</p>
+                  <p className="text-2xl font-bold text-orange-900">
+                    {salesStats ? salesStats.activeCustomers || 0 : 0}
+                  </p>
+                </div>
+                <div className="h-12 w-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="flex items-center mt-2 text-xs">
+                <Users className="h-3 w-3 text-orange-500 mr-1" />
+                <span className="text-orange-600">Live Count</span>
+                {statsLoading && <RefreshCw className="h-3 w-3 animate-spin ml-2 text-orange-500" />}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sales Transaction Search */}
         <Card className="shadow-lg border-0 bg-white">
           <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-t-lg">
             <CardTitle className="flex items-center justify-between">
@@ -388,19 +475,51 @@ export default function SalesDashboard() {
             )}
 
             {searchTerm.length >= 2 && sales.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="font-medium text-gray-700 flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  Search Results ({sales.length})
-                </h4>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-700 flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Sales Analytics ({sales.length} transactions)
+                  </h4>
+                  <div className="text-sm text-gray-600">
+                    Total: {formatCurrency(sales.reduce((sum, sale) => sum + parseFloat(sale.total), 0))}
+                  </div>
+                </div>
+
+                {/* Quick Analytics for Search Results */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-emerald-600">
+                      {formatCurrency(sales.reduce((sum, sale) => sum + parseFloat(sale.total), 0))}
+                    </p>
+                    <p className="text-xs text-gray-600">Total Value</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-blue-600">{sales.length}</p>
+                    <p className="text-xs text-gray-600">Transactions</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-purple-600">
+                      {formatCurrency(sales.reduce((sum, sale) => sum + parseFloat(sale.total), 0) / sales.length)}
+                    </p>
+                    <p className="text-xs text-gray-600">Average</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-orange-600">
+                      {sales.filter(sale => sale.paymentMethod === 'cash').length}
+                    </p>
+                    <p className="text-xs text-gray-600">Cash Sales</p>
+                  </div>
+                </div>
+
                 {sales.map((sale) => (
                   <Card
                     key={sale.id}
                     className={`cursor-pointer transition-all duration-200 hover:shadow-md border ${
                       selectedSale?.id === sale.id 
-                        ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50' 
-                        : 'border-gray-200 hover:border-blue-300'
-                    }`}
+                        ? 'ring-2 ring-emerald-500 border-emerald-200 bg-emerald-50' 
+                        : 'border-gray-200 hover:border-emerald-300'
+                    } border-l-4 border-l-emerald-500`}
                     onClick={() => handleSaleSelect(sale)}
                   >
                     <CardContent className="p-4">
@@ -408,31 +527,33 @@ export default function SalesDashboard() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-gray-800">#{sale.orderNumber}</p>
-                            <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                            <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'} className="text-xs bg-emerald-100 text-emerald-700">
                               {sale.status}
                             </Badge>
                           </div>
                           <p className="text-sm text-gray-600">
                             {sale.customer?.name || 'Walk-in Customer'}
                           </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(sale.createdAt).toLocaleDateString('en-US', {
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{new Date(sale.createdAt).toLocaleDateString('en-US', {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit'
-                            })}
-                          </p>
+                            })}</span>
+                            <span>•</span>
+                            <span>{sale.items?.length || 0} items</span>
+                          </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-lg text-gray-800">
+                          <p className="font-bold text-lg text-emerald-700">
                             {formatCurrency(parseFloat(sale.total))}
                           </p>
                           <div className="flex items-center gap-1 mt-1 justify-end">
-                            <span className="text-xs capitalize text-gray-600">
+                            <Badge variant="outline" className="text-xs capitalize">
                               {sale.paymentMethod}
-                            </span>
+                            </Badge>
                           </div>
                         </div>
                       </div>
@@ -452,14 +573,14 @@ export default function SalesDashboard() {
           </CardContent>
         </Card>
 
-        {/* Return Processing Details Section */}
+        {/* Sales Transaction Details Section */}
         {selectedSale && (
           <Card className="shadow-lg border-0 bg-white">
-            <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-lg">
+            <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Package className="h-6 w-6" />
-                  Return Processing Details
+                  <BarChart3 className="h-6 w-6" />
+                  Transaction Analytics & Details
                 </div>
                 <Button
                   variant="secondary"
@@ -480,38 +601,61 @@ export default function SalesDashboard() {
                 </div>
               ) : saleDetails ? (
                 <div className="space-y-6">
-                  {/* Sale Information */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center justify-between">
+                  {/* Transaction Overview */}
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-5 border border-emerald-200">
+                    <h4 className="font-semibold text-gray-800 mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        Sale Information
+                        <TrendingUp className="h-5 w-5 text-emerald-600" />
+                        Transaction Overview
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-green-600 font-medium">Live Data</span>
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span className="text-emerald-600 font-medium">Live Analytics</span>
                       </div>
                     </h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="font-medium text-gray-600">Order Number:</p>
-                        <p className="text-gray-800 font-mono">#{saleDetails.orderNumber}</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-emerald-100">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Order Number</p>
+                        <p className="text-lg font-bold text-emerald-700 font-mono">#{saleDetails.orderNumber}</p>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-600">Total Amount:</p>
-                        <p className="text-gray-800 font-semibold">{formatCurrency(parseFloat(saleDetails.total))}</p>
+                      <div className="bg-white p-3 rounded-lg border border-emerald-100">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Total Amount</p>
+                        <p className="text-lg font-bold text-emerald-700">{formatCurrency(parseFloat(saleDetails.total))}</p>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-600">Customer:</p>
-                        <p className="text-gray-800">{saleDetails.customer?.name || 'Walk-in Customer'}</p>
+                      <div className="bg-white p-3 rounded-lg border border-emerald-100">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Payment Method</p>
+                        <Badge variant="outline" className="text-emerald-700 border-emerald-200">
+                          {saleDetails.paymentMethod.toUpperCase()}
+                        </Badge>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-600">Date:</p>
-                        <p className="text-gray-800">
+                      <div className="bg-white p-3 rounded-lg border border-emerald-100">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Items Count</p>
+                        <p className="text-lg font-bold text-emerald-700">{saleDetails.items?.length || 0}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="bg-white p-3 rounded-lg border border-emerald-100">
+                        <p className="font-medium text-gray-600 mb-1">Customer Details</p>
+                        <p className="text-gray-800 font-medium">{saleDetails.customer?.name || 'Walk-in Customer'}</p>
+                        {saleDetails.customer?.phone && (
+                          <p className="text-gray-600 text-xs">{saleDetails.customer.phone}</p>
+                        )}
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-emerald-100">
+                        <p className="font-medium text-gray-600 mb-1">Transaction Date</p>
+                        <p className="text-gray-800 font-medium">
                           {new Date(saleDetails.createdAt).toLocaleDateString('en-US', {
                             year: 'numeric',
-                            month: 'short',
+                            month: 'long',
                             day: 'numeric'
+                          })}
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          {new Date(saleDetails.createdAt).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit'
                           })}
                         </p>
                       </div>

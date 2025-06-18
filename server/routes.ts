@@ -1557,6 +1557,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sales statistics endpoint
+  app.get('/api/sales/stats', async (req, res) => {
+    try {
+      console.log('📊 Fetching sales statistics');
+
+      const { sqlite } = await import('@db');
+
+      // Get today's sales
+      const todayStats = sqlite.prepare(`
+        SELECT 
+          COUNT(*) as todayTransactions,
+          COALESCE(SUM(CAST(total AS REAL)), 0) as todaySales
+        FROM sales 
+        WHERE DATE(created_at) = DATE('now')
+      `).get();
+
+      // Get total sales statistics
+      const totalStats = sqlite.prepare(`
+        SELECT 
+          COUNT(*) as totalTransactions,
+          COALESCE(SUM(CAST(total AS REAL)), 0) as totalSales,
+          COALESCE(AVG(CAST(total AS REAL)), 0) as averageSale
+        FROM sales
+      `).get();
+
+      // Get active customers (customers who made purchases in last 30 days)
+      const activeCustomers = sqlite.prepare(`
+        SELECT COUNT(DISTINCT customer_id) as count 
+        FROM sales 
+        WHERE customer_id IS NOT NULL 
+        AND DATE(created_at) >= DATE('now', '-30 days')
+      `).get();
+
+      const stats = {
+        todaySales: parseFloat(todayStats.todaySales) || 0,
+        totalTransactions: totalStats.totalTransactions || 0,
+        averageSale: parseFloat(totalStats.averageSale) || 0,
+        activeCustomers: activeCustomers.count || 0,
+        todayTransactions: todayStats.todayTransactions || 0
+      };
+
+      console.log('📊 Sales stats:', stats);
+      res.json(stats);
+
+    } catch (error) {
+      console.error('❌ Error fetching sales stats:', error);
+      res.status(500).json({ error: 'Failed to fetch sales statistics: ' + error.message });
+    }
+  });
+
   // Returns statistics endpoint
   app.get('/api/returns/stats', async (req, res) => {
     try {
