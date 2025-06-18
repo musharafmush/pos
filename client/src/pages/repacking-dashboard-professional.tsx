@@ -122,7 +122,28 @@ export default function RepackingDashboardProfessional() {
     customWeightUnit: "g", // Custom weight unit
     selectedPresetWeight: "250",
     marginPercentage: "15",
-    mrpMarginPercentage: "25"
+    mrpMarginPercentage: "25",
+    // Enhanced customization options
+    packagingType: "standard",
+    customPackagingType: "",
+    brandName: "",
+    productVariant: "",
+    expiryDays: "365",
+    batchPrefix: "",
+    customDescription: "",
+    nutritionalInfo: "",
+    storageInstructions: "",
+    allergenInfo: "",
+    countryOfOrigin: "India",
+    manufacturerName: "",
+    packagingMaterial: "plastic",
+    labelColor: "white",
+    priorityLevel: "normal",
+    qualityGrade: "A",
+    organicCertified: false,
+    customBarcode: "",
+    seasonalTag: "",
+    promotionalText: ""
   });
 
   // Unit conversion functions
@@ -286,7 +307,28 @@ export default function RepackingDashboardProfessional() {
       customWeightUnit: initialUnit,
       selectedPresetWeight: initialWeight,
       marginPercentage: "15",
-      mrpMarginPercentage: "25"
+      mrpMarginPercentage: "25",
+      // Enhanced customization options
+      packagingType: "standard",
+      customPackagingType: "",
+      brandName: "",
+      productVariant: "",
+      expiryDays: "365",
+      batchPrefix: "",
+      customDescription: "",
+      nutritionalInfo: "",
+      storageInstructions: "",
+      allergenInfo: "",
+      countryOfOrigin: "India",
+      manufacturerName: "",
+      packagingMaterial: "plastic",
+      labelColor: "white",
+      priorityLevel: "normal",
+      qualityGrade: "A",
+      organicCertified: false,
+      customBarcode: "",
+      seasonalTag: "",
+      promotionalText: ""
     });
     
     setIsRepackDialogOpen(true);
@@ -306,10 +348,31 @@ export default function RepackingDashboardProfessional() {
         repackData.unitWeightUnit
       );
       
+      // Create comprehensive description with customization details
+      const descriptionParts = [
+        `Repacked from ${selectedBulkProduct?.name}`,
+        repackData.customDescription && `${repackData.customDescription}`,
+        repackData.brandName && `Brand: ${repackData.brandName}`,
+        repackData.productVariant && `Variant: ${repackData.productVariant}`,
+        repackData.qualityGrade && `Quality: Grade ${repackData.qualityGrade}`,
+        repackData.packagingType !== "standard" && `Packaging: ${repackData.packagingType === "custom" ? repackData.customPackagingType : repackData.packagingType}`,
+        repackData.organicCertified && "Organic Certified",
+        repackData.seasonalTag && `${repackData.seasonalTag}`,
+        repackData.promotionalText && `${repackData.promotionalText}`,
+        repackData.storageInstructions && `Storage: ${repackData.storageInstructions}`,
+        repackData.allergenInfo && `Allergens: ${repackData.allergenInfo}`,
+        repackData.nutritionalInfo && `Nutrition: ${repackData.nutritionalInfo}`,
+        repackData.manufacturerName && `Manufacturer: ${repackData.manufacturerName}`,
+        repackData.countryOfOrigin !== "India" && `Origin: ${repackData.countryOfOrigin}`,
+        `Shelf Life: ${repackData.expiryDays} days`,
+        `Priority: ${repackData.priorityLevel}`,
+        repackData.batchPrefix && `Batch: ${repackData.batchPrefix}`
+      ].filter(Boolean).join(" | ");
+
       const productData = {
         name: repackData.targetName,
         sku: repackData.targetSku,
-        description: `Repacked from ${selectedBulkProduct?.name}`,
+        description: descriptionParts,
         price: parseFloat(repackData.sellingPrice),
         cost: parseFloat(repackData.costPrice),
         mrp: parseFloat(repackData.mrp),
@@ -319,7 +382,8 @@ export default function RepackingDashboardProfessional() {
         categoryId: selectedBulkProduct?.categoryId || 1,
         alertThreshold: Math.max(5, Math.floor(parseInt(repackData.targetQuantity) * 0.2)),
         active: true,
-        weightInGms: finalWeightInGrams
+        weightInGms: finalWeightInGrams,
+        barcode: repackData.customBarcode || undefined
       };
 
       return await apiRequest("/api/products", {
@@ -349,7 +413,28 @@ export default function RepackingDashboardProfessional() {
         customWeightUnit: "g",
         selectedPresetWeight: "250",
         marginPercentage: "15",
-        mrpMarginPercentage: "25"
+        mrpMarginPercentage: "25",
+        // Enhanced customization options
+        packagingType: "standard",
+        customPackagingType: "",
+        brandName: "",
+        productVariant: "",
+        expiryDays: "365",
+        batchPrefix: "",
+        customDescription: "",
+        nutritionalInfo: "",
+        storageInstructions: "",
+        allergenInfo: "",
+        countryOfOrigin: "India",
+        manufacturerName: "",
+        packagingMaterial: "plastic",
+        labelColor: "white",
+        priorityLevel: "normal",
+        qualityGrade: "A",
+        organicCertified: false,
+        customBarcode: "",
+        seasonalTag: "",
+        promotionalText: ""
       });
     },
     onError: (error) => {
@@ -1014,6 +1099,297 @@ export default function RepackingDashboardProfessional() {
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Recalculate Prices with New Margins
                     </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Customization Options */}
+              <div className="bg-purple-50 p-5 rounded-lg border border-purple-200">
+                <h4 className="font-semibold text-purple-900 mb-4 flex items-center gap-2">
+                  <Star className="w-4 h-4" />
+                  Professional Customization Options
+                </h4>
+                
+                <div className="grid gap-6">
+                  {/* Packaging & Branding */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="packaging-type">Packaging Type</Label>
+                      <Select 
+                        value={repackFormData.packagingType} 
+                        onValueChange={(value) => setRepackFormData({ ...repackFormData, packagingType: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="standard">Standard Package</SelectItem>
+                          <SelectItem value="premium">Premium Package</SelectItem>
+                          <SelectItem value="eco-friendly">Eco-Friendly</SelectItem>
+                          <SelectItem value="vacuum-sealed">Vacuum Sealed</SelectItem>
+                          <SelectItem value="resealable">Resealable Pouch</SelectItem>
+                          <SelectItem value="jar">Glass Jar</SelectItem>
+                          <SelectItem value="tin">Metal Tin</SelectItem>
+                          <SelectItem value="custom">Custom Type</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {repackFormData.packagingType === "custom" && (
+                        <Input
+                          placeholder="Enter custom packaging type"
+                          value={repackFormData.customPackagingType}
+                          onChange={(e) => setRepackFormData({ ...repackFormData, customPackagingType: e.target.value })}
+                        />
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="brand-name">Brand Name</Label>
+                      <Input
+                        id="brand-name"
+                        placeholder="e.g., Fresh Choice, Nature's Best"
+                        value={repackFormData.brandName}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, brandName: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="product-variant">Product Variant</Label>
+                      <Input
+                        id="product-variant"
+                        placeholder="e.g., Premium, Organic, Special"
+                        value={repackFormData.productVariant}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, productVariant: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quality & Certification */}
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="quality-grade">Quality Grade</Label>
+                      <Select 
+                        value={repackFormData.qualityGrade} 
+                        onValueChange={(value) => setRepackFormData({ ...repackFormData, qualityGrade: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="A">Grade A (Premium)</SelectItem>
+                          <SelectItem value="B">Grade B (Standard)</SelectItem>
+                          <SelectItem value="C">Grade C (Economy)</SelectItem>
+                          <SelectItem value="Export">Export Quality</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="priority-level">Priority Level</Label>
+                      <Select 
+                        value={repackFormData.priorityLevel} 
+                        onValueChange={(value) => setRepackFormData({ ...repackFormData, priorityLevel: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low Priority</SelectItem>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="high">High Priority</SelectItem>
+                          <SelectItem value="urgent">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="expiry-days">Shelf Life (Days)</Label>
+                      <Input
+                        id="expiry-days"
+                        type="number"
+                        min="1"
+                        value={repackFormData.expiryDays}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, expiryDays: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={repackFormData.organicCertified}
+                          onChange={(e) => setRepackFormData({ ...repackFormData, organicCertified: e.target.checked })}
+                          className="rounded"
+                        />
+                        Organic Certified
+                      </Label>
+                    </div>
+                  </div>
+
+                  {/* Product Information */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="custom-description">Custom Description</Label>
+                      <Textarea
+                        id="custom-description"
+                        placeholder="Additional product description for packaging"
+                        value={repackFormData.customDescription}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, customDescription: e.target.value })}
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="storage-instructions">Storage Instructions</Label>
+                      <Textarea
+                        id="storage-instructions"
+                        placeholder="e.g., Store in cool, dry place"
+                        value={repackFormData.storageInstructions}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, storageInstructions: e.target.value })}
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Advanced Options */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="batch-prefix">Batch Prefix</Label>
+                      <Input
+                        id="batch-prefix"
+                        placeholder="e.g., RP2025, BATCH"
+                        value={repackFormData.batchPrefix}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, batchPrefix: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="seasonal-tag">Seasonal Tag</Label>
+                      <Select 
+                        value={repackFormData.seasonalTag} 
+                        onValueChange={(value) => setRepackFormData({ ...repackFormData, seasonalTag: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select season" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No Season</SelectItem>
+                          <SelectItem value="winter">Winter Special</SelectItem>
+                          <SelectItem value="summer">Summer Fresh</SelectItem>
+                          <SelectItem value="monsoon">Monsoon Ready</SelectItem>
+                          <SelectItem value="festival">Festival Edition</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="promotional-text">Promotional Text</Label>
+                      <Input
+                        id="promotional-text"
+                        placeholder="e.g., New Launch, Best Seller"
+                        value={repackFormData.promotionalText}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, promotionalText: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Manufacturing & Origin */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="manufacturer-name">Manufacturer Name</Label>
+                      <Input
+                        id="manufacturer-name"
+                        placeholder="Company manufacturing this product"
+                        value={repackFormData.manufacturerName}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, manufacturerName: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="country-origin">Country of Origin</Label>
+                      <Input
+                        id="country-origin"
+                        value={repackFormData.countryOfOrigin}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, countryOfOrigin: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="custom-barcode">Custom Barcode</Label>
+                      <Input
+                        id="custom-barcode"
+                        placeholder="Enter custom barcode (optional)"
+                        value={repackFormData.customBarcode}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, customBarcode: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Allergen & Nutritional Info */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="allergen-info">Allergen Information</Label>
+                      <Textarea
+                        id="allergen-info"
+                        placeholder="e.g., Contains nuts, May contain traces of..."
+                        value={repackFormData.allergenInfo}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, allergenInfo: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="nutritional-info">Nutritional Information</Label>
+                      <Textarea
+                        id="nutritional-info"
+                        placeholder="Per 100g: Energy, Protein, Carbs, etc."
+                        value={repackFormData.nutritionalInfo}
+                        onChange={(e) => setRepackFormData({ ...repackFormData, nutritionalInfo: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Visual Customization */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="packaging-material">Packaging Material</Label>
+                      <Select 
+                        value={repackFormData.packagingMaterial} 
+                        onValueChange={(value) => setRepackFormData({ ...repackFormData, packagingMaterial: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="plastic">Food Grade Plastic</SelectItem>
+                          <SelectItem value="paper">Paper/Cardboard</SelectItem>
+                          <SelectItem value="foil">Aluminum Foil</SelectItem>
+                          <SelectItem value="glass">Glass</SelectItem>
+                          <SelectItem value="biodegradable">Biodegradable</SelectItem>
+                          <SelectItem value="laminated">Laminated Pouch</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="label-color">Label Color Theme</Label>
+                      <Select 
+                        value={repackFormData.labelColor} 
+                        onValueChange={(value) => setRepackFormData({ ...repackFormData, labelColor: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="white">White/Clean</SelectItem>
+                          <SelectItem value="green">Green/Natural</SelectItem>
+                          <SelectItem value="blue">Blue/Premium</SelectItem>
+                          <SelectItem value="red">Red/Bold</SelectItem>
+                          <SelectItem value="gold">Gold/Luxury</SelectItem>
+                          <SelectItem value="black">Black/Elegant</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>
