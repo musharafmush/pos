@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
@@ -47,11 +47,7 @@ import {
   FileText,
   Download,
   Settings,
-  Printer,
-  Wifi,
-  WifiOff,
-  Activity,
-  BarChart3
+  Printer
 } from "lucide-react";
 
 interface Product {
@@ -91,16 +87,6 @@ export default function POSEnhanced() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
   const [discount, setDiscount] = useState(0);
-  
-  // Real-time connection and data states
-  const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline'>('online');
-  const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
-  const [pendingSales, setPendingSales] = useState<number>(0);
-  const [realtimeStats, setRealtimeStats] = useState({
-    todaySales: 0,
-    totalTransactions: 0,
-    averageSale: 0
-  });
   const [showOceanDialog, setShowOceanDialog] = useState(false);
   const [oceanFreight, setOceanFreight] = useState({
     containerNumber: "",
@@ -207,59 +193,6 @@ export default function POSEnhanced() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Real-time connection monitoring
-  useEffect(() => {
-    const handleOnline = () => {
-      setConnectionStatus('online');
-      setLastSyncTime(new Date());
-      queryClient.invalidateQueries();
-      toast({
-        title: "Connection Restored",
-        description: "Back online - syncing data...",
-      });
-    };
-    
-    const handleOffline = () => {
-      setConnectionStatus('offline');
-      toast({
-        title: "Connection Lost",
-        description: "Working offline - data will sync when reconnected",
-        variant: "destructive"
-      });
-    };
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [toast, queryClient]);
-
-  // Real-time sales statistics
-  const { data: salesStats, refetch: refetchStats } = useQuery({
-    queryKey: ['/api/sales/stats'],
-    refetchInterval: 5000,
-    refetchOnWindowFocus: true,
-    enabled: connectionStatus === 'online',
-    onSuccess: (data) => {
-      setRealtimeStats({
-        todaySales: data?.todaySales || 0,
-        totalTransactions: data?.totalTransactions || 0,
-        averageSale: data?.averageSale || 0
-      });
-      setLastSyncTime(new Date());
-    }
-  });
-
-  // Real-time accounts data sync for dashboard integration
-  const { refetch: refetchAccounts } = useQuery({
-    queryKey: ['/api/accounts/stats'],
-    refetchInterval: 5000,
-    enabled: connectionStatus === 'online'
-  });
 
   // Fetch products with error handling
   const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery({
@@ -1695,50 +1628,6 @@ export default function POSEnhanced() {
                   <div>
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Enhanced POS</h1>
                     <p className="text-sm text-gray-600 font-medium">Professional Point of Sale System</p>
-                  </div>
-                </div>
-
-                {/* Real-time Status Indicator */}
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl border border-gray-200/50 shadow-sm">
-                    <div className="flex items-center space-x-2">
-                      {connectionStatus === 'online' ? (
-                        <>
-                          <Wifi className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-medium text-green-700">Online</span>
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        </>
-                      ) : (
-                        <>
-                          <WifiOff className="h-4 w-4 text-red-600" />
-                          <span className="text-sm font-medium text-red-700">Offline</span>
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        </>
-                      )}
-                    </div>
-                    <div className="h-4 w-px bg-gray-300"></div>
-                    <div className="flex items-center space-x-2">
-                      <Activity className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-700">
-                        Last sync: {lastSyncTime.toLocaleTimeString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Live Statistics */}
-                  <div className="flex items-center space-x-3 bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-2 rounded-xl border border-emerald-200/50 shadow-sm">
-                    <BarChart3 className="h-4 w-4 text-emerald-600" />
-                    <div className="flex items-center space-x-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Today:</span>
-                        <span className="font-semibold text-emerald-700 ml-1">₹{realtimeStats.todaySales.toLocaleString()}</span>
-                      </div>
-                      <div className="h-4 w-px bg-emerald-300"></div>
-                      <div>
-                        <span className="text-gray-600">Transactions:</span>
-                        <span className="font-semibold text-emerald-700 ml-1">{realtimeStats.totalTransactions}</span>
-                      </div>
-                    </div>
                   </div>
 
                   <div className="flex items-center space-x-4 ml-12">
