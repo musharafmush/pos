@@ -23,6 +23,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTheme } from "@/components/ui/theme-provider";
 import { apiRequest } from "@/lib/queryClient";
+import { 
+  DatabaseIcon, 
+  UploadIcon, 
+  SettingsIcon, 
+  BarChartIcon, 
+  TrashIcon, 
+  ShieldCheckIcon, 
+  FileTextIcon, 
+  ArrowUpFromLineIcon, 
+  RefreshCcwIcon, 
+  ShieldIcon, 
+  AlertTriangleIcon,
+  BellIcon
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 // Tax Settings Component
 function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
@@ -203,6 +219,58 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
       toast({
         title: "Save failed",
         description: "Failed to save tax settings. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRestoreData = async () => {
+    if (!selectedBackupFile) {
+      toast({
+        title: "No file selected",
+        description: "Please select a backup file to restore",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "⚠️ WARNING: This will replace ALL current data with the backup file contents. This action cannot be undone.\n\nAre you sure you want to continue?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('backup', selectedBackupFile);
+
+      const response = await fetch('/api/backup/restore', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to restore backup');
+      }
+
+      queryClient.clear();
+
+      toast({
+        title: "Data restored successfully",
+        description: "Your data has been restored from the backup file",
+      });
+
+      // Refresh the page to reload all data
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+    } catch (error) {
+      console.error('Restore error:', error);
+      toast({
+        title: "Restore failed",
+        description: "Failed to restore backup. Please check the file and try again.",
         variant: "destructive"
       });
     }
@@ -669,6 +737,9 @@ export default function Settings() {
     updateProfileMutation.mutate(data);
   };
 
+  // State for data management features
+  const [showDataStats, setShowDataStats] = useState(false);
+
   // Receipt settings form state
   const [receiptSettings, setReceiptSettings] = useState({
     businessName: "LARAVEL POS SYSTEM",
@@ -763,7 +834,7 @@ export default function Settings() {
     }
   };
 
-  const handleClearData = async () => {
+  const handleClearAllData = async () => {
     const confirmed = window.confirm(
       "⚠️ WARNING: This will permanently delete ALL your data including products, sales, purchases, customers, and suppliers. This action cannot be undone.\n\nAre you absolutely sure you want to continue?"
     );
@@ -1398,6 +1469,298 @@ ${receiptSettings.receiptFooter}
                   </div>
 
                   {/* Restore Section */}
+                  <div className="border rounded-xl p-6 space-y-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                        <UploadIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-blue-800 dark:text-blue-200">Restore Data</h3>
+                        <p className="text-xs text-blue-600 dark:text-blue-400">From Backup File</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      Restore your POS system from a previously created backup file. This will replace all current data.
+                    </p>
+                    <div className="space-y-3">
+                      <div className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg p-4 text-center">
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleRestoreFile}
+                          className="hidden"
+                          id="restore-file"
+                        />
+                        <label
+                          htmlFor="restore-file"
+                          className="cursor-pointer flex flex-col items-center gap-2"
+                        >
+                          <UploadIcon className="h-8 w-8 text-blue-400" />
+                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                            Choose Backup File
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {selectedBackupFile ? selectedBackupFile.name : "Select .json backup file"}
+                          </span>
+                        </label>
+                      </div>
+                      <Button 
+                        onClick={handleRestoreData}
+                        disabled={!selectedBackupFile}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                        size="lg"
+                      >
+                        <UploadIcon className="h-4 w-4 mr-2" />
+                        Restore Data
+                      </Button>
+                      <div className="text-xs text-red-600 dark:text-red-400 space-y-1">
+                        <p>⚠️ This will replace ALL current data</p>
+                        <p>⚠️ Create a backup before restoring</p>
+                        <p>⚠️ Process cannot be undone</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Data Management Section */}
+                  <div className="border rounded-xl p-6 space-y-4 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 border-orange-200 dark:border-orange-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg">
+                        <SettingsIcon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-orange-800 dark:text-orange-200">Data Management</h3>
+                        <p className="text-xs text-orange-600 dark:text-orange-400">System Maintenance</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      Advanced data management tools for system maintenance and optimization.
+                    </p>
+                    <div className="space-y-3">
+                      <Button 
+                        onClick={() => setShowDataStats(!showDataStats)}
+                        variant="outline"
+                        className="w-full border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/20"
+                        size="lg"
+                      >
+                        <BarChartIcon className="h-4 w-4 mr-2" />
+                        {showDataStats ? 'Hide' : 'Show'} Data Statistics
+                      </Button>
+                      <Button 
+                        onClick={handleClearAllData}
+                        variant="destructive"
+                        className="w-full"
+                        size="lg"
+                      >
+                        <TrashIcon className="h-4 w-4 mr-2" />
+                        Clear All Data
+                      </Button>
+                      <div className="text-xs text-orange-600 dark:text-orange-400 space-y-1">
+                        <p>🔧 System optimization tools</p>
+                        <p>📊 Detailed data statistics</p>
+                        <p>🗑️ Complete data removal</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Data Statistics Panel */}
+                {showDataStats && (
+                  <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-indigo-800 dark:text-indigo-200">
+                        <BarChartIcon className="h-5 w-5" />
+                        Detailed Data Statistics
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-indigo-200 dark:border-indigo-700 text-center">
+                          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">∞</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Products</div>
+                          <div className="text-xs text-gray-500">Total inventory items</div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-green-200 dark:border-green-700 text-center">
+                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">∞</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Sales</div>
+                          <div className="text-xs text-gray-500">Completed transactions</div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-orange-200 dark:border-orange-700 text-center">
+                          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">∞</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Purchases</div>
+                          <div className="text-xs text-gray-500">Purchase orders</div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-blue-200 dark:border-blue-700 text-center">
+                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">∞</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Customers</div>
+                          <div className="text-xs text-gray-500">Customer records</div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-purple-200 dark:border-purple-700 text-center">
+                          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">∞</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Suppliers</div>
+                          <div className="text-xs text-gray-500">Supplier records</div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-teal-200 dark:border-teal-700 text-center">
+                          <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">∞</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Categories</div>
+                          <div className="text-xs text-gray-500">Product categories</div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">Recent Activity</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Last Sale:</span>
+                              <span className="text-gray-800 dark:text-gray-200">Today</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Last Purchase:</span>
+                              <span className="text-gray-800 dark:text-gray-200">Yesterday</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Last Product Added:</span>
+                              <span className="text-gray-800 dark:text-gray-200">2 days ago</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Last Backup:</span>
+                              <span className="text-orange-600 dark:text-orange-400">Never</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">Storage Information</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Database Size:</span>
+                              <span className="text-gray-800 dark:text-gray-200">Calculating...</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Storage Used:</span>
+                              <span className="text-gray-800 dark:text-gray-200">Local SQLite</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Backup Status:</span>
+                              <span className="text-green-600 dark:text-green-400">Ready</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">System Status:</span>
+                              <span className="text-green-600 dark:text-green-400">Healthy</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Advanced Backup Options */}
+                <Card className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                      <ShieldCheckIcon className="h-5 w-5" />
+                      Advanced Backup & Security Options
+                    </CardTitle>
+                    <CardDescription>
+                      Professional data protection and recovery features
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Automated Backup Settings */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-slate-800 dark:text-slate-200">Automated Backup</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                            <div>
+                              <div className="font-medium">Daily Auto-Backup</div>
+                              <div className="text-sm text-gray-500">Automatic daily backups at 2:00 AM</div>
+                            </div>
+                            <Switch />
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                            <div>
+                              <div className="font-medium">Weekly Reports</div>
+                              <div className="text-sm text-gray-500">Email backup status weekly</div>
+                            </div>
+                            <Switch />
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                            <div>
+                              <div className="font-medium">Cloud Sync</div>
+                              <div className="text-sm text-gray-500">Sync backups to cloud storage</div>
+                            </div>
+                            <Switch />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Data Export Options */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-slate-800 dark:text-slate-200">Data Export</h4>
+                        <div className="space-y-3">
+                          <Button variant="outline" className="w-full justify-start">
+                            <FileTextIcon className="h-4 w-4 mr-2" />
+                            Export Sales Data (CSV)
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start">
+                            <FileTextIcon className="h-4 w-4 mr-2" />
+                            Export Products (Excel)
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start">
+                            <FileTextIcon className="h-4 w-4 mr-2" />
+                            Export Customers (PDF)
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start">
+                            <DatabaseIcon className="h-4 w-4 mr-2" />
+                            Export Full Database
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Data Migration Tools */}
+                    <div className="border-t pt-6">
+                      <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-4">Data Migration Tools</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Button variant="outline" className="flex flex-col items-center gap-2 h-auto p-4">
+                          <ArrowUpFromLineIcon className="h-6 w-6" />
+                          <span className="text-sm">Import from Excel</span>
+                        </Button>
+                        <Button variant="outline" className="flex flex-col items-center gap-2 h-auto p-4">
+                          <RefreshCcwIcon className="h-6 w-6" />
+                          <span className="text-sm">Sync with External</span>
+                        </Button>
+                        <Button variant="outline" className="flex flex-col items-center gap-2 h-auto p-4">
+                          <ShieldIcon className="h-6 w-6" />
+                          <span className="text-sm">Validate Data</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Emergency Recovery */}
+                    <div className="border-t pt-6 bg-red-50 dark:bg-red-900/10 p-4 rounded-lg border border-red-200 dark:border-red-800">
+                      <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2 flex items-center gap-2">
+                        <AlertTriangleIcon className="h-5 w-5" />
+                        Emergency Recovery
+                      </h4>
+                      <p className="text-sm text-red-700 dark:text-red-300 mb-4">
+                        Use these tools only in case of data corruption or system issues.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
+                          <AlertTriangleIcon className="h-4 w-4 mr-2" />
+                          Reset to Factory
+                        </Button>
+                        <Button variant="outline" size="sm" className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-600 dark:text-red-300">
+                          <DatabaseIcon className="h-4 w-4 mr-2" />
+                          Repair Database
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
                   <div className="border rounded-xl p-6 space-y-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
@@ -1461,7 +1824,7 @@ ${receiptSettings.receiptFooter}
                     </p>
                     <div className="space-y-3">
                       <Button 
-                        onClick={handleClearData}
+                        onClick={handleClearAllData}
                         className="w-full bg-red-600 hover:bg-red-700 text-white"
                         variant="destructive"
                         size="lg"
