@@ -215,6 +215,40 @@ export default function POSEnhanced() {
     },
   });
 
+  // Fetch active cash register status
+  const { data: activeCashRegister } = useQuery({
+    queryKey: ["/api/cash-register/active"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/cash-register/active");
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Error fetching active cash register:", error);
+        return null;
+      }
+    },
+  });
+
+  // Update register state when active register is loaded
+  useEffect(() => {
+    if (activeCashRegister) {
+      setRegisterOpened(true);
+      setActiveRegisterId(activeCashRegister.id);
+      setOpeningCash(parseFloat(activeCashRegister.openingCash));
+      setCashInHand(parseFloat(activeCashRegister.currentCash));
+      setCashReceived(parseFloat(activeCashRegister.cashReceived));
+      setUpiReceived(parseFloat(activeCashRegister.upiReceived));
+      setCardReceived(parseFloat(activeCashRegister.cardReceived));
+      setBankReceived(parseFloat(activeCashRegister.bankReceived));
+      setChequeReceived(parseFloat(activeCashRegister.chequeReceived));
+      setOtherReceived(parseFloat(activeCashRegister.otherReceived));
+      setTotalWithdrawals(parseFloat(activeCashRegister.totalWithdrawals));
+      setTotalRefunds(parseFloat(activeCashRegister.totalRefunds));
+    }
+  }, [activeCashRegister]);
+
   // Fetch customers with error handling
   const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: ["/api/customers"],
@@ -489,6 +523,17 @@ export default function POSEnhanced() {
 
   // Register opening
   const handleOpenRegister = async () => {
+    // Check if register is already open
+    if (registerOpened && activeCashRegister) {
+      toast({
+        title: "Register Already Open",
+        description: `Register ${activeCashRegister.registerId || activeCashRegister.register_id} is already open with ${formatCurrency(parseFloat(activeCashRegister.currentCash || activeCashRegister.current_cash))}`,
+        variant: "default",
+      });
+      setShowOpenRegister(false);
+      return;
+    }
+
     const amount = parseFloat(cashAmount);
 
     if (!amount || amount < 0) {
@@ -529,9 +574,12 @@ export default function POSEnhanced() {
       setRegisterOpened(true);
       setActiveRegisterId(result.register.id);
 
+      // Refresh active register data
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-register/active"] });
+
       toast({
         title: "Register Opened",
-        description: `Register ${result.register.registerId} opened with ${formatCurrency(amount)}`,
+        description: `Register ${result.register.registerId || result.register.register_id} opened with ${formatCurrency(amount)}`,
       });
 
       // Reset form and close dialog
