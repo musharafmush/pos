@@ -92,18 +92,37 @@ export default function RepackingDashboardProfessional() {
 
   const [repackFormData, setRepackFormData] = useState({
     sourceQuantity: "1",
+    sourceUnit: "kg", // Source bulk input unit
     targetQuantity: "8",
     unitWeight: "250",
+    unitWeightUnit: "g", // Target repack unit
     targetName: "",
     targetSku: "",
     sellingPrice: "",
     costPrice: "",
     mrp: "",
     customWeight: "",
+    customWeightUnit: "g", // Custom weight unit
     selectedPresetWeight: "250",
     marginPercentage: "15",
     mrpMarginPercentage: "25"
   });
+
+  // Unit conversion functions
+  const convertToGrams = (value: number, unit: string): number => {
+    return unit === 'kg' ? value * 1000 : value;
+  };
+
+  const convertFromGrams = (value: number, unit: string): number => {
+    return unit === 'kg' ? value / 1000 : value;
+  };
+
+  const formatWeightDisplay = (value: number, unit: string): string => {
+    if (unit === 'kg') {
+      return value >= 1 ? `${value}kg` : `${value * 1000}g`;
+    }
+    return value >= 1000 ? `${(value / 1000).toFixed(1)}kg` : `${value}g`;
+  };
 
   // Dynamic calculation functions for smart repacking
   const calculateQuantityFromWeight = (originalWeight: number, targetWeight: number) => {
@@ -116,33 +135,41 @@ export default function RepackingDashboardProfessional() {
     return (basePrice * (1 + marginPercentage / 100)).toFixed(2);
   };
 
-  const recalculateRepackData = (weight: string, isCustom: boolean = false) => {
+  const recalculateRepackData = (weight: string, unit: string = 'g', isCustom: boolean = false) => {
     if (!selectedBulkProduct) return;
 
-    const targetWeight = parseFloat(weight);
-    const originalWeight = parseFloat(selectedBulkProduct.weightInGms || selectedBulkProduct.weight?.toString() || "1000");
+    const targetWeightInput = parseFloat(weight);
+    const targetWeight = convertToGrams(targetWeightInput, unit);
+    
+    // Get source bulk weight with unit conversion
+    const sourceQuantity = parseFloat(repackFormData.sourceQuantity);
+    const sourceBulkWeight = convertToGrams(sourceQuantity, repackFormData.sourceUnit);
+    
     const basePrice = parseFloat(selectedBulkProduct.price.toString());
     const baseCost = parseFloat(selectedBulkProduct.cost.toString());
     const marginPercent = parseFloat(repackFormData.marginPercentage);
     const mrpMarginPercent = parseFloat(repackFormData.mrpMarginPercentage);
     
-    const suggestedQuantity = calculateQuantityFromWeight(originalWeight, targetWeight);
-    const weightRatio = targetWeight / originalWeight;
+    const suggestedQuantity = calculateQuantityFromWeight(sourceBulkWeight, targetWeight);
+    const weightRatio = targetWeight / sourceBulkWeight;
     
     const unitCostPrice = (baseCost * weightRatio).toFixed(2);
-    const unitSellingPrice = calculatePriceFromWeight(basePrice, originalWeight, targetWeight, marginPercent);
-    const unitMrp = calculatePriceFromWeight(basePrice, originalWeight, targetWeight, mrpMarginPercent);
+    const unitSellingPrice = calculatePriceFromWeight(basePrice, sourceBulkWeight, targetWeight, marginPercent);
+    const unitMrp = calculatePriceFromWeight(basePrice, sourceBulkWeight, targetWeight, mrpMarginPercent);
 
-    // Generate new SKU and name
+    // Generate new SKU and name with proper unit display
     const timestamp = Date.now();
     const cleanName = selectedBulkProduct.name.replace(/\b(bulk|BULK|Bulk)\b/gi, '').trim();
-    const targetName = `${cleanName} (${weight}g Pack)`;
+    const displayWeight = formatWeightDisplay(targetWeightInput, unit);
+    const targetName = `${cleanName} (${displayWeight} Pack)`;
     const baseSku = selectedBulkProduct.sku.replace(/[^A-Z0-9]/gi, '').substring(0, 10);
-    const targetSku = `${baseSku}-RP${weight}G-${timestamp.toString().slice(-6)}`;
+    const unitSuffix = unit === 'kg' ? 'KG' : 'G';
+    const targetSku = `${baseSku}-RP${targetWeightInput}${unitSuffix}-${timestamp.toString().slice(-6)}`;
 
     setRepackFormData(prev => ({
       ...prev,
       unitWeight: weight,
+      unitWeightUnit: unit,
       targetQuantity: suggestedQuantity.toString(),
       sellingPrice: unitSellingPrice,
       costPrice: unitCostPrice,
@@ -174,51 +201,27 @@ export default function RepackingDashboardProfessional() {
     { value: "10000", label: "10kg", display: "10 kg" }
   ];
 
-  const handlePresetWeightSelect = (weight: string) => {
-    setRepackFormData(prev => ({
-      ...prev,
-      unitWeight: weight,
-      selectedPresetWeight: weight,
-      customWeight: ""
-    }));
-  };
-
-  const handleCustomWeightChange = (value: string) => {
-    setRepackFormData(prev => ({
-      ...prev,
-      customWeight: value,
-      unitWeight: value,
-      selectedPresetWeight: ""
-    }));
-  };
-
-  // Calculate suggested quantities based on weight selection
-  const calculateSuggestedQuantity = (bulkWeight: number, targetWeight: number) => {
-    if (!targetWeight || targetWeight <= 0) return 0;
-    return Math.floor((bulkWeight * 1000) / targetWeight); // Convert kg to grams
-  };
-
-  // Auto-suggest target quantity when weight changes
-  const handleWeightChangeWithCalculation = (weight: string, isPreset: boolean = false) => {
+  const handleWeightChangeWithCalculation = (weight: string, isPreset: boolean, unit: string = 'g') => {
     if (isPreset) {
-      handlePresetWeightSelect(weight);
+      setRepackFormData(prev => ({
+        ...prev,
+        unitWeight: weight,
+        unitWeightUnit: unit,
+        selectedPresetWeight: weight,
+        customWeight: "",
+        customWeightUnit: unit
+      }));
     } else {
-      handleCustomWeightChange(weight);
+      setRepackFormData(prev => ({
+        ...prev,
+        customWeight: weight,
+        customWeightUnit: unit,
+        unitWeight: weight,
+        unitWeightUnit: unit,
+        selectedPresetWeight: ""
+      }));
     }
-
-    // Auto-calculate suggested quantity if bulk product weight is available
-    if (selectedBulkProduct?.weight && weight) {
-      const suggestedQty = calculateSuggestedQuantity(
-        parseFloat(selectedBulkProduct.weight.toString()),
-        parseInt(weight)
-      );
-      if (suggestedQty > 0) {
-        setRepackFormData(prev => ({
-          ...prev,
-          targetQuantity: suggestedQty.toString()
-        }));
-      }
-    }
+    recalculateRepackData(weight, unit, !isPreset);
   };
 
   // Fetch all products to identify repacked items
