@@ -35,7 +35,10 @@ import {
   RefreshCcwIcon, 
   ShieldIcon, 
   AlertTriangleIcon,
-  BellIcon
+  BellIcon,
+  DollarSignIcon,
+  PrinterIcon,
+  UserIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
