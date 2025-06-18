@@ -11,6 +11,7 @@ import {
   purchaseItems,
   cashRegisters,
   cashRegisterTransactions,
+  inventoryAdjustments,
   User,
   Product,
   Category,
@@ -21,7 +22,8 @@ import {
   Purchase,
   PurchaseItem,
   CashRegister,
-  CashRegisterTransaction
+  CashRegisterTransaction,
+  InventoryAdjustment
 } from "../shared/schema.js";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -2499,6 +2501,266 @@ export const storage = {
     } catch (error) {
       console.error('Error fetching cash register transactions:', error);
       return [];
+    }
+  },
+
+  // Inventory adjustments operations
+  async createInventoryAdjustment(adjustmentData: {
+    productId: number;
+    userId: number;
+    adjustmentType: string;
+    quantity: number;
+    reason: string;
+    notes?: string;
+    unitCost?: number;
+    batchNumber?: string;
+    expiryDate?: Date;
+    locationFrom?: string;
+    locationTo?: string;
+    referenceDocument?: string;
+  }): Promise<InventoryAdjustment> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+
+      // Create table if not exists
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS inventory_adjustments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          adjustment_number TEXT NOT NULL UNIQUE,
+          product_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          adjustment_type TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          previous_stock INTEGER NOT NULL,
+          new_stock INTEGER NOT NULL,
+          unit_cost TEXT,
+          total_value TEXT,
+          reason TEXT NOT NULL,
+          notes TEXT,
+          batch_number TEXT,
+          expiry_date TEXT,
+          location_from TEXT,
+          location_to TEXT,
+          reference_document TEXT,
+          approved INTEGER DEFAULT 0,
+          approved_by INTEGER,
+          approved_at TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (product_id) REFERENCES products (id),
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          FOREIGN KEY (approved_by) REFERENCES users (id)
+        )
+      `);
+
+      // Get current stock for the product
+      const getProduct = sqlite.prepare('SELECT stock_quantity FROM products WHERE id = ?');
+      const product = getProduct.get(adjustmentData.productId);
+      
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
+      const previousStock = product.stock_quantity || 0;
+      const newStock = previousStock + adjustmentData.quantity;
+
+      if (newStock < 0) {
+        throw new Error('Insufficient stock for adjustment');
+      }
+
+      // Generate adjustment number
+      const adjustmentNumber = `ADJ-${Date.now()}`;
+
+      // Calculate total value
+      const totalValue = adjustmentData.unitCost 
+        ? (Math.abs(adjustmentData.quantity) * adjustmentData.unitCost).toFixed(2)
+        : null;
+
+      // Insert adjustment record
+      const insertAdjustment = sqlite.prepare(`
+        INSERT INTO inventory_adjustments (
+          adjustment_number, product_id, user_id, adjustment_type, quantity,
+          previous_stock, new_stock, unit_cost, total_value, reason, notes,
+          batch_number, expiry_date, location_from, location_to, reference_document
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const result = insertAdjustment.run(
+        adjustmentNumber,
+        adjustmentData.productId,
+        adjustmentData.userId,
+        adjustmentData.adjustmentType,
+        adjustmentData.quantity,
+        previousStock,
+        newStock,
+        adjustmentData.unitCost?.toString() || null,
+        totalValue,
+        adjustmentData.reason,
+        adjustmentData.notes || null,
+        adjustmentData.batchNumber || null,
+        adjustmentData.expiryDate?.toISOString() || null,
+        adjustmentData.locationFrom || null,
+        adjustmentData.locationTo || null,
+        adjustmentData.referenceDocument || null
+      );
+
+      // Update product stock
+      const updateStock = sqlite.prepare('UPDATE products SET stock_quantity = ? WHERE id = ?');
+      updateStock.run(newStock, adjustmentData.productId);
+
+      // Fetch and return the created adjustment
+      const getAdjustment = sqlite.prepare(`
+        SELECT ia.*, p.name as productName, u.name as userName 
+        FROM inventory_adjustments ia
+        LEFT JOIN products p ON ia.product_id = p.id
+        LEFT JOIN users u ON ia.user_id = u.id
+        WHERE ia.id = ?
+      `);
+      const newAdjustment = getAdjustment.get(result.lastInsertRowid);
+
+      return {
+        ...newAdjustment,
+        createdAt: new Date(newAdjustment.created_at),
+        expiryDate: newAdjustment.expiry_date ? new Date(newAdjustment.expiry_date) : null,
+        approvedAt: newAdjustment.approved_at ? new Date(newAdjustment.approved_at) : null
+      };
+    } catch (error) {
+      console.error('Error creating inventory adjustment:', error);
+      throw error;
+    }
+  },
+
+  async getInventoryAdjustments(options: {
+    productId?: number;
+    userId?: number;
+    adjustmentType?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<InventoryAdjustment[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      let query = `
+        SELECT ia.*, p.name as productName, p.sku as productSku,
+               u.name as userName, a.name as approverName
+        FROM inventory_adjustments ia
+        LEFT JOIN products p ON ia.product_id = p.id
+        LEFT JOIN users u ON ia.user_id = u.id
+        LEFT JOIN users a ON ia.approved_by = a.id
+        WHERE 1=1
+      `;
+      
+      const params: any[] = [];
+      
+      if (options.productId) {
+        query += ' AND ia.product_id = ?';
+        params.push(options.productId);
+      }
+      
+      if (options.userId) {
+        query += ' AND ia.user_id = ?';
+        params.push(options.userId);
+      }
+      
+      if (options.adjustmentType) {
+        query += ' AND ia.adjustment_type = ?';
+        params.push(options.adjustmentType);
+      }
+      
+      query += ' ORDER BY ia.created_at DESC';
+      
+      if (options.limit) {
+        query += ' LIMIT ?';
+        params.push(options.limit);
+        
+        if (options.offset) {
+          query += ' OFFSET ?';
+          params.push(options.offset);
+        }
+      }
+
+      const getAdjustments = sqlite.prepare(query);
+      const adjustments = getAdjustments.all(...params);
+
+      return adjustments.map((adjustment: any) => ({
+        ...adjustment,
+        createdAt: new Date(adjustment.created_at),
+        expiryDate: adjustment.expiry_date ? new Date(adjustment.expiry_date) : null,
+        approvedAt: adjustment.approved_at ? new Date(adjustment.approved_at) : null
+      }));
+    } catch (error) {
+      console.error('Error fetching inventory adjustments:', error);
+      return [];
+    }
+  },
+
+  async approveInventoryAdjustment(id: number, approvedBy: number): Promise<InventoryAdjustment> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+
+      const updateAdjustment = sqlite.prepare(`
+        UPDATE inventory_adjustments 
+        SET approved = 1, approved_by = ?, approved_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `);
+
+      const result = updateAdjustment.run(approvedBy, id);
+
+      if (result.changes === 0) {
+        throw new Error('Inventory adjustment not found');
+      }
+
+      // Fetch and return the updated adjustment
+      const getAdjustment = sqlite.prepare(`
+        SELECT ia.*, p.name as productName, u.name as userName, a.name as approverName
+        FROM inventory_adjustments ia
+        LEFT JOIN products p ON ia.product_id = p.id
+        LEFT JOIN users u ON ia.user_id = u.id
+        LEFT JOIN users a ON ia.approved_by = a.id
+        WHERE ia.id = ?
+      `);
+      const adjustment = getAdjustment.get(id);
+
+      return {
+        ...adjustment,
+        createdAt: new Date(adjustment.created_at),
+        expiryDate: adjustment.expiry_date ? new Date(adjustment.expiry_date) : null,
+        approvedAt: adjustment.approved_at ? new Date(adjustment.approved_at) : null
+      };
+    } catch (error) {
+      console.error('Error approving inventory adjustment:', error);
+      throw error;
+    }
+  },
+
+  async deleteInventoryAdjustment(id: number): Promise<boolean> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+
+      // Get adjustment details to reverse stock changes
+      const getAdjustment = sqlite.prepare('SELECT * FROM inventory_adjustments WHERE id = ?');
+      const adjustment = getAdjustment.get(id);
+
+      if (!adjustment) {
+        return false;
+      }
+
+      // Reverse the stock adjustment
+      const reverseQuantity = -adjustment.quantity;
+      const updateStock = sqlite.prepare(`
+        UPDATE products 
+        SET stock_quantity = COALESCE(stock_quantity, 0) + ?
+        WHERE id = ?
+      `);
+      updateStock.run(reverseQuantity, adjustment.product_id);
+
+      // Delete the adjustment
+      const deleteAdjustment = sqlite.prepare('DELETE FROM inventory_adjustments WHERE id = ?');
+      const result = deleteAdjustment.run(id);
+
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error deleting inventory adjustment:', error);
+      throw error;
     }
   }
 };

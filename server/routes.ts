@@ -4660,5 +4660,138 @@ app.post("/api/customers", async (req, res) => {
 
   // Create HTTP server
   const httpServer = createServer(app);
+  // Inventory Adjustments API
+  app.get('/api/inventory-adjustments', async (req, res) => {
+    try {
+      const { productId, userId, adjustmentType, limit = 20, offset = 0 } = req.query;
+      
+      const options = {
+        productId: productId ? parseInt(productId as string) : undefined,
+        userId: userId ? parseInt(userId as string) : undefined,
+        adjustmentType: adjustmentType as string,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string)
+      };
+
+      const adjustments = await storage.getInventoryAdjustments(options);
+      res.json(adjustments);
+    } catch (error) {
+      console.error('Error fetching inventory adjustments:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/inventory-adjustments', isAuthenticated, async (req, res) => {
+    try {
+      const {
+        productId,
+        adjustmentType,
+        quantity,
+        reason,
+        notes,
+        unitCost,
+        batchNumber,
+        expiryDate,
+        locationFrom,
+        locationTo,
+        referenceDocument
+      } = req.body;
+
+      // Validate required fields
+      if (!productId || !adjustmentType || !quantity || !reason) {
+        return res.status(400).json({
+          message: 'Product ID, adjustment type, quantity, and reason are required'
+        });
+      }
+
+      // Validate adjustment type
+      const validTypes = ['add', 'remove', 'transfer', 'correction'];
+      if (!validTypes.includes(adjustmentType)) {
+        return res.status(400).json({
+          message: `Invalid adjustment type. Must be one of: ${validTypes.join(', ')}`
+        });
+      }
+
+      // Convert quantity based on adjustment type
+      const adjustmentQuantity = adjustmentType === 'remove' ? -Math.abs(quantity) : Math.abs(quantity);
+
+      const adjustmentData = {
+        productId: parseInt(productId),
+        userId: req.user?.id || 1, // Default to admin user if not authenticated
+        adjustmentType,
+        quantity: adjustmentQuantity,
+        reason,
+        notes,
+        unitCost: unitCost ? parseFloat(unitCost) : undefined,
+        batchNumber,
+        expiryDate: expiryDate ? new Date(expiryDate) : undefined,
+        locationFrom,
+        locationTo,
+        referenceDocument
+      };
+
+      const adjustment = await storage.createInventoryAdjustment(adjustmentData);
+      res.status(201).json({
+        ...adjustment,
+        message: 'Inventory adjustment created successfully'
+      });
+    } catch (error) {
+      console.error('Error creating inventory adjustment:', error);
+      res.status(500).json({ 
+        message: 'Failed to create inventory adjustment',
+        error: error.message 
+      });
+    }
+  });
+
+  app.put('/api/inventory-adjustments/:id/approve', isAdminOrManager, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const approvedBy = req.user?.id || 1;
+
+      const adjustment = await storage.approveInventoryAdjustment(id, approvedBy);
+      res.json({
+        ...adjustment,
+        message: 'Inventory adjustment approved successfully'
+      });
+    } catch (error) {
+      console.error('Error approving inventory adjustment:', error);
+      if (error.message === 'Inventory adjustment not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      res.status(500).json({ 
+        message: 'Failed to approve inventory adjustment',
+        error: error.message 
+      });
+    }
+  });
+
+  app.delete('/api/inventory-adjustments/:id', isAdminOrManager, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ message: 'Invalid adjustment ID' });
+      }
+
+      const deleted = await storage.deleteInventoryAdjustment(id);
+
+      if (!deleted) {
+        return res.status(404).json({ message: 'Inventory adjustment not found' });
+      }
+
+      res.json({ 
+        message: 'Inventory adjustment deleted successfully',
+        deletedId: id 
+      });
+    } catch (error) {
+      console.error('Error deleting inventory adjustment:', error);
+      res.status(500).json({ 
+        message: 'Failed to delete inventory adjustment',
+        error: error.message 
+      });
+    }
+  });
+
   return httpServer;
 }

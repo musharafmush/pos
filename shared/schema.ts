@@ -524,6 +524,50 @@ export type CashRegisterTransactionInsert = z.infer<typeof cashRegisterTransacti
 export const cashRegisterTransactionSelectSchema = createSelectSchema(cashRegisterTransactions);
 export type CashRegisterTransaction = z.infer<typeof cashRegisterTransactionSelectSchema>;
 
+// Inventory adjustments table
+export const inventoryAdjustments = pgTable('inventory_adjustments', {
+  id: serial('id').primaryKey(),
+  adjustmentNumber: text('adjustment_number').notNull().unique(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  adjustmentType: text('adjustment_type').notNull(), // 'add', 'remove', 'transfer', 'correction'
+  quantity: integer('quantity').notNull(), // Positive for add, negative for remove
+  previousStock: integer('previous_stock').notNull(),
+  newStock: integer('new_stock').notNull(),
+  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }),
+  totalValue: decimal('total_value', { precision: 10, scale: 2 }),
+  reason: text('reason').notNull(),
+  notes: text('notes'),
+  batchNumber: text('batch_number'),
+  expiryDate: timestamp('expiry_date'),
+  locationFrom: text('location_from'),
+  locationTo: text('location_to'),
+  referenceDocument: text('reference_document'),
+  approved: boolean('approved').default(false),
+  approvedBy: integer('approved_by').references(() => users.id),
+  approvedAt: timestamp('approved_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Inventory adjustments relations
+export const inventoryAdjustmentsRelations = relations(inventoryAdjustments, ({ one }) => ({
+  product: one(products, { fields: [inventoryAdjustments.productId], references: [products.id] }),
+  user: one(users, { fields: [inventoryAdjustments.userId], references: [users.id] }),
+  approver: one(users, { fields: [inventoryAdjustments.approvedBy], references: [users.id] })
+}));
+
+// Inventory adjustments validation schemas
+export const inventoryAdjustmentInsertSchema = createInsertSchema(inventoryAdjustments, {
+  quantity: (schema) => schema.refine(val => val !== 0, "Quantity cannot be zero"),
+  adjustmentType: (schema) => schema.refine(val => ['add', 'remove', 'transfer', 'correction'].includes(val), "Invalid adjustment type"),
+  reason: (schema) => schema.min(3, "Reason must be at least 3 characters"),
+  unitCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  totalValue: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional()
+});
+export type InventoryAdjustmentInsert = z.infer<typeof inventoryAdjustmentInsertSchema>;
+export const inventoryAdjustmentSelectSchema = createSelectSchema(inventoryAdjustments);
+export type InventoryAdjustment = z.infer<typeof inventoryAdjustmentSelectSchema>;
+
 export const settingsInsertSchema = createInsertSchema(settings, {
   key: (schema) => schema.min(1, "Key must not be empty"),
   value: (schema) => schema.min(1, "Value must not be empty")
