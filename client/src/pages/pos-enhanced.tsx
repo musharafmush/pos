@@ -1617,25 +1617,25 @@ export default function POSEnhanced() {
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900">
           {/* Modern Header */}
-          <div className="bg-white border-b border-gray-200 shadow-sm">
-            <div className="px-6 py-4">
+          <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-xl">
+            <div className="px-8 py-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-blue-600 text-white p-3 rounded-xl shadow-lg">
-                    <Monitor className="h-6 w-6" />
+                <div className="flex items-center space-x-6">
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-2xl shadow-lg">
+                    <Monitor className="h-7 w-7" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Enhanced POS</h1>
-                    <p className="text-sm text-gray-500">Professional Point of Sale System</p>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Enhanced POS</h1>
+                    <p className="text-sm text-gray-600 font-medium">Professional Point of Sale System</p>
                   </div>
 
-                  <div className="flex items-center space-x-3 ml-8">
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
-                      <CheckCircle className="w-3 h-3 mr-1" />
+                  <div className="flex items-center space-x-4 ml-12">
+                    <Badge className="bg-green-100/80 text-green-800 border-green-200 px-4 py-2 shadow-sm backdrop-blur">
+                      <CheckCircle className="w-4 h-4 mr-2" />
                       System Ready
                     </Badge>
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                      <Zap className="h-3 w-3 mr-1" />
+                    <Badge className="bg-blue-100/80 text-blue-800 border-blue-200 px-4 py-2 shadow-sm backdrop-blur">
+                      <Zap className="h-4 w-4 mr-2" />
                       Live Mode
                     </Badge>
                   </div>
@@ -1913,25 +1913,30 @@ export default function POSEnhanced() {
 
           <div className="flex">
             {/* Main Cart Section */}
-            <div className="flex-1 bg-white p-6">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-xl mb-6 shadow-lg">
+            <div className="flex-1 bg-white/90 backdrop-blur-sm p-8">
+              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-6 rounded-2xl mb-8 shadow-2xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <ShoppingCart className="h-6 w-6 mr-3" />
-                    <h2 className="text-xl font-bold">Shopping Cart</h2>
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mr-4">
+                      <ShoppingCart className="h-7 w-7" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold">Shopping Cart</h2>
+                      <p className="text-blue-100 text-sm">Professional Point of Sale</p>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold">
+                    <div className="text-xl font-bold">
                       {cart.length} items • {cart.reduce((sum, item) => sum + item.quantity, 0)} units
                     </div>
-                    <div className="text-blue-100 text-sm">
+                    <div className="text-blue-100 text-lg font-medium">
                       Subtotal: {formatCurrency(subtotal)}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="min-h-96 bg-gray-50 rounded-xl p-6 border border-gray-200">
+              <div className="min-h-96 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200/50 shadow-xl">
                 {cart.length === 0 ? (
                   <div className="text-center py-20">
                     <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-gray-300" />
@@ -2711,7 +2716,7 @@ export default function POSEnhanced() {
                   <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Quick Add</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {[100, 500, 1000, 2000, 5000, 10000, 20000, 50000].map((amount) => (
                     <Button
                       key={amount}
@@ -2733,10 +2738,10 @@ export default function POSEnhanced() {
                         setTimeout(setValues, 10);
                         setTimeout(setValues, 50);
                       }}
-                      className="border-green-200 text-green-700 hover:bg-green-50 h-12 flex flex-col justify-center"
+                      className="border-green-200/70 text-green-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 h-14 flex flex-col justify-center shadow-sm hover:shadow-md transition-all duration-200 bg-white/80 backdrop-blur-sm"
                     >
-                      <Plus className="w-3 h-3 mb-1" />
-                      <span className="font-semibold">₹{amount >= 1000 ? `${amount/1000}k` : amount}</span>
+                      <Plus className="w-4 h-4 mb-1" />
+                      <span className="font-bold text-lg">₹{amount >= 1000 ? `${amount/1000}k` : amount}</span>
                     </Button>
                   ))}
                 </div>
