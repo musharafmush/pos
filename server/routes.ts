@@ -1557,7 +1557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sales statistics endpoint
+  // Sales statistics endpoint - no auth required for dashboard access
   app.get('/api/sales/stats', async (req, res) => {
     try {
       console.log('📊 Fetching sales statistics');
@@ -1891,6 +1891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sales API endpoint - no auth required for dashboard access
   app.get('/api/sales', async (req, res) => {
     try {
       console.log('📊 Sales API endpoint accessed with query:', req.query);
@@ -2028,6 +2029,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recent sales endpoint - no auth required for dashboard access
   app.get('/api/sales/recent', async (req, res) => {
     try {
       console.log('🔄 POS Enhanced - Recent sales endpoint accessed');
