@@ -2014,7 +2014,19 @@ export default function POSEnhanced() {
                               >
                                 <Minus className="h-4 w-4" />
                               </Button>
-                              <span className="w-12 text-center font-bold text-lg">{item.quantity}</span>
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newQuantity = parseInt(e.target.value) || 1;
+                                  if (newQuantity >= 1 && newQuantity <= 999) {
+                                    updateQuantity(item.id, newQuantity);
+                                  }
+                                }}
+                                className="w-16 h-8 text-center font-bold text-lg border-0 bg-transparent p-0"
+                                min="1"
+                                max="999"
+                              />
                               <Button
                                 variant="ghost"
                                 size="sm"
