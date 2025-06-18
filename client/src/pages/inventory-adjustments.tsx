@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import DashboardLayout from "@/components/DashboardLayout";
+import DashboardLayout from "@/components/layout/dashboard-layout";
 import {
   PlusIcon,
   RefreshCw,

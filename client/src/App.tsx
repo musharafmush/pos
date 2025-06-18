@@ -48,6 +48,7 @@ import SaleReturnsDashboard from "./pages/sale-returns-dashboard";
 import ProfitManagement from "./pages/profit-management";
 import ReceiptSettings from "./pages/receipt-settings";
 import PrinterReceiptEditor from "./pages/printer-receipt-editor";
+import InventoryAdjustments from "./pages/inventory-adjustments";
 import ThermalPrinterSetup from "./pages/thermal-printer-setup";
 import EditOptions from "@/pages/edit-options";
 import AutoPrinterSetup from "@/pages/auto-printer-setup";
@@ -80,6 +81,7 @@ function Router() {
       <ProtectedRoute path="/repacking/repacking-dashboard-professional" component={RepackingDashboardProfessional} />
       <ProtectedRoute path="/print-labels" component={PrintLabels} />
       <ProtectedRoute path="/inventory" component={Inventory} />
+      <ProtectedRoute path="/inventory-adjustments" component={InventoryAdjustments} />
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
       <ProtectedRoute path="/purchases" component={Purchases} />
       <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
