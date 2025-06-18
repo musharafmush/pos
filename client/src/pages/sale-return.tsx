@@ -662,11 +662,11 @@ export default function SalesDashboard() {
                     </div>
                   </div>
 
-                  {/* Items to Return */}
+                  {/* Detailed Items Analytics */}
                   <div>
-                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <Package className="h-4 w-4 text-blue-600" />
-                      Items Available for Return ({returnItems.length})
+                    <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                      <Package className="h-5 w-5 text-emerald-600" />
+                      Items Breakdown & Analytics ({saleDetails.items?.length || 0} items)
                     </h4>
                     <div className="space-y-3 max-h-64 overflow-y-auto">
                       {returnItems.length > 0 ? (
