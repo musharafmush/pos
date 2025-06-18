@@ -87,9 +87,8 @@ function Router() {
       <ProtectedRoute path="/purchase-entry-professional" component={PurchaseEntryProfessional} />
       <ProtectedRoute path="/reports" component={Reports} />
       <ProtectedRoute path="/sales/return" component={SaleReturn} />
-      <ProtectedRoute path="/sale-return" component={SaleReturn} />
       <ProtectedRoute path="/sale-returns-dashboard" component={SaleReturnsDashboard} />
-      <ProtectedRoute path="/sales-dashboard" component={SalesDashboard} />
+      <ProtectedRoute path="/sales-dashboard" component={SaleReturn} />
       <ProtectedRoute path="/profit-management" component={ProfitManagement} />
       <ProtectedRoute path="/users" component={Users} adminOnly />
       <ProtectedRoute path="/settings" component={Settings} />

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/currency';
-import { Search, ArrowLeft, RefreshCw, DollarSign, CreditCard, Banknote, ShoppingCart, Package, AlertCircle, CheckCircle, Wifi, WifiOff, Clock } from 'lucide-react';
+import { Search, ArrowLeft, RefreshCw, DollarSign, CreditCard, Banknote, ShoppingCart, Package, AlertCircle, CheckCircle, Wifi, WifiOff, Clock, TrendingUp, Users, Calendar, BarChart3 } from 'lucide-react';
 
 interface SaleItem {
   id: number;
@@ -60,7 +60,7 @@ interface ReturnItem {
   subtotal: number;
 }
 
-export default function SaleReturn() {
+export default function SalesDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
@@ -85,6 +85,19 @@ export default function SaleReturn() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Fetch real-time sales statistics
+  const { data: salesStats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
+    queryKey: ['/api/sales/stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/sales/stats');
+      if (!response.ok) throw new Error('Failed to fetch sales statistics');
+      return response.json();
+    },
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
+    staleTime: 1000,
+  });
 
   // Fetch sales for search with real-time updates and instant search
   const { data: sales = [], isLoading: salesLoading, refetch: refetchSales } = useQuery<Sale[]>({
@@ -291,17 +304,32 @@ export default function SaleReturn() {
 
         {/* Find Sale Transaction Section */}
         <Card className="shadow-lg border-0 bg-white">
-          <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
-            <CardTitle className="flex items-center gap-3">
-              <Search className="h-6 w-6" />
-              Find Sale Transaction
+          <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-t-lg">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="h-6 w-6" />
+                Real-Time Sales Dashboard
+              </div>
+              <div className="flex items-center gap-2">
+                {isOnline ? (
+                  <div className="flex items-center gap-1 text-xs bg-white/20 px-2 py-1 rounded">
+                    <Wifi className="h-3 w-3" />
+                    Live
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-xs bg-red-500/20 px-2 py-1 rounded">
+                    <WifiOff className="h-3 w-3" />
+                    Offline
+                  </div>
+                )}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="search" className="text-sm font-medium text-gray-700">
-                  Search by Order Number, Customer Name, or Phone
+                  Search Sales Transactions (Order Number, Customer, Phone)
                 </Label>
                 <Button
                   variant="outline"
