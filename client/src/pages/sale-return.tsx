@@ -668,44 +668,60 @@ export default function SalesDashboard() {
                       <Package className="h-5 w-5 text-emerald-600" />
                       Items Breakdown & Analytics ({saleDetails.items?.length || 0} items)
                     </h4>
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {returnItems.length > 0 ? (
-                        returnItems.map((item, index) => (
+                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                      {saleDetails.items && saleDetails.items.length > 0 ? (
+                        saleDetails.items.map((item, index) => (
                           <div key={`${item.productId}-${index}`} 
-                               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                            <div className="flex-1">
-                              <p className="font-medium text-sm text-gray-800">
-                                {item.productName}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                Available: {item.maxQuantity} × {formatCurrency(item.unitPrice)}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="flex flex-col items-center">
-                                <Label className="text-xs text-gray-600 mb-1">Return Qty</Label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  max={item.maxQuantity}
-                                  value={item.returnQuantity}
-                                  onChange={(e) => updateReturnQuantity(item.productId, parseInt(e.target.value) || 0)}
-                                  className="w-16 h-8 text-center text-sm"
-                                />
+                            className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-4 border border-emerald-200">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h5 className="font-semibold text-gray-800">{item.product.name}</h5>
+                                  <Badge variant="outline" className="text-xs text-emerald-700 border-emerald-300">
+                                    SKU: {item.product.sku}
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                  <div>
+                                    <p className="text-gray-600 font-medium">Quantity</p>
+                                    <p className="text-emerald-700 font-bold">{item.quantity}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-600 font-medium">Unit Price</p>
+                                    <p className="text-emerald-700 font-bold">{formatCurrency(parseFloat(item.unitPrice))}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-600 font-medium">Line Total</p>
+                                    <p className="text-emerald-700 font-bold">{formatCurrency(parseFloat(item.subtotal))}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-600 font-medium">% of Sale</p>
+                                    <p className="text-emerald-700 font-bold">
+                                      {((parseFloat(item.subtotal) / parseFloat(saleDetails.total)) * 100).toFixed(1)}%
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-right min-w-[80px]">
-                                <p className="text-xs text-gray-600">Refund</p>
-                                <p className="font-semibold text-sm text-green-600">
-                                  {formatCurrency(item.subtotal)}
-                                </p>
+                            </div>
+                            
+                            <div className="flex items-center justify-between bg-white rounded-md p-2 border border-emerald-100">
+                              <div className="flex items-center gap-4 text-xs text-gray-600">
+                                <span>Product ID: {item.productId}</span>
+                                <span>•</span>
+                                <span>Revenue Impact: {formatCurrency(parseFloat(item.subtotal))}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  {(parseFloat(item.subtotal) > (parseFloat(saleDetails.total) / saleDetails.items.length)) ? 'High Value' : 'Standard'}
+                                </Badge>
                               </div>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                          <p className="text-sm">No items found for this sale</p>
+                        <div className="text-center py-8">
+                          <Package className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                          <p className="text-gray-500">No items data available</p>
                         </div>
                       )}
                     </div>
