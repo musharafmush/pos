@@ -372,7 +372,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const optionalColumns = [
         'description', 'mrp', 'cost', 'weight', 'weight_unit', 
         'category_id', 'stock_quantity', 'alert_threshold', 
-        'barcode', 'image', 'active', 'created_at', 'updated_at'
+        'barcode', 'image', 'active', 'created_at', 'updated_at',
+        'hsn_code', 'gst_code', 'cgst_rate', 'sgst_rate', 'igst_rate', 
+        'cess_rate', 'tax_calculation_method', 'manufacturer_name', 
+        'supplier_name', 'manufacturer_id', 'supplier_id', 'alias',
+        'item_product_type', 'department', 'brand', 'buyer',
+        'purchase_gst_calculated_on', 'gst_uom', 'purchase_abatement',
+        'config_item_with_commodity', 'senior_exempt_applicable',
+        'ean_code_required', 'weights_per_unit', 'batch_expiry_details'
       ];
 
       const availableColumns = baseColumns.concat(
@@ -407,7 +414,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         image: product.image || '',
         active: product.active !== false,
         createdAt: product.created_at,
-        updatedAt: product.updated_at
+        updatedAt: product.updated_at,
+        
+        // Tax & Compliance Details
+        hsnCode: product.hsn_code || '',
+        gstCode: product.gst_code || '',
+        cgstRate: product.cgst_rate || '0',
+        sgstRate: product.sgst_rate || '0',
+        igstRate: product.igst_rate || '0',
+        cessRate: product.cess_rate || '0',
+        taxCalculationMethod: product.tax_calculation_method || 'exclusive',
+        
+        // Supplier & Manufacturer Information
+        manufacturerName: product.manufacturer_name || '',
+        supplierName: product.supplier_name || '',
+        manufacturerId: product.manufacturer_id,
+        supplierId: product.supplier_id,
+        
+        // Product Classification
+        alias: product.alias || '',
+        itemProductType: product.item_product_type || '',
+        department: product.department || '',
+        brand: product.brand || '',
+        buyer: product.buyer || '',
+        purchaseGstCalculatedOn: product.purchase_gst_calculated_on || 'MRP',
+        gstUom: product.gst_uom || 'PIECES',
+        purchaseAbatement: product.purchase_abatement || '',
+        
+        // Configuration Options
+        configItemWithCommodity: Boolean(product.config_item_with_commodity),
+        seniorExemptApplicable: Boolean(product.senior_exempt_applicable),
+        eanCodeRequired: Boolean(product.ean_code_required),
+        weightsPerUnit: product.weights_per_unit || '',
+        batchExpiryDetails: product.batch_expiry_details || ''
       }));
 
       console.log(`✅ Found ${formattedProducts.length} products via direct query`);
