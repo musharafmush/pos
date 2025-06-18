@@ -1057,16 +1057,48 @@ export const storage = {
         SELECT 
           pi.*,
           p.name as product_name,
-          p.sku as product_sku
+          p.sku as product_sku,
+          p.cgst_rate,
+          p.sgst_rate,
+          p.igst_rate
         FROM purchase_items pi
         LEFT JOIN products p ON pi.product_id = p.id
         WHERE pi.purchase_id = ?
         ORDER BY pi.id
       `).all(id);
 
+      // Format items with proper tax percentage display
+      const formattedItems = items.map(item => {
+        let taxPercentage = 0;
+        
+        // Calculate total GST from product if available
+        if (item.cgst_rate || item.sgst_rate || item.igst_rate) {
+          const cgst = parseFloat(item.cgst_rate || '0');
+          const sgst = parseFloat(item.sgst_rate || '0');
+          const igst = parseFloat(item.igst_rate || '0');
+          taxPercentage = cgst + sgst + igst;
+        } else if (item.tax_percentage) {
+          // Use stored tax percentage if available
+          taxPercentage = parseFloat(item.tax_percentage) || 0;
+        }
+
+        return {
+          ...item,
+          tax_percentage: taxPercentage,
+          taxPercentage: taxPercentage, // Ensure both formats are available
+          // Format other numeric fields properly
+          unit_cost: parseFloat(item.unit_cost || '0'),
+          quantity: parseInt(item.quantity || '0'),
+          received_qty: parseInt(item.received_qty || '0'),
+          net_amount: parseFloat(item.net_amount || '0'),
+          discount_amount: parseFloat(item.discount_amount || '0'),
+          discount_percent: parseFloat(item.discount_percent || '0')
+        };
+      });
+
       return {
         ...purchase,
-        items
+        items: formattedItems
       };
     } catch (error) {
       console.error('Error fetching purchase by ID:', error);
