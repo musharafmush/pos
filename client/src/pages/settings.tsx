@@ -1845,13 +1845,18 @@ ${receiptSettings.receiptFooter}
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Data Management Tips */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <BellIcon className="h-5 w-5 text-blue-600" />
-                    Data Management Best Practices
-                  </h3>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BellIcon className="h-5 w-5" />
+                  Data Management Best Practices
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                       <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">🔄 Regular Backups</h4>
@@ -1880,37 +1885,36 @@ ${receiptSettings.receiptFooter}
                   </div>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="border-t pt-6">
-                  <div className="flex flex-wrap gap-3">
-                    <Button variant="outline" size="sm" onClick={() => {
-                      toast({
-                        title: "System Status",
-                        description: "Your POS system is running optimally with all data intact.",
-                      });
-                    }}>
-                      <DatabaseIcon className="h-4 w-4 mr-2" />
-                      Check System Health
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => {
-                      toast({
-                        title: "Storage Info",
-                        description: "Your data is securely stored and backed up locally.",
-                      });
-                    }}>
-                      <ShieldIcon className="h-4 w-4 mr-2" />
-                      Storage Information
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => {
-                      window.open('/api/sales/test', '_blank');
-                    }}>
-                      <BellIcon className="h-4 w-4 mr-2" />
-                      System Diagnostics
-                    </Button>
+                  {/* Quick Actions */}
+                  <div className="border-t pt-6">
+                    <div className="flex flex-wrap gap-3">
+                      <Button variant="outline" size="sm" onClick={() => {
+                        toast({
+                          title: "System Status",
+                          description: "Your POS system is running optimally with all data intact.",
+                        });
+                      }}>
+                        <DatabaseIcon className="h-4 w-4 mr-2" />
+                        Check System Health
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        toast({
+                          title: "Storage Info",
+                          description: "Your data is securely stored and backed up locally.",
+                        });
+                      }}>
+                        <ShieldIcon className="h-4 w-4 mr-2" />
+                        Storage Information
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        window.open('/api/sales/test', '_blank');
+                      }}>
+                        <BellIcon className="h-4 w-4 mr-2" />
+                        System Diagnostics
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
               </CardContent>
             </Card>
           </TabsContent>
