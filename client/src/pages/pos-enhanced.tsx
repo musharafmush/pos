@@ -2666,20 +2666,24 @@ export default function POSEnhanced() {
         }
         setShowCashRegister(open);
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg">
-            <DialogTitle className="flex items-center gap-3 text-xl">
-              <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                <Banknote className="w-5 h-5 text-white" />
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+          <DialogHeader className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white p-6 rounded-2xl shadow-xl mb-6">
+            <DialogTitle className="flex items-center gap-4 text-2xl">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                <Banknote className="w-7 h-7 text-white" />
               </div>
               <div>
-                <div className="text-gray-800">Cash Register Management</div>
-                <div className="text-sm text-gray-600 font-normal">Professional cash & payment tracking system</div>
+                <div className="text-white font-bold text-2xl">Cash Register Management</div>
+                <div className="text-green-100 font-medium">Professional cash & payment tracking system</div>
               </div>
-              <div className="ml-auto flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">Live System</span>
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">06:29 am</span>
+              <div className="ml-auto flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+                  <div className="w-3 h-3 bg-green-300 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-green-100 font-medium">Live System</span>
+                </div>
+                <span className="text-sm bg-blue-500/30 backdrop-blur-sm text-blue-100 px-3 py-2 rounded-xl font-medium">
+                  {new Date().toLocaleTimeString()}
+                </span>
               </div>
             </DialogTitle>
           </DialogHeader>
@@ -2687,18 +2691,22 @@ export default function POSEnhanced() {
           <div className="grid grid-cols-12 gap-6 p-2">
             {/* Current Balance Display */}
             <div className="col-span-4">
-              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-2xl shadow-lg">
+              <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 text-white p-8 rounded-3xl shadow-2xl border border-white/20">
                 <div className="text-center">
-                  <h3 className="text-lg font-medium mb-2 opacity-90">Current Cash Balance</h3>
-                  <div className="text-4xl font-bold mb-4">{formatCurrency(cashInHand)}</div>
-                  <div className="bg-green-400/30 rounded-lg p-3">
-                    <div className="flex justify-between"><div className="text-center">
-                        <div className="text-sm opacity-80">Today's Sales</div>
-                        <div className="font-semibold">₹0</div>
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Banknote className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3 text-green-100">Current Cash Balance</h3>
+                  <div className="text-5xl font-bold mb-6 text-white drop-shadow-lg">{formatCurrency(cashInHand)}</div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <div className="text-sm text-green-100 font-medium">Today's Sales</div>
+                        <div className="text-2xl font-bold text-white">₹0</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-sm opacity-80">Transactions</div>
-                        <div className="font-semibold">0</div>
+                        <div className="text-sm text-green-100 font-medium">Transactions</div>
+                        <div className="text-2xl font-bold text-white">0</div>
                       </div>
                     </div>
                   </div>
@@ -2709,12 +2717,14 @@ export default function POSEnhanced() {
             {/* Cash Payments Section */}
             <div className="col-span-4">
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Banknote className="w-5 h-5 text-green-600" />
-                    <h4 className="font-semibold text-gray-800">Cash Payments</h4>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
+                      <Banknote className="w-5 h-5 text-green-600" />
+                    </div>
+                    <h4 className="font-bold text-gray-800 text-lg">Cash Payments</h4>
                   </div>
-                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Quick Add</span>
+                  <span className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 text-sm px-4 py-2 rounded-xl font-medium shadow-sm">Quick Add</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -2941,39 +2951,44 @@ export default function POSEnhanced() {
 
             {/* Manual Entry Form */}
             <div className="col-span-12">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-800 mb-4">Manual Entry</h4>
-                <div className="grid grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-white via-blue-50 to-indigo-50 p-8 rounded-3xl shadow-xl border border-gray-200/50">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center">
+                    <span className="text-lg">✏️</span>
+                  </div>
+                  <h4 className="font-bold text-gray-800 text-xl">Manual Entry</h4>
+                </div>
+                <div className="grid grid-cols-3 gap-6">
                   <div>
-                    <Label htmlFor="cashAmount" className="text-sm font-medium">Amount (₹)</Label>
+                    <Label htmlFor="cashAmount" className="text-sm font-bold text-gray-700 mb-2 block">Amount (₹)</Label>
                     <Input
                       id="cashAmount"
                       type="number"
                       value={cashAmount}
                       onChange={(e) => setCashAmount(e.target.value)}
                       placeholder="Enter amount"
-                      className="mt-1"
+                      className="mt-1 h-12 text-lg font-medium border-2 focus:border-blue-500 rounded-xl shadow-sm"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="cashReason" className="text-sm font-medium">Reason</Label>
+                    <Label htmlFor="cashReason" className="text-sm font-bold text-gray-700 mb-2 block">Reason</Label>
                     <Input
                       id="cashReason"
                       value={cashReason}
                       onChange={(e) => setCashReason(e.target.value)}
                       placeholder="Enter reason"
-                      className="mt-1"
+                      className="mt-1 h-12 text-lg font-medium border-2 focus:border-blue-500 rounded-xl shadow-sm"
                     />
                   </div>
                   <div className="flex items-end">
                     <Button 
                       onClick={handleCashOperation} 
-                      className={`w-full h-10 ${
+                      className={`w-full h-12 text-lg font-bold rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105 ${
                         cashOperation === 'add' 
-                          ? 'bg-green-600 hover:bg-green-700' 
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white' 
                           : cashOperation === 'remove'
-                          ? 'bg-red-600 hover:bg-red-700'
-                          : 'bg-gray-400'
+                          ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'
+                          : 'bg-gray-400 text-gray-600'
                       }`}
                       disabled={!cashAmount || parseFloat(cashAmount) <= 0 || !cashOperation}
                     >
