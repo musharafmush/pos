@@ -1815,56 +1815,6 @@ export default function POSEnhanced() {
 
           {/* Search Section */}
           <div className="bg-white border-b border-gray-200 px-6 py-4">
-            {/* Barcode Scanner Section */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                    <Scan className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-blue-800">Barcode Scanner</h3>
-                    <p className="text-sm text-blue-600">Scan or enter product barcode for instant addition</p>
-                  </div>
-                </div>
-                <Badge className="bg-green-100 text-green-800 border-green-200">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Ready
-                </Badge>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex-1 relative">
-                  <Scan className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
-                  <Input
-                    placeholder="Scan barcode or type product code to add instantly..."
-                    value={barcodeInput}
-                    onChange={(e) => setBarcodeInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleBarcodeSubmit();
-                      }
-                    }}
-                    className="pl-10 text-sm border-blue-300 focus:border-blue-500 focus:ring-blue-500 h-12"
-                    autoFocus
-                  />
-                </div>
-                <Button
-                  onClick={handleBarcodeSubmit}
-                  disabled={!barcodeInput.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white h-12 px-6"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Item
-                </Button>
-              </div>
-              <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-                <Info className="h-3 w-3" />
-                💡 Tip: Use a barcode scanner or manually enter product barcodes/SKU for instant cart addition
-              </p>
-            </div>
-
             <div className="flex items-center space-x-4 mb-4">
               <Button 
                 onClick={() => searchInputRef.current?.focus()}
@@ -1872,10 +1822,6 @@ export default function POSEnhanced() {
               >
                 <Search className="h-4 w-4 mr-2" />
                 Search Products (F1)
-              </Button>
-              <Button variant="outline" className="hover:bg-gray-50">
-                <Search className="h-4 w-4 mr-2" />
-                Search Products
               </Button>
               <Button variant="outline" className="hover:bg-gray-50">
                 <Package className="h-4 w-4 mr-2" />
@@ -1892,21 +1838,75 @@ export default function POSEnhanced() {
               </Button>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="relative flex-1">
-                <Input
-                  ref={searchInputRef}
-                  placeholder="Type product name, SKU, or scan barcode..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="text-lg py-3 pl-12 border-2 border-gray-200 focus:border-blue-500"
-                />
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            {/* Unified Search and Barcode Scanner */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                    <Search className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-800">Product Search & Barcode Scanner</h3>
+                    <p className="text-sm text-blue-600">Search products or scan barcodes for instant addition</p>
+                  </div>
+                </div>
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Ready
+                </Badge>
               </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                <Info className="h-4 w-4" />
-                <span>{products.length} products available</span>
-                {productsLoading && <span className="text-blue-600">• Loading...</span>}
+
+              <div className="flex items-center space-x-4">
+                <div className="relative flex-1">
+                  <div className="flex items-center gap-2 absolute left-4 top-1/2 transform -translate-y-1/2">
+                    <Search className="h-5 w-5 text-blue-600" />
+                    <Scan className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Search products by name, SKU or scan barcode..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setBarcodeInput(e.target.value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (searchTerm.trim()) {
+                          handleBarcodeSubmit();
+                        }
+                      }
+                    }}
+                    className="text-lg py-3 pl-20 pr-24 border-2 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                    autoFocus
+                  />
+                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-3">
+                    <span className="text-sm text-gray-500">
+                      {products.length} products
+                    </span>
+                    <Button
+                      onClick={handleBarcodeSubmit}
+                      disabled={!searchTerm.trim()}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-4"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-blue-600 mt-3">
+                <div className="flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  <span>Type to search products or scan barcode. Press Enter or click Add to add to cart</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Scan className="h-3 w-3" />
+                  <span>Scanner works with products that have valid barcodes, stock, and pricing</span>
+                </div>
               </div>
             </div>
           </div>
