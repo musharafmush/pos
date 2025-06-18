@@ -234,18 +234,38 @@ export default function POSEnhanced() {
   // Update register state when active register is loaded
   useEffect(() => {
     if (activeCashRegister) {
+      console.log('Loading active cash register:', activeCashRegister);
       setRegisterOpened(true);
       setActiveRegisterId(activeCashRegister.id);
-      setOpeningCash(parseFloat(activeCashRegister.openingCash));
-      setCashInHand(parseFloat(activeCashRegister.currentCash));
-      setCashReceived(parseFloat(activeCashRegister.cashReceived));
-      setUpiReceived(parseFloat(activeCashRegister.upiReceived));
-      setCardReceived(parseFloat(activeCashRegister.cardReceived));
-      setBankReceived(parseFloat(activeCashRegister.bankReceived));
-      setChequeReceived(parseFloat(activeCashRegister.chequeReceived));
-      setOtherReceived(parseFloat(activeCashRegister.otherReceived));
-      setTotalWithdrawals(parseFloat(activeCashRegister.totalWithdrawals));
-      setTotalRefunds(parseFloat(activeCashRegister.totalRefunds));
+      
+      // Handle both camelCase and snake_case properties for compatibility
+      const openingCash = parseFloat(activeCashRegister.openingCash || activeCashRegister.opening_cash || '0');
+      const currentCash = parseFloat(activeCashRegister.currentCash || activeCashRegister.current_cash || '0');
+      const cashReceived = parseFloat(activeCashRegister.cashReceived || activeCashRegister.cash_received || '0');
+      const upiReceived = parseFloat(activeCashRegister.upiReceived || activeCashRegister.upi_received || '0');
+      const cardReceived = parseFloat(activeCashRegister.cardReceived || activeCashRegister.card_received || '0');
+      const bankReceived = parseFloat(activeCashRegister.bankReceived || activeCashRegister.bank_received || '0');
+      const chequeReceived = parseFloat(activeCashRegister.chequeReceived || activeCashRegister.cheque_received || '0');
+      const otherReceived = parseFloat(activeCashRegister.otherReceived || activeCashRegister.other_received || '0');
+      const totalWithdrawals = parseFloat(activeCashRegister.totalWithdrawals || activeCashRegister.total_withdrawals || '0');
+      const totalRefunds = parseFloat(activeCashRegister.totalRefunds || activeCashRegister.total_refunds || '0');
+      
+      setOpeningCash(openingCash);
+      setCashInHand(currentCash);
+      setCashReceived(cashReceived);
+      setUpiReceived(upiReceived);
+      setCardReceived(cardReceived);
+      setBankReceived(bankReceived);
+      setChequeReceived(chequeReceived);
+      setOtherReceived(otherReceived);
+      setTotalWithdrawals(totalWithdrawals);
+      setTotalRefunds(totalRefunds);
+      
+      console.log('Cash register values loaded:', {
+        openingCash,
+        currentCash,
+        cashInHand: currentCash
+      });
     }
   }, [activeCashRegister]);
 

@@ -2323,7 +2323,23 @@ export const storage = {
       const updatedRegister = getRegister.get(id);
 
       return updatedRegister ? {
-        ...updatedRegister,
+        id: updatedRegister.id,
+        registerId: updatedRegister.register_id,
+        status: updatedRegister.status,
+        openingCash: updatedRegister.opening_cash,
+        currentCash: updatedRegister.current_cash,
+        cashReceived: updatedRegister.cash_received,
+        upiReceived: updatedRegister.upi_received,
+        cardReceived: updatedRegister.card_received,
+        bankReceived: updatedRegister.bank_received,
+        chequeReceived: updatedRegister.cheque_received,
+        otherReceived: updatedRegister.other_received,
+        totalWithdrawals: updatedRegister.total_withdrawals,
+        totalRefunds: updatedRegister.total_refunds,
+        totalSales: updatedRegister.total_sales,
+        notes: updatedRegister.notes,
+        openedBy: updatedRegister.opened_by,
+        closedBy: updatedRegister.closed_by,
         openedAt: new Date(updatedRegister.opened_at),
         closedAt: updatedRegister.closed_at ? new Date(updatedRegister.closed_at) : null
       } : null;
@@ -2340,7 +2356,23 @@ export const storage = {
       const register = getRegister.get(id);
 
       return register ? {
-        ...register,
+        id: register.id,
+        registerId: register.register_id,
+        status: register.status,
+        openingCash: register.opening_cash,
+        currentCash: register.current_cash,
+        cashReceived: register.cash_received,
+        upiReceived: register.upi_received,
+        cardReceived: register.card_received,
+        bankReceived: register.bank_received,
+        chequeReceived: register.cheque_received,
+        otherReceived: register.other_received,
+        totalWithdrawals: register.total_withdrawals,
+        totalRefunds: register.total_refunds,
+        totalSales: register.total_sales,
+        notes: register.notes,
+        openedBy: register.opened_by,
+        closedBy: register.closed_by,
         openedAt: new Date(register.opened_at),
         closedAt: register.closed_at ? new Date(register.closed_at) : null
       } : null;
@@ -2362,7 +2394,23 @@ export const storage = {
       const register = getRegister.get();
 
       return register ? {
-        ...register,
+        id: register.id,
+        registerId: register.register_id,
+        status: register.status,
+        openingCash: register.opening_cash,
+        currentCash: register.current_cash,
+        cashReceived: register.cash_received,
+        upiReceived: register.upi_received,
+        cardReceived: register.card_received,
+        bankReceived: register.bank_received,
+        chequeReceived: register.cheque_received,
+        otherReceived: register.other_received,
+        totalWithdrawals: register.total_withdrawals,
+        totalRefunds: register.total_refunds,
+        totalSales: register.total_sales,
+        notes: register.notes,
+        openedBy: register.opened_by,
+        closedBy: register.closed_by,
         openedAt: new Date(register.opened_at),
         closedAt: register.closed_at ? new Date(register.closed_at) : null
       } : null;
