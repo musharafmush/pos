@@ -22,7 +22,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTheme } from "@/components/ui/theme-provider";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { DatabaseIcon, ShieldIcon, BellIcon } from "lucide-react";
 
 // Tax Settings Component
 function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
@@ -563,10 +565,8 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
   );
 }
 
-
-import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { PrinterIcon, DollarSignIcon, BellIcon, ShieldIcon, UserIcon, DatabaseIcon } from 'lucide-react';
+import { PrinterIcon, DollarSignIcon, UserIcon } from 'lucide-react';
 import ReceiptSettings from './receipt-settings';
 
 const profileFormSchema = z.object({
