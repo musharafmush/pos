@@ -1615,11 +1615,11 @@ export default function POSEnhanced() {
   }, []);
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-blue-600' : ''}`}>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900">
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden' : ''}`}>
+        <div className={`${isFullscreen ? 'h-full overflow-y-auto' : 'min-h-screen'} bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900`}>
           {/* Modern Header */}
           <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-xl">
-            <div className="px-8 py-6">
+            <div className={`${isFullscreen ? 'px-4 py-3' : 'px-8 py-6'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-6">
                   <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-2xl shadow-lg">
@@ -1912,9 +1912,9 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className="flex">
+          <div className={`flex ${isFullscreen ? 'h-[calc(100vh-160px)]' : ''}`}>
             {/* Main Cart Section */}
-            <div className="flex-1 bg-white/90 backdrop-blur-sm p-8">
+            <div className={`flex-1 bg-white/90 backdrop-blur-sm ${isFullscreen ? 'p-4 overflow-y-auto' : 'p-8'}`}>
               <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-6 rounded-2xl mb-8 shadow-2xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
@@ -2157,7 +2157,7 @@ export default function POSEnhanced() {
             </div>
 
             {/* Bill Summary Sidebar */}
-            <div className="w-96 bg-white border-l border-gray-200 p-6">
+            <div className={`${isFullscreen ? 'w-80 p-3' : 'w-96 p-6'} bg-white border-l border-gray-200 ${isFullscreen ? 'overflow-y-auto' : ''}`}>
               {/* Barcode Scanner Status */}
               <Card className="mb-4 border border-blue-200 bg-blue-50">
                 <CardContent className="p-4">
