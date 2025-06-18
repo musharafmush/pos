@@ -1972,16 +1972,27 @@ export default function POSEnhanced() {
                             <div className="flex items-center space-x-4 mt-2">
                               <div className="flex flex-col">
                                 <p className="text-lg font-bold text-green-600">
-                                  {formatCurrency(parseFloat(item.price))}
+                                  Sell: {formatCurrency(parseFloat(item.price))}
                                 </p>
+                                {item.cost && (
+                                  <p className="text-sm text-blue-600">
+                                    Cost: {formatCurrency(parseFloat(item.cost))}
+                                  </p>
+                                )}
                                 {item.mrp && parseFloat(item.mrp) > parseFloat(item.price) && (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 mt-1">
                                     <span className="text-xs text-gray-500 line-through">
                                       MRP: {formatCurrency(parseFloat(item.mrp))}
                                     </span>
                                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
                                       {Math.round(((parseFloat(item.mrp) - parseFloat(item.price)) / parseFloat(item.mrp)) * 100)}% OFF
                                     </span>
+                                  </div>
+                                )}
+                                {item.cost && item.price && (
+                                  <div className="text-xs text-purple-600 mt-1">
+                                    Margin: {formatCurrency(parseFloat(item.price) - parseFloat(item.cost))} 
+                                    ({Math.round(((parseFloat(item.price) - parseFloat(item.cost)) / parseFloat(item.price)) * 100)}%)
                                   </div>
                                 )}
                               </div>
@@ -2326,8 +2337,13 @@ export default function POSEnhanced() {
                     <div className="text-right ml-4">
                       <div className="flex flex-col items-end">
                         <div className="font-bold text-lg text-green-600">
-                          {formatCurrency(parseFloat(product.price))}
+                          Sell: {formatCurrency(parseFloat(product.price))}
                         </div>
+                        {product.cost && (
+                          <div className="text-sm text-blue-600">
+                            Cost: {formatCurrency(parseFloat(product.cost))}
+                          </div>
+                        )}
                         {product.mrp && parseFloat(product.mrp) > parseFloat(product.price) && (
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-gray-500 line-through">
@@ -2336,6 +2352,11 @@ export default function POSEnhanced() {
                             <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
                               {Math.round(((parseFloat(product.mrp) - parseFloat(product.price)) / parseFloat(product.mrp)) * 100)}% OFF
                             </span>
+                          </div>
+                        )}
+                        {product.cost && product.price && (
+                          <div className="text-xs text-purple-600 mt-1">
+                            Margin: {formatCurrency(parseFloat(product.price) - parseFloat(product.cost))}
                           </div>
                         )}
                       </div>
