@@ -96,8 +96,77 @@ export default function RepackingDashboardProfessional() {
     targetSku: "",
     sellingPrice: "",
     costPrice: "",
-    mrp: ""
+    mrp: "",
+    customWeight: "",
+    selectedPresetWeight: ""
   });
+
+  // Preset weight options in grams
+  const presetWeights = [
+    { value: "100", label: "100g", display: "100g" },
+    { value: "200", label: "200g", display: "200g" },
+    { value: "250", label: "250g", display: "250g" },
+    { value: "300", label: "300g", display: "300g" },
+    { value: "400", label: "400g", display: "400g" },
+    { value: "500", label: "500g", display: "500g" },
+    { value: "600", label: "600g", display: "600g" },
+    { value: "700", label: "700g", display: "700g" },
+    { value: "800", label: "800g", display: "800g" },
+    { value: "900", label: "900g", display: "900g" },
+    { value: "1000", label: "1kg", display: "1 kg" },
+    { value: "1500", label: "1.5kg", display: "1.5 kg" },
+    { value: "2000", label: "2kg", display: "2 kg" },
+    { value: "2500", label: "2.5kg", display: "2.5 kg" },
+    { value: "5000", label: "5kg", display: "5 kg" },
+    { value: "10000", label: "10kg", display: "10 kg" }
+  ];
+
+  const handlePresetWeightSelect = (weight: string) => {
+    setRepackFormData(prev => ({
+      ...prev,
+      unitWeight: weight,
+      selectedPresetWeight: weight,
+      customWeight: ""
+    }));
+  };
+
+  const handleCustomWeightChange = (value: string) => {
+    setRepackFormData(prev => ({
+      ...prev,
+      customWeight: value,
+      unitWeight: value,
+      selectedPresetWeight: ""
+    }));
+  };
+
+  // Calculate suggested quantities based on weight selection
+  const calculateSuggestedQuantity = (bulkWeight: number, targetWeight: number) => {
+    if (!targetWeight || targetWeight <= 0) return 0;
+    return Math.floor((bulkWeight * 1000) / targetWeight); // Convert kg to grams
+  };
+
+  // Auto-suggest target quantity when weight changes
+  const handleWeightChangeWithCalculation = (weight: string, isPreset: boolean = false) => {
+    if (isPreset) {
+      handlePresetWeightSelect(weight);
+    } else {
+      handleCustomWeightChange(weight);
+    }
+
+    // Auto-calculate suggested quantity if bulk product weight is available
+    if (selectedBulkProduct?.weight && weight) {
+      const suggestedQty = calculateSuggestedQuantity(
+        parseFloat(selectedBulkProduct.weight.toString()),
+        parseInt(weight)
+      );
+      if (suggestedQty > 0) {
+        setRepackFormData(prev => ({
+          ...prev,
+          targetQuantity: suggestedQty.toString()
+        }));
+      }
+    }
+  };
 
   // Fetch all products to identify repacked items
   const { data: products = [], isLoading } = useQuery({
@@ -1181,15 +1250,56 @@ export default function RepackingDashboardProfessional() {
                       onChange={(e) => setRepackFormData({ ...repackFormData, targetQuantity: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="repack-unitWeight">Unit Weight (g)</Label>
-                    <Input
-                      id="repack-unitWeight"
-                      type="number"
-                      min="1"
-                      value={repackFormData.unitWeight}
-                      onChange={(e) => setRepackFormData({ ...repackFormData, unitWeight: e.target.value })}
-                    />
+                  <div className="space-y-3 col-span-2">
+                    <Label>Unit Weight Selection</Label>
+                    
+                    {/* Preset Weight Buttons */}
+                    <div className="space-y-3">
+                      <div className="text-sm font-medium text-gray-700">Quick Select:</div>
+                      <div className="grid grid-cols-4 gap-2">
+                        {presetWeights.map((preset) => (
+                          <Button
+                            key={preset.value}
+                            type="button"
+                            variant={repackFormData.selectedPresetWeight === preset.value ? "default" : "outline"}
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => handleWeightChangeWithCalculation(preset.value, true)}
+                          >
+                            {preset.display}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Weight Input */}
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium text-gray-700">Custom Weight (grams):</div>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="Enter custom weight"
+                          value={repackFormData.customWeight}
+                          onChange={(e) => handleWeightChangeWithCalculation(e.target.value, false)}
+                          className="flex-1"
+                        />
+                        <span className="text-sm text-gray-500">grams</span>
+                      </div>
+                    </div>
+
+                    {/* Current Selection Display */}
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <div className="text-sm">
+                        <span className="font-medium text-blue-900">Selected Weight: </span>
+                        <span className="text-blue-700">
+                          {repackFormData.unitWeight ? `${repackFormData.unitWeight}g` : 'None selected'}
+                          {repackFormData.unitWeight && parseInt(repackFormData.unitWeight) >= 1000 && 
+                            ` (${(parseInt(repackFormData.unitWeight) / 1000).toFixed(1)}kg)`
+                          }
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="repack-targetName">New Product Name</Label>
@@ -1239,14 +1349,55 @@ export default function RepackingDashboardProfessional() {
                   </div>
                 </div>
 
-                {/* Summary */}
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-green-900 mb-2">Repack Summary</h4>
-                  <div className="text-sm text-green-800">
-                    <p>• Using {repackFormData.sourceQuantity} bulk unit(s) of {selectedBulkProduct.name}</p>
-                    <p>• Creating {repackFormData.targetQuantity} units of {repackFormData.unitWeight}g each</p>
-                    <p>• New product will be priced at {formatCurrency(parseFloat(repackFormData.sellingPrice || "0"))}</p>
-                    <p>• Remaining bulk stock: {selectedBulkProduct.stockQuantity - parseInt(repackFormData.sourceQuantity)}</p>
+                {/* Enhanced Summary */}
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-5 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    Repack Summary & Analysis
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2">
+                      <div className="text-green-800">
+                        <span className="font-medium">Source Usage:</span>
+                        <p>• {repackFormData.sourceQuantity} bulk unit(s) of {selectedBulkProduct.name}</p>
+                        <p>• Remaining stock: {selectedBulkProduct.stockQuantity - parseInt(repackFormData.sourceQuantity || "0")}</p>
+                      </div>
+                      <div className="text-blue-800">
+                        <span className="font-medium">Output:</span>
+                        <p>• {repackFormData.targetQuantity} units of {repackFormData.unitWeight}g each</p>
+                        <p>• Total weight: {parseInt(repackFormData.targetQuantity || "0") * parseInt(repackFormData.unitWeight || "0")}g</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-purple-800">
+                        <span className="font-medium">Pricing:</span>
+                        <p>• Unit price: {formatCurrency(parseFloat(repackFormData.sellingPrice || "0"))}</p>
+                        <p>• Total value: {formatCurrency(parseFloat(repackFormData.sellingPrice || "0") * parseInt(repackFormData.targetQuantity || "0"))}</p>
+                      </div>
+                      {repackFormData.unitWeight && repackFormData.targetQuantity && (
+                        <div className="text-orange-800">
+                          <span className="font-medium">Efficiency:</span>
+                          <p>• Per gram cost: {formatCurrency(parseFloat(repackFormData.sellingPrice || "0") / parseInt(repackFormData.unitWeight || "1"))}</p>
+                          <p>• Weight category: {parseInt(repackFormData.unitWeight) >= 1000 ? "Bulk" : parseInt(repackFormData.unitWeight) >= 500 ? "Medium" : "Small"}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Progress Bar for Stock Usage */}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                      <span>Stock Usage</span>
+                      <span>{((parseInt(repackFormData.sourceQuantity || "0") / selectedBulkProduct.stockQuantity) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min(100, (parseInt(repackFormData.sourceQuantity || "0") / selectedBulkProduct.stockQuantity) * 100)}%` 
+                        }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </div>
