@@ -387,13 +387,24 @@ export default function RepackingDashboardProfessional() {
         active: true,
       };
 
+      console.log('📤 Sending repacked product data:', repackedProduct);
+      
       const response = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(repackedProduct),
       });
 
-      if (!response.ok) throw new Error("Failed to create repacked product");
+      console.log('📥 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Failed to create repacked product:', errorText);
+        throw new Error(`Failed to create repacked product: ${errorText}`);
+      }
+
+      const createdProduct = await response.json();
+      console.log('✅ Created repacked product:', createdProduct);
 
       // Update bulk product stock with proper data formatting
       const bulkUnitsUsed = parseFloat(data.sourceQuantity || "1");
@@ -421,18 +432,26 @@ export default function RepackingDashboardProfessional() {
         active: selectedBulkProduct.active !== false
       };
 
+      console.log('📤 Updating bulk product stock:', bulkUpdateData);
+      
       const updateResponse = await fetch(`/api/products/${selectedBulkProduct.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bulkUpdateData),
       });
 
+      console.log('📥 Bulk update response status:', updateResponse.status);
+
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
+        console.error('❌ Failed to update bulk product stock:', errorText);
         throw new Error(`Failed to update bulk product stock: ${errorText}`);
       }
 
-      return await response.json();
+      const updatedBulkProduct = await updateResponse.json();
+      console.log('✅ Updated bulk product:', updatedBulkProduct);
+
+      return createdProduct;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -450,7 +469,18 @@ export default function RepackingDashboardProfessional() {
       });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to complete repacking", variant: "destructive" });
+      console.error('❌ Repack mutation error:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        repackFormData,
+        selectedBulkProduct
+      });
+      toast({ 
+        title: "Repacking Failed", 
+        description: error.message || "Failed to complete repacking operation. Check console for details.", 
+        variant: "destructive" 
+      });
     },
   });
 
