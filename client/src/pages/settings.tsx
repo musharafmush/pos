@@ -1363,120 +1363,140 @@ ${receiptSettings.receiptFooter}
                   </div>
                 </div>
 
-                {/* Main Actions Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Backup Section */}
-                  <div className="border rounded-xl p-6 space-y-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+                {/* Enhanced Main Actions Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {/* Enhanced Backup Section */}
+                  <div className="border rounded-xl p-6 space-y-5 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 border-green-200 dark:border-green-700 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
-                        <DatabaseIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+                      <div className="p-3 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-800 dark:to-emerald-800 rounded-xl shadow-sm">
+                        <DatabaseIcon className="h-6 w-6 text-green-600 dark:text-green-300" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-green-800 dark:text-green-200">Backup Your Data</h3>
-                        <p className="text-xs text-green-600 dark:text-green-400">Safe & Secure</p>
+                        <h3 className="text-lg font-bold text-green-800 dark:text-green-200">Backup Your Data</h3>
+                        <p className="text-sm text-green-600 dark:text-green-400 font-medium">Complete System Backup</p>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Create a complete backup of all your POS data including products, sales, purchases, customers, suppliers, and settings.
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                      Create a comprehensive backup of your entire POS system. This includes all business data, transactions, inventory, and configurations in a single secure file.
                     </p>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <Button 
                         onClick={handleBackupData}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                         size="lg"
                       >
-                        <DatabaseIcon className="h-4 w-4 mr-2" />
-                        Create Full Backup
+                        <DatabaseIcon className="h-5 w-5 mr-2" />
+                        Create Full System Backup
                       </Button>
-                      <div className="text-xs text-green-600 dark:text-green-400 space-y-1">
-                        <p>✓ All transaction data</p>
-                        <p>✓ Product inventory</p>
-                        <p>✓ Customer & supplier info</p>
-                        <p>✓ System settings</p>
+                      <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 border border-green-200 dark:border-green-700">
+                        <div className="text-xs text-green-700 dark:text-green-300 space-y-1 font-medium">
+                          <p className="flex items-center gap-2"><span className="text-green-600">✓</span> All sales & purchase transactions</p>
+                          <p className="flex items-center gap-2"><span className="text-green-600">✓</span> Complete product inventory</p>
+                          <p className="flex items-center gap-2"><span className="text-green-600">✓</span> Customer & supplier database</p>
+                          <p className="flex items-center gap-2"><span className="text-green-600">✓</span> System settings & configurations</p>
+                          <p className="flex items-center gap-2"><span className="text-green-600">✓</span> GST & tax information</p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Restore Section */}
-                  <div className="border rounded-xl p-6 space-y-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+                  {/* Enhanced Restore Section */}
+                  <div className="border rounded-xl p-6 space-y-5 bg-gradient-to-br from-blue-50 via-cyan-50 to-sky-50 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-sky-900/20 border-blue-200 dark:border-blue-700 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                        <DatabaseIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      <div className="p-3 bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-800 dark:to-cyan-800 rounded-xl shadow-sm">
+                        <DatabaseIcon className="h-6 w-6 text-blue-600 dark:text-blue-300" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-blue-800 dark:text-blue-200">Restore Data</h3>
-                        <p className="text-xs text-blue-600 dark:text-blue-400">From Backup File</p>
+                        <h3 className="text-lg font-bold text-blue-800 dark:text-blue-200">Restore Data</h3>
+                        <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">From Backup File</p>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Restore your complete POS system from a previously created backup file.
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                      Restore your complete POS system from a previously created backup file. This will replace all current data with the backup contents.
                     </p>
-                    <div className="space-y-3">
-                      <div className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg p-4">
+                    <div className="space-y-4">
+                      <div className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-xl p-5 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                         <input
                           type="file"
                           accept=".json,application/json"
                           onChange={handleRestoreFile}
-                          className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300"
+                          className="w-full text-sm text-gray-600 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-100 file:to-cyan-100 file:text-blue-700 hover:file:from-blue-200 hover:file:to-cyan-200 dark:file:from-blue-800 dark:file:to-cyan-800 dark:file:text-blue-300 file:transition-all file:cursor-pointer"
                         />
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 font-medium">
                           Select a backup file (.json) created from this system
                         </p>
                       </div>
                       <Button 
                         onClick={handleRestoreData}
                         disabled={!selectedBackupFile}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed"
                         size="lg"
                       >
-                        <DatabaseIcon className="h-4 w-4 mr-2" />
+                        <DatabaseIcon className="h-5 w-5 mr-2" />
                         {selectedBackupFile ? 'Restore from Backup' : 'Select Backup File First'}
                       </Button>
                       {selectedBackupFile && (
-                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-blue-600 dark:text-blue-400 text-lg">📁</span>
+                            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                              {selectedBackupFile.name}
+                            </p>
+                          </div>
                           <p className="text-xs text-blue-600 dark:text-blue-400">
-                            📁 Selected: {selectedBackupFile.name}
+                            File Size: {Math.round(selectedBackupFile.size / 1024)} KB
                           </p>
-                          <p className="text-xs text-blue-500 dark:text-blue-300 mt-1">
-                            Size: {Math.round(selectedBackupFile.size / 1024)} KB
-                          </p>
+                          <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
+                            <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">
+                              ⚠️ Warning: This will replace all existing data
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Clear Data Section */}
-                  <div className="border rounded-xl p-6 space-y-4 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-200 dark:border-red-800">
+                  {/* Enhanced Clear Data Section */}
+                  <div className="border rounded-xl p-6 space-y-5 bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 dark:from-red-900/20 dark:via-rose-900/20 dark:to-pink-900/20 border-red-200 dark:border-red-700 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg">
-                        <ShieldIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
+                      <div className="p-3 bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-800 dark:to-rose-800 rounded-xl shadow-sm">
+                        <ShieldIcon className="h-6 w-6 text-red-600 dark:text-red-300" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-red-800 dark:text-red-200">Clear All Data</h3>
-                        <p className="text-xs text-red-600 dark:text-red-400">⚠️ Dangerous Action</p>
+                        <h3 className="text-lg font-bold text-red-800 dark:text-red-200">Clear All Data</h3>
+                        <p className="text-sm text-red-600 dark:text-red-400 font-medium">⚠️ Dangerous Operation</p>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Permanently delete all data from the system. This will reset your POS to factory settings.
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                      Permanently delete all data from the system and reset your POS to factory settings. This operation cannot be reversed.
                     </p>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
+                      <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4 border border-red-200 dark:border-red-700">
+                        <div className="text-sm text-red-700 dark:text-red-300 space-y-2 font-medium">
+                          <p className="flex items-center gap-2 font-bold text-red-800 dark:text-red-200">
+                            <span className="text-red-600">⚠️</span> This will permanently delete:
+                          </p>
+                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> All sales & purchase transactions</p>
+                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> Complete product inventory</p>
+                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> Customer & supplier database</p>
+                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> System settings & configurations</p>
+                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> GST & tax information</p>
+                          <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/50 rounded border border-red-300 dark:border-red-600">
+                            <p className="font-bold text-red-800 dark:text-red-200 flex items-center gap-2">
+                              <span className="text-red-700">❌</span> This action cannot be undone!
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                       <Button 
                         onClick={handleClearData}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white"
+                        className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                         variant="destructive"
                         size="lg"
                       >
-                        <ShieldIcon className="h-4 w-4 mr-2" />
-                        Clear All Data
+                        <ShieldIcon className="h-5 w-5 mr-2" />
+                        Clear All System Data
                       </Button>
-                      <div className="text-xs text-red-600 dark:text-red-400 space-y-1 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                        <p className="font-medium">⚠️ This will permanently delete:</p>
-                        <p>• All sales & purchase records</p>
-                        <p>• Product inventory data</p>
-                        <p>• Customer & supplier info</p>
-                        <p>• System settings & configurations</p>
-                        <p className="font-medium text-red-700 dark:text-red-300">❌ This action cannot be undone!</p>
-                      </div>
                     </div>
                   </div>
                 </div>
