@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,7 +58,10 @@ import {
   ArrowDownIcon,
   CircleDollarSignIcon,
   ReceiptIcon,
-  HandCoinsIcon
+  HandCoinsIcon,
+  RefreshCw,
+  Database,
+  Wifi
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { useFormatCurrency } from "@/lib/currency";
@@ -107,102 +110,166 @@ export default function AccountsDashboard() {
   });
 
   const formatCurrency = useFormatCurrency();
+  const queryClient = useQueryClient();
 
-  // Mock data - replace with actual API calls
-  const accounts: Account[] = [
-    {
-      id: "1",
-      name: "Main Cash Register",
-      type: "cash",
-      balance: 15420.50,
-      currency: "INR",
-      isActive: true
+  // Real-time data fetching from POS Enhanced
+  const { data: salesData, isLoading: salesLoading, refetch: refetchSales } = useQuery({
+    queryKey: ['/api/sales'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/sales');
+        if (!response.ok) throw new Error('Failed to fetch sales data');
+        return response.json();
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+        return [];
+      }
     },
-    {
-      id: "2",
-      name: "Business Bank Account",
+    retry: 2,
+    retryDelay: 1000,
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time data
+    refetchOnWindowFocus: true,
+    staleTime: 2000
+  });
+
+  const { data: purchasesData, isLoading: purchasesLoading, refetch: refetchPurchases } = useQuery({
+    queryKey: ['/api/purchases'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/purchases');
+        if (!response.ok) throw new Error('Failed to fetch purchases data');
+        return response.json();
+      } catch (error) {
+        console.error('Error fetching purchases data:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
+    staleTime: 2000
+  });
+
+  const { data: cashRegisterData, isLoading: cashRegisterLoading, refetch: refetchCashRegister } = useQuery({
+    queryKey: ['/api/cash-register/active'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/cash-register/active');
+        if (!response.ok) throw new Error('Failed to fetch cash register data');
+        return response.json();
+      } catch (error) {
+        console.error('Error fetching cash register data:', error);
+        return null;
+      }
+    },
+    retry: 2,
+    retryDelay: 1000,
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
+    staleTime: 1000
+  });
+
+  // Calculate real-time accounts from POS data
+  const calculateRealTimeAccounts = (): Account[] => {
+    const accounts: Account[] = [];
+    
+    // Cash Register Balance from real data
+    if (cashRegisterData) {
+      accounts.push({
+        id: "cash-register",
+        name: `Cash Register (${cashRegisterData.registerId || 'Main'})`,
+        type: "cash",
+        balance: parseFloat(cashRegisterData.balance || 0),
+        currency: "INR",
+        isActive: true
+      });
+    }
+
+    // Calculate total sales revenue
+    const totalSalesRevenue = salesData?.reduce((sum: number, sale: any) => {
+      return sum + parseFloat(sale.total || sale.totalAmount || 0);
+    }, 0) || 0;
+
+    // Calculate total purchases cost
+    const totalPurchasesCost = purchasesData?.reduce((sum: number, purchase: any) => {
+      return sum + parseFloat(purchase.total || purchase.totalAmount || 0);
+    }, 0) || 0;
+
+    // Main business account (calculated from sales revenue)
+    accounts.push({
+      id: "business-revenue",
+      name: "Business Revenue Account",
       type: "bank",
-      balance: 125300.75,
-      currency: "INR",
-      accountNumber: "****4567",
-      isActive: true
-    },
-    {
-      id: "3",
-      name: "Petty Cash",
-      type: "cash",
-      balance: 2500.00,
+      balance: totalSalesRevenue,
       currency: "INR",
       isActive: true
-    },
-    {
-      id: "4",
-      name: "Business Credit Card",
-      type: "credit",
-      balance: -8750.25,
-      currency: "INR",
-      accountNumber: "****8901",
-      isActive: true
-    }
-  ];
+    });
 
-  const transactions: Transaction[] = [
-    {
-      id: "1",
-      date: "2024-01-20",
-      type: "income",
-      category: "Sales",
-      account: "Main Cash Register",
-      amount: 2500.00,
-      description: "Daily sales revenue",
-      reference: "SAL-001",
-      status: "completed"
-    },
-    {
-      id: "2",
-      date: "2024-01-20",
-      type: "expense",
-      category: "Inventory",
-      account: "Business Bank Account",
-      amount: -15000.00,
-      description: "Product purchase from supplier",
-      reference: "PUR-001",
-      status: "completed"
-    },
-    {
-      id: "3",
-      date: "2024-01-19",
-      type: "expense",
-      category: "Utilities",
-      account: "Business Bank Account",
-      amount: -450.00,
-      description: "Electricity bill payment",
-      reference: "UTIL-001",
-      status: "completed"
-    },
-    {
-      id: "4",
-      date: "2024-01-19",
-      type: "income",
-      category: "Sales",
-      account: "Business Bank Account",
-      amount: 18750.00,
-      description: "Card payment settlements",
-      reference: "SAL-002",
-      status: "completed"
-    },
-    {
-      id: "5",
-      date: "2024-01-18",
-      type: "expense",
-      category: "Office Supplies",
-      account: "Petty Cash",
-      amount: -150.00,
-      description: "Stationery purchase",
-      reference: "OFF-001",
-      status: "completed"
-    }
-  ];
+    // Inventory investment account (from purchases)
+    accounts.push({
+      id: "inventory-investment",
+      name: "Inventory Investment",
+      type: "asset",
+      balance: totalPurchasesCost,
+      currency: "INR",
+      isActive: true
+    });
+
+    // Net profit account
+    accounts.push({
+      id: "net-profit",
+      name: "Net Profit/Loss",
+      type: "asset",
+      balance: totalSalesRevenue - totalPurchasesCost,
+      currency: "INR",
+      isActive: true
+    });
+
+    return accounts;
+  };
+
+  const accounts = calculateRealTimeAccounts();
+
+  // Generate real-time transactions from POS data
+  const generateRealTimeTransactions = (): Transaction[] => {
+    const transactions: Transaction[] = [];
+
+    // Add sales transactions
+    salesData?.forEach((sale: any) => {
+      transactions.push({
+        id: `sale-${sale.id}`,
+        date: sale.createdAt || sale.created_at || new Date().toISOString(),
+        type: "income",
+        category: "Sales",
+        account: sale.paymentMethod === 'cash' ? "Cash Register" : "Business Revenue Account",
+        amount: parseFloat(sale.total || sale.totalAmount || 0),
+        description: `Sale #${sale.orderNumber || sale.id} - ${sale.customer?.name || 'Walk-in Customer'}`,
+        reference: sale.orderNumber || `SAL-${sale.id}`,
+        status: "completed"
+      });
+    });
+
+    // Add purchase transactions
+    purchasesData?.forEach((purchase: any) => {
+      transactions.push({
+        id: `purchase-${purchase.id}`,
+        date: purchase.createdAt || purchase.created_at || new Date().toISOString(),
+        type: "expense",
+        category: "Inventory",
+        account: "Business Revenue Account",
+        amount: -parseFloat(purchase.total || purchase.totalAmount || 0),
+        description: `Purchase #${purchase.orderNumber || purchase.id} - ${purchase.supplier?.name || 'Supplier'}`,
+        reference: purchase.orderNumber || `PUR-${purchase.id}`,
+        status: purchase.status === 'received' ? "completed" : "pending"
+      });
+    });
+
+    // Sort by date descending
+    return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const transactions = generateRealTimeTransactions();
 
   // Calculate totals
   const totalAssets = accounts
