@@ -137,6 +137,7 @@ export default function POSEnhanced() {
 
   // Cash register state
   const [registerOpened, setRegisterOpened] = useState(false);
+  const [activeRegisterId, setActiveRegisterId] = useState<number | null>(null);
   const [openingCash, setOpeningCash] = useState(0);
   const [cashInHand, setCashInHand] = useState(0);
   const [cashReceived, setCashReceived] = useState(0);
@@ -487,7 +488,7 @@ export default function POSEnhanced() {
   const total = subtotal - discountAmount + oceanTotal;
 
   // Register opening
-  const handleOpenRegister = () => {
+  const handleOpenRegister = async () => {
     const amount = parseFloat(cashAmount);
 
     if (!amount || amount < 0) {
@@ -499,18 +500,53 @@ export default function POSEnhanced() {
       return;
     }
 
-    setOpeningCash(amount);
-    setCashInHand(amount);
-    setRegisterOpened(true);
+    try {
+      const response = await fetch('/api/cash-register/open', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          openingCash: amount,
+          notes: `Register opened for POS operations`
+        })
+      });
 
-    toast({
-      title: "Register Opened",
-      description: `Register opened with ${formatCurrency(amount)}`,
-    });
+      if (!response.ok) {
+        const error = await response.json();
+        toast({
+          title: "Failed to Open Register",
+          description: error.error || "Could not open cash register",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    // Reset form and close dialog
-    resetCashRegisterForm();
-    setShowOpenRegister(false);
+      const result = await response.json();
+      
+      setOpeningCash(amount);
+      setCashInHand(amount);
+      setRegisterOpened(true);
+      setActiveRegisterId(result.register.id);
+
+      toast({
+        title: "Register Opened",
+        description: `Register ${result.register.registerId} opened with ${formatCurrency(amount)}`,
+      });
+
+      // Reset form and close dialog
+      resetCashRegisterForm();
+      setShowOpenRegister(false);
+
+      console.log('💰 Cash register opened and saved to database:', result);
+    } catch (error) {
+      console.error('Error opening cash register:', error);
+      toast({
+        title: "Database Error",
+        description: "Failed to save register opening to database",
+        variant: "destructive",
+      });
+    }
   };
 
   // Cash operation handler
@@ -767,6 +803,28 @@ export default function POSEnhanced() {
 
       // Update payment tracking
       updatePaymentTracking(paymentMethod, paidAmount);
+
+      // Record transaction to cash register if register is open
+      if (registerOpened && activeRegisterId) {
+        try {
+          await fetch(`/api/cash-register/${activeRegisterId}/transaction`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'sale',
+              amount: total,
+              paymentMethod: paymentMethod,
+              reason: `Sale ${saleResult.orderNumber || saleResult.billNumber}`,
+              notes: `${cart.length} items, Customer: ${selectedCustomer?.name || 'Walk-in'}`
+            })
+          });
+          console.log('💰 Sale recorded to cash register');
+        } catch (regError) {
+          console.error('Failed to record sale to cash register:', regError);
+        }
+      }
 
       toast({
         title: "✅ Sale Completed & Saved!",
