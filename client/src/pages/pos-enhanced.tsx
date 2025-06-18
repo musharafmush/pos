@@ -56,6 +56,7 @@ interface Product {
   sku: string;
   price: string;
   mrp: number;
+  cost?: string;
   stockQuantity: number;
   barcode?: string;
   category?: {
