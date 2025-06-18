@@ -321,22 +321,24 @@ export default function POSEnhanced() {
       return;
     }
 
-    // First, search only within barcode-enabled products
-    const foundProduct = barcodeEnabledProducts.find((product: Product) => 
+    // Search from the same filtered products that are currently displayed
+    const searchableProducts = filteredProducts.filter(product => isProductBarcodeEnabled(product));
+
+    if (searchableProducts.length === 0) {
+      toast({
+        title: "No Scannable Products",
+        description: "No products in current search results are eligible for barcode scanning. Try a different search term or clear filters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // First try barcode search from filtered products
+    const foundProduct = searchableProducts.find((product: Product) => 
       product.barcode && product.barcode.toLowerCase() === barcodeInput.toLowerCase().trim()
     );
 
     if (foundProduct) {
-      // Additional validation for POS-specific requirements
-      if (!isProductBarcodeEnabled(foundProduct)) {
-        toast({
-          title: "Product Not POS-Ready",
-          description: `${foundProduct.name} is not configured for barcode scanning in POS`,
-          variant: "destructive",
-        });
-        return;
-      }
-
       addToCart(foundProduct);
       setBarcodeInput("");
       toast({
@@ -345,38 +347,25 @@ export default function POSEnhanced() {
         variant: "default",
       });
     } else {
-      // Check if product exists but is not barcode-enabled
-      const existingProduct = products.find((product: Product) => 
-        product.barcode && product.barcode.toLowerCase() === barcodeInput.toLowerCase().trim()
+      // Try SKU search from filtered products
+      const foundBySku = searchableProducts.find((product: Product) => 
+        product.sku.toLowerCase() === barcodeInput.toLowerCase().trim()
       );
 
-      if (existingProduct) {
+      if (foundBySku) {
+        addToCart(foundBySku);
+        setBarcodeInput("");
         toast({
-          title: "Barcode Scanning Restricted",
-          description: `${existingProduct.name} is not eligible for POS barcode scanning. Use product search instead.`,
-          variant: "destructive",
+          title: "Product Added",
+          description: `${foundBySku.name} added via SKU scan`,
+          variant: "default",
         });
       } else {
-        // Try SKU search only for barcode-enabled products
-        const foundBySku = barcodeEnabledProducts.find((product: Product) => 
-          product.sku.toLowerCase() === barcodeInput.toLowerCase().trim()
-        );
-
-        if (foundBySku) {
-          addToCart(foundBySku);
-          setBarcodeInput("");
-          toast({
-            title: "Product Added",
-            description: `${foundBySku.name} added via SKU scan`,
-            variant: "default",
-          });
-        } else {
-          toast({
-            title: "Barcode Not Found",
-            description: `No POS-eligible product found with barcode: ${barcodeInput}. Only products with valid barcodes, stock, and pricing can be scanned.`,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Barcode Not Found",
+          description: `No product found with barcode/SKU: ${barcodeInput} in current search results. Try searching for the product first.`,
+          variant: "destructive",
+        });
       }
     }
   };
