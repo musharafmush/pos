@@ -765,7 +765,7 @@ export default function Settings() {
 
   const handleClearData = async () => {
     const confirmed = window.confirm(
-      "⚠️ WARNING: This will permanently delete ALL business data including products, sales, purchases, customers, and suppliers. Your login credentials will be preserved.\n\nThis action cannot be undone. Are you absolutely sure you want to continue?"
+      "⚠️ WARNING: This will permanently delete ALL your data including products, sales, purchases, customers, and suppliers. This action cannot be undone.\n\nAre you absolutely sure you want to continue?"
     );
 
     if (!confirmed) return;
@@ -1528,7 +1528,7 @@ ${receiptSettings.receiptFooter}
                       </div>
                     </div>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                      Permanently delete all business data while preserving your login credentials. This clears products, sales, purchases, customers, and suppliers but keeps user accounts intact.
+                      Permanently delete all data from the system and reset your POS to factory settings. This operation cannot be reversed.
                     </p>
                     <div className="space-y-4">
                       <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4 border border-red-200 dark:border-red-700">
@@ -1539,8 +1539,8 @@ ${receiptSettings.receiptFooter}
                           <p className="flex items-center gap-2"><span className="text-red-600">•</span> All sales & purchase transactions</p>
                           <p className="flex items-center gap-2"><span className="text-red-600">•</span> Complete product inventory</p>
                           <p className="flex items-center gap-2"><span className="text-red-600">•</span> Customer & supplier database</p>
-                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> Business settings & configurations</p>
-                          <p className="flex items-center gap-2"><span className="text-green-600">✓</span> Login credentials will be preserved</p>
+                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> System settings & configurations</p>
+                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> GST & tax information</p>
                           <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/50 rounded border border-red-300 dark:border-red-600">
                             <p className="font-bold text-red-800 dark:text-red-200 flex items-center gap-2">
                               <span className="text-red-700">❌</span> This action cannot be undone!
