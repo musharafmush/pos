@@ -57,9 +57,12 @@ interface Product {
   price: string;
   mrp: number;
   stockQuantity: number;
+  barcode?: string;
   category?: {
     name: string;
   };
+  weightUnit?: string;
+  weight?: number;
 }
 
 interface Customer {
@@ -227,6 +230,21 @@ export default function POSEnhanced() {
     },
   });
 
+  // Check if product is suitable for barcode scanning in POS
+  const isProductBarcodeEnabled = (product: Product): boolean => {
+    // Only allow products with valid barcodes and specific criteria
+    return !!(
+      product.barcode && 
+      product.barcode.trim().length >= 8 && // Minimum barcode length
+      product.stockQuantity > 0 && // Must have stock
+      product.price && 
+      parseFloat(product.price.toString()) > 0 && // Must have valid price
+      product.category && // Must have category
+      // Additional criteria for POS-suitable products
+      (product.weightUnit === 'g' || product.weightUnit === 'kg' || !product.weightUnit) // Weight-based or unit products
+    );
+  };
+
   // Filter products based on search term or barcode
   const filteredProducts = products.filter((product: Product) => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -234,7 +252,10 @@ export default function POSEnhanced() {
     (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Handle barcode submission
+  // Get only barcode-enabled products for scanner functionality
+  const barcodeEnabledProducts = products.filter(isProductBarcodeEnabled);
+
+  // Handle barcode submission with enhanced validation
   const handleBarcodeSubmit = () => {
     if (!barcodeInput.trim()) {
       toast({
@@ -245,39 +266,62 @@ export default function POSEnhanced() {
       return;
     }
 
-    // Search for product by barcode
-    const foundProduct = products.find((product: Product) => 
+    // First, search only within barcode-enabled products
+    const foundProduct = barcodeEnabledProducts.find((product: Product) => 
       product.barcode && product.barcode.toLowerCase() === barcodeInput.toLowerCase().trim()
     );
 
     if (foundProduct) {
+      // Additional validation for POS-specific requirements
+      if (!isProductBarcodeEnabled(foundProduct)) {
+        toast({
+          title: "Product Not POS-Ready",
+          description: `${foundProduct.name} is not configured for barcode scanning in POS`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       addToCart(foundProduct);
       setBarcodeInput("");
       toast({
         title: "Product Added",
-        description: `${foundProduct.name} added via barcode scan`,
+        description: `${foundProduct.name} (${foundProduct.barcode}) added successfully`,
         variant: "default",
       });
     } else {
-      // If not found by barcode, try SKU
-      const foundBySku = products.find((product: Product) => 
-        product.sku.toLowerCase() === barcodeInput.toLowerCase().trim()
+      // Check if product exists but is not barcode-enabled
+      const existingProduct = products.find((product: Product) => 
+        product.barcode && product.barcode.toLowerCase() === barcodeInput.toLowerCase().trim()
       );
 
-      if (foundBySku) {
-        addToCart(foundBySku);
-        setBarcodeInput("");
+      if (existingProduct) {
         toast({
-          title: "Product Added",
-          description: `${foundBySku.name} added via SKU scan`,
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Product Not Found",
-          description: `No product found with barcode: ${barcodeInput}`,
+          title: "Barcode Scanning Restricted",
+          description: `${existingProduct.name} is not eligible for POS barcode scanning. Use product search instead.`,
           variant: "destructive",
         });
+      } else {
+        // Try SKU search only for barcode-enabled products
+        const foundBySku = barcodeEnabledProducts.find((product: Product) => 
+          product.sku.toLowerCase() === barcodeInput.toLowerCase().trim()
+        );
+
+        if (foundBySku) {
+          addToCart(foundBySku);
+          setBarcodeInput("");
+          toast({
+            title: "Product Added",
+            description: `${foundBySku.name} added via SKU scan`,
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Barcode Not Found",
+            description: `No POS-eligible product found with barcode: ${barcodeInput}. Only products with valid barcodes, stock, and pricing can be scanned.`,
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -1958,6 +2002,48 @@ export default function POSEnhanced() {
 
             {/* Bill Summary Sidebar */}
             <div className="w-96 bg-white border-l border-gray-200 p-6">
+              {/* Barcode Scanner Status */}
+              <Card className="mb-4 border border-blue-200 bg-blue-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <Scan className="h-5 w-5 text-blue-600 mr-2" />
+                      <h3 className="font-semibold text-blue-900">Barcode Scanner</h3>
+                    </div>
+                    <Badge 
+                      className={`${barcodeEnabledProducts.length > 0 ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'}`}
+                    >
+                      {barcodeEnabledProducts.length > 0 ? 'Ready' : 'Limited'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Scannable Products:</span>
+                      <span className="font-medium text-blue-700">{barcodeEnabledProducts.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Products:</span>
+                      <span className="font-medium">{products.length}</span>
+                    </div>
+                    
+                    {barcodeEnabledProducts.length === 0 && (
+                      <div className="mt-3 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
+                        <Info className="h-3 w-3 inline mr-1" />
+                        No products have valid barcodes for POS scanning. Add barcodes to products to enable scanner functionality.
+                      </div>
+                    )}
+                    
+                    {barcodeEnabledProducts.length > 0 && barcodeEnabledProducts.length < products.length && (
+                      <div className="mt-3 p-2 bg-blue-100 rounded text-xs text-blue-800">
+                        <CheckCircle className="h-3 w-3 inline mr-1" />
+                        Scanner works with products that have valid barcodes (8+ chars), stock, and pricing.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-6 rounded-xl mb-6 shadow-lg">
                 <div className="flex items-center mb-3">
                   <Receipt className="h-6 w-6 mr-3" />
