@@ -9,6 +9,8 @@ import {
   saleItems,
   purchases,
   purchaseItems,
+  cashRegisters,
+  cashRegisterTransactions,
   User,
   Product,
   Category,
@@ -17,7 +19,9 @@ import {
   Sale,
   SaleItem,
   Purchase,
-  PurchaseItem
+  PurchaseItem,
+  CashRegister,
+  CashRegisterTransaction
 } from "../shared/schema.js";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -2199,6 +2203,253 @@ export const storage = {
       }));
     } catch (error) {
       console.error('Error in getPaymentAnalytics:', error);
+      return [];
+    }
+  },
+
+  // Cash Register Operations
+  async createCashRegister(data: {
+    registerId: string;
+    openingCash: number;
+    openedBy: string;
+    notes?: string;
+  }): Promise<CashRegister> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const insertRegister = sqlite.prepare(`
+        INSERT INTO cash_registers (
+          register_id, status, opening_cash, current_cash, opened_by, notes, opened_at
+        ) VALUES (?, 'open', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertRegister.run(
+        data.registerId,
+        data.openingCash.toString(),
+        data.openingCash.toString(),
+        data.openedBy,
+        data.notes || null
+      );
+
+      const getRegister = sqlite.prepare('SELECT * FROM cash_registers WHERE id = ?');
+      const newRegister = getRegister.get(result.lastInsertRowid);
+
+      return {
+        ...newRegister,
+        openedAt: new Date(newRegister.opened_at),
+        closedAt: newRegister.closed_at ? new Date(newRegister.closed_at) : null
+      };
+    } catch (error) {
+      console.error('Error creating cash register:', error);
+      throw error;
+    }
+  },
+
+  async updateCashRegister(id: number, data: Partial<CashRegister>): Promise<CashRegister | null> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const updateFields = [];
+      const updateValues = [];
+
+      if (data.currentCash !== undefined) {
+        updateFields.push('current_cash = ?');
+        updateValues.push(data.currentCash.toString());
+      }
+      if (data.cashReceived !== undefined) {
+        updateFields.push('cash_received = ?');
+        updateValues.push(data.cashReceived.toString());
+      }
+      if (data.upiReceived !== undefined) {
+        updateFields.push('upi_received = ?');
+        updateValues.push(data.upiReceived.toString());
+      }
+      if (data.cardReceived !== undefined) {
+        updateFields.push('card_received = ?');
+        updateValues.push(data.cardReceived.toString());
+      }
+      if (data.bankReceived !== undefined) {
+        updateFields.push('bank_received = ?');
+        updateValues.push(data.bankReceived.toString());
+      }
+      if (data.chequeReceived !== undefined) {
+        updateFields.push('cheque_received = ?');
+        updateValues.push(data.chequeReceived.toString());
+      }
+      if (data.otherReceived !== undefined) {
+        updateFields.push('other_received = ?');
+        updateValues.push(data.otherReceived.toString());
+      }
+      if (data.totalWithdrawals !== undefined) {
+        updateFields.push('total_withdrawals = ?');
+        updateValues.push(data.totalWithdrawals.toString());
+      }
+      if (data.totalRefunds !== undefined) {
+        updateFields.push('total_refunds = ?');
+        updateValues.push(data.totalRefunds.toString());
+      }
+      if (data.totalSales !== undefined) {
+        updateFields.push('total_sales = ?');
+        updateValues.push(data.totalSales.toString());
+      }
+      if (data.status !== undefined) {
+        updateFields.push('status = ?');
+        updateValues.push(data.status);
+      }
+      if (data.closedBy !== undefined) {
+        updateFields.push('closed_by = ?');
+        updateValues.push(data.closedBy);
+      }
+      if (data.status === 'closed') {
+        updateFields.push('closed_at = ?');
+        updateValues.push(new Date().toISOString());
+      }
+
+      if (updateFields.length === 0) {
+        return null;
+      }
+
+      updateValues.push(id);
+      
+      const updateRegister = sqlite.prepare(`
+        UPDATE cash_registers 
+        SET ${updateFields.join(', ')}
+        WHERE id = ?
+      `);
+
+      updateRegister.run(...updateValues);
+
+      const getRegister = sqlite.prepare('SELECT * FROM cash_registers WHERE id = ?');
+      const updatedRegister = getRegister.get(id);
+
+      return updatedRegister ? {
+        ...updatedRegister,
+        openedAt: new Date(updatedRegister.opened_at),
+        closedAt: updatedRegister.closed_at ? new Date(updatedRegister.closed_at) : null
+      } : null;
+    } catch (error) {
+      console.error('Error updating cash register:', error);
+      throw error;
+    }
+  },
+
+  async getCashRegisterById(id: number): Promise<CashRegister | null> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const getRegister = sqlite.prepare('SELECT * FROM cash_registers WHERE id = ?');
+      const register = getRegister.get(id);
+
+      return register ? {
+        ...register,
+        openedAt: new Date(register.opened_at),
+        closedAt: register.closed_at ? new Date(register.closed_at) : null
+      } : null;
+    } catch (error) {
+      console.error('Error fetching cash register:', error);
+      return null;
+    }
+  },
+
+  async getActiveCashRegister(): Promise<CashRegister | null> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const getRegister = sqlite.prepare(`
+        SELECT * FROM cash_registers 
+        WHERE status = 'open' 
+        ORDER BY opened_at DESC 
+        LIMIT 1
+      `);
+      const register = getRegister.get();
+
+      return register ? {
+        ...register,
+        openedAt: new Date(register.opened_at),
+        closedAt: register.closed_at ? new Date(register.closed_at) : null
+      } : null;
+    } catch (error) {
+      console.error('Error fetching active cash register:', error);
+      return null;
+    }
+  },
+
+  async listCashRegisters(limit: number = 20): Promise<CashRegister[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const getRegisters = sqlite.prepare(`
+        SELECT * FROM cash_registers 
+        ORDER BY opened_at DESC 
+        LIMIT ?
+      `);
+      const registers = getRegisters.all(limit);
+
+      return registers.map((register: any) => ({
+        ...register,
+        openedAt: new Date(register.opened_at),
+        closedAt: register.closed_at ? new Date(register.closed_at) : null
+      }));
+    } catch (error) {
+      console.error('Error listing cash registers:', error);
+      return [];
+    }
+  },
+
+  async addCashRegisterTransaction(data: {
+    registerId: number;
+    type: string;
+    amount: number;
+    paymentMethod?: string;
+    reason?: string;
+    notes?: string;
+    createdBy: string;
+  }): Promise<CashRegisterTransaction> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const insertTransaction = sqlite.prepare(`
+        INSERT INTO cash_register_transactions (
+          register_id, type, amount, payment_method, reason, notes, created_by, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertTransaction.run(
+        data.registerId,
+        data.type,
+        data.amount.toString(),
+        data.paymentMethod || null,
+        data.reason || null,
+        data.notes || null,
+        data.createdBy
+      );
+
+      const getTransaction = sqlite.prepare('SELECT * FROM cash_register_transactions WHERE id = ?');
+      const newTransaction = getTransaction.get(result.lastInsertRowid);
+
+      return {
+        ...newTransaction,
+        createdAt: new Date(newTransaction.created_at)
+      };
+    } catch (error) {
+      console.error('Error creating cash register transaction:', error);
+      throw error;
+    }
+  },
+
+  async getCashRegisterTransactions(registerId: number): Promise<CashRegisterTransaction[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const getTransactions = sqlite.prepare(`
+        SELECT * FROM cash_register_transactions 
+        WHERE register_id = ? 
+        ORDER BY created_at DESC
+      `);
+      const transactions = getTransactions.all(registerId);
+
+      return transactions.map((transaction: any) => ({
+        ...transaction,
+        createdAt: new Date(transaction.created_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching cash register transactions:', error);
       return [];
     }
   }

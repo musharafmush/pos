@@ -4471,6 +4471,193 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Cash Register API Endpoints
+  app.post('/api/cash-register/open', isAuthenticated, async (req, res) => {
+    try {
+      const { openingCash, notes } = req.body;
+      const user = req.user;
+
+      if (!openingCash || openingCash < 0) {
+        return res.status(400).json({ error: "Invalid opening cash amount" });
+      }
+
+      // Check if there's already an open register
+      const activeRegister = await storage.getActiveCashRegister();
+      if (activeRegister) {
+        return res.status(400).json({ 
+          error: "A cash register is already open",
+          registerId: activeRegister.registerId 
+        });
+      }
+
+      const registerId = `REG${Date.now()}`;
+      const register = await storage.createCashRegister({
+        registerId,
+        openingCash: parseFloat(openingCash),
+        openedBy: user.name,
+        notes
+      });
+
+      // Add opening transaction
+      await storage.addCashRegisterTransaction({
+        registerId: register.id,
+        type: 'opening',
+        amount: parseFloat(openingCash),
+        reason: 'Register opened',
+        notes,
+        createdBy: user.name
+      });
+
+      res.json({
+        success: true,
+        register,
+        message: `Register ${registerId} opened with ${openingCash}`
+      });
+    } catch (error: any) {
+      console.error('Error opening cash register:', error);
+      res.status(500).json({ error: `Failed to open register: ${error.message}` });
+    }
+  });
+
+  app.get('/api/cash-register/active', async (req, res) => {
+    try {
+      const activeRegister = await storage.getActiveCashRegister();
+      res.json(activeRegister);
+    } catch (error: any) {
+      console.error('Error fetching active cash register:', error);
+      res.status(500).json({ error: `Failed to fetch active register: ${error.message}` });
+    }
+  });
+
+  app.post('/api/cash-register/:id/transaction', isAuthenticated, async (req, res) => {
+    try {
+      const registerId = parseInt(req.params.id);
+      const { type, amount, paymentMethod, reason, notes } = req.body;
+      const user = req.user;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Invalid transaction amount" });
+      }
+
+      // Add transaction
+      const transaction = await storage.addCashRegisterTransaction({
+        registerId,
+        type,
+        amount: parseFloat(amount),
+        paymentMethod,
+        reason,
+        notes,
+        createdBy: user.name
+      });
+
+      // Update register totals based on transaction type
+      const register = await storage.getCashRegisterById(registerId);
+      if (!register) {
+        return res.status(404).json({ error: "Cash register not found" });
+      }
+
+      const updateData: any = {};
+      
+      if (type === 'sale') {
+        if (paymentMethod === 'cash') {
+          updateData.cashReceived = parseFloat(register.cashReceived) + parseFloat(amount);
+          updateData.currentCash = parseFloat(register.currentCash) + parseFloat(amount);
+        } else if (paymentMethod === 'upi') {
+          updateData.upiReceived = parseFloat(register.upiReceived) + parseFloat(amount);
+        } else if (paymentMethod === 'card') {
+          updateData.cardReceived = parseFloat(register.cardReceived) + parseFloat(amount);
+        } else if (paymentMethod === 'bank') {
+          updateData.bankReceived = parseFloat(register.bankReceived) + parseFloat(amount);
+        } else if (paymentMethod === 'cheque') {
+          updateData.chequeReceived = parseFloat(register.chequeReceived) + parseFloat(amount);
+        } else if (paymentMethod === 'other') {
+          updateData.otherReceived = parseFloat(register.otherReceived) + parseFloat(amount);
+        }
+        updateData.totalSales = parseFloat(register.totalSales) + parseFloat(amount);
+      } else if (type === 'withdrawal') {
+        updateData.totalWithdrawals = parseFloat(register.totalWithdrawals) + parseFloat(amount);
+        updateData.currentCash = parseFloat(register.currentCash) - parseFloat(amount);
+      } else if (type === 'deposit') {
+        updateData.currentCash = parseFloat(register.currentCash) + parseFloat(amount);
+      }
+
+      await storage.updateCashRegister(registerId, updateData);
+
+      res.json({
+        success: true,
+        transaction,
+        message: "Transaction recorded successfully"
+      });
+    } catch (error: any) {
+      console.error('Error recording cash register transaction:', error);
+      res.status(500).json({ error: `Failed to record transaction: ${error.message}` });
+    }
+  });
+
+  app.put('/api/cash-register/:id/close', isAuthenticated, async (req, res) => {
+    try {
+      const registerId = parseInt(req.params.id);
+      const { notes } = req.body;
+      const user = req.user;
+
+      const register = await storage.getCashRegisterById(registerId);
+      if (!register) {
+        return res.status(404).json({ error: "Cash register not found" });
+      }
+
+      if (register.status === 'closed') {
+        return res.status(400).json({ error: "Register is already closed" });
+      }
+
+      // Close the register
+      const updatedRegister = await storage.updateCashRegister(registerId, {
+        status: 'closed',
+        closedBy: user.name
+      });
+
+      // Add closing transaction
+      await storage.addCashRegisterTransaction({
+        registerId,
+        type: 'closing',
+        amount: parseFloat(register.currentCash),
+        reason: 'Register closed',
+        notes,
+        createdBy: user.name
+      });
+
+      res.json({
+        success: true,
+        register: updatedRegister,
+        message: "Register closed successfully"
+      });
+    } catch (error: any) {
+      console.error('Error closing cash register:', error);
+      res.status(500).json({ error: `Failed to close register: ${error.message}` });
+    }
+  });
+
+  app.get('/api/cash-register/:id/transactions', async (req, res) => {
+    try {
+      const registerId = parseInt(req.params.id);
+      const transactions = await storage.getCashRegisterTransactions(registerId);
+      res.json(transactions);
+    } catch (error: any) {
+      console.error('Error fetching cash register transactions:', error);
+      res.status(500).json({ error: `Failed to fetch transactions: ${error.message}` });
+    }
+  });
+
+  app.get('/api/cash-register', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string || '20');
+      const registers = await storage.listCashRegisters(limit);
+      res.json(registers);
+    } catch (error: any) {
+      console.error('Error listing cash registers:', error);
+      res.status(500).json({ error: `Failed to list registers: ${error.message}` });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

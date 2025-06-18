@@ -461,6 +461,69 @@ export type ReturnItemInsert = z.infer<typeof returnItemInsertSchema>;
 export const returnItemSelectSchema = createSelectSchema(returnItems);
 export type ReturnItem = z.infer<typeof returnItemSelectSchema>;
 
+// Cash register table
+export const cashRegisters = pgTable('cash_registers', {
+  id: serial('id').primaryKey(),
+  registerId: text('register_id').notNull().unique(),
+  status: text('status').notNull().default('closed'), // 'open', 'closed'
+  openingCash: decimal('opening_cash', { precision: 10, scale: 2 }).notNull().default('0'),
+  currentCash: decimal('current_cash', { precision: 10, scale: 2 }).notNull().default('0'),
+  cashReceived: decimal('cash_received', { precision: 10, scale: 2 }).notNull().default('0'),
+  upiReceived: decimal('upi_received', { precision: 10, scale: 2 }).notNull().default('0'),
+  cardReceived: decimal('card_received', { precision: 10, scale: 2 }).notNull().default('0'),
+  bankReceived: decimal('bank_received', { precision: 10, scale: 2 }).notNull().default('0'),
+  chequeReceived: decimal('cheque_received', { precision: 10, scale: 2 }).notNull().default('0'),
+  otherReceived: decimal('other_received', { precision: 10, scale: 2 }).notNull().default('0'),
+  totalWithdrawals: decimal('total_withdrawals', { precision: 10, scale: 2 }).notNull().default('0'),
+  totalRefunds: decimal('total_refunds', { precision: 10, scale: 2 }).notNull().default('0'),
+  totalSales: decimal('total_sales', { precision: 10, scale: 2 }).notNull().default('0'),
+  openedAt: timestamp('opened_at').defaultNow().notNull(),
+  closedAt: timestamp('closed_at'),
+  openedBy: text('opened_by').notNull(),
+  closedBy: text('closed_by'),
+  notes: text('notes')
+});
+
+// Cash register transactions table
+export const cashRegisterTransactions = pgTable('cash_register_transactions', {
+  id: serial('id').primaryKey(),
+  registerId: integer('register_id').references(() => cashRegisters.id).notNull(),
+  type: text('type').notNull(), // 'opening', 'sale', 'withdrawal', 'deposit', 'closing'
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  paymentMethod: text('payment_method'), // 'cash', 'upi', 'card', 'bank', 'cheque', 'other'
+  reason: text('reason'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: text('created_by').notNull()
+});
+
+// Cash register relations
+export const cashRegistersRelations = relations(cashRegisters, ({ many }) => ({
+  transactions: many(cashRegisterTransactions)
+}));
+
+export const cashRegisterTransactionsRelations = relations(cashRegisterTransactions, ({ one }) => ({
+  register: one(cashRegisters, { fields: [cashRegisterTransactions.registerId], references: [cashRegisters.id] })
+}));
+
+// Cash register validation schemas
+export const cashRegisterInsertSchema = createInsertSchema(cashRegisters, {
+  openingCash: (schema) => schema.min(0, "Opening cash must be at least 0"),
+  currentCash: (schema) => schema.min(0, "Current cash cannot be negative"),
+  status: (schema) => schema.refine(val => ['open', 'closed'].includes(val), "Status must be 'open' or 'closed'")
+});
+export type CashRegisterInsert = z.infer<typeof cashRegisterInsertSchema>;
+export const cashRegisterSelectSchema = createSelectSchema(cashRegisters);
+export type CashRegister = z.infer<typeof cashRegisterSelectSchema>;
+
+export const cashRegisterTransactionInsertSchema = createInsertSchema(cashRegisterTransactions, {
+  amount: (schema) => schema.refine(val => Math.abs(parseFloat(val)) > 0, "Amount must be greater than 0"),
+  type: (schema) => schema.refine(val => ['opening', 'sale', 'withdrawal', 'deposit', 'closing'].includes(val), "Invalid transaction type")
+});
+export type CashRegisterTransactionInsert = z.infer<typeof cashRegisterTransactionInsertSchema>;
+export const cashRegisterTransactionSelectSchema = createSelectSchema(cashRegisterTransactions);
+export type CashRegisterTransaction = z.infer<typeof cashRegisterTransactionSelectSchema>;
+
 export const settingsInsertSchema = createInsertSchema(settings, {
   key: (schema) => schema.min(1, "Key must not be empty"),
   value: (schema) => schema.min(1, "Value must not be empty")
