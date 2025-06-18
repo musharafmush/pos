@@ -655,6 +655,39 @@ export default function Settings() {
   const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [showReceiptSettings, setShowReceiptSettings] = useState(false);
   const [selectedBackupFile, setSelectedBackupFile] = useState<File | null>(null);
+  const [dataStats, setDataStats] = useState({
+    products: 0,
+    categories: 0,
+    suppliers: 0,
+    customers: 0,
+    sales: 0,
+    purchases: 0,
+    users: 0,
+    totalRevenue: 0,
+    lastBackup: new Date().toISOString(),
+    dbSize: '0 MB'
+  });
+
+  // Load data statistics
+  const { data: dataStatsData } = useQuery({
+    queryKey: ['/api/backup/data-stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/backup/data-stats', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch data statistics');
+      }
+      return response.json();
+    }
+  });
+
+  // Update local state when data is fetched
+  useEffect(() => {
+    if (dataStatsData) {
+      setDataStats(dataStatsData);
+    }
+  }, [dataStatsData]);
 
   // Load current user data
   const { data: userData } = useQuery({
