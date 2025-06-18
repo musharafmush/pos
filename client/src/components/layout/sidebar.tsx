@@ -153,7 +153,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [
         { href: "/inventory", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Stock Transfers" },
         { href: "/inventory-forecasting", icon: <BarChart4Icon className="h-5 w-5" />, label: "Inventory Forecasting" },
-        { href: "/adjustments", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Stock Adjustment" }
+        { href: "/inventory-adjustments", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Stock Adjustment" }
       ]
     },
     {
