@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/currency';
-import { Search, ArrowLeft, RefreshCw, DollarSign, CreditCard, Banknote, ShoppingCart, Package, AlertCircle, CheckCircle } from 'lucide-react';
+import { Search, ArrowLeft, RefreshCw, DollarSign, CreditCard, Banknote, ShoppingCart, Package, AlertCircle, CheckCircle, Wifi, WifiOff, Clock } from 'lucide-react';
 
 interface SaleItem {
   id: number;
@@ -68,8 +68,23 @@ export default function SaleReturn() {
   const [refundMethod, setRefundMethod] = useState('cash');
   const [returnReason, setReturnReason] = useState('');
   const [returnNotes, setReturnNotes] = useState('');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   const queryClient = useQueryClient();
+
+  // Monitor connection status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Fetch sales for search with real-time updates and instant search
   const { data: sales = [], isLoading: salesLoading, refetch: refetchSales } = useQuery<Sale[]>({
@@ -318,10 +333,22 @@ export default function SaleReturn() {
                 <p className="text-xs text-gray-500">Type at least 2 characters for instant search</p>
               )}
               {searchTerm.length >= 2 && (
-                <p className="text-xs text-blue-600 flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  Real-time search active - Data updates every 5 seconds
-                </p>
+                <div className="flex items-center justify-between text-xs">
+                  <p className="text-blue-600 flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    Real-time search active - Data updates every 5 seconds
+                  </p>
+                  <div className="flex items-center gap-1">
+                    {isOnline ? (
+                      <Wifi className="h-3 w-3 text-green-500" />
+                    ) : (
+                      <WifiOff className="h-3 w-3 text-red-500" />
+                    )}
+                    <span className={`text-xs ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
+                      {isOnline ? 'Connected' : 'Offline'}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -387,7 +414,7 @@ export default function SaleReturn() {
               </div>
             )}
 
-            {searchTerm.length >= 3 && !salesLoading && sales.length === 0 && (
+            {searchTerm.length >= 2 && !salesLoading && sales.length === 0 && (
               <div className="text-center py-12">
                 <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-500 font-medium">No sales found</p>
