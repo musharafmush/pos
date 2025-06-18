@@ -328,6 +328,25 @@ export default function AccountsDashboard() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
+        {/* Loading and Error States */}
+        {(salesLoading || purchasesLoading || cashRegisterLoading) && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+              <p className="text-blue-700">Loading real-time financial data from POS Enhanced...</p>
+            </div>
+          </div>
+        )}
+
+        {(!salesData && !salesLoading) && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Database className="h-4 w-4 text-yellow-600" />
+              <p className="text-yellow-700">No sales data available. Start making sales in POS Enhanced to see financial data.</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
@@ -336,10 +355,38 @@ export default function AccountsDashboard() {
                 Accounts Dashboard
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Manage your financial accounts and track transactions
+                Real-time financial tracking with POS Enhanced integration
               </p>
             </div>
             <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
+                  <Wifi className="w-2 h-2 mr-2 animate-pulse" />
+                  Live Data - Updates every 5s
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    refetchSales();
+                    refetchPurchases();
+                    refetchCashRegister();
+                  }}
+                  className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700"
+                  title="Refresh financial data"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/pos-enhanced', '_blank')}
+                className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+              >
+                <Database className="h-4 w-4" />
+                <span>POS System</span>
+              </Button>
               <Dialog open={showNewAccountDialog} onOpenChange={setShowNewAccountDialog}>
                 <DialogTrigger asChild>
                   <Button className="flex items-center space-x-1">
