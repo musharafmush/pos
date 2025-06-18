@@ -765,7 +765,7 @@ export default function Settings() {
 
   const handleClearData = async () => {
     const confirmed = window.confirm(
-      "⚠️ WARNING: This will permanently delete ALL your data including products, sales, purchases, customers, and suppliers. This action cannot be undone.\n\nAre you absolutely sure you want to continue?"
+      "⚠️ WARNING: This will permanently delete ALL business data including products, sales, purchases, customers, and suppliers. Your login credentials will be preserved.\n\nThis action cannot be undone. Are you absolutely sure you want to continue?"
     );
 
     if (!confirmed) return;
@@ -1539,8 +1539,8 @@ ${receiptSettings.receiptFooter}
                           <p className="flex items-center gap-2"><span className="text-red-600">•</span> All sales & purchase transactions</p>
                           <p className="flex items-center gap-2"><span className="text-red-600">•</span> Complete product inventory</p>
                           <p className="flex items-center gap-2"><span className="text-red-600">•</span> Customer & supplier database</p>
-                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> System settings & configurations</p>
-                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> GST & tax information</p>
+                          <p className="flex items-center gap-2"><span className="text-red-600">•</span> Business settings & configurations</p>
+                          <p className="flex items-center gap-2"><span className="text-green-600">✓</span> Login credentials will be preserved</p>
                           <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/50 rounded border border-red-300 dark:border-red-600">
                             <p className="font-bold text-red-800 dark:text-red-200 flex items-center gap-2">
                               <span className="text-red-700">❌</span> This action cannot be undone!
