@@ -1414,6 +1414,7 @@ ${receiptSettings.receiptFooter}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
+                <div>
                 {/* Quick Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <div className="text-center">
