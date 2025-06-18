@@ -71,11 +71,11 @@ export default function SaleReturn() {
   
   const queryClient = useQueryClient();
 
-  // Fetch sales for search
-  const { data: sales = [], isLoading: salesLoading } = useQuery<Sale[]>({
+  // Fetch sales for search with real-time updates and instant search
+  const { data: sales = [], isLoading: salesLoading, refetch: refetchSales } = useQuery<Sale[]>({
     queryKey: ['/api/sales', { search: searchTerm }],
     queryFn: async () => {
-      if (!searchTerm || searchTerm.length < 3) {
+      if (!searchTerm || searchTerm.length < 2) {
         return [];
       }
       
@@ -89,11 +89,14 @@ export default function SaleReturn() {
       }
       return response.json();
     },
-    enabled: searchTerm.length >= 3,
+    enabled: searchTerm.length >= 2,
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+    refetchOnWindowFocus: true,
+    staleTime: 1000, // Data considered fresh for 1 second (faster updates)
   });
 
-  // Fetch sale details when a sale is selected
-  const { data: saleDetails, isLoading: saleLoading } = useQuery<Sale>({
+  // Fetch sale details when a sale is selected with real-time updates
+  const { data: saleDetails, isLoading: saleLoading, refetch: refetchSaleDetails } = useQuery<Sale>({
     queryKey: ['/api/sales', selectedSale?.id],
     queryFn: async () => {
       if (!selectedSale?.id) return null;
@@ -105,6 +108,8 @@ export default function SaleReturn() {
       return response.json();
     },
     enabled: !!selectedSale?.id,
+    refetchInterval: 3000, // Refetch every 3 seconds for real-time updates
+    refetchOnWindowFocus: true,
   });
 
   // Update return items when sale details are loaded
@@ -279,9 +284,21 @@ export default function SaleReturn() {
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="search" className="text-sm font-medium text-gray-700">
-                Search by Order Number, Customer Name, or Phone
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="search" className="text-sm font-medium text-gray-700">
+                  Search by Order Number, Customer Name, or Phone
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchSales()}
+                  className="flex items-center gap-2 text-xs"
+                  disabled={salesLoading}
+                >
+                  <RefreshCw className={`h-3 w-3 ${salesLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -291,9 +308,20 @@ export default function SaleReturn() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                 />
+                {salesLoading && searchTerm.length >= 3 && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />
+                  </div>
+                )}
               </div>
-              {searchTerm.length > 0 && searchTerm.length < 3 && (
-                <p className="text-xs text-gray-500">Type at least 3 characters to search</p>
+              {searchTerm.length > 0 && searchTerm.length < 2 && (
+                <p className="text-xs text-gray-500">Type at least 2 characters for instant search</p>
+              )}
+              {searchTerm.length >= 2 && (
+                <p className="text-xs text-blue-600 flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  Real-time search active - Data updates every 5 seconds
+                </p>
               )}
             </div>
 
@@ -304,7 +332,7 @@ export default function SaleReturn() {
               </div>
             )}
 
-            {searchTerm.length >= 3 && sales.length > 0 && (
+            {searchTerm.length >= 2 && sales.length > 0 && (
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-700 flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4" />
@@ -373,9 +401,20 @@ export default function SaleReturn() {
         {selectedSale && (
           <Card className="shadow-lg border-0 bg-white">
             <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-3">
-                <Package className="h-6 w-6" />
-                Return Processing Details
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Package className="h-6 w-6" />
+                  Return Processing Details
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => refetchSaleDetails()}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                  disabled={saleLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 ${saleLoading ? 'animate-spin' : ''}`} />
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -388,9 +427,15 @@ export default function SaleReturn() {
                 <div className="space-y-6">
                   {/* Sale Information */}
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Sale Information
+                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        Sale Information
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-green-600 font-medium">Live Data</span>
+                      </div>
                     </h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
