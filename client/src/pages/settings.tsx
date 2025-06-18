@@ -631,12 +631,6 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
   );
 }
 
-
-import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { PrinterIcon, DollarSignIcon, BellIcon, ShieldIcon, UserIcon, DatabaseIcon } from 'lucide-react';
-import ReceiptSettings from './receipt-settings';
-
 const profileFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Must provide a valid email").or(z.literal("")),
@@ -1884,7 +1878,6 @@ ${receiptSettings.receiptFooter}
                       </p>
                     </div>
                   </div>
-                </div>
 
                   {/* Quick Actions */}
                   <div className="border-t pt-6">
