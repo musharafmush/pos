@@ -99,8 +99,59 @@ export default function RepackingDashboardProfessional() {
     costPrice: "",
     mrp: "",
     customWeight: "",
-    selectedPresetWeight: ""
+    selectedPresetWeight: "250",
+    marginPercentage: "15",
+    mrpMarginPercentage: "25"
   });
+
+  // Dynamic calculation functions for smart repacking
+  const calculateQuantityFromWeight = (originalWeight: number, targetWeight: number) => {
+    return Math.floor(originalWeight / targetWeight);
+  };
+
+  const calculatePriceFromWeight = (originalPrice: number, originalWeight: number, targetWeight: number, marginPercentage: number = 15) => {
+    const weightRatio = targetWeight / originalWeight;
+    const basePrice = originalPrice * weightRatio;
+    return (basePrice * (1 + marginPercentage / 100)).toFixed(2);
+  };
+
+  const recalculateRepackData = (weight: string, isCustom: boolean = false) => {
+    if (!selectedBulkProduct) return;
+
+    const targetWeight = parseFloat(weight);
+    const originalWeight = parseFloat(selectedBulkProduct.weightInGms || selectedBulkProduct.weight?.toString() || "1000");
+    const basePrice = parseFloat(selectedBulkProduct.price.toString());
+    const baseCost = parseFloat(selectedBulkProduct.cost.toString());
+    const marginPercent = parseFloat(repackFormData.marginPercentage);
+    const mrpMarginPercent = parseFloat(repackFormData.mrpMarginPercentage);
+    
+    const suggestedQuantity = calculateQuantityFromWeight(originalWeight, targetWeight);
+    const weightRatio = targetWeight / originalWeight;
+    
+    const unitCostPrice = (baseCost * weightRatio).toFixed(2);
+    const unitSellingPrice = calculatePriceFromWeight(basePrice, originalWeight, targetWeight, marginPercent);
+    const unitMrp = calculatePriceFromWeight(basePrice, originalWeight, targetWeight, mrpMarginPercent);
+
+    // Generate new SKU and name
+    const timestamp = Date.now();
+    const cleanName = selectedBulkProduct.name.replace(/\b(bulk|BULK|Bulk)\b/gi, '').trim();
+    const targetName = `${cleanName} (${weight}g Pack)`;
+    const baseSku = selectedBulkProduct.sku.replace(/[^A-Z0-9]/gi, '').substring(0, 10);
+    const targetSku = `${baseSku}-RP${weight}G-${timestamp.toString().slice(-6)}`;
+
+    setRepackFormData(prev => ({
+      ...prev,
+      unitWeight: weight,
+      targetQuantity: suggestedQuantity.toString(),
+      sellingPrice: unitSellingPrice,
+      costPrice: unitCostPrice,
+      mrp: unitMrp,
+      targetName,
+      targetSku,
+      selectedPresetWeight: isCustom ? "" : weight,
+      customWeight: isCustom ? weight : ""
+    }));
+  };
 
   // Preset weight options in grams
   const presetWeights = [
@@ -319,22 +370,46 @@ export default function RepackingDashboardProfessional() {
   const handleStartRepack = (product: Product) => {
     setSelectedBulkProduct(product);
 
-    // Auto-generate target product details
+    // Smart auto-generation based on product details
     const timestamp = Date.now();
-    const targetName = product.name.includes('BULK') 
-      ? product.name.replace('BULK', '250g Pack') 
-      : `${product.name} (250g Pack)`;
-    const targetSku = `${product.sku}-REPACK-250G-${timestamp}`;
+    const defaultWeight = "250"; // Default to 250g packs
+    
+    // Generate intelligent product name
+    const cleanName = product.name.replace(/\b(bulk|BULK|Bulk)\b/gi, '').trim();
+    const targetName = `${cleanName} (${defaultWeight}g Pack)`;
+    
+    // Generate unique SKU with proper formatting
+    const baseSku = product.sku.replace(/[^A-Z0-9]/gi, '').substring(0, 10);
+    const targetSku = `${baseSku}-RP${defaultWeight}G-${timestamp.toString().slice(-6)}`;
+    
+    // Calculate smart pricing based on weight ratio
+    const originalWeight = parseFloat(product.weightInGms || product.weight?.toString() || "1000");
+    const targetWeightGrams = parseFloat(defaultWeight);
+    const weightRatio = targetWeightGrams / originalWeight;
+    
+    // Smart quantity calculation (how many small packs from 1 bulk)
+    const suggestedQuantity = Math.floor(originalWeight / targetWeightGrams).toString();
+    
+    // Pricing calculations with better margins
+    const basePrice = parseFloat(product.price.toString());
+    const baseCost = parseFloat(product.cost.toString());
+    const unitCostPrice = (baseCost * weightRatio).toFixed(2);
+    const unitSellingPrice = (basePrice * weightRatio * 1.15).toFixed(2); // 15% markup
+    const unitMrp = (basePrice * weightRatio * 1.25).toFixed(2); // 25% markup for MRP
 
     setRepackFormData({
       sourceQuantity: "1",
-      targetQuantity: "8",
-      unitWeight: "250",
+      targetQuantity: suggestedQuantity,
+      unitWeight: defaultWeight,
       targetName,
       targetSku,
-      sellingPrice: (parseFloat(product.price) * 1.2).toFixed(2),
-      costPrice: product.cost,
-      mrp: (parseFloat(product.price) * 1.5).toFixed(2)
+      sellingPrice: unitSellingPrice,
+      costPrice: unitCostPrice,
+      mrp: unitMrp,
+      customWeight: "",
+      selectedPresetWeight: defaultWeight,
+      marginPercentage: "15",
+      mrpMarginPercentage: "25"
     });
 
     setIsRepackDialogOpen(true);
@@ -465,7 +540,11 @@ export default function RepackingDashboardProfessional() {
         targetSku: "",
         sellingPrice: "",
         costPrice: "",
-        mrp: ""
+        mrp: "",
+        customWeight: "",
+        selectedPresetWeight: "250",
+        marginPercentage: "15",
+        mrpMarginPercentage: "25"
       });
     },
     onError: (error: any) => {
