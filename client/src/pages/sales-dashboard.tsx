@@ -133,7 +133,7 @@ export default function SalesDashboard() {
     barcode: ''
   });
 
-  // Fetch sales data with enhanced customer billing details
+  // Fetch sales data with enhanced customer billing details and real-time updates
   const { data: salesData, isLoading: salesLoading, error: salesError, refetch: refetchSales } = useQuery({
     queryKey: ['/api/sales'],
     queryFn: async () => {
