@@ -822,6 +822,11 @@ export default function Settings() {
   // Data management handlers
   const handleBackupData = async () => {
     try {
+      toast({
+        title: "Creating backup...",
+        description: "Please wait while we prepare your data backup.",
+      });
+
       const response = await fetch('/api/backup/create', {
         method: 'POST',
         credentials: 'include'
@@ -831,29 +836,23 @@ export default function Settings() {
         throw new Error('Failed to create backup');
       }
 
-      const result = await response.json();
+      const backupData = await response.json();
+      
+      // Create download link
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `awesome-shop-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
-      // Download the backup file
-      const downloadResponse = await fetch('/api/backup/download', {
-        credentials: 'include'
+      toast({
+        title: "Backup created successfully!",
+        description: "Your data backup file has been downloaded.",
       });
-
-      if (downloadResponse.ok) {
-        const blob = await downloadResponse.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `pos-backup-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-
-        toast({
-          title: "Backup created successfully",
-          description: "Your data has been backed up and downloaded",
-        });
-      }
     } catch (error) {
       console.error('Backup error:', error);
       toast({
@@ -1448,20 +1447,20 @@ ${receiptSettings.receiptFooter}
                 {/* Quick Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">∞</div>
-                    <div className="text-xs text-gray-600">Total Records</div>
+                    <div className="text-2xl font-bold text-blue-600">{dataStats.products}</div>
+                    <div className="text-xs text-gray-600">Products</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">✓</div>
-                    <div className="text-xs text-gray-600">System Status</div>
+                    <div className="text-2xl font-bold text-green-600">{dataStats.sales}</div>
+                    <div className="text-xs text-gray-600">Sales</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">📊</div>
-                    <div className="text-xs text-gray-600">Active Data</div>
+                    <div className="text-2xl font-bold text-orange-600">{dataStats.purchases}</div>
+                    <div className="text-xs text-gray-600">Purchases</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">🔒</div>
-                    <div className="text-xs text-gray-600">Secure</div>
+                    <div className="text-2xl font-bold text-purple-600">{dataStats.customers}</div>
+                    <div className="text-xs text-gray-600">Customers</div>
                   </div>
                 </div>
 
