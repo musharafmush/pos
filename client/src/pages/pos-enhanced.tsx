@@ -1981,9 +1981,21 @@ export default function POSEnhanced() {
                             <h4 className="font-semibold text-lg text-gray-900">{item.name}</h4>
                             <p className="text-sm text-gray-500 font-mono">{item.sku}</p>
                             <div className="flex items-center space-x-4 mt-2">
-                              <p className="text-lg font-bold text-green-600">
-                                {formatCurrency(parseFloat(item.price))}
-                              </p>
+                              <div className="flex flex-col">
+                                <p className="text-lg font-bold text-green-600">
+                                  {formatCurrency(parseFloat(item.price))}
+                                </p>
+                                {item.mrp && parseFloat(item.mrp) > parseFloat(item.price) && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 line-through">
+                                      MRP: {formatCurrency(parseFloat(item.mrp))}
+                                    </span>
+                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                      {Math.round(((parseFloat(item.mrp) - parseFloat(item.price)) / parseFloat(item.mrp)) * 100)}% OFF
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                               {item.category && (
                                 <Badge variant="outline" className="text-xs">
                                   {item.category.name}
@@ -2311,10 +2323,22 @@ export default function POSEnhanced() {
                       )}
                     </div>
                     <div className="text-right ml-4">
-                      <div className="font-bold text-lg text-green-600">
-                        {formatCurrency(parseFloat(product.price))}
+                      <div className="flex flex-col items-end">
+                        <div className="font-bold text-lg text-green-600">
+                          {formatCurrency(parseFloat(product.price))}
+                        </div>
+                        {product.mrp && parseFloat(product.mrp) > parseFloat(product.price) && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-500 line-through">
+                              MRP: {formatCurrency(parseFloat(product.mrp))}
+                            </span>
+                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                              {Math.round(((parseFloat(product.mrp) - parseFloat(product.price)) / parseFloat(product.mrp)) * 100)}% OFF
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <div className={`text-sm ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <div className={`text-sm mt-1 ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
                       </div>
                     </div>
