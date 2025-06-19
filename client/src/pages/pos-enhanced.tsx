@@ -488,12 +488,20 @@ export default function POSEnhanced() {
     searchInputRef.current?.focus();
   };
 
-  const removeFromCart = (productId: number) => {
-    const item = cart.find(cartItem => cartItem.id === productId);
-    setCart(cart.filter(cartItem => cartItem.id !== productId));
+  const removeFromCart = (productId: number, isWeightBased?: boolean) => {
+    const item = cart.find(cartItem => cartItem.id === productId && 
+      (isWeightBased ? cartItem.isWeightBased : !cartItem.isWeightBased));
+    
+    setCart(cart.filter(cartItem => !(cartItem.id === productId && 
+      (isWeightBased ? cartItem.isWeightBased : !cartItem.isWeightBased))));
+    
+    const description = item?.isWeightBased 
+      ? `${item.actualWeight}kg of ${item.name} removed from cart`
+      : `${item?.name || 'Item'} removed from cart`;
+    
     toast({
       title: "Item Removed",
-      description: `${item?.name || 'Item'} removed from cart`,
+      description: description,
     });
   };
 
@@ -2133,7 +2141,7 @@ export default function POSEnhanced() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => removeFromCart(item.id)}
+                              onClick={() => removeFromCart(item.id, item.isWeightBased)}
                               className="text-red-500 hover:text-red-700 hover:bg-red-50"
                             >
                               <Trash2 className="h-5 w-5" />
@@ -2402,15 +2410,30 @@ export default function POSEnhanced() {
               {filteredProducts.slice(0, 8).map((product: Product) => (
                 <div
                   key={product.id}
-                  className="p-4 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                  className={`p-4 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                    isWeightBasedProduct(product) ? 'bg-green-50 border-green-200' : ''
+                  }`}
                   onClick={() => addToCart(product)}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{product.name}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-gray-900">{product.name}</h4>
+                        {isWeightBasedProduct(product) && (
+                          <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                            <Package className="w-3 h-3 mr-1" />
+                            Per KG
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500 font-mono">{product.sku}</p>
                       {product.barcode && (
                         <p className="text-xs text-blue-600 font-mono">📷 {product.barcode}</p>
+                      )}
+                      {isWeightBasedProduct(product) && (
+                        <p className="text-xs text-green-600 font-medium mt-1">
+                          Click to enter weight for loose selling
+                        </p>
                       )}
                       {product.category && (
                         <Badge variant="outline" className="mt-1 text-xs">
