@@ -41,9 +41,13 @@ const repackingFormSchema = z.object({
   bulkProductId: z.number().min(1, "Please select a bulk product"),
   repackQuantity: z.number().min(1, "Repack quantity must be at least 1"),
   unitWeight: z.number().min(0.01, "Unit weight must be greater than 0"),
+  weightUnit: z.enum(["g", "kg"]).default("g"),
   costPrice: z.number().min(0, "Cost price must be non-negative"),
   sellingPrice: z.number().min(0, "Selling price must be non-negative"),
   mrp: z.number().min(0, "MRP must be non-negative"),
+  newProductName: z.string().min(1, "Product name is required"),
+  newProductSku: z.string().min(1, "Product SKU is required"),
+  newProductBarcode: z.string().optional(),
 });
 
 type RepackingFormValues = z.infer<typeof repackingFormSchema>;
@@ -107,7 +111,7 @@ export default function RepackingProfessional() {
   // Show bulk products with stock > 0 for repacking
   const bulkProducts = products.filter((product: Product) => 
     product.stockQuantity > 0 && product.active && !product.sku.includes("REPACK")
-  ).sort((a, b) => {
+  ).sort((a: Product, b: Product) => {
     const aIsBulk = a.name.toLowerCase().includes('bulk') || 
                    a.name.toLowerCase().includes('bag') ||
                    a.name.toLowerCase().includes('container') ||
@@ -134,9 +138,13 @@ export default function RepackingProfessional() {
       bulkProductId: 0,
       repackQuantity: 6,
       unitWeight: 250,
+      weightUnit: "g",
       costPrice: 0,
       sellingPrice: 100,
       mrp: 150,
+      newProductName: "",
+      newProductSku: "",
+      newProductBarcode: "",
     },
   });
 
@@ -153,12 +161,15 @@ export default function RepackingProfessional() {
   const bulkProductId = form.watch("bulkProductId");
   const repackQuantity = form.watch("repackQuantity");
   const unitWeight = form.watch("unitWeight");
+  const weightUnit = form.watch("weightUnit");
 
+  // Auto-generate product details when bulk product or weight changes
   useEffect(() => {
     if (bulkProductId && products.length > 0) {
       const product = products.find((p: Product) => p.id === bulkProductId);
       if (product) {
         setSelectedProduct(product);
+        
         // Calculate cost per gram from bulk item with safety checks
         const bulkWeight = parseFloat(product.weight || "1");
         const bulkWeightInGrams = product.weightUnit === 'kg' ? 
@@ -167,16 +178,31 @@ export default function RepackingProfessional() {
 
         const productCost = parseFloat(product.cost || "0");
         const costPerGram = bulkWeightInGrams > 0 ? productCost / bulkWeightInGrams : 0;
-        const newUnitCost = costPerGram * unitWeight;
+        
+        // Convert unit weight to grams for calculation
+        const unitWeightInGrams = weightUnit === 'kg' ? unitWeight * 1000 : unitWeight;
+        const newUnitCost = costPerGram * unitWeightInGrams;
 
         if (newUnitCost > 0) {
           form.setValue("costPrice", Math.round(newUnitCost * 100) / 100);
           form.setValue("sellingPrice", Math.round(newUnitCost * 1.3 * 100) / 100);
           form.setValue("mrp", Math.round(newUnitCost * 1.5 * 100) / 100);
         }
+
+        // Auto-generate product name and SKU
+        const weightDisplay = weightUnit === 'kg' && unitWeight < 1 ? 
+          `${unitWeight * 1000}g` : 
+          `${unitWeight}${weightUnit}`;
+        
+        const newProductName = `${product.name.replace(/\s*\(.*?\)/g, '')} (${weightDisplay} Pack)`;
+        const newSku = `${product.sku}_REPACK_${weightDisplay}_${Date.now().toString().slice(-4)}`;
+        
+        form.setValue("newProductName", newProductName);
+        form.setValue("newProductSku", newSku);
+        form.setValue("newProductBarcode", `${(product.barcode || product.sku || '')}_${weightDisplay}`.replace(/[^0-9A-Z]/g, ''));
       }
     }
-  }, [bulkProductId, products, form, unitWeight]);
+  }, [bulkProductId, products, form, unitWeight, weightUnit]);
 
   // Quick Repack: 1kg to 4x250g conversion
   const quickRepackMutation = useMutation({
@@ -290,7 +316,7 @@ export default function RepackingProfessional() {
       if (!selectedProduct) throw new Error("No bulk product selected");
 
       // Validate sufficient stock
-      const productWeight = parseFloat(selectedProduct.weight) || 1;
+      const productWeight = parseFloat(selectedProduct.weight || "1") || 1;
       const productWeightUnit = selectedProduct.weightUnit || 'kg';
       let productWeightInGrams = productWeight;
       if (productWeightUnit === 'kg') {
@@ -563,13 +589,365 @@ export default function RepackingProfessional() {
               </div>
             </div>
 
-            {/* Quick Repack Section */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-6">
-              <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-                <PackageIcon className="w-5 h-5 mr-2" />
-                Quick Bulk to Repack Conversion
+            {/* Enhanced Bulk to Repack Conversion Section */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6 mb-6">
+              <h3 className="text-xl font-semibold text-blue-800 mb-4 flex items-center">
+                <PackageIcon className="w-6 h-6 mr-2" />
+                Bulk to Repack Conversion Calculator
               </h3>
-              <p className="text-sm text-green-700 mb-4">Convert bulk products into multiple smaller packs with auto-generated pricing and barcodes.</p>
+              <p className="text-sm text-blue-700 mb-6">Intelligent weight conversion system for kg and gram repacking with automatic pricing calculations.</p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column - Repack Configuration */}
+                <div className="space-y-4">
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 className="font-semibold text-gray-800 mb-3">Repack Configuration</h4>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <FormField
+                        control={form.control}
+                        name="repackQuantity"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">Number of Packs</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="100"
+                                {...field}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                className="h-10 text-center font-semibold text-lg"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Quick Pack Options</label>
+                        <div className="grid grid-cols-2 gap-1">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => form.setValue("repackQuantity", 4)}
+                            className="text-xs"
+                          >
+                            4 Packs
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => form.setValue("repackQuantity", 6)}
+                            className="text-xs"
+                          >
+                            6 Packs
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => form.setValue("repackQuantity", 8)}
+                            className="text-xs"
+                          >
+                            8 Packs
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => form.setValue("repackQuantity", 10)}
+                            className="text-xs"
+                          >
+                            10 Packs
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="unitWeight"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">Weight per Pack</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0.01)}
+                                className="h-10 text-center font-semibold text-lg"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="weightUnit"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">Weight Unit</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-10">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="g">Grams (g)</SelectItem>
+                                <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Quick Weight Presets */}
+                    <div className="mt-4">
+                      <label className="text-sm font-medium mb-2 block">Quick Weight Presets</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            form.setValue("unitWeight", 250);
+                            form.setValue("weightUnit", "g");
+                          }}
+                          className="text-xs"
+                        >
+                          250g
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            form.setValue("unitWeight", 500);
+                            form.setValue("weightUnit", "g");
+                          }}
+                          className="text-xs"
+                        >
+                          500g
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            form.setValue("unitWeight", 1);
+                            form.setValue("weightUnit", "kg");
+                          }}
+                          className="text-xs"
+                        >
+                          1kg
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            form.setValue("unitWeight", 2);
+                            form.setValue("weightUnit", "kg");
+                          }}
+                          className="text-xs"
+                        >
+                          2kg
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Auto-Generated Product Details */}
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 className="font-semibold text-gray-800 mb-3">Auto-Generated Product Details</h4>
+                    
+                    <FormField
+                      control={form.control}
+                      name="newProductName"
+                      render={({ field }) => (
+                        <FormItem className="mb-3">
+                          <FormLabel className="text-sm font-medium">Product Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="h-9 bg-blue-50" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="newProductSku"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">SKU</FormLabel>
+                            <FormControl>
+                              <Input {...field} className="h-9 bg-blue-50" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="newProductBarcode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">Barcode</FormLabel>
+                            <FormControl>
+                              <Input {...field} className="h-9 bg-blue-50" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Conversion Summary & Pricing */}
+                <div className="space-y-4">
+                  {selectedProduct && (
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <h4 className="font-semibold text-gray-800 mb-3">Conversion Summary</h4>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span className="text-sm font-medium">Source Product:</span>
+                          <span className="text-sm">{selectedProduct.name}</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span className="text-sm font-medium">Bulk Weight:</span>
+                          <span className="text-sm font-mono">
+                            {selectedProduct.weight || "1"} {selectedProduct.weightUnit || "kg"}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                          <span className="text-sm font-medium">Total Repack Weight:</span>
+                          <span className="text-sm font-mono">
+                            {(() => {
+                              const unitWeightInGrams = weightUnit === 'kg' ? unitWeight * 1000 : unitWeight;
+                              const totalGrams = unitWeightInGrams * repackQuantity;
+                              return totalGrams >= 1000 
+                                ? `${(totalGrams / 1000).toFixed(2)} kg`
+                                : `${totalGrams} g`;
+                            })()}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center p-2 bg-green-50 rounded">
+                          <span className="text-sm font-medium">Bulk Units Needed:</span>
+                          <span className="text-sm font-mono">{bulkUnitsNeeded} units</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                          <span className="text-sm font-medium">Available Stock:</span>
+                          <span className="text-sm font-mono">{selectedProduct.stockQuantity} units</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pricing Configuration */}
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 className="font-semibold text-gray-800 mb-3">Pricing Configuration</h4>
+                    
+                    <div className="space-y-3">
+                      <FormField
+                        control={form.control}
+                        name="costPrice"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">Cost Price (₹)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                className="h-9 bg-green-50 font-mono"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="sellingPrice"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">Selling Price (₹)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                className="h-9 bg-blue-50 font-mono"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="mrp"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">MRP (₹)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                className="h-9 bg-purple-50 font-mono"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Profit Margin Display */}
+                      {form.watch("costPrice") > 0 && form.watch("sellingPrice") > 0 && (
+                        <div className="mt-3 p-2 bg-gradient-to-r from-green-50 to-blue-50 rounded border">
+                          <div className="text-sm font-medium text-gray-700 mb-1">Profit Analysis</div>
+                          <div className="text-xs text-gray-600">
+                            Margin: {(((form.watch("sellingPrice") - form.watch("costPrice")) / form.watch("sellingPrice")) * 100).toFixed(1)}%
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            Profit per unit: ₹{(form.watch("sellingPrice") - form.watch("costPrice")).toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {(() => {
                 const availableBulkProducts = bulkProducts.filter(product => {
