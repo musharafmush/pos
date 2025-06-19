@@ -950,7 +950,7 @@ export default function RepackingProfessional() {
               </div>
 
               {(() => {
-                const availableBulkProducts = bulkProducts.filter(product => {
+                const availableBulkProducts = bulkProducts.filter((product: Product) => {
                   const weight = parseFloat(product.weight || "0");
                   const unit = product.weightUnit?.toLowerCase() || "kg";
                   const isBulkByName = product.name.toLowerCase().includes('bulk') || 
@@ -978,7 +978,7 @@ export default function RepackingProfessional() {
 
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {availableBulkProducts.slice(0, 6).map((product) => {
+                    {availableBulkProducts.slice(0, 6).map((product: Product) => {
                   const productWeight = parseFloat(product.weight || "1");
                   const weightUnit = product.weightUnit?.toLowerCase() || "kg";
                   let totalWeightInGrams = productWeight;
