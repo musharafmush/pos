@@ -323,7 +323,9 @@ export default function RepackingProfessional() {
         productWeightInGrams = productWeight * 1000;
       }
 
-      const totalRepackedWeight = data.unitWeight * data.repackQuantity;
+      // Convert unit weight to grams for calculation
+      const unitWeightInGrams = data.weightUnit === 'kg' ? data.unitWeight * 1000 : data.unitWeight;
+      const totalRepackedWeight = unitWeightInGrams * data.repackQuantity;
       const bulkUnitsNeeded = Math.ceil(totalRepackedWeight / productWeightInGrams);
 
       if (selectedProduct.stockQuantity < bulkUnitsNeeded) {
@@ -333,18 +335,21 @@ export default function RepackingProfessional() {
       const timestamp = Date.now();
       const repackedSku = `${selectedProduct.sku}-REPACK-${data.unitWeight}G-${timestamp}`;
 
-      const repackedName = selectedProduct.name.includes('BULK') 
-        ? selectedProduct.name.replace('BULK', `${data.unitWeight}g`) 
-        : `${selectedProduct.name} (${data.unitWeight}g Pack)`;
+      // Use proper product name and weight display
+      const weightDisplay = data.weightUnit === 'kg' && data.unitWeight < 1 ? 
+        `${data.unitWeight * 1000}g` : 
+        `${data.unitWeight}${data.weightUnit}`;
+      
+      const repackedName = data.newProductName || `${selectedProduct.name.replace(/\s*\(.*?\)/g, '')} (${weightDisplay} Pack)`;
 
       const repackedProduct = {
         name: repackedName,
         description: `Repacked from bulk item: ${selectedProduct.name}. Original weight: ${selectedProduct.weight}${selectedProduct.weightUnit}`,
-        sku: repackedSku,
+        sku: data.newProductSku || repackedSku,
         price: data.sellingPrice.toString(),
         mrp: data.mrp.toString(),
         cost: data.costPrice.toString(),
-        weight: data.unitWeight.toString(),
+        weight: data.weightUnit === 'kg' ? (data.unitWeight * 1000).toString() : data.unitWeight.toString(),
         weightUnit: "g",
         categoryId: selectedProduct.categoryId || 1,
         stockQuantity: data.repackQuantity,
@@ -417,10 +422,10 @@ export default function RepackingProfessional() {
       return;
     }
 
-    if (data.unitWeight < 1) {
+    if (data.unitWeight < 0.01) {
       toast({
         title: "Error",
-        description: "Unit weight must be at least 1 gram",
+        description: "Unit weight must be greater than 0",
         variant: "destructive",
       });
       return;
@@ -435,11 +440,14 @@ export default function RepackingProfessional() {
       return;
     }
 
-    // Check stock availability
+    // Check stock availability with proper weight conversion
     const bulkWeight = parseFloat(selectedProduct.weight || "1");
     const bulkWeightInGrams = selectedProduct.weightUnit === 'kg' ? 
       bulkWeight * 1000 : bulkWeight || 1000;
-    const totalRepackWeight = data.unitWeight * data.repackQuantity;
+    
+    // Convert unit weight to grams for calculation
+    const unitWeightInGrams = data.weightUnit === 'kg' ? data.unitWeight * 1000 : data.unitWeight;
+    const totalRepackWeight = unitWeightInGrams * data.repackQuantity;
     const bulkUnitsNeeded = Math.ceil(totalRepackWeight / bulkWeightInGrams);
 
     if (selectedProduct.stockQuantity < bulkUnitsNeeded) {
@@ -471,7 +479,9 @@ export default function RepackingProfessional() {
     bulkWeight * 1000 : 
     bulkWeight || 1000;
 
-  const totalRepackWeight = unitWeight * repackQuantity;
+  // Convert unit weight to grams for calculation
+  const unitWeightInGrams = weightUnit === 'kg' ? unitWeight * 1000 : unitWeight;
+  const totalRepackWeight = unitWeightInGrams * repackQuantity;
   const bulkUnitsNeeded = bulkWeightInGrams > 0 ? Math.ceil(totalRepackWeight / bulkWeightInGrams) : 1;
 
   const availableForPack = Math.max(0, currentStock - bulkUnitsNeeded);
@@ -1079,7 +1089,7 @@ export default function RepackingProfessional() {
                         {productCode}
                       </div>
                       <div className="col-span-4 text-left text-sm px-3 border-r border-gray-200">
-                        {unitWeight}G {selectedProduct ? selectedProduct.name.replace('BULK', '').replace('bulk', '').trim() : 'daal'} SUNBRAND
+                        {form.watch("newProductName") || `${weightUnit === 'kg' && unitWeight < 1 ? unitWeight * 1000 : unitWeight}${weightUnit === 'kg' && unitWeight < 1 ? 'g' : weightUnit} ${selectedProduct ? selectedProduct.name.replace('BULK', '').replace('bulk', '').trim() : 'Product'} Pack`}
                       </div>
                       <div className="col-span-1 text-center border-r border-gray-200">
                         <FormField
