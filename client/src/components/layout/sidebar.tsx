@@ -152,6 +152,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       icon: <PackageIcon className="h-5 w-5" />,
       items: [
         { href: "/inventory", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Stock Transfers" },
+        { href: "/bulk-items-loose", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 12v5"/><path d="M12 8v9"/><path d="M17 6v11"/></svg>, label: "Bulk Items (Loose)" },
         { href: "/inventory-forecasting", icon: <BarChart4Icon className="h-5 w-5" />, label: "Inventory Forecasting" },
         { href: "/inventory-adjustments", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Stock Adjustment" }
       ]

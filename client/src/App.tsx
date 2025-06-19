@@ -49,6 +49,7 @@ import ProfitManagement from "./pages/profit-management";
 import ReceiptSettings from "./pages/receipt-settings";
 import PrinterReceiptEditor from "./pages/printer-receipt-editor";
 import InventoryAdjustments from "./pages/inventory-adjustments";
+import BulkItemsLoose from "./pages/bulk-items-loose";
 import ThermalPrinterSetup from "./pages/thermal-printer-setup";
 import EditOptions from "@/pages/edit-options";
 import AutoPrinterSetup from "@/pages/auto-printer-setup";
@@ -82,6 +83,7 @@ function Router() {
       <ProtectedRoute path="/print-labels" component={PrintLabels} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/inventory-adjustments" component={InventoryAdjustments} />
+      <ProtectedRoute path="/bulk-items-loose" component={BulkItemsLoose} />
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
       <ProtectedRoute path="/purchases" component={Purchases} />
       <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
