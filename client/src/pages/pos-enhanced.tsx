@@ -76,6 +76,9 @@ interface Customer {
 interface CartItem extends Product {
   quantity: number;
   total: number;
+  isWeightBased?: boolean;
+  actualWeight?: number;
+  pricePerKg?: number;
 }
 
 export default function POSEnhanced() {
@@ -87,6 +90,9 @@ export default function POSEnhanced() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [showWeightDialog, setShowWeightDialog] = useState(false);
+  const [weightProduct, setWeightProduct] = useState<Product | null>(null);
+  const [enteredWeight, setEnteredWeight] = useState("");
   const [showOceanDialog, setShowOceanDialog] = useState(false);
   const [oceanFreight, setOceanFreight] = useState({
     containerNumber: "",
@@ -371,6 +377,64 @@ export default function POSEnhanced() {
     }
   };
 
+  // Check if product is suitable for weight-based selling
+  const isWeightBasedProduct = (product: Product) => {
+    return product.name.toLowerCase().includes('loose') ||
+           product.name.toLowerCase().includes('bulk') ||
+           product.name.toLowerCase().includes('per kg') ||
+           (product.weightUnit === 'kg' && parseFloat(product.weight?.toString() || "0") >= 1);
+  };
+
+  // Handle weight-based product addition
+  const handleWeightBasedAddition = (product: Product) => {
+    setWeightProduct(product);
+    setShowWeightDialog(true);
+  };
+
+  // Add weight-based item to cart
+  const addWeightBasedToCart = () => {
+    if (!weightProduct || !enteredWeight) {
+      toast({
+        title: "Invalid Weight",
+        description: "Please enter a valid weight",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const weight = parseFloat(enteredWeight);
+    if (weight <= 0 || weight > 50) { // Max 50kg limit
+      toast({
+        title: "Invalid Weight",
+        description: "Weight must be between 0.1kg and 50kg",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const pricePerKg = parseFloat(weightProduct.price);
+    const totalPrice = weight * pricePerKg;
+
+    const cartItem: CartItem = {
+      ...weightProduct,
+      quantity: 1,
+      total: totalPrice,
+      isWeightBased: true,
+      actualWeight: weight,
+      pricePerKg: pricePerKg,
+    };
+
+    setCart(prev => [...prev, cartItem]);
+    setShowWeightDialog(false);
+    setEnteredWeight("");
+    setWeightProduct(null);
+
+    toast({
+      title: "Product Added",
+      description: `${weight}kg of ${weightProduct.name} added for ${formatCurrency(totalPrice)}`,
+    });
+  };
+
   // Cart functions
   const addToCart = (product: Product) => {
     if (product.stockQuantity <= 0) {
@@ -382,7 +446,13 @@ export default function POSEnhanced() {
       return;
     }
 
-    const existingItem = cart.find(item => item.id === product.id);
+    // Check if this is a weight-based product
+    if (isWeightBasedProduct(product)) {
+      handleWeightBasedAddition(product);
+      return;
+    }
+
+    const existingItem = cart.find(item => item.id === product.id && !item.isWeightBased);
 
     if (existingItem) {
       if (existingItem.quantity >= product.stockQuantity) {
@@ -2011,37 +2081,45 @@ export default function POSEnhanced() {
                           </div>
 
                           <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                className="h-8 w-8 p-0 hover:bg-red-100"
-                              >
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => {
-                                  const newQuantity = parseInt(e.target.value) || 1;
-                                  if (newQuantity >= 1 && newQuantity <= 999) {
-                                    updateQuantity(item.id, newQuantity);
-                                  }
-                                }}
-                                className="w-16 h-8 text-center font-bold text-lg border-0 bg-transparent p-0"
-                                min="1"
-                                max="999"
-                              />
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                className="h-8 w-8 p-0 hover:bg-green-100"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            {item.isWeightBased ? (
+                              <div className="bg-green-100 rounded-lg p-3 border border-green-200">
+                                <div className="text-sm font-medium text-green-800 mb-1">Weight-based Item</div>
+                                <div className="text-lg font-bold text-green-700">{item.actualWeight} kg</div>
+                                <div className="text-xs text-green-600">@ {formatCurrency(item.pricePerKg!)}/kg</div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                  className="h-8 w-8 p-0 hover:bg-red-100"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <Input
+                                  type="number"
+                                  value={item.quantity}
+                                  onChange={(e) => {
+                                    const newQuantity = parseInt(e.target.value) || 1;
+                                    if (newQuantity >= 1 && newQuantity <= 999) {
+                                      updateQuantity(item.id, newQuantity);
+                                    }
+                                  }}
+                                  className="w-16 h-8 text-center font-bold text-lg border-0 bg-transparent p-0"
+                                  min="1"
+                                  max="999"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                  className="h-8 w-8 p-0 hover:bg-green-100"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
 
                             <div className="text-right min-w-24">
                               <div className="font-bold text-xl text-green-600">
@@ -3570,6 +3648,110 @@ Terminal: POS-Enhanced
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   Apply Ocean Costs
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Weight Input Dialog */}
+          <Dialog open={showWeightDialog} onOpenChange={setShowWeightDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center text-xl">
+                  <Package className="h-6 w-6 mr-3 text-green-600" />
+                  Enter Weight for Loose Sale
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                {weightProduct && (
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <h3 className="font-semibold text-green-800 mb-2">{weightProduct.name}</h3>
+                    <div className="text-sm text-green-700">
+                      <div>Price per kg: {formatCurrency(parseFloat(weightProduct.price))}</div>
+                      <div>Available stock: {weightProduct.stockQuantity} kg</div>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+                  <Input
+                    type="number"
+                    placeholder="Enter weight in kilograms"
+                    value={enteredWeight}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                        setEnteredWeight(value);
+                      }
+                    }}
+                    step="0.1"
+                    min="0.1"
+                    max="50"
+                    className="text-lg p-3"
+                    autoFocus
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    Minimum: 0.1kg, Maximum: 50kg
+                  </div>
+                </div>
+
+                {enteredWeight && weightProduct && (
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="text-sm text-blue-700">
+                      <div>Weight: {enteredWeight} kg</div>
+                      <div>Rate: {formatCurrency(parseFloat(weightProduct.price))}/kg</div>
+                      <div className="font-semibold text-lg text-blue-800 mt-2">
+                        Total: {formatCurrency(parseFloat(enteredWeight) * parseFloat(weightProduct.price))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEnteredWeight("0.5")}
+                    className="text-sm"
+                  >
+                    0.5 kg
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEnteredWeight("1")}
+                    className="text-sm"
+                  >
+                    1 kg
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEnteredWeight("2")}
+                    className="text-sm"
+                  >
+                    2 kg
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowWeightDialog(false);
+                    setEnteredWeight("");
+                    setWeightProduct(null);
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={addWeightBasedToCart}
+                  disabled={!enteredWeight || parseFloat(enteredWeight) <= 0}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Add to Cart
                 </Button>
               </div>
             </DialogContent>
