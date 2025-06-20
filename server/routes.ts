@@ -4633,6 +4633,206 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Purchase Reports endpoint
+  app.get('/api/reports/purchases', isAuthenticated, async (req, res) => {
+    try {
+      console.log('📊 Purchase reports endpoint accessed:', req.query);
+      
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ error: 'Start date and end date are required' });
+      }
+
+      // Convert dates to proper format for SQL
+      const start = new Date(`${startDate}T00:00:00.000Z`);
+      const end = new Date(`${endDate}T23:59:59.999Z`);
+
+      console.log(`📅 Date range: ${start.toISOString()} to ${end.toISOString()}`);
+
+      // Get purchase data
+      const purchases = await db.select({
+        id: purchasesTable.id,
+        supplierName: suppliersTable.name,
+        supplierId: purchasesTable.supplierId,
+        total: purchasesTable.total,
+        paidAmount: purchasesTable.paidAmount,
+        paymentStatus: purchasesTable.paymentStatus,
+        createdAt: purchasesTable.createdAt
+      })
+      .from(purchasesTable)
+      .leftJoin(suppliersTable, eq(purchasesTable.supplierId, suppliersTable.id))
+      .where(
+        and(
+          gte(purchasesTable.createdAt, start),
+          lte(purchasesTable.createdAt, end)
+        )
+      );
+
+      console.log(`📈 Found ${purchases.length} purchases for report period`);
+
+      // Get purchase items for detailed analysis
+      const purchaseItems = await db.select({
+        purchaseId: purchaseItemsTable.purchaseId,
+        productId: purchaseItemsTable.productId,
+        quantity: purchaseItemsTable.quantity,
+        unitCost: purchaseItemsTable.unitCost,
+        total: purchaseItemsTable.total,
+        productName: productsTable.name,
+        categoryId: productsTable.categoryId,
+        categoryName: categoriesTable.name
+      })
+      .from(purchaseItemsTable)
+      .leftJoin(productsTable, eq(purchaseItemsTable.productId, productsTable.id))
+      .leftJoin(categoriesTable, eq(productsTable.categoryId, categoriesTable.id))
+      .where(
+        inArray(purchaseItemsTable.purchaseId, purchases.map(p => p.id))
+      );
+
+      console.log(`📦 Found ${purchaseItems.length} purchase items`);
+
+      // Calculate metrics
+      const totalPurchases = purchaseItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      const totalAmount = purchases.reduce((sum, purchase) => sum + (purchase.total || 0), 0);
+      const totalTransactions = purchases.length;
+      const averageOrderValue = totalTransactions > 0 ? totalAmount / totalTransactions : 0;
+
+      // Top products
+      const productPurchases = purchaseItems.reduce((acc, item) => {
+        const key = item.productName || 'Unknown Product';
+        if (!acc[key]) {
+          acc[key] = { quantity: 0, amount: 0 };
+        }
+        acc[key].quantity += item.quantity || 0;
+        acc[key].amount += item.total || 0;
+        return acc;
+      }, {} as Record<string, { quantity: number; amount: number }>);
+
+      const topProducts = Object.entries(productPurchases)
+        .map(([productName, data]) => ({
+          productName,
+          quantity: data.quantity,
+          amount: data.amount
+        }))
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 10);
+
+      // Payment method breakdown (based on payment status)
+      const paymentMethods = purchases.reduce((acc, purchase) => {
+        const method = purchase.paymentStatus || 'Unknown';
+        if (!acc[method]) {
+          acc[method] = { count: 0, amount: 0 };
+        }
+        acc[method].count += 1;
+        acc[method].amount += purchase.total || 0;
+        return acc;
+      }, {} as Record<string, { count: number; amount: number }>);
+
+      const paymentMethodBreakdown = Object.entries(paymentMethods)
+        .map(([method, data]) => ({
+          method,
+          count: data.count,
+          amount: data.amount
+        }));
+
+      // Daily trends
+      const dailyPurchases = purchases.reduce((acc, purchase) => {
+        const date = purchase.createdAt.toISOString().split('T')[0];
+        if (!acc[date]) {
+          acc[date] = { purchases: 0, amount: 0, transactions: 0 };
+        }
+        acc[date].transactions += 1;
+        acc[date].amount += purchase.total || 0;
+        return acc;
+      }, {} as Record<string, { purchases: number; amount: number; transactions: number }>);
+
+      // Add purchase count per day
+      purchaseItems.forEach(item => {
+        const purchase = purchases.find(p => p.id === item.purchaseId);
+        if (purchase) {
+          const date = purchase.createdAt.toISOString().split('T')[0];
+          if (dailyPurchases[date]) {
+            dailyPurchases[date].purchases += item.quantity || 0;
+          }
+        }
+      });
+
+      const dailyTrends = Object.entries(dailyPurchases)
+        .map(([date, data]) => ({
+          date,
+          purchases: data.purchases,
+          amount: data.amount,
+          transactions: data.transactions
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // Purchases by category
+      const categoryPurchases = purchaseItems.reduce((acc, item) => {
+        const category = item.categoryName || 'Uncategorized';
+        if (!acc[category]) {
+          acc[category] = { purchases: 0, amount: 0 };
+        }
+        acc[category].purchases += item.quantity || 0;
+        acc[category].amount += item.total || 0;
+        return acc;
+      }, {} as Record<string, { purchases: number; amount: number }>);
+
+      const purchasesByCategory = Object.entries(categoryPurchases)
+        .map(([category, data]) => ({
+          category,
+          purchases: data.purchases,
+          amount: data.amount
+        }))
+        .sort((a, b) => b.amount - a.amount);
+
+      // Supplier insights
+      const supplierPurchases = purchases.reduce((acc, purchase) => {
+        const supplierId = purchase.supplierId || 0;
+        const supplierName = purchase.supplierName || 'Unknown Supplier';
+        if (!acc[supplierId]) {
+          acc[supplierId] = { totalOrders: 0, totalAmount: 0, supplierName };
+        }
+        acc[supplierId].totalOrders += 1;
+        acc[supplierId].totalAmount += purchase.total || 0;
+        return acc;
+      }, {} as Record<number, { totalOrders: number; totalAmount: number; supplierName: string }>);
+
+      const supplierInsights = Object.entries(supplierPurchases)
+        .map(([supplierId, data]) => ({
+          supplierId: parseInt(supplierId),
+          supplierName: data.supplierName,
+          totalOrders: data.totalOrders,
+          totalAmount: data.totalAmount
+        }))
+        .sort((a, b) => b.totalAmount - a.totalAmount)
+        .slice(0, 10);
+
+      const reportData = {
+        totalPurchases,
+        totalAmount,
+        totalTransactions,
+        averageOrderValue,
+        topProducts,
+        paymentMethodBreakdown,
+        dailyTrends,
+        purchasesByCategory,
+        supplierInsights
+      };
+
+      console.log('📊 Purchase report generated successfully:', {
+        totalAmount,
+        totalTransactions,
+        topProductsCount: topProducts.length,
+        dailyTrendsCount: dailyTrends.length
+      });
+
+      res.json(reportData);
+    } catch (error) {
+      console.error('❌ Error generating purchase report:', error);
+      res.status(500).json({ error: 'Failed to generate purchase report' });
+    }
+  });
+
   // Delete purchase
   app.delete("/api/purchases/:id", isAuthenticated, async (req, res) => {
     try {
