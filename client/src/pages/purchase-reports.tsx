@@ -105,6 +105,17 @@ export default function PurchaseReports() {
 
   const { data: reportData, isLoading, error } = useQuery({
     queryKey: ['/api/reports/purchases', startDate, endDate],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate: startDate || '',
+        endDate: endDate || ''
+      });
+      const response = await fetch(`/api/reports/purchases?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch purchase report data');
+      }
+      return response.json();
+    },
     enabled: !!isValidDateRange,
     refetchOnWindowFocus: false,
   }) as { data: PurchaseReportData | undefined; isLoading: boolean; error: any };
