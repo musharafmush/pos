@@ -4668,10 +4668,69 @@ app.post("/api/customers", async (req, res) => {
       
       const purchases = sqlite.prepare(purchaseQuery).all(startDate, endDate);
       
+      // Get purchase items with product details
+      const purchaseItemsQuery = `
+        SELECT 
+          pi.*,
+          p.name as product_name,
+          p.sku as product_sku,
+          c.name as category_name,
+          pur.id as purchase_id
+        FROM purchase_items pi
+        LEFT JOIN products p ON pi.product_id = p.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN purchases pur ON pi.purchase_id = pur.id
+        WHERE date(pur.created_at) >= date(?) AND date(pur.created_at) <= date(?)
+      `;
+      
+      const purchaseItems = sqlite.prepare(purchaseItemsQuery).all(startDate, endDate);
+      
+      console.log(`📦 Found ${purchases.length} purchases and ${purchaseItems.length} purchase items`);
+      
       // Calculate basic metrics
       const totalAmount = purchases.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
       const totalTransactions = purchases.length;
       const averageOrderValue = totalTransactions > 0 ? totalAmount / totalTransactions : 0;
+      const totalPurchases = purchaseItems.reduce((sum: number, item: any) => sum + (parseInt(item.quantity) || 0), 0);
+
+      // Top products analysis
+      const productPurchases = purchaseItems.reduce((acc: any, item: any) => {
+        const productName = item.product_name || 'Unknown Product';
+        if (!acc[productName]) {
+          acc[productName] = { quantity: 0, amount: 0 };
+        }
+        acc[productName].quantity += parseInt(item.quantity) || 0;
+        acc[productName].amount += parseFloat(item.net_amount) || 0;
+        return acc;
+      }, {});
+
+      const topProducts = Object.entries(productPurchases)
+        .map(([productName, data]: [string, any]) => ({
+          productName,
+          quantity: data.quantity,
+          amount: data.amount
+        }))
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 10);
+
+      // Category analysis
+      const categoryPurchases = purchaseItems.reduce((acc: any, item: any) => {
+        const categoryName = item.category_name || 'Uncategorized';
+        if (!acc[categoryName]) {
+          acc[categoryName] = { purchases: 0, amount: 0 };
+        }
+        acc[categoryName].purchases += parseInt(item.quantity) || 0;
+        acc[categoryName].amount += parseFloat(item.net_amount) || 0;
+        return acc;
+      }, {});
+
+      const purchasesByCategory = Object.entries(categoryPurchases)
+        .map(([category, data]: [string, any]) => ({
+          category,
+          purchases: data.purchases,
+          amount: data.amount
+        }))
+        .sort((a, b) => b.amount - a.amount);
 
       // Payment method breakdown
       const paymentMethods = purchases.reduce((acc: any, purchase: any) => {
@@ -4734,14 +4793,14 @@ app.post("/api/customers", async (req, res) => {
         .slice(0, 10);
 
       const reportData = {
-        totalPurchases: 0,
+        totalPurchases,
         totalAmount,
         totalTransactions,
         averageOrderValue,
-        topProducts: [],
+        topProducts,
         paymentMethodBreakdown,
         dailyTrends,
-        purchasesByCategory: [],
+        purchasesByCategory,
         supplierInsights
       };
 
