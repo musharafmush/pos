@@ -209,41 +209,41 @@ export default function StockReports() {
         {/* Value Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Stock Value</p>
-                <p className="text-xl font-bold">{formatCurrency(stockSummary.totalStockValue)}</p>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Stock Value</p>
+                  <p className="text-xl font-bold">{formatCurrency(stockSummary.totalStockValue)}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Retail Value</p>
-                <p className="text-xl font-bold">{formatCurrency(stockSummary.totalRetailValue)}</p>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2">
+                <BarChart3 className="h-5 w-5 text-purple-500" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Retail Value</p>
+                  <p className="text-xl font-bold">{formatCurrency(stockSummary.totalRetailValue)}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Profit Potential</p>
-                <p className="text-xl font-bold text-green-600">{formatCurrency(stockSummary.profitPotential)}</p>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5 text-green-500" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Profit Potential</p>
+                  <p className="text-xl font-bold text-green-600">{formatCurrency(stockSummary.profitPotential)}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
 
       {/* Detailed Reports */}
       <Tabs defaultValue="categories" className="space-y-4">
