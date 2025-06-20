@@ -4736,7 +4736,7 @@ app.post("/api/customers", async (req, res) => {
         }));
 
       // Daily trends
-      const dailyPurchases = purchases.reduce((acc, purchase) => {
+      const dailyPurchases = purchaseRecords.reduce((acc, purchase) => {
         const date = purchase.createdAt.toISOString().split('T')[0];
         if (!acc[date]) {
           acc[date] = { purchases: 0, amount: 0, transactions: 0 };
@@ -4747,8 +4747,8 @@ app.post("/api/customers", async (req, res) => {
       }, {} as Record<string, { purchases: number; amount: number; transactions: number }>);
 
       // Add purchase count per day
-      purchaseItems.forEach(item => {
-        const purchase = purchases.find(p => p.id === item.purchaseId);
+      purchaseItemsData.forEach(item => {
+        const purchase = purchaseRecords.find(p => p.id === item.purchaseId);
         if (purchase) {
           const date = purchase.createdAt.toISOString().split('T')[0];
           if (dailyPurchases[date]) {
@@ -4767,7 +4767,7 @@ app.post("/api/customers", async (req, res) => {
         .sort((a, b) => a.date.localeCompare(b.date));
 
       // Purchases by category
-      const categoryPurchases = purchaseItems.reduce((acc, item) => {
+      const categoryPurchases = purchaseItemsData.reduce((acc, item) => {
         const category = item.categoryName || 'Uncategorized';
         if (!acc[category]) {
           acc[category] = { purchases: 0, amount: 0 };
@@ -4786,7 +4786,7 @@ app.post("/api/customers", async (req, res) => {
         .sort((a, b) => b.amount - a.amount);
 
       // Supplier insights
-      const supplierPurchases = purchases.reduce((acc, purchase) => {
+      const supplierPurchases = purchaseRecords.reduce((acc, purchase) => {
         const supplierId = purchase.supplierId || 0;
         const supplierName = purchase.supplierName || 'Unknown Supplier';
         if (!acc[supplierId]) {
