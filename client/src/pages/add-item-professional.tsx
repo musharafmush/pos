@@ -79,6 +79,7 @@ const productFormSchema = z.object({
   // EAN Code/Barcode
   eanCodeRequired: z.boolean().default(false),
   barcode: z.string().optional(),
+  barcodeType: z.string().optional(),
 
   // Weight & Packing (Enhanced for Bulk Items)
   weightsPerUnit: z.string().default("1"),
@@ -209,12 +210,12 @@ export default function AddItemProfessional() {
   };
 
   // Fetch categories
-  const { data: categories = [], isLoading: isLoadingCategories, error: categoriesError } = useQuery({
+  const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
     queryKey: ["/api/categories"],
-  });
+  }) as { data: Category[], isLoading: boolean };
 
   // Fetch suppliers with enhanced debugging
-  const { data: suppliers = [], isLoading: isLoadingSuppliers, error: suppliersError } = useQuery({
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ["/api/suppliers"],
     queryFn: async () => {
       console.log('🏭 Fetching suppliers data...');
@@ -238,9 +239,9 @@ export default function AddItemProfessional() {
 
   // Method to refresh all data
   const refreshAllData = () => {
-    queryClient.invalidateQueries(["/api/categories"]);
-    queryClient.invalidateQueries(["/api/suppliers"]);
-    queryClient.invalidateQueries(["/api/products/all"]);
+    queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/products/all"] });
   };
 
   // Department options for dynamic selection
@@ -2281,53 +2282,44 @@ export default function AddItemProfessional() {
                                                 <SelectValue placeholder="Select bulk item to repackage" />
                                               </SelectTrigger>
                                               <SelectContent className="max-h-80 overflow-y-auto">
-                                          {/* Bulk items as shown in the reference image */}
-                                          <SelectItem value="Rice 1kg (500g Pack)">
-                                            Rice 1kg (500g Pack) - SKU: ITM670689059-REPACK-500G-174867443241†
-                                          </SelectItem>
-                                          <SelectItem value="Rice 1kg (Repackcd 100g)">
-                                            Rice 1kg (Repackcd 100g) - SKU: ITM670689059-REPACK-174652265274†
-                                          </SelectItem>
-                                          <SelectItem value="Rice 1kg">
-                                            Rice 1kg - SKU: ITM670689059†
-                                          </SelectItem>
-                                          <SelectItem value="100G">
-                                            100G - Small quantity bulk item
-                                          </SelectItem>
-                                          <SelectItem value="AJINOMOTO BULK">
-                                            AJINOMOTO BULK - Seasoning bulk pack
-                                          </SelectItem>
-                                          <SelectItem value="Rice - 25kg Bag">
-                                            Rice - 25kg Bag - Standard rice bulk pack
-                                          </SelectItem>
-                                          <SelectItem value="Wheat - 50kg Bag">
-                                            Wheat - 50kg Bag - Wheat bulk pack
-                                          </SelectItem>
-                                          <SelectItem value="Dal - 25kg Bag">
-                                            Dal - 25kg Bag - Lentils bulk pack
-                                          </SelectItem>
-                                          <SelectItem value="Sugar - 50kg Bag">
-                                            Sugar - 50kg Bag - Sugar bulk pack
-                                          </SelectItem>
-                                          <SelectItem value="Oil - 15 Ltr Container">
-                                            Oil - 15 Ltr Container - Cooking oil bulk
-                                          </SelectItem>
-
-                                          {/* Dynamic bulk items from database */}
-                                          {allProducts && allProducts.length > 0 && allProducts.map((product: any) => (
-                                            <SelectItem key={`product-${product.id}`} value={product.name}>
-                                              {product.name} - SKU: {product.sku} • Stock: {product.stockQuantity} • Weight: {product.weight || 0}{product.weightUnit || 'kg'}
-                                            </SelectItem>
-                                          ))}
-
-                                          {/* Show message if no items available */}
-                                          {(!allProducts || allProducts.length === 0) && (
-                                            <div className="p-4 text-center text-gray-500">
-                                              <p className="text-sm">No bulk items found in inventory.</p>
-                                              <p className="text-xs mt-1">Add bulk items first to enable repackaging.</p>
-                                            </div>
-                                          )}
-                                        </SelectContent>
+                                                {/* Dynamic bulk items from database */}
+                                                {bulkItems && bulkItems.length > 0 ? (
+                                                  bulkItems.map((product: any) => (
+                                                    <SelectItem key={`bulk-${product.id}`} value={product.name}>
+                                                      <div className="flex flex-col">
+                                                        <div className="font-medium">
+                                                          {product.name}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                          SKU: {product.sku} • Stock: {product.stockQuantity} • 
+                                                          Weight: {product.weight || 1}{product.weightUnit || 'kg'} • 
+                                                          Price: ₹{product.price}
+                                                        </div>
+                                                      </div>
+                                                    </SelectItem>
+                                                  ))
+                                                ) : allProducts && allProducts.length > 0 ? (
+                                                  allProducts.map((product: any) => (
+                                                    <SelectItem key={`product-${product.id}`} value={product.name}>
+                                                      <div className="flex flex-col">
+                                                        <div className="font-medium">
+                                                          {product.name}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                          SKU: {product.sku} • Stock: {product.stockQuantity} • 
+                                                          Weight: {product.weight || 1}{product.weightUnit || 'kg'} • 
+                                                          Price: ₹{product.price}
+                                                        </div>
+                                                      </div>
+                                                    </SelectItem>
+                                                  ))
+                                                ) : (
+                                                  <div className="p-4 text-center text-gray-500">
+                                                    <p className="text-sm">No bulk items found in inventory.</p>
+                                                    <p className="text-xs mt-1">Add bulk items first to enable repackaging.</p>
+                                                  </div>
+                                                )}
+                                              </SelectContent>
                                       </Select>
                                     </FormControl>
                                     <div className="text-xs text-red-500 mt-1">
@@ -2348,59 +2340,74 @@ export default function AddItemProfessional() {
                                         </div>
 
                                         <div className="p-4 space-y-3 text-sm">
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <span className="font-medium text-gray-700">Bulk Code:</span>
-                                            <span className="bg-gray-100 px-2 py-1 rounded text-center font-mono text-xs">
-                                              {form.watch("bulkItemName")?.includes("Rice 1kg (500g Pack)") ? "ITM670689059" : 
-                                               form.watch("bulkItemName")?.includes("Rice 1kg (Repackcd 100g)") ? "ITM670689059" :
-                                               form.watch("bulkItemName")?.includes("Rice 1kg") ? "ITM670689059" :
-                                               "13254"}
-                                            </span>
-                                          </div>
+                                          {(() => {
+                                            const selectedBulkItem = bulkItems?.find((p: any) => p.name === form.watch("bulkItemName")) || 
+                                                                   allProducts?.find((p: any) => p.name === form.watch("bulkItemName"));
+                                            
+                                            if (!selectedBulkItem) {
+                                              return (
+                                                <div className="text-center text-gray-500 py-4">
+                                                  <p className="text-sm">Select a bulk item to view details</p>
+                                                </div>
+                                              );
+                                            }
 
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <span className="font-medium text-gray-700">Bulk Item:</span>
-                                            <span className="bg-gray-100 px-2 py-1 rounded text-center text-xs">
-                                              {form.watch("bulkItemName")?.toUpperCase()}
-                                            </span>
-                                          </div>
+                                            return (
+                                              <>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                  <span className="font-medium text-gray-700">Bulk Code:</span>
+                                                  <span className="bg-gray-100 px-2 py-1 rounded text-center font-mono text-xs">
+                                                    {selectedBulkItem.sku || 'N/A'}
+                                                  </span>
+                                                </div>
 
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <span className="font-medium text-gray-700">Available Stock:</span>
-                                            <span className="bg-green-100 px-2 py-1 rounded text-center text-xs font-semibold text-green-800">
-                                              {form.watch("bulkItemName")?.includes("Rice 1kg (500g Pack)") ? "8" : 
-                                               form.watch("bulkItemName")?.includes("Rice 1kg (Repackcd 100g)") ? "4" :
-                                               form.watch("bulkItemName")?.includes("Rice 1kg") ? "0" :
-                                               "25"} units
-                                            </span>
-                                          </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                  <span className="font-medium text-gray-700">Bulk Item:</span>
+                                                  <span className="bg-gray-100 px-2 py-1 rounded text-center text-xs">
+                                                    {selectedBulkItem.name?.toUpperCase()}
+                                                  </span>
+                                                </div>
 
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <span className="font-medium text-gray-700">Unit Cost:</span>
-                                            <span className="bg-yellow-100 px-2 py-1 rounded text-center text-xs font-semibold">
-                                              ₹{form.watch("bulkItemName")?.includes("Rice") ? "45.00" : "120.00"}
-                                            </span>
-                                          </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                  <span className="font-medium text-gray-700">Available Stock:</span>
+                                                  <span className={`px-2 py-1 rounded text-center text-xs font-semibold ${
+                                                    selectedBulkItem.stockQuantity > 10 ? 'bg-green-100 text-green-800' :
+                                                    selectedBulkItem.stockQuantity > 0 ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-red-100 text-red-800'
+                                                  }`}>
+                                                    {selectedBulkItem.stockQuantity || 0} units
+                                                  </span>
+                                                </div>
 
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <span className="font-medium text-gray-700">Bulk MRP:</span>
-                                            <span className="bg-yellow-100 px-2 py-1 rounded text-center text-xs font-semibold">
-                                              ₹{form.watch("bulkItemName")?.includes("Rice") ? "50.00" : "150.00"}
-                                            </span>
-                                          </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                  <span className="font-medium text-gray-700">Unit Cost:</span>
+                                                  <span className="bg-yellow-100 px-2 py-1 rounded text-center text-xs font-semibold">
+                                                    ₹{parseFloat(selectedBulkItem.price || 0).toFixed(2)}
+                                                  </span>
+                                                </div>
 
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <span className="font-medium text-gray-700">Unit Weight:</span>
-                                            <span className="bg-gray-100 px-2 py-1 rounded text-center text-xs">
-                                              {form.watch("bulkItemName")?.includes("Rice") ? "1000g" : "500g"}
-                                            </span>
-                                          </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                  <span className="font-medium text-gray-700">Bulk MRP:</span>
+                                                  <span className="bg-yellow-100 px-2 py-1 rounded text-center text-xs font-semibold">
+                                                    ₹{parseFloat(selectedBulkItem.mrp || 0).toFixed(2)}
+                                                  </span>
+                                                </div>
 
-                                          <div className="border-t pt-2 mt-3">
-                                            <div className="text-xs text-gray-600 text-center">
-                                              Last Updated: {new Date().toLocaleDateString()}
-                                            </div>
-                                          </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                  <span className="font-medium text-gray-700">Unit Weight:</span>
+                                                  <span className="bg-gray-100 px-2 py-1 rounded text-center text-xs">
+                                                    {selectedBulkItem.weight || 1}{selectedBulkItem.weightUnit || 'kg'}
+                                                  </span>
+                                                </div>
+
+                                                <div className="border-t pt-2 mt-3">
+                                                  <div className="text-xs text-gray-600 text-center">
+                                                    Last Updated: {new Date().toLocaleDateString()}
+                                                  </div>
+                                                </div>
+                                              </>
+                                            );
+                                          })()}
                                         </div>
                                       </div>
                                     )}
