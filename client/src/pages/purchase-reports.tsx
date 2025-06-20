@@ -325,18 +325,24 @@ export default function PurchaseReports() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        {reportData.purchasesByCategory.map((category: any, index: number) => (
-                          <div key={index} className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                              <span className="text-sm font-medium">{category.category}</span>
+                        {reportData.purchasesByCategory.length > 0 ? (
+                          reportData.purchasesByCategory.map((category: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span className="text-sm font-medium">{category.category}</span>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-medium">{formatCurrency(category.amount)}</div>
+                                <div className="text-xs text-muted-foreground">{category.purchases} items</div>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-sm font-medium">{formatCurrency(category.amount)}</div>
-                              <div className="text-xs text-muted-foreground">{category.purchases} items</div>
-                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center text-muted-foreground py-8">
+                            No category data available for the selected period
                           </div>
-                        ))}
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -359,13 +365,21 @@ export default function PurchaseReports() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {reportData.topProducts.map((product: any, index: number) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{product.productName}</TableCell>
-                            <TableCell className="text-right">{product.quantity}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(product.amount)}</TableCell>
+                        {reportData.topProducts.length > 0 ? (
+                          reportData.topProducts.map((product: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{product.productName}</TableCell>
+                              <TableCell className="text-right">{product.quantity}</TableCell>
+                              <TableCell className="text-right">{formatCurrency(product.amount)}</TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                              No product data available for the selected period
+                            </TableCell>
                           </TableRow>
-                        ))}
+                        )}
                       </TableBody>
                     </Table>
                   </CardContent>
