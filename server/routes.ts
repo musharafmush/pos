@@ -4815,6 +4815,170 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Stock Reports endpoint
+  app.get('/api/reports/stock', isAuthenticated, async (req, res) => {
+    try {
+      console.log('📦 Stock reports endpoint accessed');
+      
+      const sqlite = db as any;
+
+      // Current stock summary
+      const stockSummaryQuery = `
+        SELECT 
+          COUNT(*) as totalProducts,
+          SUM(CASE WHEN stock_quantity > 0 THEN 1 ELSE 0 END) as productsInStock,
+          SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) as outOfStock,
+          SUM(CASE WHEN stock_quantity <= alert_threshold THEN 1 ELSE 0 END) as lowStock,
+          ROUND(SUM(stock_quantity * cost), 2) as totalStockValue,
+          ROUND(SUM(stock_quantity * price), 2) as totalRetailValue
+        FROM products 
+        WHERE active = 1
+      `;
+
+      const stockSummary = sqlite.prepare(stockSummaryQuery).get();
+
+      // Stock by category
+      const stockByCategoryQuery = `
+        SELECT 
+          c.name as categoryName,
+          COUNT(p.id) as productCount,
+          SUM(p.stock_quantity) as totalQuantity,
+          ROUND(SUM(p.stock_quantity * p.cost), 2) as categoryValue,
+          SUM(CASE WHEN p.stock_quantity <= p.alert_threshold THEN 1 ELSE 0 END) as lowStockCount
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.active = 1
+        GROUP BY c.id, c.name
+        ORDER BY categoryValue DESC
+      `;
+
+      const stockByCategory = sqlite.prepare(stockByCategoryQuery).all();
+
+      // Low stock items
+      const lowStockQuery = `
+        SELECT 
+          p.id,
+          p.name,
+          p.sku,
+          p.stock_quantity,
+          p.alert_threshold,
+          p.cost,
+          p.price,
+          c.name as categoryName,
+          ROUND((p.alert_threshold - p.stock_quantity), 2) as deficit
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.active = 1 AND p.stock_quantity <= p.alert_threshold
+        ORDER BY deficit DESC
+        LIMIT 20
+      `;
+
+      const lowStockItems = sqlite.prepare(lowStockQuery).all();
+
+      // High value items
+      const highValueQuery = `
+        SELECT 
+          p.id,
+          p.name,
+          p.sku,
+          p.stock_quantity,
+          p.cost,
+          p.price,
+          c.name as categoryName,
+          ROUND(p.stock_quantity * p.cost, 2) as stockValue,
+          ROUND(p.stock_quantity * p.price, 2) as retailValue
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.active = 1 AND p.stock_quantity > 0
+        ORDER BY stockValue DESC
+        LIMIT 15
+      `;
+
+      const highValueItems = sqlite.prepare(highValueQuery).all();
+
+      // Stock movement analysis (recent purchases and sales)
+      const recentMovementsQuery = `
+        SELECT 
+          'purchase' as type,
+          pi.product_id,
+          p.name as productName,
+          pi.quantity,
+          pi.unit_price,
+          pur.created_at as date,
+          s.name as supplierName
+        FROM purchase_items pi
+        LEFT JOIN purchases pur ON pi.purchase_id = pur.id
+        LEFT JOIN products p ON pi.product_id = p.id
+        LEFT JOIN suppliers s ON pur.supplier_id = s.id
+        WHERE date(pur.created_at) >= date('now', '-30 days')
+        
+        UNION ALL
+        
+        SELECT 
+          'sale' as type,
+          si.product_id,
+          p.name as productName,
+          -si.quantity as quantity,
+          si.unit_price,
+          sal.created_at as date,
+          c.name as customerName
+        FROM sale_items si
+        LEFT JOIN sales sal ON si.sale_id = sal.id
+        LEFT JOIN products p ON si.product_id = p.id
+        LEFT JOIN customers c ON sal.customer_id = c.id
+        WHERE date(sal.created_at) >= date('now', '-30 days')
+        
+        ORDER BY date DESC
+        LIMIT 50
+      `;
+
+      const recentMovements = sqlite.prepare(recentMovementsQuery).all();
+
+      // Zero stock items
+      const zeroStockQuery = `
+        SELECT 
+          p.id,
+          p.name,
+          p.sku,
+          p.cost,
+          p.price,
+          c.name as categoryName,
+          p.updated_at as lastUpdated
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.active = 1 AND p.stock_quantity = 0
+        ORDER BY p.updated_at DESC
+        LIMIT 20
+      `;
+
+      const zeroStockItems = sqlite.prepare(zeroStockQuery).all();
+
+      const reportData = {
+        stockSummary: {
+          totalProducts: stockSummary.totalProducts || 0,
+          productsInStock: stockSummary.productsInStock || 0,
+          outOfStock: stockSummary.outOfStock || 0,
+          lowStock: stockSummary.lowStock || 0,
+          totalStockValue: stockSummary.totalStockValue || 0,
+          totalRetailValue: stockSummary.totalRetailValue || 0,
+          profitPotential: (stockSummary.totalRetailValue || 0) - (stockSummary.totalStockValue || 0)
+        },
+        stockByCategory,
+        lowStockItems,
+        highValueItems,
+        recentMovements,
+        zeroStockItems
+      };
+
+      console.log('✅ Stock report generated successfully');
+      res.json(reportData);
+
+    } catch (error) {
+      console.error('❌ Stock reports error:', error);
+      res.status(500).json({ error: 'Failed to generate stock reports' });
+    }
+  });
+
   // Delete purchase
   app.delete("/api/purchases/:id", isAuthenticated, async (req, res) => {
     try {
