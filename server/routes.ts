@@ -4821,7 +4821,7 @@ app.post("/api/customers", async (req, res) => {
       }
 
       // Get the bulk product to validate
-      const bulkProduct = await storage.getProduct(bulkProductId);
+      const bulkProduct = await storage.getProductById(bulkProductId);
       if (!bulkProduct) {
         return res.status(404).json({
           message: 'Bulk product not found'
