@@ -4868,8 +4868,22 @@ app.post("/api/customers", async (req, res) => {
         manufacturerId: bulkProduct.manufacturerId || null
       };
 
-      // Create the repack product
-      const newProduct = await storage.createProduct(repackProductData);
+      // Check if repack product already exists
+      const existingRepack = await storage.getProductBySku(repackProductData.sku);
+      
+      let repackProduct;
+      if (existingRepack) {
+        // Update existing repack stock quantity
+        const newStockQuantity = existingRepack.stockQuantity + repackQuantity;
+        repackProduct = await storage.updateProduct(existingRepack.id, {
+          stockQuantity: newStockQuantity
+        });
+        console.log(`✅ Updated existing repack stock: ${existingRepack.name} (${existingRepack.stockQuantity} -> ${newStockQuantity})`);
+      } else {
+        // Create new repack product
+        repackProduct = await storage.createProduct(repackProductData);
+        console.log(`✅ Repack created successfully: ${repackProduct.name}`);
+      }
 
       // Update bulk product stock (reduce by bulkUnitsNeeded)
       const updatedBulkStock = bulkProduct.stockQuantity - bulkUnitsNeeded;
@@ -4877,12 +4891,11 @@ app.post("/api/customers", async (req, res) => {
         stockQuantity: updatedBulkStock
       });
 
-      console.log(`✅ Repack created successfully: ${newProduct.name}`);
       console.log(`📦 Bulk stock updated: ${bulkProduct.name} (${bulkProduct.stockQuantity} -> ${updatedBulkStock})`);
 
       res.status(201).json({
         message: 'Repack created successfully',
-        repackProduct: newProduct,
+        repackProduct: repackProduct,
         bulkProductUpdated: {
           id: bulkProductId,
           previousStock: bulkProduct.stockQuantity,
