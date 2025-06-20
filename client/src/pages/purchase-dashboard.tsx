@@ -1574,6 +1574,12 @@ export default function PurchaseDashboard() {
                                 <TableHead className="w-12 text-center font-semibold">No</TableHead>
                                 <TableHead className="min-w-[120px] font-semibold">Product</TableHead>
                                 <TableHead className="w-20 text-center font-semibold">Qty</TableHead>
+                                <TableHead className="w-20 text-center font-semibold text-green-700">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <span>Free Qty</span>
+                                    <span className="text-green-600">🎁</span>
+                                  </div>
+                                </TableHead>
                                 <TableHead className="w-24 text-center font-semibold">Unit Cost</TableHead>
                                 <TableHead className="w-24 text-center font-semibold">Amount</TableHead>
                                 <TableHead className="w-20 text-center font-semibold">Tax %</TableHead>
@@ -1613,6 +1619,20 @@ export default function PurchaseDashboard() {
                                       <span className="font-semibold text-blue-600 text-lg">
                                         {quantity}
                                       </span>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      {(() => {
+                                        const freeQty = Number(item.freeQty || item.free_qty || 0);
+                                        return freeQty > 0 ? (
+                                          <div className="flex items-center justify-center">
+                                            <span className="font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full text-sm">
+                                              {freeQty} 🎁
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <span className="text-gray-400">-</span>
+                                        );
+                                      })()}
                                     </TableCell>
                                     <TableCell className="text-center">
                                       <div className="font-semibold text-gray-900">
@@ -1683,6 +1703,37 @@ export default function PurchaseDashboard() {
                   </CardHeader>
                   <CardContent className="pt-4">
                     <div className="space-y-3">
+                      {/* Stock Impact Summary */}
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                        <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                          <Package className="w-4 h-4" />
+                          Stock Impact Summary
+                        </h4>
+                        {(() => {
+                          const items = selectedPurchase.purchaseItems || selectedPurchase.items || [];
+                          const totalReceived = items.reduce((sum, item) => sum + Number(item.receivedQty || item.received_qty || item.quantity || 0), 0);
+                          const totalFree = items.reduce((sum, item) => sum + Number(item.freeQty || item.free_qty || 0), 0);
+                          const totalStock = totalReceived + totalFree;
+                          
+                          return (
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div className="flex justify-between">
+                                <span>Received Units:</span>
+                                <span className="font-semibold text-blue-600">{totalReceived}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Free Units:</span>
+                                <span className="font-semibold text-green-600">{totalFree} 🎁</span>
+                              </div>
+                              <div className="col-span-2 flex justify-between pt-2 border-t border-green-300">
+                                <span className="font-medium">Total Stock Added:</span>
+                                <span className="font-bold text-green-700">{totalStock} units</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
                       <div className="flex justify-between py-2 border-b">
                         <span className="font-medium">Subtotal (Before Tax):</span>
                         <span className="font-semibold">
