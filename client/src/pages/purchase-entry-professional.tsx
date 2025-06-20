@@ -1621,15 +1621,20 @@ export default function PurchaseEntryProfessional() {
       }
     },
     onSuccess: (data) => {
-      const totalReceivedItems = form.getValues("items").reduce((total, item) => {
+      const items = form.getValues("items");
+      const totalReceivedItems = items.reduce((total, item) => {
         return total + (item.receivedQty || 0);
       }, 0);
+      const totalFreeItems = items.reduce((total, item) => {
+        return total + (item.freeQty || 0);
+      }, 0);
+      const totalStockAdded = totalReceivedItems + totalFreeItems;
 
       toast({
-        title: isEditMode ? "Purchase order updated! 📦" : "Purchase order created! 📦",
+        title: isEditMode ? "Purchase order updated!" : "Purchase order created!",
         description: isEditMode
           ? `Purchase order updated successfully. Stock levels have been adjusted.`
-          : `Purchase order created successfully. ${totalReceivedItems} items added to inventory.`,
+          : `Purchase order created successfully. ${totalStockAdded} total units added to inventory (${totalReceivedItems} received + ${totalFreeItems} free).`,
       });
 
       // Invalidate both purchases and products queries to refresh stock data
@@ -2352,7 +2357,17 @@ export default function PurchaseEntryProfessional() {
                             <TableHead className="min-w-[200px] font-bold border-r border-blue-200 px-4 py-4 text-sm">Description</TableHead>
                             <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Previous Stock</TableHead>
                             <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Received Qty</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Free Qty</TableHead>
+                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">
+                              <div className="flex items-center justify-center gap-1">
+                                <span>Free Qty</span>
+                                <div className="group relative">
+                                  <span className="cursor-help text-green-600">🎁</span>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                                    Free quantities automatically add to stock
+                                  </div>
+                                </div>
+                              </div>
+                            </TableHead>
                             <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cost</TableHead>
                             <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">HSN Code</TableHead>
                             <TableHead className="w-28 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Tax %</TableHead>
@@ -2598,8 +2613,22 @@ export default function PurchaseEntryProfessional() {
                                     type="number"
                                     min="0"
                                     {...form.register(`items.${index}.freeQty`, { valueAsNumber: true })}
-                                    className="w-full text-center text-xs"
-                                    placeholder="0"
+                                    className="w-full text-center text-xs bg-green-50 border-green-200 focus:border-green-400"
+                                    placeholder="Free Qty"
+                                    onChange={(e) => {
+                                      const value = parseInt(e.target.value) || 0;
+                                      form.setValue(`items.${index}.freeQty`, value);
+                                      
+                                      // Show confirmation when free qty is added
+                                      if (value > 0) {
+                                        const productName = form.getValues(`items.${index}.description`) || 'Product';
+                                        toast({
+                                          title: `Free Qty Added! 🎁`,
+                                          description: `${value} free units added for ${productName}. This will be added to stock.`,
+                                          duration: 2000,
+                                        });
+                                      }
+                                    }}
                                   />
                                 </TableCell>
 
