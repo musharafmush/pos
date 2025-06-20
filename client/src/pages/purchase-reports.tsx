@@ -103,11 +103,11 @@ export default function PurchaseReports() {
   const { startDate, endDate } = getDateRange();
   const isValidDateRange = startDate && endDate;
 
-  const { data: reportData, isLoading, error } = useQuery<PurchaseReportData>({
+  const { data: reportData, isLoading, error } = useQuery({
     queryKey: ['/api/reports/purchases', startDate, endDate],
-    enabled: isValidDateRange,
+    enabled: !!isValidDateRange,
     refetchOnWindowFocus: false,
-  });
+  }) as { data: PurchaseReportData | undefined; isLoading: boolean; error: any };
 
   const handleGenerateReport = () => {
     if (selectedPeriod === 'custom' && (!customStartDate || !customEndDate)) {
@@ -292,7 +292,7 @@ export default function PurchaseReports() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        {reportData.paymentMethodBreakdown.map((payment, index) => (
+                        {reportData.paymentMethodBreakdown.map((payment: any, index: number) => (
                           <div key={index} className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
@@ -314,7 +314,7 @@ export default function PurchaseReports() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        {reportData.purchasesByCategory.map((category, index) => (
+                        {reportData.purchasesByCategory.map((category: any, index: number) => (
                           <div key={index} className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -348,7 +348,7 @@ export default function PurchaseReports() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {reportData.topProducts.map((product, index) => (
+                        {reportData.topProducts.map((product: any, index: number) => (
                           <TableRow key={index}>
                             <TableCell className="font-medium">{product.productName}</TableCell>
                             <TableCell className="text-right">{product.quantity}</TableCell>
@@ -377,7 +377,7 @@ export default function PurchaseReports() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {reportData.supplierInsights.map((supplier, index) => (
+                        {reportData.supplierInsights.map((supplier: any, index: number) => (
                           <TableRow key={index}>
                             <TableCell className="font-medium">{supplier.supplierName}</TableCell>
                             <TableCell className="text-right">{supplier.totalOrders}</TableCell>
