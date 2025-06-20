@@ -2323,41 +2323,32 @@ export default function AddItemProfessional() {
                                         <FormItem>
                                           <FormLabel className="text-red-600">Select Bulk Item to Repackage *</FormLabel>
                                           <FormControl>
-                                            <div className="space-y-2">
-                                              {/* Custom input for bulk item name */}
-                                              <Input
-                                                placeholder="Type bulk item name (e.g., VELLAM BULK)"
-                                                value={field.value || ""}
-                                                onChange={(e) => {
-                                                  field.onChange(e.target.value);
-                                                  // Auto-populate bulk item details when selected from existing products
-                                                  const selectedProduct = bulkItems?.find((p: any) => p.name === e.target.value) || allProducts?.find((p: any) => p.name === e.target.value);
-                                                  if (selectedProduct) {
-                                                    form.setValue("cost", selectedProduct.price?.toString() || "0");
-                                                    form.setValue("mrp", selectedProduct.mrp?.toString() || "0");
-                                                  }
-                                                }}
-                                                className="border-red-300 focus:border-red-500"
-                                              />
-                                              
-                                              {/* Dropdown for existing bulk items */}
-                                              <Select 
-                                                onValueChange={(value) => {
-                                                  field.onChange(value);
-                                                  // Auto-populate bulk item details when selected
-                                                  const selectedProduct = bulkItems?.find((p: any) => p.name === value) || allProducts?.find((p: any) => p.name === value);
-                                                  if (selectedProduct) {
-                                                    form.setValue("cost", selectedProduct.price?.toString() || "0");
-                                                    form.setValue("mrp", selectedProduct.mrp?.toString() || "0");
-                                                  }
-                                                }} 
-                                                value={field.value || ""}
-                                              >
-                                                <SelectTrigger className="border-blue-300 focus:border-blue-500">
-                                                  <SelectValue placeholder="Or select from existing bulk items" />
-                                                </SelectTrigger>
-                                                <SelectContent className="max-h-80 overflow-y-auto">
-                                                {/* Dynamic bulk items from database */}
+                                            <Select 
+                                              onValueChange={(value) => {
+                                                if (value === "create-new") {
+                                                  // Don't change field value, let user type custom name
+                                                  return;
+                                                }
+                                                field.onChange(value);
+                                                // Auto-populate bulk item details when selected
+                                                const selectedProduct = bulkItems?.find((p: any) => p.name === value) || allProducts?.find((p: any) => p.name === value);
+                                                if (selectedProduct) {
+                                                  form.setValue("cost", selectedProduct.price?.toString() || "0");
+                                                  form.setValue("mrp", selectedProduct.mrp?.toString() || "0");
+                                                }
+                                              }} 
+                                              value={field.value || ""}
+                                            >
+                                              <SelectTrigger className="border-red-300 focus:border-red-500">
+                                                <SelectValue placeholder="Select or type bulk item name" />
+                                              </SelectTrigger>
+                                              <SelectContent className="max-h-80 overflow-y-auto">
+                                                {/* Option to create new bulk item */}
+                                                <SelectItem value="create-new" className="bg-blue-50 font-medium">
+                                                  ➕ Create New Bulk Item
+                                                </SelectItem>
+                                                
+                                                {/* Existing bulk items */}
                                                 {bulkItems && bulkItems.length > 0 ? (
                                                   bulkItems.map((product: any) => (
                                                     <SelectItem key={`bulk-${product.id}`} value={product.name}>
@@ -2373,8 +2364,11 @@ export default function AddItemProfessional() {
                                                       </div>
                                                     </SelectItem>
                                                   ))
-                                                ) : allProducts && allProducts.length > 0 ? (
-                                                  allProducts.map((product: any) => (
+                                                ) : null}
+                                                
+                                                {/* All products as fallback */}
+                                                {allProducts && allProducts.length > 0 ? (
+                                                  allProducts.filter((product: any) => !bulkItems?.find((b: any) => b.id === product.id)).map((product: any) => (
                                                     <SelectItem key={`product-${product.id}`} value={product.name}>
                                                       <div className="flex flex-col">
                                                         <div className="font-medium">
@@ -2388,15 +2382,22 @@ export default function AddItemProfessional() {
                                                       </div>
                                                     </SelectItem>
                                                   ))
-                                                ) : (
-                                                  <div className="p-4 text-center text-gray-500">
-                                                    <p className="text-sm">No bulk items found in inventory.</p>
-                                                    <p className="text-xs mt-1">Add bulk items first to enable repackaging.</p>
-                                                  </div>
-                                                )}
+                                                ) : null}
                                               </SelectContent>
-                                      </Select>
-                                    </FormControl>
+                                            </Select>
+                                          </FormControl>
+                                          
+                                          {/* Custom input field for manual entry */}
+                                          <div className="mt-2">
+                                            <Input
+                                              placeholder="Or type custom bulk item name (e.g., VELLAM BULK)"
+                                              value={field.value || ""}
+                                              onChange={(e) => {
+                                                field.onChange(e.target.value);
+                                              }}
+                                              className="border-blue-300 focus:border-blue-500"
+                                            />
+                                          </div>
                                     <div className="text-xs text-red-500 mt-1">
                                       Bulk Item Name is required for repackaging
                                     </div>
@@ -2419,10 +2420,10 @@ export default function AddItemProfessional() {
                                             const selectedBulkItem = bulkItems?.find((p: any) => p.name === form.watch("bulkItemName")) || 
                                                                    allProducts?.find((p: any) => p.name === form.watch("bulkItemName"));
                                             
-                                            if (!selectedBulkItem) {
+                                            if (!selectedBulkItem && form.watch("bulkItemName")) {
                                               return (
                                                 <div className="text-center text-gray-500 py-4">
-                                                  <p className="text-sm mb-3">Bulk item not found in inventory</p>
+                                                  <p className="text-sm mb-3">"{form.watch("bulkItemName")}" not found in inventory</p>
                                                   <Button
                                                     type="button"
                                                     size="sm"
@@ -2433,10 +2434,22 @@ export default function AddItemProfessional() {
                                                         createBulkItem(bulkItemName);
                                                       }
                                                     }}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
+                                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 font-medium"
                                                   >
-                                                    Create "{form.watch("bulkItemName")}" as Bulk Item
+                                                    ➕ Create "{form.watch("bulkItemName")}" as Bulk Item
                                                   </Button>
+                                                  <p className="text-xs mt-2 text-gray-400">
+                                                    This will create a new bulk product that you can use for repackaging
+                                                  </p>
+                                                </div>
+                                              );
+                                            }
+                                            
+                                            if (!selectedBulkItem) {
+                                              return (
+                                                <div className="text-center text-gray-500 py-4">
+                                                  <p className="text-sm">Type a bulk item name above to get started</p>
+                                                  <p className="text-xs mt-1">You can select existing items or create new ones</p>
                                                 </div>
                                               );
                                             }
