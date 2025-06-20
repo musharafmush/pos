@@ -163,7 +163,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [
         { href: "/reports", icon: <BarChart4Icon className="h-5 w-5" />, label: "Reports" },
         { href: "/sales-reports", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>, label: "Sales Reports" },
-        { href: "/purchase-reports", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"/></svg>, label: "Purchase Reports" }
+        { href: "/purchase-reports", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"/></svg>, label: "Purchase Reports" },
+        { href: "/stock-reports", icon: <PackageIcon className="h-5 w-5" />, label: "Stock Reports" }
       ]
     },
     {

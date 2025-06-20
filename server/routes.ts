@@ -4820,7 +4820,8 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('📦 Stock reports endpoint accessed');
       
-      const sqlite = db as any;
+      // Use direct database queries for stock reports
+      const { sqlite } = await import('../db/index.js');
 
       // Current stock summary
       const stockSummaryQuery = `
