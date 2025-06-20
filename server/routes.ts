@@ -9,8 +9,8 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { db } from "../db/index.js";
-import { eq, desc, sql } from "drizzle-orm";
-import { returns as returnTransactions, sales, returnItems, products, customers } from "../shared/schema.js";
+import { eq, desc, sql, and, gte, lte, inArray } from "drizzle-orm";
+import { returns as returnTransactions, sales, returnItems, products, customers, purchases, purchaseItems, suppliers, categories } from "../shared/schema.js";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -4651,54 +4651,54 @@ app.post("/api/customers", async (req, res) => {
       console.log(`📅 Date range: ${start.toISOString()} to ${end.toISOString()}`);
 
       // Get purchase data
-      const purchases = await db.select({
-        id: purchasesTable.id,
-        supplierName: suppliersTable.name,
-        supplierId: purchasesTable.supplierId,
-        total: purchasesTable.total,
-        paidAmount: purchasesTable.paidAmount,
-        paymentStatus: purchasesTable.paymentStatus,
-        createdAt: purchasesTable.createdAt
+      const purchaseRecords = await db.select({
+        id: purchases.id,
+        supplierName: suppliers.name,
+        supplierId: purchases.supplierId,
+        total: purchases.total,
+        paidAmount: purchases.paidAmount,
+        paymentStatus: purchases.paymentStatus,
+        createdAt: purchases.createdAt
       })
-      .from(purchasesTable)
-      .leftJoin(suppliersTable, eq(purchasesTable.supplierId, suppliersTable.id))
+      .from(purchases)
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
       .where(
         and(
-          gte(purchasesTable.createdAt, start),
-          lte(purchasesTable.createdAt, end)
+          gte(purchases.createdAt, start),
+          lte(purchases.createdAt, end)
         )
       );
 
-      console.log(`📈 Found ${purchases.length} purchases for report period`);
+      console.log(`📈 Found ${purchaseRecords.length} purchases for report period`);
 
       // Get purchase items for detailed analysis
-      const purchaseItems = await db.select({
-        purchaseId: purchaseItemsTable.purchaseId,
-        productId: purchaseItemsTable.productId,
-        quantity: purchaseItemsTable.quantity,
-        unitCost: purchaseItemsTable.unitCost,
-        total: purchaseItemsTable.total,
-        productName: productsTable.name,
-        categoryId: productsTable.categoryId,
-        categoryName: categoriesTable.name
+      const purchaseItemsData = await db.select({
+        purchaseId: purchaseItems.purchaseId,
+        productId: purchaseItems.productId,
+        quantity: purchaseItems.quantity,
+        unitCost: purchaseItems.unitCost,
+        total: purchaseItems.total,
+        productName: products.name,
+        categoryId: products.categoryId,
+        categoryName: categories.name
       })
-      .from(purchaseItemsTable)
-      .leftJoin(productsTable, eq(purchaseItemsTable.productId, productsTable.id))
-      .leftJoin(categoriesTable, eq(productsTable.categoryId, categoriesTable.id))
+      .from(purchaseItems)
+      .leftJoin(products, eq(purchaseItems.productId, products.id))
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(
-        inArray(purchaseItemsTable.purchaseId, purchases.map(p => p.id))
+        inArray(purchaseItems.purchaseId, purchaseRecords.map(p => p.id))
       );
 
-      console.log(`📦 Found ${purchaseItems.length} purchase items`);
+      console.log(`📦 Found ${purchaseItemsData.length} purchase items`);
 
       // Calculate metrics
-      const totalPurchases = purchaseItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      const totalAmount = purchases.reduce((sum, purchase) => sum + (purchase.total || 0), 0);
-      const totalTransactions = purchases.length;
+      const totalPurchases = purchaseItemsData.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      const totalAmount = purchaseRecords.reduce((sum, purchase) => sum + (purchase.total || 0), 0);
+      const totalTransactions = purchaseRecords.length;
       const averageOrderValue = totalTransactions > 0 ? totalAmount / totalTransactions : 0;
 
       // Top products
-      const productPurchases = purchaseItems.reduce((acc, item) => {
+      const productPurchases = purchaseItemsData.reduce((acc, item) => {
         const key = item.productName || 'Unknown Product';
         if (!acc[key]) {
           acc[key] = { quantity: 0, amount: 0 };
@@ -4718,7 +4718,7 @@ app.post("/api/customers", async (req, res) => {
         .slice(0, 10);
 
       // Payment method breakdown (based on payment status)
-      const paymentMethods = purchases.reduce((acc, purchase) => {
+      const paymentMethods = purchaseRecords.reduce((acc, purchase) => {
         const method = purchase.paymentStatus || 'Unknown';
         if (!acc[method]) {
           acc[method] = { count: 0, amount: 0 };
