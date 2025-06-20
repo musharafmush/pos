@@ -1179,12 +1179,13 @@ export const storage = {
         `);
 
         for (const item of items) {
-          // Get the received quantity - this is what should be added to stock
+          // Get the received quantity and free quantity - both should be added to stock
           const receivedQty = Number(item.receivedQty) || Number(item.quantity) || 0;
+          const freeQty = Number(item.freeQty) || 0;
           const quantity = Number(item.quantity) || receivedQty || 1;
           const unitCost = Number(item.unitCost) || 0;
 
-          console.log(`Processing item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Unit Cost: ${unitCost}`);
+          console.log(`Processing item: Product ID ${item.productId}, Received Qty: ${receivedQty}, Free Qty: ${freeQty}, Unit Cost: ${unitCost}`);
 
           // Insert purchase item
           insertItem.run(
@@ -1192,7 +1193,7 @@ export const storage = {
             item.productId,
             quantity,
             receivedQty,
-            Number(item.freeQty) || 0,
+            freeQty,
             unitCost,
             Number(item.cost) || unitCost,
             Number(item.sellingPrice) || 0,
@@ -1216,11 +1217,12 @@ export const storage = {
             total
           );
 
-          // Update product stock with received quantity
-          if (receivedQty > 0 && item.productId) {
+          // Update product stock with received quantity PLUS free quantity
+          const totalStockToAdd = receivedQty + freeQty;
+          if (totalStockToAdd > 0 && item.productId) {
             try {
-              const result = updateStock.run(receivedQty, item.productId);
-              console.log(`📦 Stock update result for product ${item.productId}: Added ${receivedQty} units (Changes: ${result.changes})`);
+              const result = updateStock.run(totalStockToAdd, item.productId);
+              console.log(`📦 Stock update result for product ${item.productId}: Added ${totalStockToAdd} units (Received: ${receivedQty} + Free: ${freeQty}) (Changes: ${result.changes})`);
 
               // Verify the stock update
               const checkStock = sqlite.prepare('SELECT stock_quantity FROM products WHERE id = ?');
@@ -1230,7 +1232,7 @@ export const storage = {
               console.error(`❌ Error updating stock for product ${item.productId}:`, error);
             }
           } else {
-            console.log(`⚠️ Skipping stock update for product ${item.productId}: receivedQty = ${receivedQty}`);
+            console.log(`⚠️ Skipping stock update for product ${item.productId}: totalStockToAdd = ${totalStockToAdd} (Received: ${receivedQty}, Free: ${freeQty})`);
           }
         }
       }
@@ -1325,13 +1327,15 @@ export const storage = {
         try {
           // Get existing items to calculate stock differences
           const existingItems = sqlite.prepare(`
-            SELECT product_id, received_qty FROM purchase_items WHERE purchase_id = ?
+            SELECT product_id, received_qty, free_qty FROM purchase_items WHERE purchase_id = ?
           `).all(id);
 
-          // Create a map of existing received quantities
+          // Create a map of existing received and free quantities
           const existingReceivedMap = new Map();
+          const existingFreeMap = new Map();
           existingItems.forEach((item: any) => {
             existingReceivedMap.set(item.product_id, item.received_qty || 0);
+            existingFreeMap.set(item.product_id, item.free_qty || 0);
           });
 
           // Update purchase record
@@ -1434,14 +1438,19 @@ export const storage = {
                 (item.receivedQty || 0) * (item.unitCost || 0)
               );
 
-              // Calculate stock difference and update
+              // Calculate stock difference including free quantity
               const newReceivedQty = item.receivedQty || 0;
+              const newFreeQty = item.freeQty || 0;
               const oldReceivedQty = existingReceivedMap.get(item.productId) || 0;
-              const stockDifference = newReceivedQty - oldReceivedQty;
+              const oldFreeQty = existingFreeMap.get(item.productId) || 0;
+              
+              const newTotalStock = newReceivedQty + newFreeQty;
+              const oldTotalStock = oldReceivedQty + oldFreeQty;
+              const stockDifference = newTotalStock - oldTotalStock;
 
               if (stockDifference !== 0 && item.productId) {
                 updateStock.run(stockDifference, item.productId);
-                console.log(`📦 Stock adjustment for product ${item.productId}: ${stockDifference > 0 ? '+' : ''}${stockDifference}`);
+                console.log(`📦 Stock adjustment for product ${item.productId}: ${stockDifference > 0 ? '+' : ''}${stockDifference} (Received: ${newReceivedQty - oldReceivedQty}, Free: ${newFreeQty - oldFreeQty})`);
               }
             }
           }
