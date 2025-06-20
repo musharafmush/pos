@@ -315,7 +315,7 @@ export default function RepackingProfessional() {
     mutationFn: async (data: RepackingFormValues) => {
       if (!selectedProduct) throw new Error("No bulk product selected");
 
-      // Validate sufficient stock
+      // Enhanced validation with comprehensive stock checking
       const productWeight = parseFloat(selectedProduct.weight || "1") || 1;
       const productWeightUnit = selectedProduct.weightUnit || 'kg';
       let productWeightInGrams = productWeight;
@@ -323,78 +323,103 @@ export default function RepackingProfessional() {
         productWeightInGrams = productWeight * 1000;
       }
 
-      // Convert unit weight to grams for calculation
+      // Convert unit weight to grams for precise calculation
       const unitWeightInGrams = data.weightUnit === 'kg' ? data.unitWeight * 1000 : data.unitWeight;
       const totalRepackedWeight = unitWeightInGrams * data.repackQuantity;
       const bulkUnitsNeeded = Math.ceil(totalRepackedWeight / productWeightInGrams);
 
+      // Comprehensive stock validation
       if (selectedProduct.stockQuantity < bulkUnitsNeeded) {
-        throw new Error(`Insufficient stock. Need ${bulkUnitsNeeded} units but only ${selectedProduct.stockQuantity} available.`);
+        throw new Error(`Insufficient stock: Need ${bulkUnitsNeeded} units, only ${selectedProduct.stockQuantity} available`);
       }
 
-      const timestamp = Date.now();
-      const repackedSku = `${selectedProduct.sku}-REPACK-${data.unitWeight}G-${timestamp}`;
-
-      // Use proper product name and weight display
-      const weightDisplay = data.weightUnit === 'kg' && data.unitWeight < 1 ? 
-        `${data.unitWeight * 1000}g` : 
-        `${data.unitWeight}${data.weightUnit}`;
-      
-      const repackedName = data.newProductName || `${selectedProduct.name.replace(/\s*\(.*?\)/g, '')} (${weightDisplay} Pack)`;
-
+      // Create the repacked product with enhanced metadata
       const repackedProduct = {
-        name: repackedName,
-        description: `Repacked from bulk item: ${selectedProduct.name}. Original weight: ${selectedProduct.weight}${selectedProduct.weightUnit}`,
-        sku: data.newProductSku || repackedSku,
+        name: data.newProductName,
+        description: `Professional repack from ${selectedProduct.name} - ${data.unitWeight}${data.weightUnit} precision pack`,
+        sku: data.newProductSku,
         price: data.sellingPrice.toString(),
         mrp: data.mrp.toString(),
         cost: data.costPrice.toString(),
-        weight: data.weightUnit === 'kg' ? (data.unitWeight * 1000).toString() : data.unitWeight.toString(),
-        weightUnit: "g",
+        weight: data.unitWeight.toString(),
+        weightUnit: data.weightUnit,
         categoryId: selectedProduct.categoryId || 1,
-        stockQuantity: data.repackQuantity,
-        alertThreshold: 5,
-        barcode: `${timestamp}${Math.floor(Math.random() * 1000)}`,
+        stockQuantity: data.repackQuantity.toString(),
+        alertThreshold: Math.max(1, Math.floor(data.repackQuantity * 0.1)),
+        barcode: data.newProductBarcode || `RP${Date.now()}${Math.floor(Math.random() * 1000)}`,
         active: true,
+        
+        // Enhanced repack metadata integration
+        itemPreparationsStatus: "Trade As Is",
+        bulkItemName: selectedProduct.name,
+        repackageUnits: data.repackQuantity.toString(),
+        weightInGms: (data.weightUnit === 'kg' ? data.unitWeight * 1000 : data.unitWeight).toString(),
+        
+        // Inherit tax and supplier information
+        manufacturerName: selectedProduct.manufacturerName || "",
+        supplierName: selectedProduct.supplierName || "",
+        manufacturerId: selectedProduct.manufacturerId || null,
+        supplierId: selectedProduct.supplierId || null,
+        hsnCode: selectedProduct.hsnCode || "",
+        gstCode: selectedProduct.gstCode || "GST 18%",
+        cgstRate: selectedProduct.cgstRate || "9",
+        sgstRate: selectedProduct.sgstRate || "9", 
+        igstRate: selectedProduct.igstRate || "0",
+        cessRate: selectedProduct.cessRate || "0",
+        taxCalculationMethod: selectedProduct.taxCalculationMethod || "exclusive",
       };
 
-      try {
-        const response = await apiRequest("POST", "/api/products", repackedProduct);
+      // Create the repacked product
+      const createResponse = await apiRequest("/api/products", "POST", repackedProduct);
 
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`Failed to create repacked product: ${errorData}`);
-        }
-
-        // Update bulk stock
-        const newBulkStock = Math.max(0, selectedProduct.stockQuantity - bulkUnitsNeeded);
-        const updateResponse = await apiRequest("PATCH", `/api/products/${selectedProduct.id}`, {
-          stockQuantity: newBulkStock,
-        });
-
-        if (!updateResponse.ok) {
-          throw new Error("Failed to update bulk product stock");
-        }
-
-        return response.json();
-      } catch (error) {
-        console.error('Repacking error:', error);
-        throw error;
+      if (!createResponse.ok) {
+        const errorData = await createResponse.text();
+        throw new Error(`Failed to create repacked product: ${errorData}`);
       }
+
+      // Update bulk product stock
+      const newBulkStock = Math.max(0, selectedProduct.stockQuantity - bulkUnitsNeeded);
+      const updateResponse = await apiRequest(`/api/products/${selectedProduct.id}`, "PUT", {
+        ...selectedProduct,
+        stockQuantity: newBulkStock,
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error("Failed to update bulk product stock");
+      }
+
+      return createResponse.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
-        title: "Success",
-        description: "Product repacked successfully",
+        title: "Repacking Completed Successfully",
+        description: `Created ${data.name} with ${form.getValues('repackQuantity')} units`,
+        variant: "default",
       });
-      form.reset();
+      
+      // Reset form
+      form.reset({
+        issueDate: formattedDate,
+        issueNo: "",
+        repackNo: "",
+        bulkProductId: 0,
+        repackQuantity: 6,
+        unitWeight: 250,
+        weightUnit: "g",
+        costPrice: 0,
+        sellingPrice: 100,
+        mrp: 150,
+        newProductName: "",
+        newProductSku: "",
+        newProductBarcode: "",
+      });
       setSelectedProduct(null);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Repacking Failed",
+        description: error.message || "Failed to create repacked product",
         variant: "destructive",
       });
     },
