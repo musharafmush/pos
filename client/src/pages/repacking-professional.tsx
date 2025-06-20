@@ -147,6 +147,61 @@ export default function RepackingProfessional() {
     }
   }, [integrationData, products, form, toast]);
 
+  // Auto-generate child product details when bulk product is selected
+  useEffect(() => {
+    const bulkProductId = form.watch("bulkProductId");
+    const unitWeight = form.watch("unitWeight");
+    const weightUnit = form.watch("weightUnit");
+    
+    if (bulkProductId && unitWeight && weightUnit && products.length > 0) {
+      const selectedBulkProduct = products.find((p: Product) => p.id === bulkProductId);
+      
+      if (selectedBulkProduct) {
+        // Generate child product name based on parent + weight
+        const childProductName = `${selectedBulkProduct.name} (${unitWeight}${weightUnit} Pack)`;
+        
+        // Generate child SKU based on parent SKU + repack suffix
+        const timestamp = Date.now().toString().slice(-6);
+        const childSku = `${selectedBulkProduct.sku}_REPACK_${unitWeight}${weightUnit}_${timestamp}`;
+        
+        // Generate child barcode based on parent barcode + weight info
+        const childBarcode = selectedBulkProduct.barcode ? 
+          `${selectedBulkProduct.barcode}${unitWeight}${weightUnit}` : 
+          `${timestamp}${unitWeight}${weightUnit}`;
+        
+        // Auto-populate child product details
+        form.setValue("newProductName", childProductName);
+        form.setValue("newProductSku", childSku);
+        form.setValue("newProductBarcode", childBarcode);
+        
+        // Auto-populate pricing based on weight ratio
+        const bulkWeight = parseFloat(selectedBulkProduct.weight || "1");
+        const bulkWeightUnit = selectedBulkProduct.weightUnit || "kg";
+        
+        // Convert to same unit for calculation
+        let bulkWeightInGrams = bulkWeight;
+        if (bulkWeightUnit === "kg") {
+          bulkWeightInGrams = bulkWeight * 1000;
+        }
+        
+        let childWeightInGrams = unitWeight;
+        if (weightUnit === "kg") {
+          childWeightInGrams = unitWeight * 1000;
+        }
+        
+        // Calculate proportional pricing
+        const weightRatio = childWeightInGrams / bulkWeightInGrams;
+        const childCostPrice = parseFloat(selectedBulkProduct.price || "0") * weightRatio;
+        const childMRP = parseFloat(selectedBulkProduct.mrp || "0") * weightRatio;
+        const childSellingPrice = childCostPrice * 1.2; // 20% markup
+        
+        form.setValue("costPrice", Math.round(childCostPrice * 100) / 100);
+        form.setValue("sellingPrice", Math.round(childSellingPrice * 100) / 100);
+        form.setValue("mrp", Math.round(childMRP * 100) / 100);
+      }
+    }
+  }, [form.watch("bulkProductId"), form.watch("unitWeight"), form.watch("weightUnit"), products, form]);
+
   // Watch form values for calculations
   const watchedValues = form.watch();
   const { bulkProductId, repackQuantity, unitWeight, weightUnit } = watchedValues;
@@ -629,14 +684,69 @@ export default function RepackingProfessional() {
                     )}
                   </div>
 
-                  {/* Right Panel - Pricing Configuration */}
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                      <DollarSignIcon className="w-4 h-4" />
-                      Pricing Configuration
+                  {/* Right Panel - Auto-Generated Product Details */}
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
+                      <PackageIcon className="w-4 h-4" />
+                      Auto-Generated Product Details
                     </h4>
                     
-                    <div className="space-y-3">
+                    {form.watch("bulkProductId") && form.watch("unitWeight") && form.watch("weightUnit") ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 gap-3">
+                          <div>
+                            <label className="text-xs font-medium text-orange-700 block mb-1">Product Name</label>
+                            <div className="p-2 bg-orange-100 border border-orange-300 rounded text-sm font-medium text-orange-900">
+                              {form.watch("newProductName") || "Auto-generating..."}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs font-medium text-orange-700 block mb-1">SKU</label>
+                            <div className="p-2 bg-orange-100 border border-orange-300 rounded text-xs font-mono text-orange-900">
+                              {form.watch("newProductSku") || "Auto-generating..."}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs font-medium text-orange-700 block mb-1">Barcode</label>
+                            <div className="p-2 bg-orange-100 border border-orange-300 rounded text-xs font-mono text-orange-900">
+                              {form.watch("newProductBarcode") || "Auto-generating..."}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 pt-3 border-t border-orange-300">
+                          <h5 className="text-sm font-semibold text-orange-800 mb-2">Auto-Calculated Pricing</h5>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-orange-600 font-medium">Cost Price:</span>
+                              <div className="font-semibold text-orange-900">₹{form.watch("costPrice")?.toFixed(2) || "0.00"}</div>
+                            </div>
+                            <div>
+                              <span className="text-orange-600 font-medium">MRP:</span>
+                              <div className="font-semibold text-orange-900">₹{form.watch("mrp")?.toFixed(2) || "0.00"}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center text-orange-600 py-6">
+                        <PackageIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Select bulk product and weight to see auto-generated details</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+          {/* Pricing Configuration Panel */}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
+            <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+              <DollarSignIcon className="w-4 h-4" />
+              Pricing Configuration
+            </h4>
+            
+            <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-2">
                         <FormField
                           control={form.control}
@@ -725,12 +835,12 @@ export default function RepackingProfessional() {
 
             {/* Auto-Generated Product Details */}
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-              <h4 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
-                <ClipboardIcon className="w-4 h-4" />
-                Auto-Generated Product Details
-              </h4>
-              
-              <div className="grid grid-cols-3 gap-4">
+            <h4 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
+              <ClipboardIcon className="w-4 h-4" />
+              Auto-Generated Product Details
+            </h4>
+            
+            <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="newProductName"
