@@ -4426,6 +4426,213 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Sales Reports API
+  app.get('/api/reports/sales', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      console.log('📊 Sales reports endpoint accessed:', { startDate, endDate });
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ 
+          error: 'Missing required parameters',
+          message: 'Both startDate and endDate are required'
+        });
+      }
+
+      const { sqlite } = await import('@db');
+      
+      // Get sales data within date range
+      const salesQuery = `
+        SELECT 
+          s.id,
+          s.order_number,
+          s.customer_id,
+          s.user_id,
+          s.total,
+          s.tax,
+          s.discount,
+          s.payment_method,
+          s.status,
+          s.created_at,
+          c.name as customer_name,
+          u.name as user_name
+        FROM sales s
+        LEFT JOIN customers c ON s.customer_id = c.id
+        LEFT JOIN users u ON s.user_id = u.id
+        WHERE DATE(s.created_at) >= DATE(?) AND DATE(s.created_at) <= DATE(?)
+        ORDER BY s.created_at DESC
+      `;
+      
+      const sales = sqlite.prepare(salesQuery).all(startDate, endDate);
+      console.log(`📈 Found ${sales.length} sales for report period`);
+      
+      // Get sale items with product details
+      let saleItems = [];
+      if (sales.length > 0) {
+        const saleItemsQuery = `
+          SELECT 
+            si.sale_id,
+            si.product_id,
+            si.quantity,
+            si.unit_price,
+            si.subtotal,
+            p.name as product_name,
+            p.sku,
+            c.name as category_name
+          FROM sale_items si
+          LEFT JOIN products p ON si.product_id = p.id
+          LEFT JOIN categories c ON p.category_id = c.id
+          WHERE si.sale_id IN (${sales.map(() => '?').join(',')})
+        `;
+        
+        saleItems = sqlite.prepare(saleItemsQuery).all(...sales.map(s => s.id));
+      }
+      
+      console.log(`📦 Found ${saleItems.length} sale items`);
+      
+      // Calculate metrics
+      const totalRevenue = sales.reduce((sum, sale) => sum + parseFloat(sale.total || '0'), 0);
+      const totalSales = saleItems.reduce((sum, item) => sum + parseInt(item.quantity || '0'), 0);
+      const totalTransactions = sales.length;
+      const averageOrderValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+      
+      // Group sale items by product
+      const productSales = {};
+      saleItems.forEach(item => {
+        const productId = item.product_id;
+        if (!productSales[productId]) {
+          productSales[productId] = {
+            productName: item.product_name || 'Unknown Product',
+            quantity: 0,
+            revenue: 0
+          };
+        }
+        productSales[productId].quantity += parseInt(item.quantity || '0');
+        productSales[productId].revenue += parseFloat(item.subtotal || '0');
+      });
+      
+      // Get top products
+      const topProducts = Object.values(productSales)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+      
+      // Payment method breakdown
+      const paymentMethods = {};
+      sales.forEach(sale => {
+        const method = sale.payment_method || 'unknown';
+        if (!paymentMethods[method]) {
+          paymentMethods[method] = { count: 0, amount: 0 };
+        }
+        paymentMethods[method].count++;
+        paymentMethods[method].amount += parseFloat(sale.total || '0');
+      });
+      
+      const paymentMethodBreakdown = Object.entries(paymentMethods).map(([method, data]) => ({
+        method,
+        count: data.count,
+        amount: data.amount
+      }));
+      
+      // Daily trends
+      const dailyData = {};
+      sales.forEach(sale => {
+        const date = sale.created_at.split('T')[0];
+        if (!dailyData[date]) {
+          dailyData[date] = {
+            date,
+            sales: 0,
+            revenue: 0,
+            transactions: 0
+          };
+        }
+        dailyData[date].revenue += parseFloat(sale.total || '0');
+        dailyData[date].transactions++;
+      });
+      
+      // Add sales quantities to daily data
+      saleItems.forEach(item => {
+        const sale = sales.find(s => s.id === item.sale_id);
+        if (sale) {
+          const date = sale.created_at.split('T')[0];
+          if (dailyData[date]) {
+            dailyData[date].sales += parseInt(item.quantity || '0');
+          }
+        }
+      });
+      
+      const dailyTrends = Object.values(dailyData).sort((a, b) => a.date.localeCompare(b.date));
+      
+      // Sales by category
+      const categorySales = {};
+      saleItems.forEach(item => {
+        const category = item.category_name || 'Uncategorized';
+        if (!categorySales[category]) {
+          categorySales[category] = {
+            category,
+            sales: 0,
+            revenue: 0
+          };
+        }
+        categorySales[category].sales += parseInt(item.quantity || '0');
+        categorySales[category].revenue += parseFloat(item.subtotal || '0');
+      });
+      
+      const salesByCategory = Object.values(categorySales)
+        .sort((a, b) => b.revenue - a.revenue);
+      
+      // Customer insights
+      const customerData = {};
+      sales.forEach(sale => {
+        if (sale.customer_id && sale.customer_name) {
+          const customerId = sale.customer_id;
+          if (!customerData[customerId]) {
+            customerData[customerId] = {
+              customerId,
+              customerName: sale.customer_name,
+              totalOrders: 0,
+              totalSpent: 0
+            };
+          }
+          customerData[customerId].totalOrders++;
+          customerData[customerId].totalSpent += parseFloat(sale.total || '0');
+        }
+      });
+      
+      const customerInsights = Object.values(customerData)
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 10);
+      
+      const reportData = {
+        totalSales,
+        totalRevenue,
+        totalTransactions,
+        averageOrderValue,
+        topProducts,
+        paymentMethodBreakdown,
+        dailyTrends,
+        salesByCategory,
+        customerInsights
+      };
+      
+      console.log('📊 Sales report generated successfully:', {
+        totalRevenue,
+        totalTransactions,
+        topProductsCount: topProducts.length,
+        dailyTrendsCount: dailyTrends.length
+      });
+      
+      res.json(reportData);
+      
+    } catch (error) {
+      console.error('❌ Sales report generation failed:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate sales report',
+        message: error.message 
+      });
+    }
+  });
+
   // Delete purchase
   app.delete("/api/purchases/:id", isAuthenticated, async (req, res) => {
     try {
