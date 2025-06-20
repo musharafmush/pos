@@ -4904,9 +4904,10 @@ app.post("/api/customers", async (req, res) => {
           pi.product_id,
           p.name as productName,
           pi.quantity,
-          pi.unit_cost,
+          pi.unit_cost as unit_price,
           pur.created_at as date,
-          s.name as supplierName
+          s.name as supplierName,
+          NULL as customerName
         FROM purchase_items pi
         LEFT JOIN purchases pur ON pi.purchase_id = pur.id
         LEFT JOIN products p ON pi.product_id = p.id
@@ -4922,6 +4923,7 @@ app.post("/api/customers", async (req, res) => {
           -si.quantity as quantity,
           si.unit_price,
           sal.created_at as date,
+          NULL as supplierName,
           c.name as customerName
         FROM sale_items si
         LEFT JOIN sales sal ON si.sale_id = sal.id
