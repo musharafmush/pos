@@ -16,7 +16,7 @@ import {
   ArrowUpDown
 } from "lucide-react";
 import { format } from "date-fns";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import DashboardLayout from "@/components/layout/dashboard-layout";
 
 interface StockSummary {
   totalProducts: number;
