@@ -16,6 +16,7 @@ import {
   ArrowUpDown
 } from "lucide-react";
 import { format } from "date-fns";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 
 interface StockSummary {
   totalProducts: number;
@@ -136,7 +137,7 @@ export default function StockReports() {
   const { stockSummary } = reportData;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <DashboardLayout>
       <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -507,6 +508,6 @@ export default function StockReports() {
         </TabsContent>
       </Tabs>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
