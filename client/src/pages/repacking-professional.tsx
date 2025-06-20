@@ -171,14 +171,13 @@ export default function RepackingProfessional() {
         // Generate child product name based on parent + weight
         const childProductName = `${selectedBulkProduct.name} (${unitWeight}${weightUnit} Pack)`;
         
-        // Generate child SKU based on parent SKU + repack suffix
-        const timestamp = Date.now().toString().slice(-6);
-        const childSku = `${selectedBulkProduct.sku}_REPACK_${unitWeight}${weightUnit}_${timestamp}`;
+        // Generate child SKU based on parent SKU + repack suffix (consistent format)
+        const childSku = `${selectedBulkProduct.sku}_${unitWeight}${weightUnit}`;
         
-        // Generate child barcode based on parent barcode + weight info
+        // Generate child barcode based on parent barcode + weight info (consistent format)
         const childBarcode = selectedBulkProduct.barcode ? 
-          `${selectedBulkProduct.barcode}${unitWeight}${weightUnit}` : 
-          `${timestamp}${unitWeight}${weightUnit}`;
+          `${selectedBulkProduct.barcode}_${unitWeight}${weightUnit}` : 
+          `${selectedBulkProduct.sku}_${unitWeight}${weightUnit}`;
         
         // Auto-populate child product details
         form.setValue("newProductName", childProductName);
