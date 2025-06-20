@@ -25,6 +25,7 @@ import PurchaseDashboard from "@/pages/purchase-dashboard";
 import PurchaseEntry from "@/pages/purchase-entry";
 import PurchaseEntryProfessional from "@/pages/purchase-entry-professional";
 import Reports from "./pages/reports";
+import SalesReports from "./pages/sales-reports";
 import SaleReturn from "./pages/sale-return";
 import SalesDashboard from "./pages/sales-dashboard";
 import Users from "@/pages/users";
@@ -88,6 +89,7 @@ function Router() {
       <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
       <ProtectedRoute path="/purchase-entry-professional" component={PurchaseEntryProfessional} />
       <ProtectedRoute path="/reports" component={Reports} />
+      <ProtectedRoute path="/sales-reports" component={SalesReports} />
       <ProtectedRoute path="/sales/return" component={SaleReturn} />
       <ProtectedRoute path="/sale-return" component={SaleReturn} />
       <ProtectedRoute path="/sale-returns-dashboard" component={SaleReturnsDashboard} />
