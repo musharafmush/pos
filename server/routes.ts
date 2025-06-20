@@ -4904,7 +4904,7 @@ app.post("/api/customers", async (req, res) => {
           pi.product_id,
           p.name as productName,
           pi.quantity,
-          pi.unit_price,
+          pi.unit_cost,
           pur.created_at as date,
           s.name as supplierName
         FROM purchase_items pi
