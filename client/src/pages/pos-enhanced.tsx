@@ -94,6 +94,8 @@ export default function POSEnhanced() {
   const [weightProduct, setWeightProduct] = useState<Product | null>(null);
   const [enteredWeight, setEnteredWeight] = useState("");
   const [showOceanDialog, setShowOceanDialog] = useState(false);
+  const [showPrintOptionsDialog, setShowPrintOptionsDialog] = useState(false);
+  const [currentSaleForPrint, setCurrentSaleForPrint] = useState(null);
   const [oceanFreight, setOceanFreight] = useState({
     containerNumber: "",
     vesselName: "",
@@ -968,17 +970,9 @@ export default function POSEnhanced() {
         variant: "default",
       });
 
-      // Print receipt automatically
-      try {
-        handlePrintReceipt(saleResult);
-      } catch (printError) {
-        console.error("Print error:", printError);
-        toast({
-          title: "Print Warning",
-          description: "Sale completed but receipt printing failed. You can print manually.",
-          variant: "default",
-        });
-      }
+      // Show print options dialog
+      setCurrentSaleForPrint(saleResult);
+      setShowPrintOptionsDialog(true);
 
       // Reset everything but preserve held sales
       clearCart(false);
@@ -3900,6 +3894,114 @@ Terminal: POS-Enhanced
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     {isProcessing ? "Processing..." : `Complete Sale ${formatCurrency(total)}`}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Print Options Dialog */}
+          <Dialog open={showPrintOptionsDialog} onOpenChange={setShowPrintOptionsDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Printer className="h-6 w-6 text-blue-600" />
+                  Print Receipt Options
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600 mb-6">
+                  Choose how you'd like to print the receipt for mirchi and other products:
+                </div>
+
+                <div className="space-y-3">
+                  {/* POS Bill Edit Option */}
+                  <Button
+                    onClick={() => {
+                      try {
+                        // Edit mode - opens receipt in editable format
+                        const editWindow = window.open('', '_blank');
+                        editWindow.document.write(`
+                          <html>
+                            <head><title>POS Bill Edit</title></head>
+                            <body>
+                              <h2>📝 POS Bill Edit Mode</h2>
+                              <p>Receipt for Order: ${currentSaleForPrint?.orderNumber}</p>
+                              <p>You can now edit the receipt details...</p>
+                              <textarea rows="20" cols="50" placeholder="Edit receipt content here..."></textarea>
+                              <br><button onclick="window.print()">Print Edited Bill</button>
+                            </body>
+                          </html>
+                        `);
+                        setShowPrintOptionsDialog(false);
+                      } catch (error) {
+                        console.error('POS Bill Edit failed:', error);
+                      }
+                    }}
+                    variant="outline"
+                    className="w-full justify-start h-12 text-left"
+                  >
+                    <FileText className="h-5 w-5 mr-3 text-blue-600" />
+                    <div>
+                      <div className="font-medium">POS Bill Edit</div>
+                      <div className="text-sm text-gray-500">Edit receipt before printing</div>
+                    </div>
+                  </Button>
+
+                  {/* Thermal Printer Option */}
+                  <Button
+                    onClick={() => {
+                      try {
+                        // Thermal printer optimized format
+                        if (currentSaleForPrint) {
+                          handlePrintReceipt(currentSaleForPrint, { printerType: 'thermal' });
+                        }
+                        setShowPrintOptionsDialog(false);
+                      } catch (error) {
+                        console.error('Thermal print failed:', error);
+                      }
+                    }}
+                    variant="outline"
+                    className="w-full justify-start h-12 text-left"
+                  >
+                    <Printer className="h-5 w-5 mr-3 text-green-600" />
+                    <div>
+                      <div className="font-medium">Thermal Printer</div>
+                      <div className="text-sm text-gray-500">Direct thermal receipt printing</div>
+                    </div>
+                  </Button>
+
+                  {/* Auto-Printer Option */}
+                  <Button
+                    onClick={() => {
+                      try {
+                        // Auto printer - uses system default
+                        if (currentSaleForPrint) {
+                          handlePrintReceipt(currentSaleForPrint, { autoPrint: true });
+                        }
+                        setShowPrintOptionsDialog(false);
+                      } catch (error) {
+                        console.error('Auto print failed:', error);
+                      }
+                    }}
+                    variant="outline"
+                    className="w-full justify-start h-12 text-left"
+                  >
+                    <Zap className="h-5 w-5 mr-3 text-orange-600" />
+                    <div>
+                      <div className="font-medium">Auto-Printer</div>
+                      <div className="text-sm text-gray-500">Automatic system printer</div>
+                    </div>
+                  </Button>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPrintOptionsDialog(false)}
+                  >
+                    Skip Printing
                   </Button>
                 </div>
               </div>
