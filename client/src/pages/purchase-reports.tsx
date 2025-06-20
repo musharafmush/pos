@@ -407,7 +407,7 @@ export default function PurchaseReports() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {reportData.dailyTrends.map((day, index) => (
+                        {reportData.dailyTrends.map((day: any, index: number) => (
                           <TableRow key={index}>
                             <TableCell className="font-medium">{format(new Date(day.date), 'MMM dd, yyyy')}</TableCell>
                             <TableCell className="text-right">{day.purchases}</TableCell>
