@@ -2400,8 +2400,45 @@ export default function AddItemProfessional() {
                                                   </span>
                                                 </div>
 
-                                                <div className="border-t pt-2 mt-3">
-                                                  <div className="text-xs text-gray-600 text-center">
+                                                <div className="border-t pt-3 mt-3">
+                                                  <Button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      // Navigate to repacking-professional with pre-filled data
+                                                      const repackingData = {
+                                                        bulkProduct: {
+                                                          id: selectedBulkItem.id,
+                                                          name: selectedBulkItem.name,
+                                                          sku: selectedBulkItem.sku,
+                                                          price: selectedBulkItem.price,
+                                                          mrp: selectedBulkItem.mrp,
+                                                          weight: selectedBulkItem.weight,
+                                                          weightUnit: selectedBulkItem.weightUnit,
+                                                          stockQuantity: selectedBulkItem.stockQuantity,
+                                                          category: selectedBulkItem.category,
+                                                          supplier: selectedBulkItem.supplier
+                                                        },
+                                                        newProduct: {
+                                                          itemCode: form.getValues("itemCode"),
+                                                          itemName: form.getValues("itemName"),
+                                                          manufacturerName: form.getValues("manufacturerName"),
+                                                          alias: form.getValues("alias")
+                                                        }
+                                                      };
+                                                      
+                                                      // Store data in localStorage for repacking-professional
+                                                      localStorage.setItem('repackingIntegrationData', JSON.stringify(repackingData));
+                                                      
+                                                      // Navigate to repacking-professional
+                                                      setLocation('/repacking-professional');
+                                                    }}
+                                                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2"
+                                                  >
+                                                    <PackageIcon className="w-4 h-4" />
+                                                    Start Professional Repackaging
+                                                  </Button>
+                                                  
+                                                  <div className="text-xs text-gray-600 text-center mt-2">
                                                     Last Updated: {new Date().toLocaleDateString()}
                                                   </div>
                                                 </div>

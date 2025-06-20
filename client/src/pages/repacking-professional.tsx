@@ -63,6 +63,23 @@ export default function RepackingProfessional() {
     });
   });
 
+  // Check for integration data from add-item-professional
+  const [integrationData, setIntegrationData] = useState<any>(null);
+
+  useEffect(() => {
+    const storedData = localStorage.getItem('repackingIntegrationData');
+    if (storedData) {
+      try {
+        const data = JSON.parse(storedData);
+        setIntegrationData(data);
+        // Clear the stored data after using it
+        localStorage.removeItem('repackingIntegrationData');
+      } catch (error) {
+        console.error('Error parsing integration data:', error);
+      }
+    }
+  }, []);
+
   const form = useForm<RepackingFormValues>({
     resolver: zodResolver(repackingFormSchema),
     defaultValues: {
@@ -98,6 +115,37 @@ export default function RepackingProfessional() {
     product.stockQuantity > 0 && 
     product.active
   );
+
+  // Auto-populate form when integration data is available
+  useEffect(() => {
+    if (integrationData && products.length > 0) {
+      const bulkProduct = integrationData.bulkProduct;
+      const newProduct = integrationData.newProduct;
+      
+      // Find the bulk product in the loaded products
+      const foundProduct = products.find((p: Product) => p.id === bulkProduct.id);
+      
+      if (foundProduct) {
+        // Pre-fill form with integration data
+        form.setValue("bulkProductId", foundProduct.id);
+        form.setValue("costPrice", parseFloat(bulkProduct.price || "0"));
+        form.setValue("mrp", parseFloat(bulkProduct.mrp || "0"));
+        
+        if (newProduct.itemName) {
+          form.setValue("newProductName", newProduct.itemName);
+        }
+        if (newProduct.itemCode) {
+          form.setValue("newProductSku", newProduct.itemCode);
+        }
+        
+        // Show success toast
+        toast({
+          title: "Integration Successful",
+          description: `Pre-filled repacking details for ${bulkProduct.name}`,
+        });
+      }
+    }
+  }, [integrationData, products, form, toast]);
 
   // Watch form values for calculations
   const watchedValues = form.watch();
@@ -231,7 +279,15 @@ export default function RepackingProfessional() {
         {/* Header */}
         <div className="bg-blue-600 text-white px-6 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold">Professional Repack Entry</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-semibold">Professional Repack Entry</h1>
+              {integrationData && (
+                <Badge className="bg-green-500 text-white px-3 py-1 text-xs font-medium">
+                  <PackageIcon className="w-3 h-3 mr-1" />
+                  Integrated from Item Preparation
+                </Badge>
+              )}
+            </div>
             <div className="text-sm">
               <span>User: AYYAPPAN (System Admin) | Ver: 6.5.9.2 SP-65 | Customer Id: 19983394</span>
             </div>
@@ -331,6 +387,79 @@ export default function RepackingProfessional() {
                 />
               </div>
             </div>
+
+            {/* Integration Data Display Panel */}
+            {integrationData && (
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-lg mb-6 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-green-800 flex items-center gap-2">
+                    <PackageIcon className="w-5 h-5" />
+                    Integrated Item Preparation Data
+                  </h3>
+                  <Badge className="bg-green-600 text-white">Auto-Filled</Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Source Bulk Product */}
+                  <div className="bg-white rounded-lg p-4 border border-green-200">
+                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Settings2Icon className="w-4 h-4" />
+                      Source Bulk Product
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Product Name:</span>
+                        <span className="font-medium text-gray-800">{integrationData.bulkProduct.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">SKU:</span>
+                        <span className="font-mono text-gray-800">{integrationData.bulkProduct.sku}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Available Stock:</span>
+                        <span className="font-semibold text-green-600">{integrationData.bulkProduct.stockQuantity} units</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Unit Price:</span>
+                        <span className="font-semibold text-blue-600">₹{parseFloat(integrationData.bulkProduct.price || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Target New Product */}
+                  <div className="bg-white rounded-lg p-4 border border-blue-200">
+                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <ClipboardIcon className="w-4 h-4" />
+                      Target New Product
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Product Name:</span>
+                        <span className="font-medium text-gray-800">{integrationData.newProduct.itemName || 'Pre-filled'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Item Code:</span>
+                        <span className="font-mono text-gray-800">{integrationData.newProduct.itemCode || 'Pre-filled'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Manufacturer:</span>
+                        <span className="text-gray-800">{integrationData.newProduct.manufacturerName || 'From bulk item'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Status:</span>
+                        <Badge className="bg-blue-100 text-blue-800 text-xs">Ready for Repackaging</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-3 p-2 bg-green-100 rounded text-center">
+                  <p className="text-sm text-green-800">
+                    <strong>Integration Complete:</strong> Form fields have been automatically populated. Review and adjust as needed.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Item Preparations Status - Enhanced Professional Display */}
             <div className="bg-white border border-gray-300 rounded-lg mb-6">
