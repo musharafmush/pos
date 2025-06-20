@@ -412,7 +412,7 @@ export default function AddItemProfessional() {
     const manufacturer = watchedValues.manufacturerName;
 
     if (itemName && !watchedValues.alias) {
-      const generatedAlias = generateAlias(itemName, manufacturer);
+      const generatedAlias = generateAlias(itemName || '', manufacturer || '');
       form.setValue('alias', generatedAlias);
     }
   }, [watchedValues.itemName, watchedValues.manufacturerName, form]);
