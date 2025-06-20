@@ -27,7 +27,11 @@ import {
   HelpCircleIcon,
   Settings2Icon,
   X,
-  CalendarIcon
+  CalendarIcon,
+  SettingsIcon,
+  BarChart3Icon,
+  DollarSignIcon,
+  ClipboardIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
@@ -624,13 +628,405 @@ export default function RepackingProfessional() {
               </div>
             </div>
 
-            {/* Enhanced Bulk to Repack Conversion Section */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <h3 className="text-xl font-semibold text-blue-800 mb-4 flex items-center">
-                <PackageIcon className="w-6 h-6 mr-2" />
-                Bulk to Repack Conversion Calculator
-              </h3>
-              <p className="text-sm text-blue-700 mb-6">Intelligent weight conversion system for kg and gram repacking with automatic pricing calculations.</p>
+            {/* Item Preparations Status - Enhanced Professional Display */}
+            <div className="bg-white border border-gray-300 rounded-lg mb-6">
+              {/* Header */}
+              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <PackageIcon className="w-5 h-5" />
+                  Item Preparations Status
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">Repackage - Bought in bulk, repackaged into smaller units</p>
+              </div>
+
+              {/* Main Content Grid */}
+              <div className="p-6">
+                <div className="grid grid-cols-3 gap-6">
+                  
+                  {/* Left Panel - Repack Configuration */}
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                        <SettingsIcon className="w-4 h-4" />
+                        Repack Configuration
+                      </h4>
+                      
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-sm font-medium text-blue-700">Number of Packs</label>
+                            <FormField
+                              control={form.control}
+                              name="repackQuantity"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <div className="relative">
+                                      <Input
+                                        type="number"
+                                        min="1"
+                                        max="100"
+                                        {...field}
+                                        onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                        className="h-12 text-center font-bold text-2xl bg-white border-2 border-blue-300"
+                                      />
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium text-blue-700">Quick Pack Options</label>
+                            <div className="grid grid-cols-2 gap-1 mt-1">
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => form.setValue("repackQuantity", 4)}
+                                className="text-xs h-8 bg-white hover:bg-blue-100"
+                              >
+                                4 Packs
+                              </Button>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => form.setValue("repackQuantity", 6)}
+                                className="text-xs h-8 bg-white hover:bg-blue-100"
+                              >
+                                6 Packs
+                              </Button>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => form.setValue("repackQuantity", 8)}
+                                className="text-xs h-8 bg-white hover:bg-blue-100"
+                              >
+                                8 Packs
+                              </Button>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => form.setValue("repackQuantity", 10)}
+                                className="text-xs h-8 bg-white hover:bg-blue-100"
+                              >
+                                10 Packs
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-blue-200 pt-3">
+                          <label className="text-sm font-medium text-blue-700 mb-2 block">Weight per Pack</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <FormField
+                              control={form.control}
+                              name="unitWeight"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      min="0.01"
+                                      step="0.01"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0.01)}
+                                      className="h-10 text-center font-semibold text-lg bg-white border-2 border-blue-300"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="weightUnit"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger className="h-10 bg-white border-2 border-blue-300 font-semibold">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="g">Grams (g)</SelectItem>
+                                      <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-blue-700 mb-2 block">Weight Unit</label>
+                          <div className="text-center text-lg font-bold text-blue-800 bg-white border-2 border-blue-300 rounded px-3 py-2">
+                            {weightUnit === 'kg' ? 'Kilograms (kg)' : 'Grams (g)'}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-blue-700 mb-2 block">Quick Weight Presets</label>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                form.setValue("unitWeight", 250);
+                                form.setValue("weightUnit", "g");
+                              }}
+                              className="text-xs h-8 bg-white hover:bg-blue-100"
+                            >
+                              250g
+                            </Button>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                form.setValue("unitWeight", 500);
+                                form.setValue("weightUnit", "g");
+                              }}
+                              className="text-xs h-8 bg-white hover:bg-blue-100"
+                            >
+                              500g
+                            </Button>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                form.setValue("unitWeight", 1);
+                                form.setValue("weightUnit", "kg");
+                              }}
+                              className="text-xs h-8 bg-white hover:bg-blue-100"
+                            >
+                              1kg
+                            </Button>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                form.setValue("unitWeight", 2);
+                                form.setValue("weightUnit", "kg");
+                              }}
+                              className="text-xs h-8 bg-white hover:bg-blue-100"
+                            >
+                              2kg
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Center Panel - Conversion Summary */}
+                  <div className="space-y-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                        <BarChart3Icon className="w-4 h-4" />
+                        Conversion Summary
+                      </h4>
+                      
+                      {selectedProduct && (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <span className="font-medium text-green-700">Source Product:</span>
+                            <span className="bg-white px-2 py-1 rounded font-semibold text-xs">
+                              {selectedProduct.name.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <span className="font-medium text-green-700">Bulk Weight:</span>
+                            <span className="bg-white px-2 py-1 rounded font-semibold text-xs">
+                              {bulkWeight} {selectedProduct.weightUnit}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <span className="font-medium text-green-700">Total Repack Weight:</span>
+                            <span className="bg-white px-2 py-1 rounded font-semibold text-xs">
+                              {(totalRepackWeight / 1000).toFixed(2)} kg
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <span className="font-medium text-green-700">Bulk Units Needed:</span>
+                            <span className="bg-yellow-100 px-2 py-1 rounded font-semibold text-xs text-orange-800">
+                              {bulkUnitsNeeded} units
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <span className="font-medium text-green-700">Available Stock:</span>
+                            <span className={`px-2 py-1 rounded font-semibold text-xs ${
+                              currentStock >= bulkUnitsNeeded ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {currentStock} units
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pricing Configuration */}
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                        <DollarSignIcon className="w-4 h-4" />
+                        Pricing Configuration
+                      </h4>
+                      
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <FormField
+                            control={form.control}
+                            name="costPrice"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium text-purple-700">Cost Price (₹)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    className="h-9 bg-white border-purple-300"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="sellingPrice"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium text-purple-700">Selling Price (₹)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    className="h-9 bg-white border-purple-300"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <FormField
+                          control={form.control}
+                          name="mrp"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-medium text-purple-700">MRP (₹)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                  className="h-9 bg-white border-purple-300"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Profit Analysis */}
+                        {form.watch("sellingPrice") > 0 && form.watch("costPrice") > 0 && (
+                          <div className="mt-3 p-2 bg-white rounded border border-purple-200">
+                            <div className="text-xs text-purple-700">
+                              <div className="flex justify-between">
+                                <span>Margin:</span>
+                                <span className="font-semibold">₹{(form.watch("sellingPrice") - form.watch("costPrice")).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Profit %:</span>
+                                <span className="font-semibold">{((form.watch("sellingPrice") - form.watch("costPrice")) / form.watch("costPrice") * 100).toFixed(1)}%</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Panel - Auto-Generated Product Details */}
+                  <div className="space-y-4">
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
+                        <ClipboardIcon className="w-4 h-4" />
+                        Auto-Generated Product Details
+                      </h4>
+                      
+                      <div className="space-y-3">
+                        <FormField
+                          control={form.control}
+                          name="newProductName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-medium text-orange-700">Product Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} className="h-9 bg-gray-100 border-orange-300 font-medium" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="grid grid-cols-1 gap-3">
+                          <FormField
+                            control={form.control}
+                            name="newProductSku"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium text-orange-700">SKU</FormLabel>
+                                <FormControl>
+                                  <Input {...field} className="h-9 bg-gray-100 border-orange-300 font-mono text-xs" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="newProductBarcode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium text-orange-700">Barcode</FormLabel>
+                                <FormControl>
+                                  <Input {...field} className="h-9 bg-gray-100 border-orange-300 font-mono text-xs" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Column - Repack Configuration */}
