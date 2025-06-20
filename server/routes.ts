@@ -4793,5 +4793,118 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Repacking API endpoint
+  app.post('/api/repacking', isAuthenticated, async (req, res) => {
+    try {
+      console.log('📦 Creating repack from data:', req.body);
+
+      const {
+        bulkProductId,
+        repackQuantity,
+        unitWeight,
+        weightUnit,
+        costPrice,
+        sellingPrice,
+        mrp,
+        newProductName,
+        newProductSku,
+        newProductBarcode,
+        totalRepackWeight,
+        bulkUnitsNeeded
+      } = req.body;
+
+      // Validate required fields
+      if (!bulkProductId || !repackQuantity || !unitWeight || !newProductName || !newProductSku) {
+        return res.status(400).json({
+          message: 'Missing required fields for repack creation'
+        });
+      }
+
+      // Get the bulk product to validate
+      const bulkProduct = await storage.getProduct(bulkProductId);
+      if (!bulkProduct) {
+        return res.status(404).json({
+          message: 'Bulk product not found'
+        });
+      }
+
+      // Check if there's enough stock
+      if (bulkProduct.stockQuantity < bulkUnitsNeeded) {
+        return res.status(400).json({
+          message: `Insufficient bulk stock. Need ${bulkUnitsNeeded} units, but only ${bulkProduct.stockQuantity} available.`
+        });
+      }
+
+      // Create the new repack product
+      const repackProductData = {
+        name: newProductName,
+        sku: newProductSku,
+        barcode: newProductBarcode || '',
+        description: `Repack from ${bulkProduct.name}`,
+        price: sellingPrice || costPrice || 0,
+        mrp: mrp || 0,
+        cost: costPrice || 0,
+        weight: unitWeight,
+        weightUnit: weightUnit,
+        stockQuantity: repackQuantity,
+        categoryId: bulkProduct.categoryId || 1,
+        active: true,
+        alertThreshold: 5,
+        
+        // Mark as repack product
+        itemPreparationsStatus: 'Repackage',
+        bulkItemName: bulkProduct.name,
+        repackageUnits: repackQuantity.toString(),
+        
+        // Additional product fields with defaults
+        hsnCode: bulkProduct.hsnCode || '',
+        gstCode: bulkProduct.gstCode || 'GST 18%',
+        cgstRate: bulkProduct.cgstRate || '0',
+        sgstRate: bulkProduct.sgstRate || '0',
+        igstRate: bulkProduct.igstRate || '0',
+        cessRate: bulkProduct.cessRate || '0',
+        taxCalculationMethod: bulkProduct.taxCalculationMethod || 'exclusive',
+        supplierId: bulkProduct.supplierId || null,
+        manufacturerId: bulkProduct.manufacturerId || null
+      };
+
+      // Create the repack product
+      const newProduct = await storage.createProduct(repackProductData);
+
+      // Update bulk product stock (reduce by bulkUnitsNeeded)
+      const updatedBulkStock = bulkProduct.stockQuantity - bulkUnitsNeeded;
+      await storage.updateProduct(bulkProductId, {
+        stockQuantity: updatedBulkStock
+      });
+
+      console.log(`✅ Repack created successfully: ${newProduct.name}`);
+      console.log(`📦 Bulk stock updated: ${bulkProduct.name} (${bulkProduct.stockQuantity} -> ${updatedBulkStock})`);
+
+      res.status(201).json({
+        message: 'Repack created successfully',
+        repackProduct: newProduct,
+        bulkProductUpdated: {
+          id: bulkProductId,
+          previousStock: bulkProduct.stockQuantity,
+          newStock: updatedBulkStock,
+          unitsUsed: bulkUnitsNeeded
+        },
+        repackDetails: {
+          quantity: repackQuantity,
+          unitWeight: unitWeight,
+          weightUnit: weightUnit,
+          totalWeight: totalRepackWeight
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Error creating repack:', error);
+      res.status(500).json({
+        message: 'Failed to create repack',
+        error: error.message
+      });
+    }
+  });
+
   return httpServer;
 }

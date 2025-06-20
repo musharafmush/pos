@@ -233,14 +233,23 @@ export default function RepackingProfessional() {
 
   const repackingMutation = useMutation({
     mutationFn: async (data: RepackingFormValues) => {
-      return apiRequest("/api/repacking", {
+      const response = await fetch("/api/repacking", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           ...data,
           totalRepackWeight: totalRepackWeightInGrams,
           bulkUnitsNeeded,
         }),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "Repack Created", description: "Product repack has been created successfully" });
