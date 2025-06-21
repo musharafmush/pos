@@ -1936,7 +1936,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`✅ Direct query found ${sales.length} sales`);
 
-        // Format the results
+        // Get sale items for all sales
+        const saleIds = sales.map(sale => sale.id);
+        let allSaleItems = [];
+        
+        if (saleIds.length > 0) {
+          const saleItemsQuery = `
+            SELECT 
+              si.sale_id,
+              si.id,
+              si.product_id,
+              si.quantity,
+              si.unit_price,
+              si.price,
+              si.subtotal,
+              si.total,
+              p.name as product_name,
+              p.sku as product_sku
+            FROM sale_items si
+            LEFT JOIN products p ON si.product_id = p.id
+            WHERE si.sale_id IN (${saleIds.map(() => '?').join(',')})
+            ORDER BY si.id
+          `;
+          
+          allSaleItems = sqlite.prepare(saleItemsQuery).all(...saleIds);
+          console.log(`📦 Found ${allSaleItems.length} sale items for ${saleIds.length} sales`);
+        }
+
+        // Group sale items by sale_id
+        const saleItemsMap = {};
+        allSaleItems.forEach(item => {
+          if (!saleItemsMap[item.sale_id]) {
+            saleItemsMap[item.sale_id] = [];
+          }
+          saleItemsMap[item.sale_id].push({
+            id: item.id,
+            productId: item.product_id,
+            quantity: item.quantity,
+            unitPrice: item.unit_price || item.price,
+            price: item.price,
+            subtotal: item.subtotal || item.total,
+            total: item.total,
+            product: {
+              id: item.product_id,
+              name: item.product_name || `Product #${item.product_id}`,
+              sku: item.product_sku || ''
+            }
+          });
+        });
+
+        // Format the results with sale items
         const formattedSales = sales.map(sale => ({
           id: sale.id,
           orderNumber: sale.order_number,
@@ -1958,7 +2007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: sale.userName || 'System User'
           },
           itemsSummary: sale.items_summary,
-          items: []
+          items: saleItemsMap[sale.id] || []
         }));
 
         return res.json(formattedSales);
