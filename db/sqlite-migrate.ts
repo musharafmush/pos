@@ -27,7 +27,10 @@ export async function initializeDatabase() {
     'returns',
     'return_items',
     'expense_categories',
-    'expenses'
+    'expenses',
+    'offers',
+    'offer_usage',
+    'customer_loyalty'
   ];
 
   // Users table
@@ -443,6 +446,135 @@ export async function initializeDatabase() {
     }
 
     console.log('✅ Default expense categories created');
+  }
+
+  // Offers table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS offers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      offer_type TEXT NOT NULL,
+      discount_value TEXT NOT NULL,
+      min_purchase_amount TEXT DEFAULT '0',
+      max_discount_amount TEXT,
+      buy_quantity INTEGER,
+      get_quantity INTEGER,
+      free_product_id INTEGER,
+      valid_from DATETIME,
+      valid_to DATETIME,
+      time_start TEXT,
+      time_end TEXT,
+      applicable_categories TEXT,
+      applicable_products TEXT,
+      points_multiplier TEXT DEFAULT '1',
+      points_threshold TEXT DEFAULT '1000',
+      points_reward TEXT DEFAULT '10',
+      usage_limit INTEGER,
+      usage_count INTEGER DEFAULT 0,
+      per_customer_limit INTEGER,
+      active INTEGER NOT NULL DEFAULT 1,
+      priority INTEGER DEFAULT 1,
+      created_by INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (free_product_id) REFERENCES products (id),
+      FOREIGN KEY (created_by) REFERENCES users (id)
+    )
+  `);
+
+  // Offer usage tracking table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS offer_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      offer_id INTEGER NOT NULL,
+      sale_id INTEGER NOT NULL,
+      customer_id INTEGER,
+      discount_amount TEXT NOT NULL,
+      original_amount TEXT NOT NULL,
+      final_amount TEXT NOT NULL,
+      points_earned TEXT DEFAULT '0',
+      used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (offer_id) REFERENCES offers (id),
+      FOREIGN KEY (sale_id) REFERENCES sales (id),
+      FOREIGN KEY (customer_id) REFERENCES customers (id)
+    )
+  `);
+
+  // Customer loyalty points table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS customer_loyalty (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER NOT NULL UNIQUE,
+      total_points TEXT DEFAULT '0',
+      used_points TEXT DEFAULT '0',
+      available_points TEXT DEFAULT '0',
+      last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers (id)
+    )
+  `);
+
+  // Create default offers
+  const existingOffers = db.prepare('SELECT COUNT(*) as count FROM offers').get();
+  if (existingOffers.count === 0) {
+    const defaultOffers = [
+      {
+        name: 'Weekend Special',
+        description: '10% off on weekend purchases above ₹500',
+        offer_type: 'percentage',
+        discount_value: '10',
+        min_purchase_amount: '500',
+        max_discount_amount: '200',
+        time_start: '09:00',
+        time_end: '21:00',
+        created_by: 1
+      },
+      {
+        name: 'Buy 2 Get 1 Free',
+        description: 'Buy 2 items, get 1 free (lowest priced item)',
+        offer_type: 'buy_x_get_y',
+        discount_value: '100',
+        buy_quantity: 2,
+        get_quantity: 1,
+        created_by: 1
+      },
+      {
+        name: 'Loyalty Points',
+        description: 'Earn 10 points for every ₹1000 spent',
+        offer_type: 'loyalty_points',
+        discount_value: '0',
+        points_threshold: '1000',
+        points_reward: '10',
+        created_by: 1
+      }
+    ];
+
+    const insertOffer = db.prepare(`
+      INSERT INTO offers (name, description, offer_type, discount_value, min_purchase_amount, max_discount_amount, 
+                         buy_quantity, get_quantity, time_start, time_end, points_threshold, points_reward, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const offer of defaultOffers) {
+      insertOffer.run(
+        offer.name,
+        offer.description,
+        offer.offer_type,
+        offer.discount_value,
+        offer.min_purchase_amount || null,
+        offer.max_discount_amount || null,
+        offer.buy_quantity || null,
+        offer.get_quantity || null,
+        offer.time_start || null,
+        offer.time_end || null,
+        offer.points_threshold || null,
+        offer.points_reward || null,
+        offer.created_by
+      );
+    }
+
+    console.log('✅ Default offers created');
   }
 
   db.close();

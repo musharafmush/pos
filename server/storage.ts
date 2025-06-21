@@ -14,6 +14,9 @@ import {
   inventoryAdjustments,
   expenses,
   expenseCategories,
+  offers,
+  offerUsage,
+  customerLoyalty,
   User,
   Product,
   Category,
@@ -29,7 +32,13 @@ import {
   Expense,
   ExpenseCategory,
   ExpenseInsert,
-  ExpenseCategoryInsert
+  ExpenseCategoryInsert,
+  Offer,
+  OfferInsert,
+  OfferUsage,
+  OfferUsageInsert,
+  CustomerLoyalty,
+  CustomerLoyaltyInsert
 } from "../shared/schema.js";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -2923,6 +2932,332 @@ export const storage = {
       paidExpenses: paidResult.count,
       thisMonthTotal: thisMonthResult.total,
       lastMonthTotal: lastMonthResult.total
+    };
+  },
+
+  // Offer Management
+  async createOffer(data: OfferInsert): Promise<Offer> {
+    const [offer] = await db.insert(offers).values(data).returning();
+    return offer;
+  },
+
+  async getOfferById(id: number): Promise<Offer | null> {
+    const offer = await db.query.offers.findFirst({
+      where: eq(offers.id, id),
+      with: {
+        creator: true,
+        freeProduct: true
+      }
+    });
+    return offer || null;
+  },
+
+  async listOffers(filters?: {
+    active?: boolean;
+    offerType?: string;
+    limit?: number;
+  }): Promise<Offer[]> {
+    const conditions = [];
+    if (filters?.active !== undefined) {
+      conditions.push(eq(offers.active, filters.active));
+    }
+    if (filters?.offerType) {
+      conditions.push(eq(offers.offerType, filters.offerType));
+    }
+
+    const query = db.query.offers.findMany({
+      where: conditions.length > 0 ? and(...conditions) : undefined,
+      orderBy: [desc(offers.priority), desc(offers.createdAt)],
+      limit: filters?.limit || 50,
+      with: {
+        creator: true,
+        freeProduct: true
+      }
+    });
+
+    return await query;
+  },
+
+  async updateOffer(id: number, data: Partial<OfferInsert>): Promise<Offer | null> {
+    const [updatedOffer] = await db
+      .update(offers)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(offers.id, id))
+      .returning();
+    return updatedOffer || null;
+  },
+
+  async deleteOffer(id: number): Promise<boolean> {
+    const result = await db.delete(offers).where(eq(offers.id, id));
+    return result.rowsAffected > 0;
+  },
+
+  async getActiveOffers(): Promise<Offer[]> {
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
+    return await db.query.offers.findMany({
+      where: and(
+        eq(offers.active, true),
+        or(
+          eq(offers.validFrom, null),
+          lte(offers.validFrom, now)
+        ),
+        or(
+          eq(offers.validTo, null),
+          gte(offers.validTo, now)
+        )
+      ),
+      orderBy: [desc(offers.priority)],
+      with: {
+        freeProduct: true
+      }
+    });
+  },
+
+  async applyOfferToSale(offerId: number, saleId: number, customerId: number | null, discountAmount: number, originalAmount: number, finalAmount: number, pointsEarned?: number): Promise<OfferUsage> {
+    const [usage] = await db.insert(offerUsage).values({
+      offerId,
+      saleId,
+      customerId,
+      discountAmount: discountAmount.toString(),
+      originalAmount: originalAmount.toString(),
+      finalAmount: finalAmount.toString(),
+      pointsEarned: pointsEarned?.toString() || '0'
+    }).returning();
+
+    // Update offer usage count
+    await db
+      .update(offers)
+      .set({ 
+        usageCount: sql`${offers.usageCount} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(offers.id, offerId));
+
+    return usage;
+  },
+
+  async getOfferUsageStats(offerId: number): Promise<{
+    totalUsage: number;
+    totalDiscount: number;
+    totalRevenue: number;
+    avgDiscount: number;
+  }> {
+    const [stats] = await db
+      .select({
+        totalUsage: sql<number>`COUNT(*)`,
+        totalDiscount: sql<number>`COALESCE(SUM(CAST(${offerUsage.discountAmount} AS DECIMAL)), 0)`,
+        totalRevenue: sql<number>`COALESCE(SUM(CAST(${offerUsage.finalAmount} AS DECIMAL)), 0)`,
+        avgDiscount: sql<number>`COALESCE(AVG(CAST(${offerUsage.discountAmount} AS DECIMAL)), 0)`
+      })
+      .from(offerUsage)
+      .where(eq(offerUsage.offerId, offerId));
+
+    return {
+      totalUsage: stats.totalUsage,
+      totalDiscount: stats.totalDiscount,
+      totalRevenue: stats.totalRevenue,
+      avgDiscount: stats.avgDiscount
+    };
+  },
+
+  async getOfferUsageHistory(offerId: number, limit: number = 20): Promise<OfferUsage[]> {
+    return await db.query.offerUsage.findMany({
+      where: eq(offerUsage.offerId, offerId),
+      orderBy: [desc(offerUsage.usedAt)],
+      limit,
+      with: {
+        offer: true,
+        sale: true,
+        customer: true
+      }
+    });
+  },
+
+  // Customer Loyalty Management
+  async getCustomerLoyalty(customerId: number): Promise<CustomerLoyalty | null> {
+    const loyalty = await db.query.customerLoyalty.findFirst({
+      where: eq(customerLoyalty.customerId, customerId)
+    });
+    return loyalty || null;
+  },
+
+  async createCustomerLoyalty(customerId: number): Promise<CustomerLoyalty> {
+    const [loyalty] = await db.insert(customerLoyalty).values({
+      customerId,
+      totalPoints: '0',
+      usedPoints: '0',
+      availablePoints: '0'
+    }).returning();
+    return loyalty;
+  },
+
+  async updateCustomerLoyalty(customerId: number, pointsToAdd: number): Promise<CustomerLoyalty | null> {
+    let loyalty = await this.getCustomerLoyalty(customerId);
+    
+    if (!loyalty) {
+      loyalty = await this.createCustomerLoyalty(customerId);
+    }
+
+    const currentTotal = parseFloat(loyalty.totalPoints.toString());
+    const currentAvailable = parseFloat(loyalty.availablePoints.toString());
+    const newTotal = currentTotal + pointsToAdd;
+    const newAvailable = currentAvailable + pointsToAdd;
+
+    const [updated] = await db
+      .update(customerLoyalty)
+      .set({
+        totalPoints: newTotal.toString(),
+        availablePoints: newAvailable.toString(),
+        lastUpdated: new Date()
+      })
+      .where(eq(customerLoyalty.customerId, customerId))
+      .returning();
+
+    return updated;
+  },
+
+  async redeemLoyaltyPoints(customerId: number, pointsToRedeem: number): Promise<CustomerLoyalty | null> {
+    const loyalty = await this.getCustomerLoyalty(customerId);
+    if (!loyalty) return null;
+
+    const availablePoints = parseFloat(loyalty.availablePoints.toString());
+    if (availablePoints < pointsToRedeem) {
+      throw new Error('Insufficient loyalty points');
+    }
+
+    const newUsed = parseFloat(loyalty.usedPoints.toString()) + pointsToRedeem;
+    const newAvailable = availablePoints - pointsToRedeem;
+
+    const [updated] = await db
+      .update(customerLoyalty)
+      .set({
+        usedPoints: newUsed.toString(),
+        availablePoints: newAvailable.toString(),
+        lastUpdated: new Date()
+      })
+      .where(eq(customerLoyalty.customerId, customerId))
+      .returning();
+
+    return updated;
+  },
+
+  async calculateOfferDiscount(offer: Offer, cartItems: any[], cartTotal: number, customerId?: number): Promise<{
+    applicable: boolean;
+    discountAmount: number;
+    reason?: string;
+    freeItems?: any[];
+    pointsEarned?: number;
+  }> {
+    // Check if offer is valid by time
+    const now = new Date();
+    if (offer.validFrom && offer.validFrom > now) {
+      return { applicable: false, discountAmount: 0, reason: 'Offer not yet valid' };
+    }
+    if (offer.validTo && offer.validTo < now) {
+      return { applicable: false, discountAmount: 0, reason: 'Offer has expired' };
+    }
+
+    // Check time-based offers
+    if (offer.timeStart && offer.timeEnd) {
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      if (currentTime < offer.timeStart || currentTime > offer.timeEnd) {
+        return { applicable: false, discountAmount: 0, reason: 'Offer not valid at this time' };
+      }
+    }
+
+    // Check minimum purchase amount
+    const minAmount = parseFloat(offer.minPurchaseAmount?.toString() || '0');
+    if (cartTotal < minAmount) {
+      return { applicable: false, discountAmount: 0, reason: `Minimum purchase amount ₹${minAmount} required` };
+    }
+
+    // Check usage limits
+    if (offer.usageLimit && offer.usageCount >= offer.usageLimit) {
+      return { applicable: false, discountAmount: 0, reason: 'Offer usage limit reached' };
+    }
+
+    let discountAmount = 0;
+    let freeItems: any[] = [];
+    let pointsEarned = 0;
+
+    switch (offer.offerType) {
+      case 'percentage':
+        discountAmount = (cartTotal * parseFloat(offer.discountValue.toString())) / 100;
+        const maxDiscount = parseFloat(offer.maxDiscountAmount?.toString() || '0');
+        if (maxDiscount > 0 && discountAmount > maxDiscount) {
+          discountAmount = maxDiscount;
+        }
+        break;
+
+      case 'flat_amount':
+        discountAmount = parseFloat(offer.discountValue.toString());
+        if (discountAmount > cartTotal) {
+          discountAmount = cartTotal;
+        }
+        break;
+
+      case 'buy_x_get_y':
+        if (offer.buyQuantity && offer.getQuantity) {
+          const eligibleItems = cartItems.filter(item => {
+            if (offer.applicableProducts) {
+              const applicableProducts = JSON.parse(offer.applicableProducts);
+              return applicableProducts.includes(item.productId);
+            }
+            return true;
+          });
+
+          const totalEligibleQty = eligibleItems.reduce((sum, item) => sum + item.quantity, 0);
+          const freeQty = Math.floor(totalEligibleQty / offer.buyQuantity) * offer.getQuantity;
+
+          if (freeQty > 0) {
+            // Find lowest priced items for free
+            const sortedItems = eligibleItems.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+            let remainingFreeQty = freeQty;
+            
+            for (const item of sortedItems) {
+              if (remainingFreeQty <= 0) break;
+              const freeFromThisItem = Math.min(remainingFreeQty, item.quantity);
+              freeItems.push({
+                ...item,
+                quantity: freeFromThisItem,
+                discountAmount: freeFromThisItem * parseFloat(item.price)
+              });
+              discountAmount += freeFromThisItem * parseFloat(item.price);
+              remainingFreeQty -= freeFromThisItem;
+            }
+          }
+        }
+        break;
+
+      case 'loyalty_points':
+        const threshold = parseFloat(offer.pointsThreshold?.toString() || '1000');
+        const reward = parseFloat(offer.pointsReward?.toString() || '10');
+        if (cartTotal >= threshold) {
+          pointsEarned = Math.floor(cartTotal / threshold) * reward;
+        }
+        break;
+
+      case 'category_based':
+        if (offer.applicableCategories) {
+          const applicableCategories = JSON.parse(offer.applicableCategories);
+          const eligibleItems = cartItems.filter(item => 
+            applicableCategories.includes(item.categoryId)
+          );
+          const eligibleTotal = eligibleItems.reduce((sum, item) => 
+            sum + (parseFloat(item.price) * item.quantity), 0
+          );
+          discountAmount = (eligibleTotal * parseFloat(offer.discountValue.toString())) / 100;
+        }
+        break;
+    }
+
+    return {
+      applicable: discountAmount > 0 || pointsEarned > 0,
+      discountAmount,
+      freeItems,
+      pointsEarned
     };
   }
 };

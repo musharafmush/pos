@@ -643,6 +643,121 @@ export type ExpenseInsert = z.infer<typeof expenseInsertSchema>;
 export const expenseSelectSchema = createSelectSchema(expenses);
 export type Expense = z.infer<typeof expenseSelectSchema>;
 
+// Offers table for managing promotional offers
+export const offers = pgTable('offers', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  offerType: text('offer_type').notNull(), // 'percentage', 'flat_amount', 'buy_x_get_y', 'time_based', 'category_based', 'loyalty_points'
+  discountValue: decimal('discount_value', { precision: 10, scale: 2 }).notNull(),
+  minPurchaseAmount: decimal('min_purchase_amount', { precision: 10, scale: 2 }).default('0'),
+  maxDiscountAmount: decimal('max_discount_amount', { precision: 10, scale: 2 }),
+  
+  // Buy X Get Y specific fields
+  buyQuantity: integer('buy_quantity'),
+  getQuantity: integer('get_quantity'),
+  freeProductId: integer('free_product_id').references(() => products.id),
+  
+  // Time-based offer fields
+  validFrom: timestamp('valid_from'),
+  validTo: timestamp('valid_to'),
+  timeStart: text('time_start'), // HH:MM format
+  timeEnd: text('time_end'), // HH:MM format
+  
+  // Category/Product specific
+  applicableCategories: text('applicable_categories'), // JSON array of category IDs
+  applicableProducts: text('applicable_products'), // JSON array of product IDs
+  
+  // Loyalty points
+  pointsMultiplier: decimal('points_multiplier', { precision: 5, scale: 2 }).default('1'),
+  pointsThreshold: decimal('points_threshold', { precision: 10, scale: 2 }).default('1000'),
+  pointsReward: decimal('points_reward', { precision: 10, scale: 2 }).default('10'),
+  
+  // Usage tracking
+  usageLimit: integer('usage_limit'), // null = unlimited
+  usageCount: integer('usage_count').default(0),
+  perCustomerLimit: integer('per_customer_limit'),
+  
+  // Status and metadata
+  active: boolean('active').notNull().default(true),
+  priority: integer('priority').default(1), // Higher number = higher priority
+  createdBy: integer('created_by').references(() => users.id).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// Offer usage tracking
+export const offerUsage = pgTable('offer_usage', {
+  id: serial('id').primaryKey(),
+  offerId: integer('offer_id').references(() => offers.id).notNull(),
+  saleId: integer('sale_id').references(() => sales.id).notNull(),
+  customerId: integer('customer_id').references(() => customers.id),
+  discountAmount: decimal('discount_amount', { precision: 10, scale: 2 }).notNull(),
+  originalAmount: decimal('original_amount', { precision: 10, scale: 2 }).notNull(),
+  finalAmount: decimal('final_amount', { precision: 10, scale: 2 }).notNull(),
+  pointsEarned: decimal('points_earned', { precision: 10, scale: 2 }).default('0'),
+  usedAt: timestamp('used_at').defaultNow().notNull()
+});
+
+// Customer loyalty points
+export const customerLoyalty = pgTable('customer_loyalty', {
+  id: serial('id').primaryKey(),
+  customerId: integer('customer_id').references(() => customers.id).notNull().unique(),
+  totalPoints: decimal('total_points', { precision: 10, scale: 2 }).default('0'),
+  usedPoints: decimal('used_points', { precision: 10, scale: 2 }).default('0'),
+  availablePoints: decimal('available_points', { precision: 10, scale: 2 }).default('0'),
+  lastUpdated: timestamp('last_updated').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Relations for offers
+export const offersRelations = relations(offers, ({ one, many }) => ({
+  creator: one(users, { fields: [offers.createdBy], references: [users.id] }),
+  freeProduct: one(products, { fields: [offers.freeProductId], references: [products.id] }),
+  usage: many(offerUsage)
+}));
+
+export const offerUsageRelations = relations(offerUsage, ({ one }) => ({
+  offer: one(offers, { fields: [offerUsage.offerId], references: [offers.id] }),
+  sale: one(sales, { fields: [offerUsage.saleId], references: [sales.id] }),
+  customer: one(customers, { fields: [offerUsage.customerId], references: [customers.id] })
+}));
+
+export const customerLoyaltyRelations = relations(customerLoyalty, ({ one }) => ({
+  customer: one(customers, { fields: [customerLoyalty.customerId], references: [customers.id] })
+}));
+
+// Offers validation schemas
+export const offerInsertSchema = createInsertSchema(offers, {
+  name: (schema) => schema.min(1, "Offer name is required"),
+  offerType: (schema) => schema.refine(val => 
+    ['percentage', 'flat_amount', 'buy_x_get_y', 'time_based', 'category_based', 'loyalty_points'].includes(val), 
+    "Invalid offer type"
+  ),
+  discountValue: (schema) => schema.min(0, "Discount value must be positive"),
+  minPurchaseAmount: (schema) => schema.min(0, "Minimum purchase amount must be positive").optional(),
+  maxDiscountAmount: (schema) => schema.min(0, "Maximum discount amount must be positive").optional(),
+  buyQuantity: (schema) => schema.min(1, "Buy quantity must be at least 1").optional(),
+  getQuantity: (schema) => schema.min(1, "Get quantity must be at least 1").optional(),
+  usageLimit: (schema) => schema.min(1, "Usage limit must be at least 1").optional(),
+  perCustomerLimit: (schema) => schema.min(1, "Per customer limit must be at least 1").optional(),
+  priority: (schema) => schema.min(1, "Priority must be at least 1").optional(),
+  active: (schema) => schema.optional()
+});
+export type OfferInsert = z.infer<typeof offerInsertSchema>;
+export const offerSelectSchema = createSelectSchema(offers);
+export type Offer = z.infer<typeof offerSelectSchema>;
+
+export const offerUsageInsertSchema = createInsertSchema(offerUsage);
+export type OfferUsageInsert = z.infer<typeof offerUsageInsertSchema>;
+export const offerUsageSelectSchema = createSelectSchema(offerUsage);
+export type OfferUsage = z.infer<typeof offerUsageSelectSchema>;
+
+export const customerLoyaltyInsertSchema = createInsertSchema(customerLoyalty);
+export type CustomerLoyaltyInsert = z.infer<typeof customerLoyaltyInsertSchema>;
+export const customerLoyaltySelectSchema = createSelectSchema(customerLoyalty);
+export type CustomerLoyalty = z.infer<typeof customerLoyaltySelectSchema>;
+
 export const settingsInsertSchema = createInsertSchema(settings, {
   key: (schema) => schema.min(1, "Key must not be empty"),
   value: (schema) => schema.min(1, "Value must not be empty")
