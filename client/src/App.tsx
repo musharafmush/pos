@@ -62,6 +62,7 @@ import AutoPrinterSetup from "@/pages/auto-printer-setup";
 import CashRegisterManagement from "@/pages/cash-register-management";
 import ExpenseManagement from "@/pages/expense-management";
 import ExpenseCategories from "@/pages/expense-categories";
+import OfferManagement from "@/pages/offer-management";
 
 function Router() {
   return (
