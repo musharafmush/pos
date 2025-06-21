@@ -5318,6 +5318,292 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Tax reports endpoint
+  app.get("/api/reports/tax", isAuthenticated, async (req, res) => {
+    try {
+      console.log('📊 Tax reports endpoint accessed');
+      const { sqlite } = await import('@db');
+      
+      const dateRange = req.query.range as string || '30days';
+      console.log('📅 Date range:', dateRange);
+      
+      let daysBack = 30;
+      if (dateRange === '90days') daysBack = 90;
+      if (dateRange === '1year') daysBack = 365;
+
+      // Tax summary from sales
+      const taxSummaryQuery = `
+        SELECT 
+          COUNT(s.id) as totalTransactions,
+          ROUND(COALESCE(SUM(s.total), 0), 2) as totalSales,
+          ROUND(COALESCE(SUM(s.tax), 0), 2) as totalTaxCollected,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.cgst_rate IS NOT NULL AND p.cgst_rate != '' 
+            THEN (si.subtotal * CAST(p.cgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as cgstCollected,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.sgst_rate IS NOT NULL AND p.sgst_rate != '' 
+            THEN (si.subtotal * CAST(p.sgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as sgstCollected,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.igst_rate IS NOT NULL AND p.igst_rate != '' 
+            THEN (si.subtotal * CAST(p.igst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as igstCollected,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.cess_rate IS NOT NULL AND p.cess_rate != '' 
+            THEN (si.subtotal * CAST(p.cess_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as cessCollected
+        FROM sales s
+        LEFT JOIN sale_items si ON s.id = si.sale_id
+        LEFT JOIN products p ON si.product_id = p.id
+        WHERE s.created_at >= date('now', '-${daysBack} days')
+      `;
+
+      const taxSummary = sqlite.prepare(taxSummaryQuery).get();
+
+      // Purchase tax summary
+      const purchaseTaxQuery = `
+        SELECT 
+          ROUND(COALESCE(SUM(pu.total), 0), 2) as totalPurchases,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.cgst_rate IS NOT NULL AND p.cgst_rate != '' 
+            THEN (pi.subtotal * CAST(p.cgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as purchaseCgst,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.sgst_rate IS NOT NULL AND p.sgst_rate != '' 
+            THEN (pi.subtotal * CAST(p.sgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as purchaseSgst,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.igst_rate IS NOT NULL AND p.igst_rate != '' 
+            THEN (pi.subtotal * CAST(p.igst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as purchaseIgst
+        FROM purchases pu
+        LEFT JOIN purchase_items pi ON pu.id = pi.purchase_id
+        LEFT JOIN products p ON pi.product_id = p.id
+        WHERE pu.created_at >= date('now', '-${daysBack} days')
+      `;
+
+      const purchaseTax = sqlite.prepare(purchaseTaxQuery).get();
+
+      // Tax breakdown by rate
+      const taxBreakdownQuery = `
+        SELECT 
+          COALESCE(
+            CAST(p.cgst_rate AS DECIMAL) + CAST(p.sgst_rate AS DECIMAL),
+            CAST(p.igst_rate AS DECIMAL),
+            0
+          ) as taxRate,
+          COUNT(DISTINCT s.id) as salesCount,
+          ROUND(SUM(si.subtotal), 2) as salesAmount,
+          ROUND(SUM(
+            CASE WHEN p.cgst_rate IS NOT NULL AND p.cgst_rate != '' 
+            THEN (si.subtotal * CAST(p.cgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 2) as cgstAmount,
+          ROUND(SUM(
+            CASE WHEN p.sgst_rate IS NOT NULL AND p.sgst_rate != '' 
+            THEN (si.subtotal * CAST(p.sgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 2) as sgstAmount,
+          ROUND(SUM(
+            CASE WHEN p.igst_rate IS NOT NULL AND p.igst_rate != '' 
+            THEN (si.subtotal * CAST(p.igst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 2) as igstAmount,
+          ROUND(SUM(
+            CASE WHEN p.cess_rate IS NOT NULL AND p.cess_rate != '' 
+            THEN (si.subtotal * CAST(p.cess_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 2) as cessAmount
+        FROM sales s
+        LEFT JOIN sale_items si ON s.id = si.sale_id
+        LEFT JOIN products p ON si.product_id = p.id
+        WHERE s.created_at >= date('now', '-${daysBack} days')
+        GROUP BY taxRate
+        ORDER BY taxRate
+      `;
+
+      const taxBreakdown = sqlite.prepare(taxBreakdownQuery).all().map(row => ({
+        ...row,
+        totalTaxAmount: (row.cgstAmount || 0) + (row.sgstAmount || 0) + (row.igstAmount || 0) + (row.cessAmount || 0)
+      }));
+
+      // HSN Summary
+      const hsnSummaryQuery = `
+        SELECT 
+          COALESCE(p.hsn_code, 'N/A') as hsnCode,
+          p.name as description,
+          SUM(si.quantity) as quantity,
+          ROUND(SUM(si.subtotal), 2) as value,
+          ROUND(SUM(si.subtotal), 2) as taxableValue,
+          COALESCE(CAST(p.cgst_rate AS DECIMAL), 0) as cgstRate,
+          COALESCE(CAST(p.sgst_rate AS DECIMAL), 0) as sgstRate,
+          COALESCE(CAST(p.igst_rate AS DECIMAL), 0) as igstRate,
+          ROUND(SUM(
+            CASE WHEN p.cgst_rate IS NOT NULL AND p.cgst_rate != '' 
+            THEN (si.subtotal * CAST(p.cgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 2) as cgstAmount,
+          ROUND(SUM(
+            CASE WHEN p.sgst_rate IS NOT NULL AND p.sgst_rate != '' 
+            THEN (si.subtotal * CAST(p.sgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 2) as sgstAmount,
+          ROUND(SUM(
+            CASE WHEN p.igst_rate IS NOT NULL AND p.igst_rate != '' 
+            THEN (si.subtotal * CAST(p.igst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 2) as igstAmount
+        FROM sales s
+        LEFT JOIN sale_items si ON s.id = si.sale_id
+        LEFT JOIN products p ON si.product_id = p.id
+        WHERE s.created_at >= date('now', '-${daysBack} days')
+        GROUP BY p.hsn_code, p.name, p.cgst_rate, p.sgst_rate, p.igst_rate
+        ORDER BY SUM(si.subtotal) DESC
+        LIMIT 20
+      `;
+
+      const hsnSummary = sqlite.prepare(hsnSummaryQuery).all().map(row => ({
+        ...row,
+        totalTaxAmount: (row.cgstAmount || 0) + (row.sgstAmount || 0) + (row.igstAmount || 0)
+      }));
+
+      // Recent tax transactions
+      const recentTransactionsQuery = `
+        SELECT 
+          s.id,
+          'sale' as type,
+          s.order_number as transactionNumber,
+          s.created_at as date,
+          COALESCE(c.name, 'Walk-in Customer') as customerSupplier,
+          s.total as totalAmount,
+          (s.total - COALESCE(s.tax, 0)) as taxableAmount,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.cgst_rate IS NOT NULL AND p.cgst_rate != '' 
+            THEN (si.subtotal * CAST(p.cgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as cgst,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.sgst_rate IS NOT NULL AND p.sgst_rate != '' 
+            THEN (si.subtotal * CAST(p.sgst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as sgst,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.igst_rate IS NOT NULL AND p.igst_rate != '' 
+            THEN (si.subtotal * CAST(p.igst_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as igst,
+          ROUND(COALESCE(SUM(
+            CASE WHEN p.cess_rate IS NOT NULL AND p.cess_rate != '' 
+            THEN (si.subtotal * CAST(p.cess_rate AS DECIMAL) / 100) 
+            ELSE 0 END
+          ), 0), 2) as cess,
+          COALESCE(s.tax, 0) as totalTax,
+          s.status
+        FROM sales s
+        LEFT JOIN customers c ON s.customer_id = c.id
+        LEFT JOIN sale_items si ON s.id = si.sale_id
+        LEFT JOIN products p ON si.product_id = p.id
+        WHERE s.created_at >= date('now', '-${daysBack} days')
+        GROUP BY s.id, s.order_number, s.created_at, c.name, s.total, s.tax, s.status
+        ORDER BY s.created_at DESC
+        LIMIT 15
+      `;
+
+      const recentTransactions = sqlite.prepare(recentTransactionsQuery).all();
+
+      // Monthly trends
+      const monthlyTrendsQuery = `
+        SELECT 
+          strftime('%Y-%m', s.created_at) as month,
+          ROUND(SUM(COALESCE(s.tax, 0)), 2) as salesTax,
+          0 as purchaseTax,
+          ROUND(SUM(COALESCE(s.tax, 0)), 2) as netTax
+        FROM sales s
+        WHERE s.created_at >= date('now', '-12 months')
+        GROUP BY strftime('%Y-%m', s.created_at)
+        ORDER BY month DESC
+        LIMIT 12
+      `;
+
+      const monthlyTrends = sqlite.prepare(monthlyTrendsQuery).all();
+
+      // Compliance alerts
+      const complianceAlerts = [];
+      
+      // Check for missing HSN codes
+      const missingHsnQuery = `
+        SELECT COUNT(*) as count
+        FROM products p
+        WHERE (p.hsn_code IS NULL OR p.hsn_code = '') AND p.active = 1
+      `;
+      const missingHsn = sqlite.prepare(missingHsnQuery).get();
+      
+      if (missingHsn.count > 0) {
+        complianceAlerts.push({
+          type: 'warning',
+          message: `${missingHsn.count} products missing HSN codes`,
+          description: 'HSN codes are mandatory for GST compliance. Please update product information.',
+          actionRequired: true
+        });
+      }
+
+      // Check for zero tax rates
+      const zeroTaxQuery = `
+        SELECT COUNT(*) as count
+        FROM products p
+        WHERE (p.cgst_rate IS NULL OR p.cgst_rate = '' OR p.cgst_rate = '0')
+        AND (p.sgst_rate IS NULL OR p.sgst_rate = '' OR p.sgst_rate = '0')
+        AND (p.igst_rate IS NULL OR p.igst_rate = '' OR p.igst_rate = '0')
+        AND p.active = 1
+      `;
+      const zeroTax = sqlite.prepare(zeroTaxQuery).get();
+      
+      if (zeroTax.count > 0) {
+        complianceAlerts.push({
+          type: 'info',
+          message: `${zeroTax.count} products with zero tax rates`,
+          description: 'Verify if these products are exempt or if tax rates need to be configured.',
+          actionRequired: false
+        });
+      }
+
+      const result = {
+        taxSummary: {
+          totalSales: taxSummary.totalSales || 0,
+          totalTaxCollected: taxSummary.totalTaxCollected || 0,
+          cgstCollected: taxSummary.cgstCollected || 0,
+          sgstCollected: taxSummary.sgstCollected || 0,
+          igstCollected: taxSummary.igstCollected || 0,
+          cessCollected: taxSummary.cessCollected || 0,
+          totalPurchases: purchaseTax.totalPurchases || 0,
+          totalTaxPaid: (purchaseTax.purchaseCgst || 0) + (purchaseTax.purchaseSgst || 0) + (purchaseTax.purchaseIgst || 0),
+          netTaxLiability: (taxSummary.totalTaxCollected || 0) - ((purchaseTax.purchaseCgst || 0) + (purchaseTax.purchaseSgst || 0) + (purchaseTax.purchaseIgst || 0)),
+          taxableTransactions: taxSummary.totalTransactions || 0,
+          exemptTransactions: 0
+        },
+        taxBreakdown: taxBreakdown || [],
+        hsnSummary: hsnSummary || [],
+        recentTransactions: recentTransactions || [],
+        complianceAlerts: complianceAlerts || [],
+        monthlyTrends: monthlyTrends || []
+      };
+
+      console.log('✅ Tax report generated successfully');
+      res.json(result);
+    } catch (error) {
+      console.error('❌ Tax reports error:', error);
+      res.status(500).json({ error: 'Failed to generate tax reports' });
+    }
+  });
+
   // Delete purchase
   app.delete("/api/purchases/:id", isAuthenticated, async (req, res) => {
     try {
