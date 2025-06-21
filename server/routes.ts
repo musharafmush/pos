@@ -5153,6 +5153,171 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Supplier reports endpoint
+  app.get("/api/reports/suppliers", isAuthenticated, async (req, res) => {
+    try {
+      console.log('📊 Supplier reports endpoint accessed');
+      const { sqlite } = await import('@db');
+      
+      const dateRange = req.query.range as string || '30days';
+      console.log('📅 Date range:', dateRange);
+      
+      let daysBack = 30;
+      if (dateRange === '90days') daysBack = 90;
+      if (dateRange === '1year') daysBack = 365;
+
+      // Supplier summary
+      const supplierSummaryQuery = `
+        SELECT 
+          COUNT(DISTINCT s.id) as totalSuppliers,
+          COUNT(DISTINCT CASE WHEN p.created_at >= date('now', '-30 days') THEN s.id END) as activeSuppliers,
+          ROUND(COALESCE(SUM(p.total), 0), 2) as totalPurchaseValue,
+          ROUND(COALESCE(AVG(p.total), 0), 2) as avgPurchaseValue,
+          COUNT(p.id) as totalPurchases
+        FROM suppliers s
+        LEFT JOIN purchases p ON s.id = p.supplier_id
+        WHERE s.id IS NOT NULL
+      `;
+
+      const supplierSummary = sqlite.prepare(supplierSummaryQuery).get();
+
+      // Top supplier spending
+      const topSupplierQuery = `
+        SELECT ROUND(COALESCE(MAX(supplier_total), 0), 2) as topSupplierSpending
+        FROM (
+          SELECT SUM(p.total) as supplier_total
+          FROM suppliers s
+          LEFT JOIN purchases p ON s.id = p.supplier_id
+          WHERE p.id IS NOT NULL
+          GROUP BY s.id
+        )
+      `;
+
+      const topSupplierResult = sqlite.prepare(topSupplierQuery).get();
+
+      // Top suppliers by purchase volume
+      const topSuppliersQuery = `
+        SELECT 
+          s.id,
+          s.name,
+          s.contact,
+          s.email,
+          COUNT(p.id) as totalPurchases,
+          ROUND(COALESCE(SUM(p.total), 0), 2) as totalSpent,
+          ROUND(COALESCE(AVG(p.total), 0), 2) as avgPurchaseValue,
+          MAX(p.created_at) as lastPurchaseDate,
+          CASE 
+            WHEN MAX(p.created_at) >= date('now', '-30 days') THEN 'active'
+            ELSE 'inactive'
+          END as status,
+          CASE 
+            WHEN COUNT(p.id) >= 10 THEN 95
+            WHEN COUNT(p.id) >= 5 THEN 85
+            WHEN COUNT(p.id) >= 3 THEN 75
+            WHEN COUNT(p.id) >= 1 THEN 65
+            ELSE 50
+          END as performance
+        FROM suppliers s
+        LEFT JOIN purchases p ON s.id = p.supplier_id AND p.supplier_id IS NOT NULL
+        GROUP BY s.id, s.name, s.contact, s.email
+        ORDER BY totalSpent DESC, s.name ASC
+        LIMIT 20
+      `;
+
+      const topSuppliers = sqlite.prepare(topSuppliersQuery).all();
+
+      // Supplier categories
+      const supplierCategories = [
+        {
+          category: 'Premium Suppliers',
+          count: topSuppliers.filter(s => s.totalSpent > 10000).length,
+          percentage: (topSuppliers.filter(s => s.totalSpent > 10000).length / Math.max(topSuppliers.length, 1) * 100),
+          totalSpent: topSuppliers.filter(s => s.totalSpent > 10000).reduce((sum, s) => sum + s.totalSpent, 0),
+          description: 'High-value suppliers with over ₹10,000 in purchases'
+        },
+        {
+          category: 'Regular Suppliers',
+          count: topSuppliers.filter(s => s.totalSpent >= 5000 && s.totalSpent <= 10000).length,
+          percentage: (topSuppliers.filter(s => s.totalSpent >= 5000 && s.totalSpent <= 10000).length / Math.max(topSuppliers.length, 1) * 100),
+          totalSpent: topSuppliers.filter(s => s.totalSpent >= 5000 && s.totalSpent <= 10000).reduce((sum, s) => sum + s.totalSpent, 0),
+          description: 'Consistent suppliers with ₹5,000-₹10,000 in purchases'
+        },
+        {
+          category: 'New Suppliers',
+          count: topSuppliers.filter(s => s.totalSpent < 5000).length,
+          percentage: (topSuppliers.filter(s => s.totalSpent < 5000).length / Math.max(topSuppliers.length, 1) * 100),
+          totalSpent: topSuppliers.filter(s => s.totalSpent < 5000).reduce((sum, s) => sum + s.totalSpent, 0),
+          description: 'New suppliers with under ₹5,000 in purchases'
+        },
+        {
+          category: 'Frequent Suppliers',
+          count: topSuppliers.filter(s => s.totalPurchases > 3).length,
+          percentage: (topSuppliers.filter(s => s.totalPurchases > 3).length / Math.max(topSuppliers.length, 1) * 100),
+          totalSpent: topSuppliers.filter(s => s.totalPurchases > 3).reduce((sum, s) => sum + s.totalSpent, 0),
+          description: 'Suppliers with multiple purchase orders'
+        }
+      ];
+
+      // Recent transactions
+      const recentTransactionsQuery = `
+        SELECT 
+          p.id,
+          s.name as supplierName,
+          p.purchase_number as purchaseNumber,
+          p.created_at as date,
+          p.total as amount,
+          COALESCE(p.payment_status, 'Pending') as paymentStatus,
+          COUNT(pi.id) as itemsCount
+        FROM purchases p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN purchase_items pi ON p.id = pi.purchase_id
+        WHERE p.supplier_id IS NOT NULL
+        GROUP BY p.id, s.name, p.purchase_number, p.created_at, p.total, p.payment_status
+        ORDER BY p.created_at DESC
+        LIMIT 20
+      `;
+
+      const recentTransactions = sqlite.prepare(recentTransactionsQuery).all();
+
+      // Supplier trends (monthly data)
+      const supplierTrendsQuery = `
+        SELECT 
+          strftime('%Y-%m', p.created_at) as month,
+          COUNT(p.id) as totalPurchases,
+          ROUND(SUM(p.total), 2) as totalAmount,
+          COUNT(DISTINCT p.supplier_id) as supplierCount
+        FROM purchases p
+        WHERE p.created_at >= date('now', '-12 months') AND p.supplier_id IS NOT NULL
+        GROUP BY strftime('%Y-%m', p.created_at)
+        ORDER BY month DESC
+        LIMIT 12
+      `;
+
+      const supplierTrends = sqlite.prepare(supplierTrendsQuery).all();
+
+      const result = {
+        supplierSummary: {
+          totalSuppliers: supplierSummary.totalSuppliers || 0,
+          activeSuppliers: supplierSummary.activeSuppliers || 0,
+          totalPurchaseValue: supplierSummary.totalPurchaseValue || 0,
+          avgPurchaseValue: supplierSummary.avgPurchaseValue || 0,
+          totalPurchases: supplierSummary.totalPurchases || 0,
+          topSupplierSpending: topSupplierResult.topSupplierSpending || 0
+        },
+        topSuppliers: topSuppliers || [],
+        supplierCategories,
+        recentTransactions: recentTransactions || [],
+        supplierTrends: supplierTrends || []
+      };
+
+      console.log('✅ Supplier report generated successfully');
+      res.json(result);
+    } catch (error) {
+      console.error('❌ Supplier reports error:', error);
+      res.status(500).json({ error: 'Failed to generate supplier reports' });
+    }
+  });
+
   // Delete purchase
   app.delete("/api/purchases/:id", isAuthenticated, async (req, res) => {
     try {

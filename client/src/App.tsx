@@ -29,6 +29,7 @@ import SalesReports from "./pages/sales-reports";
 import PurchaseReports from "./pages/purchase-reports";
 import StockReports from "./pages/stock-reports";
 import CustomerReports from "./pages/customer-reports";
+import SupplierReports from "./pages/supplier-reports";
 import SaleReturn from "./pages/sale-return";
 import SalesDashboard from "./pages/sales-dashboard";
 import Users from "@/pages/users";
@@ -96,6 +97,7 @@ function Router() {
       <ProtectedRoute path="/purchase-reports" component={PurchaseReports} />
       <ProtectedRoute path="/stock-reports" component={StockReports} />
       <ProtectedRoute path="/customer-reports" component={CustomerReports} />
+      <ProtectedRoute path="/supplier-reports" component={SupplierReports} />
       <ProtectedRoute path="/sales/return" component={SaleReturn} />
       <ProtectedRoute path="/sale-return" component={SaleReturn} />
       <ProtectedRoute path="/sale-returns-dashboard" component={SaleReturnsDashboard} />
