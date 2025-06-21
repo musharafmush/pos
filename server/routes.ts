@@ -4982,6 +4982,179 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Customer Reports endpoint
+  app.get('/api/reports/customers', isAuthenticated, async (req, res) => {
+    try {
+      console.log('👥 Customer reports endpoint accessed');
+      
+      const { dateRange = '30days' } = req.query;
+      console.log('📅 Date range:', dateRange);
+      
+      // Use direct database queries for customer reports
+      const { sqlite } = await import('../db/index.js');
+
+      // Calculate date range
+      let daysBack = 30;
+      switch (dateRange) {
+        case '7days': daysBack = 7; break;
+        case '30days': daysBack = 30; break;
+        case '90days': daysBack = 90; break;
+        case '1year': daysBack = 365; break;
+      }
+
+      // Customer summary
+      const customerSummaryQuery = `
+        SELECT 
+          COUNT(DISTINCT c.id) as totalCustomers,
+          COUNT(DISTINCT CASE WHEN s.created_at >= date('now', '-30 days') THEN c.id END) as activeCustomers,
+          COUNT(DISTINCT CASE WHEN c.created_at >= date('now', '-30 days') THEN c.id END) as newCustomersThisMonth,
+          ROUND(AVG(s.total), 2) as avgOrderValue,
+          ROUND(SUM(s.total), 2) as totalRevenue
+        FROM customers c
+        LEFT JOIN sales s ON c.id = s.customer_id
+        WHERE s.created_at >= date('now', '-${daysBack} days') OR c.created_at >= date('now', '-${daysBack} days')
+      `;
+
+      const customerSummary = sqlite.prepare(customerSummaryQuery).get();
+
+      // Calculate repeat customer rate
+      const repeatCustomerQuery = `
+        SELECT 
+          COUNT(DISTINCT customer_id) as totalWithOrders,
+          COUNT(DISTINCT CASE WHEN order_count > 1 THEN customer_id END) as repeatCustomers
+        FROM (
+          SELECT customer_id, COUNT(*) as order_count
+          FROM sales 
+          WHERE created_at >= date('now', '-${daysBack} days')
+          GROUP BY customer_id
+        )
+      `;
+
+      const repeatStats = sqlite.prepare(repeatCustomerQuery).get();
+      const repeatCustomerRate = repeatStats.totalWithOrders > 0 
+        ? (repeatStats.repeatCustomers / repeatStats.totalWithOrders * 100) 
+        : 0;
+
+      // Top customers
+      const topCustomersQuery = `
+        SELECT 
+          c.id,
+          c.name,
+          c.phone,
+          c.email,
+          COUNT(s.id) as totalOrders,
+          ROUND(SUM(s.total), 2) as totalSpent,
+          ROUND(AVG(s.total), 2) as avgOrderValue,
+          MAX(s.created_at) as lastOrderDate,
+          CASE 
+            WHEN MAX(s.created_at) >= date('now', '-30 days') THEN 'active'
+            ELSE 'inactive'
+          END as status
+        FROM customers c
+        LEFT JOIN sales s ON c.id = s.customer_id
+        WHERE s.created_at >= date('now', '-${daysBack} days')
+        GROUP BY c.id, c.name, c.phone, c.email
+        HAVING totalOrders > 0
+        ORDER BY totalSpent DESC
+        LIMIT 20
+      `;
+
+      const topCustomers = sqlite.prepare(topCustomersQuery).all();
+
+      // Customer segments
+      const customerSegments = [
+        {
+          segment: 'VIP Customers',
+          count: topCustomers.filter(c => c.totalSpent > 5000).length,
+          percentage: (topCustomers.filter(c => c.totalSpent > 5000).length / Math.max(topCustomers.length, 1) * 100),
+          avgSpent: topCustomers.filter(c => c.totalSpent > 5000).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(topCustomers.filter(c => c.totalSpent > 5000).length, 1),
+          description: 'High-value customers with over ₹5,000 spent'
+        },
+        {
+          segment: 'Regular Customers',
+          count: topCustomers.filter(c => c.totalSpent >= 1000 && c.totalSpent <= 5000).length,
+          percentage: (topCustomers.filter(c => c.totalSpent >= 1000 && c.totalSpent <= 5000).length / Math.max(topCustomers.length, 1) * 100),
+          avgSpent: topCustomers.filter(c => c.totalSpent >= 1000 && c.totalSpent <= 5000).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(topCustomers.filter(c => c.totalSpent >= 1000 && c.totalSpent <= 5000).length, 1),
+          description: 'Consistent customers spending ₹1,000-₹5,000'
+        },
+        {
+          segment: 'New Customers',
+          count: topCustomers.filter(c => c.totalSpent < 1000).length,
+          percentage: (topCustomers.filter(c => c.totalSpent < 1000).length / Math.max(topCustomers.length, 1) * 100),
+          avgSpent: topCustomers.filter(c => c.totalSpent < 1000).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(topCustomers.filter(c => c.totalSpent < 1000).length, 1),
+          description: 'New customers with under ₹1,000 spent'
+        },
+        {
+          segment: 'Repeat Buyers',
+          count: topCustomers.filter(c => c.totalOrders > 1).length,
+          percentage: (topCustomers.filter(c => c.totalOrders > 1).length / Math.max(topCustomers.length, 1) * 100),
+          avgSpent: topCustomers.filter(c => c.totalOrders > 1).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(topCustomers.filter(c => c.totalOrders > 1).length, 1),
+          description: 'Customers with multiple purchases'
+        }
+      ];
+
+      // Recent transactions
+      const recentTransactionsQuery = `
+        SELECT 
+          s.id,
+          c.name as customerName,
+          s.order_number as orderNumber,
+          s.created_at as date,
+          s.total as amount,
+          s.payment_method as paymentMethod,
+          s.status,
+          COUNT(si.id) as itemsCount
+        FROM sales s
+        LEFT JOIN customers c ON s.customer_id = c.id
+        LEFT JOIN sale_items si ON s.id = si.sale_id
+        WHERE s.created_at >= date('now', '-${daysBack} days')
+        GROUP BY s.id, c.name, s.order_number, s.created_at, s.total, s.payment_method, s.status
+        ORDER BY s.created_at DESC
+        LIMIT 20
+      `;
+
+      const recentTransactions = sqlite.prepare(recentTransactionsQuery).all();
+
+      // Customer growth (monthly data)
+      const customerGrowthQuery = `
+        SELECT 
+          strftime('%Y-%m', created_at) as month,
+          COUNT(*) as newCustomers,
+          0 as returningCustomers,
+          0 as totalRevenue
+        FROM customers
+        WHERE created_at >= date('now', '-12 months')
+        GROUP BY strftime('%Y-%m', created_at)
+        ORDER BY month DESC
+        LIMIT 6
+      `;
+
+      const customerGrowth = sqlite.prepare(customerGrowthQuery).all();
+
+      const reportData = {
+        customerSummary: {
+          totalCustomers: customerSummary.totalCustomers || 0,
+          activeCustomers: customerSummary.activeCustomers || 0,
+          newCustomersThisMonth: customerSummary.newCustomersThisMonth || 0,
+          avgOrderValue: customerSummary.avgOrderValue || 0,
+          totalRevenue: customerSummary.totalRevenue || 0,
+          repeatCustomerRate: repeatCustomerRate || 0
+        },
+        topCustomers: topCustomers || [],
+        customerSegments: customerSegments,
+        recentTransactions: recentTransactions || [],
+        customerGrowth: customerGrowth || []
+      };
+
+      console.log('✅ Customer report generated successfully');
+      res.json(reportData);
+
+    } catch (error) {
+      console.error('❌ Customer reports error:', error);
+      res.status(500).json({ error: 'Failed to generate customer reports' });
+    }
+  });
+
   // Delete purchase
   app.delete("/api/purchases/:id", isAuthenticated, async (req, res) => {
     try {
