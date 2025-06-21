@@ -2719,31 +2719,64 @@ export default function POSEnhanced() {
                     Keep Open
                   </Button>
                   <Button
-                    onClick={() => {
-                      setRegisterOpened(false);
-                      setOpeningCash(0);
-                      setCashInHand(0);
-                      setCashReceived(0);
-                      setUpiReceived(0);
-                      setCardReceived(0);
-                      setBankReceived(0);
-                      setChequeReceived(0);
-                      setOtherReceived(0);
-                      setTotalWithdrawals(0);
-                      setTotalRefunds(0);
-                      setShowCloseRegister(false);
-                      
-                      // Clear cash register state from localStorage
+                    onClick={async () => {
                       try {
-                        localStorage.removeItem('cashRegisterState');
+                        // Close register in database if we have an active register
+                        if (activeCashRegister?.id) {
+                          const response = await fetch(`/api/cash-register/${activeCashRegister.id}/close`, {
+                            method: 'PUT',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                              notes: 'Register closed from POS Enhanced'
+                            })
+                          });
+
+                          if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.error || 'Failed to close register');
+                          }
+
+                          console.log('✅ Register closed in database');
+                        }
+
+                        // Clear local state
+                        setRegisterOpened(false);
+                        setOpeningCash(0);
+                        setCashInHand(0);
+                        setCashReceived(0);
+                        setUpiReceived(0);
+                        setCardReceived(0);
+                        setBankReceived(0);
+                        setChequeReceived(0);
+                        setOtherReceived(0);
+                        setTotalWithdrawals(0);
+                        setTotalRefunds(0);
+                        setShowCloseRegister(false);
+                        
+                        // Clear cash register state from localStorage
+                        try {
+                          localStorage.removeItem('cashRegisterState');
+                        } catch (error) {
+                          console.error("Error clearing cash register state:", error);
+                        }
+
+                        // Refresh active register data to show closed state
+                        queryClient.invalidateQueries({ queryKey: ["/api/cash-register/active"] });
+                        
+                        toast({
+                          title: "Register Closed Successfully",
+                          description: "End of day completed and saved to database",
+                        });
                       } catch (error) {
-                        console.error("Error clearing cash register state:", error);
+                        console.error('Error closing register:', error);
+                        toast({
+                          title: "Failed to Close Register",
+                          description: error instanceof Error ? error.message : "Could not close register in database",
+                          variant: "destructive",
+                        });
                       }
-                      
-                      toast({
-                        title: "Register Closed",
-                        description: "End of day completed successfully",
-                      });
                     }}
                     className="bg-red-600 hover:bg-red-700"
                   >
