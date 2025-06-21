@@ -730,7 +730,7 @@ export default function POSEnhanced() {
   };
 
   // Withdrawal handler
-  const handleWithdrawal = () => {
+  const handleWithdrawal = async () => {
     const amount = parseFloat(withdrawalAmount);
 
     if (!amount || amount <= 0) {
@@ -751,17 +751,79 @@ export default function POSEnhanced() {
       return;
     }
 
-    setCashInHand(prev => prev - amount);
-    setTotalWithdrawals(prev => prev + amount);
+    try {
+      // Update local state immediately
+      const newCashInHand = cashInHand - amount;
+      const newTotalWithdrawals = totalWithdrawals + amount;
+      
+      setCashInHand(newCashInHand);
+      setTotalWithdrawals(newTotalWithdrawals);
 
-    toast({
-      title: "Withdrawal Processed",
-      description: `Withdrew ${formatCurrency(amount)}. ${withdrawalNote ? `Note: ${withdrawalNote}` : ''}`,
-    });
+      // Record withdrawal transaction to cash register if active
+      if (registerOpened && activeRegisterId) {
+        try {
+          await fetch(`/api/cash-register/${activeRegisterId}/transaction`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'withdrawal',
+              amount: amount,
+              paymentMethod: 'cash',
+              reason: withdrawalNote || 'Cash withdrawal',
+              notes: `Withdrawal processed from POS Enhanced`
+            })
+          });
+          console.log('💰 Withdrawal recorded to cash register');
+        } catch (regError) {
+          console.error('Failed to record withdrawal to cash register:', regError);
+        }
+      }
 
-    // Reset withdrawal form and close dialog
-    resetWithdrawalForm();
-    setShowWithdrawal(false);
+      // Force localStorage update immediately
+      const updatedCashRegisterState = {
+        registerOpened,
+        activeRegisterId,
+        openingCash,
+        cashInHand: newCashInHand,
+        cashReceived,
+        upiReceived,
+        cardReceived,
+        bankReceived,
+        chequeReceived,
+        otherReceived,
+        totalWithdrawals: newTotalWithdrawals,
+        totalRefunds,
+        lastUpdated: new Date().toISOString()
+      };
+
+      localStorage.setItem('cashRegisterState', JSON.stringify(updatedCashRegisterState));
+
+      toast({
+        title: "Withdrawal Processed",
+        description: `Withdrew ${formatCurrency(amount)}. New balance: ${formatCurrency(newCashInHand)}${withdrawalNote ? `. Note: ${withdrawalNote}` : ''}`,
+      });
+
+      // Reset withdrawal form and close dialog
+      resetWithdrawalForm();
+      setShowWithdrawal(false);
+
+      // Force a small delay to ensure state updates propagate
+      setTimeout(() => {
+        // Double-check the state is correctly updated
+        setCashInHand(newCashInHand);
+        console.log(`💰 Cash withdrawal completed: ${formatCurrency(amount)}, Current balance: ${formatCurrency(newCashInHand)}`);
+      }, 100);
+
+    } catch (error) {
+      console.error('Withdrawal processing error:', error);
+      toast({
+        title: "Withdrawal Failed",
+        description: "Failed to process withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Update payment tracking when processing sales
