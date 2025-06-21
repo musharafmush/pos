@@ -162,6 +162,61 @@ export default function OfferManagement() {
     createOfferMutation.mutate(data);
   };
 
+  const handleViewOffer = (offer: any) => {
+    // Create a detailed view of the offer
+    const offerDetails = `
+Offer Details:
+Name: ${offer.name}
+Type: ${getOfferTypeLabel(offer.offer_type)}
+Description: ${offer.description || 'No description'}
+Discount: ${offer.offer_type === 'percentage' ? `${offer.discount_value}%` : 
+           offer.offer_type === 'flat_amount' ? `₹${offer.discount_value}` :
+           offer.offer_type === 'buy_x_get_y' ? `Buy ${offer.buy_quantity} Get ${offer.get_quantity}` :
+           `${offer.discount_value}`}
+${offer.min_purchase_amount ? `Min Purchase: ₹${offer.min_purchase_amount}` : ''}
+${offer.max_discount_amount ? `Max Discount: ₹${offer.max_discount_amount}` : ''}
+${offer.usage_limit ? `Usage Limit: ${offer.usage_limit}` : ''}
+${offer.per_customer_limit ? `Per Customer Limit: ${offer.per_customer_limit}` : ''}
+Priority: ${offer.priority || 1}
+Status: ${offer.active ? 'Active' : 'Inactive'}
+Created: ${new Date(offer.created_at).toLocaleDateString()}
+    `.trim();
+
+    alert(offerDetails);
+  };
+
+  const handleEditOffer = (offer: any) => {
+    // Convert offer data to form format
+    const formData = {
+      name: offer.name,
+      description: offer.description || '',
+      offerType: offer.offer_type,
+      discountValue: offer.discount_value?.toString() || '0',
+      minPurchaseAmount: offer.min_purchase_amount?.toString() || '',
+      maxDiscountAmount: offer.max_discount_amount?.toString() || '',
+      buyQuantity: offer.buy_quantity?.toString() || '',
+      getQuantity: offer.get_quantity?.toString() || '',
+      freeProductId: offer.free_product_id?.toString() || '',
+      validFrom: offer.date_start || '',
+      validTo: offer.date_end || '',
+      timeStart: offer.time_start || '',
+      timeEnd: offer.time_end || '',
+      applicableCategories: offer.category_id?.toString() || '',
+      applicableProducts: offer.product_id?.toString() || '',
+      pointsThreshold: offer.points_threshold?.toString() || '',
+      pointsReward: offer.points_reward?.toString() || '',
+      usageLimit: offer.usage_limit?.toString() || '',
+      perCustomerLimit: offer.per_customer_limit?.toString() || '',
+      priority: offer.priority?.toString() || '1',
+      active: offer.active
+    };
+
+    // Reset form with offer data
+    form.reset(formData);
+    setSelectedOffer(offer);
+    setIsCreateDialogOpen(true);
+  };
+
   const getOfferTypeLabel = (type: string) => {
     const labels = {
       percentage: "Percentage Discount",
@@ -613,7 +668,7 @@ export default function OfferManagement() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {getOfferTypeIcon(offer.offerType)}
+                    {getOfferTypeIcon(offer.offer_type)}
                     <CardTitle className="text-lg">{offer.name}</CardTitle>
                   </div>
                   <Badge variant={offer.active ? "default" : "secondary"}>
@@ -621,7 +676,7 @@ export default function OfferManagement() {
                   </Badge>
                 </div>
                 <CardDescription>
-                  {getOfferTypeLabel(offer.offerType)}
+                  {getOfferTypeLabel(offer.offer_type)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -633,18 +688,18 @@ export default function OfferManagement() {
                   <div className="flex justify-between">
                     <span>Discount:</span>
                     <span className="font-medium">
-                      {offer.offerType === 'percentage' ? `${offer.discountValue}%` : 
-                       offer.offerType === 'flat_amount' ? `₹${offer.discountValue}` :
-                       offer.offerType === 'buy_x_get_y' ? `Buy ${offer.buyQuantity} Get ${offer.getQuantity}` :
-                       offer.offerType === 'loyalty_points' ? `${offer.pointsReward} points` :
-                       `${offer.discountValue}%`}
+                      {offer.offer_type === 'percentage' ? `${offer.discount_value || 0}%` : 
+                       offer.offer_type === 'flat_amount' ? `₹${offer.discount_value || 0}` :
+                       offer.offer_type === 'buy_x_get_y' ? `Buy ${offer.buy_quantity || 1} Get ${offer.get_quantity || 1}` :
+                       offer.offer_type === 'loyalty_points' ? `${offer.points_reward || 0} points` :
+                       `${offer.discount_value || 0}%`}
                     </span>
                   </div>
                   
-                  {offer.minPurchaseAmount && parseFloat(offer.minPurchaseAmount) > 0 && (
+                  {offer.min_purchase_amount && parseFloat(offer.min_purchase_amount) > 0 && (
                     <div className="flex justify-between">
                       <span>Min Purchase:</span>
-                      <span className="font-medium">₹{offer.minPurchaseAmount}</span>
+                      <span className="font-medium">₹{offer.min_purchase_amount}</span>
                     </div>
                   )}
                   
@@ -664,11 +719,21 @@ export default function OfferManagement() {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleViewOffer(offer)}
+                  >
                     <Eye className="mr-1 h-3 w-3" />
                     View
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleEditOffer(offer)}
+                  >
                     <Edit className="mr-1 h-3 w-3" />
                     Edit
                   </Button>
