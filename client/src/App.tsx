@@ -59,6 +59,7 @@ import InventoryAdjustments from "./pages/inventory-adjustments";
 import ThermalPrinterSetup from "./pages/thermal-printer-setup";
 import EditOptions from "@/pages/edit-options";
 import AutoPrinterSetup from "@/pages/auto-printer-setup";
+import CashRegisterManagement from "@/pages/cash-register-management";
 
 function Router() {
   return (
@@ -123,6 +124,7 @@ function Router() {
       <ProtectedRoute path="/thermal-printer-setup" component={ThermalPrinterSetup} />
       <ProtectedRoute path="/edit-options" component={EditOptions} />
       <ProtectedRoute path="/auto-printer-setup" component={AutoPrinterSetup} />
+      <ProtectedRoute path="/cash-register-management" component={CashRegisterManagement} />
       <Route component={NotFound} />
     </Switch>
   );
