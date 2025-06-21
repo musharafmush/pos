@@ -5742,15 +5742,19 @@ app.post("/api/customers", async (req, res) => {
         SELECT 
           ia.id,
           'adjustment' as type,
-          (ia.new_quantity - ia.old_quantity) as quantity,
+          CASE 
+            WHEN ia.adjustment_type = 'add' THEN ia.quantity
+            WHEN ia.adjustment_type = 'remove' THEN -ia.quantity
+            ELSE ia.quantity
+          END as quantity,
           ia.created_at as date,
           'ADJ-' || ia.id as reference,
           u.name as user,
           COALESCE(ia.reason, 'Stock adjustment') as notes,
-          0 as unitPrice,
-          0 as totalValue,
-          ia.old_quantity as previousStock,
-          ia.new_quantity as newStock
+          COALESCE(ia.unit_cost, 0) as unitPrice,
+          COALESCE(ia.unit_cost * ia.quantity, 0) as totalValue,
+          0 as previousStock,
+          0 as newStock
         FROM inventory_adjustments ia
         LEFT JOIN users u ON ia.user_id = u.id
         WHERE ia.product_id = ? 
