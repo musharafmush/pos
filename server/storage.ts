@@ -3172,13 +3172,29 @@ export const storage = {
   },
 
   async createCustomerLoyalty(customerId: number): Promise<CustomerLoyalty> {
-    const [loyalty] = await db.insert(customerLoyalty).values({
-      customerId,
-      totalPoints: '0',
-      usedPoints: '0',
-      availablePoints: '0'
-    }).returning();
-    return loyalty;
+    try {
+      // Use direct SQLite query to avoid schema compatibility issues
+      const { sqlite } = await import('../db/index.js');
+      
+      const result = sqlite.prepare(`
+        INSERT INTO customer_loyalty (
+          customer_id, total_points, used_points, available_points, 
+          tier, created_at, last_updated
+        ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).run(customerId, '0', '0', '0', 'Member');
+
+      // Fetch the created loyalty record
+      const loyalty = sqlite.prepare('SELECT * FROM customer_loyalty WHERE id = ?').get(result.lastInsertRowid);
+      
+      return {
+        ...loyalty,
+        createdAt: new Date(loyalty.created_at),
+        lastUpdated: new Date(loyalty.last_updated)
+      };
+    } catch (error) {
+      console.error('Error creating customer loyalty:', error);
+      throw error;
+    }
   },
 
   async updateCustomerLoyalty(customerId: number, pointsToAdd: number): Promise<CustomerLoyalty | null> {
@@ -3378,21 +3394,26 @@ export const storage = {
     try {
       const now = new Date();
       
+      // Get all active offers without date filtering first (SQLite compatibility)
       let query = db
         .select()
         .from(schema.offers)
-        .where(
-          and(
-            eq(schema.offers.active, true),
-            lte(schema.offers.validFrom, now),
-            gte(schema.offers.validTo, now)
-          )
-        );
+        .where(eq(schema.offers.active, true));
 
       const allOffers = await query;
       
+      // Filter by date in JavaScript to avoid SQLite function issues
+      const validOffers = allOffers.filter(offer => {
+        if (offer.validFrom && offer.validTo) {
+          const validFrom = new Date(offer.validFrom);
+          const validTo = new Date(offer.validTo);
+          return now >= validFrom && now <= validTo;
+        }
+        return true; // If no date restrictions, offer is valid
+      });
+      
       // Filter offers that apply to this product
-      const applicableOffers = allOffers.filter(offer => {
+      const applicableOffers = validOffers.filter(offer => {
         // Check product-specific offers
         if (offer.applicableProducts) {
           const applicableProducts = JSON.parse(offer.applicableProducts);
