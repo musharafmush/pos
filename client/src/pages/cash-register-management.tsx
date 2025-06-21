@@ -91,7 +91,7 @@ export default function CashRegisterManagement() {
   });
 
   // Fetch recent registers
-  const { data: recentRegisters, isLoading: loadingRecent } = useQuery({
+  const { data: recentRegisters, isLoading: loadingRecent, refetch: refetchRecent } = useQuery({
     queryKey: ["/api/cash-register/recent"],
     queryFn: async () => {
       const response = await fetch('/api/cash-register/recent');
@@ -220,20 +220,31 @@ export default function CashRegisterManagement() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto p-6">
-        {/* Header */}
+        {/* Header with Enhanced Action Buttons */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Cash Register Management</h1>
             <p className="text-gray-600 mt-2">Manage cash register operations and view transaction history</p>
           </div>
-          <Button
-            onClick={() => refetchActive()}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setShowOpenRegister(true)}
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+              size="lg"
+            >
+              <Plus className="w-5 h-5" />
+              Open New Register
+            </Button>
+            <Button
+              onClick={() => refetchActive()}
+              variant="outline"
+              className="flex items-center gap-2"
+              size="lg"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Active Register Status */}
@@ -347,38 +358,63 @@ export default function CashRegisterManagement() {
                 Quick Actions
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                onClick={() => setShowOpenRegister(true)}
-                disabled={!!activeCashRegister}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
-              >
-                <Unlock className="w-4 h-4 mr-2" />
-                Open New Register
-              </Button>
-              <Button
-                onClick={() => setShowCloseRegister(true)}
-                disabled={!activeCashRegister}
-                variant="destructive"
-                className="w-full disabled:bg-gray-300"
-              >
-                <Lock className="w-4 h-4 mr-2" />
-                Close Current Register
-              </Button>
+            <CardContent className="space-y-4">
+              {/* Primary Actions */}
+              <div className="space-y-3">
+                <Button
+                  onClick={() => setShowOpenRegister(true)}
+                  disabled={!!activeCashRegister}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:bg-gray-300 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-200"
+                  size="lg"
+                >
+                  <Unlock className="w-5 h-5 mr-2" />
+                  Open New Register
+                </Button>
+                <Button
+                  onClick={() => setShowCloseRegister(true)}
+                  disabled={!activeCashRegister}
+                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:bg-gray-300 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-200"
+                  size="lg"
+                >
+                  <Lock className="w-5 h-5 mr-2" />
+                  Close Current Register
+                </Button>
+              </div>
+              
               <Separator />
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  if (activeCashRegister) {
-                    viewTransactions(activeCashRegister);
-                  }
-                }}
-                disabled={!activeCashRegister}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Transaction History
-              </Button>
+              
+              {/* Secondary Actions */}
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 font-medium py-2.5 transition-all duration-200"
+                  onClick={() => {
+                    if (activeCashRegister) {
+                      viewTransactions(activeCashRegister);
+                    }
+                  }}
+                  disabled={!activeCashRegister}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  View Transaction History
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full border-2 border-purple-200 hover:bg-purple-50 hover:border-purple-300 font-medium py-2.5 transition-all duration-200"
+                  onClick={() => refetchActive()}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh Status
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full border-2 border-orange-200 hover:bg-orange-50 hover:border-orange-300 font-medium py-2.5 transition-all duration-200"
+                  onClick={() => refetchRecent()}
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Reload History
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -431,13 +467,31 @@ export default function CashRegisterManagement() {
                           {new Date(register.openedAt).toLocaleDateString()}
                         </td>
                         <td className="py-3 px-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => viewTransactions(register)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewTransactions(register)}
+                              className="bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300 text-blue-700 font-medium px-3 py-2 shadow-sm"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                            {register.status === 'open' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedRegister(register);
+                                  setShowCloseRegister(true);
+                                }}
+                                className="bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300 text-red-700 font-medium px-3 py-2 shadow-sm"
+                              >
+                                <Lock className="w-4 h-4 mr-1" />
+                                Close
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
