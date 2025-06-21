@@ -385,6 +385,12 @@ export default function POS() {
             <span>Subtotal:</span>
             <span>${formatCurrency(calculateSubtotal())}</span>
         </div>
+        ${totalOfferDiscount > 0 ? `
+        <div style="display: flex; justify-content: space-between; color: #16a34a;">
+            <span>Offer Discount:</span>
+            <span>-${formatCurrency(calculateOfferDiscount())}</span>
+        </div>
+        ` : ''}
         <div style="display: flex; justify-content: space-between;">
             <span>Tax (7%):</span>
             <span>${formatCurrency(calculateTax())}</span>
@@ -398,6 +404,11 @@ export default function POS() {
             <span>Payment Method:</span>
             <span>${paymentMethod.toUpperCase()}</span>
         </div>
+        ${appliedOffers.length > 0 ? `
+        <div style="margin-top: 10px; font-size: 10px; color: #16a34a;">
+            Offers Applied: ${appliedOffers.map(o => o.name).join(', ')}
+        </div>
+        ` : ''}
     </div>
     
     ${customerNote ? `
