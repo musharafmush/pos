@@ -355,10 +355,13 @@ export default function CustomerReports() {
                           <TableCell>
                             <Badge variant="outline">{customer.totalOrders}</Badge>
                           </TableCell>
-                          <TableCell className="font-medium">₹{customer.totalSpent.toFixed(2)}</TableCell>
-                          <TableCell>₹{customer.avgOrderValue.toFixed(2)}</TableCell>
+                          <TableCell className="font-medium">₹{Number(customer.totalSpent || 0).toFixed(2)}</TableCell>
+                          <TableCell>₹{Number(customer.avgOrderValue || 0).toFixed(2)}</TableCell>
                           <TableCell>
-                            {format(new Date(customer.lastOrderDate), 'MMM dd, yyyy')}
+                            {customer.lastOrderDate ? 
+                              format(new Date(customer.lastOrderDate), 'MMM dd, yyyy') : 
+                              'No orders'
+                            }
                           </TableCell>
                           <TableCell>
                             <Badge className={getCustomerStatusColor(customer.status)}>
