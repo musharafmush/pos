@@ -130,6 +130,7 @@ function Router() {
       <ProtectedRoute path="/cash-register-management" component={CashRegisterManagement} />
       <ProtectedRoute path="/expense-management" component={ExpenseManagement} />
       <ProtectedRoute path="/expense-categories" component={ExpenseCategories} />
+      <ProtectedRoute path="/offer-management" component={OfferManagement} />
       <Route component={NotFound} />
     </Switch>
   );
