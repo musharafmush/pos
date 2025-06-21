@@ -442,7 +442,7 @@ export default function CustomerReports() {
                           <TableCell>
                             {format(new Date(transaction.date), 'MMM dd, yyyy HH:mm')}
                           </TableCell>
-                          <TableCell className="font-medium">₹{transaction.amount.toFixed(2)}</TableCell>
+                          <TableCell className="font-medium">₹{Number(transaction.amount).toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge variant="outline">{transaction.paymentMethod}</Badge>
                           </TableCell>
