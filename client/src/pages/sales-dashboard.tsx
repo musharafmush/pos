@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,158 +67,17 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   ArrowLeftRight,
-  RefreshCw,
-  Banknote,
-  Lock,
-  Unlock,
-  Calculator,
-  CreditCard
+  RefreshCw
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFormatCurrency } from "@/lib/currency";
-import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "@/components/ui/textarea";
 
 export default function SalesDashboard() {
   const [timeRange, setTimeRange] = useState<string>("7");
   const [startDate, setStartDate] = useState<string>(format(subDays(new Date(), 7), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const formatCurrency = useFormatCurrency();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  // Cash Register Management State
-  const [showOpenRegister, setShowOpenRegister] = useState(false);
-  const [showCloseRegister, setShowCloseRegister] = useState(false);
-  const [cashAmount, setCashAmount] = useState("");
-  const [registerNotes, setRegisterNotes] = useState("");
-
-  // Active Cash Register Query
-  const { data: activeCashRegister, isLoading: cashRegisterLoading } = useQuery({
-    queryKey: ["/api/cash-register/active"],
-    queryFn: async () => {
-      const response = await fetch("/api/cash-register/active");
-      if (!response.ok) {
-        return null;
-      }
-      return response.json();
-    },
-    refetchInterval: 30000,
-    retry: 1
-  });
-
-  // Cash Register Management Functions
-  const handleOpenRegister = async () => {
-    if (activeCashRegister) {
-      toast({
-        title: "Register Already Open",
-        description: `Register ${activeCashRegister.registerId} is already open with ${formatCurrency(parseFloat(activeCashRegister.currentCash || 0))}`,
-        variant: "default",
-      });
-      setShowOpenRegister(false);
-      return;
-    }
-
-    const amount = parseFloat(cashAmount);
-    if (!amount || amount < 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid opening amount",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/cash-register/open', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          openingCash: amount,
-          notes: registerNotes || 'Register opened from Sales Dashboard'
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        toast({
-          title: "Failed to Open Register",
-          description: error.error || "Could not open cash register",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const result = await response.json();
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-register/active"] });
-
-      toast({
-        title: "Register Opened Successfully",
-        description: `Register ${result.register.registerId} opened with ${formatCurrency(amount)}`,
-      });
-
-      setCashAmount("");
-      setRegisterNotes("");
-      setShowOpenRegister(false);
-    } catch (error) {
-      console.error('Error opening cash register:', error);
-      toast({
-        title: "Database Error",
-        description: "Failed to save register opening to database",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCloseRegister = async () => {
-    if (!activeCashRegister?.id) {
-      toast({
-        title: "No Active Register",
-        description: "There is no active register to close",
-        variant: "destructive",
-      });
-      setShowCloseRegister(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/cash-register/${activeCashRegister.id}/close`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          notes: registerNotes || 'Register closed from Sales Dashboard'
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to close register');
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-register/active"] });
-      
-      toast({
-        title: "Register Closed Successfully",
-        description: "End of day completed and saved to database",
-      });
-
-      setRegisterNotes("");
-      setShowCloseRegister(false);
-    } catch (error) {
-      console.error('Error closing register:', error);
-      toast({
-        title: "Failed to Close Register",
-        description: error instanceof Error ? error.message : "Could not close register in database",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Customer Billing Details CRUD operations
   const [selectedSale, setSelectedSale] = useState<any>(null);
@@ -945,51 +804,6 @@ export default function SalesDashboard() {
               <p className="text-gray-600 dark:text-gray-400">Monitor your sales performance and trends • Real-time POS integration</p>
             </div>
             <div className="flex items-center space-x-3">
-              {/* Cash Register Status */}
-              <div className="flex items-center space-x-2">
-                {cashRegisterLoading ? (
-                  <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                    Checking Register...
-                  </Badge>
-                ) : activeCashRegister ? (
-                  <div className="flex items-center space-x-2">
-                    <Badge className="bg-green-100 text-green-800 border-green-300">
-                      <Unlock className="h-3 w-3 mr-1" />
-                      Register {activeCashRegister.registerId} Open
-                    </Badge>
-                    <span className="text-sm text-gray-600">
-                      {formatCurrency(parseFloat(activeCashRegister.currentCash || 0))}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowCloseRegister(true)}
-                      className="h-7 px-2 text-xs bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
-                    >
-                      <Lock className="h-3 w-3 mr-1" />
-                      Close
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
-                      <Lock className="h-3 w-3 mr-1" />
-                      No Register Open
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowOpenRegister(true)}
-                      className="h-7 px-2 text-xs bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-                    >
-                      <Unlock className="h-3 w-3 mr-1" />
-                      Open
-                    </Button>
-                  </div>
-                )}
-              </div>
-              
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-3 py-1">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
@@ -3795,127 +3609,6 @@ export default function SalesDashboard() {
                     Create Customer
                 </Button>
             </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Open Cash Register Dialog */}
-      <Dialog open={showOpenRegister} onOpenChange={setShowOpenRegister}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <Unlock className="h-5 w-5 text-green-600" />
-              <span>Open Cash Register</span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="openingCash">Opening Cash Amount</Label>
-              <Input
-                id="openingCash"
-                type="number"
-                step="0.01"
-                value={cashAmount}
-                onChange={(e) => setCashAmount(e.target.value)}
-                placeholder="Enter opening cash amount"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="openingNotes">Notes (Optional)</Label>
-              <Textarea
-                id="openingNotes"
-                value={registerNotes}
-                onChange={(e) => setRegisterNotes(e.target.value)}
-                placeholder="Add any notes about opening the register..."
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setShowOpenRegister(false);
-                setCashAmount("");
-                setRegisterNotes("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleOpenRegister}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Unlock className="h-4 w-4 mr-1" />
-              Open Register
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Close Cash Register Dialog */}
-      <Dialog open={showCloseRegister} onOpenChange={setShowCloseRegister}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <Lock className="h-5 w-5 text-red-600" />
-              <span>Close Cash Register</span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {activeCashRegister && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Register ID:</span>
-                    <p>{activeCashRegister.registerId}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">Current Cash:</span>
-                    <p>{formatCurrency(parseFloat(activeCashRegister.currentCash || 0))}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">Opened:</span>
-                    <p>{activeCashRegister.openedAt ? format(new Date(activeCashRegister.openedAt), "MMM dd, yyyy HH:mm") : 'Unknown'}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">Opening Cash:</span>
-                    <p>{formatCurrency(parseFloat(activeCashRegister.openingCash || 0))}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div>
-              <Label htmlFor="closingNotes">Notes (Optional)</Label>
-              <Textarea
-                id="closingNotes"
-                value={registerNotes}
-                onChange={(e) => setRegisterNotes(e.target.value)}
-                placeholder="Add any notes about closing the register..."
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setShowCloseRegister(false);
-                setRegisterNotes("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleCloseRegister}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              <Lock className="h-4 w-4 mr-1" />
-              Close Register
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
       </div>
