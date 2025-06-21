@@ -5604,6 +5604,312 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Get products list for history search
+  app.get("/api/products/search", isAuthenticated, async (req, res) => {
+    try {
+      console.log('🔍 Product search endpoint accessed');
+      const { sqlite } = await import('@db');
+      
+      const searchTerm = req.query.q as string || '';
+      console.log('🔍 Search term:', searchTerm);
+      
+      const searchQuery = `
+        SELECT 
+          p.id,
+          p.name,
+          p.sku,
+          p.barcode,
+          p.stock_quantity,
+          p.price,
+          c.name as category,
+          s.name as supplier
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        WHERE 
+          p.active = 1 AND (
+            p.name LIKE ? OR 
+            p.sku LIKE ? OR 
+            p.barcode LIKE ? OR
+            c.name LIKE ?
+          )
+        ORDER BY p.name
+        LIMIT 50
+      `;
+
+      const searchPattern = `%${searchTerm}%`;
+      const products = sqlite.prepare(searchQuery).all(
+        searchPattern, searchPattern, searchPattern, searchPattern
+      );
+
+      console.log('✅ Product search completed, found:', products.length, 'products');
+      res.json(products);
+    } catch (error) {
+      console.error('❌ Product search error:', error);
+      res.status(500).json({ error: 'Failed to search products' });
+    }
+  });
+
+  // Product history endpoint
+  app.get("/api/products/history/:id", isAuthenticated, async (req, res) => {
+    try {
+      console.log('📊 Product history endpoint accessed');
+      const { sqlite } = await import('@db');
+      
+      const productId = parseInt(req.params.id);
+      const dateRange = req.query.range as string || '30days';
+      console.log('📅 Product ID:', productId, 'Date range:', dateRange);
+      
+      let daysBack = 30;
+      if (dateRange === '7days') daysBack = 7;
+      if (dateRange === '90days') daysBack = 90;
+      if (dateRange === '1year') daysBack = 365;
+      if (dateRange === 'all') daysBack = 36500; // ~100 years
+
+      // Get product information
+      const productQuery = `
+        SELECT 
+          p.id,
+          p.name,
+          p.sku,
+          p.barcode,
+          p.stock_quantity as currentStock,
+          p.price,
+          p.cost,
+          c.name as category,
+          s.name as supplier,
+          CASE WHEN p.active = 1 THEN 'Active' ELSE 'Inactive' END as status
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        WHERE p.id = ?
+      `;
+
+      const product = sqlite.prepare(productQuery).get(productId);
+
+      if (!product) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+
+      // Stock movements from sales (outgoing)
+      const salesMovementsQuery = `
+        SELECT 
+          si.id,
+          'sale' as type,
+          -si.quantity as quantity,
+          s.created_at as date,
+          s.order_number as reference,
+          u.name as user,
+          'Sale transaction' as notes,
+          si.unit_price as unitPrice,
+          si.subtotal as totalValue,
+          0 as previousStock,
+          0 as newStock
+        FROM sale_items si
+        LEFT JOIN sales s ON si.sale_id = s.id
+        LEFT JOIN users u ON s.user_id = u.id
+        WHERE si.product_id = ? 
+        AND s.created_at >= date('now', '-${daysBack} days')
+      `;
+
+      const salesMovements = sqlite.prepare(salesMovementsQuery).all(productId);
+
+      // Stock movements from purchases (incoming)
+      const purchaseMovementsQuery = `
+        SELECT 
+          pi.id,
+          'purchase' as type,
+          pi.quantity as quantity,
+          p.created_at as date,
+          COALESCE(p.purchase_number, p.order_number, 'PO-' || p.id) as reference,
+          u.name as user,
+          'Purchase order' as notes,
+          pi.unit_cost as unitPrice,
+          pi.subtotal as totalValue,
+          0 as previousStock,
+          0 as newStock
+        FROM purchase_items pi
+        LEFT JOIN purchases p ON pi.purchase_id = p.id
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE pi.product_id = ? 
+        AND p.created_at >= date('now', '-${daysBack} days')
+      `;
+
+      const purchaseMovements = sqlite.prepare(purchaseMovementsQuery).all(productId);
+
+      // Inventory adjustments
+      const adjustmentMovementsQuery = `
+        SELECT 
+          ia.id,
+          'adjustment' as type,
+          (ia.new_quantity - ia.old_quantity) as quantity,
+          ia.created_at as date,
+          'ADJ-' || ia.id as reference,
+          u.name as user,
+          COALESCE(ia.reason, 'Stock adjustment') as notes,
+          0 as unitPrice,
+          0 as totalValue,
+          ia.old_quantity as previousStock,
+          ia.new_quantity as newStock
+        FROM inventory_adjustments ia
+        LEFT JOIN users u ON ia.user_id = u.id
+        WHERE ia.product_id = ? 
+        AND ia.created_at >= date('now', '-${daysBack} days')
+      `;
+
+      const adjustmentMovements = sqlite.prepare(adjustmentMovementsQuery).all(productId);
+
+      // Combine all movements and calculate stock progression
+      const allMovements = [
+        ...salesMovements,
+        ...purchaseMovements,
+        ...adjustmentMovements
+      ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      // Calculate previous/new stock for sales and purchases
+      let currentStock = product.currentStock;
+      for (let i = allMovements.length - 1; i >= 0; i--) {
+        const movement = allMovements[i];
+        if (movement.type !== 'adjustment') {
+          movement.newStock = currentStock;
+          movement.previousStock = currentStock - movement.quantity;
+          currentStock = movement.previousStock;
+        }
+      }
+
+      // Sales history
+      const salesHistoryQuery = `
+        SELECT 
+          si.id,
+          s.id as saleId,
+          s.order_number as orderNumber,
+          COALESCE(c.name, 'Walk-in Customer') as customer,
+          si.quantity,
+          si.unit_price as unitPrice,
+          si.subtotal,
+          s.created_at as date,
+          s.status
+        FROM sale_items si
+        LEFT JOIN sales s ON si.sale_id = s.id
+        LEFT JOIN customers c ON s.customer_id = c.id
+        WHERE si.product_id = ? 
+        AND s.created_at >= date('now', '-${daysBack} days')
+        ORDER BY s.created_at DESC
+      `;
+
+      const salesHistory = sqlite.prepare(salesHistoryQuery).all(productId);
+
+      // Purchase history
+      const purchaseHistoryQuery = `
+        SELECT 
+          pi.id,
+          p.id as purchaseId,
+          COALESCE(p.purchase_number, p.order_number, 'PO-' || p.id) as orderNumber,
+          s.name as supplier,
+          pi.quantity,
+          pi.unit_cost as unitCost,
+          pi.subtotal,
+          p.created_at as date,
+          p.status
+        FROM purchase_items pi
+        LEFT JOIN purchases p ON pi.purchase_id = p.id
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        WHERE pi.product_id = ? 
+        AND p.created_at >= date('now', '-${daysBack} days')
+        ORDER BY p.created_at DESC
+      `;
+
+      const purchaseHistory = sqlite.prepare(purchaseHistoryQuery).all(productId);
+
+      // Price history (simulated from product updates - would need audit table in real implementation)
+      const priceHistory = [];
+
+      // Analytics calculations
+      const analyticsQuery = `
+        SELECT 
+          COALESCE(SUM(si.quantity), 0) as totalSold,
+          COALESCE(AVG(si.unit_price), 0) as averageSalePrice,
+          COALESCE(MAX(s.created_at), '') as lastSaleDate
+        FROM sale_items si
+        LEFT JOIN sales s ON si.sale_id = s.id
+        WHERE si.product_id = ? 
+        AND s.created_at >= date('now', '-${daysBack} days')
+      `;
+
+      const salesAnalytics = sqlite.prepare(analyticsQuery).get(productId);
+
+      const purchaseAnalyticsQuery = `
+        SELECT 
+          COALESCE(SUM(pi.quantity), 0) as totalPurchased,
+          COALESCE(AVG(pi.unit_cost), 0) as averagePurchasePrice,
+          COALESCE(MAX(p.created_at), '') as lastPurchaseDate
+        FROM purchase_items pi
+        LEFT JOIN purchases p ON pi.purchase_id = p.id
+        WHERE pi.product_id = ? 
+        AND p.created_at >= date('now', '-${daysBack} days')
+      `;
+
+      const purchaseAnalytics = sqlite.prepare(purchaseAnalyticsQuery).get(productId);
+
+      const profitMargin = salesAnalytics.averageSalePrice > 0 && purchaseAnalytics.averagePurchasePrice > 0
+        ? ((salesAnalytics.averageSalePrice - purchaseAnalytics.averagePurchasePrice) / salesAnalytics.averageSalePrice) * 100
+        : 0;
+
+      const turnoverRate = salesAnalytics.totalSold > 0 && product.currentStock > 0
+        ? salesAnalytics.totalSold / (salesAnalytics.totalSold + product.currentStock)
+        : 0;
+
+      const analytics = {
+        totalSold: salesAnalytics.totalSold || 0,
+        totalPurchased: purchaseAnalytics.totalPurchased || 0,
+        averageSalePrice: salesAnalytics.averageSalePrice || 0,
+        averagePurchasePrice: purchaseAnalytics.averagePurchasePrice || 0,
+        profitMargin: profitMargin,
+        turnoverRate: turnoverRate,
+        daysInStock: 30, // Simplified calculation
+        lastSaleDate: salesAnalytics.lastSaleDate || null,
+        lastPurchaseDate: purchaseAnalytics.lastPurchaseDate || null
+      };
+
+      const result = {
+        product: {
+          ...product,
+          currentStock: Number(product.currentStock) || 0,
+          price: Number(product.price) || 0,
+          cost: Number(product.cost) || 0
+        },
+        stockMovements: allMovements.map(movement => ({
+          ...movement,
+          quantity: Number(movement.quantity) || 0,
+          unitPrice: Number(movement.unitPrice) || 0,
+          totalValue: Number(movement.totalValue) || 0,
+          previousStock: Number(movement.previousStock) || 0,
+          newStock: Number(movement.newStock) || 0
+        })),
+        priceHistory: priceHistory,
+        salesHistory: salesHistory.map(sale => ({
+          ...sale,
+          quantity: Number(sale.quantity) || 0,
+          unitPrice: Number(sale.unitPrice) || 0,
+          subtotal: Number(sale.subtotal) || 0
+        })),
+        purchaseHistory: purchaseHistory.map(purchase => ({
+          ...purchase,
+          quantity: Number(purchase.quantity) || 0,
+          unitCost: Number(purchase.unitCost) || 0,
+          subtotal: Number(purchase.subtotal) || 0
+        })),
+        analytics: analytics
+      };
+
+      console.log('✅ Product history generated successfully');
+      res.json(result);
+    } catch (error) {
+      console.error('❌ Product history error:', error);
+      res.status(500).json({ error: 'Failed to generate product history' });
+    }
+  });
+
   // Delete purchase
   app.delete("/api/purchases/:id", isAuthenticated, async (req, res) => {
     try {
