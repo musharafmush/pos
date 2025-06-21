@@ -357,16 +357,35 @@ export default function SalesDashboard() {
   };
 
   const openEditDialog = (sale: any) => {
-    setSelectedSale(sale);
-    setEditForm({
-      orderNumber: sale.orderNumber || '',
-      customerId: sale.customerId?.toString() || '',
-      customerName: sale.customerName || sale.customer?.name || '',
-      total: sale.total?.toString() || '',
-      paymentMethod: sale.paymentMethod || 'cash',
-      status: sale.status || 'completed'
+    // Use the comprehensive customer billing edit form instead
+    const customerBillingData = {
+      customerId: sale.customerId || sale.customer_id,
+      customerName: sale.customerName || sale.customer?.name || 'Walk-in Customer',
+      phone: sale.customer?.phone || '',
+      email: sale.customer?.email || '',
+      address: sale.customer?.address || '',
+      totalBilled: sale.total?.toString() || '0',
+      orderCount: '1',
+      averageOrderValue: sale.total?.toString() || '0',
+      status: 'active',
+      paymentMethod: sale.paymentMethod || 'cash'
+    };
+    
+    setSelectedCustomerBilling(customerBillingData);
+    setCustomerBillingForm({
+      customerName: customerBillingData.customerName,
+      phone: customerBillingData.phone,
+      email: customerBillingData.email,
+      address: customerBillingData.address,
+      totalBilled: customerBillingData.totalBilled,
+      orderCount: customerBillingData.orderCount,
+      averageOrderValue: customerBillingData.averageOrderValue,
+      status: customerBillingData.status,
+      paymentTerm: '',
+      creditLimit: '',
+      notes: ''
     });
-    setIsEditDialogOpen(true);
+    setIsEditCustomerBillingDialogOpen(true);
   };
 
   const openDeleteDialog = (sale: any) => {
