@@ -450,9 +450,9 @@ export default function CashRegisterManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentRegisters.map((register: CashRegister) => (
+                    {recentRegisters.map((register: any) => (
                       <tr key={register.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium">{register.registerId}</td>
+                        <td className="py-3 px-4 font-medium">{register.register_id}</td>
                         <td className="py-3 px-4">
                           <Badge
                             variant={register.status === 'open' ? 'default' : 'secondary'}
@@ -461,12 +461,12 @@ export default function CashRegisterManagement() {
                             {register.status.toUpperCase()}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4">{formatCurrency(register.openingCash)}</td>
-                        <td className="py-3 px-4">{formatCurrency(register.totalSales)}</td>
-                        <td className="py-3 px-4">{formatCurrency(register.currentCash)}</td>
-                        <td className="py-3 px-4">{register.openedBy}</td>
+                        <td className="py-3 px-4">{formatCurrency(register.opening_cash)}</td>
+                        <td className="py-3 px-4">{formatCurrency(register.total_sales)}</td>
+                        <td className="py-3 px-4">{formatCurrency(register.current_cash)}</td>
+                        <td className="py-3 px-4">{register.opened_by}</td>
                         <td className="py-3 px-4">
-                          {new Date(register.openedAt).toLocaleDateString()}
+                          {new Date(register.opened_at).toLocaleDateString()}
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
