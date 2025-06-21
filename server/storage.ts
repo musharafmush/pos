@@ -2826,14 +2826,33 @@ export const storage = {
   },
 
   async getExpenses(): Promise<(Expense & { categoryName?: string; supplierName?: string; userName?: string })[]> {
-    return await db.query.expenses.findMany({
-      with: {
-        category: true,
-        supplier: true,
-        user: true
-      },
-      orderBy: [desc(expenses.createdAt)]
-    });
+    try {
+      // Use direct SQLite query to avoid schema compatibility issues
+      const { sqlite } = await import('../db/index.js');
+      
+      const expensesData = sqlite.prepare(`
+        SELECT 
+          e.*,
+          ec.name as categoryName,
+          s.name as supplierName,
+          u.name as userName
+        FROM expenses e
+        LEFT JOIN expense_categories ec ON e.category_id = ec.id
+        LEFT JOIN suppliers s ON e.supplier_id = s.id
+        LEFT JOIN users u ON e.user_id = u.id
+        ORDER BY e.created_at DESC
+      `).all();
+
+      return expensesData.map(expense => ({
+        ...expense,
+        expenseDate: new Date(expense.expense_date),
+        createdAt: new Date(expense.created_at),
+        updatedAt: new Date(expense.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      return [];
+    }
   },
 
   async getExpenseById(id: number): Promise<(Expense & { categoryName?: string; supplierName?: string; userName?: string }) | null> {
