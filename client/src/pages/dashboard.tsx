@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { SalesChart } from "@/components/dashboard/sales-chart";
@@ -20,7 +21,6 @@ import {
   PercentIcon,
   BadgePercentIcon
 } from "lucide-react";
-import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFormatCurrency } from "@/lib/currency";
@@ -194,6 +194,17 @@ export default function Dashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Low Stock Items</h3>
           <LowStockItems />
+        </div>
+
+        {/* Test Link to Cash Register Management */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h3 className="text-lg font-semibold text-blue-800 mb-2">Cash Register Management</h3>
+          <p className="text-blue-600 mb-3">Manage cash register operations and view transaction history</p>
+          <Link href="/cash-register-management">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              Open Cash Register Management
+            </Button>
+          </Link>
         </div>
       </div>
     </DashboardLayout>
