@@ -5200,7 +5200,7 @@ app.post("/api/customers", async (req, res) => {
         SELECT 
           s.id,
           s.name,
-          s.contact,
+          s.phone as contact,
           s.email,
           COUNT(p.id) as totalPurchases,
           ROUND(COALESCE(SUM(p.total), 0), 2) as totalSpent,
@@ -5219,7 +5219,7 @@ app.post("/api/customers", async (req, res) => {
           END as performance
         FROM suppliers s
         LEFT JOIN purchases p ON s.id = p.supplier_id AND p.supplier_id IS NOT NULL
-        GROUP BY s.id, s.name, s.contact, s.email
+        GROUP BY s.id, s.name, s.phone, s.email
         ORDER BY totalSpent DESC, s.name ASC
         LIMIT 20
       `;
