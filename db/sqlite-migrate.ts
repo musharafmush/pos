@@ -25,7 +25,9 @@ export async function initializeDatabase() {
     'purchases',
     'purchase_items',
     'returns',
-    'return_items'
+    'return_items',
+    'expense_categories',
+    'expenses'
   ];
 
   // Users table
@@ -377,6 +379,69 @@ export async function initializeDatabase() {
     }
 
     console.log('✅ Default suppliers created');
+  }
+
+  // Expense Categories table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS expense_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Expenses table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      expense_number TEXT NOT NULL UNIQUE,
+      title TEXT NOT NULL,
+      description TEXT,
+      amount TEXT NOT NULL,
+      expense_date DATETIME NOT NULL,
+      payment_method TEXT NOT NULL,
+      category_id INTEGER NOT NULL,
+      supplier_id INTEGER,
+      user_id INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      notes TEXT,
+      receipt_number TEXT,
+      reference TEXT,
+      recurring INTEGER DEFAULT 0,
+      recurring_period TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (category_id) REFERENCES expense_categories (id),
+      FOREIGN KEY (supplier_id) REFERENCES suppliers (id),
+      FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+  `);
+
+  // Create default expense categories
+  const existingExpenseCategories = db.prepare('SELECT COUNT(*) as count FROM expense_categories').get();
+  if (existingExpenseCategories.count === 0) {
+    const expenseCategories = [
+      { name: 'Office Supplies', description: 'Stationery, equipment, and office materials' },
+      { name: 'Travel & Transportation', description: 'Business travel, fuel, and transportation costs' },
+      { name: 'Marketing & Advertising', description: 'Promotional materials, ads, and marketing campaigns' },
+      { name: 'Utilities', description: 'Electricity, water, internet, and phone bills' },
+      { name: 'Equipment & Maintenance', description: 'Equipment purchases and maintenance costs' },
+      { name: 'Professional Services', description: 'Legal, accounting, and consulting fees' },
+      { name: 'Insurance', description: 'Business insurance premiums' },
+      { name: 'Rent & Facilities', description: 'Office rent and facility costs' }
+    ];
+
+    const insertExpenseCategory = db.prepare(`
+      INSERT INTO expense_categories (name, description)
+      VALUES (?, ?)
+    `);
+
+    for (const category of expenseCategories) {
+      insertExpenseCategory.run(category.name, category.description);
+    }
+
+    console.log('✅ Default expense categories created');
   }
 
   db.close();
