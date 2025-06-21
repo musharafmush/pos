@@ -5043,8 +5043,8 @@ app.post("/api/customers", async (req, res) => {
           c.phone,
           c.email,
           COUNT(s.id) as totalOrders,
-          ROUND(SUM(s.total), 2) as totalSpent,
-          ROUND(AVG(s.total), 2) as avgOrderValue,
+          ROUND(COALESCE(SUM(s.total), 0), 2) as totalSpent,
+          ROUND(COALESCE(AVG(s.total), 0), 2) as avgOrderValue,
           MAX(s.created_at) as lastOrderDate,
           CASE 
             WHEN MAX(s.created_at) >= date('now', '-30 days') THEN 'active'
@@ -5052,7 +5052,7 @@ app.post("/api/customers", async (req, res) => {
           END as status
         FROM customers c
         LEFT JOIN sales s ON c.id = s.customer_id
-        WHERE s.created_at >= date('now', '-${daysBack} days')
+        WHERE s.id IS NOT NULL
         GROUP BY c.id, c.name, c.phone, c.email
         HAVING totalOrders > 0
         ORDER BY totalSpent DESC
