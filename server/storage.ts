@@ -12,6 +12,8 @@ import {
   cashRegisters,
   cashRegisterTransactions,
   inventoryAdjustments,
+  expenses,
+  expenseCategories,
   User,
   Product,
   Category,
@@ -23,7 +25,11 @@ import {
   PurchaseItem,
   CashRegister,
   CashRegisterTransaction,
-  InventoryAdjustment
+  InventoryAdjustment,
+  Expense,
+  ExpenseCategory,
+  ExpenseInsert,
+  ExpenseCategoryInsert
 } from "../shared/schema.js";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -2771,5 +2777,152 @@ export const storage = {
       console.error('Error deleting inventory adjustment:', error);
       throw error;
     }
+  },
+
+  // Expense Categories Operations
+  async createExpenseCategory(categoryData: ExpenseCategoryInsert): Promise<ExpenseCategory> {
+    const [category] = await db.insert(expenseCategories).values(categoryData).returning();
+    return category;
+  },
+
+  async getExpenseCategories(): Promise<ExpenseCategory[]> {
+    return await db.query.expenseCategories.findMany({
+      orderBy: [desc(expenseCategories.name)]
+    });
+  },
+
+  async updateExpenseCategory(id: number, updates: Partial<ExpenseCategoryInsert>): Promise<ExpenseCategory | null> {
+    const [category] = await db.update(expenseCategories)
+      .set(updates)
+      .where(eq(expenseCategories.id, id))
+      .returning();
+    return category || null;
+  },
+
+  async deleteExpenseCategory(id: number): Promise<boolean> {
+    const result = await db.delete(expenseCategories).where(eq(expenseCategories.id, id));
+    return result.rowCount > 0;
+  },
+
+  // Expense Operations
+  async createExpense(expenseData: ExpenseInsert): Promise<Expense> {
+    const expenseNumber = `EXP-${Date.now()}`;
+    const [expense] = await db.insert(expenses).values({
+      ...expenseData,
+      expenseNumber,
+      expenseDate: expenseData.expenseDate || new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return expense;
+  },
+
+  async getExpenses(): Promise<(Expense & { categoryName?: string; supplierName?: string; userName?: string })[]> {
+    return await db.query.expenses.findMany({
+      with: {
+        category: true,
+        supplier: true,
+        user: true
+      },
+      orderBy: [desc(expenses.createdAt)]
+    });
+  },
+
+  async getExpenseById(id: number): Promise<(Expense & { categoryName?: string; supplierName?: string; userName?: string }) | null> {
+    return await db.query.expenses.findFirst({
+      where: eq(expenses.id, id),
+      with: {
+        category: true,
+        supplier: true,
+        user: true
+      }
+    });
+  },
+
+  async updateExpense(id: number, updates: Partial<ExpenseInsert>): Promise<Expense | null> {
+    const [expense] = await db.update(expenses)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(expenses.id, id))
+      .returning();
+    return expense || null;
+  },
+
+  async deleteExpense(id: number): Promise<boolean> {
+    const result = await db.delete(expenses).where(eq(expenses.id, id));
+    return result.rowCount > 0;
+  },
+
+  async getExpensesByDateRange(startDate: Date, endDate: Date): Promise<(Expense & { categoryName?: string; supplierName?: string })[]> {
+    return await db.query.expenses.findMany({
+      where: and(
+        gte(expenses.expenseDate, startDate),
+        lte(expenses.expenseDate, endDate)
+      ),
+      with: {
+        category: true,
+        supplier: true
+      },
+      orderBy: [desc(expenses.expenseDate)]
+    });
+  },
+
+  async getExpensesByCategory(categoryId: number): Promise<Expense[]> {
+    return await db.query.expenses.findMany({
+      where: eq(expenses.categoryId, categoryId),
+      orderBy: [desc(expenses.expenseDate)]
+    });
+  },
+
+  async getExpensesByStatus(status: string): Promise<Expense[]> {
+    return await db.query.expenses.findMany({
+      where: eq(expenses.status, status),
+      orderBy: [desc(expenses.expenseDate)]
+    });
+  },
+
+  async getExpenseStats(): Promise<{
+    totalExpenses: number;
+    pendingExpenses: number;
+    paidExpenses: number;
+    thisMonthTotal: number;
+    lastMonthTotal: number;
+  }> {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    const [totalResult] = await db.select({
+      total: sql<number>`COALESCE(SUM(CAST(${expenses.amount} AS DECIMAL)), 0)`,
+      count: sql<number>`COUNT(*)`
+    }).from(expenses);
+
+    const [pendingResult] = await db.select({
+      count: sql<number>`COUNT(*)`
+    }).from(expenses).where(eq(expenses.status, 'pending'));
+
+    const [paidResult] = await db.select({
+      count: sql<number>`COUNT(*)`
+    }).from(expenses).where(eq(expenses.status, 'paid'));
+
+    const [thisMonthResult] = await db.select({
+      total: sql<number>`COALESCE(SUM(CAST(${expenses.amount} AS DECIMAL)), 0)`
+    }).from(expenses).where(gte(expenses.expenseDate, startOfMonth));
+
+    const [lastMonthResult] = await db.select({
+      total: sql<number>`COALESCE(SUM(CAST(${expenses.amount} AS DECIMAL)), 0)`
+    }).from(expenses).where(
+      and(
+        gte(expenses.expenseDate, startOfLastMonth),
+        lte(expenses.expenseDate, endOfLastMonth)
+      )
+    );
+
+    return {
+      totalExpenses: totalResult.total,
+      pendingExpenses: pendingResult.count,
+      paidExpenses: paidResult.count,
+      thisMonthTotal: thisMonthResult.total,
+      lastMonthTotal: lastMonthResult.total
+    };
   }
 };

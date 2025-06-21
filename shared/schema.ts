@@ -568,6 +568,81 @@ export type InventoryAdjustmentInsert = z.infer<typeof inventoryAdjustmentInsert
 export const inventoryAdjustmentSelectSchema = createSelectSchema(inventoryAdjustments);
 export type InventoryAdjustment = z.infer<typeof inventoryAdjustmentSelectSchema>;
 
+// Expense categories table
+export const expenseCategories = pgTable('expense_categories', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  description: text('description'),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Expenses table
+export const expenses = pgTable('expenses', {
+  id: serial('id').primaryKey(),
+  expenseNumber: text('expense_number').notNull().unique(),
+  title: text('title').notNull(),
+  description: text('description'),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  categoryId: integer('category_id').references(() => expenseCategories.id).notNull(),
+  supplierId: integer('supplier_id').references(() => suppliers.id),
+  paymentMethod: text('payment_method').notNull().default('cash'), // 'cash', 'upi', 'card', 'bank', 'cheque'
+  expenseDate: timestamp('expense_date').notNull(),
+  dueDate: timestamp('due_date'),
+  status: text('status').notNull().default('pending'), // 'pending', 'paid', 'cancelled'
+  paidAmount: decimal('paid_amount', { precision: 10, scale: 2 }).notNull().default('0'),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  receiptImage: text('receipt_image'),
+  notes: text('notes'),
+  tags: text('tags'), // comma-separated tags
+  recurring: boolean('recurring').notNull().default(false),
+  recurringPeriod: text('recurring_period'), // 'weekly', 'monthly', 'yearly'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// Expense categories relations
+export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
+  expenses: many(expenses)
+}));
+
+// Expenses relations
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  category: one(expenseCategories, { fields: [expenses.categoryId], references: [expenseCategories.id] }),
+  supplier: one(suppliers, { fields: [expenses.supplierId], references: [suppliers.id] }),
+  user: one(users, { fields: [expenses.userId], references: [users.id] })
+}));
+
+// Expense categories validation schemas
+export const expenseCategoryInsertSchema = createInsertSchema(expenseCategories, {
+  name: (schema) => schema.min(1, "Category name is required"),
+  description: (schema) => schema.optional(),
+  active: (schema) => schema.optional()
+});
+export type ExpenseCategoryInsert = z.infer<typeof expenseCategoryInsertSchema>;
+export const expenseCategorySelectSchema = createSelectSchema(expenseCategories);
+export type ExpenseCategory = z.infer<typeof expenseCategorySelectSchema>;
+
+// Expenses validation schemas
+export const expenseInsertSchema = createInsertSchema(expenses, {
+  title: (schema) => schema.min(1, "Expense title is required"),
+  amount: (schema) => schema.min(0, "Amount must be at least 0"),
+  description: (schema) => schema.optional(),
+  paymentMethod: (schema) => schema.refine(val => ['cash', 'upi', 'card', 'bank', 'cheque'].includes(val), "Invalid payment method"),
+  status: (schema) => schema.refine(val => ['pending', 'paid', 'cancelled'].includes(val), "Invalid status").optional(),
+  paidAmount: (schema) => schema.min(0, "Paid amount must be at least 0").optional(),
+  receiptImage: (schema) => schema.optional(),
+  notes: (schema) => schema.optional(),
+  tags: (schema) => schema.optional(),
+  recurring: (schema) => schema.optional(),
+  recurringPeriod: (schema) => schema.optional(),
+  supplierId: (schema) => schema.optional(),
+  dueDate: (schema) => schema.optional()
+});
+export type ExpenseInsert = z.infer<typeof expenseInsertSchema>;
+export const expenseSelectSchema = createSelectSchema(expenses);
+export type Expense = z.infer<typeof expenseSelectSchema>;
+
 export const settingsInsertSchema = createInsertSchema(settings, {
   key: (schema) => schema.min(1, "Key must not be empty"),
   value: (schema) => schema.min(1, "Value must not be empty")

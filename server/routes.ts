@@ -6467,5 +6467,181 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Expense Categories Routes
+  app.get('/api/expense-categories', async (req, res) => {
+    try {
+      const categories = await storage.getExpenseCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching expense categories:', error);
+      res.status(500).json({ message: 'Failed to fetch expense categories' });
+    }
+  });
+
+  app.post('/api/expense-categories', async (req, res) => {
+    try {
+      const categoryData = req.body;
+      const category = await storage.createExpenseCategory(categoryData);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error('Error creating expense category:', error);
+      res.status(500).json({ message: 'Failed to create expense category' });
+    }
+  });
+
+  app.put('/api/expense-categories/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const category = await storage.updateExpenseCategory(id, updates);
+      if (!category) {
+        return res.status(404).json({ message: 'Expense category not found' });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error('Error updating expense category:', error);
+      res.status(500).json({ message: 'Failed to update expense category' });
+    }
+  });
+
+  app.delete('/api/expense-categories/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteExpenseCategory(id);
+      if (!success) {
+        return res.status(404).json({ message: 'Expense category not found' });
+      }
+      res.json({ message: 'Expense category deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting expense category:', error);
+      res.status(500).json({ message: 'Failed to delete expense category' });
+    }
+  });
+
+  // Expenses Routes
+  app.get('/api/expenses', async (req, res) => {
+    try {
+      const expenses = await storage.getExpenses();
+      res.json(expenses);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      res.status(500).json({ message: 'Failed to fetch expenses' });
+    }
+  });
+
+  app.get('/api/expenses/stats', async (req, res) => {
+    try {
+      const stats = await storage.getExpenseStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching expense stats:', error);
+      res.status(500).json({ message: 'Failed to fetch expense stats' });
+    }
+  });
+
+  app.get('/api/expenses/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const expense = await storage.getExpenseById(id);
+      if (!expense) {
+        return res.status(404).json({ message: 'Expense not found' });
+      }
+      res.json(expense);
+    } catch (error) {
+      console.error('Error fetching expense:', error);
+      res.status(500).json({ message: 'Failed to fetch expense' });
+    }
+  });
+
+  app.post('/api/expenses', async (req, res) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const expenseData = {
+        ...req.body,
+        userId: user.id,
+        expenseDate: new Date(req.body.expenseDate || new Date())
+      };
+
+      const expense = await storage.createExpense(expenseData);
+      res.status(201).json(expense);
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      res.status(500).json({ message: 'Failed to create expense' });
+    }
+  });
+
+  app.put('/api/expenses/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const expense = await storage.updateExpense(id, updates);
+      if (!expense) {
+        return res.status(404).json({ message: 'Expense not found' });
+      }
+      res.json(expense);
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      res.status(500).json({ message: 'Failed to update expense' });
+    }
+  });
+
+  app.delete('/api/expenses/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteExpense(id);
+      if (!success) {
+        return res.status(404).json({ message: 'Expense not found' });
+      }
+      res.json({ message: 'Expense deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      res.status(500).json({ message: 'Failed to delete expense' });
+    }
+  });
+
+  app.get('/api/expenses/by-date-range', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: 'Start date and end date are required' });
+      }
+      
+      const expenses = await storage.getExpensesByDateRange(
+        new Date(startDate as string),
+        new Date(endDate as string)
+      );
+      res.json(expenses);
+    } catch (error) {
+      console.error('Error fetching expenses by date range:', error);
+      res.status(500).json({ message: 'Failed to fetch expenses by date range' });
+    }
+  });
+
+  app.get('/api/expenses/by-category/:categoryId', async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      const expenses = await storage.getExpensesByCategory(categoryId);
+      res.json(expenses);
+    } catch (error) {
+      console.error('Error fetching expenses by category:', error);
+      res.status(500).json({ message: 'Failed to fetch expenses by category' });
+    }
+  });
+
+  app.get('/api/expenses/by-status/:status', async (req, res) => {
+    try {
+      const status = req.params.status;
+      const expenses = await storage.getExpensesByStatus(status);
+      res.json(expenses);
+    } catch (error) {
+      console.error('Error fetching expenses by status:', error);
+      res.status(500).json({ message: 'Failed to fetch expenses by status' });
+    }
+  });
+
   return httpServer;
 }
