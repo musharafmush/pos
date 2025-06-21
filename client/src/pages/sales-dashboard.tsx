@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { printReceipt } from "@/components/pos/print-receipt";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1149,7 +1150,34 @@ export default function SalesDashboard() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    window.print();
+                                    // Create receipt data structure for printing
+                                    const receiptData = {
+                                      billNumber: sale.orderNumber || 'N/A',
+                                      billDate: sale.createdAt || new Date().toISOString(),
+                                      customerDetails: {
+                                        name: sale.customerName || 'Walk-in Customer'
+                                      },
+                                      salesMan: sale.userName || 'Admin',
+                                      items: sale.items?.map((item: any) => ({
+                                        id: item.id || 1,
+                                        name: item.product?.name || item.productName || 'Unknown Product',
+                                        sku: item.product?.sku || item.sku || 'N/A',
+                                        quantity: item.quantity || 1,
+                                        price: (item.unitPrice || item.price || 0).toString(),
+                                        total: item.subtotal || item.total || 0,
+                                        mrp: item.unitPrice || item.price || 0
+                                      })) || [],
+                                      subtotal: (sale.total || 0) - (sale.tax || 0),
+                                      discount: sale.discount || 0,
+                                      discountType: 'fixed' as const,
+                                      taxRate: 0,
+                                      taxAmount: sale.tax || 0,
+                                      grandTotal: sale.total || 0,
+                                      amountPaid: sale.total || 0,
+                                      changeDue: 0,
+                                      paymentMethod: sale.paymentMethod || 'cash'
+                                    };
+                                    printReceipt(receiptData);
                                   }}
                                   className="h-7 px-2 text-xs text-green-600 hover:text-green-800"
                                 >
@@ -2260,7 +2288,34 @@ export default function SalesDashboard() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                      window.print();
+                                      // Create receipt data structure for printing
+                                      const receiptData = {
+                                        billNumber: sale.orderNumber || 'N/A',
+                                        billDate: sale.createdAt || new Date().toISOString(),
+                                        customerDetails: {
+                                          name: sale.customerName || 'Walk-in Customer'
+                                        },
+                                        salesMan: sale.userName || 'Admin',
+                                        items: sale.items?.map((item: any) => ({
+                                          id: item.id || 1,
+                                          name: item.product?.name || item.productName || 'Unknown Product',
+                                          sku: item.product?.sku || item.sku || 'N/A',
+                                          quantity: item.quantity || 1,
+                                          price: (item.unitPrice || item.price || 0).toString(),
+                                          total: item.subtotal || item.total || 0,
+                                          mrp: item.unitPrice || item.price || 0
+                                        })) || [],
+                                        subtotal: (sale.total || 0) - (sale.tax || 0),
+                                        discount: sale.discount || 0,
+                                        discountType: 'fixed' as const,
+                                        taxRate: 0,
+                                        taxAmount: sale.tax || 0,
+                                        grandTotal: sale.total || 0,
+                                        amountPaid: sale.total || 0,
+                                        changeDue: 0,
+                                        paymentMethod: sale.paymentMethod || 'cash'
+                                      };
+                                      printReceipt(receiptData);
                                     }}
                                     className="h-8 px-2 text-xs text-green-600 hover:text-green-800 hover:bg-green-50"
                                   >
