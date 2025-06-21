@@ -121,6 +121,7 @@ export default function ProductHistory() {
   // Fetch product history data
   const { data: historyData, isLoading } = useQuery<ProductHistoryData>({
     queryKey: ['/api/products/history', selectedProductId, dateFilter],
+    queryFn: () => fetch(`/api/products/history/${selectedProductId}?range=${dateFilter}`).then(res => res.json()),
     enabled: !!selectedProductId,
   });
 
