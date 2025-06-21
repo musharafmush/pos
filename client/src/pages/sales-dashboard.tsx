@@ -2879,7 +2879,34 @@ export default function SalesDashboard() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      window.print();
+                      // Create receipt data structure for printing
+                      const receiptData = {
+                        billNumber: selectedSaleDetail.orderNumber || 'N/A',
+                        billDate: selectedSaleDetail.createdAt || new Date().toISOString(),
+                        customerDetails: {
+                          name: selectedSaleDetail.customerName || 'Walk-in Customer'
+                        },
+                        salesMan: selectedSaleDetail.userName || 'Admin',
+                        items: selectedSaleDetail.items?.map((item: any) => ({
+                          id: item.id || 1,
+                          name: item.product?.name || item.productName || 'Unknown Product',
+                          sku: item.product?.sku || item.sku || 'N/A',
+                          quantity: item.quantity || 1,
+                          price: (item.unitPrice || item.price || 0).toString(),
+                          total: item.subtotal || item.total || 0,
+                          mrp: item.unitPrice || item.price || 0
+                        })) || [],
+                        subtotal: (selectedSaleDetail.total || 0) - (selectedSaleDetail.tax || 0),
+                        discount: selectedSaleDetail.discount || 0,
+                        discountType: 'fixed' as const,
+                        taxRate: 0,
+                        taxAmount: selectedSaleDetail.tax || 0,
+                        grandTotal: selectedSaleDetail.total || 0,
+                        amountPaid: selectedSaleDetail.total || 0,
+                        changeDue: 0,
+                        paymentMethod: selectedSaleDetail.paymentMethod || 'cash'
+                      };
+                      printReceipt(receiptData);
                     }}
                     className="text-green-600 hover:text-green-800"
                   >
