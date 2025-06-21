@@ -5035,7 +5035,7 @@ app.post("/api/customers", async (req, res) => {
         ? (repeatStats.repeatCustomers / repeatStats.totalWithOrders * 100) 
         : 0;
 
-      // Top customers
+      // Top customers - if no customers have sales, show all customers with zero data
       const topCustomersQuery = `
         SELECT 
           c.id,
@@ -5051,11 +5051,9 @@ app.post("/api/customers", async (req, res) => {
             ELSE 'inactive'
           END as status
         FROM customers c
-        LEFT JOIN sales s ON c.id = s.customer_id
-        WHERE s.id IS NOT NULL
+        LEFT JOIN sales s ON c.id = s.customer_id AND s.customer_id IS NOT NULL
         GROUP BY c.id, c.name, c.phone, c.email
-        HAVING totalOrders > 0
-        ORDER BY totalSpent DESC
+        ORDER BY totalSpent DESC, c.name ASC
         LIMIT 20
       `;
 
