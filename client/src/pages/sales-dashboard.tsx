@@ -2704,14 +2704,14 @@ export default function SalesDashboard() {
                             <TableCell className="font-medium">{index + 1}</TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{item.productName || item.name || "Unknown Product"}</div>
+                                <div className="font-medium">{item.product?.name || item.productName || item.name || "Unknown Product"}</div>
                                 {item.description && (
                                   <div className="text-xs text-gray-500">{item.description}</div>
                                 )}
                               </div>
                             </TableCell>
                             <TableCell>
-                              <span className="font-mono text-sm">{item.sku || item.productSku || "N/A"}</span>
+                              <span className="font-mono text-sm">{item.product?.sku || item.sku || item.productSku || "N/A"}</span>
                             </TableCell>
                             <TableCell className="text-right">
                               {formatCurrency(parseFloat(item.unitPrice || item.price || 0))}
