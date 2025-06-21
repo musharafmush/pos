@@ -21,19 +21,36 @@ const redeemPointsSchema = z.object({
   points: z.string().min(1, "Points amount is required")
 });
 
+const addPointsSchema = z.object({
+  customerId: z.string().min(1, "Customer is required"),
+  points: z.string().min(1, "Points amount is required"),
+  reason: z.string().min(1, "Reason is required")
+});
+
 type RedeemPointsData = z.infer<typeof redeemPointsSchema>;
+type AddPointsData = z.infer<typeof addPointsSchema>;
 
 export default function LoyaltyManagement() {
   const [isRedeemDialogOpen, setIsRedeemDialogOpen] = useState(false);
+  const [isAddPointsDialogOpen, setIsAddPointsDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<RedeemPointsData>({
+  const redeemForm = useForm<RedeemPointsData>({
     resolver: zodResolver(redeemPointsSchema),
     defaultValues: {
       customerId: "",
       points: ""
+    }
+  });
+
+  const addPointsForm = useForm<AddPointsData>({
+    resolver: zodResolver(addPointsSchema),
+    defaultValues: {
+      customerId: "",
+      points: "",
+      reason: ""
     }
   });
 
@@ -47,17 +64,34 @@ export default function LoyaltyManagement() {
     }
   });
 
-  // Fetch customer loyalty data
-  const { data: loyaltyData = [], isLoading } = useQuery({
-    queryKey: ['/api/loyalty/all'],
+  // Fetch customer loyalty data with enhanced error handling and real-time updates
+  const { data: loyaltyData = [], isLoading, refetch: refetchLoyalty } = useQuery({
+    queryKey: ['/api/loyalty/all', customers.length],
     queryFn: async () => {
+      if (customers.length === 0) return [];
+      
       const loyaltyPromises = customers.map(async (customer: any) => {
         try {
           const response = await fetch(`/api/loyalty/customer/${customer.id}`);
-          if (!response.ok) return null;
+          if (!response.ok) {
+            // If loyalty doesn't exist, create it
+            if (response.status === 404) {
+              const createResponse = await fetch('/api/loyalty/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customerId: customer.id })
+              });
+              if (createResponse.ok) {
+                const newLoyalty = await createResponse.json();
+                return { ...newLoyalty, customer };
+              }
+            }
+            return null;
+          }
           const loyalty = await response.json();
           return { ...loyalty, customer };
         } catch (error) {
+          console.error(`Error fetching loyalty for customer ${customer.id}:`, error);
           return null;
         }
       });
@@ -65,7 +99,9 @@ export default function LoyaltyManagement() {
       const results = await Promise.all(loyaltyPromises);
       return results.filter(Boolean);
     },
-    enabled: customers.length > 0
+    enabled: customers.length > 0,
+    refetchInterval: 30000, // Refresh every 30 seconds for real-time updates
+    staleTime: 10000 // Consider data stale after 10 seconds
   });
 
   // Redeem points mutation
@@ -78,7 +114,8 @@ export default function LoyaltyManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/loyalty/all'] });
       setIsRedeemDialogOpen(false);
-      form.reset();
+      redeemForm.reset();
+      refetchLoyalty();
       toast({
         title: "Success",
         description: "Points redeemed successfully"
@@ -93,8 +130,39 @@ export default function LoyaltyManagement() {
     }
   });
 
+  // Add points mutation
+  const addPointsMutation = useMutation({
+    mutationFn: async (data: AddPointsData) => {
+      return apiRequest('POST', `/api/loyalty/customer/${data.customerId}/add`, {
+        points: parseInt(data.points),
+        reason: data.reason
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/loyalty/all'] });
+      setIsAddPointsDialogOpen(false);
+      addPointsForm.reset();
+      refetchLoyalty();
+      toast({
+        title: "Success",
+        description: "Points added successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add points",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleRedeem = (data: RedeemPointsData) => {
     redeemPointsMutation.mutate(data);
+  };
+
+  const handleAddPoints = (data: AddPointsData) => {
+    addPointsMutation.mutate(data);
   };
 
   const getTierColor = (points: number) => {
@@ -148,10 +216,10 @@ export default function LoyaltyManagement() {
                   Process point redemption for a customer
                 </DialogDescription>
               </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleRedeem)} className="space-y-4">
+              <Form {...redeemForm}>
+                <form onSubmit={redeemForm.handleSubmit(handleRedeem)} className="space-y-4">
                   <FormField
-                    control={form.control}
+                    control={redeemForm.control}
                     name="customerId"
                     render={({ field }) => (
                       <FormItem>
@@ -175,7 +243,7 @@ export default function LoyaltyManagement() {
                     )}
                   />
                   <FormField
-                    control={form.control}
+                    control={redeemForm.control}
                     name="points"
                     render={({ field }) => (
                       <FormItem>
