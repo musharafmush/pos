@@ -2937,19 +2937,78 @@ export const storage = {
 
   // Offer Management
   async createOffer(data: OfferInsert): Promise<Offer> {
-    const [offer] = await db.insert(offers).values(data).returning();
-    return offer;
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const result = sqlite.prepare(`
+        INSERT INTO offers (
+          name, description, offer_type, discount_value, min_purchase_amount,
+          max_discount_amount, buy_quantity, get_quantity, category_id,
+          product_id, usage_limit, per_customer_limit, date_start, date_end,
+          time_start, time_end, points_threshold, points_reward, priority,
+          active, created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).run(
+        data.name,
+        data.description || null,
+        data.offerType,
+        data.discountValue || 0,
+        data.minPurchaseAmount || null,
+        data.maxDiscountAmount || null,
+        data.buyQuantity || null,
+        data.getQuantity || null,
+        data.categoryId || null,
+        data.productId || null,
+        data.usageLimit || null,
+        data.perCustomerLimit || null,
+        data.dateStart || null,
+        data.dateEnd || null,
+        data.timeStart || null,
+        data.timeEnd || null,
+        data.pointsThreshold || null,
+        data.pointsReward || null,
+        data.priority || 0,
+        data.active !== false ? 1 : 0,
+        data.createdBy
+      );
+
+      // Fetch the created offer
+      const offer = sqlite.prepare('SELECT * FROM offers WHERE id = ?').get(result.lastInsertRowid);
+      return {
+        ...offer,
+        active: Boolean(offer.active),
+        createdAt: new Date(offer.created_at),
+        updatedAt: new Date(offer.updated_at)
+      };
+    } catch (error) {
+      console.error('Error creating offer:', error);
+      throw error;
+    }
   },
 
   async getOfferById(id: number): Promise<Offer | null> {
-    const offer = await db.query.offers.findFirst({
-      where: eq(offers.id, id),
-      with: {
-        creator: true,
-        freeProduct: true
-      }
-    });
-    return offer || null;
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const offer = sqlite.prepare(`
+        SELECT o.*, u.name as creatorName
+        FROM offers o
+        LEFT JOIN users u ON o.created_by = u.id
+        WHERE o.id = ?
+      `).get(id);
+
+      if (!offer) return null;
+
+      return {
+        ...offer,
+        active: Boolean(offer.active),
+        createdAt: new Date(offer.created_at),
+        updatedAt: new Date(offer.updated_at)
+      };
+    } catch (error) {
+      console.error('Error fetching offer:', error);
+      return null;
+    }
   },
 
   async listOffers(filters?: {
@@ -2957,25 +3016,48 @@ export const storage = {
     offerType?: string;
     limit?: number;
   }): Promise<Offer[]> {
-    const conditions = [];
-    if (filters?.active !== undefined) {
-      conditions.push(eq(offers.active, filters.active));
-    }
-    if (filters?.offerType) {
-      conditions.push(eq(offers.offerType, filters.offerType));
-    }
+    try {
+      // Use direct SQLite query to avoid schema issues
+      const { sqlite } = await import('../db/index.js');
+      
+      let query = `
+        SELECT o.*, u.name as creatorName
+        FROM offers o
+        LEFT JOIN users u ON o.created_by = u.id
+        WHERE 1=1
+      `;
+      const params = [];
 
-    const query = db.query.offers.findMany({
-      where: conditions.length > 0 ? and(...conditions) : undefined,
-      orderBy: [desc(offers.priority), desc(offers.createdAt)],
-      limit: filters?.limit || 50,
-      with: {
-        creator: true,
-        freeProduct: true
+      if (filters?.active !== undefined) {
+        query += ` AND o.active = ?`;
+        params.push(filters.active ? 1 : 0);
       }
-    });
+      
+      if (filters?.offerType) {
+        query += ` AND o.offer_type = ?`;
+        params.push(filters.offerType);
+      }
 
-    return await query;
+      query += ` ORDER BY o.priority DESC, o.created_at DESC`;
+      
+      if (filters?.limit) {
+        query += ` LIMIT ?`;
+        params.push(filters.limit);
+      } else {
+        query += ` LIMIT 50`;
+      }
+
+      const offers = sqlite.prepare(query).all(...params);
+      return offers.map(offer => ({
+        ...offer,
+        active: Boolean(offer.active),
+        createdAt: new Date(offer.created_at),
+        updatedAt: new Date(offer.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error listing offers:', error);
+      return [];
+    }
   },
 
   async updateOffer(id: number, data: Partial<OfferInsert>): Promise<Offer | null> {
@@ -2988,8 +3070,14 @@ export const storage = {
   },
 
   async deleteOffer(id: number): Promise<boolean> {
-    const result = await db.delete(offers).where(eq(offers.id, id));
-    return result.rowsAffected > 0;
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const result = sqlite.prepare('DELETE FROM offers WHERE id = ?').run(id);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error deleting offer:', error);
+      return false;
+    }
   },
 
   async getActiveOffers(): Promise<Offer[]> {
