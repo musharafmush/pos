@@ -5263,16 +5263,16 @@ app.post("/api/customers", async (req, res) => {
         SELECT 
           p.id,
           s.name as supplierName,
-          p.purchase_number as purchaseNumber,
+          COALESCE(p.purchase_number, p.order_number, 'PO-' || p.id) as purchaseNumber,
           p.created_at as date,
           p.total as amount,
-          COALESCE(p.payment_status, 'Pending') as paymentStatus,
+          COALESCE(p.status, 'Pending') as paymentStatus,
           COUNT(pi.id) as itemsCount
         FROM purchases p
         LEFT JOIN suppliers s ON p.supplier_id = s.id
         LEFT JOIN purchase_items pi ON p.id = pi.purchase_id
         WHERE p.supplier_id IS NOT NULL
-        GROUP BY p.id, s.name, p.purchase_number, p.created_at, p.total, p.payment_status
+        GROUP BY p.id, s.name, p.purchase_number, p.order_number, p.created_at, p.total, p.status
         ORDER BY p.created_at DESC
         LIMIT 20
       `;
