@@ -112,9 +112,10 @@ export default function ProductHistory() {
   const [typeFilter, setTypeFilter] = useState('all');
 
   // Fetch available products for selection
-  const { data: products } = useQuery({
-    queryKey: ['/api/products'],
-    enabled: true,
+  const { data: products, isLoading: productsLoading } = useQuery({
+    queryKey: ['/api/products/search', searchTerm],
+    queryFn: () => fetch(`/api/products/search?q=${encodeURIComponent(searchTerm)}`).then(res => res.json()),
+    enabled: !selectedProductId,
   });
 
   // Fetch product history data
@@ -174,11 +175,7 @@ export default function ProductHistory() {
     }
   };
 
-  const filteredProducts = products?.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredProducts = products || [];
 
   const filteredMovements = historyData?.stockMovements?.filter(movement => {
     if (typeFilter === 'all') return true;
@@ -228,7 +225,7 @@ export default function ProductHistory() {
                         <div className="flex-1">
                           <h3 className="font-semibold text-sm">{product.name}</h3>
                           <p className="text-xs text-gray-500 mt-1">SKU: {product.sku}</p>
-                          <p className="text-xs text-gray-500">Stock: {product.stockQuantity || 0}</p>
+                          <p className="text-xs text-gray-500">Stock: {product.stock_quantity || 0}</p>
                         </div>
                         <Badge variant="outline" className="text-xs">
                           ₹{Number(product.price || 0).toFixed(2)}
@@ -239,7 +236,13 @@ export default function ProductHistory() {
                 ))}
               </div>
               
-              {filteredProducts.length === 0 && (
+              {productsLoading && (
+                <div className="text-center py-8 text-gray-500">
+                  Loading products...
+                </div>
+              )}
+              
+              {!productsLoading && filteredProducts.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   No products found. Try adjusting your search.
                 </div>
