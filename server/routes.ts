@@ -6195,6 +6195,17 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  app.get('/api/cash-register/recent', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string || '10');
+      const registers = await storage.listCashRegisters(limit);
+      res.json(registers);
+    } catch (error: any) {
+      console.error('Error fetching recent cash registers:', error);
+      res.status(500).json({ error: `Failed to fetch recent registers: ${error.message}` });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   // Inventory Adjustments API
