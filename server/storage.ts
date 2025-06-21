@@ -3347,5 +3347,80 @@ export const storage = {
       freeItems,
       pointsEarned
     };
+  },
+
+  // Get product by barcode for POS scanning
+  async getProductByBarcode(barcode: string) {
+    try {
+      const result = await db
+        .select()
+        .from(schema.products)
+        .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
+        .where(eq(schema.products.barcode, barcode))
+        .limit(1);
+
+      if (result.length === 0) return null;
+
+      const { products: product, categories: category } = result[0];
+      
+      return {
+        ...product,
+        category: category ? { name: category.name } : null
+      };
+    } catch (error) {
+      console.error('Error getting product by barcode:', error);
+      throw error;
+    }
+  },
+
+  // Get applicable offers for a specific product and customer
+  async getApplicableOffers(productId: number, customerId?: number) {
+    try {
+      const now = new Date();
+      
+      let query = db
+        .select()
+        .from(schema.offers)
+        .where(
+          and(
+            eq(schema.offers.active, true),
+            lte(schema.offers.validFrom, now),
+            gte(schema.offers.validTo, now)
+          )
+        );
+
+      const allOffers = await query;
+      
+      // Filter offers that apply to this product
+      const applicableOffers = allOffers.filter(offer => {
+        // Check product-specific offers
+        if (offer.applicableProducts) {
+          const applicableProducts = JSON.parse(offer.applicableProducts);
+          if (applicableProducts.includes(productId)) {
+            return true;
+          }
+        }
+        
+        // Check customer-specific offers
+        if (customerId && offer.applicableCustomers) {
+          const applicableCustomers = JSON.parse(offer.applicableCustomers);
+          if (applicableCustomers.includes(customerId)) {
+            return true;
+          }
+        }
+        
+        // Check general offers (no specific products/customers)
+        if (!offer.applicableProducts && !offer.applicableCustomers) {
+          return true;
+        }
+        
+        return false;
+      });
+
+      return applicableOffers;
+    } catch (error) {
+      console.error('Error getting applicable offers:', error);
+      return [];
+    }
   }
 };

@@ -3273,6 +3273,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Barcode scan API for POS with offer triggers
+  app.post('/api/barcode/scan', isAuthenticated, async (req, res) => {
+    try {
+      const { barcode, customerId } = req.body;
+      
+      if (!barcode) {
+        return res.status(400).json({ message: 'Barcode is required' });
+      }
+
+      console.log('🔍 Scanning barcode:', barcode, 'for customer:', customerId);
+
+      // Find product by barcode
+      const product = await storage.getProductByBarcode(barcode);
+      
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found for this barcode' });
+      }
+
+      // Get applicable offers for this product and customer
+      const applicableOffers = await storage.getApplicableOffers(product.id, customerId);
+      
+      // Filter offers that are triggered by barcode scan
+      const barcodeTriggeredOffers = applicableOffers.filter(offer => 
+        offer.triggerType === 'scan' || offer.triggerType === 'barcode_scan'
+      );
+
+      console.log('🎁 Found', barcodeTriggeredOffers.length, 'barcode-triggered offers for product:', product.name);
+
+      res.json({
+        product,
+        triggeredOffers: barcodeTriggeredOffers,
+        message: barcodeTriggeredOffers.length > 0 
+          ? `Product found with ${barcodeTriggeredOffers.length} special offer(s)!`
+          : 'Product found'
+      });
+
+    } catch (error) {
+      console.error('Error processing barcode scan:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Customers API
   app.get('/api/customers', async (req, res) => {
     try {
