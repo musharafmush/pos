@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SearchIcon, PlusIcon, MinusIcon, XIcon, CreditCardIcon, ReceiptIcon, PrinterIcon } from "lucide-react";
+import { SearchIcon, PlusIcon, MinusIcon, XIcon, CreditCardIcon, ReceiptIcon, PrinterIcon, Scan, Gift } from "lucide-react";
+import { OfferEngine } from "@/components/pos/offer-engine";
+import { BarcodeScanner } from "@/components/pos/barcode-scanner";
 import { 
   Dialog,
   DialogContent,
@@ -54,6 +56,10 @@ export default function POS() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastSaleData, setLastSaleData] = useState<any>(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number>();
+  const [appliedOffers, setAppliedOffers] = useState<any[]>([]);
+  const [totalOfferDiscount, setTotalOfferDiscount] = useState(0);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const formatCurrency = useFormatCurrency();
@@ -80,6 +86,16 @@ export default function POS() {
       return response.json();
     },
     enabled: searchTerm.length > 0
+  });
+
+  // Fetch customers for offer eligibility
+  const { data: customers = [] } = useQuery({
+    queryKey: ['/api/customers'],
+    queryFn: async () => {
+      const response = await fetch('/api/customers');
+      if (!response.ok) throw new Error('Failed to fetch customers');
+      return response.json();
+    }
   });
 
   // Fetch business settings for receipt header
@@ -159,6 +175,31 @@ export default function POS() {
     } finally {
       setBarcodeInput("");
     }
+  };
+
+  // Handle offer calculations when cart changes
+  const handleOffersCalculated = (offers: any[], totalDiscount: number) => {
+    setAppliedOffers(offers);
+    setTotalOfferDiscount(totalDiscount);
+  };
+
+  // Handle barcode scanner product addition
+  const handleProductScanned = (product: any, triggeredOffers?: any[]) => {
+    addToCart(product);
+    if (triggeredOffers && triggeredOffers.length > 0) {
+      toast({
+        title: "Special Offers Activated!",
+        description: `${triggeredOffers.length} offer(s) triggered by scanning ${product.name}`,
+      });
+    }
+  };
+
+  // Handle offers triggered by barcode scanning
+  const handleOfferTriggered = (offers: any[]) => {
+    toast({
+      title: "Barcode Offer Activated!",
+      description: `Special promotion activated: ${offers.map(o => o.name).join(', ')}`,
+    });
   };
 
   const addToCart = (product: Product) => {
