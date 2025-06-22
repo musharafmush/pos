@@ -2152,55 +2152,130 @@ export default function AddItemDashboard() {
                 Comprehensive information about this product including all fields and configurations
               </DialogDescription>
             </DialogHeader>
-            {selectedProduct && (
+            {selectedProduct ? (
               <div className="space-y-6">
-                {/* Basic Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-600">
-                      <InfoIcon className="w-5 h-5" />
-                      Basic Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Product Name</label>
-                        <p className="text-lg font-semibold">{selectedProduct.name}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">SKU</label>
-                        <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded max-w-fit">{selectedProduct.sku}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Status</label>
-                        <Badge variant={selectedProduct.active ? "default" : "secondary"}>
-                          {selectedProduct.active ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Alias</label>
-                        <p className="text-gray-800">{selectedProduct.alias || "N/A"}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Product Type</label>
-                        <p className="text-gray-800">{selectedProduct.itemProductType || "Standard"}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Department</label>
-                        <p className="text-gray-800">{selectedProduct.department || "N/A"}</p>
-                      </div>
-                    </div>
-                    {selectedProduct.description && (
-                      <div className="mt-4">
-                        <label className="text-sm font-medium text-gray-600">Description</label>
-                        <p className="text-gray-800 bg-gray-50 p-3 rounded">{selectedProduct.description}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                {/* Loading state for detailed product data */}
+                {!selectedProduct.name ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-600">Loading complete product details...</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Basic Information */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-blue-600">
+                          <InfoIcon className="w-5 h-5" />
+                          Basic Information
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Product Name</label>
+                            <p className="text-lg font-semibold">{selectedProduct.name || "Loading..."}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">SKU</label>
+                            <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded max-w-fit">{selectedProduct.sku || "Loading..."}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Status</label>
+                            <Badge variant={selectedProduct.active ? "default" : "secondary"}>
+                              {selectedProduct.active ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Alias</label>
+                            <p className="text-gray-800">{selectedProduct.alias || "N/A"}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Product Type</label>
+                            <p className="text-gray-800">{selectedProduct.itemProductType || "Standard"}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Department</label>
+                            <p className="text-gray-800">{selectedProduct.department || "N/A"}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Brand</label>
+                            <p className="text-gray-800">{selectedProduct.brand || "N/A"}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Barcode</label>
+                            <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded max-w-fit">{selectedProduct.barcode || "N/A"}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Created Date</label>
+                            <p className="text-gray-800">
+                              {selectedProduct.createdAt ? new Date(selectedProduct.createdAt).toLocaleDateString() : "N/A"}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {selectedProduct.description && (
+                          <div className="mt-4">
+                            <label className="text-sm font-medium text-gray-600">Description</label>
+                            <p className="text-gray-800 bg-gray-50 p-3 rounded">{selectedProduct.description}</p>
+                          </div>
+                        )}
 
-                {/* Pricing Information */}
+                        {/* Manufacturer and Supplier Information */}
+                        <div className="mt-4 pt-4 border-t">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">Supplier Information</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium text-gray-600">Manufacturer</label>
+                              <p className="text-gray-800">{selectedProduct.manufacturerName || "N/A"}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-600">Supplier</label>
+                              <p className="text-gray-800">{selectedProduct.supplierName || "N/A"}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Stock Information */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-purple-600">
+                          <WarehouseIcon className="w-5 h-5" />
+                          Stock & Inventory Details
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-4 gap-4">
+                          <div className="bg-purple-50 p-3 rounded">
+                            <label className="text-sm font-medium text-purple-700">Current Stock</label>
+                            <p className="text-2xl font-bold text-purple-800">{selectedProduct.stockQuantity || 0} units</p>
+                          </div>
+                          <div className="bg-yellow-50 p-3 rounded">
+                            <label className="text-sm font-medium text-yellow-700">Alert Threshold</label>
+                            <p className="text-xl font-bold text-yellow-800">{selectedProduct.alertThreshold || 5} units</p>
+                          </div>
+                          <div className="bg-gray-50 p-3 rounded">
+                            <label className="text-sm font-medium text-gray-700">Weight</label>
+                            <p className="text-xl font-bold text-gray-800">
+                              {selectedProduct.weight ? `${selectedProduct.weight} ${selectedProduct.weightUnit || "kg"}` : "N/A"}
+                            </p>
+                          </div>
+                          <div className="bg-blue-50 p-3 rounded">
+                            <label className="text-sm font-medium text-blue-700">Stock Status</label>
+                            <Badge 
+                              variant={selectedProduct.stockQuantity <= (selectedProduct.alertThreshold || 5) ? "destructive" : "default"}
+                              className="text-lg font-bold"
+                            >
+                              {selectedProduct.stockQuantity <= (selectedProduct.alertThreshold || 5) ? "LOW STOCK" : "IN STOCK"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Pricing Information */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-green-600">
@@ -2568,6 +2643,12 @@ export default function AddItemDashboard() {
                     </CardContent>
                   </Card>
                 )}
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600">No product selected</p>
               </div>
             )}
             <DialogFooter className="mt-6">
