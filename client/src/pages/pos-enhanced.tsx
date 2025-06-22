@@ -377,6 +377,13 @@ export default function POSEnhanced() {
 
   // Handle loyalty point redemption
   const handleLoyaltyRedemption = () => {
+    console.log('Handling loyalty redemption:', {
+      customerLoyalty,
+      loyaltyPointsToRedeem,
+      cartLength: cart.length,
+      subtotal: cart.reduce((sum, item) => sum + item.total, 0)
+    });
+
     if (!customerLoyalty || loyaltyPointsToRedeem <= 0) {
       toast({
         title: "Invalid Redemption",
@@ -417,10 +424,15 @@ export default function POSEnhanced() {
       return;
     }
 
+    // Apply the loyalty discount
     setLoyaltyDiscount(discountFromPoints);
     setShowLoyaltyDialog(false);
     
-    console.log('Loyalty points redeemed:', loyaltyPointsToRedeem, 'Discount applied:', discountFromPoints);
+    console.log('Loyalty redemption successful:', {
+      pointsRedeemed: loyaltyPointsToRedeem, 
+      discountApplied: discountFromPoints,
+      newLoyaltyDiscount: discountFromPoints
+    });
     
     toast({
       title: "Points Redeemed Successfully",

@@ -6909,5 +6909,34 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Add loyalty points endpoint
+  app.post('/api/loyalty/add-points', async (req, res) => {
+    try {
+      const { customerId, points, reason } = req.body;
+      
+      console.log('Adding loyalty points:', { customerId, points, reason });
+      
+      if (!customerId || !points || points <= 0) {
+        return res.status(400).json({ message: 'Customer ID and valid points amount required' });
+      }
+      
+      const loyalty = await storage.addLoyaltyPoints(customerId, points, reason || 'Points added');
+      
+      console.log('Loyalty points added successfully:', loyalty);
+      res.json({
+        success: true,
+        message: 'Points added successfully',
+        loyalty,
+        pointsAdded: points
+      });
+    } catch (error) {
+      console.error('Error adding loyalty points:', error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || 'Failed to add loyalty points' 
+      });
+    }
+  });
+
   return httpServer;
 }
