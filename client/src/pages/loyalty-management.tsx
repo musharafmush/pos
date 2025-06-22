@@ -730,21 +730,46 @@ export default function LoyaltyManagement() {
                         </div>
                       </div>
                       
-                      <div className="flex gap-3 pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCustomer(customer);
-                            redeemForm.setValue('customerId', customer.customerId?.toString() || customer.customer?.id?.toString() || '');
-                            setIsRedeemDialogOpen(true);
-                          }}
-                          className="flex-1 border-blue-200 text-blue-600 hover:bg-blue-50"
-                          disabled={!customer.availablePoints || customer.availablePoints <= 0}
-                        >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Redeem Points
-                        </Button>
+                      <div className="flex items-center justify-between pt-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedCustomers.includes((customer.customerId || customer.customer?.id)?.toString())}
+                          onChange={() => toggleCustomerSelection((customer.customerId || customer.customer?.id)?.toString())}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCustomer(customer);
+                              redeemForm.setValue('customerId', customer.customerId?.toString() || customer.customer?.id?.toString() || '');
+                              setIsRedeemDialogOpen(true);
+                            }}
+                            className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                            disabled={!customer.availablePoints || customer.availablePoints <= 0}
+                          >
+                            <CreditCard className="w-3 h-3 mr-1" />
+                            Redeem
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditDialog(customer)}>
+                                <Edit className="mr-2 h-3 w-3" />
+                                Edit Account
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openDeleteDialog(customer)} className="text-red-600">
+                                <Trash2 className="mr-2 h-3 w-3" />
+                                Delete Account
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -752,6 +777,211 @@ export default function LoyaltyManagement() {
               })
             )}
           </div>
+
+          {/* Edit Loyalty Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-xl">Edit Loyalty Account</DialogTitle>
+                <DialogDescription>
+                  Modify customer loyalty points and account details
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...editLoyaltyForm}>
+                <form onSubmit={editLoyaltyForm.handleSubmit(handleEditLoyalty)} className="space-y-5">
+                  <FormField
+                    control={editLoyaltyForm.control}
+                    name="totalPoints"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Total Points</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="1500"
+                            className="h-12 text-lg"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editLoyaltyForm.control}
+                    name="availablePoints"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Available Points</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="1200"
+                            className="h-12 text-lg"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editLoyaltyForm.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Notes (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Account adjustment notes..."
+                            className="min-h-[80px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditDialogOpen(false)}
+                      className="px-6"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={editLoyaltyMutation.isPending}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-6"
+                    >
+                      {editLoyaltyMutation.isPending ? "Updating..." : "Update Account"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Loyalty Account</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to permanently delete the loyalty account for{" "}
+                  <span className="font-semibold">{customerToDelete?.customer?.name || 'this customer'}</span>?
+                  This action cannot be undone and all loyalty points will be lost.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteConfirm}
+                  className="bg-red-600 hover:bg-red-700"
+                  disabled={deleteLoyaltyMutation.isPending}
+                >
+                  {deleteLoyaltyMutation.isPending ? "Deleting..." : "Delete Account"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Bulk Update Dialog */}
+          <Dialog open={isBulkUpdateDialogOpen} onOpenChange={setIsBulkUpdateDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-xl">Bulk Update Loyalty Points</DialogTitle>
+                <DialogDescription>
+                  Apply changes to {selectedCustomers.length} selected customer accounts
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...bulkUpdateForm}>
+                <form onSubmit={bulkUpdateForm.handleSubmit(handleBulkUpdate)} className="space-y-5">
+                  <FormField
+                    control={bulkUpdateForm.control}
+                    name="operation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Operation Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="h-12">
+                              <SelectValue placeholder="Choose operation" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="add">Add Points</SelectItem>
+                            <SelectItem value="subtract">Subtract Points</SelectItem>
+                            <SelectItem value="set">Set Points</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={bulkUpdateForm.control}
+                    name="points"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Points Amount</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="100"
+                            className="h-12 text-lg"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={bulkUpdateForm.control}
+                    name="reason"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Reason</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., Seasonal bonus, Promotion adjustment"
+                            className="h-12"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      This will affect <span className="font-semibold">{selectedCustomers.length}</span> customer accounts.
+                    </p>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsBulkUpdateDialogOpen(false)}
+                      className="px-6"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={bulkUpdateMutation.isPending}
+                      className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 px-6"
+                    >
+                      {bulkUpdateMutation.isPending ? "Processing..." : "Apply Changes"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </DashboardLayout>
