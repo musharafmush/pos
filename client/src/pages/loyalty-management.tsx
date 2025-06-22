@@ -30,6 +30,13 @@ const addPointsSchema = z.object({
   reason: z.string().min(1, "Reason is required")
 });
 
+const salePointsSchema = z.object({
+  customerId: z.string().min(1, "Customer is required"),
+  saleAmount: z.string().min(1, "Sale amount is required"),
+  pointsPerRupee: z.string().default("1"),
+  notes: z.string().optional()
+});
+
 const editLoyaltySchema = z.object({
   totalPoints: z.string().min(1, "Total points is required"),
   availablePoints: z.string().min(1, "Available points is required"),
@@ -45,12 +52,14 @@ const bulkUpdateSchema = z.object({
 
 type RedeemPointsData = z.infer<typeof redeemPointsSchema>;
 type AddPointsData = z.infer<typeof addPointsSchema>;
+type SalePointsData = z.infer<typeof salePointsSchema>;
 type EditLoyaltyData = z.infer<typeof editLoyaltySchema>;
 type BulkUpdateData = z.infer<typeof bulkUpdateSchema>;
 
 export default function LoyaltyManagement() {
   const [isRedeemDialogOpen, setIsRedeemDialogOpen] = useState(false);
   const [isAddPointsDialogOpen, setIsAddPointsDialogOpen] = useState(false);
+  const [isSalePointsDialogOpen, setIsSalePointsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBulkUpdateDialogOpen, setIsBulkUpdateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -74,6 +83,16 @@ export default function LoyaltyManagement() {
       customerId: "",
       points: "",
       reason: ""
+    }
+  });
+
+  const salePointsForm = useForm<SalePointsData>({
+    resolver: zodResolver(salePointsSchema),
+    defaultValues: {
+      customerId: "",
+      saleAmount: "",
+      pointsPerRupee: "1",
+      notes: ""
     }
   });
 
@@ -246,6 +265,41 @@ export default function LoyaltyManagement() {
     }
   });
 
+  // Sale-based points mutation
+  const salePointsMutation = useMutation({
+    mutationFn: async (data: SalePointsData) => {
+      const saleAmount = parseFloat(data.saleAmount);
+      const pointsPerRupee = parseFloat(data.pointsPerRupee);
+      const calculatedPoints = Math.floor(saleAmount * pointsPerRupee);
+      
+      return apiRequest('POST', '/api/loyalty/add-points', {
+        customerId: parseInt(data.customerId),
+        points: calculatedPoints,
+        reason: `Sale-based points: ₹${saleAmount} x ${pointsPerRupee} points/rupee${data.notes ? ` - ${data.notes}` : ''}`
+      });
+    },
+    onSuccess: (_, variables) => {
+      const saleAmount = parseFloat(variables.saleAmount);
+      const pointsPerRupee = parseFloat(variables.pointsPerRupee);
+      const calculatedPoints = Math.floor(saleAmount * pointsPerRupee);
+      
+      toast({
+        title: "Sale Points Added Successfully",
+        description: `${calculatedPoints} points awarded for ₹${saleAmount} sale`,
+      });
+      setIsSalePointsDialogOpen(false);
+      salePointsForm.reset();
+      refetchLoyalty();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Adding Sale Points",
+        description: error.message || "Failed to add sale-based loyalty points",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Redeem points mutation
   const redeemPointsMutation = useMutation({
     mutationFn: async (data: RedeemPointsData) => {
@@ -407,6 +461,15 @@ export default function LoyaltyManagement() {
                   <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg">
                     <Gift className="mr-2 h-5 w-5" />
                     Award Points
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+              
+              <Dialog open={isSalePointsDialogOpen} onOpenChange={setIsSalePointsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="border-2 border-purple-500 text-purple-600 hover:bg-purple-50">
+                    <TrendingUp className="mr-2 h-5 w-5" />
+                    Sale Points
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
