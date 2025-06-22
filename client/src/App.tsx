@@ -17,7 +17,6 @@ import AddItemDashboard from "@/pages/add-item-dashboard";
 import RepackingProfessional from "@/pages/repacking-professional";
 import RepackingDashboardProfessional from "@/pages/repacking-dashboard-professional";
 import RepackingMainDashboard from "./pages/repacking-main-dashboard";
-import ProductsUpdatePrice from "@/pages/products-update-price";
 import UpdatePriceProfessional from "@/pages/update-price-professional";
 import Units from "@/pages/units";
 import Inventory from "@/pages/inventory";
@@ -117,7 +116,6 @@ function Router() {
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/suppliers" component={Suppliers} />
       <ProtectedRoute path="/customers" component={Customers} />
-      <ProtectedRoute path="/products/update-price" component={ProductsUpdatePrice} />
       <ProtectedRoute path="/update-price-professional" component={UpdatePriceProfessional} />
       <ProtectedRoute path="/settings/currency" component={CurrencySettings} />
       <ProtectedRoute path="/settings/business" component={BusinessSettings} />
