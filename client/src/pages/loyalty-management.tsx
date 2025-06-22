@@ -91,7 +91,7 @@ export default function LoyaltyManagement() {
     defaultValues: {
       customerId: "",
       saleAmount: "",
-      pointsPerRupee: "1",
+      pointsPerRupee: "0.01",
       notes: ""
     }
   });
@@ -545,15 +545,15 @@ export default function LoyaltyManagement() {
                             <FormControl>
                               <Input
                                 type="number"
-                                placeholder="1"
+                                placeholder="0.01"
                                 className="h-12 text-lg"
-                                step="0.1"
+                                step="0.001"
                                 min="0"
                                 {...field}
                               />
                             </FormControl>
                             <FormDescription className="text-xs text-gray-500">
-                              Default: 1 point per rupee spent
+                              Default: 1 point per 100 rupees spent (0.01)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -583,11 +583,11 @@ export default function LoyaltyManagement() {
                           <div className="flex items-center justify-between">
                             <span className="text-purple-800 font-medium">Points to Award:</span>
                             <span className="text-purple-700 font-bold text-lg">
-                              {Math.floor(parseFloat(salePointsForm.watch("saleAmount") || "0") * parseFloat(salePointsForm.watch("pointsPerRupee") || "1"))} points
+                              {Math.floor(parseFloat(salePointsForm.watch("saleAmount") || "0") * parseFloat(salePointsForm.watch("pointsPerRupee") || "0.01"))} points
                             </span>
                           </div>
                           <div className="text-xs text-purple-600 mt-1">
-                            ₹{salePointsForm.watch("saleAmount")} × {salePointsForm.watch("pointsPerRupee")} points/rupee
+                            ₹{salePointsForm.watch("saleAmount")} × {salePointsForm.watch("pointsPerRupee")} = {Math.floor(parseFloat(salePointsForm.watch("saleAmount") || "0") * parseFloat(salePointsForm.watch("pointsPerRupee") || "0.01"))} points (₹100 = 1 point)
                           </div>
                         </div>
                       )}
