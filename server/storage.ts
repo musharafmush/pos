@@ -3298,6 +3298,83 @@ export const storage = {
     return updated;
   },
 
+  async updateLoyaltyAccount(customerId: number, updates: { totalPoints: number; availablePoints: number; notes?: string }): Promise<CustomerLoyalty | null> {
+    try {
+      const [updated] = await db.update(customerLoyalty)
+        .set({
+          totalPoints: updates.totalPoints.toString(),
+          availablePoints: updates.availablePoints.toString(),
+          notes: updates.notes || null,
+          lastUpdated: new Date()
+        })
+        .where(eq(customerLoyalty.customerId, customerId))
+        .returning();
+
+      return updated;
+    } catch (error) {
+      console.error('Error updating loyalty account:', error);
+      throw error;
+    }
+  },
+
+  async deleteLoyaltyAccount(customerId: number): Promise<boolean> {
+    try {
+      const result = await db.delete(customerLoyalty)
+        .where(eq(customerLoyalty.customerId, customerId));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting loyalty account:', error);
+      throw error;
+    }
+  },
+
+  async bulkUpdateLoyaltyPoints(operation: string, points: number, reason: string, customerIds: number[]): Promise<{ updatedCount: number }> {
+    try {
+      let updatedCount = 0;
+
+      for (const customerId of customerIds) {
+        const loyalty = await this.getCustomerLoyalty(customerId);
+
+        if (loyalty) {
+          let newTotalPoints = parseFloat(loyalty.totalPoints.toString());
+          let newAvailablePoints = parseFloat(loyalty.availablePoints.toString());
+
+          switch (operation) {
+            case 'add':
+              newTotalPoints += points;
+              newAvailablePoints += points;
+              break;
+            case 'subtract':
+              newTotalPoints = Math.max(0, newTotalPoints - points);
+              newAvailablePoints = Math.max(0, newAvailablePoints - points);
+              break;
+            case 'set':
+              newTotalPoints = points;
+              newAvailablePoints = points;
+              break;
+          }
+
+          await db.update(customerLoyalty)
+            .set({
+              totalPoints: newTotalPoints.toString(),
+              availablePoints: newAvailablePoints.toString(),
+              notes: reason,
+              lastUpdated: new Date()
+            })
+            .where(eq(customerLoyalty.customerId, customerId));
+
+          updatedCount++;
+        }
+      }
+
+      return { updatedCount };
+    } catch (error) {
+      console.error('Error in bulk loyalty update:', error);
+      throw error;
+    }
+  },
+
   async calculateOfferDiscount(offer: Offer, cartItems: any[], cartTotal: number, customerId?: number): Promise<{
     applicable: boolean;
     discountAmount: number;

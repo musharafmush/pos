@@ -6938,5 +6938,78 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Update loyalty account endpoint
+  app.put('/api/loyalty/customer/:customerId/update', async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const { totalPoints, availablePoints, notes } = req.body;
+      
+      console.log('Updating loyalty account:', { customerId, totalPoints, availablePoints, notes });
+      
+      if (!customerId) {
+        return res.status(400).json({ error: 'Customer ID is required' });
+      }
+
+      const result = await storage.updateLoyaltyAccount(parseInt(customerId), {
+        totalPoints: parseInt(totalPoints),
+        availablePoints: parseInt(availablePoints),
+        notes
+      });
+      res.json({
+        success: true,
+        message: 'Loyalty account updated successfully',
+        loyalty: result
+      });
+    } catch (error) {
+      console.error('Error updating loyalty account:', error);
+      res.status(500).json({ error: 'Failed to update loyalty account' });
+    }
+  });
+
+  // Delete loyalty account endpoint
+  app.delete('/api/loyalty/customer/:customerId', async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      
+      console.log('Deleting loyalty account for customer:', customerId);
+      
+      if (!customerId) {
+        return res.status(400).json({ error: 'Customer ID is required' });
+      }
+
+      await storage.deleteLoyaltyAccount(parseInt(customerId));
+      res.json({
+        success: true,
+        message: 'Loyalty account deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting loyalty account:', error);
+      res.status(500).json({ error: 'Failed to delete loyalty account' });
+    }
+  });
+
+  // Bulk update loyalty points endpoint
+  app.post('/api/loyalty/bulk-update', async (req, res) => {
+    try {
+      const { operation, points, reason, customerIds } = req.body;
+      
+      console.log('Bulk updating loyalty points:', { operation, points, reason, customerIds });
+      
+      if (!operation || !points || !reason || !customerIds || !Array.isArray(customerIds)) {
+        return res.status(400).json({ error: 'Operation, points, reason, and customer IDs are required' });
+      }
+
+      const result = await storage.bulkUpdateLoyaltyPoints(operation, parseInt(points), reason, customerIds);
+      res.json({
+        success: true,
+        message: `Bulk ${operation} operation completed successfully`,
+        updatedCount: result.updatedCount
+      });
+    } catch (error) {
+      console.error('Error in bulk loyalty update:', error);
+      res.status(500).json({ error: 'Failed to perform bulk update' });
+    }
+  });
+
   return httpServer;
 }
