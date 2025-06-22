@@ -605,11 +605,11 @@ export default function LoyaltyManagement() {
                           <div className="flex items-center justify-between">
                             <span className="text-purple-800 font-medium">Points to Award:</span>
                             <span className="text-purple-700 font-bold text-lg">
-                              {Math.floor(parseFloat(salePointsForm.watch("saleAmount") || "0") * parseFloat(salePointsForm.watch("pointsPerRupee") || "0.01"))} points
+                              {Math.round((parseFloat(salePointsForm.watch("saleAmount") || "0") * parseFloat(salePointsForm.watch("pointsPerRupee") || "0.01")) * 100) / 100} points
                             </span>
                           </div>
                           <div className="text-xs text-purple-600 mt-1">
-                            ₹{salePointsForm.watch("saleAmount")} × {salePointsForm.watch("pointsPerRupee")} = {Math.floor(parseFloat(salePointsForm.watch("saleAmount") || "0") * parseFloat(salePointsForm.watch("pointsPerRupee") || "0.01"))} points (₹100 = 1 point)
+                            ₹{salePointsForm.watch("saleAmount")} × {salePointsForm.watch("pointsPerRupee")} = {Math.round((parseFloat(salePointsForm.watch("saleAmount") || "0") * parseFloat(salePointsForm.watch("pointsPerRupee") || "0.01")) * 100) / 100} points (₹100 = 1 point)
                           </div>
                         </div>
                       )}

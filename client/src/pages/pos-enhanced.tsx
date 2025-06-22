@@ -311,11 +311,13 @@ export default function POSEnhanced() {
       if (response.ok) {
         const loyaltyData = await response.json();
         console.log('Loyalty data received:', loyaltyData);
+        console.log('Available points:', loyaltyData.availablePoints);
+        console.log('Total points:', loyaltyData.totalPoints);
         setCustomerLoyalty(loyaltyData);
         
         toast({
           title: "Loyalty Points Loaded",
-          description: `Customer has ${loyaltyData.totalPoints} loyalty points`,
+          description: `Customer has ${loyaltyData.availablePoints || loyaltyData.totalPoints || 0} loyalty points`,
           duration: 2000,
         });
       } else if (response.status === 404) {
@@ -372,7 +374,7 @@ export default function POSEnhanced() {
   // Calculate points to earn from current purchase
   const calculatePointsToEarn = (total: number) => {
     // 1 point per 100 rupees spent (0.01 points per rupee)
-    return Math.floor(total * 0.01);
+    return Math.round((total * 0.01) * 100) / 100; // Round to 2 decimal places
   };
 
   // Handle loyalty point redemption
@@ -2152,9 +2154,9 @@ export default function POSEnhanced() {
                     <>
                       <div className="flex items-center text-green-600 font-medium">
                         <Star className="h-4 w-4 mr-1" />
-                        {customerLoyalty.totalPoints}
+                        {customerLoyalty.availablePoints || 0}
                       </div>
-                      {customerLoyalty.totalPoints > 0 && (
+                      {(customerLoyalty.availablePoints || 0) > 0 && (
                         <Button
                           size="sm"
                           variant="outline"
