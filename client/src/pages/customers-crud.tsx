@@ -233,6 +233,7 @@ export default function CustomersCRUD() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      queryClient.refetchQueries({ queryKey: ["/api/customers"] });
       setIsAddDialogOpen(false);
       createForm.reset();
       toast({
@@ -274,6 +275,7 @@ export default function CustomersCRUD() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      queryClient.refetchQueries({ queryKey: ["/api/customers"] });
       setIsEditDialogOpen(false);
       setEditingCustomer(null);
       editForm.reset();
@@ -308,7 +310,10 @@ export default function CustomersCRUD() {
       return data;
     },
     onSuccess: (data) => {
+      // Invalidate and refetch customer data
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      queryClient.refetchQueries({ queryKey: ["/api/customers"] });
+      
       setIsDeleteAlertOpen(false);
       setSelectedCustomerId(null);
       
