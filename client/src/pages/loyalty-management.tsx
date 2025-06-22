@@ -145,10 +145,17 @@ export default function LoyaltyManagement() {
     refetchInterval: 30000 // Refresh every 30 seconds
   });
 
-  // Calculate summary statistics
+  // Calculate summary statistics with proper number handling
   const totalCustomers = loyaltyData.length;
-  const totalActivePoints = loyaltyData.reduce((total, customer) => total + (customer.totalPoints || 0), 0);
-  const totalUsedPoints = loyaltyData.reduce((total, customer) => total + ((customer.totalPoints || 0) - (customer.availablePoints || 0)), 0);
+  const totalActivePoints = loyaltyData.reduce((total, customer) => {
+    const points = Number(customer.availablePoints) || 0;
+    return total + points;
+  }, 0);
+  const totalUsedPoints = loyaltyData.reduce((total, customer) => {
+    const totalPts = Number(customer.totalPoints) || 0;
+    const availablePts = Number(customer.availablePoints) || 0;
+    return total + (totalPts - availablePts);
+  }, 0);
   const averagePoints = totalCustomers > 0 ? Math.round(totalActivePoints / totalCustomers) : 0;
 
   // Loyalty tier system
@@ -617,7 +624,7 @@ export default function LoyaltyManagement() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-900">
-                {totalActivePoints.toLocaleString()}
+                {isNaN(totalActivePoints) || !isFinite(totalActivePoints) ? '0' : Math.max(0, totalActivePoints).toLocaleString()}
               </div>
               <p className="text-sm text-green-600 mt-1">
                 Points ready to redeem
@@ -634,7 +641,7 @@ export default function LoyaltyManagement() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-purple-900">
-                {totalUsedPoints.toLocaleString()}
+                {isNaN(totalUsedPoints) || !isFinite(totalUsedPoints) ? '0' : Math.max(0, totalUsedPoints).toLocaleString()}
               </div>
               <p className="text-sm text-purple-600 mt-1">
                 Total redeemed
@@ -651,7 +658,7 @@ export default function LoyaltyManagement() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-orange-900">
-                {averagePoints.toLocaleString()}
+                {isNaN(averagePoints) || !isFinite(averagePoints) ? '0' : Math.max(0, averagePoints).toLocaleString()}
               </div>
               <p className="text-sm text-orange-600 mt-1">
                 Per customer
