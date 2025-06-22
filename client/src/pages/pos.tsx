@@ -623,7 +623,7 @@ export default function POS() {
                     <SelectValue placeholder="Select customer for offers" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Walk-in Customer</SelectItem>
+                    <SelectItem value="walk-in">Walk-in Customer</SelectItem>
                     {customers.map((customer: any) => (
                       <SelectItem key={customer.id} value={customer.id.toString()}>
                         {customer.name} - {customer.phone || 'No phone'}

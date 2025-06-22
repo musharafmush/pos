@@ -1126,7 +1126,7 @@ export default function ProductsEnhanced() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No change</SelectItem>
+                          <SelectItem value="no-change">No change</SelectItem>
                           {categories.map((category: Category) => (
                             <SelectItem key={category.id} value={category.id.toString()}>
                               {category.name}
@@ -1203,7 +1203,7 @@ export default function ProductsEnhanced() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No change</SelectItem>
+                          <SelectItem value="no-change">No change</SelectItem>
                           <SelectItem value="active">Active</SelectItem>
                           <SelectItem value="inactive">Inactive</SelectItem>
                         </SelectContent>

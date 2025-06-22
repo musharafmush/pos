@@ -1272,7 +1272,7 @@ export default function RepackingDashboardProfessional() {
                           <SelectValue placeholder="Select season" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No Season</SelectItem>
+                          <SelectItem value="none">No Season</SelectItem>
                           <SelectItem value="winter">Winter Special</SelectItem>
                           <SelectItem value="summer">Summer Fresh</SelectItem>
                           <SelectItem value="monsoon">Monsoon Ready</SelectItem>
