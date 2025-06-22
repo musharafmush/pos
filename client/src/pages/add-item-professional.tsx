@@ -1469,6 +1469,9 @@ export default function AddItemProfessional() {
                                       } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032") || hsnValue.startsWith("87111")) {
                                         suggestedGst = "GST 28%";
                                         suggestedDescription = "Luxury goods - Cars, tobacco";
+                                      } else if (hsnValue.startsWith("71") || hsnValue.startsWith("9701") || hsnValue.startsWith("9702") || hsnValue.startsWith("8801") || hsnValue.startsWith("8802")) {
+                                        suggestedGst = "GST 40%";
+                                        suggestedDescription = "Premium luxury - Jewelry, art, aircraft";
                                       }
 
                                       if (suggestedGst && hsnValue.length >= 4) {
@@ -1619,6 +1622,7 @@ export default function AddItemProfessional() {
                                     <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
                                     <SelectItem value="GST 18%">GST 18% - Standard rate (Most goods & services)</SelectItem>
                                     <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
+                                    <SelectItem value="GST 40%">GST 40% - Premium luxury goods (High-end items)</SelectItem>
                                     <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
                                     <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
                                   </SelectContent>
