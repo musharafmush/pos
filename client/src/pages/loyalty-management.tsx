@@ -9,12 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Users, Gift, Star, TrendingUp, Award, CreditCard } from "lucide-react";
+import { Users, Gift, Star, TrendingUp, Award, CreditCard, Edit, Trash2, Plus, MoreVertical, History, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const redeemPointsSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
@@ -27,13 +30,33 @@ const addPointsSchema = z.object({
   reason: z.string().min(1, "Reason is required")
 });
 
+const editLoyaltySchema = z.object({
+  totalPoints: z.string().min(1, "Total points is required"),
+  availablePoints: z.string().min(1, "Available points is required"),
+  notes: z.string().optional()
+});
+
+const bulkUpdateSchema = z.object({
+  operation: z.enum(["add", "subtract", "set"]),
+  points: z.string().min(1, "Points amount is required"),
+  reason: z.string().min(1, "Reason is required"),
+  selectedCustomers: z.array(z.string()).min(1, "Select at least one customer")
+});
+
 type RedeemPointsData = z.infer<typeof redeemPointsSchema>;
 type AddPointsData = z.infer<typeof addPointsSchema>;
+type EditLoyaltyData = z.infer<typeof editLoyaltySchema>;
+type BulkUpdateData = z.infer<typeof bulkUpdateSchema>;
 
 export default function LoyaltyManagement() {
   const [isRedeemDialogOpen, setIsRedeemDialogOpen] = useState(false);
   const [isAddPointsDialogOpen, setIsAddPointsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isBulkUpdateDialogOpen, setIsBulkUpdateDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
+  const [customerToDelete, setCustomerToDelete] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -51,6 +74,25 @@ export default function LoyaltyManagement() {
       customerId: "",
       points: "",
       reason: ""
+    }
+  });
+
+  const editLoyaltyForm = useForm<EditLoyaltyData>({
+    resolver: zodResolver(editLoyaltySchema),
+    defaultValues: {
+      totalPoints: "",
+      availablePoints: "",
+      notes: ""
+    }
+  });
+
+  const bulkUpdateForm = useForm<BulkUpdateData>({
+    resolver: zodResolver(bulkUpdateSchema),
+    defaultValues: {
+      operation: "add",
+      points: "",
+      reason: "",
+      selectedCustomers: []
     }
   });
 
@@ -176,12 +218,146 @@ export default function LoyaltyManagement() {
     }
   });
 
+  // Edit loyalty mutation
+  const editLoyaltyMutation = useMutation({
+    mutationFn: async (data: EditLoyaltyData) => {
+      return apiRequest(`/api/loyalty/customer/${selectedCustomer.customerId}/update`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          totalPoints: parseInt(data.totalPoints),
+          availablePoints: parseInt(data.availablePoints),
+          notes: data.notes
+        })
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Loyalty Account Updated",
+        description: "Customer loyalty information has been updated successfully",
+      });
+      setIsEditDialogOpen(false);
+      editLoyaltyForm.reset();
+      refetchLoyalty();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Updating Loyalty",
+        description: error.message || "Failed to update loyalty account",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete loyalty mutation
+  const deleteLoyaltyMutation = useMutation({
+    mutationFn: async (customerId: number) => {
+      return apiRequest(`/api/loyalty/customer/${customerId}`, {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Loyalty Account Deleted",
+        description: "Customer loyalty account has been permanently deleted",
+      });
+      setIsDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+      refetchLoyalty();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Deleting Account",
+        description: error.message || "Failed to delete loyalty account",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Bulk update mutation
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async (data: BulkUpdateData) => {
+      return apiRequest('/api/loyalty/bulk-update', {
+        method: 'POST',
+        body: JSON.stringify({
+          operation: data.operation,
+          points: parseInt(data.points),
+          reason: data.reason,
+          customerIds: data.selectedCustomers.map(id => parseInt(id))
+        })
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Bulk Update Completed",
+        description: "Points have been updated for selected customers",
+      });
+      setIsBulkUpdateDialogOpen(false);
+      bulkUpdateForm.reset();
+      setSelectedCustomers([]);
+      refetchLoyalty();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error in Bulk Update",
+        description: error.message || "Failed to perform bulk update",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleAddPoints = (data: AddPointsData) => {
     addPointsMutation.mutate(data);
   };
 
   const handleRedeem = (data: RedeemPointsData) => {
     redeemPointsMutation.mutate(data);
+  };
+
+  const handleEditLoyalty = (data: EditLoyaltyData) => {
+    editLoyaltyMutation.mutate(data);
+  };
+
+  const handleBulkUpdate = (data: BulkUpdateData) => {
+    data.selectedCustomers = selectedCustomers;
+    bulkUpdateMutation.mutate(data);
+  };
+
+  const openEditDialog = (customer: any) => {
+    setSelectedCustomer(customer);
+    editLoyaltyForm.setValue('totalPoints', customer.totalPoints?.toString() || '0');
+    editLoyaltyForm.setValue('availablePoints', customer.availablePoints?.toString() || '0');
+    editLoyaltyForm.setValue('notes', customer.notes || '');
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (customer: any) => {
+    setCustomerToDelete(customer);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (customerToDelete) {
+      deleteLoyaltyMutation.mutate(customerToDelete.customerId || customerToDelete.customer?.id);
+    }
+  };
+
+  const toggleCustomerSelection = (customerId: string) => {
+    setSelectedCustomers(prev => 
+      prev.includes(customerId) 
+        ? prev.filter(id => id !== customerId)
+        : [...prev, customerId]
+    );
+  };
+
+  const selectAllCustomers = () => {
+    const allIds = loyaltyData.map(customer => 
+      (customer.customerId || customer.customer?.id)?.toString()
+    ).filter(Boolean);
+    setSelectedCustomers(allIds);
+  };
+
+  const clearSelection = () => {
+    setSelectedCustomers([]);
   };
 
   return (
@@ -199,6 +375,29 @@ export default function LoyaltyManagement() {
               </p>
             </div>
             <div className="flex items-center gap-4">
+              {selectedCustomers.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-sm px-3 py-1">
+                    {selectedCustomers.length} selected
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearSelection}
+                    className="h-8"
+                  >
+                    Clear
+                  </Button>
+                  <Dialog open={isBulkUpdateDialogOpen} onOpenChange={setIsBulkUpdateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="border-2 border-orange-500 text-orange-600 hover:bg-orange-50">
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Bulk Update
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+                </div>
+              )}
               <Dialog open={isAddPointsDialogOpen} onOpenChange={setIsAddPointsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg">
