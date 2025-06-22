@@ -17,6 +17,9 @@ import {
   offers,
   offerUsage,
   customerLoyalty,
+  taxCategories,
+  taxSettings,
+  hsnCodes,
   User,
   Product,
   Category,
@@ -38,7 +41,13 @@ import {
   OfferUsage,
   OfferUsageInsert,
   CustomerLoyalty,
-  CustomerLoyaltyInsert
+  CustomerLoyaltyInsert,
+  TaxCategory,
+  TaxCategoryInsert,
+  TaxSettingsType,
+  TaxSettingsInsert,
+  HsnCode,
+  HsnCodeInsert
 } from "../shared/schema.js";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -3602,5 +3611,116 @@ export const storage = {
       console.error('Error getting applicable offers:', error);
       return [];
     }
+  },
+
+  // Tax Categories Management
+  async createTaxCategory(data: TaxCategoryInsert): Promise<TaxCategory> {
+    const [category] = await db.insert(taxCategories).values(data).returning();
+    return category;
+  },
+
+  async getTaxCategories(): Promise<TaxCategory[]> {
+    return await db.query.taxCategories.findMany({
+      orderBy: [desc(taxCategories.name)]
+    });
+  },
+
+  async getTaxCategoryById(id: number): Promise<TaxCategory | null> {
+    return await db.query.taxCategories.findFirst({
+      where: eq(taxCategories.id, id)
+    });
+  },
+
+  async updateTaxCategory(id: number, data: Partial<TaxCategoryInsert>): Promise<TaxCategory | null> {
+    const [category] = await db.update(taxCategories)
+      .set(data)
+      .where(eq(taxCategories.id, id))
+      .returning();
+    return category || null;
+  },
+
+  async deleteTaxCategory(id: number): Promise<boolean> {
+    const result = await db.delete(taxCategories).where(eq(taxCategories.id, id));
+    return result.rowCount > 0;
+  },
+
+  // Tax Settings Management
+  async getTaxSettings(): Promise<TaxSettingsType | null> {
+    return await db.query.taxSettings.findFirst();
+  },
+
+  async updateTaxSettings(data: Partial<TaxSettingsInsert>): Promise<TaxSettingsType> {
+    // Check if settings exist
+    const existing = await this.getTaxSettings();
+    
+    if (existing) {
+      const [updated] = await db.update(taxSettings)
+        .set(data)
+        .where(eq(taxSettings.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(taxSettings).values(data).returning();
+      return created;
+    }
+  },
+
+  // HSN Codes Management
+  async createHsnCode(data: HsnCodeInsert): Promise<HsnCode> {
+    const [hsnCode] = await db.insert(hsnCodes).values(data).returning();
+    return hsnCode;
+  },
+
+  async getHsnCodes(): Promise<HsnCode[]> {
+    return await db.query.hsnCodes.findMany({
+      orderBy: [desc(hsnCodes.hsnCode)]
+    });
+  },
+
+  async getHsnCodeById(id: number): Promise<HsnCode | null> {
+    return await db.query.hsnCodes.findFirst({
+      where: eq(hsnCodes.id, id)
+    });
+  },
+
+  async getHsnCodeByCode(code: string): Promise<HsnCode | null> {
+    return await db.query.hsnCodes.findFirst({
+      where: eq(hsnCodes.hsnCode, code)
+    });
+  },
+
+  async searchHsnCodes(query: string): Promise<HsnCode[]> {
+    return await db.query.hsnCodes.findMany({
+      where: or(
+        like(hsnCodes.hsnCode, `%${query}%`),
+        like(hsnCodes.description, `%${query}%`)
+      ),
+      limit: 20
+    });
+  },
+
+  async updateHsnCode(id: number, data: Partial<HsnCodeInsert>): Promise<HsnCode | null> {
+    const [hsnCode] = await db.update(hsnCodes)
+      .set(data)
+      .where(eq(hsnCodes.id, id))
+      .returning();
+    return hsnCode || null;
+  },
+
+  async deleteHsnCode(id: number): Promise<boolean> {
+    const result = await db.delete(hsnCodes).where(eq(hsnCodes.id, id));
+    return result.rowCount > 0;
+  },
+
+  async getTaxRateByHsnCode(hsnCode: string): Promise<{ cgst: string; sgst: string; igst: string; cess?: string } | null> {
+    const hsn = await this.getHsnCodeByCode(hsnCode);
+    if (!hsn) return null;
+
+    return {
+      cgst: hsn.cgstRate || "0",
+      sgst: hsn.sgstRate || "0", 
+      igst: hsn.igstRate || "0",
+      cess: hsn.cessRate || "0"
+    };
   }
 };

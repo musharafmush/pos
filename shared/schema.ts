@@ -14,6 +14,46 @@ export const settings = pgTable('settings', {
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
 
+// Tax Categories table for managing GST rates
+export const taxCategories = pgTable('tax_categories', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  rate: decimal('rate', { precision: 5, scale: 2 }).notNull(),
+  hsnCodeRange: text('hsn_code_range'),
+  description: text('description'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// Tax Settings table for global tax configuration
+export const taxSettings = pgTable('tax_settings', {
+  id: serial('id').primaryKey(),
+  taxCalculationMethod: text('tax_calculation_method').default('afterDiscount'), // afterDiscount, beforeDiscount
+  pricesIncludeTax: boolean('prices_include_tax').default(false),
+  enableMultipleTaxRates: boolean('enable_multiple_tax_rates').default(true),
+  companyGstin: text('company_gstin'),
+  companyState: text('company_state'),
+  companyStateCode: text('company_state_code'),
+  defaultTaxCategoryId: integer('default_tax_category_id').references(() => taxCategories.id),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// HSN Code Master table for tax rate mapping
+export const hsnCodes = pgTable('hsn_codes', {
+  id: serial('id').primaryKey(),
+  hsnCode: text('hsn_code').notNull().unique(),
+  description: text('description').notNull(),
+  taxCategoryId: integer('tax_category_id').references(() => taxCategories.id).notNull(),
+  cgstRate: decimal('cgst_rate', { precision: 5, scale: 2 }).default('0'),
+  sgstRate: decimal('sgst_rate', { precision: 5, scale: 2 }).default('0'),
+  igstRate: decimal('igst_rate', { precision: 5, scale: 2 }).default('0'),
+  cessRate: decimal('cess_rate', { precision: 5, scale: 2 }).default('0'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
 // Categories table
 export const categories = pgTable('categories', {
   id: serial('id').primaryKey(),
@@ -280,6 +320,21 @@ export const purchaseItemsRelations = relations(purchaseItems, ({ one }) => ({
   product: one(products, { fields: [purchaseItems.productId], references: [products.id] })
 }));
 
+// Tax Categories relations
+export const taxCategoriesRelations = relations(taxCategories, ({ many }) => ({
+  hsnCodes: many(hsnCodes)
+}));
+
+// HSN Codes relations
+export const hsnCodesRelations = relations(hsnCodes, ({ one }) => ({
+  taxCategory: one(taxCategories, { fields: [hsnCodes.taxCategoryId], references: [taxCategories.id] })
+}));
+
+// Tax Settings relations
+export const taxSettingsRelations = relations(taxSettings, ({ one }) => ({
+  defaultTaxCategory: one(taxCategories, { fields: [taxSettings.defaultTaxCategoryId], references: [taxCategories.id] })
+}));
+
 // Validation schemas
 export const categoryInsertSchema = createInsertSchema(categories, {
   name: (schema) => schema.min(3, "Name must be at least 3 characters"),
@@ -404,6 +459,46 @@ export const purchaseItemInsertSchema = createInsertSchema(purchaseItems, {
 export type PurchaseItemInsert = z.infer<typeof purchaseItemInsertSchema>;
 export const purchaseItemSelectSchema = createSelectSchema(purchaseItems);
 export type PurchaseItem = z.infer<typeof purchaseItemSelectSchema>;
+
+// Tax Categories validation schemas
+export const taxCategoryInsertSchema = createInsertSchema(taxCategories, {
+  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
+  rate: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
+  hsnCodeRange: (schema) => schema.optional(),
+  description: (schema) => schema.optional(),
+  isActive: (schema) => schema.optional()
+});
+export type TaxCategoryInsert = z.infer<typeof taxCategoryInsertSchema>;
+export const taxCategorySelectSchema = createSelectSchema(taxCategories);
+export type TaxCategory = z.infer<typeof taxCategorySelectSchema>;
+
+// Tax Settings validation schemas
+export const taxSettingsInsertSchema = createInsertSchema(taxSettings, {
+  taxCalculationMethod: (schema) => schema.optional(),
+  pricesIncludeTax: (schema) => schema.optional(),
+  enableMultipleTaxRates: (schema) => schema.optional(),
+  companyGstin: (schema) => schema.optional(),
+  companyState: (schema) => schema.optional(),
+  companyStateCode: (schema) => schema.optional(),
+  defaultTaxCategoryId: (schema) => schema.optional()
+});
+export type TaxSettingsInsert = z.infer<typeof taxSettingsInsertSchema>;
+export const taxSettingsSelectSchema = createSelectSchema(taxSettings);
+export type TaxSettingsType = z.infer<typeof taxSettingsSelectSchema>;
+
+// HSN Codes validation schemas
+export const hsnCodeInsertSchema = createInsertSchema(hsnCodes, {
+  hsnCode: (schema) => schema.min(4, "HSN code must be at least 4 characters"),
+  description: (schema) => schema.min(3, "Description must be at least 3 characters"),
+  cgstRate: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  sgstRate: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  igstRate: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  cessRate: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  isActive: (schema) => schema.optional()
+});
+export type HsnCodeInsert = z.infer<typeof hsnCodeInsertSchema>;
+export const hsnCodeSelectSchema = createSelectSchema(hsnCodes);
+export type HsnCode = z.infer<typeof hsnCodeSelectSchema>;
 
 // Returns table
 export const returns = pgTable('returns', {
