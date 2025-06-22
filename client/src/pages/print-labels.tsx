@@ -20,26 +20,14 @@ import {
   SettingsIcon, 
   SearchIcon, 
   Package2Icon,
-  BarChart3Icon,
-  QrCodeIcon,
   FilterIcon,
   DownloadIcon,
   RefreshCwIcon,
-  CopyIcon,
-  ScanIcon,
   GridIcon,
   ListIcon,
-  ZoomInIcon,
-  ZoomOutIcon,
-  RotateCcwIcon,
-  SaveIcon,
-  UploadIcon,
   Eye,
-  FileTextIcon,
-  ImageIcon,
   StarIcon,
-  ClockIcon,
-  TrendingUpIcon
+  ClockIcon
 } from "lucide-react";
 
 interface Product {
@@ -58,6 +46,12 @@ interface Product {
   hsnCode?: string;
   gstCode?: string;
   active?: boolean;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  description?: string;
 }
 
 interface LabelTemplate {
@@ -140,62 +134,44 @@ const defaultTemplates: LabelTemplate[] = [
 export default function PrintLabels() {
   const { toast } = useToast();
 
-  // Basic state
+  // State management
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showOnlySelected, setShowOnlySelected] = useState(false);
-
-  // Label configuration
   const [selectedTemplate, setSelectedTemplate] = useState<string>('retail-standard');
-  const [customTemplate, setCustomTemplate] = useState<LabelTemplate | null>(null);
   const [copies, setCopies] = useState(1);
   const [labelsPerRow, setLabelsPerRow] = useState(2);
-  const [labelsPerPage, setLabelsPerPage] = useState(10);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
 
-  // Advanced options
+  // Advanced label options
   const [includeBarcode, setIncludeBarcode] = useState(true);
   const [includePrice, setIncludePrice] = useState(true);
   const [includeDescription, setIncludeDescription] = useState(false);
   const [includeMRP, setIncludeMRP] = useState(true);
   const [includeWeight, setIncludeWeight] = useState(false);
   const [includeHSN, setIncludeHSN] = useState(false);
-  const [includeDateCode, setIncludeDateCode] = useState(false);
-  const [includeBatch, setIncludeBatch] = useState(false);
-  const [includeExpiry, setIncludeExpiry] = useState(false);
-
-  // Custom fields
   const [customText, setCustomText] = useState("");
-  const [customLogo, setCustomLogo] = useState("");
-  const [watermark, setWatermark] = useState("");
-
-  // Print settings
   const [paperSize, setPaperSize] = useState("A4");
   const [orientation, setOrientation] = useState("portrait");
   const [margin, setMargin] = useState(5);
-  const [quality, setQuality] = useState("high");
 
-  // Dialog states
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
-  const [isBulkEditDialogOpen, setIsBulkEditDialogOpen] = useState(false);
-
-  // Preview state
-  const [previewZoom, setPreviewZoom] = useState(100);
-
-  // Fetch data
-  const { data: products = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
+  // Fetch data with proper typing
+  const { data: productsData = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
     queryKey: ['/api/products'],
   });
 
-  const { data: categories = [] } = useQuery({
+  const { data: categoriesData = [] } = useQuery({
     queryKey: ['/api/categories'],
   });
 
-  // Filter and sort products
-  const filteredProducts = (products as Product[]).filter((product: Product) => {
+  const products = productsData as Product[];
+  const categories = categoriesData as Category[];
+
+  // Filter products
+  const filteredProducts = products.filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -210,11 +186,10 @@ export default function PrintLabels() {
 
   // Get current template
   const getCurrentTemplate = (): LabelTemplate => {
-    if (customTemplate) return customTemplate;
     return defaultTemplates.find(t => t.id === selectedTemplate) || defaultTemplates[0];
   };
 
-  // Handle product selection
+  // Product selection handlers
   const handleProductSelect = (productId: number, checked: boolean) => {
     if (checked) {
       setSelectedProducts([...selectedProducts, productId]);
@@ -232,70 +207,56 @@ export default function PrintLabels() {
     setSelectedProducts([]);
   };
 
-  // Generate barcode
+  // Generate professional barcode
   const generateBarcode = (text: string, width: number = 100, height: number = 30) => {
-    const barcodePattern = text.split('').map((char, index) => {
-      const charCode = char.charCodeAt(0);
-      return Array.from({ length: 3 }, (_, i) => 
-        `<rect x="${(index * 9) + (i * 3)}" y="5" width="${(charCode % 3) + 1}" height="${height - 15}" fill="#000"/>`
-      ).join('');
+    const barcodeData = text.padEnd(12, '0').substring(0, 12);
+    const bars = barcodeData.split('').map((digit, index) => {
+      const digitValue = parseInt(digit);
+      const barWidth = digitValue % 4 + 1;
+      const barHeight = height - 15;
+      return `<rect x="${index * 8}" y="5" width="${barWidth}" height="${barHeight}" fill="#000"/>`;
     }).join('');
     
     return `
-      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="display: block;">
-        <rect width="${width}" height="${height}" fill="#fff"/>
-        ${barcodePattern}
-        <text x="${width/2}" y="${height - 2}" font-family="monospace" font-size="8" text-anchor="middle" fill="#000">${text}</text>
-      </svg>
-    `;
-  };
-
-  // Generate QR code
-  const generateQRCode = (text: string, size: number = 50) => {
-    const gridSize = 21;
-    const cellSize = size / gridSize;
-    const qrPattern = text.split('').map((char, index) => {
-      const charCode = char.charCodeAt(0);
-      const row = Math.floor(index / gridSize);
-      const col = index % gridSize;
-      const shouldFill = (charCode + row + col) % 2 === 0;
-      return shouldFill ? 
-        `<rect x="${col * cellSize}" y="${row * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000"/>` : 
-        '';
-    }).join('');
-    
-    return `
-      <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="display: block;">
-        <rect width="${size}" height="${size}" fill="#fff" stroke="#000" stroke-width="1"/>
-        ${qrPattern}
-      </svg>
+      <div style="text-align: center; margin: 2px 0;">
+        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #ddd;">
+          <rect width="${width}" height="${height}" fill="#fff"/>
+          ${bars}
+          <text x="${width/2}" y="${height - 2}" font-family="monospace" font-size="8" text-anchor="middle" fill="#000">${barcodeData}</text>
+        </svg>
+      </div>
     `;
   };
 
   // Generate label HTML
   const generateLabelHTML = (product: Product, template: LabelTemplate) => {
+    const currentTemplate = {
+      ...template,
+      includeBarcode,
+      includePrice,
+      includeDescription,
+      includeMRP,
+      includeWeight,
+      includeHSN
+    };
+
     const {
-      width, height, fontSize, includeBarcode, includePrice, includeDescription,
-      includeMRP, includeWeight, includeHSN, barcodePosition, borderStyle,
-      borderWidth, backgroundColor, textColor
-    } = template;
+      width, height, fontSize, borderStyle, borderWidth, backgroundColor, textColor
+    } = currentTemplate;
 
     const borderCSS = borderStyle !== 'none' ? 
       `border: ${borderWidth}px ${borderStyle} #333;` : '';
 
-    const barcodeHTML = includeBarcode ? 
-      generateBarcode(product.barcode || product.sku, width * 0.8, 20) : '';
-
-    const qrCodeHTML = includeBarcode && barcodePosition === 'left' ? 
-      generateQRCode(product.sku, 30) : '';
+    const barcodeHTML = currentTemplate.includeBarcode ? 
+      generateBarcode(product.barcode || product.sku, Math.min(width * 2.8, 200), 25) : '';
 
     return `
       <div class="product-label" style="
         width: ${width}mm;
         height: ${height}mm;
         ${borderCSS}
-        padding: 2mm;
-        margin: 1mm;
+        padding: 3mm;
+        margin: 2mm;
         display: inline-block;
         font-family: Arial, sans-serif;
         background: ${backgroundColor};
@@ -305,83 +266,68 @@ export default function PrintLabels() {
         vertical-align: top;
         position: relative;
         font-size: ${fontSize}px;
-        line-height: 1.2;
+        line-height: 1.3;
+        overflow: hidden;
       ">
-        ${customLogo ? `<img src="${customLogo}" style="width: 20mm; height: auto; margin-bottom: 1mm;" />` : ''}
-
-        <div style="font-weight: bold; margin-bottom: 1mm; overflow: hidden; text-overflow: ellipsis;">
+        <div style="font-weight: bold; margin-bottom: 2mm; font-size: ${fontSize + 1}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
           ${product.name}
         </div>
 
-        <div style="font-size: ${fontSize * 0.8}px; color: #666; margin-bottom: 1mm;">
+        <div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 1mm;">
           SKU: ${product.sku}
         </div>
 
-        ${includeDescription && product.description ? 
-          `<div style="font-size: ${fontSize * 0.7}px; color: #888; margin-bottom: 1mm; overflow: hidden; text-overflow: ellipsis;">
-            ${product.description.substring(0, 60)}${product.description.length > 60 ? '...' : ''}
+        ${currentTemplate.includeDescription && product.description ? 
+          `<div style="font-size: ${fontSize - 2}px; color: #888; margin-bottom: 1mm; overflow: hidden; height: 15px;">
+            ${product.description.substring(0, 40)}${product.description.length > 40 ? '...' : ''}
           </div>` : ''
         }
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1mm;">
-          ${includePrice ? 
-            `<div style="font-size: ${fontSize * 1.1}px; font-weight: bold; color: #2563eb;">
-              ₹${Number(product.price).toFixed(2)}
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2mm;">
+          ${currentTemplate.includePrice ? 
+            `<div style="font-size: ${fontSize + 2}px; font-weight: bold; color: #2563eb;">
+              ₹${parseFloat(product.price).toFixed(2)}
             </div>` : ''
           }
-          ${includeMRP && product.mrp && product.mrp !== product.price ? 
-            `<div style="font-size: ${fontSize * 0.8}px; color: #666; text-decoration: line-through;">
-              MRP: ₹${Number(product.mrp).toFixed(2)}
+          ${currentTemplate.includeMRP && product.mrp && parseFloat(product.mrp) !== parseFloat(product.price) ? 
+            `<div style="font-size: ${fontSize - 1}px; color: #666; text-decoration: line-through;">
+              MRP: ₹${parseFloat(product.mrp).toFixed(2)}
             </div>` : ''
           }
         </div>
 
-        ${includeWeight && product.weight ? 
-          `<div style="font-size: ${fontSize * 0.8}px; color: #666; margin-bottom: 1mm;">
+        ${currentTemplate.includeWeight && product.weight ? 
+          `<div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 1mm;">
             Weight: ${product.weight} ${product.weightUnit || 'kg'}
           </div>` : ''
         }
 
-        ${includeHSN && product.hsnCode ? 
-          `<div style="font-size: ${fontSize * 0.7}px; color: #666; margin-bottom: 1mm;">
+        ${currentTemplate.includeHSN && product.hsnCode ? 
+          `<div style="font-size: ${fontSize - 2}px; color: #666; margin-bottom: 1mm;">
             HSN: ${product.hsnCode}
           </div>` : ''
         }
 
-        ${includeDateCode ? 
-          `<div style="font-size: ${fontSize * 0.7}px; color: #666; margin-bottom: 1mm;">
-            Date: ${new Date().toLocaleDateString('en-IN')}
-          </div>` : ''
-        }
-
         ${customText ? 
-          `<div style="font-size: ${fontSize * 0.8}px; color: #666; margin-bottom: 1mm;">
+          `<div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 1mm;">
             ${customText}
           </div>` : ''
         }
 
-        ${barcodePosition === 'bottom' && barcodeHTML ? 
-          `<div style="text-align: center; margin-top: auto;">
+        ${currentTemplate.includeBarcode ? 
+          `<div style="margin-top: auto; text-align: center;">
             ${barcodeHTML}
           </div>` : ''
         }
 
-        ${barcodePosition === 'left' && qrCodeHTML ? 
-          `<div style="position: absolute; top: 2mm; right: 2mm;">
-            ${qrCodeHTML}
-          </div>` : ''
-        }
-
-        ${watermark ? 
-          `<div style="position: absolute; bottom: 1mm; right: 1mm; font-size: 6px; color: #ccc; transform: rotate(-45deg);">
-            ${watermark}
-          </div>` : ''
-        }
+        <div style="position: absolute; bottom: 1mm; right: 2mm; font-size: 6px; color: #ccc;">
+          ${new Date().toLocaleDateString('en-IN')}
+        </div>
       </div>
     `;
   };
 
-  // Handle print
+  // Print functionality
   const handlePrint = () => {
     if (selectedProducts.length === 0) {
       toast({
@@ -395,7 +341,7 @@ export default function PrintLabels() {
   };
 
   const executePrint = () => {
-    const selectedProductsData = (products as Product[]).filter((p: Product) => 
+    const selectedProductsData = products.filter((p: Product) => 
       selectedProducts.includes(p.id)
     );
 
@@ -414,6 +360,7 @@ export default function PrintLabels() {
         <html>
           <head>
             <title>Product Labels - ${new Date().toLocaleDateString()}</title>
+            <meta charset="UTF-8">
             <style>
               @page { 
                 size: ${paperSize} ${orientation};
@@ -430,9 +377,11 @@ export default function PrintLabels() {
                 grid-template-columns: repeat(${labelsPerRow}, 1fr);
                 gap: 2mm;
                 width: 100%;
+                align-items: start;
               }
               .product-label {
                 break-inside: avoid;
+                page-break-inside: avoid;
               }
               @media print {
                 body { 
@@ -445,9 +394,9 @@ export default function PrintLabels() {
                   margin: 0;
                   padding: 0;
                 }
-                @page {
-                    size: ${paperSize === '3.15inch' ? '80mm 80mm' : `${paperSize} ${orientation}`};
-                    margin: ${margin}mm;
+                .product-label {
+                  break-inside: avoid;
+                  page-break-inside: avoid;
                 }
               }
             </style>
@@ -462,8 +411,8 @@ export default function PrintLabels() {
                   window.print();
                   setTimeout(function() {
                     window.close();
-                  }, 1000);
-                }, 500);
+                  }, 2000);
+                }, 1000);
               };
             </script>
           </body>
@@ -482,42 +431,22 @@ export default function PrintLabels() {
     });
   };
 
-  // Handle preview
+  // Preview functionality
   const handlePreview = () => {
+    if (selectedProducts.length === 0) {
+      toast({
+        title: "No products selected",
+        description: "Please select at least one product to preview labels.",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsPreviewDialogOpen(true);
   };
 
-  // Save template
-  const saveTemplate = () => {
-    const template: LabelTemplate = {
-      id: `custom-${Date.now()}`,
-      name: `Custom Template ${Date.now()}`,
-      width: 80,
-      height: 50,
-      fontSize: 12,
-      includeBarcode,
-      includePrice,
-      includeDescription,
-      includeMRP,
-      includeWeight,
-      includeHSN,
-      barcodePosition: 'bottom',
-      borderStyle: 'solid',
-      borderWidth: 1,
-      backgroundColor: '#ffffff',
-      textColor: '#000000'
-    };
-
-    setCustomTemplate(template);
-    toast({
-      title: "Template saved",
-      description: "Your custom template has been saved.",
-    });
-  };
-
-  // Export labels data
+  // Export functionality
   const exportLabelsData = () => {
-    const selectedProductsData = (products as Product[]).filter((p: Product) => 
+    const selectedProductsData = products.filter((p: Product) => 
       selectedProducts.includes(p.id)
     );
 
@@ -534,6 +463,19 @@ export default function PrintLabels() {
     URL.revokeObjectURL(url);
   };
 
+  if (isLoadingProducts) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <RefreshCwIcon className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+            <p className="mt-2 text-muted-foreground">Loading products...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -542,22 +484,14 @@ export default function PrintLabels() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <TagIcon className="h-8 w-8 text-blue-600" />
-              Professional Label Printing
+              Print Labels
             </h1>
             <p className="text-muted-foreground mt-1">
-              Advanced label printing with customizable templates and professional features
+              Professional label printing with customizable templates
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button 
-              variant="outline"
-              onClick={() => setIsTemplateDialogOpen(true)}
-              className="border-purple-600 text-purple-600 hover:bg-purple-50"
-            >
-              <SettingsIcon className="h-4 w-4 mr-2" />
-              Templates
-            </Button>
             <Button 
               variant="outline"
               onClick={handlePreview}
@@ -631,7 +565,7 @@ export default function PrintLabels() {
                 <StarIcon className="h-5 w-5 text-orange-600" />
                 <div>
                   <p className="text-sm text-muted-foreground">Template</p>
-                  <p className="text-xl font-bold text-sm">
+                  <p className="text-sm font-bold">
                     {getCurrentTemplate().name}
                   </p>
                 </div>
@@ -646,18 +580,17 @@ export default function PrintLabels() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <SettingsIcon className="h-5 w-5" />
-                Label Configuration
+                Label Settings
               </CardTitle>
               <CardDescription>
-                Customize your label settings
+                Configure your label options
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="basic">Basic</TabsTrigger>
                   <TabsTrigger value="advanced">Advanced</TabsTrigger>
-                  <TabsTrigger value="design">Design</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="basic" className="space-y-4">
@@ -674,9 +607,6 @@ export default function PrintLabels() {
                             {template.name}
                           </SelectItem>
                         ))}
-                        {customTemplate && (
-                          <SelectItem value="custom">Custom Template</SelectItem>
-                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -689,7 +619,7 @@ export default function PrintLabels() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {[1, 2, 3, 4, 5, 10, 20, 50, 100].map(num => (
+                        {[1, 2, 3, 4, 5, 10, 20, 50].map(num => (
                           <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
                         ))}
                       </SelectContent>
@@ -711,85 +641,7 @@ export default function PrintLabels() {
                     </Select>
                   </div>
 
-                  {/* Basic Elements */}
-                  <Separator />
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Include Elements</h4>
-
-                    {[
-                      { key: 'barcode', label: 'Barcode/QR', state: includeBarcode, setState: setIncludeBarcode, icon: QrCodeIcon },
-                      { key: 'price', label: 'Price', state: includePrice, setState: setIncludePrice, icon: BarChart3Icon },
-                      { key: 'description', label: 'Description', state: includeDescription, setState: setIncludeDescription, icon: FileTextIcon },
-                      { key: 'mrp', label: 'MRP', state: includeMRP, setState: setIncludeMRP, icon: TrendingUpIcon },
-                    ].map(item => {
-                      const Icon = item.icon;
-                      return (
-                        <div key={item.key} className="flex items-center space-x-2">
-                          <Switch
-                            id={item.key}
-                            checked={item.state}
-                            onCheckedChange={item.setState}
-                          />
-                          <Label htmlFor={item.key} className="text-sm flex items-center gap-2">
-                            <Icon className="h-3 w-3" />
-                            {item.label}
-                          </Label>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="advanced" className="space-y-4">
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Advanced Elements</h4>
-
-                    {[
-                      { key: 'weight', label: 'Weight/Unit', state: includeWeight, setState: setIncludeWeight },
-                      { key: 'hsn', label: 'HSN Code', state: includeHSN, setState: setIncludeHSN },
-                      { key: 'date', label: 'Date Code', state: includeDateCode, setState: setIncludeDateCode },
-                      { key: 'batch', label: 'Batch Number', state: includeBatch, setState: setIncludeBatch },
-                      { key: 'expiry', label: 'Expiry Date', state: includeExpiry, setState: setIncludeExpiry },
-                    ].map(item => (
-                      <div key={item.key} className="flex items-center space-x-2">
-                        <Switch
-                          id={item.key}
-                          checked={item.state}
-                          onCheckedChange={item.setState}
-                        />
-                        <Label htmlFor={item.key} className="text-sm">
-                          {item.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Separator />
-
-                  {/* Custom Text */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Custom Text</Label>
-                    <Textarea
-                      placeholder="Add custom text to labels..."
-                      value={customText}
-                      onChange={(e) => setCustomText(e.target.value)}
-                      rows={2}
-                    />
-                  </div>
-
-                  {/* Watermark */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Watermark</Label>
-                    <Input
-                      placeholder="Watermark text..."
-                      value={watermark}
-                      onChange={(e) => setWatermark(e.target.value)}
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="design" className="space-y-4">
-                  {/* Paper Settings */}
+                  {/* Paper Size */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Paper Size</Label>
                     <Select value={paperSize} onValueChange={setPaperSize}>
@@ -800,59 +652,82 @@ export default function PrintLabels() {
                         <SelectItem value="A4">A4</SelectItem>
                         <SelectItem value="A5">A5</SelectItem>
                         <SelectItem value="Letter">Letter</SelectItem>
-                        <SelectItem value="Legal">Legal</SelectItem>
-                        <SelectItem value="3.15inch">3.15inch</SelectItem>
+                        <SelectItem value="3.15inch">Thermal 3.15"</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                </TabsContent>
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Orientation</Label>
-                    <Select value={orientation} onValueChange={setOrientation}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="portrait">Portrait</SelectItem>
-                        <SelectItem value="landscape">Landscape</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <TabsContent value="advanced" className="space-y-4">
+                  {/* Label Content Options */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Include in Labels</Label>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-barcode" 
+                        checked={includeBarcode}
+                        onCheckedChange={(checked) => setIncludeBarcode(checked as boolean)}
+                      />
+                      <Label htmlFor="include-barcode" className="text-sm">Barcode</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-price" 
+                        checked={includePrice}
+                        onCheckedChange={(checked) => setIncludePrice(checked as boolean)}
+                      />
+                      <Label htmlFor="include-price" className="text-sm">Price</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-mrp" 
+                        checked={includeMRP}
+                        onCheckedChange={(checked) => setIncludeMRP(checked as boolean)}
+                      />
+                      <Label htmlFor="include-mrp" className="text-sm">MRP</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-weight" 
+                        checked={includeWeight}
+                        onCheckedChange={(checked) => setIncludeWeight(checked as boolean)}
+                      />
+                      <Label htmlFor="include-weight" className="text-sm">Weight</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-description" 
+                        checked={includeDescription}
+                        onCheckedChange={(checked) => setIncludeDescription(checked as boolean)}
+                      />
+                      <Label htmlFor="include-description" className="text-sm">Description</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-hsn" 
+                        checked={includeHSN}
+                        onCheckedChange={(checked) => setIncludeHSN(checked as boolean)}
+                      />
+                      <Label htmlFor="include-hsn" className="text-sm">HSN Code</Label>
+                    </div>
                   </div>
 
+                  {/* Custom Text */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Page Margin (mm)</Label>
-                    <Input
-                      type="number"
-                      value={margin}
-                      onChange={(e) => setMargin(Number(e.target.value))}
-                      min="0"
-                      max="50"
+                    <Label htmlFor="custom-text" className="text-sm font-medium">Custom Text</Label>
+                    <Textarea
+                      id="custom-text"
+                      placeholder="Add custom text to labels..."
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
+                      className="min-h-[60px]"
                     />
-                  </div>
-
-                  {/* Quality */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Print Quality</Label>
-                    <Select value={quality} onValueChange={setQuality}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="high">High Quality</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Separator />
-
-                  {/* Actions */}
-                  <div className="space-y-2">
-                    <Button onClick={saveTemplate} className="w-full" variant="outline">
-                      <SaveIcon className="h-4 w-4 mr-2" />
-                      Save as Template
-                    </Button>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -862,62 +737,36 @@ export default function PrintLabels() {
           {/* Products Panel */}
           <Card className="lg:col-span-3">
             <CardHeader>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package2Icon className="h-5 w-5" />
-                    Product Selection
-                  </CardTitle>
-                  <CardDescription>
-                    Choose products for label printing
-                  </CardDescription>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                  >
-                    {viewMode === 'grid' ? <ListIcon className="h-4 w-4" /> : <GridIcon className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSelectAll}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDeselectAll}
-                  >
-                    Clear
-                  </Button>
-                </div>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Package2Icon className="h-5 w-5" />
+                Product Selection
+              </CardTitle>
+              <CardDescription>
+                Select products to print labels for
+              </CardDescription>
             </CardHeader>
-
-            <CardContent className="space-y-4">
-              {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-4"><div className="relative flex-1">
-                  <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search products by name, SKU, or barcode..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+            <CardContent>
+              {/* Filters and Search */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="flex-1">
+                  <div className="relative">
+                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search products by name, SKU, or barcode..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
 
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Filter by category" />
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((category: any) => (
+                    {categories.map((category) => (
                       <SelectItem key={category.id} value={category.name}>
                         {category.name}
                       </SelectItem>
@@ -925,141 +774,75 @@ export default function PrintLabels() {
                   </SelectContent>
                 </Select>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="show-selected"
-                    checked={showOnlySelected}
-                    onCheckedChange={setShowOnlySelected}
-                  />
-                  <Label htmlFor="show-selected" className="text-sm whitespace-nowrap">
-                    Show Selected Only
-                  </Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                  >
+                    {viewMode === 'grid' ? <ListIcon className="h-4 w-4" /> : <GridIcon className="h-4 w-4" />}
+                  </Button>
                 </div>
               </div>
 
-              {/* Selected Products Summary */}
-              {selectedProducts.length > 0 && (
-                <div className="flex flex-wrap gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                    {selectedProducts.length} products selected
-                  </Badge>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {selectedProducts.length * copies} labels to print
-                  </Badge>
-                  {selectedTemplate && (
-                    <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                      {getCurrentTemplate().name} template
-                    </Badge>
-                  )}
+              {/* Selection Controls */}
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                    Select All ({filteredProducts.length})
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDeselectAll}>
+                    Deselect All
+                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="show-only-selected" 
+                      checked={showOnlySelected}
+                      onCheckedChange={(checked) => setShowOnlySelected(checked as boolean)}
+                    />
+                    <Label htmlFor="show-only-selected" className="text-sm">Show only selected</Label>
+                  </div>
                 </div>
-              )}
+                <Badge variant="secondary">{selectedProducts.length} selected</Badge>
+              </div>
 
               {/* Products Grid/List */}
-              {isLoadingProducts ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <Card key={i} className="animate-pulse">
-                      <CardContent className="p-4">
-                        <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                        <div className="h-3 bg-gray-200 rounded mb-2"></div>
-                        <div className="h-3 bg-gray-200 rounded"></div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className={
-                  viewMode === 'grid' 
-                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" 
-                    : "space-y-2"
-                }>
-                  {filteredProducts.map((product: Product) => {
-                    const isSelected = selectedProducts.includes(product.id);
-
-                    if (viewMode === 'list') {
-                      return (
-                        <div
-                          key={product.id}
-                          className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                            isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
-                          }`}
-                          onClick={() => handleProductSelect(product.id, !isSelected)}
-                        >
-                          <Checkbox
-                            checked={isSelected}
-                            onChange={() => {}}
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium">{product.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              SKU: {product.sku} • ₹{Number(product.price).toFixed(2)}
-                              {product.stockQuantity !== undefined && (
-                                <span className="ml-2">Stock: {product.stockQuantity}</span>
-                              )}
-                            </div>
+              <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                {filteredProducts.map((product) => (
+                  <Card key={product.id} className={`cursor-pointer transition-all ${
+                    selectedProducts.includes(product.id) ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-md'
+                  }`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Checkbox 
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={(checked) => handleProductSelect(product.id, checked as boolean)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm truncate">{product.name}</h3>
+                          <p className="text-xs text-muted-foreground mt-1">SKU: {product.sku}</p>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-lg font-bold text-blue-600">₹{parseFloat(product.price).toFixed(2)}</span>
+                            {product.stockQuantity !== undefined && (
+                              <Badge variant={product.stockQuantity > 0 ? "secondary" : "destructive"}>
+                                Stock: {product.stockQuantity}
+                              </Badge>
+                            )}
                           </div>
+                          {product.barcode && (
+                            <p className="text-xs text-muted-foreground mt-1">Barcode: {product.barcode}</p>
+                          )}
                         </div>
-                      );
-                    }
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
 
-                    return (
-                      <Card
-                        key={product.id}
-                        className={`cursor-pointer transition-all duration-200 ${
-                          isSelected 
-                            ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' 
-                            : 'hover:shadow-md'
-                        }`}
-                        onClick={() => handleProductSelect(product.id, !isSelected)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Checkbox
-                                  checked={isSelected}
-                                  onChange={() => {}}
-                                />
-                                <h3 className="font-medium text-sm line-clamp-2">
-                                  {product.name}
-                                </h3>
-                              </div>
-
-                              <div className="space-y-1 text-xs text-muted-foreground">
-                                <p>SKU: {product.sku}</p>
-                                <div className="flex items-center justify-between">
-                                  <span className="font-semibold text-blue-600">
-                                    ₹{Number(product.price).toFixed(2)}
-                                  </span>
-                                  {product.stockQuantity !== undefined && (
-                                    <Badge variant={product.stockQuantity > 10 ? "secondary" : "destructive"}>
-                                      Stock: {product.stockQuantity}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-
-                              {product.category && (
-                                <Badge variant="outline" className="mt-2">
-                                  {product.category.name}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-
-              {!isLoadingProducts && filteredProducts.length === 0 && (
-                <div className="text-center py-12">
-                  <Package2Icon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Try adjusting your search or filter criteria.
-                  </p>
+              {filteredProducts.length === 0 && (
+                <div className="text-center py-8">
+                  <Package2Icon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No products found matching your criteria.</p>
                 </div>
               )}
             </CardContent>
@@ -1068,67 +851,38 @@ export default function PrintLabels() {
 
         {/* Print Dialog */}
         <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <PrinterIcon className="h-5 w-5" />
-                Print Labels Configuration
-              </DialogTitle>
+              <DialogTitle>Print Labels</DialogTitle>
             </DialogHeader>
-
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Products Selected</Label>
-                  <div className="p-3 bg-gray-50 rounded border">
-                    {selectedProducts.length} products
-                  </div>
+            <div className="space-y-4">
+              <p>Ready to print {selectedProducts.length * copies} labels?</p>
+              <div className="bg-muted p-4 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span>Products:</span>
+                  <span>{selectedProducts.length}</span>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Total Labels</Label>
-                  <div className="p-3 bg-gray-50 rounded border">
-                    {selectedProducts.length * copies} labels
-                  </div>
+                <div className="flex justify-between">
+                  <span>Copies each:</span>
+                  <span>{copies}</span>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Template</Label>
-                  <div className="p-3 bg-gray-50 rounded border">
-                    {getCurrentTemplate().name}
-                  </div>
+                <div className="flex justify-between font-bold">
+                  <span>Total labels:</span>
+                  <span>{selectedProducts.length * copies}</span>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Paper Size</Label>
-                  <div className="p-3 bg-gray-50 rounded border">
-                    {paperSize} ({orientation})
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Label Elements</Label>
-                <div className="flex flex-wrap gap-2">
-                  {includeBarcode && <Badge>Barcode</Badge>}
-                  {includePrice && <Badge>Price</Badge>}
-                  {includeDescription && <Badge>Description</Badge>}
-                  {includeMRP && <Badge>MRP</Badge>}
-                  {includeWeight && <Badge>Weight</Badge>}
-                  {includeHSN && <Badge>HSN Code</Badge>}
+                <div className="flex justify-between">
+                  <span>Template:</span>
+                  <span>{getCurrentTemplate().name}</span>
                 </div>
               </div>
             </div>
-
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsPrintDialogOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={executePrint} className="bg-blue-600 hover:bg-blue-700">
                 <PrinterIcon className="h-4 w-4 mr-2" />
-                Print Labels
+                Print Now
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1136,125 +890,43 @@ export default function PrintLabels() {
 
         {/* Preview Dialog */}
         <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                Label Preview
-              </DialogTitle>
+              <DialogTitle>Label Preview</DialogTitle>
             </DialogHeader>
-
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPreviewZoom(Math.max(50, previewZoom - 25))}
-                  >
-                    <ZoomOutIcon className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm">{previewZoom}%</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPreviewZoom(Math.min(200, previewZoom + 25))}
-                  >
-                    <ZoomInIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPreviewZoom(100)}
-                >
-                  <RotateCcwIcon className="h-4 w-4" />
-                  Reset
-                </Button>
+              <div className="bg-white p-4 border rounded-lg" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: `repeat(${labelsPerRow}, 1fr)`, 
+                gap: '8px',
+                maxHeight: '60vh',
+                overflowY: 'auto'
+              }}>
+                {products.filter(p => selectedProducts.includes(p.id)).slice(0, 6).map((product) => (
+                  <div 
+                    key={product.id} 
+                    dangerouslySetInnerHTML={{ 
+                      __html: generateLabelHTML(product, getCurrentTemplate()) 
+                    }} 
+                  />
+                ))}
               </div>
-
-              <div 
-                className="border rounded-lg p-4 bg-white overflow-auto"
-                style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: 'top left' }}
-              >
-                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${labelsPerRow}, 1fr)` }}>
-                  {products
-                    .filter((p: Product) => selectedProducts.includes(p.id))
-                    .slice(0, 6)
-                    .map((product: Product) => (
-                      <div 
-                        key={product.id}
-                        dangerouslySetInnerHTML={{ 
-                          __html: generateLabelHTML(product, getCurrentTemplate()) 
-                        }}
-                      />
-                    ))}
-                </div>
-
-                {selectedProducts.length > 6 && (
-                  <div className="text-center text-sm text-muted-foreground mt-4">
-                    ... and {selectedProducts.length - 6} more products
-                  </div>
-                )}
-              </div>
+              {selectedProducts.length > 6 && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Showing first 6 labels. {selectedProducts.length - 6} more will be printed.
+                </p>
+              )}
             </div>
-
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsPreviewDialogOpen(false)}>
-                Close
+                Close Preview
               </Button>
               <Button onClick={() => {
                 setIsPreviewDialogOpen(false);
                 handlePrint();
-              }}>
+              }} className="bg-blue-600 hover:bg-blue-700">
                 <PrinterIcon className="h-4 w-4 mr-2" />
                 Print These Labels
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Template Dialog */}
-        <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <SettingsIcon className="h-5 w-5" />
-                Label Templates
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {defaultTemplates.map(template => (
-                <Card 
-                  key={template.id}
-                  className={`cursor-pointer transition-all ${
-                    selectedTemplate === template.id ? 'ring-2 ring-blue-500' : ''
-                  }`}
-                  onClick={() => setSelectedTemplate(template.id)}
-                >
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-2">{template.name}</h3>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>{template.width}mm × {template.height}mm</p>
-                      <div className="flex flex-wrap gap-1">
-                        {template.includeBarcode && <Badge variant="outline" className="text-xs">Barcode</Badge>}
-                        {template.includePrice && <Badge variant="outline" className="text-xs">Price</Badge>}
-                        {template.includeMRP && <Badge variant="outline" className="text-xs">MRP</Badge>}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
-                Close
-              </Button>
-              <Button onClick={() => setIsTemplateDialogOpen(false)}>
-                Apply Template
               </Button>
             </DialogFooter>
           </DialogContent>
