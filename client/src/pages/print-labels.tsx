@@ -195,7 +195,7 @@ export default function PrintLabels() {
   });
 
   // Filter and sort products
-  const filteredProducts = products.filter((product: Product) => {
+  const filteredProducts = (products as Product[]).filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -234,32 +234,40 @@ export default function PrintLabels() {
 
   // Generate barcode
   const generateBarcode = (text: string, width: number = 100, height: number = 30) => {
+    const barcodePattern = text.split('').map((char, index) => {
+      const charCode = char.charCodeAt(0);
+      return Array.from({ length: 3 }, (_, i) => 
+        `<rect x="${(index * 9) + (i * 3)}" y="5" width="${(charCode % 3) + 1}" height="${height - 15}" fill="#000"/>`
+      ).join('');
+    }).join('');
+    
     return `
-      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <g>
-          ${Array.from({ length: 50 }, (_, i) => 
-            `<rect x="${i * 2}" y="5" width="1" height="${height - 10}" fill="${i % 2 === 0 ? '#000' : '#fff'}"/>`
-          ).join('')}
-        </g>
-        <text x="${width/2}" y="${height - 2}" font-family="Arial" font-size="8" text-anchor="middle" fill="#000">${text}</text>
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+        <rect width="${width}" height="${height}" fill="#fff"/>
+        ${barcodePattern}
+        <text x="${width/2}" y="${height - 2}" font-family="monospace" font-size="8" text-anchor="middle" fill="#000">${text}</text>
       </svg>
     `;
   };
 
   // Generate QR code
   const generateQRCode = (text: string, size: number = 50) => {
+    const gridSize = 21;
+    const cellSize = size / gridSize;
+    const qrPattern = text.split('').map((char, index) => {
+      const charCode = char.charCodeAt(0);
+      const row = Math.floor(index / gridSize);
+      const col = index % gridSize;
+      const shouldFill = (charCode + row + col) % 2 === 0;
+      return shouldFill ? 
+        `<rect x="${col * cellSize}" y="${row * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000"/>` : 
+        '';
+    }).join('');
+    
     return `
-      <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${size}" height="${size}" fill="#fff"/>
-        ${Array.from({ length: 10 }, (_, row) =>
-          Array.from({ length: 10 }, (_, col) => {
-            const shouldFill = (row + col) % 2 === 0;
-            return shouldFill ? 
-              `<rect x="${col * (size/10)}" y="${row * (size/10)}" width="${size/10}" height="${size/10}" fill="#000"/>` : 
-              '';
-          }).join('')
-        ).join('')}
-        <text x="${size/2}" y="${size + 12}" font-family="Arial" font-size="6" text-anchor="middle" fill="#000">${text}</text>
+      <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+        <rect width="${size}" height="${size}" fill="#fff" stroke="#000" stroke-width="1"/>
+        ${qrPattern}
       </svg>
     `;
   };
@@ -387,7 +395,7 @@ export default function PrintLabels() {
   };
 
   const executePrint = () => {
-    const selectedProductsData = products.filter((p: Product) => 
+    const selectedProductsData = (products as Product[]).filter((p: Product) => 
       selectedProducts.includes(p.id)
     );
 
@@ -509,7 +517,7 @@ export default function PrintLabels() {
 
   // Export labels data
   const exportLabelsData = () => {
-    const selectedProductsData = products.filter((p: Product) => 
+    const selectedProductsData = (products as Product[]).filter((p: Product) => 
       selectedProducts.includes(p.id)
     );
 
