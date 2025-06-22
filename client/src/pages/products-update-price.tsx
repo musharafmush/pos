@@ -110,9 +110,13 @@ export default function ProductsUpdatePrice() {
 
   // Apply price calculations
   const calculateNewPrice = (currentPrice: string, adjustmentType: string, adjustmentValue: string, roundingRule: string) => {
-    const current = parseFloat(currentPrice);
-    const adjustment = parseFloat(adjustmentValue || "0");
+    const current = parseFloat(currentPrice) || 0;
+    const adjustment = parseFloat(adjustmentValue || "0") || 0;
     let newPrice = current;
+
+    if (isNaN(current)) {
+      return "0.00";
+    }
 
     switch (adjustmentType) {
       case "percentage":
@@ -122,17 +126,21 @@ export default function ProductsUpdatePrice() {
         newPrice = current + adjustment;
         break;
       case "manual":
-        return adjustmentValue || currentPrice;
+        const manualPrice = parseFloat(adjustmentValue || "0");
+        return isNaN(manualPrice) ? currentPrice : manualPrice.toFixed(2);
     }
+
+    // Ensure newPrice is not negative
+    newPrice = Math.max(0, newPrice);
 
     // Apply rounding
     switch (roundingRule) {
       case "nearest":
-        return Math.round(newPrice).toString();
+        return Math.round(newPrice).toFixed(2);
       case "up":
-        return Math.ceil(newPrice).toString();
+        return Math.ceil(newPrice).toFixed(2);
       case "down":
-        return Math.floor(newPrice).toString();
+        return Math.floor(newPrice).toFixed(2);
       default:
         return newPrice.toFixed(2);
     }
@@ -140,12 +148,18 @@ export default function ProductsUpdatePrice() {
 
   const handlePreviewPrices = (data: PriceUpdateFormValues) => {
     const updates = filteredProducts.map((product: Product) => {
-      const currentPrice = data.priceType === "selling" ? product.price : 
-                          data.priceType === "cost" ? product.cost || "0" : 
-                          product.mrp || "0";
+      // Safely extract current price based on type
+      let currentPrice = "0";
+      if (data.priceType === "selling") {
+        currentPrice = product.price?.toString() || "0";
+      } else if (data.priceType === "cost") {
+        currentPrice = product.cost?.toString() || "0";
+      } else if (data.priceType === "mrp") {
+        currentPrice = product.mrp?.toString() || "0";
+      }
       
       const newPrice = calculateNewPrice(
-        currentPrice.toString(),
+        currentPrice,
         data.adjustmentType,
         data.adjustmentValue || "0",
         data.roundingRule
@@ -155,8 +169,8 @@ export default function ProductsUpdatePrice() {
         id: product.id,
         name: product.name,
         sku: product.sku,
-        currentPrice: currentPrice.toString(),
-        newPrice,
+        currentPrice: parseFloat(currentPrice).toFixed(2),
+        newPrice: parseFloat(newPrice).toFixed(2),
         selected: selectedProducts.includes(product.id),
       };
     });
@@ -203,25 +217,60 @@ export default function ProductsUpdatePrice() {
       const selectedUpdates = productUpdates.filter(p => p.selected);
       const priceType = form.watch("priceType");
       
+      if (selectedUpdates.length === 0) {
+        throw new Error("Please select at least one product to update");
+      }
+      
+      console.log(`Starting bulk price update for ${selectedUpdates.length} products`);
+      
       const updates = [];
       for (const update of selectedUpdates) {
         const product = products.find((p: Product) => p.id === update.id);
         if (product) {
-          const updatedData = { ...product };
-          
-          if (priceType === "selling") {
-            updatedData.price = update.newPrice;
-          } else if (priceType === "cost") {
-            updatedData.cost = update.newPrice;
-          } else if (priceType === "mrp") {
-            updatedData.mrp = update.newPrice;
+          // Validate the new price
+          const newPriceValue = parseFloat(update.newPrice);
+          if (isNaN(newPriceValue) || newPriceValue < 0) {
+            throw new Error(`Invalid price for product ${product.name}: ${update.newPrice}`);
           }
           
-          updates.push(apiRequest("PUT", `/api/products/${update.id}`, updatedData));
+          // Create update payload with only necessary fields
+          const updatePayload: any = {
+            name: product.name,
+            sku: product.sku,
+            description: product.description || "",
+            categoryId: product.categoryId,
+            stockQuantity: product.stockQuantity || 0,
+            alertThreshold: product.alertThreshold || 10,
+            barcode: product.barcode || "",
+            active: product.active !== false
+          };
+          
+          // Set all three price fields to ensure consistency
+          updatePayload.price = parseFloat(product.price?.toString() || "0");
+          updatePayload.cost = parseFloat(product.cost?.toString() || "0");
+          updatePayload.mrp = parseFloat(product.mrp?.toString() || "0");
+          
+          // Update the specific price type
+          if (priceType === "selling") {
+            updatePayload.price = newPriceValue;
+          } else if (priceType === "cost") {
+            updatePayload.cost = newPriceValue;
+          } else if (priceType === "mrp") {
+            updatePayload.mrp = newPriceValue;
+          }
+          
+          // Add optional fields if they exist
+          if (product.weight) updatePayload.weight = parseFloat(product.weight.toString());
+          if (product.weightUnit) updatePayload.weightUnit = product.weightUnit;
+          
+          console.log(`Updating product ${product.id} (${product.name}) - ${priceType}: ${newPriceValue}`);
+          updates.push(apiRequest("PUT", `/api/products/${update.id}`, updatePayload));
         }
       }
       
-      return Promise.all(updates);
+      const results = await Promise.all(updates);
+      console.log(`Successfully updated ${results.length} products`);
+      return results;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -231,10 +280,21 @@ export default function ProductsUpdatePrice() {
       });
       setCurrentStep(3);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      console.error("Price update error:", error);
+      let errorMessage = "Failed to update prices";
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       toast({
         title: "❌ Error",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },
