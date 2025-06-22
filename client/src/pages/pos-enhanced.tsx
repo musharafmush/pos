@@ -148,6 +148,12 @@ export default function POSEnhanced() {
   const [registerOpened, setRegisterOpened] = useState(false);
   const [activeRegisterId, setActiveRegisterId] = useState<number | null>(null);
   const [openingCash, setOpeningCash] = useState(0);
+
+  // Loyalty management state
+  const [customerLoyalty, setCustomerLoyalty] = useState<any>(null);
+  const [loyaltyPointsToRedeem, setLoyaltyPointsToRedeem] = useState(0);
+  const [showLoyaltyDialog, setShowLoyaltyDialog] = useState(false);
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
   const [cashInHand, setCashInHand] = useState(0);
   const [cashReceived, setCashReceived] = useState(0);
   const [upiReceived, setUpiReceived] = useState(0);
@@ -293,6 +299,106 @@ export default function POSEnhanced() {
       }
     },
   });
+
+  // Fetch customer loyalty data when customer is selected
+  const fetchCustomerLoyalty = async (customerId: number) => {
+    try {
+      const response = await fetch(`/api/loyalty/customer/${customerId}`);
+      if (response.ok) {
+        const loyaltyData = await response.json();
+        setCustomerLoyalty(loyaltyData);
+      } else if (response.status === 404) {
+        // Create loyalty record if doesn't exist
+        const createResponse = await fetch('/api/loyalty/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerId })
+        });
+        if (createResponse.ok) {
+          const newLoyalty = await createResponse.json();
+          setCustomerLoyalty(newLoyalty);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching loyalty data:', error);
+      setCustomerLoyalty(null);
+    }
+  };
+
+  // Reset loyalty state when customer changes
+  useEffect(() => {
+    if (selectedCustomer) {
+      fetchCustomerLoyalty(selectedCustomer.id);
+    } else {
+      setCustomerLoyalty(null);
+      setLoyaltyPointsToRedeem(0);
+      setLoyaltyDiscount(0);
+    }
+  }, [selectedCustomer]);
+
+  // Calculate points to earn from current purchase
+  const calculatePointsToEarn = (total: number) => {
+    // 1 point per rupee spent
+    return Math.floor(total);
+  };
+
+  // Handle loyalty point redemption
+  const handleLoyaltyRedemption = () => {
+    if (!customerLoyalty || loyaltyPointsToRedeem <= 0) return;
+    
+    if (loyaltyPointsToRedeem > customerLoyalty.totalPoints) {
+      toast({
+        title: "Insufficient Points",
+        description: `Customer only has ${customerLoyalty.totalPoints} points available`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 1 point = ₹1 discount
+    const discountFromPoints = loyaltyPointsToRedeem;
+    setLoyaltyDiscount(discountFromPoints);
+    setShowLoyaltyDialog(false);
+    
+    toast({
+      title: "Points Redeemed",
+      description: `${loyaltyPointsToRedeem} points redeemed for ₹${discountFromPoints} discount`,
+    });
+  };
+
+  // Award loyalty points after successful sale
+  const awardLoyaltyPoints = async (customerId: number, points: number, saleId: number) => {
+    try {
+      await fetch('/api/loyalty/add-points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId,
+          points,
+          reason: `Purchase - Sale #${saleId}`
+        })
+      });
+    } catch (error) {
+      console.error('Error awarding loyalty points:', error);
+    }
+  };
+
+  // Redeem loyalty points during checkout
+  const redeemLoyaltyPoints = async (customerId: number, points: number) => {
+    try {
+      await fetch('/api/loyalty/redeem-points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId,
+          points
+        })
+      });
+    } catch (error) {
+      console.error('Error redeeming loyalty points:', error);
+      throw error;
+    }
+  };
 
   // Check if product is suitable for barcode scanning in POS
   const isProductBarcodeEnabled = (product: Product): boolean => {
@@ -944,6 +1050,11 @@ export default function POSEnhanced() {
         }
       }
 
+      // Process loyalty point redemption before creating sale
+      if (selectedCustomer && loyaltyPointsToRedeem > 0) {
+        await redeemLoyaltyPoints(selectedCustomer.id, loyaltyPointsToRedeem);
+      }
+
       const saleData = {
         customerId: selectedCustomer?.id || null,
         customerName: selectedCustomer?.name || "Walk-in Customer",
@@ -956,13 +1067,13 @@ export default function POSEnhanced() {
           total: item.total.toString()
         })),
         subtotal: subtotal.toFixed(2),
-        discount: discountAmount.toFixed(2),
+        discount: (discountAmount + loyaltyDiscount).toFixed(2),
         discountPercent: discount,
         total: total.toFixed(2),
         paymentMethod,
         amountPaid: paidAmount.toFixed(2),
         change: (paidAmount - total).toFixed(2),
-        notes: `Bill: ${billNumber}`,
+        notes: `Bill: ${billNumber}${loyaltyPointsToRedeem > 0 ? `, Loyalty: ${loyaltyPointsToRedeem} points redeemed` : ''}`,
         billNumber: billNumber,
         status: "completed"
       };
@@ -999,6 +1110,17 @@ export default function POSEnhanced() {
       // Verify the sale was saved
       if (saleResult.saved !== false && saleResult.id) {
         console.log(`💾 Sale saved to database with ID: ${saleResult.id}`);
+        
+        // Award loyalty points to customer after successful sale
+        if (selectedCustomer) {
+          const pointsToEarn = calculatePointsToEarn(total);
+          if (pointsToEarn > 0) {
+            await awardLoyaltyPoints(selectedCustomer.id, pointsToEarn, saleResult.id);
+            
+            // Refresh customer loyalty data
+            await fetchCustomerLoyalty(selectedCustomer.id);
+          }
+        }
       }
 
       // Update payment tracking
