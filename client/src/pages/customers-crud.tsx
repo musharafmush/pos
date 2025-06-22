@@ -298,24 +298,43 @@ export default function CustomersCRUD() {
       const response = await fetch(`/api/customers/${customerId}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Failed to delete customer");
-      return await response.json();
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete customer");
+      }
+      
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       setIsDeleteAlertOpen(false);
       setSelectedCustomerId(null);
-      toast({
-        title: "Customer deleted",
-        description: "Customer has been successfully deleted.",
-        duration: 3000,
-      });
+      
+      if (data.message.includes("deactivated")) {
+        toast({
+          title: "Customer deactivated",
+          description: "Customer had related records and has been safely deactivated instead of deleted.",
+          duration: 4000,
+        });
+      } else {
+        toast({
+          title: "Customer deleted",
+          description: "Customer has been successfully deleted.",
+          duration: 3000,
+        });
+      }
     },
     onError: (error: any) => {
+      setIsDeleteAlertOpen(false);
+      setSelectedCustomerId(null);
+      
       toast({
-        title: "Error deleting customer",
-        description: error.message || "Failed to delete customer. Please try again.",
+        title: "Cannot delete customer",
+        description: error.message || "This customer has associated records and cannot be deleted.",
         variant: "destructive",
+        duration: 5000,
       });
     },
   });
@@ -1050,10 +1069,24 @@ export default function CustomersCRUD() {
         <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the customer
-                and all associated data from the database.
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                Delete Customer Confirmation
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>You are about to delete this customer from the database.</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+                    <div className="text-sm text-amber-800">
+                      <p className="font-medium">Important:</p>
+                      <p>If this customer has sales history or loyalty points, they will be safely deactivated instead of permanently deleted to preserve data integrity.</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This action ensures your business records remain complete and accurate.
+                </p>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -1063,7 +1096,7 @@ export default function CustomersCRUD() {
                 disabled={deleteCustomerMutation.isPending}
                 className="bg-red-600 hover:bg-red-700"
               >
-                {deleteCustomerMutation.isPending ? "Deleting..." : "Delete Customer"}
+                {deleteCustomerMutation.isPending ? "Processing..." : "Proceed with Deletion"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

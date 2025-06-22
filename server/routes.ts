@@ -3534,7 +3534,21 @@ app.post("/api/customers", async (req, res) => {
       res.json({ message: 'Customer deleted successfully' });
     } catch (error) {
       console.error('Error deleting customer:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      
+      if (error instanceof Error) {
+        if (error.message.includes('FOREIGN KEY constraint failed')) {
+          return res.status(400).json({ 
+            message: 'Cannot delete customer: This customer has associated sales or loyalty records. Customer will be deactivated instead.' 
+          });
+        }
+        if (error.message.includes('associated sales or loyalty records')) {
+          return res.status(200).json({ 
+            message: 'Customer deactivated: Customer had related records and has been safely deactivated instead of deleted.' 
+          });
+        }
+      }
+      
+      res.status(500).json({ message: 'Failed to delete customer. Please try again.' });
     }
   });
 

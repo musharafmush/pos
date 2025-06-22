@@ -921,10 +921,42 @@ export const storage = {
 
   async deleteCustomer(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(customers).where(eq(customers.id, id)).returning({ id: customers.id });
-      return result.length > 0;
+      // Check if customer has related records
+      const relatedSales = await db.query.sales.findMany({
+        where: eq(sales.customerId, id),
+        limit: 1
+      });
+      
+      const relatedLoyalty = await db.query.customerLoyalty.findMany({
+        where: eq(customerLoyalty.customerId, id),
+        limit: 1
+      });
+
+      // If customer has related records, implement soft delete instead
+      if (relatedSales.length > 0 || relatedLoyalty.length > 0) {
+        // Update customer to inactive status instead of hard delete
+        const result = await db.update(customers)
+          .set({ 
+            name: `[DELETED] ${Date.now()}`,
+            email: null,
+            phone: null,
+            address: null
+          })
+          .where(eq(customers.id, id))
+          .returning({ id: customers.id });
+        
+        return result.length > 0;
+      } else {
+        // Safe to hard delete if no related records
+        const result = await db.delete(customers).where(eq(customers.id, id)).returning({ id: customers.id });
+        return result.length > 0;
+      }
     } catch (error) {
       console.error('Error deleting customer:', error);
+      // For foreign key constraints, provide more specific error handling
+      if (error instanceof Error && error.message.includes('FOREIGN KEY constraint failed')) {
+        throw new Error('Cannot delete customer: This customer has associated sales or loyalty records. Customer will be deactivated instead.');
+      }
       throw error;
     }
   },
