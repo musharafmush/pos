@@ -30,7 +30,6 @@ import { DatabaseIcon, ShieldIcon, BellIcon } from "lucide-react";
 function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
   const { toast } = useToast();
   const [taxSettings, setTaxSettings] = useState({
-    defaultTaxRate: 18,
     taxCalculationMethod: 'afterDiscount',
     pricesIncludeTax: false,
     enableMultipleTaxRates: true,
@@ -213,27 +212,6 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="defaultTaxRate">Default Tax Rate (%)</Label>
-          <Input 
-            id="defaultTaxRate" 
-            type="number" 
-            placeholder="Enter tax rate" 
-            value={taxSettings.defaultTaxRate.toString()}
-            onChange={(e) => {
-              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-              if (!isNaN(value) && value >= 0 && value <= 100) {
-                updateTaxSetting('defaultTaxRate', value);
-              }
-            }}
-            min="0"
-            max="100"
-            step="0.01"
-          />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            This rate will be applied to all sales by default
-          </p>
-        </div>
 
         <div className="space-y-2">
           <Label htmlFor="taxCalculation">Tax Calculation Method</Label>
@@ -457,10 +435,6 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
             </h4>
             <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
               <div className="flex justify-between">
-                <span>Default tax rate:</span>
-                <span className="font-medium">{taxSettings.defaultTaxRate}%</span>
-              </div>
-              <div className="flex justify-between">
                 <span>Calculation method:</span>
                 <span className="font-medium">
                   {taxSettings.taxCalculationMethod === 'afterDiscount' ? 'After discount' : 'Before discount'}
@@ -536,7 +510,6 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
               const confirmed = window.confirm('Reset tax settings to default values?');
               if (confirmed) {
                 setTaxSettings({
-                  defaultTaxRate: 18,
                   taxCalculationMethod: 'afterDiscount',
                   pricesIncludeTax: false,
                   enableMultipleTaxRates: true,
