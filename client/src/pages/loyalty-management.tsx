@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Users, Gift, Star, TrendingUp, Award, CreditCard, Edit, Trash2, Plus, MoreVertical, History, RefreshCw, Calculator, Phone, Mail, Calendar, User } from "lucide-react";
+import { Users, Gift, Star, TrendingUp, Award, CreditCard, Edit, Trash2, Plus, MoreVertical, History, RefreshCw, Calculator, Phone, Mail, Calendar, User, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -66,6 +66,7 @@ export default function LoyaltyManagement() {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [customerToDelete, setCustomerToDelete] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -904,6 +905,20 @@ export default function LoyaltyManagement() {
             </Badge>
           </div>
           
+          {/* Search Bar */}
+          <div className="relative max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <Input
+              type="text"
+              placeholder="Search customers by name, phone, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {isLoading ? (
               <div className="col-span-full text-center py-12">
@@ -921,7 +936,17 @@ export default function LoyaltyManagement() {
                 <p className="text-gray-500">Start building your loyalty program by adding customers</p>
               </div>
             ) : (
-              loyaltyData.map((customer: any) => {
+              loyaltyData
+                .filter((customer: any) => {
+                  if (!searchTerm) return true;
+                  const searchLower = searchTerm.toLowerCase();
+                  return (
+                    customer.customer?.name?.toLowerCase().includes(searchLower) ||
+                    customer.customer?.phone?.toLowerCase().includes(searchLower) ||
+                    customer.customer?.email?.toLowerCase().includes(searchLower)
+                  );
+                })
+                .map((customer: any) => {
                 const tier = getTier(customer.availablePoints || 0);
                 return (
                   <Card key={customer.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
