@@ -305,25 +305,56 @@ export default function POSEnhanced() {
   // Fetch customer loyalty data when customer is selected
   const fetchCustomerLoyalty = async (customerId: number) => {
     try {
+      console.log('Fetching loyalty data for customer:', customerId);
       const response = await fetch(`/api/loyalty/customer/${customerId}`);
+      
       if (response.ok) {
         const loyaltyData = await response.json();
+        console.log('Loyalty data received:', loyaltyData);
         setCustomerLoyalty(loyaltyData);
+        
+        toast({
+          title: "Loyalty Points Loaded",
+          description: `Customer has ${loyaltyData.totalPoints} loyalty points`,
+          duration: 2000,
+        });
       } else if (response.status === 404) {
+        console.log('Creating new loyalty record for customer:', customerId);
         // Create loyalty record if doesn't exist
         const createResponse = await fetch('/api/loyalty/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ customerId })
         });
+        
         if (createResponse.ok) {
           const newLoyalty = await createResponse.json();
+          console.log('New loyalty record created:', newLoyalty);
           setCustomerLoyalty(newLoyalty);
+          
+          toast({
+            title: "Loyalty Account Created",
+            description: "New loyalty account created for customer",
+            duration: 2000,
+          });
+        } else {
+          console.error('Failed to create loyalty record');
+          setCustomerLoyalty(null);
         }
+      } else {
+        console.error('Failed to fetch loyalty data:', response.status);
+        setCustomerLoyalty(null);
       }
     } catch (error) {
       console.error('Error fetching loyalty data:', error);
       setCustomerLoyalty(null);
+      
+      toast({
+        title: "Loyalty Error",
+        description: "Failed to load loyalty points. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
 
@@ -346,7 +377,14 @@ export default function POSEnhanced() {
 
   // Handle loyalty point redemption
   const handleLoyaltyRedemption = () => {
-    if (!customerLoyalty || loyaltyPointsToRedeem <= 0) return;
+    if (!customerLoyalty || loyaltyPointsToRedeem <= 0) {
+      toast({
+        title: "Invalid Redemption",
+        description: "Please enter valid points to redeem",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (loyaltyPointsToRedeem > customerLoyalty.totalPoints) {
       toast({
@@ -357,14 +395,37 @@ export default function POSEnhanced() {
       return;
     }
 
+    if (cart.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Please add items to cart before redeeming points",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // 1 point = ₹1 discount
     const discountFromPoints = loyaltyPointsToRedeem;
+    const currentSubtotal = cart.reduce((sum, item) => sum + item.total, 0);
+    
+    if (discountFromPoints > currentSubtotal) {
+      toast({
+        title: "Discount Too High",
+        description: `Maximum discount allowed is ₹${currentSubtotal} for current cart`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoyaltyDiscount(discountFromPoints);
     setShowLoyaltyDialog(false);
     
+    console.log('Loyalty points redeemed:', loyaltyPointsToRedeem, 'Discount applied:', discountFromPoints);
+    
     toast({
-      title: "Points Redeemed",
+      title: "Points Redeemed Successfully",
       description: `${loyaltyPointsToRedeem} points redeemed for ₹${discountFromPoints} discount`,
+      duration: 3000,
     });
   };
 
@@ -649,6 +710,11 @@ export default function POSEnhanced() {
     setAmountPaid("");
     setPaymentMethod("cash");
     setBarcodeInput("");
+    
+    // Clear loyalty state
+    setCustomerLoyalty(null);
+    setLoyaltyPointsToRedeem(0);
+    setLoyaltyDiscount(0);
     setOceanFreight({
       containerNumber: "",
       vesselName: "",
@@ -4311,14 +4377,65 @@ Terminal: POS-Enhanced
                     max={customerLoyalty?.totalPoints || 0}
                     autoFocus
                   />
+                  
+                  {/* Quick Selection Buttons */}
+                  <div className="mt-2">
+                    <div className="text-xs text-gray-500 mb-2">Quick Select:</div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[10, 25, 50, 100].map((points) => (
+                        <Button
+                          key={points}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const maxPoints = customerLoyalty?.totalPoints || 0;
+                            const pointsToSet = Math.min(points, maxPoints);
+                            setLoyaltyPointsToRedeem(pointsToSet);
+                          }}
+                          disabled={!customerLoyalty || customerLoyalty.totalPoints < points}
+                          className="text-xs h-8"
+                        >
+                          {points}
+                        </Button>
+                      ))}
+                    </div>
+                    
+                    {customerLoyalty && customerLoyalty.totalPoints > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setLoyaltyPointsToRedeem(customerLoyalty.totalPoints)}
+                        className="w-full mt-2 text-xs h-8 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                      >
+                        Use All Points ({customerLoyalty.totalPoints})
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {loyaltyPointsToRedeem > 0 && (
                   <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <span className="text-blue-800 font-medium">Discount Amount:</span>
                       <span className="text-blue-700 font-bold">{formatCurrency(loyaltyPointsToRedeem)}</span>
                     </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-600">Points After Redemption:</span>
+                      <span className="text-blue-700 font-medium">
+                        {(customerLoyalty?.totalPoints || 0) - loyaltyPointsToRedeem} points
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setLoyaltyPointsToRedeem(0)}
+                      className="w-full mt-2 text-xs h-6 text-red-600 hover:bg-red-50"
+                    >
+                      Clear Selection
+                    </Button>
                   </div>
                 )}
 
