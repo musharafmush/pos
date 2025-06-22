@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Users, Gift, Star, TrendingUp, Award, CreditCard, Edit, Trash2, Plus, MoreVertical, History, RefreshCw } from "lucide-react";
+import { Users, Gift, Star, TrendingUp, Award, CreditCard, Edit, Trash2, Plus, MoreVertical, History, RefreshCw, Calculator, Phone, Mail, Calendar, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -428,9 +428,31 @@ export default function LoyaltyManagement() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Customer Loyalty Management
               </h1>
-              <p className="text-lg text-gray-600">
-                Track rewards, manage points, and boost customer retention
-              </p>
+              <div className="space-y-2">
+                <p className="text-lg text-gray-600">
+                  Track rewards, manage points, and boost customer retention
+                </p>
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calculator className="h-5 w-5 text-purple-600" />
+                    <span className="font-semibold text-purple-800">Loyalty Point Rules:</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="font-bold text-purple-700">₹1 = 0.01 points</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-purple-700">₹10 = 0.10 points</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-purple-700">₹100 = 1.00 points</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-purple-700">₹275 = 2.75 points</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               {selectedCustomers.length > 0 && (
@@ -908,13 +930,28 @@ export default function LoyaltyManagement() {
                         <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg">
                           {customer.customer?.name?.charAt(0)?.toUpperCase() || 'C'}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 space-y-1">
                           <CardTitle className="text-lg font-semibold text-gray-900">
                             {customer.customer?.name || 'Unknown Customer'}
                           </CardTitle>
-                          <CardDescription className="text-sm text-gray-500">
-                            Member since {new Date(customer.customer?.createdAt || customer.createdAt).toLocaleDateString()}
-                          </CardDescription>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-3 w-3" />
+                              <span>{customer.customer?.phone || 'No phone'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-3 w-3" />
+                              <span>{customer.customer?.email || 'No email'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-3 w-3" />
+                              <span>Member since {new Date(customer.customer?.createdAt || customer.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <User className="h-3 w-3" />
+                              <span>ID: {customer.customer?.id || customer.customerId}</span>
+                            </div>
+                          </div>
                         </div>
                         <Badge 
                           variant="secondary"
@@ -925,7 +962,7 @@ export default function LoyaltyManagement() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-green-50 rounded-lg p-4 text-center">
                           <Label className="text-sm font-medium text-green-700">Available Points</Label>
                           <div className="text-2xl font-bold text-green-600 mt-1">
@@ -936,6 +973,27 @@ export default function LoyaltyManagement() {
                           <Label className="text-sm font-medium text-blue-700">Total Earned</Label>
                           <div className="text-2xl font-bold text-blue-600 mt-1">
                             {(customer.totalPoints || 0).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 rounded-lg p-4">
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">Point Calculation Examples</Label>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between text-purple-700">
+                              <span>₹1 sale:</span>
+                              <span className="font-medium">0.01 points</span>
+                            </div>
+                            <div className="flex justify-between text-purple-700">
+                              <span>₹10 sale:</span>
+                              <span className="font-medium">0.10 points</span>
+                            </div>
+                            <div className="flex justify-between text-purple-700">
+                              <span>₹100 sale:</span>
+                              <span className="font-medium">1.00 points</span>
+                            </div>
+                            <div className="flex justify-between text-purple-700">
+                              <span>₹275 sale:</span>
+                              <span className="font-medium">2.75 points</span>
+                            </div>
                           </div>
                         </div>
                       </div>
