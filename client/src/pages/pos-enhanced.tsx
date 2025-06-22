@@ -426,17 +426,29 @@ export default function POSEnhanced() {
 
     // Apply the loyalty discount
     setLoyaltyDiscount(discountFromPoints);
+    
+    // Update customer loyalty points display to show remaining points
+    if (customerLoyalty) {
+      const updatedLoyalty = {
+        ...customerLoyalty,
+        totalPoints: customerLoyalty.totalPoints - loyaltyPointsToRedeem,
+        availablePoints: customerLoyalty.totalPoints - loyaltyPointsToRedeem
+      };
+      setCustomerLoyalty(updatedLoyalty);
+    }
+    
     setShowLoyaltyDialog(false);
     
     console.log('Loyalty redemption successful:', {
       pointsRedeemed: loyaltyPointsToRedeem, 
       discountApplied: discountFromPoints,
-      newLoyaltyDiscount: discountFromPoints
+      newLoyaltyDiscount: discountFromPoints,
+      remainingPoints: (customerLoyalty?.totalPoints || 0) - loyaltyPointsToRedeem
     });
     
     toast({
       title: "Points Redeemed Successfully",
-      description: `${loyaltyPointsToRedeem} points redeemed for ₹${discountFromPoints} discount`,
+      description: `${loyaltyPointsToRedeem} points redeemed for ₹${discountFromPoints} discount. Remaining: ${(customerLoyalty?.totalPoints || 0) - loyaltyPointsToRedeem} points`,
       duration: 3000,
     });
   };
@@ -1243,6 +1255,10 @@ export default function POSEnhanced() {
       setShowPaymentDialog(false);
       setAmountPaid("");
       setBillNumber(`POS${Date.now()}`);
+      
+      // Reset loyalty-related state for next transaction
+      setLoyaltyPointsToRedeem(0);
+      setLoyaltyDiscount(0);
 
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
