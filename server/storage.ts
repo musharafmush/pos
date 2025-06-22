@@ -3298,6 +3298,37 @@ export const storage = {
     return updated;
   },
 
+  async addLoyaltyPoints(customerId: number, pointsToAdd: number, reason: string): Promise<CustomerLoyalty | null> {
+    try {
+      const loyalty = await this.getCustomerLoyalty(customerId);
+      if (!loyalty) {
+        // Create new loyalty account if doesn't exist
+        return await this.createLoyaltyAccount(customerId);
+      }
+
+      const currentTotal = parseFloat(loyalty.totalPoints.toString());
+      const currentAvailable = parseFloat(loyalty.availablePoints.toString());
+      
+      const newTotal = currentTotal + pointsToAdd;
+      const newAvailable = currentAvailable + pointsToAdd;
+
+      const [updated] = await db
+        .update(customerLoyalty)
+        .set({
+          totalPoints: newTotal.toString(),
+          availablePoints: newAvailable.toString(),
+          lastUpdated: new Date()
+        })
+        .where(eq(customerLoyalty.customerId, customerId))
+        .returning();
+
+      return updated;
+    } catch (error) {
+      console.error('Error adding loyalty points:', error);
+      throw error;
+    }
+  },
+
   async updateLoyaltyAccount(customerId: number, updates: { totalPoints: number; availablePoints: number; notes?: string }): Promise<CustomerLoyalty | null> {
     try {
       const [updated] = await db.update(customerLoyalty)
