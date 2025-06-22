@@ -1512,6 +1512,8 @@ export default function AddItemProfessional() {
                                       suggestedGst = "GST 18%";
                                     } else if (value.includes("22021000") || value.includes("24021000") || value.includes("87032390") || value.includes("87111000")) {
                                       suggestedGst = "GST 28%";
+                                    } else if (value.includes("71131900") || value.includes("97011000") || value.includes("97021000") || value.includes("88011000") || value.includes("88021100")) {
+                                      suggestedGst = "GST 40%";
                                     }
 
                                     if (suggestedGst) {
@@ -1578,6 +1580,13 @@ export default function AddItemProfessional() {
                                       <SelectItem value="49019900">49019900 - Books (5%)</SelectItem>
                                       <SelectItem value="48201000">48201000 - Notebooks (12%)</SelectItem>
                                       <SelectItem value="96085000">96085000 - Pens (18%)</SelectItem>
+
+                                      {/* Premium Luxury Items - 40% GST */}
+                                      <SelectItem value="71131900">71131900 - Gold Jewelry (40%)</SelectItem>
+                                      <SelectItem value="97011000">97011000 - Paintings & Art (40%)</SelectItem>
+                                      <SelectItem value="97021000">97021000 - Antiques (40%)</SelectItem>
+                                      <SelectItem value="88011000">88011000 - Aircraft (40%)</SelectItem>
+                                      <SelectItem value="88021100">88021100 - Helicopters (40%)</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
