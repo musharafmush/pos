@@ -5709,6 +5709,188 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // ===========================================
+  // TAX MANAGEMENT API ENDPOINTS
+  // ===========================================
+
+  // Tax Categories Management
+  app.get('/api/tax/categories', isAuthenticated, async (req, res) => {
+    try {
+      const categories = await storage.getTaxCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching tax categories:', error);
+      res.status(500).json({ error: 'Failed to fetch tax categories' });
+    }
+  });
+
+  app.post('/api/tax/categories', isAdminOrManager, async (req, res) => {
+    try {
+      const validatedData = schema.taxCategoryInsertSchema.parse(req.body);
+      const category = await storage.createTaxCategory(validatedData);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error('Error creating tax category:', error);
+      res.status(500).json({ error: 'Failed to create tax category' });
+    }
+  });
+
+  app.put('/api/tax/categories/:id', isAdminOrManager, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = schema.taxCategoryInsertSchema.partial().parse(req.body);
+      const category = await storage.updateTaxCategory(id, validatedData);
+      if (!category) {
+        return res.status(404).json({ error: 'Tax category not found' });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error('Error updating tax category:', error);
+      res.status(500).json({ error: 'Failed to update tax category' });
+    }
+  });
+
+  app.delete('/api/tax/categories/:id', isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteTaxCategory(id);
+      if (!success) {
+        return res.status(404).json({ error: 'Tax category not found' });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting tax category:', error);
+      res.status(500).json({ error: 'Failed to delete tax category' });
+    }
+  });
+
+  // Tax Settings Management
+  app.get('/api/tax/settings', isAuthenticated, async (req, res) => {
+    try {
+      const settings = await storage.getTaxSettings();
+      res.json(settings || {});
+    } catch (error) {
+      console.error('Error fetching tax settings:', error);
+      res.status(500).json({ error: 'Failed to fetch tax settings' });
+    }
+  });
+
+  app.put('/api/tax/settings', isAdminOrManager, async (req, res) => {
+    try {
+      const validatedData = schema.taxSettingsInsertSchema.parse(req.body);
+      const settings = await storage.updateTaxSettings(validatedData);
+      res.json(settings);
+    } catch (error) {
+      console.error('Error updating tax settings:', error);
+      res.status(500).json({ error: 'Failed to update tax settings' });
+    }
+  });
+
+  // HSN Codes Management
+  app.get('/api/tax/hsn-codes', isAuthenticated, async (req, res) => {
+    try {
+      const hsnCodes = await storage.getHsnCodes();
+      res.json(hsnCodes);
+    } catch (error) {
+      console.error('Error fetching HSN codes:', error);
+      res.status(500).json({ error: 'Failed to fetch HSN codes' });
+    }
+  });
+
+  app.get('/api/tax/hsn-codes/search', isAuthenticated, async (req, res) => {
+    try {
+      const query = req.query.q as string || '';
+      if (!query || query.length < 2) {
+        return res.json([]);
+      }
+      const hsnCodes = await storage.searchHsnCodes(query);
+      res.json(hsnCodes);
+    } catch (error) {
+      console.error('Error searching HSN codes:', error);
+      res.status(500).json({ error: 'Failed to search HSN codes' });
+    }
+  });
+
+  app.get('/api/tax/hsn-codes/:code/rates', isAuthenticated, async (req, res) => {
+    try {
+      const code = req.params.code;
+      const rates = await storage.getTaxRateByHsnCode(code);
+      if (!rates) {
+        return res.status(404).json({ error: 'HSN code not found' });
+      }
+      res.json(rates);
+    } catch (error) {
+      console.error('Error fetching tax rates for HSN code:', error);
+      res.status(500).json({ error: 'Failed to fetch tax rates' });
+    }
+  });
+
+  app.post('/api/tax/hsn-codes', isAdminOrManager, async (req, res) => {
+    try {
+      const validatedData = schema.hsnCodeInsertSchema.parse(req.body);
+      const hsnCode = await storage.createHsnCode(validatedData);
+      res.status(201).json(hsnCode);
+    } catch (error) {
+      console.error('Error creating HSN code:', error);
+      res.status(500).json({ error: 'Failed to create HSN code' });
+    }
+  });
+
+  app.put('/api/tax/hsn-codes/:id', isAdminOrManager, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = schema.hsnCodeInsertSchema.partial().parse(req.body);
+      const hsnCode = await storage.updateHsnCode(id, validatedData);
+      if (!hsnCode) {
+        return res.status(404).json({ error: 'HSN code not found' });
+      }
+      res.json(hsnCode);
+    } catch (error) {
+      console.error('Error updating HSN code:', error);
+      res.status(500).json({ error: 'Failed to update HSN code' });
+    }
+  });
+
+  app.delete('/api/tax/hsn-codes/:id', isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteHsnCode(id);
+      if (!success) {
+        return res.status(404).json({ error: 'HSN code not found' });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting HSN code:', error);
+      res.status(500).json({ error: 'Failed to delete HSN code' });
+    }
+  });
+
+  // Bulk HSN Code Import
+  app.post('/api/tax/hsn-codes/bulk-import', isAdmin, async (req, res) => {
+    try {
+      const { hsnCodes } = req.body;
+      if (!Array.isArray(hsnCodes)) {
+        return res.status(400).json({ error: 'Invalid data format' });
+      }
+
+      const results = [];
+      for (const hsnData of hsnCodes) {
+        try {
+          const validatedData = schema.hsnCodeInsertSchema.parse(hsnData);
+          const hsnCode = await storage.createHsnCode(validatedData);
+          results.push({ success: true, hsnCode });
+        } catch (error) {
+          results.push({ success: false, error: error.message, data: hsnData });
+        }
+      }
+
+      res.json({ results });
+    } catch (error) {
+      console.error('Error bulk importing HSN codes:', error);
+      res.status(500).json({ error: 'Failed to bulk import HSN codes' });
+    }
+  });
+
   // Get products list for history search
   app.get("/api/products/search", isAuthenticated, async (req, res) => {
     try {
