@@ -159,16 +159,66 @@ export default function LoyaltyManagement() {
     return { name: "Bronze", color: "bg-orange-500" };
   };
 
+  // Helper functions for customer selection
+  const toggleCustomerSelection = (customerId: string) => {
+    setSelectedCustomers(prev => 
+      prev.includes(customerId) 
+        ? prev.filter(id => id !== customerId)
+        : [...prev, customerId]
+    );
+  };
+
+  const selectAllCustomers = () => {
+    const allCustomerIds = loyaltyData.map(customer => 
+      (customer.customerId || customer.customer?.id)?.toString()
+    ).filter(Boolean);
+    setSelectedCustomers(allCustomerIds);
+  };
+
+  const clearSelection = () => {
+    setSelectedCustomers([]);
+  };
+
+  // Dialog helper functions
+  const openEditDialog = (customer: any) => {
+    setSelectedCustomer(customer);
+    editLoyaltyForm.setValue('totalPoints', customer.totalPoints?.toString() || '0');
+    editLoyaltyForm.setValue('availablePoints', customer.availablePoints?.toString() || '0');
+    editLoyaltyForm.setValue('notes', customer.notes || '');
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (customer: any) => {
+    setCustomerToDelete(customer);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Form submission handlers
+  const handleEditLoyalty = async (data: EditLoyaltyData) => {
+    await editLoyaltyMutation.mutateAsync(data);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (customerToDelete) {
+      const customerId = customerToDelete.customerId || customerToDelete.customer?.id;
+      await deleteLoyaltyMutation.mutateAsync(customerId);
+    }
+  };
+
+  const handleBulkUpdate = async (data: BulkUpdateData) => {
+    await bulkUpdateMutation.mutateAsync(data);
+    setSelectedCustomers([]);
+    setIsBulkUpdateDialogOpen(false);
+    bulkUpdateForm.reset();
+  };
+
   // Add points mutation
   const addPointsMutation = useMutation({
     mutationFn: async (data: AddPointsData) => {
-      return apiRequest('/api/loyalty/add-points', {
-        method: 'POST',
-        body: JSON.stringify({
-          customerId: parseInt(data.customerId),
-          points: parseInt(data.points),
-          reason: data.reason
-        })
+      return apiRequest('/api/loyalty/add-points', 'POST', {
+        customerId: parseInt(data.customerId),
+        points: parseInt(data.points),
+        reason: data.reason
       });
     },
     onSuccess: () => {
@@ -192,12 +242,9 @@ export default function LoyaltyManagement() {
   // Redeem points mutation
   const redeemPointsMutation = useMutation({
     mutationFn: async (data: RedeemPointsData) => {
-      return apiRequest('/api/loyalty/redeem-points', {
-        method: 'POST',
-        body: JSON.stringify({
-          customerId: parseInt(data.customerId),
-          points: parseInt(data.points)
-        })
+      return apiRequest('/api/loyalty/redeem-points', 'POST', {
+        customerId: parseInt(data.customerId),
+        points: parseInt(data.points)
       });
     },
     onSuccess: () => {
@@ -221,13 +268,10 @@ export default function LoyaltyManagement() {
   // Edit loyalty mutation
   const editLoyaltyMutation = useMutation({
     mutationFn: async (data: EditLoyaltyData) => {
-      return apiRequest(`/api/loyalty/customer/${selectedCustomer.customerId}/update`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          totalPoints: parseInt(data.totalPoints),
-          availablePoints: parseInt(data.availablePoints),
-          notes: data.notes
-        })
+      return apiRequest(`/api/loyalty/customer/${selectedCustomer.customerId}/update`, 'PUT', {
+        totalPoints: parseInt(data.totalPoints),
+        availablePoints: parseInt(data.availablePoints),
+        notes: data.notes
       });
     },
     onSuccess: () => {
@@ -251,9 +295,7 @@ export default function LoyaltyManagement() {
   // Delete loyalty mutation
   const deleteLoyaltyMutation = useMutation({
     mutationFn: async (customerId: number) => {
-      return apiRequest(`/api/loyalty/customer/${customerId}`, {
-        method: 'DELETE'
-      });
+      return apiRequest(`/api/loyalty/customer/${customerId}`, 'DELETE');
     },
     onSuccess: () => {
       toast({
@@ -276,14 +318,11 @@ export default function LoyaltyManagement() {
   // Bulk update mutation
   const bulkUpdateMutation = useMutation({
     mutationFn: async (data: BulkUpdateData) => {
-      return apiRequest('/api/loyalty/bulk-update', {
-        method: 'POST',
-        body: JSON.stringify({
-          operation: data.operation,
-          points: parseInt(data.points),
-          reason: data.reason,
-          customerIds: data.selectedCustomers.map(id => parseInt(id))
-        })
+      return apiRequest('/api/loyalty/bulk-update', 'POST', {
+        operation: data.operation,
+        points: parseInt(data.points),
+        reason: data.reason,
+        customerIds: selectedCustomers.map(id => parseInt(id))
       });
     },
     onSuccess: () => {
@@ -313,9 +352,7 @@ export default function LoyaltyManagement() {
     redeemPointsMutation.mutate(data);
   };
 
-  const handleEditLoyalty = (data: EditLoyaltyData) => {
-    editLoyaltyMutation.mutate(data);
-  };
+
 
   const handleBulkUpdate = (data: BulkUpdateData) => {
     data.selectedCustomers = selectedCustomers;
