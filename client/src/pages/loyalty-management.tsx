@@ -474,6 +474,149 @@ export default function LoyaltyManagement() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
+                    <DialogTitle className="text-xl">Sale-Based Points</DialogTitle>
+                    <DialogDescription>
+                      Award points based on customer sale amounts
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...salePointsForm}>
+                    <form onSubmit={salePointsForm.handleSubmit(async (data) => await salePointsMutation.mutateAsync(data))} className="space-y-5">
+                      <FormField
+                        control={salePointsForm.control}
+                        name="customerId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Select Customer</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-12">
+                                  <SelectValue placeholder="Choose customer for sale points" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {customers.map((customer: any) => (
+                                  <SelectItem key={customer.id} value={customer.id.toString()}>
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                        {customer.name?.charAt(0)?.toUpperCase() || 'C'}
+                                      </div>
+                                      <div>
+                                        <div className="font-medium">{customer.name}</div>
+                                        <div className="text-sm text-gray-500">{customer.phone || 'No phone'}</div>
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={salePointsForm.control}
+                        name="saleAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Sale Amount (₹)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="1000"
+                                className="h-12 text-lg"
+                                step="0.01"
+                                min="0"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs text-gray-500">
+                              Enter the total sale amount
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={salePointsForm.control}
+                        name="pointsPerRupee"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Points per Rupee</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="1"
+                                className="h-12 text-lg"
+                                step="0.1"
+                                min="0"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs text-gray-500">
+                              Default: 1 point per rupee spent
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={salePointsForm.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Notes (Optional)</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Special sale promotion, bonus points, etc."
+                                className="min-h-[80px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {/* Preview calculation */}
+                      {salePointsForm.watch("saleAmount") && salePointsForm.watch("pointsPerRupee") && (
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-purple-800 font-medium">Points to Award:</span>
+                            <span className="text-purple-700 font-bold text-lg">
+                              {Math.floor(parseFloat(salePointsForm.watch("saleAmount") || "0") * parseFloat(salePointsForm.watch("pointsPerRupee") || "1"))} points
+                            </span>
+                          </div>
+                          <div className="text-xs text-purple-600 mt-1">
+                            ₹{salePointsForm.watch("saleAmount")} × {salePointsForm.watch("pointsPerRupee")} points/rupee
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex gap-3 pt-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setIsSalePointsDialogOpen(false)}
+                          className="flex-1"
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          disabled={salePointsMutation.isPending}
+                          className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 px-6"
+                        >
+                          {salePointsMutation.isPending ? "Adding..." : "Award Sale Points"}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isAddPointsDialogOpen} onOpenChange={setIsAddPointsDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
                     <DialogTitle className="text-xl">Award Loyalty Points</DialogTitle>
                     <DialogDescription>
                       Give bonus points to reward customer loyalty
