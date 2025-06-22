@@ -65,6 +65,7 @@ import ExpenseManagement from "@/pages/expense-management";
 import ExpenseCategories from "@/pages/expense-categories";
 import OfferManagement from "@/pages/offer-management";
 import LoyaltyManagement from "@/pages/loyalty-management";
+import LoyaltyRules from "@/pages/loyalty-rules";
 
 function Router() {
   return (
@@ -134,6 +135,7 @@ function Router() {
       <ProtectedRoute path="/expense-categories" component={ExpenseCategories} />
       <ProtectedRoute path="/offer-management" component={OfferManagement} />
       <ProtectedRoute path="/loyalty-management" component={LoyaltyManagement} />
+      <ProtectedRoute path="/loyalty-rules" component={LoyaltyRules} />
       <Route component={NotFound} />
     </Switch>
   );
