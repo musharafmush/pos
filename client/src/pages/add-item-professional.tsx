@@ -1679,6 +1679,83 @@ export default function AddItemProfessional() {
                           </div>
                         </div>
 
+                        {/* Quick GST Rate Selection */}
+                        <div className="mt-4 p-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                          <h4 className="text-sm font-medium mb-3 text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                            Quick Select Standard GST Rates
+                          </h4>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {[
+                              { rate: 0, name: 'Tax Exempt', color: 'gray' },
+                              { rate: 5, name: 'Essential Items', color: 'green' },
+                              { rate: 12, name: 'Standard Rate', color: 'blue' },
+                              { rate: 18, name: 'General Goods', color: 'purple' },
+                              { rate: 28, name: 'Luxury Items', color: 'orange' },
+                              { rate: 40, name: 'Premium Luxury', color: 'red' }
+                            ].map((quickRate) => (
+                              <Button
+                                key={quickRate.rate}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  // For intra-state: CGST + SGST = Total GST
+                                  const halfRate = (quickRate.rate / 2).toString();
+                                  form.setValue("cgstRate", halfRate);
+                                  form.setValue("sgstRate", halfRate);
+                                  form.setValue("igstRate", "0");
+                                  form.setValue("gstCode", `GST ${quickRate.rate}%`);
+                                  
+                                  toast({
+                                    title: "GST Rate Applied",
+                                    description: `${quickRate.name} (${quickRate.rate}%) - CGST: ${halfRate}%, SGST: ${halfRate}%`,
+                                  });
+                                }}
+                                className={`
+                                  ${quickRate.color === 'gray' ? 'border-gray-400 hover:bg-gray-100' : ''}
+                                  ${quickRate.color === 'green' ? 'border-green-400 hover:bg-green-100' : ''}
+                                  ${quickRate.color === 'blue' ? 'border-blue-400 hover:bg-blue-100' : ''}
+                                  ${quickRate.color === 'purple' ? 'border-purple-400 hover:bg-purple-100' : ''}
+                                  ${quickRate.color === 'orange' ? 'border-orange-400 hover:bg-orange-100' : ''}
+                                  ${quickRate.color === 'red' ? 'border-red-400 hover:bg-red-100' : ''}
+                                `}
+                              >
+                                {quickRate.rate}%
+                              </Button>
+                            ))}
+                          </div>
+                          
+                          {/* Quick IGST Selection */}
+                          <div className="border-t border-blue-200 pt-3">
+                            <div className="text-xs text-blue-700 mb-2">For Inter-State Transactions (IGST only):</div>
+                            <div className="flex flex-wrap gap-2">
+                              {[0, 5, 12, 18, 28, 40].map((rate) => (
+                                <Button
+                                  key={`igst-${rate}`}
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    form.setValue("igstRate", rate.toString());
+                                    form.setValue("cgstRate", "0");
+                                    form.setValue("sgstRate", "0");
+                                    form.setValue("gstCode", `GST ${rate}%`);
+                                    
+                                    toast({
+                                      title: "IGST Rate Applied",
+                                      description: `Inter-state GST: ${rate}%`,
+                                    });
+                                  }}
+                                  className="text-xs px-2 py-1 border-indigo-400 hover:bg-indigo-100"
+                                >
+                                  IGST {rate}%
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-3 gap-4">
                           <FormField
                             control={form.control}
