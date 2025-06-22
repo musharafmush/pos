@@ -38,6 +38,7 @@ import Users from "@/pages/users";
 import Settings from "@/pages/settings";
 import Suppliers from "@/pages/suppliers";
 import Customers from "@/pages/customers";
+import CustomersCRUD from "@/pages/customers-crud";
 import AddProduct from "@/pages/add-product";
 import PrintLabels from "@/pages/print-labels";
 import InventoryForecasting from "@/pages/inventory-forecasting";
@@ -115,7 +116,7 @@ function Router() {
       <ProtectedRoute path="/users" component={Users} adminOnly />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/suppliers" component={Suppliers} />
-      <ProtectedRoute path="/customers" component={Customers} />
+      <ProtectedRoute path="/customers" component={CustomersCRUD} />
       <ProtectedRoute path="/update-price-professional" component={UpdatePriceProfessional} />
       <ProtectedRoute path="/settings/currency" component={CurrencySettings} />
       <ProtectedRoute path="/settings/business" component={BusinessSettings} />
