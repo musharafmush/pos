@@ -34,10 +34,12 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
     pricesIncludeTax: false,
     enableMultipleTaxRates: true,
     taxCategories: [
-      { id: 1, name: 'Food & Groceries', rate: 5, hsn: '1001-2000', description: 'Essential food items and groceries' },
-      { id: 2, name: 'General Merchandise', rate: 18, hsn: '3001-9999', description: 'Standard consumer goods' },
-      { id: 3, name: 'Luxury Items', rate: 28, hsn: '8701-8800', description: 'High-end consumer products' },
-      { id: 4, name: 'Essential Services', rate: 0, hsn: '9801-9900', description: 'Tax-exempt essential services' }
+      { id: 1, name: 'Tax Exempt', rate: 0, hsn: '9801-9900', description: 'Tax-exempt essential services and items' },
+      { id: 2, name: 'Food & Groceries', rate: 5, hsn: '1001-2000', description: 'Essential food items and groceries' },
+      { id: 3, name: 'Standard Rate', rate: 12, hsn: '2001-5000', description: 'Standard consumer goods - medium rate' },
+      { id: 4, name: 'General Merchandise', rate: 18, hsn: '3001-9999', description: 'Standard consumer goods - high rate' },
+      { id: 5, name: 'Luxury Items', rate: 28, hsn: '8701-8800', description: 'High-end consumer products' },
+      { id: 6, name: 'Premium Luxury', rate: 40, hsn: '8801-9000', description: 'Premium luxury goods and services' }
     ]
   });
 
@@ -358,9 +360,67 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
               </div>
             ))}
 
+            {/* Quick Add Standard GST Rates */}
+            <div className="p-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+              <h4 className="text-md font-medium mb-3 text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                Quick Add Standard GST Rates
+              </h4>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                Click to quickly add standard Indian GST tax rates
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { rate: 0, name: 'Tax Exempt' },
+                  { rate: 5, name: 'Essential Items' },
+                  { rate: 12, name: 'Standard Rate' },
+                  { rate: 18, name: 'General Goods' },
+                  { rate: 28, name: 'Luxury Items' },
+                  { rate: 40, name: 'Premium Luxury' }
+                ].map((quickRate) => {
+                  const exists = taxSettings.taxCategories.some(cat => cat.rate === quickRate.rate);
+                  return (
+                    <Button
+                      key={quickRate.rate}
+                      variant={exists ? "secondary" : "outline"}
+                      size="sm"
+                      disabled={exists}
+                      onClick={() => {
+                        const newId = Math.max(...taxSettings.taxCategories.map(c => c.id), 0) + 1;
+                        const newCategory = {
+                          id: newId,
+                          name: quickRate.name,
+                          rate: quickRate.rate,
+                          hsn: '',
+                          description: `${quickRate.rate}% GST rate category`
+                        };
+                        
+                        setTaxSettings(prev => {
+                          const updated = {
+                            ...prev,
+                            taxCategories: [...prev.taxCategories, newCategory]
+                          };
+                          localStorage.setItem('taxSettings', JSON.stringify(updated));
+                          return updated;
+                        });
+                        
+                        toast({
+                          title: "Tax category added",
+                          description: `${quickRate.name} (${quickRate.rate}%) added successfully`,
+                        });
+                      }}
+                      className={exists ? "opacity-50 cursor-not-allowed" : ""}
+                    >
+                      {exists ? `✓ ${quickRate.rate}%` : `+ ${quickRate.rate}%`}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Add New Category Form */}
             <div className="p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
-              <h4 className="text-md font-medium mb-4 text-gray-700 dark:text-gray-300">Add New Tax Category</h4>
+              <h4 className="text-md font-medium mb-4 text-gray-700 dark:text-gray-300">Add Custom Tax Category</h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-2">
@@ -514,8 +574,12 @@ function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
                   pricesIncludeTax: false,
                   enableMultipleTaxRates: true,
                   taxCategories: [
-                    { id: 1, name: 'Food & Groceries', rate: 5, hsn: '1001-2000', description: 'Essential food items and groceries' },
-                    { id: 2, name: 'General Merchandise', rate: 18, hsn: '3001-9999', description: 'Standard consumer goods' }
+                    { id: 1, name: 'Tax Exempt', rate: 0, hsn: '9801-9900', description: 'Tax-exempt essential services and items' },
+                    { id: 2, name: 'Food & Groceries', rate: 5, hsn: '1001-2000', description: 'Essential food items and groceries' },
+                    { id: 3, name: 'Standard Rate', rate: 12, hsn: '2001-5000', description: 'Standard consumer goods - medium rate' },
+                    { id: 4, name: 'General Merchandise', rate: 18, hsn: '3001-9999', description: 'Standard consumer goods - high rate' },
+                    { id: 5, name: 'Luxury Items', rate: 28, hsn: '8701-8800', description: 'High-end consumer products' },
+                    { id: 6, name: 'Premium Luxury', rate: 40, hsn: '8801-9000', description: 'Premium luxury goods and services' }
                   ]
                 });
                 localStorage.removeItem('taxSettings');
