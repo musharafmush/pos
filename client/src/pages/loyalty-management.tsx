@@ -354,48 +354,8 @@ export default function LoyaltyManagement() {
 
 
 
-  const handleBulkUpdate = (data: BulkUpdateData) => {
-    data.selectedCustomers = selectedCustomers;
-    bulkUpdateMutation.mutate(data);
-  };
 
-  const openEditDialog = (customer: any) => {
-    setSelectedCustomer(customer);
-    editLoyaltyForm.setValue('totalPoints', customer.totalPoints?.toString() || '0');
-    editLoyaltyForm.setValue('availablePoints', customer.availablePoints?.toString() || '0');
-    editLoyaltyForm.setValue('notes', customer.notes || '');
-    setIsEditDialogOpen(true);
-  };
 
-  const openDeleteDialog = (customer: any) => {
-    setCustomerToDelete(customer);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    if (customerToDelete) {
-      deleteLoyaltyMutation.mutate(customerToDelete.customerId || customerToDelete.customer?.id);
-    }
-  };
-
-  const toggleCustomerSelection = (customerId: string) => {
-    setSelectedCustomers(prev => 
-      prev.includes(customerId) 
-        ? prev.filter(id => id !== customerId)
-        : [...prev, customerId]
-    );
-  };
-
-  const selectAllCustomers = () => {
-    const allIds = loyaltyData.map(customer => 
-      (customer.customerId || customer.customer?.id)?.toString()
-    ).filter(Boolean);
-    setSelectedCustomers(allIds);
-  };
-
-  const clearSelection = () => {
-    setSelectedCustomers([]);
-  };
 
   return (
     <DashboardLayout>
