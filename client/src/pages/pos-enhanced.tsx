@@ -371,8 +371,8 @@ export default function POSEnhanced() {
 
   // Calculate points to earn from current purchase
   const calculatePointsToEarn = (total: number) => {
-    // 1 point per rupee spent
-    return Math.floor(total);
+    // 1 point per 100 rupees spent (0.01 points per rupee)
+    return Math.floor(total * 0.01);
   };
 
   // Handle loyalty point redemption
@@ -1206,6 +1206,7 @@ export default function POSEnhanced() {
         // Award loyalty points to customer after successful sale
         if (selectedCustomer) {
           const pointsToEarn = calculatePointsToEarn(total);
+          console.log(`🎯 Loyalty calculation: ₹${total} × 0.01 = ${pointsToEarn} points`);
           if (pointsToEarn > 0) {
             await awardLoyaltyPoints(selectedCustomer.id, pointsToEarn, saleResult.id);
             
