@@ -100,388 +100,460 @@ export default function LoyaltyManagement() {
       return results.filter(Boolean);
     },
     enabled: customers.length > 0,
-    refetchInterval: 30000, // Refresh every 30 seconds for real-time updates
-    staleTime: 10000 // Consider data stale after 10 seconds
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
+
+  // Calculate summary statistics
+  const totalCustomers = loyaltyData.length;
+  const totalActivePoints = loyaltyData.reduce((total, customer) => total + (customer.totalPoints || 0), 0);
+  const totalUsedPoints = loyaltyData.reduce((total, customer) => total + ((customer.totalPoints || 0) - (customer.availablePoints || 0)), 0);
+  const averagePoints = totalCustomers > 0 ? Math.round(totalActivePoints / totalCustomers) : 0;
+
+  // Loyalty tier system
+  const getTier = (points: number) => {
+    if (points >= 1000) return { name: "Platinum", color: "bg-purple-500" };
+    if (points >= 500) return { name: "Gold", color: "bg-yellow-500" };
+    if (points >= 200) return { name: "Silver", color: "bg-gray-400" };
+    return { name: "Bronze", color: "bg-orange-500" };
+  };
+
+  // Add points mutation
+  const addPointsMutation = useMutation({
+    mutationFn: async (data: AddPointsData) => {
+      return apiRequest('/api/loyalty/add-points', {
+        method: 'POST',
+        body: JSON.stringify({
+          customerId: parseInt(data.customerId),
+          points: parseInt(data.points),
+          reason: data.reason
+        })
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Points Added Successfully",
+        description: "Loyalty points have been awarded to the customer",
+      });
+      setIsAddPointsDialogOpen(false);
+      addPointsForm.reset();
+      refetchLoyalty();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Adding Points",
+        description: error.message || "Failed to add loyalty points",
+        variant: "destructive",
+      });
+    }
   });
 
   // Redeem points mutation
   const redeemPointsMutation = useMutation({
     mutationFn: async (data: RedeemPointsData) => {
-      return apiRequest('POST', `/api/loyalty/customer/${data.customerId}/redeem`, {
-        points: parseInt(data.points)
+      return apiRequest('/api/loyalty/redeem-points', {
+        method: 'POST',
+        body: JSON.stringify({
+          customerId: parseInt(data.customerId),
+          points: parseInt(data.points)
+        })
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/loyalty/all'] });
+      toast({
+        title: "Points Redeemed Successfully",
+        description: "Customer loyalty points have been redeemed",
+      });
       setIsRedeemDialogOpen(false);
       redeemForm.reset();
       refetchLoyalty();
-      toast({
-        title: "Success",
-        description: "Points redeemed successfully"
-      });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to redeem points",
-        variant: "destructive"
+        title: "Error Redeeming Points",
+        description: error.message || "Failed to redeem loyalty points",
+        variant: "destructive",
       });
     }
   });
-
-  // Add points mutation
-  const addPointsMutation = useMutation({
-    mutationFn: async (data: AddPointsData) => {
-      return apiRequest('POST', `/api/loyalty/customer/${data.customerId}/add`, {
-        points: parseInt(data.points),
-        reason: data.reason
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/loyalty/all'] });
-      setIsAddPointsDialogOpen(false);
-      addPointsForm.reset();
-      refetchLoyalty();
-      toast({
-        title: "Success",
-        description: "Points added successfully"
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add points",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const handleRedeem = (data: RedeemPointsData) => {
-    redeemPointsMutation.mutate(data);
-  };
 
   const handleAddPoints = (data: AddPointsData) => {
     addPointsMutation.mutate(data);
   };
 
-  const getTier = (points: number) => {
-    if (points >= 1000) return { name: "Gold", color: "bg-yellow-500" };
-    if (points >= 500) return { name: "Silver", color: "bg-gray-400" };
-    return { name: "Bronze", color: "bg-amber-600" };
+  const handleRedeem = (data: RedeemPointsData) => {
+    redeemPointsMutation.mutate(data);
   };
-
-  // Calculate summary stats
-  const totalCustomers = loyaltyData.length;
-  const totalActivePoints = loyaltyData.reduce((sum, loyalty) => sum + (loyalty.availablePoints || 0), 0);
-  const totalUsedPoints = loyaltyData.reduce((sum, loyalty) => sum + (loyalty.usedPoints || 0), 0);
-  const averagePoints = totalCustomers > 0 ? Math.round(totalActivePoints / totalCustomers) : 0;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Customer Loyalty Management</h1>
-            <p className="text-muted-foreground">
-              Manage customer loyalty points and rewards program
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Dialog open={isAddPointsDialogOpen} onOpenChange={setIsAddPointsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Star className="mr-2 h-4 w-4" />
-                  Add Points
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add Loyalty Points</DialogTitle>
-                  <DialogDescription>
-                    Award loyalty points to a customer
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...addPointsForm}>
-                  <form onSubmit={addPointsForm.handleSubmit(handleAddPoints)} className="space-y-4">
-                    <FormField
-                      control={addPointsForm.control}
-                      name="customerId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Customer</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+      <div className="space-y-8">
+        {/* Enhanced Header */}
+        <div className="border-b border-gray-200 pb-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Customer Loyalty Management
+              </h1>
+              <p className="text-lg text-gray-600">
+                Track rewards, manage points, and boost customer retention
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Dialog open={isAddPointsDialogOpen} onOpenChange={setIsAddPointsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg">
+                    <Gift className="mr-2 h-5 w-5" />
+                    Award Points
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl">Award Loyalty Points</DialogTitle>
+                    <DialogDescription>
+                      Give bonus points to reward customer loyalty
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...addPointsForm}>
+                    <form onSubmit={addPointsForm.handleSubmit(handleAddPoints)} className="space-y-5">
+                      <FormField
+                        control={addPointsForm.control}
+                        name="customerId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Select Customer</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-12">
+                                  <SelectValue placeholder="Choose customer to reward" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {customers.map((customer: any) => (
+                                  <SelectItem key={customer.id} value={customer.id.toString()}>
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                        {customer.name?.charAt(0)?.toUpperCase() || 'C'}
+                                      </div>
+                                      <div>
+                                        <div className="font-medium">{customer.name}</div>
+                                        <div className="text-sm text-gray-500">{customer.phone || 'No phone'}</div>
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={addPointsForm.control}
+                        name="points"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Points Amount</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a customer" />
-                              </SelectTrigger>
+                              <Input
+                                type="number"
+                                placeholder="100"
+                                className="h-12 text-lg"
+                                {...field}
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {customers.map((customer: any) => (
-                                <SelectItem key={customer.id} value={customer.id.toString()}>
-                                  {customer.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={addPointsForm.control}
-                      name="points"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Points to Add</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="100" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter the number of points to award
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={addPointsForm.control}
-                      name="reason"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Reason</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Purchase reward, bonus points, etc." {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Brief description for the point award
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end space-x-4">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setIsAddPointsDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={addPointsMutation.isPending}>
-                        {addPointsMutation.isPending ? "Adding..." : "Add Points"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={addPointsForm.control}
+                        name="reason"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Reason</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="e.g., Birthday bonus, Purchase milestone"
+                                className="h-12"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-end gap-3 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsAddPointsDialogOpen(false)}
+                          className="px-6"
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          disabled={addPointsMutation.isPending}
+                          className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 px-6"
+                        >
+                          {addPointsMutation.isPending ? "Adding..." : "Award Points"}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
 
-            <Dialog open={isRedeemDialogOpen} onOpenChange={setIsRedeemDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Redeem Points
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Redeem Customer Points</DialogTitle>
-                  <DialogDescription>
-                    Process point redemption for a customer
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...redeemForm}>
-                  <form onSubmit={redeemForm.handleSubmit(handleRedeem)} className="space-y-4">
-                    <FormField
-                      control={redeemForm.control}
-                      name="customerId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Customer</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+              <Dialog open={isRedeemDialogOpen} onOpenChange={setIsRedeemDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="border-2 border-blue-500 text-blue-600 hover:bg-blue-50">
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    Redeem Points
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl">Redeem Loyalty Points</DialogTitle>
+                    <DialogDescription>
+                      Process point redemption for customer purchases
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...redeemForm}>
+                    <form onSubmit={redeemForm.handleSubmit(handleRedeem)} className="space-y-5">
+                      <FormField
+                        control={redeemForm.control}
+                        name="customerId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Select Customer</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-12">
+                                  <SelectValue placeholder="Choose customer for redemption" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {customers.map((customer: any) => (
+                                  <SelectItem key={customer.id} value={customer.id.toString()}>
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                        {customer.name?.charAt(0)?.toUpperCase() || 'C'}
+                                      </div>
+                                      <div>
+                                        <div className="font-medium">{customer.name}</div>
+                                        <div className="text-sm text-gray-500">{customer.phone || 'No phone'}</div>
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={redeemForm.control}
+                        name="points"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Points to Redeem</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select customer" />
-                              </SelectTrigger>
+                              <Input
+                                type="number"
+                                placeholder="50"
+                                className="h-12 text-lg"
+                                {...field}
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {customers.map((customer: any) => (
-                                <SelectItem key={customer.id} value={customer.id.toString()}>
-                                  {customer.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={redeemForm.control}
-                      name="points"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Points to Redeem</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="100" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter the number of points to redeem
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end space-x-4">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setIsRedeemDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={redeemPointsMutation.isPending}>
-                        {redeemPointsMutation.isPending ? "Processing..." : "Redeem Points"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-end gap-3 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsRedeemDialogOpen(false)}
+                          className="px-6"
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          disabled={redeemPointsMutation.isPending}
+                          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-6"
+                        >
+                          {redeemPointsMutation.isPending ? "Processing..." : "Redeem Points"}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+        {/* Enhanced Summary Stats */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold text-blue-700">Total Customers</CardTitle>
+              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                <Users className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalCustomers}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold text-blue-900">{totalCustomers}</div>
+              <p className="text-sm text-blue-600 mt-1">
                 Active loyalty members
               </p>
             </CardContent>
           </Card>
-          <Card>
+          
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Points</CardTitle>
-              <Star className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold text-green-700">Active Points</CardTitle>
+              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                <Star className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalActivePoints.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold text-green-900">
+                {totalActivePoints.toLocaleString()}
+              </div>
+              <p className="text-sm text-green-600 mt-1">
                 Points ready to redeem
               </p>
             </CardContent>
           </Card>
-          <Card>
+          
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Redeemed Points</CardTitle>
-              <Gift className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold text-purple-700">Redeemed Points</CardTitle>
+              <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalUsedPoints.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                Total points used
+              <div className="text-3xl font-bold text-purple-900">
+                {totalUsedPoints.toLocaleString()}
+              </div>
+              <p className="text-sm text-purple-600 mt-1">
+                Total redeemed
               </p>
             </CardContent>
           </Card>
-          <Card>
+          
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Points</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold text-orange-700">Average Points</CardTitle>
+              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                <Award className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{averagePoints}</div>
-              <p className="text-xs text-muted-foreground">
-                Points per customer
+              <div className="text-3xl font-bold text-orange-900">
+                {averagePoints.toLocaleString()}
+              </div>
+              <p className="text-sm text-orange-600 mt-1">
+                Per customer
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Customer Loyalty Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {loyaltyData.map((loyalty: any) => {
-            const tier = getTier(loyalty.availablePoints || 0);
-            return (
-              <Card key={loyalty.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{loyalty.customer.name}</CardTitle>
-                    <Badge variant="secondary" className={`${tier.color} text-white`}>
-                      {tier.name}
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    Customer since {new Date(loyalty.customer.createdAt).toLocaleDateString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Available Points</p>
-                      <p className="text-xl font-bold text-green-600">{loyalty.availablePoints || 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Total Earned</p>
-                      <p className="text-xl font-bold">{loyalty.totalPoints || 0}</p>
-                    </div>
-                  </div>
-
-                  {loyalty.usedPoints > 0 && (
-                    <div className="text-sm">
-                      <p className="text-muted-foreground">Redeemed: {loyalty.usedPoints} points</p>
-                    </div>
-                  )}
-
-                  {loyalty.lastEarnedDate && (
-                    <div className="text-sm">
-                      <p className="text-xs text-muted-foreground">
-                        Last earned: {new Date(loyalty.lastEarnedDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
-
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => {
-                      redeemForm.setValue('customerId', loyalty.customerId.toString());
-                      setIsRedeemDialogOpen(true);
-                    }}
-                    disabled={!loyalty.availablePoints || loyalty.availablePoints <= 0}
-                  >
-                    <CreditCard className="mr-1 h-3 w-3" />
-                    Redeem Points
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+        {/* Enhanced Customer Cards */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900">Customer Loyalty Accounts</h2>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              {totalCustomers} Active Members
+            </Badge>
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {isLoading ? (
+              <div className="col-span-full text-center py-12">
+                <div className="inline-flex items-center gap-3 text-gray-500">
+                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  Loading customer loyalty data...
+                </div>
+              </div>
+            ) : loyaltyData.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Loyalty Members Yet</h3>
+                <p className="text-gray-500">Start building your loyalty program by adding customers</p>
+              </div>
+            ) : (
+              loyaltyData.map((customer: any) => {
+                const tier = getTier(customer.availablePoints || 0);
+                return (
+                  <Card key={customer.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg">
+                          {customer.customer?.name?.charAt(0)?.toUpperCase() || 'C'}
+                        </div>
+                        <div className="flex-1">
+                          <CardTitle className="text-lg font-semibold text-gray-900">
+                            {customer.customer?.name || 'Unknown Customer'}
+                          </CardTitle>
+                          <CardDescription className="text-sm text-gray-500">
+                            Member since {new Date(customer.customer?.createdAt || customer.createdAt).toLocaleDateString()}
+                          </CardDescription>
+                        </div>
+                        <Badge 
+                          variant="secondary"
+                          className={`${tier.color} text-white border-0`}
+                        >
+                          {tier.name}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-green-50 rounded-lg p-4 text-center">
+                          <Label className="text-sm font-medium text-green-700">Available Points</Label>
+                          <div className="text-2xl font-bold text-green-600 mt-1">
+                            {(customer.availablePoints || 0).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-4 text-center">
+                          <Label className="text-sm font-medium text-blue-700">Total Earned</Label>
+                          <div className="text-2xl font-bold text-blue-600 mt-1">
+                            {(customer.totalPoints || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-3 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            redeemForm.setValue('customerId', customer.customerId?.toString() || customer.customer?.id?.toString() || '');
+                            setIsRedeemDialogOpen(true);
+                          }}
+                          className="flex-1 border-blue-200 text-blue-600 hover:bg-blue-50"
+                          disabled={!customer.availablePoints || customer.availablePoints <= 0}
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Redeem Points
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
         </div>
-
-        {loyaltyData.length === 0 && !isLoading && (
-          <div className="text-center py-12">
-            <Users className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-semibold text-gray-900">No loyalty data</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Customers will appear here once they start earning loyalty points.
-            </p>
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="mt-2 text-sm text-gray-500">Loading loyalty data...</p>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );
