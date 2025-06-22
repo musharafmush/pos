@@ -215,7 +215,7 @@ export default function LoyaltyManagement() {
   // Add points mutation
   const addPointsMutation = useMutation({
     mutationFn: async (data: AddPointsData) => {
-      return apiRequest('/api/loyalty/add-points', 'POST', {
+      return apiRequest('POST', '/api/loyalty/add-points', {
         customerId: parseInt(data.customerId),
         points: parseInt(data.points),
         reason: data.reason
@@ -242,7 +242,7 @@ export default function LoyaltyManagement() {
   // Redeem points mutation
   const redeemPointsMutation = useMutation({
     mutationFn: async (data: RedeemPointsData) => {
-      return apiRequest('/api/loyalty/redeem-points', 'POST', {
+      return apiRequest('POST', '/api/loyalty/redeem-points', {
         customerId: parseInt(data.customerId),
         points: parseInt(data.points)
       });
@@ -268,7 +268,7 @@ export default function LoyaltyManagement() {
   // Edit loyalty mutation
   const editLoyaltyMutation = useMutation({
     mutationFn: async (data: EditLoyaltyData) => {
-      return apiRequest(`/api/loyalty/customer/${selectedCustomer.customerId}/update`, 'PUT', {
+      return apiRequest('PUT', `/api/loyalty/customer/${selectedCustomer.customerId}/update`, {
         totalPoints: parseInt(data.totalPoints),
         availablePoints: parseInt(data.availablePoints),
         notes: data.notes
@@ -295,7 +295,7 @@ export default function LoyaltyManagement() {
   // Delete loyalty mutation
   const deleteLoyaltyMutation = useMutation({
     mutationFn: async (customerId: number) => {
-      return apiRequest(`/api/loyalty/customer/${customerId}`, 'DELETE');
+      return apiRequest('DELETE', `/api/loyalty/customer/${customerId}`);
     },
     onSuccess: () => {
       toast({
@@ -318,7 +318,7 @@ export default function LoyaltyManagement() {
   // Bulk update mutation
   const bulkUpdateMutation = useMutation({
     mutationFn: async (data: BulkUpdateData) => {
-      return apiRequest('/api/loyalty/bulk-update', 'POST', {
+      return apiRequest('POST', '/api/loyalty/bulk-update', {
         operation: data.operation,
         points: parseInt(data.points),
         reason: data.reason,
