@@ -47,7 +47,9 @@ import {
   FileText,
   Download,
   Settings,
-  Printer
+  Printer,
+  Star,
+  Gift
 } from "lucide-react";
 
 interface Product {
@@ -711,11 +713,11 @@ export default function POSEnhanced() {
     return freight + insurance + customs + handling;
   };
 
-  // Calculate totals with ocean freight
+  // Calculate totals with ocean freight and loyalty discount
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
   const discountAmount = (subtotal * discount) / 100;
   const oceanTotal = calculateOceanTotal();
-  const total = subtotal - discountAmount + oceanTotal;
+  const total = subtotal - discountAmount - loyaltyDiscount + oceanTotal;
 
   // Register opening
   const handleOpenRegister = async () => {
@@ -2034,7 +2036,7 @@ export default function POSEnhanced() {
                 </Select>
               </div>
 
-              <div className="col-span-3">
+              <div className="col-span-2">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Contact</label>
                 <div className="flex items-center text-gray-600">
                   {selectedCustomer?.phone ? (
@@ -2044,6 +2046,33 @@ export default function POSEnhanced() {
                     </>
                   ) : (
                     <span className="text-gray-400">No contact info</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="col-span-1">
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Loyalty Points</label>
+                <div className="flex items-center space-x-2">
+                  {selectedCustomer && customerLoyalty ? (
+                    <>
+                      <div className="flex items-center text-green-600 font-medium">
+                        <Star className="h-4 w-4 mr-1" />
+                        {customerLoyalty.totalPoints}
+                      </div>
+                      {customerLoyalty.totalPoints > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowLoyaltyDialog(true)}
+                          className="text-xs px-2 py-1 h-7 hover:bg-green-50 border-green-200 text-green-700"
+                        >
+                          <Gift className="h-3 w-3 mr-1" />
+                          Redeem
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-gray-400 text-sm">No points</span>
                   )}
                 </div>
               </div>
@@ -2513,10 +2542,35 @@ export default function POSEnhanced() {
                     </div>
                   )}
 
+                  {loyaltyDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="flex items-center">
+                        <Star className="h-4 w-4 mr-1" />
+                        Loyalty Discount:
+                      </span>
+                      <span>-{formatCurrency(loyaltyDiscount)}</span>
+                    </div>
+                  )}
+
                   {oceanTotal > 0 && (
                     <div className="flex justify-between text-blue-600">
                       <span>Ocean Freight:</span>
                       <span>+{formatCurrency(oceanTotal)}</span>
+                    </div>
+                  )}
+
+                  {selectedCustomer && total > 0 && (
+                    <div className="bg-green-50 p-3 rounded-lg border border-green-200 mt-3">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-green-800 font-medium flex items-center">
+                          <Gift className="h-4 w-4 mr-1" />
+                          Points to Earn:
+                        </span>
+                        <span className="text-green-700 font-bold">{calculatePointsToEarn(total)} pts</span>
+                      </div>
+                      <div className="text-xs text-green-600 mt-1">
+                        Customer: {selectedCustomer.name}
+                      </div>
                     </div>
                   )}
 
@@ -4219,6 +4273,72 @@ Terminal: POS-Enhanced
                     onClick={() => setShowPrintOptionsDialog(false)}
                   >
                     Skip Printing
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Loyalty Point Redemption Dialog */}
+          <Dialog open={showLoyaltyDialog} onOpenChange={setShowLoyaltyDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Star className="h-6 w-6 text-green-600" />
+                  Redeem Loyalty Points
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-green-800 font-medium">Available Points:</span>
+                    <span className="text-green-700 font-bold text-lg">{customerLoyalty?.totalPoints || 0}</span>
+                  </div>
+                  <p className="text-green-600 text-sm">1 point = ₹1 discount</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="loyaltyPointsInput" className="text-sm font-medium">Points to Redeem</Label>
+                  <Input
+                    id="loyaltyPointsInput"
+                    type="number"
+                    value={loyaltyPointsToRedeem}
+                    onChange={(e) => setLoyaltyPointsToRedeem(parseInt(e.target.value) || 0)}
+                    placeholder="Enter points to redeem"
+                    className="mt-1 text-lg"
+                    min="0"
+                    max={customerLoyalty?.totalPoints || 0}
+                    autoFocus
+                  />
+                </div>
+
+                {loyaltyPointsToRedeem > 0 && (
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-blue-800 font-medium">Discount Amount:</span>
+                      <span className="text-blue-700 font-bold">{formatCurrency(loyaltyPointsToRedeem)}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowLoyaltyDialog(false);
+                      setLoyaltyPointsToRedeem(0);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleLoyaltyRedemption}
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={loyaltyPointsToRedeem <= 0 || loyaltyPointsToRedeem > (customerLoyalty?.totalPoints || 0)}
+                  >
+                    <Gift className="h-4 w-4 mr-2" />
+                    Redeem Points
                   </Button>
                 </div>
               </div>
