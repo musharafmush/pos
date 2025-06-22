@@ -6880,5 +6880,34 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // POS Enhanced loyalty redemption endpoint
+  app.post('/api/loyalty/redeem-points', async (req, res) => {
+    try {
+      const { customerId, points } = req.body;
+      
+      console.log('Processing loyalty redemption:', { customerId, points });
+      
+      if (!customerId || !points || points <= 0) {
+        return res.status(400).json({ message: 'Customer ID and valid points amount required' });
+      }
+      
+      const loyalty = await storage.redeemLoyaltyPoints(customerId, points);
+      
+      console.log('Loyalty points redeemed successfully:', loyalty);
+      res.json({
+        success: true,
+        message: 'Points redeemed successfully',
+        loyalty,
+        pointsRedeemed: points
+      });
+    } catch (error) {
+      console.error('Error redeeming loyalty points:', error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || 'Failed to redeem loyalty points' 
+      });
+    }
+  });
+
   return httpServer;
 }
