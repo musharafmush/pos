@@ -4238,6 +4238,99 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Tax Management API - HSN Code Lookup
+  app.get('/api/tax/hsn-codes/:hsnCode/rates', async (req, res) => {
+    try {
+      const hsnCode = req.params.hsnCode;
+      console.log('🔍 Looking up tax rates for HSN code:', hsnCode);
+
+      const { sqlite } = await import('@db');
+
+      // Look up HSN code in our tax database
+      const hsnQuery = sqlite.prepare(`
+        SELECT 
+          hc.hsn_code,
+          hc.description,
+          hc.cgst_rate,
+          hc.sgst_rate,
+          hc.igst_rate,
+          hc.cess_rate
+        FROM hsn_code_mappings hc
+        WHERE hc.hsn_code = ? OR hc.hsn_code LIKE ?
+        ORDER BY LENGTH(hc.hsn_code) DESC
+        LIMIT 1
+      `);
+
+      const hsnResult = hsnQuery.get(hsnCode, hsnCode + '%');
+
+      if (hsnResult) {
+        console.log('✅ Found HSN code in database:', hsnResult);
+        res.json({
+          hsnCode: hsnResult.hsn_code,
+          description: hsnResult.description,
+          cgst: hsnResult.cgst_rate?.toString() || "0",
+          sgst: hsnResult.sgst_rate?.toString() || "0", 
+          igst: hsnResult.igst_rate?.toString() || "0",
+          cess: hsnResult.cess_rate?.toString() || "0"
+        });
+      } else {
+        // Fallback: Return default rates based on HSN prefix patterns
+        console.log('❌ HSN code not found in database, using fallback');
+        res.status(404).json({ 
+          message: 'HSN code not found in database',
+          hsnCode: hsnCode
+        });
+      }
+
+    } catch (error) {
+      console.error('Error looking up HSN code:', error);
+      res.status(500).json({ 
+        message: 'Failed to lookup HSN code',
+        error: error.message 
+      });
+    }
+  });
+
+  // Tax Management API - Get all tax configurations
+  app.get('/api/tax/configurations', async (req, res) => {
+    try {
+      console.log('📋 Fetching tax configurations');
+      const { sqlite } = await import('@db');
+
+      const taxConfigs = sqlite.prepare(`
+        SELECT * FROM tax_configurations ORDER BY created_at DESC
+      `).all();
+
+      res.json(taxConfigs);
+    } catch (error) {
+      console.error('Error fetching tax configurations:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch tax configurations',
+        error: error.message 
+      });
+    }
+  });
+
+  // Tax Management API - Get all tax categories
+  app.get('/api/tax/categories', async (req, res) => {
+    try {
+      console.log('📋 Fetching tax categories');
+      const { sqlite } = await import('@db');
+
+      const taxCategories = sqlite.prepare(`
+        SELECT * FROM tax_categories ORDER BY name
+      `).all();
+
+      res.json(taxCategories);
+    } catch (error) {
+      console.error('Error fetching tax categories:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch tax categories',
+        error: error.message 
+      });
+    }
+  });
+
   // Sales debug endpoint (kept for compatibility)
   app.get('/api/sales/debug', async (req, res) => {
     try {

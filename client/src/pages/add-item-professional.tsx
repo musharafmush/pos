@@ -1446,52 +1446,77 @@ export default function AddItemProfessional() {
                                     value={field.value || ""}
                                     placeholder="Enter HSN Code manually (e.g., 10019000)" 
                                     maxLength={8}
-                                    onChange={(e) => {
+                                    onChange={async (e) => {
                                       const hsnValue = e.target.value.replace(/\D/g, ''); // Only allow digits
                                       field.onChange(hsnValue);
 
-                                      // Auto-suggest GST code based on HSN with enhanced logic
-                                      let suggestedGst = "";
-                                      let suggestedDescription = "";
+                                      // Auto-lookup tax rates from database when HSN code is valid
+                                      if (hsnValue.length >= 4) {
+                                        try {
+                                          // First try to fetch exact HSN code from our tax database
+                                          const response = await fetch(`/api/tax/hsn-codes/${hsnValue}/rates`);
+                                          if (response.ok) {
+                                            const taxRates = await response.json();
+                                            
+                                            // Apply the tax rates from database
+                                            form.setValue("cgstRate", taxRates.cgst || "0");
+                                            form.setValue("sgstRate", taxRates.sgst || "0");
+                                            form.setValue("igstRate", taxRates.igst || "0");
+                                            form.setValue("cessRate", taxRates.cess || "0");
 
-                                      if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
-                                        suggestedGst = "GST 0%";
-                                        suggestedDescription = "Basic food items - Nil rate";
-                                      } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17") || hsnValue.startsWith("21") || hsnValue.startsWith("30") || hsnValue.startsWith("49") || hsnValue.startsWith("63")) {
-                                        suggestedGst = "GST 5%";
-                                        suggestedDescription = "Essential goods - Food items, medicines";
-                                      } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("48") || hsnValue.startsWith("87120") || hsnValue.startsWith("90")) {
-                                        suggestedGst = "GST 12%";
-                                        suggestedDescription = "Standard rate - Textiles, electronics";
-                                      } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("64") || hsnValue.startsWith("84") || hsnValue.startsWith("85") || hsnValue.startsWith("96") || hsnValue.startsWith("19") || hsnValue.startsWith("30059")) {
-                                        suggestedGst = "GST 18%";
-                                        suggestedDescription = "Standard rate - Most goods & services";
-                                      } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032") || hsnValue.startsWith("87111")) {
-                                        suggestedGst = "GST 28%";
-                                        suggestedDescription = "Luxury goods - Cars, tobacco";
-                                      } else if (hsnValue.startsWith("71") || hsnValue.startsWith("9701") || hsnValue.startsWith("9702") || hsnValue.startsWith("8801") || hsnValue.startsWith("8802")) {
-                                        suggestedGst = "GST 40%";
-                                        suggestedDescription = "Premium luxury - Jewelry, art, aircraft";
-                                      }
+                                            // Calculate total GST rate for display
+                                            const totalGst = parseFloat(taxRates.cgst || "0") + parseFloat(taxRates.sgst || "0") + parseFloat(taxRates.igst || "0");
+                                            form.setValue("gstCode", `GST ${totalGst}%`);
 
-                                      if (suggestedGst && hsnValue.length >= 4) {
-                                        form.setValue("gstCode", suggestedGst);
-
-                                        // Auto-calculate GST breakdown for intra-state transactions
-                                        const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
-                                        if (gstRate > 0) {
-                                          const cgstSgstRate = (gstRate / 2).toString();
-                                          form.setValue("cgstRate", cgstSgstRate);
-                                          form.setValue("sgstRate", cgstSgstRate);
-                                          form.setValue("igstRate", "0");
-                                        } else {
-                                          form.setValue("cgstRate", "0");
-                                          form.setValue("sgstRate", "0");
-                                          form.setValue("igstRate", "0");
+                                            console.log(`HSN ${hsnValue}: Found in database - CGST: ${taxRates.cgst}%, SGST: ${taxRates.sgst}%, IGST: ${taxRates.igst}%`);
+                                            return;
+                                          }
+                                        } catch (error) {
+                                          console.log('Database lookup failed, using fallback logic');
                                         }
 
-                                        // Show suggestion notification
-                                        if (hsnValue.length >= 6) {
+                                        // Fallback to manual HSN code logic if database lookup fails
+                                        let suggestedGst = "";
+                                        let suggestedDescription = "";
+
+                                        if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08") || hsnValue.startsWith("1006") || hsnValue.startsWith("1701") || hsnValue.startsWith("0401")) {
+                                          suggestedGst = "GST 0%";
+                                          suggestedDescription = "Basic food items - Nil rate";
+                                        } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17") || hsnValue.startsWith("21") || hsnValue.startsWith("30") || hsnValue.startsWith("49") || hsnValue.startsWith("1905") || hsnValue.startsWith("0712")) {
+                                          suggestedGst = "GST 5%";
+                                          suggestedDescription = "Essential goods - Food items, medicines";
+                                        } else if (hsnValue.startsWith("62") || hsnValue.startsWith("6203") || hsnValue.startsWith("48") || hsnValue.startsWith("90")) {
+                                          suggestedGst = "GST 12%";
+                                          suggestedDescription = "Standard rate - Textiles, electronics";
+                                        } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("64") || hsnValue.startsWith("84") || hsnValue.startsWith("85") || hsnValue.startsWith("8517") || hsnValue.startsWith("8471") || hsnValue.startsWith("96") || hsnValue.startsWith("19")) {
+                                          suggestedGst = "GST 18%";
+                                          suggestedDescription = "Standard rate - Most goods & services";
+                                        } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("2402") || hsnValue.startsWith("2208") || hsnValue.startsWith("87032") || hsnValue.startsWith("87111")) {
+                                          suggestedGst = "GST 28%";
+                                          suggestedDescription = "Luxury goods - Cars, tobacco";
+                                        } else if (hsnValue.startsWith("71") || hsnValue.startsWith("7113") || hsnValue.startsWith("7114") || hsnValue.startsWith("7116") || hsnValue.startsWith("9701") || hsnValue.startsWith("9702") || hsnValue.startsWith("9703") || hsnValue.startsWith("8801") || hsnValue.startsWith("8802") || hsnValue.startsWith("8903") || hsnValue.startsWith("9401")) {
+                                          suggestedGst = "GST 40%";
+                                          suggestedDescription = "Premium luxury - Jewelry, art, aircraft";
+                                        }
+
+                                        if (suggestedGst) {
+                                          form.setValue("gstCode", suggestedGst);
+
+                                          // Auto-calculate GST breakdown for intra-state transactions
+                                          const gstRate = parseFloat(suggestedGst.replace("GST ", "").replace("%", ""));
+                                          if (gstRate > 0) {
+                                            const cgstSgstRate = (gstRate / 2).toString();
+                                            form.setValue("cgstRate", cgstSgstRate);
+                                            form.setValue("sgstRate", cgstSgstRate);
+                                            form.setValue("igstRate", "0");
+                                            form.setValue("cessRate", "0");
+                                          } else {
+                                            form.setValue("cgstRate", "0");
+                                            form.setValue("sgstRate", "0");
+                                            form.setValue("igstRate", "0");
+                                            form.setValue("cessRate", "0");
+                                          }
+
                                           console.log(`HSN ${hsnValue}: ${suggestedGst} - ${suggestedDescription}`);
                                         }
                                       }
