@@ -949,41 +949,60 @@ export default function LoyaltyManagement() {
                 .map((customer: any) => {
                 const tier = getTier(customer.availablePoints || 0);
                 return (
-                  <Card key={customer.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg">
+                  <Card key={customer.id} className="border border-gray-200 hover:border-blue-300 transition-all duration-300 bg-white">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start gap-4">
+                        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
                           {customer.customer?.name?.charAt(0)?.toUpperCase() || 'C'}
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <CardTitle className="text-lg font-semibold text-gray-900">
-                            {customer.customer?.name || 'Unknown Customer'}
-                          </CardTitle>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-3 w-3" />
-                              <span>{customer.customer?.phone || 'No phone'}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-3">
+                            <CardTitle className="text-xl font-bold text-gray-900">
+                              {customer.customer?.name || 'Unknown Customer'}
+                            </CardTitle>
+                            <Badge 
+                              variant="secondary"
+                              className={`${tier.color} text-white border-0 px-3 py-1`}
+                            >
+                              {tier.name}
+                            </Badge>
+                          </div>
+                          
+                          {/* Line-by-line customer details */}
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-1">
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Phone className="h-4 w-4" />
+                                <span className="font-medium">Phone:</span>
+                              </div>
+                              <span className="text-gray-900 font-medium">{customer.customer?.phone || 'Not provided'}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-3 w-3" />
-                              <span>{customer.customer?.email || 'No email'}</span>
+                            
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-1">
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Mail className="h-4 w-4" />
+                                <span className="font-medium">Email:</span>
+                              </div>
+                              <span className="text-gray-900 font-medium">{customer.customer?.email || 'Not provided'}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3 w-3" />
-                              <span>Member since {new Date(customer.customer?.createdAt || customer.createdAt).toLocaleDateString()}</span>
+                            
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-1">
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Calendar className="h-4 w-4" />
+                                <span className="font-medium">Member Since:</span>
+                              </div>
+                              <span className="text-gray-900 font-medium">{new Date(customer.customer?.createdAt || customer.createdAt).toLocaleDateString()}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <User className="h-3 w-3" />
-                              <span>ID: {customer.customer?.id || customer.customerId}</span>
+                            
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-1">
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <User className="h-4 w-4" />
+                                <span className="font-medium">Customer ID:</span>
+                              </div>
+                              <span className="text-gray-900 font-medium">#{customer.customer?.id || customer.customerId}</span>
                             </div>
                           </div>
                         </div>
-                        <Badge 
-                          variant="secondary"
-                          className={`${tier.color} text-white border-0`}
-                        >
-                          {tier.name}
-                        </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
