@@ -395,10 +395,10 @@ export default function POSEnhanced() {
       return;
     }
     
-    if (loyaltyPointsToRedeem > customerLoyalty.totalPoints) {
+    if (loyaltyPointsToRedeem > parseFloat(customerLoyalty.availablePoints)) {
       toast({
         title: "Insufficient Points",
-        description: `Customer only has ${customerLoyalty.totalPoints} points available`,
+        description: `Customer only has ${parseFloat(customerLoyalty.availablePoints)} points available`,
         variant: "destructive",
       });
       return;
@@ -2154,9 +2154,9 @@ export default function POSEnhanced() {
                     <>
                       <div className="flex items-center text-green-600 font-medium">
                         <Star className="h-4 w-4 mr-1" />
-                        {customerLoyalty.availablePoints || 0}
+                        {parseFloat(customerLoyalty.availablePoints) || 0}
                       </div>
-                      {(customerLoyalty.availablePoints || 0) > 0 && (
+                      {(parseFloat(customerLoyalty.availablePoints) || 0) > 0 && (
                         <Button
                           size="sm"
                           variant="outline"
