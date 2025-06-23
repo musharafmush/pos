@@ -1076,8 +1076,18 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`items.${index}.code`, product.sku || "");
       form.setValue(`items.${index}.description`, product.description || product.name);
       
-      // Use cost price from product if available, otherwise use selling price
-      const costPrice = parseFloat(product.cost || product.price) || 0;
+      // Enhanced cost price calculation with multiple fallbacks
+      let costPrice = 0;
+      if (product.cost && parseFloat(product.cost) > 0) {
+        costPrice = parseFloat(product.cost);
+      } else if (product.price && parseFloat(product.price) > 0) {
+        // If no cost, estimate from price (typically 60-70% of selling price)
+        costPrice = Math.round(parseFloat(product.price) * 0.65 * 100) / 100;
+      } else {
+        // Default minimum cost
+        costPrice = 10;
+      }
+      
       const sellingPrice = parseFloat(product.price) || 0;
       
       // Calculate MRP: use product MRP if available, otherwise calculate from selling price
@@ -2751,50 +2761,80 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      value={form.watch(`items.${index}.unitCost`) || 0}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.unitCost`, value);
+                                  <div className="space-y-1">
+                                    <div className="relative">
+                                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={form.watch(`items.${index}.unitCost`) || ""}
+                                        onChange={(e) => {
+                                          const value = parseFloat(e.target.value) || 0;
+                                          form.setValue(`items.${index}.unitCost`, value);
 
-                                        // Auto-calculate net amount using receivedQty
-                                        const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                        const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
+                                          // Auto-calculate net amount using receivedQty
+                                          const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                          const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
 
-                                        const subtotal = value * receivedQty;
-                                        const taxableAmount = subtotal - discount;
-                                        const tax = (taxableAmount * taxPercentage) / 100;
-                                        const netAmount = taxableAmount + tax;
+                                          const subtotal = value * receivedQty;
+                                          const taxableAmount = subtotal - discount;
+                                          const tax = (taxableAmount * taxPercentage) / 100;
+                                          const netAmount = taxableAmount + tax;
 
-                                        form.setValue(`items.${index}.netAmount`, netAmount);
+                                          form.setValue(`items.${index}.netAmount`, netAmount);
 
-                                        // Trigger form validation
-                                        setTimeout(() => form.trigger(`items.${index}`), 50);
-                                      }}
-                                      className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          // Move to next row's product field or add new row
-                                          if (index === fields.length - 1) {
-                                            addItem();
-                                            setTimeout(() => {
-                                              const newRowCodeField = document.querySelector(`input[name="items.${index + 1}.code"]`) as HTMLInputElement;
-                                              newRowCodeField?.focus();
-                                            }, 100);
-                                          } else {
-                                            const nextRowCodeField = document.querySelector(`input[name="items.${index + 1}.code"]`) as HTMLInputElement;
-                                            nextRowCodeField?.focus();
+                                          // Trigger form validation
+                                          setTimeout(() => form.trigger(`items.${index}`), 50);
+                                        }}
+                                        className="w-full text-right text-xs pl-6 focus:bg-yellow-50 focus:border-blue-500"
+                                        placeholder="Enter cost price"
+                                        onFocus={(e) => e.target.select()}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            // Move to next field (tax percentage)
+                                            const nextField = document.querySelector(`input[name="items.${index}.taxPercentage"]`) as HTMLInputElement;
+                                            nextField?.focus();
                                           }
+                                        }}
+                                      />
+                                    </div>
+                                    
+                                    {/* Cost Price Indicator */}
+                                    {(() => {
+                                      const currentCost = form.watch(`items.${index}.unitCost`) || 0;
+                                      const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
+                                      
+                                      if (selectedProduct && currentCost > 0) {
+                                        const originalCost = parseFloat(selectedProduct.cost || "0");
+                                        const sellingPrice = parseFloat(selectedProduct.price || "0");
+                                        
+                                        if (originalCost > 0 && Math.abs(currentCost - originalCost) < 0.01) {
+                                          return (
+                                            <div className="text-xs text-green-600 text-center">
+                                              Original cost
+                                            </div>
+                                          );
+                                        } else if (originalCost === 0 && sellingPrice > 0) {
+                                          return (
+                                            <div className="text-xs text-blue-600 text-center">
+                                              Estimated cost
+                                            </div>
+                                          );
+                                        } else if (originalCost > 0) {
+                                          const difference = ((currentCost - originalCost) / originalCost) * 100;
+                                          return (
+                                            <div className={`text-xs text-center ${
+                                              difference > 0 ? 'text-red-600' : 'text-green-600'
+                                            }`}>
+                                              {difference > 0 ? '+' : ''}{difference.toFixed(1)}% vs original
+                                            </div>
+                                          );
                                         }
-                                      }}
-                                    />
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
                                 </TableCell>
 
