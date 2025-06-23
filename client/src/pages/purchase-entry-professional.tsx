@@ -472,7 +472,7 @@ export default function PurchaseEntryProfessional() {
                       currentFormData.items.some(item => 
                         item.productId > 0 || 
                         item.description?.trim() !== "" ||
-                        (item.receivedQty > 0 && item.unitCost > 0)
+                        ((item.receivedQty || 0) > 0 && (item.unitCost || 0) > 0)
                       );
 
     if (!hasAnyData) {
@@ -982,7 +982,7 @@ export default function PurchaseEntryProfessional() {
     const cgstRate = parseFloat(product.cgstRate || "0");
     const sgstRate = parseFloat(product.sgstRate || "0");
     const igstRate = parseFloat(product.igstRate || "0");
-    const cessRate = parseFloat(product.cessRate || "0");
+    const cessRate = 0; // Cess rate not implemented in current product schema
     
     // Calculate total GST (CGST + SGST for intra-state, IGST for inter-state)
     let totalGst = 0;
@@ -2135,71 +2135,157 @@ export default function PurchaseEntryProfessional() {
                 </CardContent>
               </Card>
 
-              {/* Additional Charges Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Additional Charges</CardTitle>
+              {/* Enhanced Additional Charges Section */}
+              <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100">
+                  <CardTitle className="flex items-center gap-2 text-blue-800">
+                    <Package className="w-5 h-5" />
+                    Additional Charges
+                  </CardTitle>
+                  <p className="text-sm text-blue-600">These charges will be distributed proportionally across all line items</p>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <CardContent className="space-y-6 pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="surchargeAmount">Surcharge (₹)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...form.register("surchargeAmount", { 
-                          valueAsNumber: true
-                        })}
-                        placeholder="0"
-                      />
+                      <Label htmlFor="surchargeAmount" className="text-sm font-semibold text-gray-700">
+                        Surcharge (₹)
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register("surchargeAmount", { 
+                            valueAsNumber: true
+                          })}
+                          className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="freightAmount">Freight Charges (₹)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...form.register("freightAmount", { 
-                          valueAsNumber: true
-                        })}
-                        placeholder="0"
-                      />
+                      <Label htmlFor="freightAmount" className="text-sm font-semibold text-gray-700">
+                        Freight Charges (₹)
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register("freightAmount", { 
+                            valueAsNumber: true
+                          })}
+                          className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="packingCharges">Packing Charges (₹)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...form.register("packingCharges", { 
-                          valueAsNumber: true
-                        })}
-                        placeholder="0"
-                      />
+                      <Label htmlFor="packingCharges" className="text-sm font-semibold text-gray-700">
+                        Packing Charges (₹)
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register("packingCharges", { 
+                            valueAsNumber: true
+                          })}
+                          className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="otherCharges">Other Charges (₹)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...form.register("otherCharges", { 
-                          valueAsNumber: true
-                        })}
-                        placeholder="0"
-                      />
+                      <Label htmlFor="otherCharges" className="text-sm font-semibold text-gray-700">
+                        Other Charges (₹)
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register("otherCharges", { 
+                            valueAsNumber: true
+                          })}
+                          className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="additionalDiscount">Additional Discount (₹)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...form.register("additionalDiscount", { 
-                          valueAsNumber: true
-                        })}
-                        placeholder="0"
-                      />
+                      <Label htmlFor="additionalDiscount" className="text-sm font-semibold text-gray-700">
+                        Additional Discount (₹)
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register("additionalDiscount", { 
+                            valueAsNumber: true
+                          })}
+                          className="pl-8 border-red-200 focus:border-red-500 focus:ring-red-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Charges Summary */}
+                  <div className="bg-white rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-700">Charges Summary</h4>
+                      <Badge variant="outline" className="text-blue-700 border-blue-300">
+                        Auto-calculated
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="bg-green-50 p-3 rounded-lg text-center">
+                        <div className="text-green-600 font-medium">Total Charges</div>
+                        <div className="text-lg font-bold text-green-800">
+                          ₹{(
+                            (Number(watchedSurcharge) || 0) + 
+                            (Number(watchedFreight) || 0) + 
+                            (Number(watchedPacking) || 0) + 
+                            (Number(watchedOther) || 0)
+                          ).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="bg-red-50 p-3 rounded-lg text-center">
+                        <div className="text-red-600 font-medium">Total Discount</div>
+                        <div className="text-lg font-bold text-red-800">
+                          ₹{(Number(watchedAdditionalDiscount) || 0).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="bg-blue-50 p-3 rounded-lg text-center">
+                        <div className="text-blue-600 font-medium">Net Additional</div>
+                        <div className="text-lg font-bold text-blue-800">
+                          ₹{(
+                            (Number(watchedSurcharge) || 0) + 
+                            (Number(watchedFreight) || 0) + 
+                            (Number(watchedPacking) || 0) + 
+                            (Number(watchedOther) || 0) - 
+                            (Number(watchedAdditionalDiscount) || 0)
+                          ).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="bg-purple-50 p-3 rounded-lg text-center">
+                        <div className="text-purple-600 font-medium">Impact on Cost</div>
+                        <div className="text-sm font-bold text-purple-800">
+                          Distributed across {form.watch("items")?.filter(item => item.productId > 0).length || 0} items
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
