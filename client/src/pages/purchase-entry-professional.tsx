@@ -2737,27 +2737,57 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    {...form.register(`items.${index}.freeQty`, { valueAsNumber: true })}
-                                    className="w-full text-center text-xs bg-green-50 border-green-200 focus:border-green-400"
-                                    placeholder="Free Qty"
-                                    onChange={(e) => {
-                                      const value = parseInt(e.target.value) || 0;
-                                      form.setValue(`items.${index}.freeQty`, value);
-                                      
-                                      // Show confirmation when free qty is added
-                                      if (value > 0) {
-                                        const productName = form.getValues(`items.${index}.description`) || 'Product';
-                                        toast({
-                                          title: `Free Qty Added! 🎁`,
-                                          description: `${value} free units added for ${productName}. This will be added to stock.`,
-                                          duration: 2000,
-                                        });
+                                  <div className="space-y-1">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      value={form.watch(`items.${index}.freeQty`) || ""}
+                                      className="w-full text-center text-xs bg-green-50 border-green-200 focus:border-green-400 focus:bg-green-100"
+                                      placeholder="0"
+                                      onChange={(e) => {
+                                        const value = parseInt(e.target.value) || 0;
+                                        form.setValue(`items.${index}.freeQty`, value);
+                                        
+                                        // Show confirmation when free qty is added
+                                        if (value > 0) {
+                                          const productName = form.getValues(`items.${index}.description`) || 'Product';
+                                          toast({
+                                            title: `Free Qty Added! 🎁`,
+                                            description: `${value} free units added for ${productName}. This will be added to stock.`,
+                                            duration: 2000,
+                                          });
+                                        }
+                                        
+                                        // Trigger form validation
+                                        setTimeout(() => form.trigger(`items.${index}`), 50);
+                                      }}
+                                      onFocus={(e) => e.target.select()}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          // Move to cost field
+                                          const nextField = document.querySelector(`input[name="items.${index}.unitCost"]`) as HTMLInputElement;
+                                          nextField?.focus();
+                                        }
+                                      }}
+                                    />
+                                    
+                                    {/* Free Qty Indicator */}
+                                    {(() => {
+                                      const freeQty = form.watch(`items.${index}.freeQty`) || 0;
+                                      if (freeQty > 0) {
+                                        return (
+                                          <div className="text-xs text-green-600 text-center font-medium">
+                                            🎁 +{freeQty} free
+                                          </div>
+                                        );
                                       }
-                                    }}
-                                  />
+                                      return (
+                                        <div className="text-xs text-gray-400 text-center">
+                                          Free bonus
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
