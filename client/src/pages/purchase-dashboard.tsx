@@ -80,11 +80,99 @@ import {
   MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import type { Purchase } from "@shared/schema";
+
+// Free Qty Edit Cell Component
+function FreeQtyEditCell({ item, onUpdate }: { item: any; onUpdate: (newFreeQty: number) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [tempValue, setTempValue] = useState(0);
+  const { toast } = useToast();
+
+  const freeQty = Number(item.freeQty || item.free_qty || 0);
+
+  const handleUpdate = async (newFreeQty: number) => {
+    try {
+      const response = await fetch(`/api/purchase-items/${item.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ freeQty: newFreeQty }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Free Qty Updated",
+          description: `Free quantity updated to ${newFreeQty}`,
+        });
+        onUpdate(newFreeQty);
+      } else {
+        throw new Error('Failed to update free quantity');
+      }
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Could not update free quantity",
+        variant: "destructive",
+      });
+      setTempValue(freeQty);
+    }
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <Input
+        type="number"
+        min="0"
+        value={tempValue}
+        onChange={(e) => setTempValue(Number(e.target.value) || 0)}
+        className="w-16 h-8 text-xs text-center"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            handleUpdate(tempValue);
+          } else if (e.key === 'Escape') {
+            setTempValue(freeQty);
+            setEditing(false);
+          }
+        }}
+        onBlur={() => {
+          if (tempValue !== freeQty) {
+            handleUpdate(tempValue);
+          } else {
+            setEditing(false);
+          }
+        }}
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <div 
+      className="cursor-pointer hover:bg-green-100 rounded px-2 py-1 transition-colors"
+      onClick={() => {
+        setTempValue(freeQty);
+        setEditing(true);
+      }}
+      title="Click to edit free quantity"
+    >
+      {freeQty > 0 ? (
+        <span className="font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full text-sm">
+          {freeQty} 🎁
+        </span>
+      ) : (
+        <span className="text-gray-400 hover:text-green-600">
+          + Add Free
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function PurchaseDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -1621,91 +1709,14 @@ export default function PurchaseDashboard() {
                                       </span>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                      {(() => {
-                                        const freeQty = Number(item.freeQty || item.free_qty || 0);
-                                        const [editingFreeQty, setEditingFreeQty] = useState(false);
-                                        const [tempFreeQty, setTempFreeQty] = useState(freeQty);
-
-                                        const handleFreeQtyUpdate = async (newFreeQty: number) => {
-                                          try {
-                                            const response = await fetch(`/api/purchase-items/${item.id}`, {
-                                              method: 'PUT',
-                                              headers: {
-                                                'Content-Type': 'application/json',
-                                              },
-                                              body: JSON.stringify({ freeQty: newFreeQty }),
-                                            });
-
-                                            if (response.ok) {
-                                              toast({
-                                                title: "Free Qty Updated",
-                                                description: `Free quantity updated to ${newFreeQty}`,
-                                              });
-                                              // Update the item in the current view
-                                              item.freeQty = newFreeQty;
-                                              item.free_qty = newFreeQty;
-                                            } else {
-                                              throw new Error('Failed to update free quantity');
-                                            }
-                                          } catch (error) {
-                                            toast({
-                                              title: "Update Failed",
-                                              description: "Could not update free quantity",
-                                              variant: "destructive",
-                                            });
-                                            setTempFreeQty(freeQty); // Reset to original value
-                                          }
-                                          setEditingFreeQty(false);
-                                        };
-
-                                        if (editingFreeQty) {
-                                          return (
-                                            <div className="flex items-center gap-1">
-                                              <Input
-                                                type="number"
-                                                min="0"
-                                                value={tempFreeQty}
-                                                onChange={(e) => setTempFreeQty(Number(e.target.value) || 0)}
-                                                className="w-16 h-8 text-xs text-center"
-                                                onKeyDown={(e) => {
-                                                  if (e.key === 'Enter') {
-                                                    handleFreeQtyUpdate(tempFreeQty);
-                                                  } else if (e.key === 'Escape') {
-                                                    setTempFreeQty(freeQty);
-                                                    setEditingFreeQty(false);
-                                                  }
-                                                }}
-                                                onBlur={() => {
-                                                  if (tempFreeQty !== freeQty) {
-                                                    handleFreeQtyUpdate(tempFreeQty);
-                                                  } else {
-                                                    setEditingFreeQty(false);
-                                                  }
-                                                }}
-                                                autoFocus
-                                              />
-                                            </div>
-                                          );
-                                        }
-
-                                        return (
-                                          <div 
-                                            className="cursor-pointer hover:bg-green-100 rounded px-2 py-1 transition-colors"
-                                            onClick={() => setEditingFreeQty(true)}
-                                            title="Click to edit free quantity"
-                                          >
-                                            {freeQty > 0 ? (
-                                              <span className="font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full text-sm">
-                                                {freeQty} 🎁
-                                              </span>
-                                            ) : (
-                                              <span className="text-gray-400 hover:text-green-600">
-                                                + Add Free
-                                              </span>
-                                            )}
-                                          </div>
-                                        );
-                                      })()}
+                                      <FreeQtyEditCell 
+                                        item={item} 
+                                        onUpdate={(newFreeQty) => {
+                                          // Update the item in the current view
+                                          item.freeQty = newFreeQty;
+                                          item.free_qty = newFreeQty;
+                                        }}
+                                      />
                                     </TableCell>
                                     <TableCell className="text-center">
                                       <div className="font-semibold text-gray-900">
