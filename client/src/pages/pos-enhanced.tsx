@@ -725,6 +725,81 @@ export default function POSEnhanced() {
     ));
   };
 
+  // Update cart item quantity (for Ocean freight dialog)
+  const updateCartItemQuantity = (productId: number, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+
+    const product = products.find((p: Product) => p.id === productId);
+    if (product && newQuantity > product.stockQuantity) {
+      toast({
+        title: "Stock Limit Exceeded",
+        description: `Maximum ${product.stockQuantity} units available`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCart(cart.map(item =>
+      item.id === productId
+        ? { ...item, quantity: newQuantity, total: newQuantity * parseFloat(item.price) }
+        : item
+    ));
+  };
+
+  // Update cart item weight (for weight-based products)
+  const updateCartItemWeight = (productId: number, newWeight: number) => {
+    if (newWeight <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+
+    setCart(cart.map(item =>
+      item.id === productId && item.isWeightBased
+        ? { 
+            ...item, 
+            actualWeight: newWeight, 
+            quantity: newWeight,
+            total: newWeight * (item.pricePerKg || parseFloat(item.price))
+          }
+        : item
+    ));
+  };
+
+  // Update cart item price
+  const updateCartItemPrice = (productId: number, newPrice: number) => {
+    if (newPrice < 0) {
+      toast({
+        title: "Invalid Price",
+        description: "Price cannot be negative",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCart(cart.map(item => {
+      if (item.id === productId) {
+        if (item.isWeightBased) {
+          return { 
+            ...item, 
+            pricePerKg: newPrice,
+            price: newPrice.toString(),
+            total: (item.actualWeight || 1) * newPrice
+          };
+        } else {
+          return { 
+            ...item, 
+            price: newPrice.toString(),
+            total: item.quantity * newPrice
+          };
+        }
+      }
+      return item;
+    }));
+  };
+
   const clearCart = (clearHeldSales = false) => {
     const hadItems = cart.length > 0;
     const heldSalesCount = holdSales.length;
@@ -3871,124 +3946,258 @@ Terminal: POS-Enhanced
             </DialogContent>
           </Dialog>
 
-          {/* Ocean Freight Dialog */}
+          {/* Enhanced Ocean Freight & Cart Management Dialog */}
           <Dialog open={showOceanDialog} onOpenChange={setShowOceanDialog}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-xl">
                   <Package className="h-6 w-6 text-blue-600" />
-                  Enter Ocean Freight & Shipping Costs
+                  Ocean Freight Management & Cart Editor
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Shipping Details */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Panel: Cart Items Editor */}
                 <div className="space-y-4">
+                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                    <h3 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
+                      <ShoppingCart className="h-5 w-5" />
+                      Cart Items ({cart.length})
+                    </h3>
+                    
+                    <div className="max-h-80 overflow-y-auto space-y-3">
+                      {cart.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                          <p>No items in cart</p>
+                        </div>
+                      ) : (
+                        cart.map((item, index) => (
+                          <div key={`${item.id}-${index}`} className="bg-white p-4 rounded-lg border shadow-sm">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
+                                <p className="text-xs text-gray-600">SKU: {item.sku}</p>
+                                {item.isWeightBased && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                      Weight-based: {item.actualWeight}kg @ ₹{item.pricePerKg}/kg
+                                    </Badge>
+                                  </div>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeFromCart(item.id)}
+                                className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs text-gray-600">
+                                  {item.isWeightBased ? 'Weight (kg)' : 'Quantity'}
+                                </Label>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      if (item.isWeightBased) {
+                                        const newWeight = Math.max(0.1, (item.actualWeight || 1) - 0.1);
+                                        updateCartItemWeight(item.id, newWeight);
+                                      } else {
+                                        updateCartItemQuantity(item.id, Math.max(1, item.quantity - 1));
+                                      }
+                                    }}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <Input
+                                    type="number"
+                                    value={item.isWeightBased ? item.actualWeight || 1 : item.quantity}
+                                    onChange={(e) => {
+                                      const value = parseFloat(e.target.value) || 0;
+                                      if (item.isWeightBased) {
+                                        updateCartItemWeight(item.id, Math.max(0.1, value));
+                                      } else {
+                                        updateCartItemQuantity(item.id, Math.max(1, Math.floor(value)));
+                                      }
+                                    }}
+                                    className="h-8 text-center text-sm"
+                                    step={item.isWeightBased ? "0.1" : "1"}
+                                    min={item.isWeightBased ? "0.1" : "1"}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      if (item.isWeightBased) {
+                                        const newWeight = (item.actualWeight || 1) + 0.1;
+                                        updateCartItemWeight(item.id, newWeight);
+                                      } else {
+                                        updateCartItemQuantity(item.id, item.quantity + 1);
+                                      }
+                                    }}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <Label className="text-xs text-gray-600">Unit Price</Label>
+                                <Input
+                                  type="number"
+                                  value={item.isWeightBased ? item.pricePerKg || parseFloat(item.price) : parseFloat(item.price)}
+                                  onChange={(e) => {
+                                    const newPrice = parseFloat(e.target.value) || 0;
+                                    updateCartItemPrice(item.id, newPrice);
+                                  }}
+                                  className="h-8 text-sm mt-1"
+                                  step="0.01"
+                                  min="0"
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-600">Item Total:</span>
+                                <span className="font-semibold text-gray-900">
+                                  {formatCurrency(item.total)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    
+                    {cart.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-orange-200">
+                        <div className="flex justify-between items-center text-lg font-semibold text-orange-800">
+                          <span>Cart Subtotal:</span>
+                          <span>{formatCurrency(cart.reduce((sum, item) => sum + item.total, 0))}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Panel: Ocean Freight Details */}
+                <div className="space-y-4">
+                  {/* Shipping Details */}
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <h3 className="font-semibold text-blue-800 mb-3">Shipping Details</h3>
 
                     <div className="space-y-3">
                       <div>
-                        <Label htmlFor="containerNumber">Container Number</Label>
+                        <Label htmlFor="containerNumber" className="text-sm">Container Number</Label>
                         <Input
                           id="containerNumber"
                           value={oceanFreight.containerNumber}
                           onChange={(e) => setOceanFreight(prev => ({ ...prev, containerNumber: e.target.value }))}
                           placeholder="e.g., ABCD1234567"
-                          className="mt-1"
+                          className="mt-1 h-9"
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="vesselName">Vessel Name</Label>
+                        <Label htmlFor="vesselName" className="text-sm">Vessel Name</Label>
                         <Input
                           id="vesselName"
                           value={oceanFreight.vesselName}
                           onChange={(e) => setOceanFreight(prev => ({ ...prev, vesselName: e.target.value }))}
                           placeholder="e.g., MSC Oscar"
-                          className="mt-1"
+                          className="mt-1 h-9"
                         />
                       </div>
 
-                      <div>
-                        <Label htmlFor="portOfLoading">Port of Loading</Label>
-                        <Input
-                          id="portOfLoading"
-                          value={oceanFreight.portOfLoading}
-                          onChange={(e) => setOceanFreight(prev => ({ ...prev, portOfLoading: e.target.value }))}
-                          placeholder="e.g., Shanghai, China"
-                          className="mt-1"
-                        />
-                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="portOfLoading" className="text-sm">Port of Loading</Label>
+                          <Input
+                            id="portOfLoading"
+                            value={oceanFreight.portOfLoading}
+                            onChange={(e) => setOceanFreight(prev => ({ ...prev, portOfLoading: e.target.value }))}
+                            placeholder="Shanghai, China"
+                            className="mt-1 h-9"
+                          />
+                        </div>
 
-                      <div>
-                        <Label htmlFor="portOfDischarge">Port of Discharge</Label>
-                        <Input
-                          id="portOfDischarge"
-                          value={oceanFreight.portOfDischarge}
-                          onChange={(e) => setOceanFreight(prev => ({ ...prev, portOfDischarge: e.target.value }))}
-                          placeholder="e.g., Mumbai, India"
-                          className="mt-1"
-                        />
+                        <div>
+                          <Label htmlFor="portOfDischarge" className="text-sm">Port of Discharge</Label>
+                          <Input
+                            id="portOfDischarge"
+                            value={oceanFreight.portOfDischarge}
+                            onChange={(e) => setOceanFreight(prev => ({ ...prev, portOfDischarge: e.target.value }))}
+                            placeholder="Mumbai, India"
+                            className="mt-1 h-9"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Cost Details */}
-                <div className="space-y-4">
+                  {/* Cost Details */}
                   <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                     <h3 className="font-semibold text-green-800 mb-3">Cost Breakdown</h3>
 
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label htmlFor="freightCost">Ocean Freight Cost</Label>
+                        <Label htmlFor="freightCost" className="text-sm">Ocean Freight</Label>
                         <Input
                           id="freightCost"
                           type="number"
                           value={oceanFreight.freightCost}
                           onChange={(e) => setOceanFreight(prev => ({ ...prev, freightCost: e.target.value }))}
                           placeholder="0.00"
-                          className="mt-1"
+                          className="mt-1 h-9"
                           step="0.01"
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="insuranceCost">Marine Insurance</Label>
+                        <Label htmlFor="insuranceCost" className="text-sm">Marine Insurance</Label>
                         <Input
                           id="insuranceCost"
                           type="number"
                           value={oceanFreight.insuranceCost}
                           onChange={(e) => setOceanFreight(prev => ({ ...prev, insuranceCost: e.target.value }))}
                           placeholder="0.00"
-                          className="mt-1"
+                          className="mt-1 h-9"
                           step="0.01"
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="customsDuty">Customs Duty</Label>
+                        <Label htmlFor="customsDuty" className="text-sm">Customs Duty</Label>
                         <Input
                           id="customsDuty"
                           type="number"
                           value={oceanFreight.customsDuty}
                           onChange={(e) => setOceanFreight(prev => ({ ...prev, customsDuty: e.target.value }))}
                           placeholder="0.00"
-                          className="mt-1"
+                          className="mt-1 h-9"
                           step="0.01"
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="handlingCharges">Handling Charges</Label>
+                        <Label htmlFor="handlingCharges" className="text-sm">Handling Charges</Label>
                         <Input
                           id="handlingCharges"
                           type="number"
                           value={oceanFreight.handlingCharges}
                           onChange={(e) => setOceanFreight(prev => ({ ...prev, handlingCharges: e.target.value }))}
                           placeholder="0.00"
-                          className="mt-1"
+                          className="mt-1 h-9"
                           step="0.01"
                         />
                       </div>
@@ -4002,46 +4211,70 @@ Terminal: POS-Enhanced
                       <div className="text-2xl font-bold">{formatCurrency(calculateOceanTotal())}</div>
                     </div>
                   </div>
+
+                  {/* Combined Total */}
+                  <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4 rounded-lg">
+                    <div className="text-center">
+                      <div className="text-sm font-medium opacity-90 mb-2">Grand Total (Cart + Ocean)</div>
+                      <div className="text-3xl font-bold">
+                        {formatCurrency(cart.reduce((sum, item) => sum + item.total, 0) + calculateOceanTotal())}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-6 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setOceanFreight({
-                      containerNumber: "",
-                      vesselName: "",
-                      portOfLoading: "",
-                      portOfDischarge: "",
-                      freightCost: "",
-                      insuranceCost: "",
-                      customsDuty: "",
-                      handlingCharges: "",
-                      totalOceanCost: 0
-                    });
-                  }}
-                >
-                  Clear All
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowOceanDialog(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowOceanDialog(false);
-                    toast({
-                      title: "Ocean Freight Added",
-                      description: `Total ocean costs: ${formatCurrency(calculateOceanTotal())}`,
-                    });
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Apply Ocean Costs
-                </Button>
+              <div className="flex justify-between items-center pt-6 border-t">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setOceanFreight({
+                        containerNumber: "",
+                        vesselName: "",
+                        portOfLoading: "",
+                        portOfDischarge: "",
+                        freightCost: "",
+                        insuranceCost: "",
+                        customsDuty: "",
+                        handlingCharges: "",
+                        totalOceanCost: 0
+                      });
+                    }}
+                    size="sm"
+                  >
+                    Clear Ocean Data
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCart([])}
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    Clear Cart
+                  </Button>
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowOceanDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowOceanDialog(false);
+                      toast({
+                        title: "Ocean Freight Applied",
+                        description: `Ocean costs: ${formatCurrency(calculateOceanTotal())} | Cart updated successfully`,
+                      });
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Apply Changes
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>
