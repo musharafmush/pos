@@ -2488,8 +2488,40 @@ export default function PurchaseEntryProfessional() {
                             const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
 
                             const amount = qty * cost;
-                            const netCost = cost + (cost * taxPercent / 100) - discountAmount;
-                            const netAmount = amount - discountAmount + (amount * taxPercent / 100);
+                            
+                            // Get additional charges for proportional distribution
+                            const surchargeAmount = Number(watchedSurcharge) || 0;
+                            const freightAmount = Number(watchedFreight) || 0;
+                            const packingCharges = Number(watchedPacking) || 0;
+                            const otherCharges = Number(watchedOther) || 0;
+                            const additionalDiscount = Number(watchedAdditionalDiscount) || 0;
+                            
+                            const totalAdditionalCharges = surchargeAmount + freightAmount + packingCharges + otherCharges;
+                            
+                            // Calculate total order value for proportional distribution
+                            const allItems = form.watch("items") || [];
+                            const totalOrderValue = allItems.reduce((sum, item) => {
+                              if (item.productId && item.productId > 0) {
+                                return sum + ((item.receivedQty || 0) * (item.unitCost || 0));
+                              }
+                              return sum;
+                            }, 0);
+                            
+                            // Calculate proportional additional charges for this item
+                            let itemAdditionalCharges = 0;
+                            let itemAdditionalDiscount = 0;
+                            
+                            if (totalOrderValue > 0) {
+                              const itemProportion = amount / totalOrderValue;
+                              itemAdditionalCharges = totalAdditionalCharges * itemProportion;
+                              itemAdditionalDiscount = additionalDiscount * itemProportion;
+                            }
+                            
+                            // Enhanced Net Cost calculation including additional charges
+                            const baseCostWithTax = cost + (cost * taxPercent / 100);
+                            const netCost = baseCostWithTax + (itemAdditionalCharges / qty) - (discountAmount / qty) - (itemAdditionalDiscount / qty);
+                            
+                            const netAmount = amount - discountAmount + (amount * taxPercent / 100) + itemAdditionalCharges - itemAdditionalDiscount;
                             const cashAmount = amount * cashPercent / 100;
                             const roiPercent = sellingPrice > 0 && netCost > 0 ? ((sellingPrice - netCost) / netCost) * 100 : 0;
                             const grossProfitPercent = sellingPrice > 0 ? ((sellingPrice - netCost) / sellingPrice) * 100 : 0;
@@ -2988,9 +3020,19 @@ export default function PurchaseEntryProfessional() {
                                 </TableCell>
 
                                 <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                    <span className="text-xs">₹</span>
-                                    <span className="ml-1 font-medium">{netCost.toFixed(0)}</span>
+                                  <div className="flex flex-col items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                                    <div className="flex items-center">
+                                      <span className="text-xs">₹</span>
+                                      <span className="ml-1 font-medium">{netCost.toFixed(2)}</span>
+                                      {totalAdditionalCharges > 0 && (
+                                        <span className="ml-1 text-green-600" title="Includes additional charges">📦</span>
+                                      )}
+                                    </div>
+                                    {totalAdditionalCharges > 0 && (
+                                      <div className="text-xs text-green-600 mt-1">
+                                        +₹{(itemAdditionalCharges / qty).toFixed(2)} charges
+                                      </div>
+                                    )}
                                   </div>
                                 </TableCell>
 
