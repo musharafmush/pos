@@ -98,6 +98,9 @@ export default function POSEnhanced() {
   const [showOceanDialog, setShowOceanDialog] = useState(false);
   const [showPrintOptionsDialog, setShowPrintOptionsDialog] = useState(false);
   const [currentSaleForPrint, setCurrentSaleForPrint] = useState(null);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [isVoiceSearching, setIsVoiceSearching] = useState(false);
+  const [voiceRecognition, setVoiceRecognition] = useState<any>(null);
   const [oceanFreight, setOceanFreight] = useState({
     containerNumber: "",
     vesselName: "",
@@ -799,6 +802,73 @@ export default function POSEnhanced() {
       return item;
     }));
   };
+
+  // Voice recognition functionality
+  const initializeVoiceRecognition = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        setIsVoiceSearching(true);
+      };
+      
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setCustomerSearchTerm(transcript);
+        setIsVoiceSearching(false);
+        
+        toast({
+          title: "Voice Search Complete",
+          description: `Searching for: "${transcript}"`,
+        });
+      };
+      
+      recognition.onerror = () => {
+        setIsVoiceSearching(false);
+        toast({
+          title: "Voice Search Error",
+          description: "Please try again or use text search",
+          variant: "destructive",
+        });
+      };
+      
+      recognition.onend = () => {
+        setIsVoiceSearching(false);
+      };
+      
+      setVoiceRecognition(recognition);
+    }
+  };
+
+  // Start voice search
+  const startVoiceSearch = () => {
+    if (voiceRecognition) {
+      voiceRecognition.start();
+    } else {
+      initializeVoiceRecognition();
+      setTimeout(() => {
+        if (voiceRecognition) {
+          voiceRecognition.start();
+        }
+      }, 100);
+    }
+  };
+
+  // Filter customers based on search term
+  const filteredCustomers = customers.filter((customer: Customer) => {
+    const searchLower = customerSearchTerm.toLowerCase();
+    return (
+      customer.name.toLowerCase().includes(searchLower) ||
+      (customer.phone && customer.phone.includes(customerSearchTerm)) ||
+      (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
+      customer.id.toString().includes(customerSearchTerm)
+    );
+  });
 
   const clearCart = (clearHeldSales = false) => {
     const hadItems = cart.length > 0;
@@ -3956,8 +4026,137 @@ Terminal: POS-Enhanced
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Panel: Cart Items Editor */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Panel: Customer Search & Selection */}
+                <div className="space-y-4">
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <h3 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Customer Search & Selection
+                    </h3>
+                    
+                    {/* Search Input with Voice */}
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="Search by name, phone, email, or ID..."
+                          value={customerSearchTerm}
+                          onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                          className="pr-12"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={startVoiceSearch}
+                          disabled={isVoiceSearching}
+                          className={`absolute right-1 top-1 h-8 w-8 p-0 ${isVoiceSearching ? 'text-red-500 animate-pulse' : 'text-blue-500'}`}
+                          title="Voice Search"
+                        >
+                          {isVoiceSearching ? (
+                            <div className="flex items-center justify-center">
+                              <div className="w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                            </div>
+                          ) : (
+                            <Phone className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      
+                      {isVoiceSearching && (
+                        <div className="flex items-center gap-2 text-red-600 text-sm">
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+                          Listening... Speak customer name or number
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Current Selected Customer */}
+                    {selectedCustomer && (
+                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold text-green-800">{selectedCustomer.name}</h4>
+                            <p className="text-sm text-green-600">ID: {selectedCustomer.id}</p>
+                            {selectedCustomer.phone && (
+                              <p className="text-sm text-green-600">📞 {selectedCustomer.phone}</p>
+                            )}
+                            {selectedCustomer.email && (
+                              <p className="text-sm text-green-600">✉️ {selectedCustomer.email}</p>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedCustomer(null)}
+                            className="text-red-500 hover:text-red-700 h-6 w-6 p-0"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Customer Search Results */}
+                    {customerSearchTerm && (
+                      <div className="mt-4 max-h-48 overflow-y-auto space-y-2">
+                        <h4 className="text-sm font-medium text-purple-800 mb-2">
+                          Search Results ({filteredCustomers.length})
+                        </h4>
+                        {filteredCustomers.length === 0 ? (
+                          <div className="text-center py-4 text-gray-500">
+                            <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No customers found</p>
+                            <p className="text-xs">Try searching by name, phone, or ID</p>
+                          </div>
+                        ) : (
+                          filteredCustomers.slice(0, 5).map((customer: Customer) => (
+                            <div
+                              key={customer.id}
+                              className="p-3 bg-white border border-purple-100 rounded cursor-pointer hover:bg-purple-50 transition-colors"
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setCustomerSearchTerm("");
+                                toast({
+                                  title: "Customer Selected",
+                                  description: `${customer.name} selected for this order`,
+                                });
+                              }}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h5 className="font-semibold text-gray-900 text-sm">{customer.name}</h5>
+                                  <p className="text-xs text-gray-600">ID: {customer.id}</p>
+                                  {customer.phone && (
+                                    <p className="text-xs text-blue-600">📞 {customer.phone}</p>
+                                  )}
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  Select
+                                </Badge>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+
+                    {/* Quick Add Customer */}
+                    <div className="mt-4 pt-3 border-t border-purple-200">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowNewCustomerDialog(true)}
+                        className="w-full text-purple-600 border-purple-200 hover:bg-purple-50"
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Add New Customer
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Middle Panel: Cart Items Editor */}
                 <div className="space-y-4">
                   <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                     <h3 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
