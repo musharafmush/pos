@@ -2846,7 +2846,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Add the additional free quantity to product stock
           const stockUpdateQuery = sqlite.prepare(`
             UPDATE products 
-            SET stock = stock + ? 
+            SET stock_quantity = stock_quantity + ? 
             WHERE id = ?
           `);
           stockUpdateQuery.run(additionalQty, productId);
