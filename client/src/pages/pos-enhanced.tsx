@@ -2831,6 +2831,15 @@ export default function POSEnhanced() {
 
               {/* Action Buttons */}
               <div className="space-y-3">
+                {/* Ocean Freight Management Button */}
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-4 h-auto"
+                  onClick={() => setShowOceanDialog(true)}
+                >
+                  <Package className="h-5 w-5 mr-3" />
+                  Enter Ocean Freight Management
+                </Button>
+
                 <Button
                   className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 h-auto"
                   onClick={() => setShowPaymentDialog(true)}
@@ -4174,6 +4183,8 @@ Terminal: POS-Enhanced
                                 name: "SUGAR BULK",
                                 sku: "SUGAR-BULK-001",
                                 price: "45",
+                                mrp: "50",
+                                stockQuantity: 100,
                                 isWeightBased: true,
                                 pricePerKg: 45,
                                 actualWeight: 2.5,
@@ -4186,6 +4197,8 @@ Terminal: POS-Enhanced
                                 name: "Sugar (250g Pack)",
                                 sku: "SUGAR-250G",
                                 price: "25",
+                                mrp: "30",
+                                stockQuantity: 50,
                                 isWeightBased: false,
                                 quantity: 3,
                                 total: 75
