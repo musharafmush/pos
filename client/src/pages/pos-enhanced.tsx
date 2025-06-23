@@ -1539,14 +1539,29 @@ export default function POSEnhanced() {
 
   // Enhanced receipt printing functionality
   const handlePrintReceipt = (saleData: any) => {
-    // Validate cart data before printing
+    // Allow printing even with empty cart for demo/test purposes
+    let itemsToprint = cart;
+    
+    // If cart is empty, use sample data for testing
     if (cart.length === 0) {
+      itemsToprint = [
+        {
+          id: 1,
+          name: "Sample Product",
+          sku: "SAMPLE-001",
+          price: "29.99",
+          mrp: 35,
+          quantity: 1,
+          total: 29.99,
+          stockQuantity: 100
+        }
+      ];
+      
       toast({
-        title: "Print Error",
-        description: "No items in cart to print receipt",
-        variant: "destructive",
+        title: "Demo Receipt",
+        description: "Generating demo receipt with sample data",
+        variant: "default",
       });
-      return;
     }
 
     try {
@@ -1561,7 +1576,7 @@ export default function POSEnhanced() {
           place: ""
         },
         salesMan: "Admin User",
-        items: cart.map(item => ({
+        items: itemsToprint.map(item => ({
           id: item.id,
           name: item.name,
           sku: item.sku,
@@ -2894,19 +2909,8 @@ export default function POSEnhanced() {
 
                 <Button
                   variant="outline"
-                  className="wfull hover:bg-gray-50"
-                  onClick={() => {
-                    if (cart.length > 0) {
-                      handlePrintReceipt(null);
-                    } else {
-                      toast({
-                        title: "Empty Cart",
-                        description: "Please add items to cart before printing receipt",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  disabled={cart.length === 0}
+                  className="w-full hover:bg-gray-50"
+                  onClick={() => handlePrintReceipt(null)}
                 >
                   <Receipt className="h-4 w-4 mr-2" />
                   Print Receipt
