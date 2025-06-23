@@ -2729,12 +2729,20 @@ export default function POSEnhanced() {
           </div>
 
           {/* Product Search Results Overlay */}
-          {searchTerm && filteredProducts.length > 0 && (
+          {searchTerm && searchTerm.length > 0 && filteredProducts.length > 0 && (
             <div className="absolute top-48 left-6 right-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-20 max-h-80 overflow-auto">
-              <div className="p-3 bg-gray-50 border-b border-gray-200 rounded-t-xl">
+              <div className="p-3 bg-gray-50 border-b border-gray-200 rounded-t-xl flex justify-between items-center">
                 <h3 className="font-semibold text-gray-900">
                   Found {filteredProducts.length} products
                 </h3>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSearchTerm("")}
+                  className="h-6 w-6 p-0 hover:bg-gray-200"
+                >
+                  ×
+                </Button>
               </div>
               {filteredProducts.slice(0, 8).map((product: Product) => (
                 <div
