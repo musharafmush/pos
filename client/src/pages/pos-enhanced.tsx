@@ -4035,15 +4035,15 @@ Terminal: POS-Enhanced
                       Customer Search & Selection
                     </h3>
                     
-                    {/* Search Input with Voice */}
+                    {/* Enhanced Search Input with Voice */}
                     <div className="space-y-3">
                       <div className="relative">
                         <Input
                           type="text"
-                          placeholder="Search by name, phone, email, or ID..."
+                          placeholder="Search: name, phone, email, ID (e.g., 'Amit', '9876543212', 'amit@email.com', '3')"
                           value={customerSearchTerm}
                           onChange={(e) => setCustomerSearchTerm(e.target.value)}
-                          className="pr-12"
+                          className="pr-12 text-sm"
                         />
                         <Button
                           size="sm"
@@ -4051,7 +4051,7 @@ Terminal: POS-Enhanced
                           onClick={startVoiceSearch}
                           disabled={isVoiceSearching}
                           className={`absolute right-1 top-1 h-8 w-8 p-0 ${isVoiceSearching ? 'text-red-500 animate-pulse' : 'text-blue-500'}`}
-                          title="Voice Search"
+                          title="Voice Search - Say customer name or number"
                         >
                           {isVoiceSearching ? (
                             <div className="flex items-center justify-center">
@@ -4061,6 +4061,21 @@ Terminal: POS-Enhanced
                             <Phone className="h-4 w-4" />
                           )}
                         </Button>
+                      </div>
+                      
+                      {/* Search Examples */}
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <p><strong>Search Examples:</strong></p>
+                        <div className="grid grid-cols-2 gap-1 text-xs">
+                          <span>• Name: "Amit Patel"</span>
+                          <span>• Phone: "+91-9876543212"</span>
+                          <span>• Email: "amit@email.com"</span>
+                          <span>• ID: "3"</span>
+                        </div>
+                        <div className="text-xs bg-blue-50 p-2 rounded border-l-2 border-blue-300">
+                          <p className="font-medium text-blue-800">Voice Commands:</p>
+                          <p className="text-blue-700">"Find Amit Patel" or "Customer number three"</p>
+                        </div>
                       </div>
                       
                       {isVoiceSearching && (
@@ -4141,8 +4156,55 @@ Terminal: POS-Enhanced
                       </div>
                     )}
 
-                    {/* Quick Add Customer */}
-                    <div className="mt-4 pt-3 border-t border-purple-200">
+                    {/* Quick Actions */}
+                    <div className="mt-4 pt-3 border-t border-purple-200 space-y-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          // Auto-select Amit Patel and add test products for demo
+                          const amitPatel = customers.find((c: Customer) => c.name === "Amit Patel");
+                          if (amitPatel) {
+                            setSelectedCustomer(amitPatel);
+                            
+                            // Add test products to cart
+                            const testItems = [
+                              {
+                                id: 10,
+                                name: "SUGAR BULK",
+                                sku: "SUGAR-BULK-001",
+                                price: "45",
+                                isWeightBased: true,
+                                pricePerKg: 45,
+                                actualWeight: 2.5,
+                                quantity: 1,
+                                total: 112.5,
+                                weightUnit: "kg"
+                              },
+                              {
+                                id: 7,
+                                name: "Sugar (250g Pack)",
+                                sku: "SUGAR-250G",
+                                price: "25",
+                                isWeightBased: false,
+                                quantity: 3,
+                                total: 75
+                              }
+                            ];
+                            setCart(testItems);
+                            
+                            toast({
+                              title: "Demo Setup Complete",
+                              description: "Amit Patel selected with test products in cart",
+                            });
+                          }
+                        }}
+                        className="w-full text-green-600 border-green-200 hover:bg-green-50"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Demo: Setup Cart & Customer
+                      </Button>
+                      
                       <Button
                         size="sm"
                         variant="outline"
