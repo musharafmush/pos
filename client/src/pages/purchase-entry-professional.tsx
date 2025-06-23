@@ -2769,7 +2769,7 @@ export default function PurchaseEntryProfessional() {
                                         min="0"
                                         step="0.01"
                                         value={form.watch(`items.${index}.unitCost`) || ""}
-                                        onChange={(e) => {
+                                        onChange={async (e) => {
                                           const value = parseFloat(e.target.value) || 0;
                                           form.setValue(`items.${index}.unitCost`, value);
 
@@ -2784,6 +2784,41 @@ export default function PurchaseEntryProfessional() {
                                           const netAmount = taxableAmount + tax;
 
                                           form.setValue(`items.${index}.netAmount`, netAmount);
+
+                                          // Update product cost price in real-time if changed significantly
+                                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
+                                          if (selectedProduct && value > 0) {
+                                            const originalCost = parseFloat(selectedProduct.cost || "0");
+                                            const costDifference = Math.abs(value - originalCost);
+                                            
+                                            // Update product cost if difference is more than 0.01
+                                            if (costDifference > 0.01) {
+                                              try {
+                                                await apiRequest('PATCH', `/api/products/${selectedProduct.id}`, { cost: value });
+                                                
+                                                // Update local products array to reflect the change
+                                                const updatedProducts = products.map(p => 
+                                                  p.id === selectedProduct.id ? { ...p, cost: value.toString() } : p
+                                                );
+                                                queryClient.setQueryData(['/api/products'], updatedProducts);
+                                                
+                                                // Show success notification
+                                                toast({
+                                                  title: "Product Cost Updated",
+                                                  description: `${selectedProduct.name} cost updated from ₹${originalCost} to ₹${value}`,
+                                                });
+                                                
+                                                console.log(`Updated product ${selectedProduct.name} cost from ${originalCost} to ${value}`);
+                                              } catch (error) {
+                                                console.error('Failed to update product cost:', error);
+                                                toast({
+                                                  title: "Update Failed",
+                                                  description: "Failed to update product cost. Please try again.",
+                                                  variant: "destructive",
+                                                });
+                                              }
+                                            }
+                                          }
 
                                           // Trigger form validation
                                           setTimeout(() => form.trigger(`items.${index}`), 50);
@@ -2809,8 +2844,9 @@ export default function PurchaseEntryProfessional() {
                                       if (selectedProduct && currentCost > 0) {
                                         const originalCost = parseFloat(selectedProduct.cost || "0");
                                         const sellingPrice = parseFloat(selectedProduct.price || "0");
+                                        const costDifference = Math.abs(currentCost - originalCost);
                                         
-                                        if (originalCost > 0 && Math.abs(currentCost - originalCost) < 0.01) {
+                                        if (originalCost > 0 && costDifference < 0.01) {
                                           return (
                                             <div className="text-xs text-green-600 text-center">
                                               Original cost
@@ -2822,13 +2858,13 @@ export default function PurchaseEntryProfessional() {
                                               Estimated cost
                                             </div>
                                           );
-                                        } else if (originalCost > 0) {
+                                        } else if (originalCost > 0 && costDifference > 0.01) {
                                           const difference = ((currentCost - originalCost) / originalCost) * 100;
                                           return (
                                             <div className={`text-xs text-center ${
-                                              difference > 0 ? 'text-red-600' : 'text-green-600'
+                                              difference > 0 ? 'text-orange-600' : 'text-green-600'
                                             }`}>
-                                              {difference > 0 ? '+' : ''}{difference.toFixed(1)}% vs original
+                                              {difference > 0 ? '+' : ''}{difference.toFixed(1)}% - Will update product
                                             </div>
                                           );
                                         }
