@@ -1360,6 +1360,8 @@ export const storage = {
           unit_cost: parseFloat(item.unit_cost || '0'),
           quantity: parseInt(item.quantity || '0'),
           received_qty: parseInt(item.received_qty || '0'),
+          free_qty: parseInt(item.free_qty || '0'),
+          freeQty: parseInt(item.free_qty || '0'), // Ensure both formats are available
           net_amount: parseFloat(item.net_amount || '0'),
           discount_amount: parseFloat(item.discount_amount || '0'),
           discount_percent: parseFloat(item.discount_percent || '0')
