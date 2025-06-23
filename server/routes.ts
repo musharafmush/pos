@@ -2797,6 +2797,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update purchase item (for Free Qty updates)
+  app.put('/api/purchase-items/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { freeQty } = req.body;
+
+      console.log(`🔄 Updating purchase item ${id} with free qty: ${freeQty}`);
+
+      // Validate input
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ error: 'Invalid purchase item ID' });
+      }
+
+      if (freeQty !== undefined && (isNaN(freeQty) || freeQty < 0)) {
+        return res.status(400).json({ error: 'Free quantity must be a non-negative number' });
+      }
+
+      // Use direct SQLite query for better control
+      const { sqlite } = await import('@db');
+
+      // Check if item exists
+      const existingItem = sqlite.prepare('SELECT * FROM purchase_items WHERE id = ?').get(id);
+      if (!existingItem) {
+        return res.status(404).json({ error: 'Purchase item not found' });
+      }
+
+      // Update the free quantity
+      const updateQuery = sqlite.prepare(`
+        UPDATE purchase_items 
+        SET free_qty = ? 
+        WHERE id = ?
+      `);
+      
+      const result = updateQuery.run(freeQty || 0, id);
+
+      if (result.changes === 0) {
+        return res.status(404).json({ error: 'Purchase item not found or no changes made' });
+      }
+
+      // If free quantity is added, update product stock
+      if (freeQty > 0) {
+        const productId = existingItem.product_id;
+        const currentFreeQty = existingItem.free_qty || 0;
+        const additionalQty = freeQty - currentFreeQty;
+
+        if (additionalQty > 0) {
+          // Add the additional free quantity to product stock
+          const stockUpdateQuery = sqlite.prepare(`
+            UPDATE products 
+            SET stock = stock + ? 
+            WHERE id = ?
+          `);
+          stockUpdateQuery.run(additionalQty, productId);
+
+          console.log(`✅ Added ${additionalQty} free units to product ${productId} stock`);
+        }
+      }
+
+      console.log(`✅ Purchase item ${id} updated successfully`);
+      res.json({ 
+        success: true, 
+        message: 'Purchase item updated successfully',
+        freeQty: freeQty || 0
+      });
+
+    } catch (error) {
+      console.error('❌ Error updating purchase item:', error);
+      res.status(500).json({ 
+        error: 'Failed to update purchase item',
+        message: error.message 
+      });
+    }
+  });
+
   // Update purchase payment status
   app.put('/api/purchases/:id/payment', async (req, res) => {
     try {

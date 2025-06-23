@@ -1623,14 +1623,87 @@ export default function PurchaseDashboard() {
                                     <TableCell className="text-center">
                                       {(() => {
                                         const freeQty = Number(item.freeQty || item.free_qty || 0);
-                                        return freeQty > 0 ? (
-                                          <div className="flex items-center justify-center">
-                                            <span className="font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full text-sm">
-                                              {freeQty} 🎁
-                                            </span>
+                                        const [editingFreeQty, setEditingFreeQty] = useState(false);
+                                        const [tempFreeQty, setTempFreeQty] = useState(freeQty);
+
+                                        const handleFreeQtyUpdate = async (newFreeQty: number) => {
+                                          try {
+                                            const response = await fetch(`/api/purchase-items/${item.id}`, {
+                                              method: 'PUT',
+                                              headers: {
+                                                'Content-Type': 'application/json',
+                                              },
+                                              body: JSON.stringify({ freeQty: newFreeQty }),
+                                            });
+
+                                            if (response.ok) {
+                                              toast({
+                                                title: "Free Qty Updated",
+                                                description: `Free quantity updated to ${newFreeQty}`,
+                                              });
+                                              // Update the item in the current view
+                                              item.freeQty = newFreeQty;
+                                              item.free_qty = newFreeQty;
+                                            } else {
+                                              throw new Error('Failed to update free quantity');
+                                            }
+                                          } catch (error) {
+                                            toast({
+                                              title: "Update Failed",
+                                              description: "Could not update free quantity",
+                                              variant: "destructive",
+                                            });
+                                            setTempFreeQty(freeQty); // Reset to original value
+                                          }
+                                          setEditingFreeQty(false);
+                                        };
+
+                                        if (editingFreeQty) {
+                                          return (
+                                            <div className="flex items-center gap-1">
+                                              <Input
+                                                type="number"
+                                                min="0"
+                                                value={tempFreeQty}
+                                                onChange={(e) => setTempFreeQty(Number(e.target.value) || 0)}
+                                                className="w-16 h-8 text-xs text-center"
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    handleFreeQtyUpdate(tempFreeQty);
+                                                  } else if (e.key === 'Escape') {
+                                                    setTempFreeQty(freeQty);
+                                                    setEditingFreeQty(false);
+                                                  }
+                                                }}
+                                                onBlur={() => {
+                                                  if (tempFreeQty !== freeQty) {
+                                                    handleFreeQtyUpdate(tempFreeQty);
+                                                  } else {
+                                                    setEditingFreeQty(false);
+                                                  }
+                                                }}
+                                                autoFocus
+                                              />
+                                            </div>
+                                          );
+                                        }
+
+                                        return (
+                                          <div 
+                                            className="cursor-pointer hover:bg-green-100 rounded px-2 py-1 transition-colors"
+                                            onClick={() => setEditingFreeQty(true)}
+                                            title="Click to edit free quantity"
+                                          >
+                                            {freeQty > 0 ? (
+                                              <span className="font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full text-sm">
+                                                {freeQty} 🎁
+                                              </span>
+                                            ) : (
+                                              <span className="text-gray-400 hover:text-green-600">
+                                                + Add Free
+                                              </span>
+                                            )}
                                           </div>
-                                        ) : (
-                                          <span className="text-gray-400">-</span>
                                         );
                                       })()}
                                     </TableCell>
