@@ -1523,7 +1523,7 @@ export default function PurchaseEntryProfessional() {
         const validItems = data.items.filter(item => 
           item.productId && 
           item.productId > 0 && 
-          (item.receivedQty > 0 || item.quantity > 0) &&
+          ((item.receivedQty ?? 0) > 0 || (item.quantity ?? 0) > 0) &&
           item.unitCost >= 0
         );
 
@@ -2820,11 +2820,11 @@ export default function PurchaseEntryProfessional() {
                                     {/* HSN Code Validation Indicator */}
                                     {form.watch(`items.${index}.hsnCode`) && (
                                       <div className={`text-xs px-2 py-1 rounded text-center ${
-                                        form.watch(`items.${index}.hsnCode`).length >= 6 
+                                        (form.watch(`items.${index}.hsnCode`) || "").length >= 6 
                                           ? 'bg-green-100 text-green-700 border border-green-300' 
                                           : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
                                       }`}>
-                                        {form.watch(`items.${index}.hsnCode`).length >= 6 ? '✓ Valid HSN' : '⚠ Incomplete'}
+                                        {(form.watch(`items.${index}.hsnCode`) || "").length >= 6 ? '✓ Valid HSN' : '⚠ Incomplete'}
                                       </div>
                                     )}
 
@@ -2873,7 +2873,7 @@ export default function PurchaseEntryProfessional() {
                                     />
                                     
                                     {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
-                                    {form.watch(`items.${index}.taxPercentage`) > 0 && (
+                                    {(form.watch(`items.${index}.taxPercentage`) || 0) > 0 && (
                                       <div className="text-xs bg-blue-50 p-2 rounded border space-y-1">
                                         {(() => {
                                           const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
@@ -3111,10 +3111,10 @@ export default function PurchaseEntryProfessional() {
 
                                 <TableCell className="border-r px-3 py-3">
                                   <div className="flex items-center justify-center p-1 bg-green-50 rounded text-xs">
-                                    {form.watch(`items.${index}.netAmount`) > 0 ? (
+                                    {((form.watch(`items.${index}.netAmount`) as number) || 0) > 0 ? (
                                       <>
                                         <span className="text-xs font-medium text-green-700">₹</span>
-                                        <span className="font-medium text-green-700 ml-1">{Math.round(form.watch(`items.${index}.netAmount`))}</span>
+                                        <span className="font-medium text-green-700 ml-1">{Math.round(form.watch(`items.${index}.netAmount`) || 0)}</span>
                                       </>
                                     ) : (
                                       <span className="text-gray-400">-</span>
