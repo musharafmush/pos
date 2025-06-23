@@ -2834,7 +2834,40 @@ export default function POSEnhanced() {
                 {/* Ocean Freight Management Button */}
                 <Button
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-4 h-auto"
-                  onClick={() => setShowOceanDialog(true)}
+                  onClick={() => {
+                    // Auto-add test items if cart is empty
+                    if (cart.length === 0) {
+                      const testItems = [
+                        {
+                          id: 10,
+                          name: "SUGAR BULK",
+                          sku: "SUGAR-BULK-001",
+                          price: "45",
+                          mrp: 50,
+                          stockQuantity: 100,
+                          isWeightBased: true,
+                          pricePerKg: 45,
+                          actualWeight: 2.5,
+                          quantity: 1,
+                          total: 112.5,
+                          weightUnit: "kg"
+                        }
+                      ];
+                      setCart(testItems);
+                      
+                      // Auto-select Amit Patel
+                      const amitPatel = customers.find((c: Customer) => c.name === "Amit Patel");
+                      if (amitPatel) {
+                        setSelectedCustomer(amitPatel);
+                      }
+                      
+                      toast({
+                        title: "Demo Setup Complete",
+                        description: "Test products and customer added for Ocean freight demo",
+                      });
+                    }
+                    setShowOceanDialog(true);
+                  }}
                 >
                   <Package className="h-5 w-5 mr-3" />
                   Enter Ocean Freight Management
@@ -4183,7 +4216,7 @@ Terminal: POS-Enhanced
                                 name: "SUGAR BULK",
                                 sku: "SUGAR-BULK-001",
                                 price: "45",
-                                mrp: "50",
+                                mrp: 50,
                                 stockQuantity: 100,
                                 isWeightBased: true,
                                 pricePerKg: 45,
@@ -4197,7 +4230,7 @@ Terminal: POS-Enhanced
                                 name: "Sugar (250g Pack)",
                                 sku: "SUGAR-250G",
                                 price: "25",
-                                mrp: "30",
+                                mrp: 30,
                                 stockQuantity: 50,
                                 isWeightBased: false,
                                 quantity: 3,
