@@ -2298,7 +2298,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return {
           productId: ensureInt(item.productId),
           quantity: ensureInt(item.quantity),
-          unitCost: ensureFloat(item.unitCost)
+          receivedQty: ensureInt(item.receivedQty || item.quantity),
+          freeQty: ensureInt(item.freeQty),
+          unitCost: ensureFloat(item.unitCost),
+          cost: ensureFloat(item.cost || item.unitCost),
+          hsnCode: item.hsnCode || "",
+          taxPercentage: ensureFloat(item.taxPercentage),
+          discountAmount: ensureFloat(item.discountAmount),
+          discountPercent: ensureFloat(item.discountPercent),
+          expiryDate: item.expiryDate || "",
+          batchNumber: item.batchNumber || "",
+          sellingPrice: ensureFloat(item.sellingPrice),
+          mrp: ensureFloat(item.mrp),
+          netCost: ensureFloat(item.netCost || item.unitCost),
+          netAmount: ensureFloat(item.netAmount),
+          location: item.location || "",
+          unit: item.unit || "PCS",
+          roiPercent: ensureFloat(item.roiPercent),
+          grossProfitPercent: ensureFloat(item.grossProfitPercent),
+          cashPercent: ensureFloat(item.cashPercent),
+          cashAmount: ensureFloat(item.cashAmount)
         };
       });
 
@@ -2307,7 +2326,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validSupplierId = isNaN(suppId) ? 1 : suppId;
 
       console.log("Creating purchase with supplier ID:", validSupplierId);
-      console.log("Parsed items:", JSON.stringify(parsedItems));
+      console.log("Parsed items:", parsedItems.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        receivedQty: item.receivedQty,
+        freeQty: item.freeQty,
+        unitCost: item.unitCost
+      })));
 
       const purchase = await storage.createPurchase(
         (req.user as any).id,

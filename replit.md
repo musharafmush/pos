@@ -136,6 +136,13 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Free Qty Functionality Fix (June 25, 2025)
+- Fixed Free Qty functionality in purchase-entry-professional backend processing
+- Updated purchase creation API to properly handle freeQty field data
+- Enhanced purchase item parsing to include all purchase fields (freeQty, receivedQty, etc.)
+- Stock management now correctly adds both received quantity and free quantity to inventory
+- Resolved issue where Free Qty input was not being saved to database
+
 ### Enhanced Search & Filter System (June 25, 2025)
 - Implemented comprehensive search functionality for repacking-professional page
 - Added advanced search and filter interface to sales-dashboard
