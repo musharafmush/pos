@@ -425,32 +425,134 @@ export default function RepackingProfessional() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Select Bulk Product</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))} 
-                        value={field.value.toString()}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-9 bg-white border-gray-300">
-                            <SelectValue placeholder="Choose bulk product" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-80 overflow-y-auto">
-                          {bulkProducts.map((product: Product) => (
-                            <SelectItem key={product.id} value={product.id.toString()}>
-                              <div className="flex flex-col">
-                                <div className="font-medium">
-                                  {product.name}
+                      <div className="space-y-2">
+                        {/* Search Interface */}
+                        <div className="relative">
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                              <Input
+                                placeholder="Search by name, SKU, barcode, or price..."
+                                value={productSearchTerm}
+                                onChange={(e) => setProductSearchTerm(e.target.value)}
+                                className="pl-10 h-9 bg-white border-gray-300"
+                                onFocus={() => setIsProductSearchOpen(true)}
+                              />
+                              {productSearchTerm && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setProductSearchTerm("");
+                                    setIsProductSearchOpen(false);
+                                  }}
+                                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={startVoiceSearch}
+                              disabled={isListening}
+                              className={`h-9 px-3 ${isListening ? 'bg-red-100 border-red-300 text-red-600' : 'hover:bg-blue-50'}`}
+                            >
+                              <Mic className={`h-4 w-4 ${isListening ? 'text-red-500' : ''}`} />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Product Selection */}
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            setIsProductSearchOpen(false);
+                          }} 
+                          value={field.value.toString()}
+                          open={isProductSearchOpen}
+                          onOpenChange={setIsProductSearchOpen}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-9 bg-white border-gray-300">
+                              <SelectValue placeholder="Choose bulk product" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-96 overflow-y-auto">
+                            {filteredBulkProducts.length > 0 ? (
+                              <>
+                                <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b">
+                                  <div className="flex items-center gap-2">
+                                    <Warehouse className="h-3 w-3" />
+                                    Found {filteredBulkProducts.length} bulk products
+                                    {productSearchTerm && (
+                                      <span className="text-blue-600">
+                                        matching "{productSearchTerm}"
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                  SKU: {product.sku} • Stock: {product.stockQuantity} • 
-                                  Weight: {product.weight || 1}{product.weightUnit || 'kg'} • 
-                                  Price: ₹{product.price}
+                                {filteredBulkProducts.map((product: Product) => (
+                                  <SelectItem key={product.id} value={product.id.toString()}>
+                                    <div className="flex flex-col w-full">
+                                      <div className="flex items-center justify-between w-full">
+                                        <div className="font-medium text-gray-900">
+                                          {product.name}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <Badge variant="outline" className="text-xs">
+                                            Stock: {product.stockQuantity}
+                                          </Badge>
+                                          <Badge variant="secondary" className="text-xs">
+                                            ₹{product.price}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1 flex items-center gap-3">
+                                        <span>SKU: {product.sku}</span>
+                                        <span>Weight: {product.weight || 1}{product.weightUnit || 'kg'}</span>
+                                        {product.barcode && <span>Barcode: {product.barcode}</span>}
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </>
+                            ) : productSearchTerm ? (
+                              <div className="px-3 py-8 text-center">
+                                <div className="flex flex-col items-center gap-2 text-gray-500">
+                                  <Search className="h-8 w-8 text-gray-300" />
+                                  <div className="text-sm font-medium">No products found</div>
+                                  <div className="text-xs">
+                                    Try searching with different keywords or clear the search
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setProductSearchTerm("")}
+                                    className="mt-2"
+                                  >
+                                    Clear Search
+                                  </Button>
                                 </div>
                               </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            ) : (
+                              <div className="px-3 py-6 text-center">
+                                <div className="flex flex-col items-center gap-2 text-gray-500">
+                                  <ShoppingCart className="h-8 w-8 text-gray-300" />
+                                  <div className="text-sm font-medium">No bulk products available</div>
+                                  <div className="text-xs">
+                                    Please ensure products have stock and are active
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
