@@ -25,7 +25,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { apiRequest } from "@/lib/queryClient";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   PackageIcon,
   BarChart3Icon,
@@ -35,13 +34,6 @@ import {
   HelpCircleIcon,
   PrinterIcon,
   X,
-  Ship,
-  Search,
-  Mic,
-  MicOff,
-  User,
-  Phone,
-  MapPin,
 } from "lucide-react";
 
 // Types
@@ -56,15 +48,6 @@ type Product = {
   weightUnit?: string;
   stockQuantity: number;
   active: boolean;
-};
-
-type Customer = {
-  id: number;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  loyaltyPoints?: number;
 };
 
 const repackingFormSchema = z.object({
@@ -89,12 +72,6 @@ export default function RepackingProfessional() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Ocean freight management states
-  const [showOceanFreight, setShowOceanFreight] = useState(false);
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [selectedOceanCustomer, setSelectedOceanCustomer] = useState<Customer | null>(null);
-  const [isListening, setIsListening] = useState(false);
 
   // Parse integration data from URL parameters
   const [integrationData, setIntegrationData] = useState<any>(null);
@@ -143,87 +120,6 @@ export default function RepackingProfessional() {
   const { data: products = [] } = useQuery({
     queryKey: ["/api/products"],
   });
-
-  // Fetch customers for Ocean freight
-  const { data: customers = [] } = useQuery({
-    queryKey: ["/api/customers"],
-  });
-
-  // Filtered customers for search
-  const filteredCustomers = customers.filter((customer: Customer) =>
-    customer.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-    (customer.phone && customer.phone.includes(customerSearch)) ||
-    (customer.email && customer.email.toLowerCase().includes(customerSearch.toLowerCase()))
-  );
-
-  // Voice search functionality
-  const startVoiceSearch = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-      
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-      
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setCustomerSearch(transcript);
-        setIsListening(false);
-      };
-      
-      recognition.onerror = () => {
-        setIsListening(false);
-        toast({
-          title: "Voice Search Error",
-          description: "Could not access microphone. Please try again.",
-          variant: "destructive",
-        });
-      };
-      
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-      
-      recognition.start();
-    } else {
-      toast({
-        title: "Voice Search Not Supported",
-        description: "Your browser doesn't support voice search.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle Ocean freight customer selection
-  const handleOceanCustomerSelect = (customer: Customer) => {
-    setSelectedOceanCustomer(customer);
-    setCustomerSearch("");
-    setShowOceanFreight(false);
-    toast({
-      title: "Ocean Freight Customer Selected",
-      description: `Selected ${customer.name} for freight management`,
-    });
-  };
-
-  // Handle bulk product selection with automatic Ocean freight access
-  const handleBulkProductSelect = (productId: string) => {
-    form.setValue("bulkProductId", parseInt(productId));
-    
-    // Auto-open Ocean freight dialog when bulk product is selected
-    if (productId && parseInt(productId) > 0) {
-      setShowOceanFreight(true);
-      toast({
-        title: "Bulk Product Selected",
-        description: "Ocean freight customer search opened automatically",
-        variant: "default",
-      });
-    }
-  };
 
   // Filter bulk products
   const bulkProducts = products.filter((product: Product) => 
@@ -455,7 +351,7 @@ export default function RepackingProfessional() {
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Select Bulk Product</FormLabel>
                       <Select 
-                        onValueChange={handleBulkProductSelect} 
+                        onValueChange={(value) => field.onChange(parseInt(value))} 
                         value={field.value.toString()}
                       >
                         <FormControl>
@@ -608,213 +504,6 @@ export default function RepackingProfessional() {
                       ))}
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Ocean Freight Management Panel */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                  <Ship className="w-4 h-4" />
-                  Ocean Freight Management
-                </h4>
-                
-                <div className="space-y-3">
-                  <Dialog open={showOceanFreight} onOpenChange={setShowOceanFreight}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full bg-blue-100 border-blue-300 hover:bg-blue-200 text-blue-800"
-                      >
-                        <Ship className="w-4 h-4 mr-2" />
-                        Search Ocean Freight Customers
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-blue-800">
-                          <Ship className="w-5 h-5" />
-                          Ocean Freight Customer Management
-                        </DialogTitle>
-                      </DialogHeader>
-                      
-                      <div className="space-y-4 mt-4">
-                        {/* Customer Search */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700">
-                            Search Customer for Ocean Freight
-                          </label>
-                          <div className="flex gap-2">
-                            <div className="relative flex-1">
-                              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                placeholder="Search by name, phone, or email..."
-                                value={customerSearch}
-                                onChange={(e) => setCustomerSearch(e.target.value)}
-                                className="pl-10 pr-12"
-                              />
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={startVoiceSearch}
-                              disabled={isListening}
-                              className={`px-3 ${isListening ? 'bg-red-100 border-red-300' : 'hover:bg-gray-50'}`}
-                            >
-                              {isListening ? (
-                                <MicOff className="h-4 w-4 text-red-600" />
-                              ) : (
-                                <Mic className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                          {isListening && (
-                            <p className="text-sm text-red-600 animate-pulse">
-                              Listening... Please speak clearly
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Customer Results */}
-                        {customerSearch && (
-                          <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
-                            <div className="p-3 bg-gray-50 border-b border-gray-200">
-                              <h4 className="font-medium text-gray-900">
-                                Found {filteredCustomers.length} customers
-                              </h4>
-                            </div>
-                            {filteredCustomers.length > 0 ? (
-                              <div className="divide-y divide-gray-200">
-                                {filteredCustomers.slice(0, 10).map((customer: Customer) => (
-                                  <div
-                                    key={customer.id}
-                                    className="p-4 hover:bg-blue-50 cursor-pointer transition-colors"
-                                    onClick={() => handleOceanCustomerSelect(customer)}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                          <User className="h-4 w-4 text-gray-500" />
-                                          <span className="font-medium text-gray-900">
-                                            {customer.name}
-                                          </span>
-                                        </div>
-                                        {customer.phone && (
-                                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Phone className="h-3 w-3" />
-                                            {customer.phone}
-                                          </div>
-                                        )}
-                                        {customer.address && (
-                                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <MapPin className="h-3 w-3" />
-                                            {customer.address}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="text-right">
-                                        <Badge variant="secondary" className="text-xs">
-                                          Select
-                                        </Badge>
-                                        {customer.loyaltyPoints && (
-                                          <div className="text-xs text-blue-600 mt-1">
-                                            {customer.loyaltyPoints} points
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="p-4 text-center text-gray-500">
-                                No customers found matching "{customerSearch}"
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Selected Customer Display */}
-                        {selectedOceanCustomer && (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <h4 className="font-medium text-blue-800 mb-2">Selected Ocean Freight Customer</h4>
-                            <div className="space-y-1 text-sm">
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-blue-600" />
-                                <span className="font-medium">{selectedOceanCustomer.name}</span>
-                              </div>
-                              {selectedOceanCustomer.phone && (
-                                <div className="flex items-center gap-2 text-blue-700">
-                                  <Phone className="h-3 w-3" />
-                                  {selectedOceanCustomer.phone}
-                                </div>
-                              )}
-                              {selectedOceanCustomer.address && (
-                                <div className="flex items-center gap-2 text-blue-700">
-                                  <MapPin className="h-3 w-3" />
-                                  {selectedOceanCustomer.address}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  {selectedOceanCustomer && (
-                    <div className="bg-white border border-blue-200 rounded p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-blue-800">Ocean Freight Customer:</p>
-                          <p className="text-sm text-blue-700 font-semibold">{selectedOceanCustomer.name}</p>
-                          {selectedOceanCustomer.phone && (
-                            <p className="text-xs text-blue-600">{selectedOceanCustomer.phone}</p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300">
-                            Active
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedOceanCustomer(null)}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Quick Actions for Ocean Freight */}
-                  {selectedOceanCustomer && (
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1 bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-800"
-                        onClick={() => {
-                          toast({
-                            title: "Ocean Freight Activated",
-                            description: `Processing freight for ${selectedOceanCustomer.name}`,
-                          });
-                        }}
-                      >
-                        <Ship className="w-3 h-3 mr-1" />
-                        Process Freight
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1 bg-green-50 border-green-200 hover:bg-green-100 text-green-800"
-                        onClick={() => setShowOceanFreight(true)}
-                      >
-                        <Search className="w-3 h-3 mr-1" />
-                        Change Customer
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </div>
 
