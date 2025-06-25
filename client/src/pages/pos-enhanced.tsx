@@ -1562,35 +1562,44 @@ export default function POSEnhanced() {
         receiptAmountPaid = saleData.amountPaid || saleData.total;
       }
 
-      // Ensure we have valid items for printing - use sample data if cart is empty
+      // Ensure we have valid items for printing
       if (!itemsForReceipt || itemsForReceipt.length === 0) {
-        // Use sample data for testing when cart is empty
-        itemsForReceipt = [
-          {
-            id: 1,
-            productId: 1,
-            name: "Sample Product",
-            productName: "Sample Product",
-            sku: "SAMPLE-001",
-            productSku: "SAMPLE-001",
-            price: "30",
-            unitPrice: "30",
-            quantity: 1,
-            total: 30,
-            subtotal: 30,
-            mrp: 50
-          }
-        ];
-        receiptBillNumber = `TEST${Date.now()}`;
-        receiptTotal = 30;
-        receiptSubtotal = 30;
-        receiptAmountPaid = 30;
-        
-        toast({
-          title: "Demo Receipt",
-          description: "Printing test receipt with sample data",
-          variant: "default",
-        });
+        // Only use sample data for manual testing when no sale data is provided
+        if (!saleData) {
+          itemsForReceipt = [
+            {
+              id: 1,
+              productId: 1,
+              name: "Sample Product",
+              productName: "Sample Product",
+              sku: "SAMPLE-001",
+              productSku: "SAMPLE-001",
+              price: "30",
+              unitPrice: "30",
+              quantity: 1,
+              total: 30,
+              subtotal: 30,
+              mrp: 50
+            }
+          ];
+          receiptBillNumber = `TEST${Date.now()}`;
+          receiptTotal = 30;
+          receiptSubtotal = 30;
+          receiptAmountPaid = 30;
+          
+          toast({
+            title: "Demo Receipt",
+            description: "Printing test receipt with sample data",
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "No Items to Print",
+            description: "Cannot print receipt without items",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       const receiptData = {
