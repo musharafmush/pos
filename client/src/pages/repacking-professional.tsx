@@ -34,6 +34,10 @@ import {
   HelpCircleIcon,
   PrinterIcon,
   X,
+  Search,
+  Mic,
+  ShoppingCart,
+  Warehouse,
 } from "lucide-react";
 
 // Types
@@ -75,6 +79,11 @@ export default function RepackingProfessional() {
 
   // Parse integration data from URL parameters
   const [integrationData, setIntegrationData] = useState<any>(null);
+  
+  // Bulk product search functionality
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [isProductSearchOpen, setIsProductSearchOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -121,11 +130,77 @@ export default function RepackingProfessional() {
     queryKey: ["/api/products"],
   });
 
-  // Filter bulk products
+  // Filter bulk products with search functionality
   const bulkProducts = products.filter((product: Product) => 
     product.stockQuantity > 0 && 
     product.active
   );
+
+  // Advanced product search with multiple criteria
+  const filteredBulkProducts = bulkProducts.filter((product: Product) => {
+    if (!productSearchTerm) return true;
+    
+    const searchLower = productSearchTerm.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(searchLower) ||
+      product.sku.toLowerCase().includes(searchLower) ||
+      (product.barcode && product.barcode.toLowerCase().includes(searchLower)) ||
+      product.price.toString().includes(searchLower) ||
+      product.stockQuantity.toString().includes(searchLower)
+    );
+  });
+
+  // Voice search functionality
+  const startVoiceSearch = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+        toast({
+          title: "Voice Search Active",
+          description: "Speak the product name you're looking for...",
+        });
+      };
+      
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setProductSearchTerm(transcript);
+        setIsListening(false);
+        
+        toast({
+          title: "Voice Search Complete",
+          description: `Searching for: ${transcript}`,
+        });
+      };
+      
+      recognition.onerror = () => {
+        setIsListening(false);
+        toast({
+          title: "Voice Search Error",
+          description: "Please try again or use text search",
+          variant: "destructive",
+        });
+      };
+      
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognition.start();
+    } else {
+      toast({
+        title: "Voice Search Unavailable",
+        description: "Please use text search instead",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Auto-populate form when integration data is available
   useEffect(() => {
