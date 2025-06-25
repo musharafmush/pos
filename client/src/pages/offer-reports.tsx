@@ -60,23 +60,34 @@ export default function OfferReports() {
   // Process offers data
   const offersList = Array.isArray(offers) ? offers : [];
   
+  // Debug: Log offers data structure
+  console.log('Offers data structure:', offersList.length > 0 ? offersList[0] : 'No offers');
+  
   // Filter offers based on search and filters
   const filteredOffers = offersList.filter((offer: any) => {
     const matchesSearch = !searchTerm || 
+      offer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.code?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesType = filterType === "all" || offer.type === filterType;
-    const matchesStatus = filterStatus === "all" || offer.status === filterStatus;
+    const matchesType = filterType === "all" || 
+      offer.offerType === filterType || 
+      offer.type === filterType ||
+      offer.discountType === filterType;
+    
+    const offerStatus = offer.isActive ? 'active' : 'inactive';
+    const matchesStatus = filterStatus === "all" || 
+      offerStatus === filterStatus ||
+      offer.status === filterStatus;
     
     return matchesSearch && matchesType && matchesStatus;
   });
 
   // Calculate offer analytics
   const calculateOfferMetrics = () => {
-    const activeOffers = offersList.filter((offer: any) => offer.status === 'active').length;
-    const expiredOffers = offersList.filter((offer: any) => offer.status === 'expired').length;
+    const activeOffers = offersList.filter((offer: any) => offer.isActive === true || offer.status === 'active').length;
+    const expiredOffers = offersList.filter((offer: any) => offer.isActive === false || offer.status === 'expired' || offer.status === 'inactive').length;
     const totalOffers = offersList.length;
     
     // Calculate usage from sales data
@@ -104,12 +115,12 @@ export default function OfferReports() {
   const generateOfferPerformanceData = () => {
     const offerTypes = {};
     offersList.forEach((offer: any) => {
-      const type = offer.type || 'other';
+      const type = offer.offerType || offer.type || offer.discountType || 'discount';
       if (!offerTypes[type]) {
         offerTypes[type] = { name: type, count: 0, active: 0 };
       }
       offerTypes[type].count += 1;
-      if (offer.status === 'active') {
+      if (offer.isActive || offer.status === 'active') {
         offerTypes[type].active += 1;
       }
     });
@@ -471,20 +482,28 @@ export default function OfferReports() {
                   <TableBody>
                     {filteredOffers.map((offer: any) => (
                       <TableRow key={offer.id}>
-                        <TableCell className="font-medium">{offer.title}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{offer.type}</Badge>
+                        <TableCell className="font-medium">
+                          {offer.name || offer.title || offer.offerName || `Offer #${offer.id}`}
                         </TableCell>
                         <TableCell>
-                          {offer.type === 'percentage' ? `${offer.value}%` : formatCurrency(offer.value)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={offer.status === 'active' ? 'default' : 'secondary'}>
-                            {offer.status}
+                          <Badge variant="outline">
+                            {offer.offerType || offer.discountType || offer.type || 'Discount'}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {offer.validUntil ? format(new Date(offer.validUntil), 'MMM dd, yyyy') : 'No expiry'}
+                          {offer.discountType === 'percentage' || offer.offerType === 'percentage' 
+                            ? `${offer.discountValue || offer.value || offer.percentage || 0}%` 
+                            : formatCurrency(offer.discountValue || offer.value || offer.amount || 0)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={offer.isActive || offer.active || offer.status === 'active' ? 'default' : 'secondary'}>
+                            {offer.isActive || offer.active || offer.status === 'active' ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {offer.endDate || offer.validUntil || offer.expiryDate 
+                            ? format(new Date(offer.endDate || offer.validUntil || offer.expiryDate), 'MMM dd, yyyy') 
+                            : 'No expiry'}
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-gray-600">0 times</span>
