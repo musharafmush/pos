@@ -177,6 +177,13 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Implemented automatic thermal receipt printing after sale completion
 - Streamlined POS printing process for improved user experience
 
+### 77mm Thermal Paper Support (June 25, 2025)
+- Added support for 77mm thermal paper width in print-receipt component
+- Updated paper configuration options to include 72mm, 77mm (optimal), and 80mm
+- Set 77mm as the default paper width for optimal thermal printing
+- Enhanced unified printer settings with comprehensive paper width options
+- Updated Xprinter XP-420B configuration guidance for 77mm paper
+
 ## Changelog
 
 - June 25, 2025. Initial setup and enhanced search capabilities

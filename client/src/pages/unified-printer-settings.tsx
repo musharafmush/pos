@@ -81,7 +81,7 @@ export default function UnifiedPrinterSettings() {
     
     // Receipt Settings
     receiptFooter: 'Thank you for shopping with us!',
-    paperWidth: '80mm',
+    paperWidth: '77mm',
     showLogo: true,
     autoPrint: true,
     showCustomerDetails: true,
@@ -248,7 +248,7 @@ export default function UnifiedPrinterSettings() {
       phoneNumber: '+91-9876543210',
       taxId: '33GSPDB3311F1ZZ',
       receiptFooter: 'Thank you for shopping with us!',
-      paperWidth: '80mm',
+      paperWidth: '77mm',
       showLogo: true,
       autoPrint: true,
       showCustomerDetails: true,
@@ -543,8 +543,10 @@ export default function UnifiedPrinterSettings() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="58mm">58mm</SelectItem>
-                          <SelectItem value="80mm">80mm</SelectItem>
+                          <SelectItem value="58mm">58mm (Compact)</SelectItem>
+                          <SelectItem value="72mm">72mm (Standard)</SelectItem>
+                          <SelectItem value="77mm">77mm (Optimal)</SelectItem>
+                          <SelectItem value="80mm">80mm (Wide)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -644,7 +646,7 @@ export default function UnifiedPrinterSettings() {
                     <ul className="list-disc list-inside ml-4 space-y-1">
                       <li>Control Panel → Devices and Printers</li>
                       <li>Right-click Xprinter XP-420B → Printing Preferences</li>
-                      <li>Advanced/Page Setup → Width: 72mm, Height: 297mm</li>
+                      <li>Advanced/Page Setup → Width: 77mm, Height: 297mm</li>
                       <li>Save as "Thermal Receipt"</li>
                     </ul>
                     
@@ -653,7 +655,7 @@ export default function UnifiedPrinterSettings() {
                       <li>More Settings → Margins: None</li>
                       <li>Background Graphics: Enabled</li>
                       <li>Scale: 100%</li>
-                      <li>Paper Size: 72mm x Receipt</li>
+                      <li>Paper Size: 77mm x Receipt</li>
                     </ul>
                   </div>
                 </div>
@@ -662,7 +664,7 @@ export default function UnifiedPrinterSettings() {
                   <div className="border rounded-lg p-3 bg-green-50">
                     <h4 className="font-medium text-sm text-green-900">Correct Settings</h4>
                     <ul className="text-sm text-green-800 mt-1 space-y-1">
-                      <li>• Paper: 72mm × 297mm</li>
+                      <li>• Paper: 77mm × 297mm</li>
                       <li>• Margins: None (0mm)</li>
                       <li>• Scale: 100%</li>
                       <li>• Background Graphics: ON</li>

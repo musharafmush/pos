@@ -45,7 +45,7 @@ export interface ReceiptCustomization {
   autoPrint: boolean;
 
   // Layout Customization
-  paperWidth: 'thermal58' | 'thermal80' | 'a4';
+  paperWidth: 'thermal58' | 'thermal72' | 'thermal77' | 'thermal80' | 'a4';
   fontSize: 'small' | 'medium' | 'large';
   fontFamily: 'courier' | 'arial' | 'impact';
   headerStyle: 'centered' | 'left' | 'justified';
@@ -124,12 +124,16 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       ...customization
     };
 
-  // Paper configurations
+  // Paper configurations with 77mm support
     const paperConfigs = {
       thermal58: { width: '54mm', maxWidth: '50mm', fontSize: '12px' },
-      thermal80: { width: '76mm', maxWidth: '72mm', fontSize: '14px' },
-      '80mm': { width: '76mm', maxWidth: '72mm', fontSize: '14px' },
+      thermal72: { width: '72mm', maxWidth: '68mm', fontSize: '13px' },
+      thermal77: { width: '77mm', maxWidth: '73mm', fontSize: '14px' },
+      thermal80: { width: '80mm', maxWidth: '76mm', fontSize: '14px' },
       '58mm': { width: '54mm', maxWidth: '50mm', fontSize: '12px' },
+      '72mm': { width: '72mm', maxWidth: '68mm', fontSize: '13px' },
+      '77mm': { width: '77mm', maxWidth: '73mm', fontSize: '14px' },
+      '80mm': { width: '80mm', maxWidth: '76mm', fontSize: '14px' },
       '112mm': { width: '108mm', maxWidth: '104mm', fontSize: '15px' },
       a4: { width: '210mm', maxWidth: '200mm', fontSize: '15px' }
     };
@@ -177,15 +181,15 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         background: white !important;
         color: black !important;
         line-height: 1.1 !important;
-        font-size: ${paperWidth === 'thermal58' ? '16px' : paperWidth === 'thermal80' ? '18px' : '19px'} !important;
+        font-size: ${paperWidth === 'thermal58' ? '16px' : paperWidth === 'thermal72' ? '17px' : paperWidth === 'thermal77' ? '18px' : paperWidth === 'thermal80' ? '18px' : '19px'} !important;
         width: 100% !important;
         height: auto !important;
         overflow: visible !important;
       }
       
       .receipt { 
-        width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
-        max-width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
+        width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '108mm'} !important;
+        max-width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '108mm'} !important;
         margin: 0 auto !important;
         padding: 2mm !important;
         border: none !important;
