@@ -2314,7 +2314,7 @@ export default function POSEnhanced() {
                     <>
                       <div className="flex items-center text-green-600 font-medium">
                         <Star className="h-4 w-4 mr-1" />
-                        {parseFloat(customerLoyalty.availablePoints) || 0}
+                        {Math.round((parseFloat(customerLoyalty.availablePoints) || 0) * 100) / 100}
                       </div>
                       {(parseFloat(customerLoyalty.availablePoints) || 0) > 0 && (
                         <Button
@@ -4942,7 +4942,7 @@ Terminal: POS-Enhanced
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-green-800 font-medium">Available Points:</span>
-                    <span className="text-green-700 font-bold text-lg">{customerLoyalty?.totalPoints || 0}</span>
+                    <span className="text-green-700 font-bold text-lg">{Math.round((parseFloat(customerLoyalty?.totalPoints?.toString() || '0')) * 100) / 100}ints || 0}</span>
                   </div>
                   <p className="text-green-600 text-sm">1 point = ₹1 discount</p>
                 </div>

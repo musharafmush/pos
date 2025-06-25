@@ -271,7 +271,8 @@ export default function LoyaltyManagement() {
     mutationFn: async (data: SalePointsData) => {
       const saleAmount = parseFloat(data.saleAmount);
       const pointsPerRupee = parseFloat(data.pointsPerRupee);
-      const calculatedPoints = Math.floor(saleAmount * pointsPerRupee);
+      // Round to 2 decimal places to avoid floating point precision issues
+      const calculatedPoints = Math.round(saleAmount * pointsPerRupee * 100) / 100;
       
       return apiRequest('POST', '/api/loyalty/add-points', {
         customerId: parseInt(data.customerId),
@@ -282,7 +283,7 @@ export default function LoyaltyManagement() {
     onSuccess: (_, variables) => {
       const saleAmount = parseFloat(variables.saleAmount);
       const pointsPerRupee = parseFloat(variables.pointsPerRupee);
-      const calculatedPoints = Math.floor(saleAmount * pointsPerRupee);
+      const calculatedPoints = Math.round(saleAmount * pointsPerRupee * 100) / 100;
       
       toast({
         title: "Sale Points Added Successfully",

@@ -3320,8 +3320,9 @@ export const storage = {
       const currentTotal = parseFloat(loyalty.totalPoints.toString());
       const currentAvailable = parseFloat(loyalty.availablePoints.toString());
       
-      const newTotal = currentTotal + pointsToAdd;
-      const newAvailable = currentAvailable + pointsToAdd;
+      // Round to 2 decimal places to avoid floating point precision issues
+      const newTotal = Math.round((currentTotal + pointsToAdd) * 100) / 100;
+      const newAvailable = Math.round((currentAvailable + pointsToAdd) * 100) / 100;
 
       const [updated] = await db
         .update(customerLoyalty)
