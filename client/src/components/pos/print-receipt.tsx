@@ -96,7 +96,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com',
       showLogo: false,
       autoPrint: true,
-      paperWidth: 'thermal80',
+      paperWidth: 'thermal77',
       fontSize: 'medium',
       fontFamily: 'courier',
       headerStyle: 'centered',
@@ -165,7 +165,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     return;
   }
 
-  const paperWidth = receiptSettings?.paperWidth || '80mm';
+  const paperWidth = receiptSettings?.paperWidth || '77mm';
   const printCSS = `
     <style>
       * { 
@@ -202,7 +202,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 
       /* Xprinter XP-420B Optimized Styles */
       @page { 
-        size: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} auto !important;
+        size: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} auto !important;
         margin: 0 !important; 
         padding: 0 !important;
         border: none !important;
@@ -223,7 +223,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           margin: 0 !important; 
           padding: 0 !important; 
           background: white !important;
-          font-size: ${paperWidth === 'thermal58' ? '13pt' : paperWidth === 'thermal80' ? '14pt' : '16pt'} !important;
+          font-size: ${paperWidth === 'thermal58' ? '13pt' : paperWidth === 'thermal72' ? '13.5pt' : paperWidth === 'thermal77' ? '14pt' : paperWidth === 'thermal80' ? '14pt' : '16pt'} !important;
           width: 100% !important;
           height: auto !important;
           overflow: visible !important;
@@ -234,8 +234,8 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         }
         
         .receipt { 
-          width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
-          max-width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
+          width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
+          max-width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
           margin: 0 auto !important;
           padding: 2mm !important;
           border: none !important;
