@@ -136,8 +136,13 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Edit-Options Page Removal (June 25, 2025)
+- Removed the edit-options page (POS Bill Edit) from the application
+- Cleaned up App.tsx routing configuration to remove references to deleted page
+- Functionality consolidated into unified printer settings and other existing pages
+
 ### Unified Printer Settings Implementation (June 25, 2025)
-- Created comprehensive unified printer settings page consolidating edit-options, thermal-printer-setup, and auto-printer-setup
+- Created comprehensive unified printer settings page consolidating thermal-printer-setup and auto-printer-setup
 - Implemented unified interface with tabs for Auto-Printer, Thermal Printer, Receipt, Business, and Help sections
 - Added Auto-Printer Status controls with activation/deactivation, print delay, retry attempts, and queue management
 - Enhanced thermal printer configuration with paper width, font settings, and Xprinter XP-420B specific guidance
