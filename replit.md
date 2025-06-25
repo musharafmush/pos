@@ -139,6 +139,7 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 ### Edit-Options Page Removal (June 25, 2025)
 - Removed the edit-options page (POS Bill Edit) from the application
 - Cleaned up App.tsx routing configuration to remove references to deleted page
+- Removed POS Bill Edit references from sidebar navigation and pos-enhanced print options
 - Functionality consolidated into unified printer settings and other existing pages
 
 ### Unified Printer Settings Implementation (June 25, 2025)

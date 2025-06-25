@@ -4904,38 +4904,7 @@ Terminal: POS-Enhanced
                 </div>
 
                 <div className="space-y-3">
-                  {/* POS Bill Edit Option */}
-                  <Button
-                    onClick={() => {
-                      try {
-                        // Edit mode - opens receipt in editable format
-                        const editWindow = window.open('', '_blank');
-                        editWindow.document.write(`
-                          <html>
-                            <head><title>POS Bill Edit</title></head>
-                            <body>
-                              <h2>📝 POS Bill Edit Mode</h2>
-                              <p>Receipt for Order: ${currentSaleForPrint?.orderNumber}</p>
-                              <p>You can now edit the receipt details...</p>
-                              <textarea rows="20" cols="50" placeholder="Edit receipt content here..."></textarea>
-                              <br><button onclick="window.print()">Print Edited Bill</button>
-                            </body>
-                          </html>
-                        `);
-                        setShowPrintOptionsDialog(false);
-                      } catch (error) {
-                        console.error('POS Bill Edit failed:', error);
-                      }
-                    }}
-                    variant="outline"
-                    className="w-full justify-start h-12 text-left"
-                  >
-                    <FileText className="h-5 w-5 mr-3 text-blue-600" />
-                    <div>
-                      <div className="font-medium">POS Bill Edit</div>
-                      <div className="text-sm text-gray-500">Edit receipt before printing</div>
-                    </div>
-                  </Button>
+
 
                   {/* Thermal Printer Option */}
                   <Button
