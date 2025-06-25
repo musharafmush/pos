@@ -150,24 +150,8 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     impact: "'Impact', 'Arial Black', sans-serif"
   };
 
-  const receiptHtml = generateThermalReceiptHTML({
-        orderNumber: data.billNumber,
-        createdAt: data.billDate,
-        user: { name: data.salesMan },
-        customer: { name: data.customerDetails.name },
-        items: data.items.map(item => ({
-            productName: item.name,
-            productSku: item.sku,
-            quantity: item.quantity,
-            unitPrice: parseFloat(item.price),
-            subtotal: item.total,
-            discount: data.discountType === 'percentage' ? data.discount : 0
-        })),
-        total: data.grandTotal,
-        discount: data.discount,
-        tax: data.taxAmount,
-        paymentMethod: data.paymentMethod
-    }, receiptSettings);
+  // Generate comprehensive thermal receipt with all data
+  const receiptHtml = generateEnhancedThermalReceiptHTML(data, receiptSettings);
 
   // Create print window with enhanced settings
   const printWindow = window.open('', '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
