@@ -96,8 +96,7 @@ export default function POSEnhanced() {
   const [weightProduct, setWeightProduct] = useState<Product | null>(null);
   const [enteredWeight, setEnteredWeight] = useState("");
   const [showOceanDialog, setShowOceanDialog] = useState(false);
-  const [showPrintOptionsDialog, setShowPrintOptionsDialog] = useState(false);
-  const [currentSaleForPrint, setCurrentSaleForPrint] = useState(null);
+
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [isVoiceSearching, setIsVoiceSearching] = useState(false);
   const [voiceRecognition, setVoiceRecognition] = useState<any>(null);
@@ -1394,9 +1393,40 @@ export default function POSEnhanced() {
         variant: "default",
       });
 
-      // Show print options dialog
-      setCurrentSaleForPrint(saleResult);
-      setShowPrintOptionsDialog(true);
+      // Automatically print receipt without dialog
+      const completedSaleData = {
+        id: saleResult.id,
+        billNumber: saleResult.billNumber || saleResult.orderNumber,
+        orderNumber: saleResult.orderNumber || saleResult.billNumber,
+        total: total,
+        subtotal: subtotal,
+        discount: discountAmount + loyaltyDiscount,
+        paymentMethod: paymentMethod,
+        amountPaid: paidAmount,
+        change: Math.max(0, paidAmount - total),
+        customer: selectedCustomer,
+        items: cart.map(item => ({
+          id: item.id,
+          productId: item.id,
+          name: item.name,
+          productName: item.name,
+          sku: item.sku || `ITM${String(item.id).padStart(6, '0')}`,
+          productSku: item.sku || `ITM${String(item.id).padStart(6, '0')}`,
+          quantity: item.quantity,
+          price: parseFloat(item.price),
+          unitPrice: parseFloat(item.price),
+          total: item.total,
+          subtotal: item.total,
+          mrp: item.mrp || parseFloat(item.price) * 1.2
+        })),
+        createdAt: new Date().toISOString(),
+        status: 'completed'
+      };
+
+      // Auto-print with thermal printer
+      setTimeout(() => {
+        handlePrintReceipt(completedSaleData);
+      }, 500);
 
       // Reset everything but preserve held sales
       clearCart(false);
@@ -4888,82 +4918,7 @@ Terminal: POS-Enhanced
             </DialogContent>
           </Dialog>
 
-          {/* Print Options Dialog */}
-          <Dialog open={showPrintOptionsDialog} onOpenChange={setShowPrintOptionsDialog}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-xl">
-                  <Printer className="h-6 w-6 text-blue-600" />
-                  Print Receipt Options
-                </DialogTitle>
-              </DialogHeader>
 
-              <div className="space-y-4">
-                <div className="text-sm text-gray-600 mb-6">
-                  Choose how you'd like to print the receipt for mirchi and other products:
-                </div>
-
-                <div className="space-y-3">
-
-
-                  {/* Thermal Printer Option */}
-                  <Button
-                    onClick={() => {
-                      try {
-                        // Thermal printer optimized format
-                        if (currentSaleForPrint) {
-                          handlePrintReceipt(currentSaleForPrint, { printerType: 'thermal' });
-                        }
-                        setShowPrintOptionsDialog(false);
-                      } catch (error) {
-                        console.error('Thermal print failed:', error);
-                      }
-                    }}
-                    variant="outline"
-                    className="w-full justify-start h-12 text-left"
-                  >
-                    <Printer className="h-5 w-5 mr-3 text-green-600" />
-                    <div>
-                      <div className="font-medium">Thermal Printer</div>
-                      <div className="text-sm text-gray-500">Direct thermal receipt printing</div>
-                    </div>
-                  </Button>
-
-                  {/* Auto-Printer Option */}
-                  <Button
-                    onClick={() => {
-                      try {
-                        // Auto printer - uses system default
-                        if (currentSaleForPrint) {
-                          handlePrintReceipt(currentSaleForPrint, { autoPrint: true });
-                        }
-                        setShowPrintOptionsDialog(false);
-                      } catch (error) {
-                        console.error('Auto print failed:', error);
-                      }
-                    }}
-                    variant="outline"
-                    className="w-full justify-start h-12 text-left"
-                  >
-                    <Zap className="h-5 w-5 mr-3 text-orange-600" />
-                    <div>
-                      <div className="font-medium">Auto-Printer</div>
-                      <div className="text-sm text-gray-500">Automatic system printer</div>
-                    </div>
-                  </Button>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowPrintOptionsDialog(false)}
-                  >
-                    Skip Printing
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
 
           {/* Loyalty Point Redemption Dialog */}
           <Dialog open={showLoyaltyDialog} onOpenChange={setShowLoyaltyDialog}>

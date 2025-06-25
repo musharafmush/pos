@@ -172,10 +172,10 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Distinguished between manual test printing (sample data) and automatic real-time printing (transaction data)
 - Enhanced toast notifications to indicate receipt printing status
 
-### Print System Enhancement (June 25, 2025)
-- Resolved print functionality issues by implementing sample data fallback
-- Enhanced receipt printing system for empty cart scenarios
-- Improved POS system reliability for transaction processing
+### Print System Streamlining (June 25, 2025)
+- Removed Print Receipt Options dialog to simplify printing workflow
+- Implemented automatic thermal receipt printing after sale completion
+- Streamlined POS printing process for improved user experience
 
 ## Changelog
 
