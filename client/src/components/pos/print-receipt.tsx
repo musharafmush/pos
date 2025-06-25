@@ -200,16 +200,18 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         box-sizing: border-box !important;
       }
 
-      /* Xprinter XP-420B Optimized Styles */
+      /* Xprinter XP-420B Optimized Styles - Force Single Sheet */
       @page { 
-        size: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} auto !important;
+        size: ${paperWidth === 'thermal58' ? '58mm 150mm' : paperWidth === 'thermal72' ? '72mm 150mm' : paperWidth === 'thermal77' ? '77mm 150mm' : paperWidth === 'thermal80' ? '80mm 150mm' : '112mm 150mm'} !important;
         margin: 0 !important; 
         padding: 0 !important;
         border: none !important;
-        /* Ensure single page printing */
+        /* Force single page - critical */
         page-break-inside: avoid !important;
         page-break-after: avoid !important;
         page-break-before: avoid !important;
+        orphans: 1000 !important;
+        widows: 1000 !important;
         /* Ensure background graphics are printed */
         -webkit-print-color-adjust: exact !important;
         color-adjust: exact !important;
@@ -244,20 +246,23 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         }
         
         .receipt { 
-          width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
-          max-width: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} !important;
+          width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
+          max-width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
           margin: 0 auto !important;
-          padding: 2mm !important;
+          padding: 1.5mm !important;
           border: none !important;
           box-shadow: none !important;
-          /* Force single page printing */
+          /* Absolute single page constraints */
           page-break-inside: avoid !important;
           page-break-after: avoid !important;
           page-break-before: avoid !important;
           height: auto !important;
           min-height: auto !important;
-          max-height: none !important;
-          overflow: visible !important;
+          max-height: 140mm !important;
+          overflow: hidden !important;
+          /* Compact layout for single sheet */
+          line-height: 1.1 !important;
+          font-size: ${paperWidth === 'thermal58' ? '11px' : paperWidth === 'thermal72' ? '12px' : paperWidth === 'thermal77' ? '12px' : paperWidth === 'thermal80' ? '13px' : '14px'} !important;
           /* Ensure proper scaling for Xprinter */
           transform: scale(1.0) !important;
           transform-origin: top center !important;
@@ -269,18 +274,37 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           display: none !important; 
         }
         
-        /* Force single page for all elements */
+        /* Aggressive single page constraints */
         * { 
           page-break-inside: avoid !important;
           page-break-after: avoid !important;
           page-break-before: avoid !important;
+          orphans: 1000 !important;
+          widows: 1000 !important;
         }
         
-        /* Prevent any element from causing page breaks */
+        /* Ultra-compact spacing for single sheet */
         .receipt * {
           page-break-inside: avoid !important;
           page-break-after: avoid !important;
           page-break-before: avoid !important;
+          margin: 0 !important;
+          line-height: 1.1 !important;
+        }
+        
+        /* Compact item rows */
+        .receipt table, .receipt tr, .receipt td {
+          margin: 0 !important;
+          padding: 0.5mm !important;
+          border-spacing: 0 !important;
+          font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'} !important;
+        }
+        
+        /* Ultra-compact headers and footers */
+        .receipt h1, .receipt h2, .receipt h3 {
+          margin: 0.5mm 0 !important;
+          font-size: ${paperWidth === 'thermal58' ? '12px' : '13px'} !important;
+          line-height: 1.1 !important;
         }
         
         /* Xprinter specific optimizations */
@@ -325,39 +349,50 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         }
       }
 
-      /* Thermal specific typography */
+      /* Ultra-compact thermal typography for single sheet */
       .thermal-header {
         font-weight: bold !important;
         text-align: center !important;
-        font-size: ${paperWidth === 'thermal58' ? '20px' : '22px'} !important;
-        letter-spacing: 1px !important;
-        margin-bottom: 2mm !important;
+        font-size: ${paperWidth === 'thermal58' ? '14px' : '16px'} !important;
+        letter-spacing: 0.5px !important;
+        margin-bottom: 1mm !important;
+        line-height: 1.1 !important;
       }
       
       .thermal-line {
         border-top: 1px solid #000 !important;
-        margin: 1.5mm 0 !important;
+        margin: 0.5mm 0 !important;
         height: 0 !important;
       }
       
       .thermal-dotted {
         border-top: 1px dotted #000 !important;
-        margin: 1.5mm 0 !important;
+        margin: 0.5mm 0 !important;
         height: 0 !important;
       }
       
       .thermal-text {
-        font-size: ${paperWidth === 'thermal58' ? '16px' : '17px'} !important;
-        line-height: 1.2 !important;
+        font-size: ${paperWidth === 'thermal58' ? '11px' : '12px'} !important;
+        line-height: 1.1 !important;
+        margin: 0 !important;
       }
       
       .thermal-total {
         font-weight: bold !important;
-        font-size: ${paperWidth === 'thermal58' ? '18px' : '20px'} !important;
+        font-size: ${paperWidth === 'thermal58' ? '13px' : '14px'} !important;
         border: 1px solid #000 !important;
-        padding: 1mm !important;
+        padding: 0.5mm !important;
         text-align: center !important;
-        margin: 2mm 0 !important;
+        margin: 1mm 0 !important;
+        line-height: 1.1 !important;
+      }
+      
+      /* Ultra-compact item list */
+      .item-row {
+        font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'} !important;
+        line-height: 1.0 !important;
+        margin: 0 !important;
+        padding: 0.2mm 0 !important;
       }
     </style>
   `;
