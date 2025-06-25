@@ -1538,78 +1538,116 @@ export default function POSEnhanced() {
   });
 
   // Enhanced receipt printing functionality
-  const handlePrintReceipt = (saleData: any) => {
-    // Allow printing even with empty cart for demo/test purposes
-    let itemsToprint = cart;
-    
-    // If cart is empty, use sample data for testing
-    if (cart.length === 0) {
-      itemsToprint = [
-        {
-          id: 1,
-          name: "Sample Product",
-          sku: "SAMPLE-001",
-          price: "29.99",
-          mrp: 35,
-          quantity: 1,
-          total: 29.99,
-          stockQuantity: 100
-        }
-      ];
-      
-      toast({
-        title: "Demo Receipt",
-        description: "Generating demo receipt with sample data",
-        variant: "default",
-      });
-    }
-
+  const handlePrintReceipt = (saleData: any, options?: any) => {
     try {
+      // Use actual sale data if provided, otherwise use current cart state
+      let itemsForReceipt = cart;
+      let receiptBillNumber = billNumber;
+      let receiptCustomer = selectedCustomer;
+      let receiptSubtotal = subtotal;
+      let receiptTotal = total;
+      let receiptDiscount = discountAmount;
+      let receiptPaymentMethod = paymentMethod;
+      let receiptAmountPaid = parseFloat(amountPaid) || total;
+      
+      // If saleData is provided from a completed transaction, use that instead
+      if (saleData && saleData.items) {
+        itemsForReceipt = saleData.items;
+        receiptBillNumber = saleData.billNumber || saleData.orderNumber;
+        receiptCustomer = saleData.customer;
+        receiptSubtotal = saleData.subtotal || saleData.total;
+        receiptTotal = saleData.total;
+        receiptDiscount = saleData.discount || 0;
+        receiptPaymentMethod = saleData.paymentMethod || 'cash';
+        receiptAmountPaid = saleData.amountPaid || saleData.total;
+      }
+
+      // Ensure we have valid items for printing
+      if (!itemsForReceipt || itemsForReceipt.length === 0) {
+        toast({
+          title: "No Items to Print",
+          description: "Cannot print receipt without items",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const receiptData = {
-        billNumber: billNumber,
-        billDate: new Date().toLocaleDateString('en-IN'),
+        billNumber: receiptBillNumber,
+        orderNumber: receiptBillNumber,
+        billDate: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         customerDetails: {
-          name: selectedCustomer?.name || "Walk-in Customer",
-          doorNo: selectedCustomer?.phone ? `Ph: ${selectedCustomer.phone}` : "",
+          name: receiptCustomer?.name || "Walk-in Customer",
+          doorNo: receiptCustomer?.phone ? `Ph: ${receiptCustomer.phone}` : "",
           street: "",
           address: "",
           place: ""
         },
+        customer: {
+          name: receiptCustomer?.name || "Walk-in Customer"
+        },
+        user: {
+          name: "Admin User"
+        },
         salesMan: "Admin User",
-        items: itemsToprint.map(item => ({
-          id: item.id,
-          name: item.name,
-          sku: item.sku,
-          quantity: item.quantity,
-          price: item.price,
-          total: item.total,
-          mrp: item.mrp || parseFloat(item.price)
+        items: itemsForReceipt.map(item => ({
+          id: item.id || item.productId,
+          productId: item.id || item.productId,
+          name: item.name || item.productName,
+          productName: item.name || item.productName,
+          sku: item.sku || item.productSku || `ITM${String(item.id || item.productId).padStart(6, '0')}`,
+          productSku: item.sku || item.productSku || `ITM${String(item.id || item.productId).padStart(6, '0')}`,
+          quantity: item.quantity || 1,
+          price: parseFloat(item.price || item.unitPrice || "0"),
+          unitPrice: parseFloat(item.price || item.unitPrice || "0"),
+          total: item.total || item.subtotal || (item.quantity * parseFloat(item.price || item.unitPrice || "0")),
+          subtotal: item.total || item.subtotal || (item.quantity * parseFloat(item.price || item.unitPrice || "0")),
+          mrp: item.mrp || (parseFloat(item.price || item.unitPrice || "0") * 1.2)
         })),
-        subtotal: subtotal,
-        discount: discountAmount,
-        discountType: 'percentage' as const,
+        subtotal: receiptSubtotal,
+        discount: receiptDiscount,
+        discountType: 'fixed' as const,
         taxRate: 0,
+        tax: 0,
         taxAmount: 0,
-        grandTotal: total,
-        amountPaid: parseFloat(amountPaid) || total,
-        changeDue: Math.max(0, (parseFloat(amountPaid) || total) - total),
-        paymentMethod: paymentMethod.toUpperCase(),
-        notes: `Bill: ${billNumber} | Terminal: POS-Enhanced`
+        grandTotal: receiptTotal,
+        total: receiptTotal,
+        amountPaid: receiptAmountPaid,
+        changeDue: Math.max(0, receiptAmountPaid - receiptTotal),
+        change: Math.max(0, receiptAmountPaid - receiptTotal),
+        paymentMethod: receiptPaymentMethod.toUpperCase(),
+        status: 'completed',
+        notes: `Bill: ${receiptBillNumber} | Terminal: POS-Enhanced`
       };
 
-      console.log("📄 Printing receipt with data:", receiptData);
-      printReceiptUtil(receiptData);
+      console.log("Printing receipt with data:", receiptData);
+      
+      // Use the print receipt utility with proper thermal settings
+      const printSettings = {
+        paperWidth: options?.paperWidth || 'thermal80',
+        fontSize: 'medium',
+        currencySymbol: '₹',
+        businessName: 'M MART',
+        businessAddress: '123 Business Street, City, State',
+        taxId: '33GSPDB3311F1ZZ',
+        phoneNumber: '+91-9876543210',
+        thermalOptimized: options?.printerType === 'thermal',
+        autoPrint: options?.autoPrint || false
+      };
+      
+      printReceiptUtil(receiptData, printSettings);
 
       toast({
-        title: "✅ Receipt Sent to Printer",
-        description: `Receipt ${billNumber} sent successfully`,
+        title: "Receipt Sent to Printer",
+        description: `Receipt ${receiptBillNumber} processed successfully`,
         variant: "default",
       });
 
     } catch (error) {
       console.error("Receipt printing error:", error);
       toast({
-        title: "❌ Print Failed",
+        title: "Print Failed",
         description: "Failed to generate receipt. Please try again.",
         variant: "destructive",
       });
