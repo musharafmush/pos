@@ -206,6 +206,10 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         margin: 0 !important; 
         padding: 0 !important;
         border: none !important;
+        /* Ensure single page printing */
+        page-break-inside: avoid !important;
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
         /* Ensure background graphics are printed */
         -webkit-print-color-adjust: exact !important;
         color-adjust: exact !important;
@@ -226,7 +230,13 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           font-size: ${paperWidth === 'thermal58' ? '13pt' : paperWidth === 'thermal72' ? '13.5pt' : paperWidth === 'thermal77' ? '14pt' : paperWidth === 'thermal80' ? '14pt' : '16pt'} !important;
           width: 100% !important;
           height: auto !important;
+          min-height: auto !important;
+          max-height: none !important;
           overflow: visible !important;
+          /* Force single page */
+          page-break-inside: avoid !important;
+          page-break-after: avoid !important;
+          page-break-before: avoid !important;
           /* Enable background graphics for Xprinter */
           -webkit-print-color-adjust: exact !important;
           color-adjust: exact !important;
@@ -240,7 +250,14 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           padding: 2mm !important;
           border: none !important;
           box-shadow: none !important;
+          /* Force single page printing */
           page-break-inside: avoid !important;
+          page-break-after: avoid !important;
+          page-break-before: avoid !important;
+          height: auto !important;
+          min-height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
           /* Ensure proper scaling for Xprinter */
           transform: scale(1.0) !important;
           transform-origin: top center !important;
@@ -252,9 +269,18 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           display: none !important; 
         }
         
-        /* Ensure single page output and proper margins */
+        /* Force single page for all elements */
         * { 
-          page-break-inside: avoid !important; 
+          page-break-inside: avoid !important;
+          page-break-after: avoid !important;
+          page-break-before: avoid !important;
+        }
+        
+        /* Prevent any element from causing page breaks */
+        .receipt * {
+          page-break-inside: avoid !important;
+          page-break-after: avoid !important;
+          page-break-before: avoid !important;
         }
         
         /* Xprinter specific optimizations */
@@ -342,13 +368,13 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       <head>
         <title>Thermal Receipt - ${data.billNumber}</title>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'}, initial-scale=1.0">
+        <meta name="viewport" content="width=${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'}, initial-scale=1.0">
         ${printCSS}
       </head>
       <body>
         <div class="print-instructions no-print">
           🖨️ Xprinter XP-420B Receipt: ${data.billNumber} | ${paperWidth}
-          <br><small>Paper: ${paperWidth === 'thermal80' ? '80mm' : '58mm'} x 297mm | Scale: 100% | Margins: 0mm (All sides)</small>
+          <br><small>Paper: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} x 297mm | Scale: 100% | Margins: 0mm (All sides)</small>
           <br><small style="color: #d32f2f;">⚠️ IMPORTANT: Set Margins to 0mm in print dialog → More Settings</small>
           <br><button onclick="xprinterOptimizedPrint()" style="margin: 2px; padding: 4px 8px; background: #2196F3; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Print (Zero Margins)</button>
           <button onclick="window.print()" style="margin: 2px; padding: 4px 8px; background: #4CAF50; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Standard Print</button>
@@ -366,7 +392,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
               // Show Xprinter configuration reminder
               const confirmed = confirm(
                 'Xprinter XP-420B Settings Check:\\n\\n' +
-                '✅ Paper Size: ${paperWidth === 'thermal80' ? '80mm' : '58mm'} x 297mm (or "Thermal Receipt")\\n' +
+                '✅ Paper Size: ${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'} x 297mm (or "Thermal Receipt")\\n' +
                 '✅ Margins: 0mm (All sides)\\n' +
                 '✅ Scale: 100%\\n' +
                 '✅ Background Graphics: Enabled\\n' +
@@ -380,8 +406,8 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                 if (receipt) {
                   receipt.style.margin = '0';
                   receipt.style.padding = '2mm';
-                  receipt.style.width = '${paperWidth === 'thermal58' ? '54mm' : '76mm'}';
-                  receipt.style.maxWidth = '${paperWidth === 'thermal58' ? '54mm' : '76mm'}';
+                  receipt.style.width = '${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '104mm'}';
+                  receipt.style.maxWidth = '${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '104mm'}';
                 }
                 
                 // Ensure all graphics elements are visible
