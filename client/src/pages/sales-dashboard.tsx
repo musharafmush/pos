@@ -67,7 +67,16 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   ArrowLeftRight,
-  RefreshCw
+  RefreshCw,
+  Search,
+  Filter,
+  SortAsc,
+  SortDesc,
+  X,
+  Calendar,
+  User,
+  CreditCard,
+  Package
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -78,6 +87,14 @@ export default function SalesDashboard() {
   const [startDate, setStartDate] = useState<string>(format(subDays(new Date(), 7), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const formatCurrency = useFormatCurrency();
+
+  // Search and Filter functionality
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState("all");
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Customer Billing Details CRUD operations
   const [selectedSale, setSelectedSale] = useState<any>(null);
@@ -621,13 +638,79 @@ export default function SalesDashboard() {
 
   console.log('Processed chart data:', chartData);
 
+  // Process sales data with advanced search and filtering
+  const rawSales = Array.isArray(salesData) ? salesData : [];
+  
+  // Advanced search and filter functionality
+  const filteredAndSortedSales = rawSales
+    .filter((sale: any) => {
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matches = 
+          sale.orderNumber?.toLowerCase().includes(searchLower) ||
+          sale.customer?.name?.toLowerCase().includes(searchLower) ||
+          sale.customer?.phone?.includes(searchTerm) ||
+          sale.itemsSummary?.toLowerCase().includes(searchLower) ||
+          sale.total?.toString().includes(searchTerm) ||
+          sale.user?.name?.toLowerCase().includes(searchLower);
+        
+        if (!matches) return false;
+      }
+
+      // Status filter
+      if (filterStatus !== "all" && sale.status !== filterStatus) {
+        return false;
+      }
+
+      // Payment method filter
+      if (filterPaymentMethod !== "all" && sale.paymentMethod !== filterPaymentMethod) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a: any, b: any) => {
+      let aValue, bValue;
+
+      switch (sortBy) {
+        case "date":
+          aValue = new Date(a.createdAt);
+          bValue = new Date(b.createdAt);
+          break;
+        case "total":
+          aValue = parseFloat(a.total) || 0;
+          bValue = parseFloat(b.total) || 0;
+          break;
+        case "customer":
+          aValue = a.customer?.name || "";
+          bValue = b.customer?.name || "";
+          break;
+        case "orderNumber":
+          aValue = a.orderNumber || "";
+          bValue = b.orderNumber || "";
+          break;
+        default:
+          aValue = a.createdAt;
+          bValue = b.createdAt;
+      }
+
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+  const sales = filteredAndSortedSales;
+
   // Calculate metrics with better error handling
-  const totalSalesAmount = salesData?.reduce((total: number, sale: any) => {
+  const totalSalesAmount = sales.reduce((total: number, sale: any) => {
     const saleTotal = parseFloat(sale.total || sale.totalAmount || sale.amount || 0);
     return total + (isNaN(saleTotal) ? 0 : saleTotal);
   }, 0) || 0;
 
-  const totalTransactions = salesData?.length || 0;
+  const totalTransactions = sales.length || 0;
   const averageOrderValue = totalTransactions > 0 ? totalSalesAmount / totalTransactions : 0;
 
   // Mock data for additional metrics
