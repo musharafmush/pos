@@ -486,20 +486,48 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 };
 
   const generateThermalReceiptHTML = (sale: any, settings: any) => {
-    // Safely handle date parsing
-    let formattedDate = new Date().toLocaleDateString('en-IN');
-    let formattedTime = new Date().toLocaleTimeString('en-IN', { hour12: true });
+    // Safely handle date parsing with proper Indian format
+    let formattedDate = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric'
+    });
+    let formattedTime = new Date().toLocaleTimeString('en-IN', { 
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true 
+    });
 
     try {
       if (sale?.createdAt) {
         const date = new Date(sale.createdAt);
         if (!isNaN(date.getTime())) {
-          formattedDate = date.toLocaleDateString('en-IN');
-          formattedTime = date.toLocaleTimeString('en-IN', { hour12: true });
+          formattedDate = date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+          formattedTime = date.toLocaleTimeString('en-IN', { 
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true 
+          });
         }
       }
     } catch (error) {
       console.warn('Date parsing error:', error);
+      // Fallback to manual formatting
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      formattedDate = `${day}/${month}/${year}`;
+      
+      const hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      const displayHours = hours % 12 || 12;
+      formattedTime = `${displayHours}:${minutes} ${ampm}`;
     }
 
     // Ensure sale has proper structure with defaults and safe property access
@@ -558,10 +586,10 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <span>Bill:</span><strong style="text-align: right;">${safeData.orderNumber}</strong>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>Date:</span><span style="text-align: right;">${formattedDate}</span>
+          <span>Date:</span><span style="text-align: right; font-weight: bold;">${formattedDate}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>Time:</span><span style="text-align: right;">${formattedTime}</span>
+          <span>Time:</span><span style="text-align: right; font-weight: bold;">${formattedTime}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span>Cashier:</span><span style="text-align: right;">${safeData.user.name}</span>
