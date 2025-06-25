@@ -136,6 +136,14 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Unified Printer Settings Implementation (June 25, 2025)
+- Created comprehensive unified printer settings page consolidating edit-options, thermal-printer-setup, and auto-printer-setup
+- Implemented unified interface with tabs for Auto-Printer, Thermal Printer, Receipt, Business, and Help sections
+- Added Auto-Printer Status controls with activation/deactivation, print delay, retry attempts, and queue management
+- Enhanced thermal printer configuration with paper width, font settings, and Xprinter XP-420B specific guidance
+- Integrated receipt layout controls and business information management in single interface
+- Added navigation links from main settings page to unified printer settings
+
 ### Free Qty Functionality Fix (June 25, 2025)
 - Fixed Free Qty functionality in purchase-entry-professional backend processing
 - Updated purchase creation API to properly handle freeQty field data

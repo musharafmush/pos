@@ -24,7 +24,7 @@ import { z } from "zod";
 import { useTheme } from "@/components/ui/theme-provider";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { DatabaseIcon, ShieldIcon, BellIcon } from "lucide-react";
+import { DatabaseIcon, ShieldIcon, BellIcon, Settings as SettingsIcon, Printer, Zap } from "lucide-react";
 
 // Tax Settings Component
 function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
@@ -1800,6 +1800,69 @@ ${receiptSettings.receiptFooter}
                       System Diagnostics
                     </Button>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Printer Settings */}
+          <TabsContent value="printer">
+            <Card>
+              <CardHeader>
+                <CardTitle>Printer Configuration</CardTitle>
+                <CardDescription>Manage all printer and receipt settings in one place</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button 
+                    onClick={() => window.open('/printer-settings', '_blank')}
+                    className="flex flex-col items-center gap-2 h-auto p-6 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                    variant="outline"
+                  >
+                    <div className="p-3 bg-blue-100 rounded-full">
+                      <SettingsIcon className="h-6 w-6" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-medium">Unified Printer Settings</h3>
+                      <p className="text-xs text-muted-foreground">All-in-one printer configuration</p>
+                    </div>
+                  </Button>
+
+                  <Button 
+                    onClick={() => window.open('/thermal-printer-setup', '_blank')}
+                    className="flex flex-col items-center gap-2 h-auto p-6 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                    variant="outline"
+                  >
+                    <div className="p-3 bg-green-100 rounded-full">
+                      <Printer className="h-6 w-6" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-medium">Thermal Printer</h3>
+                      <p className="text-xs text-muted-foreground">Hardware configuration</p>
+                    </div>
+                  </Button>
+
+                  <Button 
+                    onClick={() => window.open('/auto-printer-setup', '_blank')}
+                    className="flex flex-col items-center gap-2 h-auto p-6 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200"
+                    variant="outline"
+                  >
+                    <div className="p-3 bg-purple-100 rounded-full">
+                      <Zap className="h-6 w-6" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-medium">Auto-Printer</h3>
+                      <p className="text-xs text-muted-foreground">Automatic printing setup</p>
+                    </div>
+                  </Button>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Recommended: Use Unified Printer Settings</h4>
+                  <p className="text-sm text-blue-800">
+                    The unified printer settings page consolidates all printer configuration options including 
+                    auto-printer, thermal printer, receipt formatting, and business information in one interface.
+                  </p>
                 </div>
               </CardContent>
             </Card>
