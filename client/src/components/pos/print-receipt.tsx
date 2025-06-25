@@ -200,19 +200,19 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         box-sizing: border-box !important;
       }
 
-      /* Xprinter XP-420B Optimized Styles - Force Single Sheet */
+      /* Professional Thermal Receipt - Optimized for Single Sheet */
       @page { 
-        size: ${paperWidth === 'thermal58' ? '58mm 150mm' : paperWidth === 'thermal72' ? '72mm 150mm' : paperWidth === 'thermal77' ? '77mm 150mm' : paperWidth === 'thermal80' ? '80mm 150mm' : '112mm 150mm'} !important;
+        size: ${paperWidth === 'thermal58' ? '58mm 200mm' : paperWidth === 'thermal72' ? '72mm 200mm' : paperWidth === 'thermal77' ? '77mm 200mm' : paperWidth === 'thermal80' ? '80mm 200mm' : '112mm 250mm'} !important;
         margin: 0 !important; 
         padding: 0 !important;
         border: none !important;
-        /* Force single page - critical */
+        /* Critical single page constraints */
         page-break-inside: avoid !important;
         page-break-after: avoid !important;
         page-break-before: avoid !important;
         orphans: 1000 !important;
         widows: 1000 !important;
-        /* Ensure background graphics are printed */
+        /* Enhanced graphics support */
         -webkit-print-color-adjust: exact !important;
         color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -246,27 +246,27 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         }
         
         .receipt { 
-          width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
-          max-width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
+          width: ${paperWidth === 'thermal58' ? '56mm' : paperWidth === 'thermal72' ? '70mm' : paperWidth === 'thermal77' ? '75mm' : paperWidth === 'thermal80' ? '78mm' : '110mm'} !important;
+          max-width: ${paperWidth === 'thermal58' ? '56mm' : paperWidth === 'thermal72' ? '70mm' : paperWidth === 'thermal77' ? '75mm' : paperWidth === 'thermal80' ? '78mm' : '110mm'} !important;
           margin: 0 auto !important;
-          padding: 1.5mm !important;
+          padding: 2mm !important;
           border: none !important;
           box-shadow: none !important;
-          /* Absolute single page constraints */
+          /* Professional single page layout */
           page-break-inside: avoid !important;
           page-break-after: avoid !important;
           page-break-before: avoid !important;
           height: auto !important;
           min-height: auto !important;
-          max-height: 140mm !important;
-          overflow: hidden !important;
-          /* Compact layout for single sheet */
-          line-height: 1.1 !important;
-          font-size: ${paperWidth === 'thermal58' ? '11px' : paperWidth === 'thermal72' ? '12px' : paperWidth === 'thermal77' ? '12px' : paperWidth === 'thermal80' ? '13px' : '14px'} !important;
-          /* Ensure proper scaling for Xprinter */
-          transform: scale(1.0) !important;
-          transform-origin: top center !important;
+          max-height: ${paperWidth === 'thermal58' ? '190mm' : '190mm'} !important;
+          overflow: visible !important;
+          /* Enhanced typography */
+          line-height: 1.2 !important;
+          font-size: ${paperWidth === 'thermal58' ? '10px' : paperWidth === 'thermal72' ? '11px' : paperWidth === 'thermal77' ? '12px' : paperWidth === 'thermal80' ? '12px' : '13px'} !important;
+          font-family: 'Courier New', monospace !important;
+          /* Professional appearance */
           background: white !important;
+          color: black !important;
         }
 
         /* Hide all non-essential elements for thermal printing */
@@ -283,28 +283,47 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           widows: 1000 !important;
         }
         
-        /* Ultra-compact spacing for single sheet */
+        /* Professional spacing and layout */
         .receipt * {
           page-break-inside: avoid !important;
           page-break-after: avoid !important;
           page-break-before: avoid !important;
-          margin: 0 !important;
-          line-height: 1.1 !important;
         }
         
-        /* Compact item rows */
-        .receipt table, .receipt tr, .receipt td {
-          margin: 0 !important;
-          padding: 0.5mm !important;
-          border-spacing: 0 !important;
-          font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'} !important;
-        }
-        
-        /* Ultra-compact headers and footers */
-        .receipt h1, .receipt h2, .receipt h3 {
+        /* Enhanced table styling */
+        .receipt table {
+          width: 100% !important;
+          border-collapse: collapse !important;
           margin: 0.5mm 0 !important;
-          font-size: ${paperWidth === 'thermal58' ? '12px' : '13px'} !important;
-          line-height: 1.1 !important;
+        }
+        
+        .receipt th, .receipt td {
+          padding: 0.5mm !important;
+          border: none !important;
+          font-size: inherit !important;
+          line-height: 1.2 !important;
+        }
+        
+        /* Professional headers */
+        .receipt h1, .receipt h2, .receipt h3, .thermal-header {
+          margin: 1mm 0 !important;
+          font-weight: bold !important;
+          line-height: 1.2 !important;
+        }
+        
+        /* Enhanced separator lines */
+        .thermal-line {
+          border-top: 1px solid #000 !important;
+          margin: 1mm 0 !important;
+          height: 0 !important;
+          page-break-inside: avoid !important;
+        }
+        
+        .thermal-dotted {
+          border-top: 1px dotted #666 !important;
+          margin: 1mm 0 !important;
+          height: 0 !important;
+          page-break-inside: avoid !important;
         }
         
         /* Xprinter specific optimizations */
