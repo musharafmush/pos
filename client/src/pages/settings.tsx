@@ -995,6 +995,7 @@ ${receiptSettings.receiptFooter}
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="receipts">Receipt Settings</TabsTrigger>
+            <TabsTrigger value="printer">Printer Settings</TabsTrigger>
             <TabsTrigger value="tax">Tax Settings</TabsTrigger>
             <TabsTrigger value="data">Data Management</TabsTrigger>
           </TabsList>

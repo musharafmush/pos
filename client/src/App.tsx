@@ -60,6 +60,7 @@ import InventoryAdjustments from "./pages/inventory-adjustments";
 import ThermalPrinterSetup from "./pages/thermal-printer-setup";
 import EditOptions from "@/pages/edit-options";
 import AutoPrinterSetup from "@/pages/auto-printer-setup";
+import UnifiedPrinterSettings from "@/pages/unified-printer-settings";
 import CashRegisterManagement from "@/pages/cash-register-management";
 import ExpenseManagement from "@/pages/expense-management";
 import ExpenseCategories from "@/pages/expense-categories";
@@ -131,6 +132,7 @@ function Router() {
       <ProtectedRoute path="/thermal-printer-setup" component={ThermalPrinterSetup} />
       <ProtectedRoute path="/edit-options" component={EditOptions} />
       <ProtectedRoute path="/auto-printer-setup" component={AutoPrinterSetup} />
+      <ProtectedRoute path="/printer-settings" component={UnifiedPrinterSettings} />
       <ProtectedRoute path="/cash-register-management" component={CashRegisterManagement} />
       <ProtectedRoute path="/expense-management" component={ExpenseManagement} />
       <ProtectedRoute path="/expense-categories" component={ExpenseCategories} />
