@@ -935,6 +935,149 @@ export default function SalesDashboard() {
             </div>
           </div>
 
+          {/* Advanced Search and Filter Interface */}
+          <div className="mt-6 bg-white border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <Search className="h-5 w-5 text-blue-600" />
+                Search & Filter Sales
+              </h3>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  {sales.length} of {rawSales.length} transactions
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className="flex items-center gap-1"
+                >
+                  <Filter className="h-4 w-4" />
+                  Filters
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by order number, customer name, phone, items, amount, or user..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-10 bg-white border-gray-300"
+                />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Filter Panel */}
+              {isFilterOpen && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg border">
+                  {/* Status Filter */}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Status</Label>
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="refunded">Refunded</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Payment Method Filter */}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Payment Method</Label>
+                    <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Methods</SelectItem>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
+                        <SelectItem value="credit">Credit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Sort By */}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Sort By</Label>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date">Date</SelectItem>
+                        <SelectItem value="total">Amount</SelectItem>
+                        <SelectItem value="customer">Customer</SelectItem>
+                        <SelectItem value="orderNumber">Order Number</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Sort Order */}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Order</Label>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                      className="w-full h-9 justify-start"
+                    >
+                      {sortOrder === "asc" ? (
+                        <>
+                          <SortAsc className="h-4 w-4 mr-2" />
+                          Ascending
+                        </>
+                      ) : (
+                        <>
+                          <SortDesc className="h-4 w-4 mr-2" />
+                          Descending
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Clear Filters */}
+                  <div className="col-span-1 md:col-span-4 flex justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearchTerm("");
+                        setFilterStatus("all");
+                        setFilterPaymentMethod("all");
+                        setSortBy("date");
+                        setSortOrder("desc");
+                        setIsFilterOpen(false);
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <X className="h-4 w-4" />
+                      Clear All Filters
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Loading and Error States */}
           {salesLoading && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
