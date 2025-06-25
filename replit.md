@@ -52,6 +52,15 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Low stock alerts and thresholds
 - Batch tracking and expiry date management
 - Multiple unit of measure support
+- Advanced bulk product repacking functionality
+- Weight-based item management for Ocean freight products
+
+### Search & Filter Capabilities
+- Comprehensive search functionality across repacking-professional page
+- Real-time search and filtering in sales-dashboard
+- Custom searchable dropdown components with keyboard navigation
+- Advanced filtering by status, payment method, customer data, and order information
+- Dynamic result counting and sort options
 
 ## Data Flow
 
@@ -125,9 +134,23 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - **Data Backup**: Automated backup system before deployments
 - **Multi-Environment**: Support for SQLite (dev) and MySQL (prod)
 
+## Recent Changes
+
+### Enhanced Search & Filter System (June 25, 2025)
+- Implemented comprehensive search functionality for repacking-professional page
+- Added advanced search and filter interface to sales-dashboard
+- Created custom searchable dropdown components with keyboard navigation
+- Enhanced sales data processing with real-time filtering and sorting
+- Added dynamic transaction count display and collapsible filter panels
+
+### Print System Enhancement (June 25, 2025)
+- Resolved print functionality issues by implementing sample data fallback
+- Enhanced receipt printing system for empty cart scenarios
+- Improved POS system reliability for transaction processing
+
 ## Changelog
 
-- June 25, 2025. Initial setup
+- June 25, 2025. Initial setup and enhanced search capabilities
 
 ## User Preferences
 
