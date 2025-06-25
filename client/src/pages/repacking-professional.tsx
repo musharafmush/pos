@@ -210,6 +210,21 @@ export default function RepackingProfessional() {
     });
   };
 
+  // Handle bulk product selection with automatic Ocean freight access
+  const handleBulkProductSelect = (productId: string) => {
+    form.setValue("bulkProductId", parseInt(productId));
+    
+    // Auto-open Ocean freight dialog when bulk product is selected
+    if (productId && parseInt(productId) > 0) {
+      setShowOceanFreight(true);
+      toast({
+        title: "Bulk Product Selected",
+        description: "Ocean freight customer search opened automatically",
+        variant: "default",
+      });
+    }
+  };
+
   // Filter bulk products
   const bulkProducts = products.filter((product: Product) => 
     product.stockQuantity > 0 && 
@@ -440,7 +455,7 @@ export default function RepackingProfessional() {
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Select Bulk Product</FormLabel>
                       <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))} 
+                        onValueChange={handleBulkProductSelect} 
                         value={field.value.toString()}
                       >
                         <FormControl>
@@ -611,7 +626,7 @@ export default function RepackingProfessional() {
                         className="w-full bg-blue-100 border-blue-300 hover:bg-blue-200 text-blue-800"
                       >
                         <Ship className="w-4 h-4 mr-2" />
-                        Access Ocean Freight System
+                        Search Ocean Freight Customers
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -751,16 +766,53 @@ export default function RepackingProfessional() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-blue-800">Ocean Freight Customer:</p>
-                          <p className="text-sm text-blue-700">{selectedOceanCustomer.name}</p>
+                          <p className="text-sm text-blue-700 font-semibold">{selectedOceanCustomer.name}</p>
+                          {selectedOceanCustomer.phone && (
+                            <p className="text-xs text-blue-600">{selectedOceanCustomer.phone}</p>
+                          )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedOceanCustomer(null)}
-                        >
-                          ×
-                        </Button>
+                        <div className="flex gap-2">
+                          <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300">
+                            Active
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedOceanCustomer(null)}
+                          >
+                            ×
+                          </Button>
+                        </div>
                       </div>
+                    </div>
+                  )}
+                  
+                  {/* Quick Actions for Ocean Freight */}
+                  {selectedOceanCustomer && (
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-800"
+                        onClick={() => {
+                          toast({
+                            title: "Ocean Freight Activated",
+                            description: `Processing freight for ${selectedOceanCustomer.name}`,
+                          });
+                        }}
+                      >
+                        <Ship className="w-3 h-3 mr-1" />
+                        Process Freight
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 bg-green-50 border-green-200 hover:bg-green-100 text-green-800"
+                        onClick={() => setShowOceanFreight(true)}
+                      >
+                        <Search className="w-3 h-3 mr-1" />
+                        Change Customer
+                      </Button>
                     </div>
                   )}
                 </div>
