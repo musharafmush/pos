@@ -604,29 +604,34 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
       
-      <div style="display: flex; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 2mm;">
-        <div style="flex: 1;">Item</div>
-        <div style="flex: 1; text-align: center;">Qty</div>
-        <div style="flex: 1; text-align: center;">Rate</div>
-        <div style="flex: 1; text-align: right;">Total</div>
+      <div style="display: flex; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 2mm;">
+        <div style="flex: 2;">Item</div>
+        <div style="width: 25px; text-align: center;">Qty</div>
+        <div style="width: 50px; text-align: center;">Rate</div>
+        <div style="width: 50px; text-align: right;">Total</div>
       </div>
       
       ${safeData.items.map((item: any) => `
-        <div style="margin-bottom: 3mm; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'};">
-          <div style="font-weight: bold; margin-bottom: 1mm;">
-            ${(item.productName || item.name || 'Item')}
+        <div style="margin-bottom: 2mm; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'};">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1mm;">
+            <div style="flex: 2; font-weight: bold; line-height: 1.2;">
+              ${(item.productName || item.name || 'Sample Product')}
+            </div>
+            <div style="width: 25px; text-align: center; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'};">
+              ${item.quantity || 1}
+            </div>
+            <div style="width: 50px; text-align: center; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'};">
+              ${settings.currencySymbol || '₹'}${Number(item.unitPrice || item.price || 30).toFixed(0)}
+            </div>
+            <div style="width: 50px; text-align: right; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'};">
+              ${settings.currencySymbol || '₹'}${Number(item.subtotal || item.total || ((item.quantity || 1) * (item.unitPrice || item.price || 30))).toFixed(0)}
+            </div>
           </div>
-          <div style="font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; color: #666; margin-bottom: 1mm; font-style: italic;">
-            ${item.productSku || item.sku || 'ITM000000'}
+          <div style="font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #666; margin-bottom: 1mm; font-style: italic;">
+            ${item.productSku || item.sku || 'SAMPLE-001'}
           </div>
-          <div style="display: flex; align-items: center;">
-            <div style="flex: 1;"></div>
-            <div style="flex: 1; text-align: center; font-weight: bold;">${item.quantity || 1}</div>
-            <div style="flex: 1; text-align: center; font-weight: bold;">${settings.currencySymbol}${Number(item.unitPrice || item.price || 100).toFixed(0)}</div>
-            <div style="flex: 1; text-align: right; font-weight: bold;">${settings.currencySymbol}${Number(item.subtotal || item.total || ((item.quantity || 1) * (item.unitPrice || item.price || 100))).toFixed(0)}</div>
-          </div>
-          <div style="text-align: right; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; margin-top: 1mm; color: #666;">
-            MRP: ${settings.currencySymbol}${Number((item.unitPrice || item.price || 100) + 20).toFixed(0)} | Save: ${settings.currencySymbol}${((item.unitPrice || item.price || 100) * 0.2).toFixed(0)}
+          <div style="text-align: right; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #666;">
+            MRP: ${settings.currencySymbol || '₹'}${Number((item.unitPrice || item.price || 30) + 20).toFixed(0)} | Save: ${settings.currencySymbol || '₹'}${Number((item.unitPrice || item.price || 30) * 0.2).toFixed(0)}
           </div>
         </div>
       `).join('')}
