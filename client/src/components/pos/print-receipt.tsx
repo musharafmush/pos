@@ -654,5 +654,15 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     `;
   };
 
+// Enhanced thermal receipt HTML generator - alias for unified printer settings
+export const generateEnhancedThermalReceiptHTML = (sale: any, settings: any) => {
+  // Ensure settings has currencySymbol
+  const enhancedSettings = {
+    ...settings,
+    currencySymbol: settings.currencySymbol || '₹'
+  };
+  return generateThermalReceiptHTML(sale, enhancedSettings);
+};
+
 // Export the customization interface for use in settings
 export { type ReceiptCustomization };
