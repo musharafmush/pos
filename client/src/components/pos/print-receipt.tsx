@@ -45,6 +45,8 @@ interface ReceiptData {
   paymentMethod: string;
   notes?: string;
   loyaltyPointsEarned?: number;
+  loyaltyPointsRedeemed?: number;
+  customerLoyaltyBalance?: number;
 }
 
 export interface ReceiptCustomization {
@@ -320,6 +322,39 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           ` : ''}
         </table>
       </div>
+      
+      ${(data.loyaltyPointsEarned && data.loyaltyPointsEarned > 0) || data.customerLoyaltyBalance !== undefined ? `
+        <div class="thermal-dotted"></div>
+        
+        <div class="thermal-text" style="margin: 1.5mm 0; font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'}; line-height: 1.2;">
+          <div style="text-align: center; font-weight: bold; margin-bottom: 1mm; border-bottom: 1px solid #000; padding-bottom: 0.5mm;">
+            ⭐ LOYALTY REWARDS ⭐
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${data.loyaltyPointsEarned && data.loyaltyPointsEarned > 0 ? `
+              <tr>
+                <td style="text-align: left; padding: 0.5mm 0;">Points Earned Today:</td>
+                <td style="text-align: right; padding: 0.5mm 0; color: #ff9800; font-weight: bold;">+${data.loyaltyPointsEarned}</td>
+              </tr>
+            ` : ''}
+            ${data.customerLoyaltyBalance !== undefined ? `
+              <tr>
+                <td style="text-align: left; padding: 0.5mm 0;">Total Loyalty Points:</td>
+                <td style="text-align: right; padding: 0.5mm 0; color: #2e7d32; font-weight: bold;">${(data.customerLoyaltyBalance + (data.loyaltyPointsEarned || 0)).toFixed(2)}</td>
+              </tr>
+            ` : ''}
+            ${data.loyaltyPointsRedeemed && data.loyaltyPointsRedeemed > 0 ? `
+              <tr>
+                <td style="text-align: left; padding: 0.5mm 0;">Points Redeemed:</td>
+                <td style="text-align: right; padding: 0.5mm 0; color: #d32f2f; font-weight: bold;">-${data.loyaltyPointsRedeemed}</td>
+              </tr>
+            ` : ''}
+          </table>
+          <div style="text-align: center; font-size: ${paperWidth === 'thermal58' ? '8px' : '9px'}; margin-top: 1mm; font-style: italic;">
+            Earn 1 point for every ₹100 spent!
+          </div>
+        </div>
+      ` : ''}
       
       <div class="thermal-dotted"></div>
       
