@@ -1693,7 +1693,14 @@ export default function POSEnhanced() {
         customerLoyaltyBalance: data.customerLoyaltyBalance || 0
       };
 
-      console.log("Printing receipt with data:", receiptData);
+      console.log("🧾 Receipt data being sent to printer:", {
+        loyaltyPointsEarned: receiptData.loyaltyPointsEarned,
+        loyaltyPointsRedeemed: receiptData.loyaltyPointsRedeemed,
+        customerLoyaltyBalance: receiptData.customerLoyaltyBalance,
+        customerName: receiptData.customerDetails?.name,
+        billNumber: receiptData.billNumber,
+        total: receiptData.total
+      });
       
       // Use the print receipt utility with proper thermal settings
       const printSettings = {
@@ -1708,7 +1715,7 @@ export default function POSEnhanced() {
         autoPrint: options?.autoPrint || false
       };
       
-      printReceiptUtil(receiptData, printSettings);
+      printReceipt(receiptData, printSettings);
 
       toast({
         title: "Receipt Sent to Printer",

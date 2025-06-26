@@ -81,6 +81,14 @@ export interface ReceiptCustomization {
 }
 
 export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptCustomization>) => {
+  console.log("🖨️ Thermal receipt function called with loyalty data:", {
+    loyaltyPointsEarned: data.loyaltyPointsEarned,
+    loyaltyPointsRedeemed: data.loyaltyPointsRedeemed,
+    customerLoyaltyBalance: data.customerLoyaltyBalance,
+    customerName: data.customerDetails?.name,
+    billNumber: data.billNumber
+  });
+
   const printContainer = document.createElement('div');
   printContainer.style.position = 'fixed';
   printContainer.style.top = '-9999px';
