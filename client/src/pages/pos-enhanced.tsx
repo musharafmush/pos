@@ -1687,7 +1687,10 @@ export default function POSEnhanced() {
         change: Math.max(0, receiptAmountPaid - receiptTotal),
         paymentMethod: receiptPaymentMethod.toUpperCase(),
         status: 'completed',
-        notes: `Bill: ${receiptBillNumber} | Terminal: POS-Enhanced`
+        notes: `Bill: ${receiptBillNumber} | Terminal: POS-Enhanced`,
+        loyaltyPointsEarned: data.loyaltyPointsEarned || 0,
+        loyaltyPointsRedeemed: data.loyaltyPointsRedeemed || 0,
+        customerLoyaltyBalance: data.customerLoyaltyBalance || 0
       };
 
       console.log("Printing receipt with data:", receiptData);
