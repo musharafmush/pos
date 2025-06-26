@@ -389,11 +389,18 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       ` : ''}
     `;
 
-    // Create print window
-    const printWindow = window.open('', '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
-    if (!printWindow) {
-      console.error('Could not open print window. Please allow popups for this site.');
+    // Create print frame instead of popup window to avoid blocking
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'absolute';
+    printFrame.style.top = '-9999px';
+    printFrame.style.left = '-9999px';
+    document.body.appendChild(printFrame);
+    
+    const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
+    if (!printDocument) {
+      console.error('Could not access print frame document.');
       document.body.removeChild(printContainer);
+      document.body.removeChild(printFrame);
       return;
     }
 
@@ -548,16 +555,38 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       </html>
     `;
 
-    printWindow.document.write(printContent);
-    printWindow.document.close();
+    printDocument.write(printContent);
+    printDocument.close();
 
+    // Trigger print after content loads
     setTimeout(() => {
-      document.body.removeChild(printContainer);
+      try {
+        if (printFrame.contentWindow) {
+          printFrame.contentWindow.print();
+        }
+      } catch (printError) {
+        console.error('Print execution failed:', printError);
+      }
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(printContainer);
+        document.body.removeChild(printFrame);
+      }, 2000);
     }, 1000);
 
   } catch (error: unknown) {
     console.error('Error generating receipt:', error);
-    document.body.removeChild(printContainer);
+    if (document.body.contains(printContainer)) {
+      document.body.removeChild(printContainer);
+    }
+    // Clean up print frame if it exists
+    const printFrames = document.querySelectorAll('iframe[style*="-9999px"]');
+    printFrames.forEach(frame => {
+      if (document.body.contains(frame)) {
+        document.body.removeChild(frame);
+      }
+    });
   }
 };
 
