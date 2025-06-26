@@ -1688,9 +1688,9 @@ export default function POSEnhanced() {
         paymentMethod: receiptPaymentMethod.toUpperCase(),
         status: 'completed',
         notes: `Bill: ${receiptBillNumber} | Terminal: POS-Enhanced`,
-        loyaltyPointsEarned: data.loyaltyPointsEarned || 0,
-        loyaltyPointsRedeemed: data.loyaltyPointsRedeemed || 0,
-        customerLoyaltyBalance: data.customerLoyaltyBalance || 0
+        loyaltyPointsEarned: saleData?.loyaltyPointsEarned || 0,
+        loyaltyPointsRedeemed: saleData?.loyaltyPointsRedeemed || 0,
+        customerLoyaltyBalance: saleData?.customerLoyaltyBalance || 0
       };
 
       console.log("🧾 Receipt data being sent to printer:", {
