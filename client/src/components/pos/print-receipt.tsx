@@ -49,7 +49,7 @@ interface ReceiptData {
   customerLoyaltyBalance?: number;
 }
 
-export interface ReceiptCustomization {
+interface ReceiptCustomization {
   businessName: string;
   businessAddress: string;
   phoneNumber: string;
@@ -249,97 +249,52 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                 </td>
                 <td style="text-align: right; padding: 1mm 0; vertical-align: top;">
                   <strong>₹${finalAmount.toFixed(2)}</strong>
-                  ${itemGst > 0 ? `<br><small>+GST ${itemGst}%</small>` : ''}
+                  ${itemGst > 0 ? `<br><small>+${itemGst}% GST</small>` : ''}
                 </td>
-              </tr>
-            `;
+              </tr>`;
             }).join('')}
           </tbody>
         </table>
       </div>
       
-      <div class="thermal-dotted"></div>
-      
-      <div class="thermal-text" style="font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'}; line-height: 1.2; margin: 1.5mm 0;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="text-align: left; padding: 0.5mm 0; border-bottom: 1px dotted #666;"><strong>Subtotal (Before Tax):</strong></td>
-            <td style="text-align: right; padding: 0.5mm 0; border-bottom: 1px dotted #666;"><strong>₹${(parseFloat(data.subtotal.toString()) - (data.taxAmount || 0)).toFixed(2)}</strong></td>
-          </tr>
-          ${data.discount > 0 ? `
-            <tr>
-              <td style="text-align: left; padding: 0.5mm 0;">Item Discount${data.discountType === 'percentage' ? ` (${data.discount}%)` : ''}:</td>
-              <td style="text-align: right; padding: 0.5mm 0; color: #d32f2f;">-₹${
-                data.discountType === 'percentage' 
-                  ? (parseFloat(data.subtotal.toString()) * data.discount / 100).toFixed(2)
-                  : data.discount.toFixed(2)
-              }</td>
-            </tr>
-          ` : ''}
-          ${data.taxAmount && data.taxAmount > 0 ? `
-            <tr>
-              <td style="text-align: left; padding: 0.5mm 0;">
-                <strong>GST Summary:</strong><br>
-                ${data.cgstRate ? `CGST (${data.cgstRate}%): ₹${(data.taxAmount / 2).toFixed(2)}<br>` : ''}
-                ${data.sgstRate ? `SGST (${data.sgstRate}%): ₹${(data.taxAmount / 2).toFixed(2)}<br>` : ''}
-                ${data.igstRate ? `IGST (${data.igstRate}%): ₹${data.taxAmount}<br>` : ''}
-                ${!data.cgstRate && !data.sgstRate && !data.igstRate ? `GST (${data.taxRate}%):` : ''}
-              </td>
-              <td style="text-align: right; padding: 0.5mm 0; vertical-align: top;">
-                <strong>₹${data.taxAmount.toFixed(2)}</strong>
-              </td>
-            </tr>
-          ` : ''}
-          ${data.roundingAdjustment ? `
-            <tr>
-              <td style="text-align: left; padding: 0.5mm 0;">Rounding Adjustment:</td>
-              <td style="text-align: right; padding: 0.5mm 0;">₹${data.roundingAdjustment.toFixed(2)}</td>
-            </tr>
-          ` : ''}
-        </table>
-      </div>
-      
-      <div class="thermal-total" style="margin: 1.5mm 0; padding: 1mm; font-size: ${paperWidth === 'thermal58' ? '14px' : '16px'}; font-weight: bold; text-align: center; border: 2px solid #000; background: #f0f0f0;">
-        GRAND TOTAL: ₹${parseFloat((data.grandTotal || data.total || 0).toString()).toFixed(2)}
-        <br><small style="font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'}; font-weight: normal;">
-          (${numberToWords(parseFloat((data.grandTotal || data.total || 0).toString()))} Only)
-        </small>
-      </div>
+      <div class="thermal-line"></div>
       
       <div class="thermal-text" style="margin: 1.5mm 0; font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'}; line-height: 1.2;">
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
-            <td style="text-align: left; padding: 0.5mm 0;"><strong>Payment Method:</strong></td>
-            <td style="text-align: right; padding: 0.5mm 0;"><strong>${data.paymentMethod.toUpperCase()}</strong></td>
+            <td style="text-align: left; padding: 0.5mm 0;">Subtotal:</td>
+            <td style="text-align: right; padding: 0.5mm 0;"><strong>₹${data.subtotal}</strong></td>
+          </tr>
+          ${data.discount > 0 ? `
+            <tr>
+              <td style="text-align: left; padding: 0.5mm 0;">Discount:</td>
+              <td style="text-align: right; padding: 0.5mm 0;">-₹${data.discount.toFixed(2)}</td>
+            </tr>
+          ` : ''}
+          ${data.taxAmount && data.taxAmount > 0 ? `
+            <tr>
+              <td style="text-align: left; padding: 0.5mm 0;">Tax (${data.taxRate || 0}%):</td>
+              <td style="text-align: right; padding: 0.5mm 0;">₹${data.taxAmount.toFixed(2)}</td>
+            </tr>
+          ` : ''}
+          <tr style="border-top: 1px solid #000; font-weight: bold; font-size: ${paperWidth === 'thermal58' ? '12px' : '14px'};">
+            <td style="text-align: left; padding: 1mm 0;">TOTAL:</td>
+            <td style="text-align: right; padding: 1mm 0;">₹${data.grandTotal || data.total}</td>
           </tr>
           <tr>
-            <td style="text-align: left; padding: 0.5mm 0;">Amount Paid:</td>
-            <td style="text-align: right; padding: 0.5mm 0;">₹${parseFloat((data.amountPaid || data.total || 0).toString()).toFixed(2)}</td>
+            <td style="text-align: left; padding: 0.5mm 0;">Paid:</td>
+            <td style="text-align: right; padding: 0.5mm 0;">₹${data.amountPaid.toFixed(2)}</td>
           </tr>
-          ${(data.changeDue || data.change || 0) > 0 ? `
+          ${(data.changeDue || data.change) && (data.changeDue || data.change) > 0 ? `
             <tr>
-              <td style="text-align: left; padding: 0.5mm 0;"><strong>Change Due:</strong></td>
-              <td style="text-align: right; padding: 0.5mm 0; font-weight: bold; color: #2e7d32;">₹${parseFloat((data.changeDue || data.change || 0).toString()).toFixed(2)}</td>
+              <td style="text-align: left; padding: 0.5mm 0;">Change:</td>
+              <td style="text-align: right; padding: 0.5mm 0;">₹${(data.changeDue || data.change || 0).toFixed(2)}</td>
             </tr>
           ` : ''}
-          ${data.loyaltyPointsEarned ? `
-            <tr>
-              <td style="text-align: left; padding: 0.5mm 0;">Loyalty Points Earned:</td>
-              <td style="text-align: right; padding: 0.5mm 0; color: #ff9800;"><strong>+${data.loyaltyPointsEarned}</strong></td>
-            </tr>
-          ` : ''}
-          ${data.customerLoyaltyBalance !== undefined ? `
-            <tr>
-              <td style="text-align: left; padding: 0.5mm 0;">Total Loyalty Points:</td>
-              <td style="text-align: right; padding: 0.5mm 0; color: #2e7d32;"><strong>${((Number(data.customerLoyaltyBalance) || 0) + (Number(data.loyaltyPointsEarned) || 0)).toFixed(2)}</strong></td>
-            </tr>
-          ` : ''}
-          ${data.loyaltyPointsRedeemed && data.loyaltyPointsRedeemed > 0 ? `
-            <tr>
-              <td style="text-align: left; padding: 0.5mm 0;">Loyalty Points Redeemed:</td>
-              <td style="text-align: right; padding: 0.5mm 0; color: #d32f2f;">-${data.loyaltyPointsRedeemed}</td>
-            </tr>
-          ` : ''}
+          <tr>
+            <td style="text-align: left; padding: 0.5mm 0;">Payment:</td>
+            <td style="text-align: right; padding: 0.5mm 0;"><strong>${data.paymentMethod.toUpperCase()}</strong></td>
+          </tr>
         </table>
       </div>
       
@@ -381,196 +336,46 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       <div class="thermal-text" style="text-align: center; margin: 2mm 0; font-size: ${paperWidth === 'thermal58' ? '9px' : '10px'}; line-height: 1.1; border-top: 1px solid #000; padding-top: 1mm;">
         <strong style="font-size: ${paperWidth === 'thermal58' ? '11px' : '12px'};">🛍️ Thank You for Shopping! 🛍️</strong><br>
         ${receiptSettings.receiptFooter.replace(/\n/g, '<br>')}<br>
-        <br>
-        <strong>Store Timings:</strong> 9:00 AM - 10:00 PM<br>
-        <strong>Customer Care:</strong> ${receiptSettings.phoneNumber}<br>
-        ${receiptSettings.email ? `<strong>Email:</strong> ${receiptSettings.email}<br>` : ''}
-        <br>
-        <div style="font-size: 8px; border-top: 1px dotted #666; padding-top: 1mm; margin-top: 1mm;">
-          <strong>Invoice ID:</strong> ${data.billNumber}<br>
-          <strong>Printed:</strong> ${new Date().toLocaleString()}<br>
-          <strong>POS Terminal:</strong> Thermal Receipt System v2.0<br>
-          <em>This is a computer generated invoice</em>
-        </div>
+        <small style="font-size: ${paperWidth === 'thermal58' ? '8px' : '9px'};">
+          Amount in Words: ${numberToWords(data.grandTotal || data.total || 0)} Rupees Only
+        </small>
       </div>
       
       ${data.notes ? `
-        <div class="thermal-text" style="text-align: center; font-size: ${paperWidth === 'thermal58' ? '8px' : '9px'}; margin: 1mm 0; font-style: italic;">
-          <strong>Notes:</strong> ${data.notes}
+        <div class="thermal-text" style="text-align: center; margin: 1mm 0; font-size: ${paperWidth === 'thermal58' ? '8px' : '9px'}; font-style: italic;">
+          ${data.notes}
         </div>
       ` : ''}
-    `;
-
-    // Create print frame instead of popup window to avoid blocking
-    const printFrame = document.createElement('iframe');
-    printFrame.style.position = 'absolute';
-    printFrame.style.top = '-9999px';
-    printFrame.style.left = '-9999px';
-    document.body.appendChild(printFrame);
-    
-    const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
-    if (!printDocument) {
-      console.error('Could not access print frame document.');
-      document.body.removeChild(printContainer);
-      document.body.removeChild(printFrame);
-      return;
-    }
-
-    const printCSS = `
+      
       <style>
-        * { 
-          box-sizing: border-box; 
-          margin: 0; 
-          padding: 0; 
-        }
-        
-        html, body { 
-          margin: 0 !important; 
-          padding: 0 !important; 
-          background: white !important; 
-          color: black !important;
-          font-family: 'Courier New', 'Consolas', 'Lucida Console', monospace !important;
-          font-size: ${paperWidth === 'thermal58' ? '16px' : paperWidth === 'thermal72' ? '17px' : paperWidth === 'thermal77' ? '18px' : paperWidth === 'thermal80' ? '18px' : '19px'} !important;
-          line-height: 1.2 !important;
-        }
-
-        .thermal-receipt { 
-          width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '108mm'} !important;
-          max-width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '108mm'} !important;
-          padding: 2mm !important;
-          margin: 0 auto !important;
-          background: white !important;
-          color: black !important;
-          font-family: 'Courier New', 'Consolas', 'Lucida Console', monospace !important;
-        }
-
-        @page {
-          size: ${paperWidth === 'thermal58' ? '58mm 200mm' : paperWidth === 'thermal72' ? '72mm 200mm' : paperWidth === 'thermal77' ? '77mm 200mm' : paperWidth === 'thermal80' ? '80mm 200mm' : '112mm 250mm'} !important;
-          margin: 0 !important;
-        }
-
+        .thermal-header { font-family: ${receiptSettings.fontFamily}, monospace; }
+        .thermal-text { font-family: ${receiptSettings.fontFamily}, monospace; }
+        .thermal-line { border-bottom: 1px solid #000; margin: 1mm 0; }
+        .thermal-dotted { border-bottom: 1px dotted #666; margin: 1mm 0; }
         @media print {
-          html, body {
-            width: 100% !important;
-            height: auto !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-            color: black !important;
-            font-family: 'Courier New', 'Consolas', 'Lucida Console', monospace !important;
-            font-size: ${paperWidth === 'thermal58' ? '13pt' : paperWidth === 'thermal72' ? '13.5pt' : paperWidth === 'thermal77' ? '14pt' : paperWidth === 'thermal80' ? '14pt' : '16pt'} !important;
-            line-height: 1.2 !important;
-          }
-
-          .thermal-receipt {
-            width: ${paperWidth === 'thermal58' ? '56mm' : paperWidth === 'thermal72' ? '70mm' : paperWidth === 'thermal77' ? '75mm' : paperWidth === 'thermal80' ? '78mm' : '110mm'} !important;
-            max-width: ${paperWidth === 'thermal58' ? '56mm' : paperWidth === 'thermal72' ? '70mm' : paperWidth === 'thermal77' ? '75mm' : paperWidth === 'thermal80' ? '78mm' : '110mm'} !important;
-            padding: 1mm !important;
-            margin: 0 !important;
-            background: white !important;
-            color: black !important;
-            max-height: ${paperWidth === 'thermal58' ? '190mm' : '190mm'} !important;
-          }
-
-          .thermal-text, .thermal-header, .thermal-total {
-            font-size: ${paperWidth === 'thermal58' ? '10px' : paperWidth === 'thermal72' ? '11px' : paperWidth === 'thermal77' ? '12px' : paperWidth === 'thermal80' ? '12px' : '13px'} !important;
-            line-height: 1.1 !important;
-            margin: 0.5mm 0 !important;
-            padding: 0 !important;
-            color: black !important;
-            background: transparent !important;
-          }
-
-          .thermal-line {
-            width: 100% !important;
-            height: 1px !important;
-            background: black !important;
-            margin: 1mm 0 !important;
-            border: none !important;
-          }
-
-          .thermal-dotted {
-            width: 100% !important;
-            height: 1px !important;
-            border-top: 1px dotted black !important;
-            margin: 1mm 0 !important;
-          }
-
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-
-          th, td {
-            border: none !important;
-            padding: 0.5mm !important;
-            margin: 0 !important;
-            font-size: inherit !important;
-            color: black !important;
-            background: transparent !important;
-          }
-
-          .thermal-header {
-            font-size: ${paperWidth === 'thermal58' ? '14px' : '16px'} !important;
-            font-weight: bold !important;
-            text-align: center !important;
-            margin-bottom: 1mm !important;
-            border-bottom: 2px solid black !important;
-            padding-bottom: 0.5mm !important;
-          }
-
-          .thermal-total {
-            font-size: ${paperWidth === 'thermal58' ? '11px' : '12px'} !important;
-            font-weight: bold !important;
-            text-align: center !important;
-            border: 2px solid black !important;
-            padding: 1mm !important;
-            margin: 1mm 0 !important;
-            background: #f0f0f0 !important;
-          }
-
-          .item-row {
-            font-size: ${paperWidth === 'thermal58' ? '13px' : '14px'} !important;
-            border-bottom: 1px dotted #666 !important;
-          }
-
-          small {
-            font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'} !important;
-          }
+          body { margin: 0; padding: 0; }
+          .thermal-header, .thermal-text { color: #000 !important; }
         }
       </style>
     `;
 
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=${paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '112mm'}, initial-scale=1.0">
-        <title>🖨️ Professional Thermal Receipt: ${data.billNumber || 'BILL'} | ${paperWidth}</title>
-        ${printCSS}
-      </head>
-      <body>
-        <div class="thermal-receipt">
-          ${receiptHtml}
-        </div>
-        <script>
-          window.addEventListener('load', function() {
-            setTimeout(function() {
-              window.print();
-            }, 500);
-          });
-        </script>
-      </body>
-      </html>
-    `;
+    // Create iframe for printing
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.top = '-9999px';
+    printFrame.style.left = '-9999px';
+    printFrame.style.width = paperWidth === 'thermal58' ? '58mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : '80mm';
+    printFrame.style.height = 'auto';
+    document.body.appendChild(printFrame);
 
-    printDocument.write(printContent);
-    printDocument.close();
+    const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
+    if (printDocument) {
+      printDocument.open();
+      printDocument.write(receiptHtml);
+      printDocument.close();
+    }
 
-    // Trigger print after content loads
+    // Auto print after a delay
     setTimeout(() => {
       try {
         if (printFrame.contentWindow) {
@@ -582,8 +387,12 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       
       // Clean up
       setTimeout(() => {
-        document.body.removeChild(printContainer);
-        document.body.removeChild(printFrame);
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.body.contains(printFrame)) {
+          document.body.removeChild(printFrame);
+        }
       }, 2000);
     }, 1000);
 
@@ -599,164 +408,54 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         document.body.removeChild(frame);
       }
     });
+    throw error;
   }
 };
 
-export const generateReceiptPreview = (settings: Partial<ReceiptCustomization>) => {
-  const sampleData: ReceiptData = {
-    billNumber: 'POS1234567890',
-    billDate: new Date().toLocaleString(),
-    customerDetails: {
-      name: 'Sample Customer',
-      phone: '+91-9876543210',
-      email: 'customer@example.com',
-      address: '123 Sample Street, Sample City'
+// Sample receipt data for testing
+export const sampleReceiptData: ReceiptData = {
+  billNumber: "POS1750923123456",
+  billDate: new Date().toLocaleString(),
+  customerDetails: {
+    name: "Priya Sharma",
+    phone: "+91-9876543210",
+    address: "123 Main Street, City"
+  },
+  salesMan: "Admin User",
+  items: [
+    {
+      id: 1,
+      name: "Basmati Rice Premium",
+      sku: "RICE-BASMATI-001",
+      quantity: 2,
+      price: "55.00",
+      total: 110.00,
+      mrp: 60,
+      hsnCode: "1006",
+      gstRate: 5
     },
-    salesMan: 'Sample Staff',
-    items: [
-      {
-        id: 1,
-        name: 'Sample Product 1',
-        sku: 'SKU001',
-        quantity: 2,
-        price: '100.00',
-        total: 200,
-        mrp: 120,
-        unit: 'pcs',
-        hsnCode: '1234',
-        discount: 5,
-        gstRate: 18
-      },
-      {
-        id: 2,
-        name: 'Sample Product 2',
-        sku: 'SKU002',
-        quantity: 1,
-        price: '250.00',
-        total: 250,
-        mrp: 300,
-        unit: 'kg',
-        hsnCode: '5678',
-        gstRate: 12
-      }
-    ],
-    subtotal: 450,
-    discount: 10,
-    discountType: 'fixed',
-    taxRate: 18,
-    taxAmount: 79.2,
-    grandTotal: 519.2,
-    amountPaid: 520,
-    changeDue: 0.8,
-    paymentMethod: 'cash',
-    loyaltyPointsEarned: 5.19
-  };
-
-  return `
-    <div style="max-width: 400px; margin: 0 auto; font-family: 'Courier New', monospace; background: white; padding: 10px; border: 1px solid #ccc;">
-      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '18px' : '20px'}; font-weight: bold; margin-bottom: 2mm;">
-        ${settings.businessName || 'M MART'}
-      </div>
-      
-      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 1mm;">
-        ${(settings.businessAddress || '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD').replace(/\n/g, '<br>')}
-      </div>
-      
-      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; font-weight: bold; margin-bottom: 1mm;">
-        Phone: ${settings.phoneNumber || '+91-9876543210'}
-      </div>
-      
-      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; margin-bottom: 1mm;">
-        GST No: ${settings.taxId || '33QIWPS9348F1Z2'}
-      </div>
-      
-      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; margin-bottom: 2mm;">
-        Email: ${settings.email || 'info@mmart.com'}
-      </div>
-      
-      <hr style="border: 1px solid #000; margin: 2mm 0;">
-      
-      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
-        <strong>Invoice Details:</strong><br>
-        Bill No: <strong>${sampleData.billNumber}</strong><br>
-        Date: <strong>${sampleData.billDate}</strong><br>
-        Customer: <strong>${sampleData.customerDetails?.name}</strong><br>
-        Cashier: <strong>${sampleData.salesMan}</strong>
-      </div>
-      
-      <hr style="border: 1px solid #000; margin: 2mm 0;">
-      
-      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
-        <div style="display: flex; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 2mm;">
-          <div style="flex: 2;">Item</div>
-          <div style="width: 40px; text-align: center;">Qty</div>
-          <div style="width: 60px; text-align: right;">Rate</div>
-          <div style="width: 80px; text-align: right;">Amount</div>
-        </div>
-        
-        ${sampleData.items.map(item => `
-        <div style="margin-bottom: 2mm; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'};">
-          <div style="display: flex; align-items: flex-start;">
-            <div style="flex: 2;">
-              <strong>${item.name}</strong><br>
-              <small>SKU: ${item.sku} | HSN: ${item.hsnCode}</small>
-            </div>
-            <div style="width: 25px; text-align: center; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'};">
-              ${item.quantity}
-            </div>
-            <div style="width: 50px; text-align: center; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'};">
-              ₹${item.price}
-            </div>
-            <div style="width: 50px; text-align: right; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'};">
-              ₹${item.total}
-            </div>
-          </div>
-          <div style="font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #666; margin-bottom: 1mm; font-style: italic;">
-            MRP: ₹${item.mrp} | Unit: ${item.unit} | GST: ${item.gstRate}%
-          </div>
-          <div style="text-align: right; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #666;">
-            ${item.discount ? `Discount: ${item.discount}%` : ''}
-          </div>
-        </div>
-        `).join('')}
-      </div>
-      
-      <hr style="border: 1px dotted #666; margin: 2mm 0;">
-      
-      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
-        Subtotal: <span style="float: right;">₹${sampleData.subtotal}</span><br>
-        Discount: <span style="float: right; color: #d32f2f;">-₹${sampleData.discount}</span><br>
-        Tax (GST): <span style="float: right;">₹${sampleData.taxAmount}</span><br>
-      </div>
-      
-      <div style="border: 2px solid #000; padding: 2mm; text-align: center; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '16px' : '18px'}; margin: 2mm 0;">
-        GRAND TOTAL: ₹${sampleData.grandTotal}
-      </div>
-      
-      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin: 2mm 0;">
-        Payment Method: <span style="float: right;"><strong>${sampleData.paymentMethod.toUpperCase()}</strong></span><br>
-        Amount Paid: <span style="float: right;">₹${sampleData.amountPaid}</span><br>
-        Change Due: <span style="float: right; font-weight: bold; color: #2e7d32;">₹${sampleData.changeDue}</span><br>
-        Loyalty Points: <span style="float: right; color: #ff9800;"><strong>+${sampleData.loyaltyPointsEarned}</strong></span>
-      </div>
-      
-      <hr style="border: 1px solid #000; margin: 2mm 0;">
-      
-      <div style="text-align: center; margin: 2mm 0;">
-        <div style="font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '16px' : '18px'}; margin-bottom: 1mm;">
-          🛍️ Thank You for Shopping! 🛍️
-        </div>
-        <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 1mm;">
-          ${(settings.receiptFooter || 'Thank you for shopping with us!').replace(/\n/g, '<br>')}
-        </div>
-        <div style="font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; color: #666;">
-          Store Timings: 9:00 AM - 10:00 PM<br>
-          Customer Care: ${settings.phoneNumber || '+91-9876543210'}
-        </div>
-        <div style="font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; color: #666;">
-          This is a computer generated invoice
-        </div>
-      </div>
-    </div>
-  `;
+    {
+      id: 2,
+      name: "Organic Wheat Flour",
+      sku: "FLOUR-WHEAT-002",
+      quantity: 1,
+      price: "45.00",
+      total: 45.00,
+      mrp: 50,
+      hsnCode: "1101",
+      gstRate: 5
+    }
+  ],
+  subtotal: 155.00,
+  discount: 5.00,
+  discountType: 'fixed',
+  taxRate: 5,
+  taxAmount: 7.50,
+  grandTotal: 157.50,
+  amountPaid: 160.00,
+  changeDue: 2.50,
+  paymentMethod: "cash",
+  notes: "Thank you for your purchase!",
+  loyaltyPointsEarned: 1.58,
+  customerLoyaltyBalance: 25.50
 };
