@@ -1426,9 +1426,15 @@ export default function POSEnhanced() {
         status: 'completed'
       };
 
-      // Auto-print with thermal printer
+      // Auto-print with thermal printer with loyalty information
       setTimeout(() => {
-        handlePrintReceipt(completedSaleData);
+        const receiptDataWithLoyalty = {
+          ...completedSaleData,
+          loyaltyPointsEarned: selectedCustomer ? calculatePointsToEarn(total) : 0,
+          loyaltyPointsRedeemed: loyaltyPointsToRedeem,
+          customerLoyaltyBalance: customerLoyalty ? parseFloat(customerLoyalty.availablePoints || customerLoyalty.totalPoints || '0') : 0
+        };
+        handlePrintReceipt(receiptDataWithLoyalty);
       }, 500);
 
       // Reset everything but preserve held sales
