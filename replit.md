@@ -192,6 +192,8 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Features include: QR codes, Indian number-to-words conversion, GST breakdown, professional layout
 - Support for both download and inline preview modes with print functionality
 - Optimized for thermal printer compatibility with proper page dimensions
+- Added PDF Receipt button alongside Thermal Print option in POS Enhanced interface
+- Fixed TypeScript issues with PDFKit and QRCode type declarations for proper compilation
 
 ## Changelog
 
