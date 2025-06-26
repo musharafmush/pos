@@ -108,7 +108,13 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
   document.body.appendChild(printContainer);
 
   try {
-    const savedSettings = localStorage.getItem('receiptSettings');
+    let savedSettings = null;
+    try {
+      savedSettings = localStorage.getItem('receiptSettings');
+    } catch (storageError) {
+      console.warn('localStorage access failed:', storageError);
+    }
+    
     const defaultSettings: ReceiptCustomization = {
       businessName: 'M MART',
       businessAddress: '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD,\nSAMUTHIRAM VILLAGE,\nTIRUVANNAMALAI-606603',
@@ -140,11 +146,20 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       thermalOptimized: true
     };
 
-    const receiptSettings = {
-      ...defaultSettings,
-      ...(savedSettings ? JSON.parse(savedSettings) : {}),
-      ...customization
-    };
+    let receiptSettings = { ...defaultSettings };
+    
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        receiptSettings = { ...receiptSettings, ...parsedSettings };
+      } catch (parseError) {
+        console.warn('Failed to parse receipt settings:', parseError);
+      }
+    }
+    
+    if (customization) {
+      receiptSettings = { ...receiptSettings, ...customization };
+    }
 
     const paperWidth = receiptSettings.paperWidth;
 
@@ -370,9 +385,16 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 
     const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
     if (printDocument) {
-      printDocument.open();
-      printDocument.write(receiptHtml);
-      printDocument.close();
+      try {
+        printDocument.open();
+        printDocument.write(receiptHtml);
+        printDocument.close();
+      } catch (documentError) {
+        console.error('Document write failed:', documentError);
+        throw new Error('Failed to generate receipt document');
+      }
+    } else {
+      throw new Error('Unable to access print document');
     }
 
     // Auto print after a delay
