@@ -1725,9 +1725,10 @@ export default function POSEnhanced() {
 
     } catch (error) {
       console.error("Receipt printing error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate receipt. Please try again.";
       toast({
         title: "Print Failed",
-        description: "Failed to generate receipt. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

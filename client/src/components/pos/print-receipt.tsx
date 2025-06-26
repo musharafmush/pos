@@ -86,8 +86,20 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     loyaltyPointsRedeemed: data.loyaltyPointsRedeemed,
     customerLoyaltyBalance: data.customerLoyaltyBalance,
     customerName: data.customerDetails?.name,
-    billNumber: data.billNumber
+    billNumber: data.billNumber,
+    itemsCount: data.items?.length || 0
   });
+
+  // Validate receipt data before processing
+  if (!data || !data.items || data.items.length === 0) {
+    console.error("❌ Cannot print receipt: No items found");
+    throw new Error("Cannot print receipt without items. Please add items to cart first.");
+  }
+
+  if (!data.billNumber) {
+    console.error("❌ Cannot print receipt: No bill number");
+    throw new Error("Cannot print receipt without bill number.");
+  }
 
   const printContainer = document.createElement('div');
   printContainer.style.position = 'fixed';
