@@ -96,7 +96,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com',
       showLogo: false,
       autoPrint: true,
-      paperWidth: 'thermal77',
+      paperWidth: 'thermal80',
       fontSize: 'medium',
       fontFamily: 'courier',
       headerStyle: 'centered',

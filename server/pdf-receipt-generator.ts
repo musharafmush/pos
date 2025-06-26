@@ -55,14 +55,14 @@ export interface PDFReceiptSettings {
 
 export class PDFReceiptGenerator {
   private doc: PDFDocument;
-  private pageWidth = 288; // 4 inches = 288 points
-  private margin = 20;
+  private pageWidth = 226; // 80mm thermal paper = 226 points
+  private margin = 10;
   private contentWidth: number;
   private currentY = 40;
 
   constructor() {
     this.doc = new PDFDocument({
-      size: [this.pageWidth, 'auto'], // 4-inch width, auto height
+      size: [this.pageWidth, 'auto'], // 80mm thermal paper width, auto height
       margin: this.margin,
       info: {
         Title: 'POS Receipt',

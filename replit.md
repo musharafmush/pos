@@ -177,16 +177,16 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Implemented automatic thermal receipt printing after sale completion
 - Streamlined POS printing process for improved user experience
 
-### 77mm Thermal Paper Support (June 25, 2025)
-- Added support for 77mm thermal paper width in print-receipt component
-- Updated paper configuration options to include 72mm, 77mm (optimal), and 80mm
-- Set 77mm as the default paper width for optimal thermal printing
-- Enhanced unified printer settings with comprehensive paper width options
-- Updated Xprinter XP-420B configuration guidance for 77mm paper
+### 80mm Thermal Paper Support (June 26, 2025)
+- Updated to 80mm thermal paper as professional standard based on real receipt analysis
+- Changed PDF receipt generator to use 226 points width (80mm standard)
+- Updated default paper width from 77mm to 80mm across all printer settings
+- Enhanced thermal printer configuration for professional 80mm receipts
+- Updated Xprinter XP-420B configuration guidance for 80mm paper standard
 
-### 4-inch PDF Receipt Generation (June 26, 2025)
-- Implemented professional 4-inch wide PDF receipt generator using PDFKit
-- Created PDFReceiptGenerator class with 288pt width (4 inches) for thermal printers
+### 80mm PDF Receipt Generation (June 26, 2025)
+- Implemented professional 80mm wide PDF receipt generator using PDFKit
+- Created PDFReceiptGenerator class with 226pt width (80mm standard) for thermal printers
 - Added comprehensive PDF generation API endpoints (/api/pdf-receipt/generate and /api/pdf-receipt/preview)
 - Integrated PDF receipt generator component into POS-enhanced interface
 - Features include: QR codes, Indian number-to-words conversion, GST breakdown, professional layout
