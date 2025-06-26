@@ -51,7 +51,6 @@ import {
   Star,
   Gift
 } from "lucide-react";
-import PDFReceiptGenerator from '@/components/pos/pdf-receipt-generator';
 
 interface Product {
   id: number;
@@ -119,8 +118,6 @@ export default function POSEnhanced() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
-  const [showPDFGenerator, setShowPDFGenerator] = useState(false);
-  const [lastSaleData, setLastSaleData] = useState<any>(null);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
@@ -1426,15 +1423,9 @@ export default function POSEnhanced() {
         status: 'completed'
       };
 
-      // Auto-print with thermal printer with loyalty information
+      // Auto-print with thermal printer
       setTimeout(() => {
-        const receiptDataWithLoyalty = {
-          ...completedSaleData,
-          loyaltyPointsEarned: selectedCustomer ? calculatePointsToEarn(total) : 0,
-          loyaltyPointsRedeemed: loyaltyPointsToRedeem,
-          customerLoyaltyBalance: customerLoyalty ? parseFloat(customerLoyalty.availablePoints || customerLoyalty.totalPoints || '0') : 0
-        };
-        handlePrintReceipt(receiptDataWithLoyalty);
+        handlePrintReceipt(completedSaleData);
       }, 500);
 
       // Reset everything but preserve held sales
@@ -1687,20 +1678,10 @@ export default function POSEnhanced() {
         change: Math.max(0, receiptAmountPaid - receiptTotal),
         paymentMethod: receiptPaymentMethod.toUpperCase(),
         status: 'completed',
-        notes: `Bill: ${receiptBillNumber} | Terminal: POS-Enhanced`,
-        loyaltyPointsEarned: saleData?.loyaltyPointsEarned || 0,
-        loyaltyPointsRedeemed: saleData?.loyaltyPointsRedeemed || 0,
-        customerLoyaltyBalance: saleData?.customerLoyaltyBalance || 0
+        notes: `Bill: ${receiptBillNumber} | Terminal: POS-Enhanced`
       };
 
-      console.log("🧾 Receipt data being sent to printer:", {
-        loyaltyPointsEarned: receiptData.loyaltyPointsEarned,
-        loyaltyPointsRedeemed: receiptData.loyaltyPointsRedeemed,
-        customerLoyaltyBalance: receiptData.customerLoyaltyBalance,
-        customerName: receiptData.customerDetails?.name,
-        billNumber: receiptData.billNumber,
-        total: receiptData.total
-      });
+      console.log("Printing receipt with data:", receiptData);
       
       // Use the print receipt utility with proper thermal settings
       const printSettings = {
@@ -1715,7 +1696,7 @@ export default function POSEnhanced() {
         autoPrint: options?.autoPrint || false
       };
       
-      printReceipt(receiptData, printSettings);
+      printReceiptUtil(receiptData, printSettings);
 
       toast({
         title: "Receipt Sent to Printer",
@@ -1725,10 +1706,9 @@ export default function POSEnhanced() {
 
     } catch (error) {
       console.error("Receipt printing error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to generate receipt. Please try again.";
       toast({
         title: "Print Failed",
-        description: errorMessage,
+        description: "Failed to generate receipt. Please try again.",
         variant: "destructive",
       });
     }
@@ -5056,33 +5036,7 @@ Terminal: POS-Enhanced
               </div>
             </DialogContent>
           </Dialog>
-          {/* PDF Receipt Generator Dialog */}
-        {showPDFGenerator && lastSaleData && (
-          <Dialog open={showPDFGenerator} onOpenChange={setShowPDFGenerator}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>4-inch PDF Receipt Generator</DialogTitle>
-                <p className="text-sm text-muted-foreground">
-                  Generate professional PDF receipts optimized for 4-inch thermal printers
-                </p>
-              </DialogHeader>
-              
-              <PDFReceiptGenerator
-                receiptData={lastSaleData}
-                businessSettings={{
-                  businessName: 'M MART',
-                  businessAddress: '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD,\nSAMUDHIRAM VILLAGE,\nTIRUVANNAMALAI-606603',
-                  phoneNumber: '+91-9876543210',
-                  email: 'info@mmart.com',
-                  taxId: '33QIWPS9348F1Z2',
-                  receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com'
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
-
-      </div>
+        </div>
     </div>
   );
 }

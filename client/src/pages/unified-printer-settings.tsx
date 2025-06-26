@@ -81,7 +81,7 @@ export default function UnifiedPrinterSettings() {
     
     // Receipt Settings
     receiptFooter: 'Thank you for shopping with us!',
-    paperWidth: '80mm',
+    paperWidth: '77mm',
     showLogo: true,
     autoPrint: true,
     showCustomerDetails: true,

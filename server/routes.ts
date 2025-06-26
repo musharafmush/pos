@@ -11,7 +11,6 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { db } from "../db/index.js";
 import { eq, desc, sql, and, gte, lte, inArray } from "drizzle-orm";
 import { returns as returnTransactions, sales, returnItems, products, customers, purchases, purchaseItems, suppliers, categories } from "../shared/schema.js";
-import { generatePDFReceipt, PDFReceiptData, PDFReceiptSettings } from "./pdf-receipt-generator.js";
 
 // Define authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
