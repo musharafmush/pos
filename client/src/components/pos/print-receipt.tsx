@@ -319,7 +319,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           ${data.customerLoyaltyBalance !== undefined ? `
             <tr>
               <td style="text-align: left; padding: 0.5mm 0;">Total Loyalty Points:</td>
-              <td style="text-align: right; padding: 0.5mm 0; color: #2e7d32;"><strong>${(data.customerLoyaltyBalance + (data.loyaltyPointsEarned || 0)).toFixed(2)}</strong></td>
+              <td style="text-align: right; padding: 0.5mm 0; color: #2e7d32;"><strong>${((Number(data.customerLoyaltyBalance) || 0) + (Number(data.loyaltyPointsEarned) || 0)).toFixed(2)}</strong></td>
             </tr>
           ` : ''}
           ${data.loyaltyPointsRedeemed && data.loyaltyPointsRedeemed > 0 ? `
@@ -348,7 +348,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
             ${data.customerLoyaltyBalance !== undefined ? `
               <tr>
                 <td style="text-align: left; padding: 0.5mm 0;">Total Loyalty Points:</td>
-                <td style="text-align: right; padding: 0.5mm 0; color: #2e7d32; font-weight: bold;">${(data.customerLoyaltyBalance + (data.loyaltyPointsEarned || 0)).toFixed(2)}</td>
+                <td style="text-align: right; padding: 0.5mm 0; color: #2e7d32; font-weight: bold;">${((Number(data.customerLoyaltyBalance) || 0) + (Number(data.loyaltyPointsEarned) || 0)).toFixed(2)}</td>
               </tr>
             ` : ''}
             ${data.loyaltyPointsRedeemed && data.loyaltyPointsRedeemed > 0 ? `
