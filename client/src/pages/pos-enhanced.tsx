@@ -51,6 +51,7 @@ import {
   Star,
   Gift
 } from "lucide-react";
+import PDFReceiptGenerator from '@/components/pos/pdf-receipt-generator';
 
 interface Product {
   id: number;
@@ -118,6 +119,8 @@ export default function POSEnhanced() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [showPDFGenerator, setShowPDFGenerator] = useState(false);
+  const [lastSaleData, setLastSaleData] = useState<any>(null);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
@@ -5036,7 +5039,33 @@ Terminal: POS-Enhanced
               </div>
             </DialogContent>
           </Dialog>
-        </div>
+          {/* PDF Receipt Generator Dialog */}
+        {showPDFGenerator && lastSaleData && (
+          <Dialog open={showPDFGenerator} onOpenChange={setShowPDFGenerator}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>4-inch PDF Receipt Generator</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Generate professional PDF receipts optimized for 4-inch thermal printers
+                </p>
+              </DialogHeader>
+              
+              <PDFReceiptGenerator
+                receiptData={lastSaleData}
+                businessSettings={{
+                  businessName: 'M MART',
+                  businessAddress: '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD,\nSAMUDHIRAM VILLAGE,\nTIRUVANNAMALAI-606603',
+                  phoneNumber: '+91-9876543210',
+                  email: 'info@mmart.com',
+                  taxId: '33QIWPS9348F1Z2',
+                  receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com'
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
+
+      </div>
     </div>
   );
 }
