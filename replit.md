@@ -184,6 +184,15 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Enhanced unified printer settings with comprehensive paper width options
 - Updated Xprinter XP-420B configuration guidance for 77mm paper
 
+### 4-inch PDF Receipt Generation (June 26, 2025)
+- Implemented professional 4-inch wide PDF receipt generator using PDFKit
+- Created PDFReceiptGenerator class with 288pt width (4 inches) for thermal printers
+- Added comprehensive PDF generation API endpoints (/api/pdf-receipt/generate and /api/pdf-receipt/preview)
+- Integrated PDF receipt generator component into POS-enhanced interface
+- Features include: QR codes, Indian number-to-words conversion, GST breakdown, professional layout
+- Support for both download and inline preview modes with print functionality
+- Optimized for thermal printer compatibility with proper page dimensions
+
 ## Changelog
 
 - June 25, 2025. Initial setup and enhanced search capabilities
