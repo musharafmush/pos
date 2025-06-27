@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { toast } from '@/hooks/use-toast';
 import { generateEnhancedThermalReceiptHTML } from '@/components/pos/print-receipt';
+import { useQuery } from "@tanstack/react-query";
 import {
   Settings,
   Printer,
@@ -31,7 +32,8 @@ import {
   PlayCircle,
   PauseCircle,
   RotateCcw,
-  HelpCircle
+  HelpCircle,
+  Activity
 } from 'lucide-react';
 
 interface PrinterSettings {
