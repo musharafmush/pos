@@ -81,6 +81,11 @@ interface CartItem extends Product {
   isWeightBased?: boolean;
   actualWeight?: number;
   pricePerKg?: number;
+  productId?: number;
+  productName?: string;
+  productSku?: string;
+  unitPrice?: number;
+  subtotal?: number;
 }
 
 export default function POSEnhanced() {
@@ -133,6 +138,7 @@ export default function POSEnhanced() {
     notes: string;
     timestamp: Date;
     total: number;
+    oceanFreight?: any;
   }>>([]);
 
   // Printer settings state
@@ -1712,6 +1718,153 @@ export default function POSEnhanced() {
         description: "Failed to generate receipt. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  // Direct Bill Printing - Enhanced automatic printing with error handling
+  const handleDirectBillPrint = async (saleData: any, saleResult: any) => {
+    try {
+      console.log("🖨️ Direct Bill Print: Starting automatic receipt generation...");
+      
+      // Validate sale data
+      if (!saleData || !saleData.billNumber) {
+        throw new Error("Invalid sale data for printing");
+      }
+
+      // Prepare enhanced receipt data with all transaction details
+      const receiptData = {
+        billNumber: saleData.billNumber,
+        billDate: new Date().toLocaleString('en-IN'),
+        orderNumber: saleData.orderNumber,
+        customerDetails: saleData.customer || { name: 'Walk-in Customer' },
+        salesMan: 'POS System',
+        items: saleData.items.map((item: any) => ({
+          id: item.id || item.productId,
+          name: item.name || item.productName,
+          sku: item.sku || item.productSku || `ITM${String(item.id || item.productId).padStart(6, '0')}`,
+          quantity: item.quantity,
+          price: (item.price || item.unitPrice || 0).toString(),
+          unitPrice: item.price || item.unitPrice || 0,
+          total: item.total || item.subtotal || 0,
+          subtotal: item.total || item.subtotal || 0,
+          mrp: item.mrp || (parseFloat(item.price || item.unitPrice || "0") * 1.2)
+        })),
+        subtotal: saleData.subtotal || saleData.total,
+        discount: saleData.discount || 0,
+        discountType: 'fixed' as const,
+        taxRate: 0,
+        taxAmount: 0,
+        grandTotal: saleData.total,
+        total: saleData.total,
+        amountPaid: saleData.amountPaid || saleData.total,
+        changeDue: saleData.change || Math.max(0, (saleData.amountPaid || saleData.total) - saleData.total),
+        change: saleData.change || Math.max(0, (saleData.amountPaid || saleData.total) - saleData.total),
+        paymentMethod: (saleData.paymentMethod || 'CASH').toUpperCase(),
+        status: 'completed',
+        notes: saleData.notes || `Transaction completed successfully`,
+        createdAt: saleData.createdAt || new Date().toISOString()
+      };
+
+      // Enhanced print settings for direct printing
+      const printSettings = {
+        paperWidth: 'thermal77' as const,
+        fontSize: 'medium' as const,
+        fontFamily: 'courier' as const,
+        thermalOptimized: true,
+        businessName: receiptSettings.businessName || 'M MART',
+        businessAddress: receiptSettings.address || 'Professional Retail Solution\n123 Business Street, City',
+        phoneNumber: receiptSettings.phone || '+91-9876543210',
+        taxId: receiptSettings.taxId || '33GSPDB3311F1ZZ',
+        receiptFooter: receiptSettings.receiptFooter || 'Thank you for shopping with us!\nVisit again soon',
+        autoPrint: true,
+        showInstructions: false,
+        directPrint: true
+      };
+
+      console.log("🖨️ Direct Bill Print: Sending to thermal printer...");
+      console.log("📄 Receipt Data:", receiptData);
+      console.log("⚙️ Print Settings:", printSettings);
+
+      // Send to thermal printer with enhanced error handling
+      try {
+        printReceiptUtil(receiptData, printSettings);
+        
+        console.log("✅ Direct Bill Print: Receipt sent to printer successfully");
+        
+        // Success notification
+        toast({
+          title: "🖨️ Bill Printed",
+          description: `Receipt ${receiptData.billNumber} sent to thermal printer automatically`,
+          variant: "default",
+        });
+
+        // Optional: Track print statistics
+        localStorage.setItem('lastPrintedBill', JSON.stringify({
+          billNumber: receiptData.billNumber,
+          timestamp: new Date().toISOString(),
+          total: receiptData.total,
+          customer: receiptData.customerDetails.name
+        }));
+
+      } catch (printError) {
+        console.error("❌ Direct Bill Print: Thermal printing failed:", printError);
+        
+        // Fallback: Show print dialog instead of failing silently
+        setTimeout(() => {
+          console.log("🔄 Direct Bill Print: Attempting fallback print...");
+          try {
+            handlePrintReceipt(saleData);
+          } catch (fallbackError) {
+            console.error("Fallback print also failed:", fallbackError);
+          }
+        }, 1000);
+
+        toast({
+          title: "Print Issue",
+          description: "Automatic printing failed. Print dialog opened as backup.",
+          variant: "default",
+        });
+      }
+
+    } catch (error) {
+      console.error("❌ Direct Bill Print: Critical error:", error);
+      
+      // Fallback to manual print dialog
+      toast({
+        title: "Direct Print Failed",
+        description: "Unable to print automatically. Please use manual print option.",
+        variant: "destructive",
+      });
+      
+      // Store failed print for retry
+      localStorage.setItem('failedPrint', JSON.stringify({
+        saleData,
+        timestamp: new Date().toISOString(),
+        error: error.message
+      }));
+    }
+  };
+
+  // Retry failed prints
+  const retryFailedPrint = () => {
+    try {
+      const failedPrint = localStorage.getItem('failedPrint');
+      if (failedPrint) {
+        const { saleData } = JSON.parse(failedPrint);
+        try {
+          handlePrintReceipt(saleData);
+        } catch (retryError) {
+          console.error("Print retry failed:", retryError);
+        }
+        localStorage.removeItem('failedPrint');
+        
+        toast({
+          title: "Print Retry",
+          description: "Attempting to print previously failed receipt",
+        });
+      }
+    } catch (error) {
+      console.error("Failed print retry error:", error);
     }
   };
 
