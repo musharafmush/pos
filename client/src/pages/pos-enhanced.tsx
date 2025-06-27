@@ -1441,7 +1441,7 @@ export default function POSEnhanced() {
           unitPrice: parseFloat(item.price),
           total: item.total,
           subtotal: item.total,
-          mrp: item.mrp || parseFloat(item.price) * 1.2
+          mrp: Number(item.mrp) || 0
         })),
         createdAt: new Date().toISOString(), // Current timestamp for receipt
         status: 'completed'
@@ -1688,7 +1688,7 @@ export default function POSEnhanced() {
           unitPrice: parseFloat(item.price || item.unitPrice || "0"),
           total: item.total || item.subtotal || (item.quantity * parseFloat(item.price || item.unitPrice || "0")),
           subtotal: item.total || item.subtotal || (item.quantity * parseFloat(item.price || item.unitPrice || "0")),
-          mrp: item.mrp || (parseFloat(item.price || item.unitPrice || "0") * 1.2)
+          mrp: Number(item.mrp) || 0
         })),
         subtotal: receiptSubtotal,
         discount: receiptDiscount,
@@ -1780,7 +1780,7 @@ export default function POSEnhanced() {
           unitPrice: item.price || item.unitPrice || 0,
           total: item.total || item.subtotal || 0,
           subtotal: item.total || item.subtotal || 0,
-          mrp: item.mrp || (parseFloat(item.price || item.unitPrice || "0") * 1.2)
+          mrp: Number(item.mrp) || 0
         })),
         subtotal: saleData.subtotal || saleData.total,
         discount: saleData.discount || 0,

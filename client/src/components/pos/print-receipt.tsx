@@ -669,9 +669,19 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <div style="font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #666; margin-bottom: 1mm; font-style: italic;">
             ${item.productSku || item.sku || 'SAMPLE-001'}
           </div>
-          <div style="text-align: right; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #666;">
-            MRP: ${settings.currencySymbol || '₹'}${Number((item.unitPrice || item.price || 30) + 20).toFixed(0)} | Save: ${settings.currencySymbol || '₹'}${Number((item.unitPrice || item.price || 30) * 0.2).toFixed(0)}
-          </div>
+          ${settings.showMRP ? `<div style="text-align: right; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #666;">
+            ${(() => {
+              const actualMRP = Number(item.mrp || 0);
+              const sellingPrice = Number(item.unitPrice || item.price || 0);
+              if (actualMRP > 0 && sellingPrice > 0) {
+                const savings = actualMRP - sellingPrice;
+                return `MRP: ${settings.currencySymbol || '₹'}${actualMRP.toFixed(0)}${savings > 0 ? ` | Save: ${settings.currencySymbol || '₹'}${savings.toFixed(0)}` : ''}`;
+              } else if (actualMRP > 0) {
+                return `MRP: ${settings.currencySymbol || '₹'}${actualMRP.toFixed(0)}`;
+              }
+              return '';
+            })()}
+          </div>` : ''}
         </div>
       `).join('')}
       

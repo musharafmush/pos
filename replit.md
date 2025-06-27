@@ -235,6 +235,13 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Enhanced bill printing with automatic paper width detection (58mm, 72mm, 77mm, 80mm) from settings
 - Integrated all receipt customization options from unified printer settings into POS printing workflow
 
+### Dynamic MRP Display Fix (June 27, 2025)
+- Fixed thermal receipt MRP display to use actual product MRP data instead of calculated fallback values
+- Updated thermal receipt generation to show real MRP and calculate accurate savings dynamically
+- Enhanced MRP formatting in print-receipt.tsx to respect showMRP setting from printer configuration
+- Removed hardcoded MRP calculations (price + 20) and replaced with authentic product MRP data
+- Improved receipt accuracy by displaying actual product pricing information from database
+
 ### 77mm Thermal Paper Support (June 25, 2025)
 - Added support for 77mm thermal paper width in print-receipt component
 - Updated paper configuration options to include 72mm, 77mm (optimal), and 80mm
