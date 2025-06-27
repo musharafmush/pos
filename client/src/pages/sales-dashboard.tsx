@@ -1317,7 +1317,7 @@ export default function SalesDashboard() {
                                       )}
                                     </div>
                                     <div className="text-sm text-gray-600">
-                                      <span className="font-medium">{sale.customerName || sale.customer_name || "Walk-in Customer"}</span>
+                                      <span className="font-medium">{sale.customer?.name || sale.customerName || sale.customer_name || "Walk-in Customer"}</span>
                                       {sale.customerPhone && <span> • {sale.customerPhone}</span>}
                                     </div>
                                     <div className="text-xs text-gray-500">
@@ -1540,7 +1540,7 @@ export default function SalesDashboard() {
                   onClick={() => {
                     // Export customer billing data
                     const csvData = customerBillingData?.map(customer => ({
-                      'Customer Name': customer.customerName || 'Walk-in Customer',
+                      'Customer Name': customer.customer?.name || customer.customerName || 'Walk-in Customer',
                       'Phone': customer.phone || '',
                       'Email': customer.email || '',
                       'Total Billed': customer.totalBilled || '0',
@@ -2252,7 +2252,7 @@ export default function SalesDashboard() {
                     const csvData = salesData?.map(sale => ({
                       'Date': format(new Date(sale.createdAt || sale.created_at || new Date()), "yyyy-MM-dd"),
                       'Invoice': sale.orderNumber || sale.invoiceNumber || `INV-${sale.id}`,
-                      'Customer': sale.customerName || sale.customer_name || "Walk-in Customer",
+                      'Customer': sale.customer?.name || sale.customerName || sale.customer_name || "Walk-in Customer",
                       'Total': sale.total || sale.totalAmount || sale.amount || 0,
                       'Payment': sale.paymentMethod || sale.payment_method || "Cash",
                       'Status': sale.status || "Completed"
@@ -2414,13 +2414,13 @@ export default function SalesDashboard() {
                               <TableCell className="py-4 px-6">
                                 <div className="flex flex-col">
                                   <span className="font-medium text-gray-800">
-                                    {sale.customerName || sale.customer_name || "Walk-in Customer"}
+                                    {sale.customer?.name || sale.customerName || sale.customer_name || "Walk-in Customer"}
                                   </span>
-                                  {sale.customerPhone && (
-                                    <span className="text-sm text-gray-500">{sale.customerPhone}</span>
+                                  {(sale.customer?.phone || sale.customerPhone) && (
+                                    <span className="text-sm text-gray-500">{sale.customer?.phone || sale.customerPhone}</span>
                                   )}
-                                  {sale.customerEmail && (
-                                    <span className="text-xs text-gray-400">{sale.customerEmail}</span>
+                                  {(sale.customer?.email || sale.customerEmail) && (
+                                    <span className="text-xs text-gray-400">{sale.customer?.email || sale.customerEmail}</span>
                                   )}
                                 </div>
                               </TableCell>
@@ -2519,7 +2519,7 @@ export default function SalesDashboard() {
                                         billNumber: sale.orderNumber || 'N/A',
                                         billDate: sale.createdAt || new Date().toISOString(),
                                         customerDetails: {
-                                          name: sale.customerName || 'Walk-in Customer'
+                                          name: sale.customer?.name || sale.customerName || 'Walk-in Customer'
                                         },
                                         salesMan: sale.userName || 'Admin',
                                         items: sale.items?.map((item: any) => ({
@@ -2895,7 +2895,7 @@ export default function SalesDashboard() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Name:</span>
-                        <span className="font-medium">{selectedSaleDetail.customerName || selectedSaleDetail.customer_name || "Walk-in Customer"}</span>
+                        <span className="font-medium">{selectedSaleDetail.customer?.name || selectedSaleDetail.customerName || selectedSaleDetail.customer_name || "Walk-in Customer"}</span>
                       </div>
                       {selectedSaleDetail.customerPhone && (
                         <div className="flex justify-between">
@@ -3110,7 +3110,7 @@ export default function SalesDashboard() {
                         billNumber: selectedSaleDetail.orderNumber || 'N/A',
                         billDate: selectedSaleDetail.createdAt || new Date().toISOString(),
                         customerDetails: {
-                          name: selectedSaleDetail.customerName || 'Walk-in Customer'
+                          name: selectedSaleDetail.customer?.name || selectedSaleDetail.customerName || 'Walk-in Customer'
                         },
                         salesMan: selectedSaleDetail.userName || 'Admin',
                         items: selectedSaleDetail.items?.map((item: any) => ({
