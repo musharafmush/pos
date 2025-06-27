@@ -255,6 +255,25 @@ export default function POSEnhanced() {
     },
   });
 
+  // Fetch printer settings dynamically for bill printing
+  const { data: dynamicPrinterSettings, isLoading: printerSettingsLoading } = useQuery({
+    queryKey: ["/api/settings/receipt"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/settings/receipt");
+        if (!response.ok) {
+          console.warn('Failed to fetch printer settings, using defaults');
+          return null;
+        }
+        return response.json();
+      } catch (error) {
+        console.error('Error fetching printer settings:', error);
+        return null;
+      }
+    },
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
+
   // Update register state when active register is loaded
   useEffect(() => {
     if (activeCashRegister) {
@@ -1779,20 +1798,31 @@ export default function POSEnhanced() {
         createdAt: new Date().toISOString() // Always use current date/time for printing
       };
 
-      // Enhanced print settings for direct printing
+      // Enhanced print settings using unified printer settings
       const printSettings = {
-        paperWidth: 'thermal77' as const,
-        fontSize: 'medium' as const,
-        fontFamily: 'courier' as const,
-        thermalOptimized: true,
-        businessName: receiptSettings.businessName || 'M MART',
-        businessAddress: receiptSettings.address || 'Professional Retail Solution\n123 Business Street, City',
-        phoneNumber: receiptSettings.phone || '+91-9876543210',
-        taxId: receiptSettings.taxId || '33GSPDB3311F1ZZ',
-        receiptFooter: receiptSettings.receiptFooter || 'Thank you for shopping with us!\nVisit again soon',
-        autoPrint: true,
+        paperWidth: (dynamicPrinterSettings?.paperWidth === '77mm' ? 'thermal77' : 
+                     dynamicPrinterSettings?.paperWidth === '80mm' ? 'thermal80' : 
+                     dynamicPrinterSettings?.paperWidth === '58mm' ? 'thermal58' : 
+                     dynamicPrinterSettings?.paperWidth === '72mm' ? 'thermal72' : 'thermal77') as const,
+        fontSize: (dynamicPrinterSettings?.fontSize || 'medium') as const,
+        fontFamily: (dynamicPrinterSettings?.fontFamily || 'courier') as const,
+        thermalOptimized: dynamicPrinterSettings?.thermalOptimized ?? true,
+        businessName: dynamicPrinterSettings?.businessName || receiptSettings.businessName || 'M MART',
+        businessAddress: dynamicPrinterSettings?.businessAddress || receiptSettings.address || 'Professional Retail Solution\n123 Business Street, City',
+        phoneNumber: dynamicPrinterSettings?.phoneNumber || receiptSettings.phone || '+91-9876543210',
+        taxId: dynamicPrinterSettings?.taxId || receiptSettings.taxId || '33GSPDB3311F1ZZ',
+        receiptFooter: dynamicPrinterSettings?.receiptFooter || receiptSettings.receiptFooter || 'Thank you for shopping with us!\nVisit again soon',
+        autoPrint: dynamicPrinterSettings?.enableAutoPrint ?? true,
         showInstructions: false,
-        directPrint: true
+        directPrint: true,
+        showLogo: dynamicPrinterSettings?.showLogo ?? true,
+        showCustomerDetails: dynamicPrinterSettings?.showCustomerDetails ?? true,
+        showItemSKU: dynamicPrinterSettings?.showItemSKU ?? false,
+        showMRP: dynamicPrinterSettings?.showMRP ?? true,
+        showSavings: dynamicPrinterSettings?.showSavings ?? true,
+        headerStyle: dynamicPrinterSettings?.headerStyle || 'center',
+        boldTotals: dynamicPrinterSettings?.boldTotals ?? true,
+        separatorStyle: dynamicPrinterSettings?.separatorStyle || 'dashed'
       };
 
       console.log("🖨️ Direct Bill Print: Sending to thermal printer...");
@@ -2465,6 +2495,17 @@ export default function POSEnhanced() {
                       </Button>
                     </>
                   )}
+
+                  <Button
+                    onClick={() => window.open('/printer-settings', '_blank')}
+                    variant="outline"
+                    size="sm"
+                    className="hover:bg-purple-50 border-purple-200 text-purple-700"
+                    title="Open printer settings"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Printer Settings
+                  </Button>
 
                   <Button
                     onClick={toggleFullscreen}
