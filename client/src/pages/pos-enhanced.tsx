@@ -1326,7 +1326,10 @@ export default function POSEnhanced() {
           unitPrice: parseFloat(item.price).toString(),
           subtotal: item.total.toString(),
           price: parseFloat(item.price).toString(),
-          total: item.total.toString()
+          total: item.total.toString(),
+          mrp: item.mrp,
+          name: item.name,
+          sku: item.sku
         })),
         subtotal: subtotal.toFixed(2),
         discount: (discountAmount + loyaltyDiscount).toFixed(2),
