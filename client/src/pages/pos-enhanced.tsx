@@ -645,6 +645,7 @@ export default function POSEnhanced() {
       isWeightBased: true,
       actualWeight: weight,
       pricePerKg: pricePerKg,
+      mrp: parseFloat(weightProduct.mrp) || 0,
     };
 
     setCart(prev => [...prev, cartItem]);
@@ -696,7 +697,8 @@ export default function POSEnhanced() {
       setCart([...cart, { 
         ...product, 
         quantity: 1, 
-        total: parseFloat(product.price) 
+        total: parseFloat(product.price),
+        mrp: parseFloat(product.mrp) || 0
       }]);
     }
 
