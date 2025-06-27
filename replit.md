@@ -204,6 +204,13 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Added fallback logic to read customer names from multiple data sources
 - Improved direct bill printing to include complete customer information
 - Added debugging logs to track customer data flow through receipt generation process
+- Verified fix working: thermal receipts now show actual customer names (e.g., "Anya")
+
+### Printer Settings Debugging Enhancement (June 27, 2025)
+- Added comprehensive debugging to unified printer settings save functionality
+- Enhanced error handling with detailed error messages for settings save operations
+- Verified receipt settings API endpoints working correctly (GET/POST)
+- Added logging to track settings save process and identify any configuration issues
 
 ### 77mm Thermal Paper Support (June 25, 2025)
 - Added support for 77mm thermal paper width in print-receipt component
