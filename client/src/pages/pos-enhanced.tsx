@@ -1644,14 +1644,14 @@ export default function POSEnhanced() {
         billDate: new Date().toISOString(),
         createdAt: new Date().toISOString(), // Always current timestamp
         customerDetails: {
-          name: receiptCustomer?.name || "Walk-in Customer",
-          doorNo: receiptCustomer?.phone ? `Ph: ${receiptCustomer.phone}` : "",
+          name: receiptCustomer?.name || selectedCustomer?.name || "Walk-in Customer",
+          doorNo: receiptCustomer?.phone ? `Ph: ${receiptCustomer.phone}` : selectedCustomer?.phone ? `Ph: ${selectedCustomer.phone}` : "",
           street: "",
           address: "",
           place: ""
         },
         customer: {
-          name: receiptCustomer?.name || "Walk-in Customer"
+          name: receiptCustomer?.name || selectedCustomer?.name || "Walk-in Customer"
         },
         user: {
           name: "Admin User"
@@ -1724,6 +1724,8 @@ export default function POSEnhanced() {
   const handleDirectBillPrint = async (saleData: any, saleResult: any) => {
     try {
       console.log("🖨️ Direct Bill Print: Starting automatic receipt generation...");
+      console.log("🏷️ Customer data for receipt:", saleData.customer);
+      console.log("👤 Selected Customer:", selectedCustomer);
       
       // Validate sale data
       if (!saleData || !saleData.billNumber) {
@@ -1741,7 +1743,14 @@ export default function POSEnhanced() {
         billNumber: saleData.billNumber,
         billDate: currentDate,
         orderNumber: saleData.orderNumber,
-        customerDetails: saleData.customer || { name: 'Walk-in Customer' },
+        customerDetails: { 
+          name: saleData.customer?.name || saleData.customerName || selectedCustomer?.name || 'Walk-in Customer' 
+        },
+        customer: {
+          name: saleData.customer?.name || saleData.customerName || selectedCustomer?.name || 'Walk-in Customer',
+          phone: saleData.customer?.phone || selectedCustomer?.phone || '',
+          email: saleData.customer?.email || selectedCustomer?.email || ''
+        },
         salesMan: 'POS System',
         items: saleData.items.map((item: any) => ({
           id: item.id || item.productId,

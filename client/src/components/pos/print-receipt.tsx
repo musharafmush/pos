@@ -577,7 +577,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         name: sale?.user?.name || 'Admin User'
       },
       customer: {
-        name: sale?.customer?.name || 'Walk-in Customer'
+        name: sale?.customer?.name || sale?.customerName || sale?.customer_name || 'Walk-in Customer'
       },
       items: Array.isArray(sale?.items) ? sale.items.map((item: any) => ({
         productName: item?.productName || item?.name || 'Sample Product',
