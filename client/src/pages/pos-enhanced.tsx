@@ -1423,9 +1423,10 @@ export default function POSEnhanced() {
         status: 'completed'
       };
 
-      // Auto-print with thermal printer
+      // Direct Bill Printing - Automatic thermal receipt generation
+      console.log("🖨️ Starting direct bill printing process...");
       setTimeout(() => {
-        handlePrintReceipt(completedSaleData);
+        handleDirectBillPrint(completedSaleData, saleResult);
       }, 500);
 
       // Reset everything but preserve held sales
