@@ -71,6 +71,18 @@ interface ThermalPrinterSettings {
 }
 
 export default function ThermalPrinterSetup() {
+  // Fetch receipt settings for real-time data
+  const { data: receiptSettings, isLoading: isLoadingSettings } = useQuery({
+    queryKey: ['/api/settings/receipt'],
+    refetchInterval: 5000 // Refresh every 5 seconds
+  });
+
+  // Fetch recent sales for print status
+  const { data: recentSales, isLoading: isLoadingSales } = useQuery({
+    queryKey: ['/api/sales'],
+    refetchInterval: 3000 // Refresh every 3 seconds
+  });
+
   const [activeTab, setActiveTab] = useState('setup');
   const [testResults, setTestResults] = useState<{ [key: string]: 'pending' | 'success' | 'failed' }>({});
   const [isConnected, setIsConnected] = useState(false);
@@ -425,6 +437,16 @@ export default function ThermalPrinterSetup() {
           <div className="flex items-center gap-2">
             <Badge variant={isConnected ? "secondary" : "destructive"} className={isConnected ? "bg-green-100 text-green-800" : ""}>
               {isConnected ? "Connected" : "Disconnected"}
+            </Badge>
+            {!isLoadingSettings && !isLoadingSales && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Activity className="w-3 h-3" />
+                Live Data
+              </Badge>
+            )}
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Gauge className="w-3 h-3" />
+              {(receiptSettings as any)?.paperWidth || '77mm'} Paper
             </Badge>
             <Button variant="outline" size="sm" onClick={() => window.open('/unified-printer-settings', '_blank')}>
               <Settings className="h-4 w-4 mr-2" />

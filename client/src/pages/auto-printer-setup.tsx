@@ -201,7 +201,7 @@ const AutoPrinterSetup: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Paper Width</p>
                   <p className="text-lg font-semibold text-purple-600">
-                    {receiptSettings?.paperWidth || '77mm'}
+                    {(receiptSettings as any)?.paperWidth || '77mm'}
                   </p>
                 </div>
                 <Settings className="w-8 h-8 text-purple-500" />

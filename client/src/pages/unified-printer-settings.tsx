@@ -72,6 +72,18 @@ interface PrinterSettings {
 }
 
 export default function UnifiedPrinterSettings() {
+  // Fetch receipt settings for real-time data
+  const { data: receiptSettings, isLoading: isLoadingSettings } = useQuery({
+    queryKey: ['/api/settings/receipt'],
+    refetchInterval: 2000 // Refresh every 2 seconds for real-time feel
+  });
+
+  // Fetch recent sales for print queue simulation
+  const { data: recentSales, isLoading: isLoadingSales } = useQuery({
+    queryKey: ['/api/sales'],
+    refetchInterval: 2000 // Refresh every 2 seconds for real-time feel
+  });
+
   const [settings, setSettings] = useState<PrinterSettings>({
     // Business Settings
     businessName: 'M MART',
@@ -109,9 +121,25 @@ export default function UnifiedPrinterSettings() {
     printOnReturn: true
   });
 
-  const [autoPrinterStatus, setAutoPrinterStatus] = useState('inactive');
+  const [autoPrinterStatus, setAutoPrinterStatus] = useState('active');
   const [printQueue, setPrintQueue] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Calculate real-time stats
+  const todaysSales = recentSales ? recentSales.filter((sale: any) => {
+    const saleDate = new Date(sale.createdAt);
+    const today = new Date();
+    return saleDate.toDateString() === today.toDateString();
+  }).length : 0;
+
+  const totalRevenue = recentSales ? recentSales.reduce((sum: number, sale: any) => {
+    const saleDate = new Date(sale.createdAt);
+    const today = new Date();
+    if (saleDate.toDateString() === today.toDateString()) {
+      return sum + (parseFloat(sale.total) || 0);
+    }
+    return sum;
+  }, 0) : 0;
 
   // Load settings on component mount
   useEffect(() => {
@@ -350,6 +378,61 @@ export default function UnifiedPrinterSettings() {
               {isSaving ? 'Saving...' : 'Save All'}
             </Button>
           </div>
+        </div>
+
+        {/* Real-time Status Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Today's Sales</p>
+                  <p className="text-2xl font-bold text-blue-600">{todaysSales}</p>
+                </div>
+                <Activity className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Revenue Today</p>
+                  <p className="text-2xl font-bold text-green-600">₹{totalRevenue.toFixed(2)}</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Paper Width</p>
+                  <p className="text-lg font-semibold text-purple-600">
+                    {settings.paperWidth}
+                  </p>
+                </div>
+                <Settings className="w-8 h-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Auto-Print</p>
+                  <p className="text-lg font-semibold text-orange-600">
+                    {settings.enableAutoPrint ? 'Active' : 'Inactive'}
+                  </p>
+                </div>
+                <Zap className={`w-8 h-8 ${settings.enableAutoPrint ? 'text-orange-500' : 'text-gray-400'}`} />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="autoprinter" className="space-y-6">
