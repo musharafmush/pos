@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { printReceipt as printReceiptUtil } from '@/components/pos/print-receipt';
+import { useQuery } from "@tanstack/react-query";
 import {
   Printer,
   Settings,
@@ -29,7 +30,10 @@ import {
   Save,
   RotateCcw,
   HelpCircle,
-  BookOpen
+  BookOpen,
+  Activity,
+  Clock,
+  Gauge
 } from 'lucide-react';
 
 interface ThermalPrinterSettings {

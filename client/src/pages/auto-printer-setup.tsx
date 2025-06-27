@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { AutoPrinter } from "@/components/pos/auto-printer";
 import { ThermalPrinter } from "@/components/pos/thermal-printer";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Zap, 
   Settings, 
@@ -15,12 +16,66 @@ import {
   BookOpen, 
   AlertTriangle,
   CheckCircle,
-  Info
+  Info,
+  Activity,
+  Clock,
+  Printer,
+  RefreshCw
 } from "lucide-react";
 
 const AutoPrinterSetup: React.FC = () => {
   const { toast } = useToast();
-  const [autoPrinterSettings, setAutoPrinterSettings] = useState({});
+  const [autoPrinterSettings, setAutoPrinterSettings] = useState({
+    enableAutoPrint: true,
+    printDelay: 2,
+    retryAttempts: 3,
+    printCustomerCopy: true,
+    printMerchantCopy: true,
+    autoOpenCashDrawer: true,
+    quietMode: false,
+    printOnSale: true,
+    printOnReturn: true
+  });
+  const [printQueue, setPrintQueue] = useState(0);
+  const [autoPrinterStatus, setAutoPrinterStatus] = useState('active');
+  const [lastPrintTime, setLastPrintTime] = useState<Date | null>(null);
+
+  // Fetch receipt settings for real-time data
+  const { data: receiptSettings, isLoading: isLoadingSettings } = useQuery({
+    queryKey: ['/api/settings/receipt'],
+    refetchInterval: 5000 // Refresh every 5 seconds
+  });
+
+  // Fetch recent sales for print queue simulation
+  const { data: recentSales, isLoading: isLoadingSales } = useQuery({
+    queryKey: ['/api/sales'],
+    refetchInterval: 3000 // Refresh every 3 seconds
+  });
+
+  // Load auto-printer settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('autoPrinterSettings');
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      setAutoPrinterSettings(prev => ({ ...prev, ...parsed }));
+    }
+  }, []);
+
+  // Simulate print queue based on recent sales
+  useEffect(() => {
+    if (recentSales && Array.isArray(recentSales)) {
+      const todaysSales = recentSales.filter((sale: any) => {
+        const saleDate = new Date(sale.createdAt);
+        const today = new Date();
+        return saleDate.toDateString() === today.toDateString();
+      });
+      setPrintQueue(todaysSales.length);
+      
+      if (todaysSales.length > 0) {
+        setLastPrintTime(new Date(todaysSales[0].createdAt));
+      }
+    }
+  }, [recentSales]);
 
   const handleAutoPrinterSettingsChange = (settings: any) => {
     setAutoPrinterSettings(settings);
@@ -91,6 +146,16 @@ const AutoPrinterSetup: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Badge variant={autoPrinterStatus === 'active' ? 'default' : 'secondary'} className="flex items-center gap-1">
+              <Activity className="w-3 h-3" />
+              {autoPrinterStatus === 'active' ? 'Active' : 'Inactive'}
+            </Badge>
+            {!isLoadingSettings && !isLoadingSales && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" />
+                Live Data
+              </Badge>
+            )}
             <Button variant="outline" size="sm">
               <BookOpen className="h-4 w-4 mr-2" />
               Documentation
@@ -100,6 +165,63 @@ const AutoPrinterSetup: React.FC = () => {
               Advanced
             </Button>
           </div>
+        </div>
+
+        {/* Real-time Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Print Queue</p>
+                  <p className="text-2xl font-bold text-blue-600">{printQueue}</p>
+                </div>
+                <Printer className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Status</p>
+                  <p className="text-lg font-semibold text-green-600">
+                    {autoPrinterSettings.enableAutoPrint ? 'Enabled' : 'Disabled'}
+                  </p>
+                </div>
+                <CheckCircle className={`w-8 h-8 ${autoPrinterSettings.enableAutoPrint ? 'text-green-500' : 'text-gray-400'}`} />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Paper Width</p>
+                  <p className="text-lg font-semibold text-purple-600">
+                    {receiptSettings?.paperWidth || '77mm'}
+                  </p>
+                </div>
+                <Settings className="w-8 h-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Last Print</p>
+                  <p className="text-sm font-medium text-gray-800">
+                    {lastPrintTime ? lastPrintTime.toLocaleTimeString() : 'None'}
+                  </p>
+                </div>
+                <Clock className="w-8 h-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="autoprinter" className="space-y-4">
