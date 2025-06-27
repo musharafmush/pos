@@ -1730,10 +1730,16 @@ export default function POSEnhanced() {
         throw new Error("Invalid sale data for printing");
       }
 
-      // Prepare enhanced receipt data with all transaction details
+      // Prepare enhanced receipt data with all transaction details - Use current date
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      const currentDate = `${day}/${month}/${year}`;
+      
       const receiptData = {
         billNumber: saleData.billNumber,
-        billDate: new Date().toLocaleString('en-IN'),
+        billDate: currentDate,
         orderNumber: saleData.orderNumber,
         customerDetails: saleData.customer || { name: 'Walk-in Customer' },
         salesMan: 'POS System',

@@ -551,49 +551,21 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 };
 
   const generateThermalReceiptHTML = (sale: any, settings: any) => {
-    // Safely handle date parsing with proper Indian format
-    let formattedDate = new Date().toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit', 
-      year: 'numeric'
-    });
-    let formattedTime = new Date().toLocaleTimeString('en-IN', { 
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true 
-    });
-
-    try {
-      if (sale?.createdAt) {
-        const date = new Date(sale.createdAt);
-        if (!isNaN(date.getTime())) {
-          formattedDate = date.toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          });
-          formattedTime = date.toLocaleTimeString('en-IN', { 
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true 
-          });
-        }
-      }
-    } catch (error) {
-      console.warn('Date parsing error:', error);
-      // Fallback to manual formatting
-      const now = new Date();
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const year = now.getFullYear();
-      formattedDate = `${day}/${month}/${year}`;
-      
-      const hours = now.getHours();
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const ampm = hours >= 12 ? 'pm' : 'am';
-      const displayHours = hours % 12 || 12;
-      formattedTime = `${displayHours}:${minutes} ${ampm}`;
-    }
+    // Always use current date and time for proper receipt display
+    const now = new Date();
+    
+    // Format date as DD/MM/YYYY
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const formattedDate = `${day}/${month}/${year}`;
+    
+    // Format time as HH:MM AM/PM
+    const hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    const displayHours = hours % 12 || 12;
+    const formattedTime = `${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
 
     // Ensure sale has proper structure with defaults and safe property access
     const safeData = {
