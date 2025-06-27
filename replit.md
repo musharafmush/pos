@@ -220,6 +220,13 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Added real-time print queue simulation based on actual sales data
 - Implemented comprehensive status dashboards with color-coded indicators and icons
 
+### Printer Settings Consolidation (June 27, 2025)
+- Removed separate auto-printer-setup and thermal-printer-setup pages to eliminate redundancy
+- Consolidated all printer functionality into unified-printer-settings page accessible via /printer-settings
+- Updated main settings page to show only single "Printer Settings" option instead of three separate buttons
+- Removed routing for /auto-printer-setup and /thermal-printer-setup from application
+- Simplified printer configuration workflow by providing all settings in one comprehensive interface
+
 ### 77mm Thermal Paper Support (June 25, 2025)
 - Added support for 77mm thermal paper width in print-receipt component
 - Updated paper configuration options to include 72mm, 77mm (optimal), and 80mm
