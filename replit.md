@@ -198,6 +198,13 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Fixed customer phone and email display in sales dashboard table
 - Improved all customer references across sales dashboard components
 
+### Thermal Receipt Customer Display Fix (June 27, 2025)
+- Fixed thermal receipt showing "Walk-in Customer" instead of actual customer names
+- Enhanced customer data handling in receipt generation to include customer object structure
+- Added fallback logic to read customer names from multiple data sources
+- Improved direct bill printing to include complete customer information
+- Added debugging logs to track customer data flow through receipt generation process
+
 ### 77mm Thermal Paper Support (June 25, 2025)
 - Added support for 77mm thermal paper width in print-receipt component
 - Updated paper configuration options to include 72mm, 77mm (optimal), and 80mm
