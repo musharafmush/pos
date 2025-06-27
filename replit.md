@@ -191,6 +191,13 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Improved date formatting to always show current date/time in DD/MM/YYYY format
 - Optimized receipt layout to prevent content truncation on 77mm thermal paper
 
+### Sales Dashboard Customer Details Fix (June 27, 2025)
+- Fixed customer details display in sales dashboard showing "Walk-in Customer" for all sales
+- Updated customer name display to properly read from nested customer object structure
+- Enhanced customer data fetching to show actual customer names (Sunita Singh, Amit Patel, etc.)
+- Fixed customer phone and email display in sales dashboard table
+- Improved all customer references across sales dashboard components
+
 ### 77mm Thermal Paper Support (June 25, 2025)
 - Added support for 77mm thermal paper width in print-receipt component
 - Updated paper configuration options to include 72mm, 77mm (optimal), and 80mm
