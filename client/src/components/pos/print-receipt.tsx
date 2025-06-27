@@ -549,10 +549,11 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 };
 
   const generateThermalReceiptHTML = (sale: any, settings: any) => {
-    // Always use current date and time for proper receipt display
+    // Always use current date and time for proper receipt display - FORCE CURRENT DATE
     const now = new Date();
+    console.log('🕒 Current time for receipt:', now.toISOString());
     
-    // Format date as DD/MM/YYYY
+    // Format date as DD/MM/YYYY - ALWAYS CURRENT
     const day = String(now.getDate()).padStart(2, '0');
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = now.getFullYear();
@@ -564,6 +565,9 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     const ampm = hours >= 12 ? 'pm' : 'am';
     const displayHours = hours % 12 || 12;
     const formattedTime = `${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
+    
+    console.log('📅 Formatted date for receipt:', formattedDate);
+    console.log('⏰ Formatted time for receipt:', formattedTime);
 
     // Ensure sale has proper structure with defaults and safe property access
     const safeData = {

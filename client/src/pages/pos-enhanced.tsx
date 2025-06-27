@@ -1424,7 +1424,7 @@ export default function POSEnhanced() {
           subtotal: item.total,
           mrp: item.mrp || parseFloat(item.price) * 1.2
         })),
-        createdAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(), // Current timestamp for receipt
         status: 'completed'
       };
 
@@ -1642,7 +1642,7 @@ export default function POSEnhanced() {
         billNumber: receiptBillNumber,
         orderNumber: receiptBillNumber,
         billDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(), // Always current timestamp
         customerDetails: {
           name: receiptCustomer?.name || "Walk-in Customer",
           doorNo: receiptCustomer?.phone ? `Ph: ${receiptCustomer.phone}` : "",
@@ -1767,7 +1767,7 @@ export default function POSEnhanced() {
         paymentMethod: (saleData.paymentMethod || 'CASH').toUpperCase(),
         status: 'completed',
         notes: saleData.notes || `Transaction completed successfully`,
-        createdAt: saleData.createdAt || new Date().toISOString()
+        createdAt: new Date().toISOString() // Always use current date/time for printing
       };
 
       // Enhanced print settings for direct printing
