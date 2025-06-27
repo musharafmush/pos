@@ -162,12 +162,16 @@ export default function UnifiedPrinterSettings() {
   const saveSettings = async () => {
     setIsSaving(true);
     try {
+      console.log('💾 Saving printer settings:', settings);
+      
       // Save receipt settings to backend
       const receiptResponse = await fetch('/api/settings/receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       });
+      
+      console.log('📊 Receipt settings save response:', receiptResponse.status, receiptResponse.statusText);
 
       if (receiptResponse.ok) {
         // Save auto-printer settings to localStorage
@@ -187,12 +191,16 @@ export default function UnifiedPrinterSettings() {
           title: "Settings Saved",
           description: "All printer settings have been updated successfully."
         });
+      } else {
+        const errorText = await receiptResponse.text();
+        console.error('🚨 Failed to save receipt settings:', receiptResponse.status, errorText);
+        throw new Error(`Failed to save settings: ${receiptResponse.status} ${errorText}`);
       }
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
         title: "Save Failed",
-        description: "Failed to save settings. Please try again.",
+        description: `Failed to save settings: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {
