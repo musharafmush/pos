@@ -197,6 +197,7 @@ export const saleItems = pgTable('sale_items', {
   quantity: integer('quantity').notNull(),
   unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
   subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
+  mrp: decimal('mrp', { precision: 10, scale: 2 }).default('0'),
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
