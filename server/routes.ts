@@ -1951,6 +1951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               si.price,
               si.subtotal,
               si.total,
+              si.mrp,
               p.name as product_name,
               p.sku as product_sku
             FROM sale_items si
@@ -1977,6 +1978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             price: item.price,
             subtotal: item.subtotal || item.total,
             total: item.total,
+            mrp: item.mrp,
             product: {
               id: item.product_id,
               name: item.product_name || `Product #${item.product_id}`,
