@@ -1329,7 +1329,7 @@ export default function POSEnhanced() {
           subtotal: item.total.toString(),
           price: parseFloat(item.price).toString(),
           total: item.total.toString(),
-          mrp: item.mrp,
+          mrp: Number(item.mrp) || 0,
           name: item.name,
           sku: item.sku
         })),
