@@ -202,16 +202,14 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 
       /* Xprinter XP-420B Optimized Styles - Force Single Sheet */
       @page { 
-        size: ${paperWidth === 'thermal58' ? '58mm 150mm' : paperWidth === 'thermal72' ? '72mm 150mm' : paperWidth === 'thermal77' ? '77mm 150mm' : paperWidth === 'thermal80' ? '80mm 150mm' : '112mm 150mm'} !important;
+        size: ${paperWidth === 'thermal58' ? '58mm auto' : paperWidth === 'thermal72' ? '72mm auto' : paperWidth === 'thermal77' ? '77mm auto' : paperWidth === 'thermal80' ? '80mm auto' : '112mm auto'} !important;
         margin: 0 !important; 
         padding: 0 !important;
         border: none !important;
-        /* Force single page - critical */
-        page-break-inside: avoid !important;
-        page-break-after: avoid !important;
-        page-break-before: avoid !important;
-        orphans: 1000 !important;
-        widows: 1000 !important;
+        /* Auto height to accommodate all content */
+        page-break-inside: auto !important;
+        page-break-after: auto !important;
+        page-break-before: auto !important;
         /* Ensure background graphics are printed */
         -webkit-print-color-adjust: exact !important;
         color-adjust: exact !important;
@@ -252,14 +250,14 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           padding: 1.5mm !important;
           border: none !important;
           box-shadow: none !important;
-          /* Absolute single page constraints */
-          page-break-inside: avoid !important;
-          page-break-after: avoid !important;
-          page-break-before: avoid !important;
+          /* Allow content to flow naturally */
+          page-break-inside: auto !important;
+          page-break-after: auto !important;
+          page-break-before: auto !important;
           height: auto !important;
           min-height: auto !important;
-          max-height: 140mm !important;
-          overflow: hidden !important;
+          max-height: none !important;
+          overflow: visible !important;
           /* Compact layout for single sheet */
           line-height: 1.1 !important;
           font-size: ${paperWidth === 'thermal58' ? '11px' : paperWidth === 'thermal72' ? '12px' : paperWidth === 'thermal77' ? '12px' : paperWidth === 'thermal80' ? '13px' : '14px'} !important;
@@ -274,28 +272,28 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           display: none !important; 
         }
         
-        /* Aggressive single page constraints */
+        /* Natural content flow */
         * { 
-          page-break-inside: avoid !important;
-          page-break-after: avoid !important;
-          page-break-before: avoid !important;
-          orphans: 1000 !important;
-          widows: 1000 !important;
+          page-break-inside: auto !important;
+          page-break-after: auto !important;
+          page-break-before: auto !important;
+          orphans: 1 !important;
+          widows: 1 !important;
         }
         
-        /* Ultra-compact spacing for single sheet */
+        /* Optimized spacing for thermal printing */
         .receipt * {
-          page-break-inside: avoid !important;
-          page-break-after: avoid !important;
-          page-break-before: avoid !important;
+          page-break-inside: auto !important;
+          page-break-after: auto !important;
+          page-break-before: auto !important;
           margin: 0 !important;
-          line-height: 1.1 !important;
+          line-height: 1.2 !important;
         }
         
         /* Compact item rows */
         .receipt table, .receipt tr, .receipt td {
           margin: 0 !important;
-          padding: 0.5mm !important;
+          padding: 1mm !important;
           border-spacing: 0 !important;
           font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'} !important;
         }

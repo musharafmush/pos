@@ -183,6 +183,14 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Simplified POS interface by removing redundant settings access points
 - Direct bill printing now uses default settings for automatic thermal receipt generation
 
+### Thermal Receipt Layout Fix (June 27, 2025)
+- Fixed thermal receipt content being cut off at bottom
+- Changed @page size from fixed height (150mm) to auto height to accommodate all content
+- Updated page break constraints to allow natural content flow
+- Enhanced spacing and padding for better thermal printer compatibility
+- Improved date formatting to always show current date/time in DD/MM/YYYY format
+- Optimized receipt layout to prevent content truncation on 77mm thermal paper
+
 ### 77mm Thermal Paper Support (June 25, 2025)
 - Added support for 77mm thermal paper width in print-receipt component
 - Updated paper configuration options to include 72mm, 77mm (optimal), and 80mm
