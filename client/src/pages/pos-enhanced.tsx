@@ -1748,6 +1748,7 @@ export default function POSEnhanced() {
       console.log("🖨️ Direct Bill Print: Starting automatic receipt generation...");
       console.log("🏷️ Customer data for receipt:", saleData.customer);
       console.log("👤 Selected Customer:", selectedCustomer);
+      console.log("📦 Sale items with MRP data:", saleData.items);
       
       // Validate sale data
       if (!saleData || !saleData.billNumber) {
