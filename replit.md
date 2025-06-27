@@ -241,6 +241,11 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Enhanced MRP formatting in print-receipt.tsx to respect showMRP setting from printer configuration
 - Removed hardcoded MRP calculations (price + 20) and replaced with authentic product MRP data
 - Improved receipt accuracy by displaying actual product pricing information from database
+- Fixed sale data mapping to include MRP field from cart items to receipt generation
+- Enhanced MRP display logic to show information in all scenarios:
+  - Below MRP: "MRP: ₹15 | Save: ₹3" 
+  - Above MRP: "MRP: ₹11 | Above MRP: ₹2"
+  - Equal to MRP: "MRP: ₹13"
 
 ### 77mm Thermal Paper Support (June 25, 2025)
 - Added support for 77mm thermal paper width in print-receipt component

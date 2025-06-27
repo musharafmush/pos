@@ -675,7 +675,13 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
               const sellingPrice = Number(item.unitPrice || item.price || 0);
               if (actualMRP > 0 && sellingPrice > 0) {
                 const savings = actualMRP - sellingPrice;
-                return `MRP: ${settings.currencySymbol || '₹'}${actualMRP.toFixed(0)}${savings > 0 ? ` | Save: ${settings.currencySymbol || '₹'}${savings.toFixed(0)}` : ''}`;
+                if (savings > 0) {
+                  return `MRP: ${settings.currencySymbol || '₹'}${actualMRP.toFixed(0)} | Save: ${settings.currencySymbol || '₹'}${savings.toFixed(0)}`;
+                } else if (savings < 0) {
+                  return `MRP: ${settings.currencySymbol || '₹'}${actualMRP.toFixed(0)} | Above MRP: ${settings.currencySymbol || '₹'}${Math.abs(savings).toFixed(0)}`;
+                } else {
+                  return `MRP: ${settings.currencySymbol || '₹'}${actualMRP.toFixed(0)}`;
+                }
               } else if (actualMRP > 0) {
                 return `MRP: ${settings.currencySymbol || '₹'}${actualMRP.toFixed(0)}`;
               }
