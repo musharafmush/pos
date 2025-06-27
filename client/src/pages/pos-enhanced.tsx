@@ -694,12 +694,14 @@ export default function POSEnhanced() {
           : item
       ));
     } else {
-      setCart([...cart, { 
+      const cartItem = { 
         ...product, 
         quantity: 1, 
         total: parseFloat(product.price),
         mrp: parseFloat(product.mrp) || 0
-      }]);
+      };
+      console.log('📦 Adding product to cart:', product.name, 'MRP:', product.mrp, '→', cartItem.mrp);
+      setCart([...cart, cartItem]);
     }
 
     toast({
