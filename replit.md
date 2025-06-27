@@ -177,6 +177,12 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Implemented automatic thermal receipt printing after sale completion
 - Streamlined POS printing process for improved user experience
 
+### Receipt & Printer Settings Removal (June 27, 2025)
+- Removed "Receipt & Printer Settings" button from pos-enhanced interface header
+- Removed entire printer settings dialog to streamline user experience
+- Simplified POS interface by removing redundant settings access points
+- Direct bill printing now uses default settings for automatic thermal receipt generation
+
 ### 77mm Thermal Paper Support (June 25, 2025)
 - Added support for 77mm thermal paper width in print-receipt component
 - Updated paper configuration options to include 72mm, 77mm (optimal), and 80mm
