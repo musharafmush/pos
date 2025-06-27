@@ -227,6 +227,14 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Removed routing for /auto-printer-setup and /thermal-printer-setup from application
 - Simplified printer configuration workflow by providing all settings in one comprehensive interface
 
+### POS Enhanced Printer Integration (June 27, 2025)
+- Connected POS enhanced bill printing to unified printer settings for dynamic configuration
+- Added real-time printer settings query to fetch current settings from /printer-settings page
+- Updated print function to use dynamic settings instead of hardcoded values for paper width, fonts, business info
+- Added "Printer Settings" button in POS enhanced header for easy access to configuration
+- Enhanced bill printing with automatic paper width detection (58mm, 72mm, 77mm, 80mm) from settings
+- Integrated all receipt customization options from unified printer settings into POS printing workflow
+
 ### 77mm Thermal Paper Support (June 25, 2025)
 - Added support for 77mm thermal paper width in print-receipt component
 - Updated paper configuration options to include 72mm, 77mm (optimal), and 80mm
