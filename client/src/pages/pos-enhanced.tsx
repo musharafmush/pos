@@ -4988,7 +4988,7 @@ export default function POSEnhanced() {
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-green-800 font-medium">Available Points:</span>
-                    <span className="text-green-700 font-bold text-lg">{Math.round((parseFloat(customerLoyalty?.totalPoints?.toString() || '0')) * 100) / 100}</span>
+                    <span className="text-green-700 font-bold text-lg">{Math.round((parseFloat(customerLoyalty?.availablePoints?.toString() || '0')) * 100) / 100}</span>
                   </div>
                   <p className="text-green-600 text-sm">1 point = ₹1 discount</p>
                 </div>
@@ -5003,7 +5003,7 @@ export default function POSEnhanced() {
                     placeholder="Enter points to redeem"
                     className="mt-1 text-lg"
                     min="0"
-                    max={customerLoyalty?.totalPoints || 0}
+                    max={customerLoyalty?.availablePoints || 0}
                     autoFocus
                   />
                   
