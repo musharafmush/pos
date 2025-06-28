@@ -1852,6 +1852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
       const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const customerId = req.query.customerId ? parseInt(req.query.customerId as string) : undefined;
+      const days = req.query.days ? parseInt(req.query.days as string) : undefined;
 
       // Try direct database query first
       try {
@@ -1923,6 +1924,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           query += whereAdded ? ' AND' : ' WHERE';
           query += ' s.customer_id = ?';
           params.push(customerId);
+          whereAdded = true;
+        }
+
+        // Add days filter for time range filtering
+        if (days) {
+          const dateThreshold = new Date();
+          if (days === 1) {
+            // For "Today", filter to today's date only
+            dateThreshold.setHours(0, 0, 0, 0);
+          } else {
+            // For other ranges, go back N days
+            dateThreshold.setDate(dateThreshold.getDate() - days);
+            dateThreshold.setHours(0, 0, 0, 0);
+          }
+          
+          query += whereAdded ? ' AND' : ' WHERE';
+          query += ' s.created_at >= ?';
+          params.push(dateThreshold.toISOString());
           whereAdded = true;
         }
 

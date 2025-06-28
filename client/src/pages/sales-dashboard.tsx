@@ -155,10 +155,10 @@ export default function SalesDashboard() {
 
   // Fetch sales data with enhanced customer billing details and real-time updates
   const { data: salesData, isLoading: salesLoading, error: salesError, refetch: refetchSales } = useQuery({
-    queryKey: ['/api/sales'],
+    queryKey: ['/api/sales', timeRange],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/sales?limit=100&include=customer,items,billing');
+        const response = await fetch(`/api/sales?limit=100&include=customer,items,billing&days=${timeRange}`);
         if (!response.ok) {
           console.error('Sales API response not ok:', response.status, response.statusText);
           throw new Error(`Failed to fetch sales: ${response.status}`);
