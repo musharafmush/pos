@@ -987,15 +987,17 @@ export default function Settings() {
 
       const result = await response.json();
 
-      queryClient.clear();
-
+      // Step 3: Completion
       toast({
-        title: "Data restored successfully",
-        description: "Your backup has been restored successfully. Page will reload shortly.",
+        title: "✅ Restore Completed Successfully",
+        description: `${backupData.metadata?.total_records || 'All'} records restored. System will reload.`,
       });
 
-      // Clear the selected file
+      queryClient.clear();
+
+      // Clear the selected file and preview
       setSelectedBackupFile(null);
+      setBackupPreview(null);
 
       // Refresh the page to reload the restored data
       setTimeout(() => {
@@ -1005,10 +1007,12 @@ export default function Settings() {
     } catch (error) {
       console.error('Restore error:', error);
       toast({
-        title: "Restore failed",
+        title: "❌ Restore Failed",
         description: error.message || "Failed to restore backup. Please check the file and try again.",
         variant: "destructive"
       });
+    } finally {
+      setRestoreInProgress(false);
     }
   };
 
@@ -1634,14 +1638,96 @@ ${receiptSettings.receiptFooter}
                       </div>
                       <Button 
                         onClick={handleRestoreData}
-                        disabled={!selectedBackupFile}
+                        disabled={!selectedBackupFile || restoreInProgress}
                         className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed"
                         size="lg"
                       >
                         <DatabaseIcon className="h-5 w-5 mr-2" />
-                        {selectedBackupFile ? 'Restore from Backup' : 'Select Backup File First'}
+                        {restoreInProgress ? 'Restoring Data...' : selectedBackupFile ? 'Restore from Backup' : 'Select Backup File First'}
                       </Button>
-                      {selectedBackupFile && (
+                      
+                      {/* Professional Backup Analysis */}
+                      {selectedBackupFile && backupPreview && (
+                        <div className="space-y-4">
+                          {/* File Information */}
+                          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-blue-600 dark:text-blue-400 text-lg">📁</span>
+                              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                                {selectedBackupFile.name}
+                              </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <span className="text-blue-600 dark:text-blue-400 font-medium">File Size:</span>
+                                <span className="ml-1 text-blue-700 dark:text-blue-300">{Math.round(selectedBackupFile.size / 1024)} KB</span>
+                              </div>
+                              <div>
+                                <span className="text-blue-600 dark:text-blue-400 font-medium">Format:</span>
+                                <span className="ml-1 text-blue-700 dark:text-blue-300">JSON Backup</span>
+                              </div>
+                              {backupPreview.metadata && (
+                                <>
+                                  <div>
+                                    <span className="text-blue-600 dark:text-blue-400 font-medium">Created:</span>
+                                    <span className="ml-1 text-blue-700 dark:text-blue-300">
+                                      {new Date(backupPreview.timestamp).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-blue-600 dark:text-blue-400 font-medium">Version:</span>
+                                    <span className="ml-1 text-blue-700 dark:text-blue-300">{backupPreview.version || 'v2.0'}</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Data Content Analysis */}
+                          {backupPreview.data && (
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                              <h4 className="text-sm font-semibold text-green-800 dark:text-green-200 mb-3 flex items-center gap-2">
+                                <span className="text-green-600">📊</span> Backup Content Analysis
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                {Object.entries(backupPreview.data).map(([table, data]) => (
+                                  <div key={table} className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-green-200 dark:border-green-600">
+                                    <div className="font-medium text-green-700 dark:text-green-300 capitalize">
+                                      {table.replace('_', ' ')}
+                                    </div>
+                                    <div className="text-green-600 dark:text-green-400 font-bold">
+                                      {Array.isArray(data) ? data.length : 0} records
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              {backupPreview.metadata && (
+                                <div className="mt-3 text-xs text-green-700 dark:text-green-300 font-medium">
+                                  Total Records: {backupPreview.metadata.total_records || 'Unknown'} | 
+                                  Tables: {backupPreview.metadata.total_tables || Object.keys(backupPreview.data).length}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Warning Section */}
+                          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-red-600 text-lg">⚠️</span>
+                              <p className="text-sm font-bold text-red-800 dark:text-red-200">Critical Warning</p>
+                            </div>
+                            <div className="text-xs text-red-700 dark:text-red-300 space-y-1">
+                              <p>• This will completely replace ALL current data</p>
+                              <p>• Current sales, products, and customers will be overwritten</p>
+                              <p>• This action cannot be undone</p>
+                              <p>• Create a backup of current data before proceeding</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Simple file preview for files without preview data */}
+                      {selectedBackupFile && !backupPreview && (
                         <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-blue-600 dark:text-blue-400 text-lg">📁</span>
@@ -1649,10 +1735,10 @@ ${receiptSettings.receiptFooter}
                               {selectedBackupFile.name}
                             </p>
                           </div>
-                          <p className="text-xs text-blue-600 dark:text-blue-400">
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mb-2">
                             File Size: {Math.round(selectedBackupFile.size / 1024)} KB
                           </p>
-                          <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
+                          <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
                             <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">
                               ⚠️ Warning: This will replace all existing data
                             </p>
