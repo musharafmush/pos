@@ -1481,6 +1481,17 @@ export default function POSEnhanced() {
         customerPhone: selectedCustomer?.phone,
         customerEmail: selectedCustomer?.email,
         selectedCustomer: selectedCustomer,
+        // Enhanced customer data for receipt
+        customerDetails: {
+          name: selectedCustomer?.name || 'Walk-in Customer',
+          phone: selectedCustomer?.phone || '',
+          email: selectedCustomer?.email || ''
+        },
+        // Additional phone/email references for receipt compatibility
+        phone: selectedCustomer?.phone,
+        email: selectedCustomer?.email,
+        customer_phone: selectedCustomer?.phone,
+        customer_email: selectedCustomer?.email,
         loyaltyDiscount: loyaltyDiscount,
         loyaltyPointsRedeemed: redeemedPointsForTransaction,
         loyaltyInfo: customerLoyalty ? {

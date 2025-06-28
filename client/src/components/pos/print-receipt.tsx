@@ -654,41 +654,56 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
         <div><strong>Customer:</strong> ${safeData.customer.name}</div>
         ${(() => {
-          // Get phone number from multiple possible sources
+          // Enhanced phone number extraction from multiple possible sources
           const phoneNumber = safeData.customerDetails?.phone || 
                              safeData.customer?.phone || 
                              safeData.customerPhone ||
-                             (safeData.selectedCustomer && safeData.selectedCustomer.phone);
+                             (safeData.selectedCustomer && safeData.selectedCustomer.phone) ||
+                             // Additional fallback sources
+                             safeData.phone ||
+                             safeData.customer_phone;
           
           // Debug logging to console
-          console.log('🔍 Receipt Debug - Customer Data:', {
+          console.log('🔍 Receipt Debug - Enhanced Customer Data:', {
             customerDetails: safeData.customerDetails,
             customer: safeData.customer,
             customerPhone: safeData.customerPhone,
             selectedCustomer: safeData.selectedCustomer,
+            phone: safeData.phone,
+            customer_phone: safeData.customer_phone,
             finalPhoneNumber: phoneNumber
           });
           
-          if (phoneNumber) {
+          // Always show phone section, even if no number available
+          if (phoneNumber && phoneNumber.trim() !== '') {
             return `
-            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #666; margin-top: 1mm;">
-              📞 ${phoneNumber}
+            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #333; margin-top: 1mm; font-weight: bold;">
+              📞 ${phoneNumber.trim()}
+            </div>
+            `;
+          } else {
+            // Show placeholder for missing phone number
+            return `
+            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; color: #999; margin-top: 1mm; font-style: italic;">
+              📞 Phone: Not provided
             </div>
             `;
           }
-          return '';
         })()}
         ${(() => {
-          // Get email from multiple possible sources
+          // Enhanced email extraction from multiple possible sources
           const emailAddress = safeData.customerDetails?.email || 
                                safeData.customer?.email || 
                                safeData.customerEmail ||
-                               (safeData.selectedCustomer && safeData.selectedCustomer.email);
+                               (safeData.selectedCustomer && safeData.selectedCustomer.email) ||
+                               // Additional fallback sources
+                               safeData.email ||
+                               safeData.customer_email;
           
-          if (emailAddress) {
+          if (emailAddress && emailAddress.trim() !== '') {
             return `
-            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #666; margin-top: 1mm;">
-              ✉️ ${emailAddress}
+            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #333; margin-top: 1mm;">
+              ✉️ ${emailAddress.trim()}
             </div>
             `;
           }
