@@ -63,7 +63,7 @@ export default function Dashboard() {
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-600">Total Sales</div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaySales || "0")}
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysRevenue || 0)}
                 </div>
               </div>
             </div>
@@ -77,7 +77,7 @@ export default function Dashboard() {
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-600">Net</div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaySales || "0")}
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysNet || 0)}
                 </div>
               </div>
             </div>
@@ -89,11 +89,11 @@ export default function Dashboard() {
                 <ArrowUpIcon className="h-5 w-5 text-purple-600" />
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-600">Smart Freight Distribution</div>
+                <div className="text-sm font-medium text-gray-600">Total Purchase</div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {isLoading ? "..." : formatCurrency(dashboardStats?.totalFreightDistributed || "0")}
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysPurchaseAmount || 0)}
                 </div>
-                <div className="text-xs text-gray-500">Across all purchase orders</div>
+                <div className="text-xs text-gray-500">Today's purchases</div>
               </div>
             </div>
           </Card>
@@ -106,7 +106,7 @@ export default function Dashboard() {
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-600">Total Sell Return</div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {isLoading ? "..." : formatCurrency("0.00")}
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysReturnAmount || 0)}
                 </div>
               </div>
             </div>

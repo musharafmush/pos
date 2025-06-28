@@ -1606,37 +1606,99 @@ export const storage = {
   // Dashboard related operations
   async getDashboardStats(): Promise<any> {
     try {
-      // Get total products
-      const totalProducts = await db.query.products.findMany();
+      const { sqlite } = await import('../db/index.js');
 
-      // Get total sales for today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todaySales = await db.query.sales.findMany({
-        where: gte(sales.createdAt, today)
-      });
+      console.log('📊 Fetching dashboard stats...');
+
+      // Get total products
+      const totalProductsQuery = sqlite.prepare('SELECT COUNT(*) as count FROM products');
+      const totalProductsResult = totalProductsQuery.get();
+      const totalProducts = totalProductsResult.count || 0;
+
+      // Get today's sales using DATE() function for SQLite compatibility
+      const todaySalesQuery = sqlite.prepare(`
+        SELECT 
+          COUNT(*) as count,
+          COALESCE(SUM(CAST(total AS REAL)), 0) as revenue
+        FROM sales 
+        WHERE DATE(created_at) = DATE('now')
+      `);
+      const todaySalesResult = todaySalesQuery.get();
+      const todaysSales = todaySalesResult.count || 0;
+      const todaysRevenue = todaySalesResult.revenue || 0;
 
       // Get low stock products
-      const lowStockProducts = await db.query.products.findMany({
-        where: sql`${products.stockQuantity} <= ${products.alertThreshold}`,
-        limit: 10
-      });
+      const lowStockQuery = sqlite.prepare(`
+        SELECT COUNT(*) as count 
+        FROM products 
+        WHERE stock_quantity <= alert_threshold
+      `);
+      const lowStockResult = lowStockQuery.get();
+      const lowStockItems = lowStockResult.count || 0;
 
-      const todayRevenue = todaySales.reduce((sum, sale) => sum + parseFloat(sale.total || '0'), 0);
+      // Get total purchases today
+      const todayPurchasesQuery = sqlite.prepare(`
+        SELECT 
+          COUNT(*) as count,
+          COALESCE(SUM(CAST(total AS REAL)), 0) as total
+        FROM purchases 
+        WHERE DATE(created_at) = DATE('now')
+      `);
+      const todayPurchasesResult = todayPurchasesQuery.get();
+      const todaysPurchases = todayPurchasesResult.count || 0;
+      const todaysPurchaseAmount = todayPurchasesResult.total || 0;
 
-      return {
-        totalProducts: totalProducts.length,
-        todaysSales: todaySales.length,
-        todaysRevenue: todayRevenue,
-        lowStockItems: lowStockProducts.length
+      // Get total expenses today
+      const todayExpensesQuery = sqlite.prepare(`
+        SELECT COALESCE(SUM(CAST(amount AS REAL)), 0) as total
+        FROM expenses 
+        WHERE DATE(expense_date) = DATE('now')
+      `);
+      const todayExpensesResult = todayExpensesQuery.get();
+      const todaysExpenses = todayExpensesResult.total || 0;
+
+      // Get returns today
+      const todayReturnsQuery = sqlite.prepare(`
+        SELECT 
+          COUNT(*) as count,
+          COALESCE(SUM(CAST(total_refund AS REAL)), 0) as total
+        FROM returns 
+        WHERE DATE(created_at) = DATE('now')
+      `);
+      const todayReturnsResult = todayReturnsQuery.get();
+      const todaysReturns = todayReturnsResult.count || 0;
+      const todaysReturnAmount = todayReturnsResult.total || 0;
+
+      const stats = {
+        totalProducts,
+        todaysSales,
+        todaysRevenue,
+        lowStockItems,
+        todaysPurchases,
+        todaysPurchaseAmount,
+        todaysExpenses,
+        todaysReturns,
+        todaysReturnAmount,
+        // Calculate net for today (sales - expenses - returns)
+        todaysNet: todaysRevenue - todaysExpenses - todaysReturnAmount
       };
+
+      console.log('📊 Dashboard stats calculated:', stats);
+      return stats;
+
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
       return {
         totalProducts: 0,
         todaysSales: 0,
         todaysRevenue: 0,
-        lowStockItems: 0
+        lowStockItems: 0,
+        todaysPurchases: 0,
+        todaysPurchaseAmount: 0,
+        todaysExpenses: 0,
+        todaysReturns: 0,
+        todaysReturnAmount: 0,
+        todaysNet: 0
       };
     }
   },
