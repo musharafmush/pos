@@ -32,6 +32,11 @@ interface ReceiptData {
   changeDue: number;
   paymentMethod: string;
   notes?: string;
+  loyaltyInfo?: {
+    pointsEarned: number;
+    totalPoints: number;
+    availablePoints: number;
+  };
 }
 
 export interface ReceiptCustomization {
@@ -55,6 +60,7 @@ export interface ReceiptCustomization {
   showItemSKU: boolean;
   showMRP: boolean;
   showSavings: boolean;
+  showLoyaltyPoints: boolean;
   showBarcode: boolean;
   showQRCode: boolean;
 
@@ -104,6 +110,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       showItemSKU: true,
       showMRP: true,
       showSavings: true,
+      showLoyaltyPoints: true,
       showBarcode: false,
       showQRCode: false,
       headerBackground: true,
@@ -736,6 +743,30 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <strong style="text-align: right;">${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</strong>
         </div>
       </div>
+
+      ${settings.showLoyaltyPoints && safeData.loyaltyInfo ? `
+      <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
+
+      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin: 2mm 0; background: #f8f9fa; padding: 1.5mm; border: 1px solid #e9ecef; border-radius: 2px;">
+        <div style="text-align: center; font-weight: bold; margin-bottom: 1mm; color: #495057;">
+          🎁 LOYALTY REWARDS 🎁
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #059669;">
+          <span>Points Earned:</span>
+          <strong>+${Number(safeData.loyaltyInfo.pointsEarned || 0).toFixed(2)}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
+          <span>Total Points:</span>
+          <strong>${Number(safeData.loyaltyInfo.totalPoints || 0).toFixed(2)}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; color: #007bff;">
+          <span>Available Points:</span>
+          <strong>${Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2)}</strong>
+        </div>
+        <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; color: #6c757d; margin-top: 1mm; font-style: italic;">
+          ₹100 spent = 1 loyalty point
+        </div>
+      </div>` : ''}
 
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
 
