@@ -32,10 +32,13 @@ interface ReceiptData {
   changeDue: number;
   paymentMethod: string;
   notes?: string;
+  loyaltyDiscount?: number;
+  loyaltyPointsRedeemed?: number;
   loyaltyInfo?: {
     pointsEarned: number;
     totalPoints: number;
     availablePoints: number;
+    pointsRedeemed?: number;
   };
 }
 
@@ -602,7 +605,10 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       total: Number(sale?.total) || 1300,
       tax: Number(sale?.tax) || 0,
       taxAmount: Number(sale?.taxAmount) || 0,
-      paymentMethod: sale?.paymentMethod || 'CASH'
+      paymentMethod: sale?.paymentMethod || 'CASH',
+      loyaltyDiscount: Number(sale?.loyaltyDiscount) || 0,
+      loyaltyPointsRedeemed: Number(sale?.loyaltyPointsRedeemed) || 0,
+      loyaltyInfo: sale?.loyaltyInfo || null
     };
 
     return `
@@ -754,20 +760,20 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <span>Points Earned:</span>
           <strong>+${Number(safeData.loyaltyInfo.pointsEarned || 0).toFixed(2)}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
-          <span>Total Points:</span>
-          <strong>${Number(safeData.loyaltyInfo.totalPoints || 0).toFixed(2)}</strong>
-        </div>
-        <div style="display: flex; justify-content: space-between; color: #2563eb;">
-          <span>Available Points:</span>
-          <strong>${Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2)}</strong>
-        </div>
-        ${safeData.loyaltyInfo.pointsRedeemed ? `
-        <div style="display: flex; justify-content: space-between; color: #dc2626;">
+        ${safeData.loyaltyPointsRedeemed && safeData.loyaltyPointsRedeemed > 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #dc2626;">
           <span>Points Redeemed:</span>
-          <strong>-${Number(safeData.loyaltyInfo.pointsRedeemed || 0).toFixed(2)}</strong>
+          <strong>-${Number(safeData.loyaltyPointsRedeemed).toFixed(2)}</strong>
         </div>
         ` : ''}
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
+          <span>Previous Points:</span>
+          <strong>${Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2)}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; color: #2563eb;">
+          <span>New Total:</span>
+          <strong>${Number(safeData.loyaltyInfo.totalPoints || 0).toFixed(2)}</strong>
+        </div>
         ` : `
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #059669;">
           <span>Points Earned:</span>
