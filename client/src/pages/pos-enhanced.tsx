@@ -1481,17 +1481,21 @@ export default function POSEnhanced() {
         customerPhone: selectedCustomer?.phone,
         customerEmail: selectedCustomer?.email,
         selectedCustomer: selectedCustomer,
-        // Enhanced customer data for receipt
+        // Enhanced customer data for receipt with comprehensive phone data
         customerDetails: {
           name: selectedCustomer?.name || 'Walk-in Customer',
           phone: selectedCustomer?.phone || '',
-          email: selectedCustomer?.email || ''
+          email: selectedCustomer?.email || '',
+          // Additional phone field for thermal receipt compatibility
+          doorNo: selectedCustomer?.phone ? `Ph: ${selectedCustomer.phone}` : ''
         },
-        // Additional phone/email references for receipt compatibility
+        // Multiple phone/email references for maximum receipt compatibility
         phone: selectedCustomer?.phone,
         email: selectedCustomer?.email,
         customer_phone: selectedCustomer?.phone,
         customer_email: selectedCustomer?.email,
+        // Raw customer object preservation
+        rawCustomer: selectedCustomer,
         loyaltyDiscount: loyaltyDiscount,
         loyaltyPointsRedeemed: redeemedPointsForTransaction,
         loyaltyInfo: customerLoyalty ? {
@@ -1520,6 +1524,12 @@ export default function POSEnhanced() {
 
       // Direct Bill Printing - Automatic thermal receipt generation
       console.log("🖨️ Starting direct bill printing process...");
+      console.log("📞 Customer phone data for receipt:", {
+        selectedCustomer: selectedCustomer,
+        customerPhone: selectedCustomer?.phone,
+        customerData: completedSaleData.customer,
+        customerDetails: completedSaleData.customerDetails
+      });
       setTimeout(() => {
         handleDirectBillPrint(completedSaleData, saleResult);
       }, 500);

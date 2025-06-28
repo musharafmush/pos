@@ -652,40 +652,69 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
 
       <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
-        <div><strong>Customer:</strong> ${safeData.customer.name}</div>
+        <div><strong>Customer:</strong> ${
+          // Enhanced customer name extraction with multiple fallbacks
+          safeData.customer?.name || 
+          safeData.customerName || 
+          safeData.customer_name ||
+          safeData.selectedCustomer?.name ||
+          sale?.customer?.name ||
+          sale?.customerName ||
+          sale?.customer_name ||
+          'Walk-in Customer'
+        }</div>
         ${(() => {
-          // Enhanced phone number extraction from multiple possible sources
-          const phoneNumber = safeData.customerDetails?.phone || 
-                             safeData.customer?.phone || 
-                             safeData.customerPhone ||
-                             (safeData.selectedCustomer && safeData.selectedCustomer.phone) ||
-                             // Additional fallback sources
-                             safeData.phone ||
-                             safeData.customer_phone;
+          // Enhanced phone number extraction with comprehensive fallback logic
+          const phoneNumber = 
+            // Primary sources from POS data
+            safeData.customerDetails?.phone || 
+            safeData.customer?.phone || 
+            safeData.customerPhone ||
+            // Secondary sources from selected customer
+            (safeData.selectedCustomer && safeData.selectedCustomer.phone) ||
+            // Direct property access fallbacks
+            safeData.phone ||
+            safeData.customer_phone ||
+            // Raw sale data phone fields
+            sale?.customer?.phone ||
+            sale?.customerPhone ||
+            sale?.customer_phone ||
+            sale?.phone ||
+            // Customer object nested access
+            (sale?.customer && sale.customer.phone) ||
+            (sale?.selectedCustomer && sale.selectedCustomer.phone) ||
+            // Receipt data customer details
+            (sale?.customerDetails && sale.customerDetails.phone);
           
-          // Debug logging to console
-          console.log('🔍 Receipt Debug - Enhanced Customer Data:', {
-            customerDetails: safeData.customerDetails,
-            customer: safeData.customer,
-            customerPhone: safeData.customerPhone,
-            selectedCustomer: safeData.selectedCustomer,
-            phone: safeData.phone,
-            customer_phone: safeData.customer_phone,
-            finalPhoneNumber: phoneNumber
+          // Debug logging to console for troubleshooting
+          console.log('🔍 Receipt Phone Debug - All Data Sources:', {
+            'safeData.customerDetails': safeData.customerDetails,
+            'safeData.customer': safeData.customer,
+            'safeData.customerPhone': safeData.customerPhone,
+            'safeData.selectedCustomer': safeData.selectedCustomer,
+            'safeData.phone': safeData.phone,
+            'safeData.customer_phone': safeData.customer_phone,
+            'sale.customer': sale?.customer,
+            'sale.customerPhone': sale?.customerPhone,
+            'sale.customer_phone': sale?.customer_phone,
+            'sale.phone': sale?.phone,
+            'sale.selectedCustomer': sale?.selectedCustomer,
+            'sale.customerDetails': sale?.customerDetails,
+            'finalPhoneNumber': phoneNumber
           });
           
-          // Always show phone section, even if no number available
-          if (phoneNumber && phoneNumber.trim() !== '') {
+          // Always show phone section with proper data
+          if (phoneNumber && phoneNumber.trim() !== '' && phoneNumber.trim() !== 'undefined' && phoneNumber.trim() !== 'null') {
             return `
             <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #333; margin-top: 1mm; font-weight: bold;">
               📞 ${phoneNumber.trim()}
             </div>
             `;
           } else {
-            // Show placeholder for missing phone number
+            // Only show placeholder if truly no phone data available
             return `
             <div style="font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; color: #999; margin-top: 1mm; font-style: italic;">
-              📞 Phone: Not provided
+              📞 Phone: Contact store for details
             </div>
             `;
           }
