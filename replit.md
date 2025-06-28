@@ -263,10 +263,20 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Resolved login failures for all users including admin and mushu accounts
 - System now properly supports user authentication with SQLite backend
 
+### Dashboard Statistics Fix (June 28, 2025)
+- Fixed critical SQLite database schema compatibility issues preventing dashboard data display
+- Resolved "no such column: model" and "min_order_qty" errors in products table
+- Added missing database columns (model, size, color, material, min_order_qty, etc.) to products table
+- Replaced Drizzle ORM queries with direct SQLite queries in getDashboardStats function
+- Fixed SQLite binding errors preventing data retrieval from sales, purchases, expenses, and returns
+- Updated frontend dashboard to correctly display real financial data instead of zeros
+- Dashboard now shows actual daily statistics: sales revenue, purchase amounts, expenses, returns, and net profit
+- Low-stock products API endpoint restored to full functionality
+
 ## Changelog
 
 - June 25, 2025. Initial setup and enhanced search capabilities
-- June 28, 2025. Fixed SQLite authentication system and user login functionality
+- June 28, 2025. Fixed SQLite authentication system, user login functionality, and dashboard statistics display
 
 ## User Preferences
 

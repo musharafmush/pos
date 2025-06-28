@@ -120,7 +120,7 @@ export default function Dashboard() {
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-600">Total Purchase</div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {isLoading ? "..." : formatCurrency("0.00")}
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysPurchaseAmount || 0)}
                 </div>
               </div>
             </div>
@@ -162,7 +162,7 @@ export default function Dashboard() {
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-600">Expense</div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {isLoading ? "..." : formatCurrency("0.00")}
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysExpenses || 0)}
                 </div>
               </div>
             </div>
