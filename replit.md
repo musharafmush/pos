@@ -254,9 +254,19 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Enhanced unified printer settings with comprehensive paper width options
 - Updated Xprinter XP-420B configuration guidance for 77mm paper
 
+### SQLite Authentication Fix (June 28, 2025)
+- Fixed critical SQLite user creation error caused by PostgreSQL-specific functions
+- Created SQLite-compatible schema to replace PostgreSQL defaultNow() functions
+- Updated database initialization to use proper SQLite timestamp handling
+- Fixed password hashing system preventing double-hashing in user updates
+- Added password reset API endpoint for fixing authentication issues
+- Resolved login failures for all users including admin and mushu accounts
+- System now properly supports user authentication with SQLite backend
+
 ## Changelog
 
 - June 25, 2025. Initial setup and enhanced search capabilities
+- June 28, 2025. Fixed SQLite authentication system and user login functionality
 
 ## User Preferences
 
