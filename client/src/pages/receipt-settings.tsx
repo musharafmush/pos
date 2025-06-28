@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +15,7 @@ import ReceiptTemplateManager from "@/components/pos/receipt-template-manager";
 
 export default function ReceiptSettings() {
   const { toast } = useToast();
-  
+
   const [settings, setSettings] = useState<ReceiptCustomization>({
     businessName: 'M MART',
     businessAddress: '47,SHOP NO.1&2,\nTHANDARAMPATTU MAIN ROAD,\nSAMUTHIRAM VILLAGE,\nTIRUVANNAMALAI-606603',
@@ -161,7 +160,7 @@ export default function ReceiptSettings() {
       language: 'english',
       currencySymbol: '₹'
     };
-    
+
     setSettings(defaultSettings);
     toast({
       title: "🔄 Reset Complete",
@@ -180,7 +179,7 @@ export default function ReceiptSettings() {
             </h1>
             <p className="text-gray-600 mt-2">Configure your receipt format and appearance for optimal printing</p>
           </div>
-          
+
           <div className="flex gap-2">
             <Button variant="outline" onClick={resetToDefaults}>
               <Zap className="h-4 w-4 mr-2" />
@@ -245,7 +244,7 @@ export default function ReceiptSettings() {
                         placeholder="Your Business Name"
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="businessAddress">Business Address</Label>
                       <Textarea 
@@ -256,7 +255,7 @@ export default function ReceiptSettings() {
                         rows={4}
                       />
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="phoneNumber">Phone Number</Label>
@@ -267,7 +266,7 @@ export default function ReceiptSettings() {
                           placeholder="+91-XXXXXXXXXX"
                         />
                       </div>
-                      
+
                       <div>
                         <Label htmlFor="email">Email (Optional)</Label>
                         <Input 
@@ -278,7 +277,7 @@ export default function ReceiptSettings() {
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="taxId">GST/Tax ID</Label>
                       <Input 
@@ -288,7 +287,7 @@ export default function ReceiptSettings() {
                         placeholder="33QIWPS9348F1Z2"
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="receiptFooter">Receipt Footer</Label>
                       <Textarea 
@@ -310,7 +309,7 @@ export default function ReceiptSettings() {
                           placeholder="www.yourbusiness.com"
                         />
                       </div>
-                      
+
                       <div>
                         <Label htmlFor="returnPolicyText">Return Policy Text</Label>
                         <Input 
@@ -354,7 +353,7 @@ export default function ReceiptSettings() {
                           </SelectContent>
                         </Select>
                       </div>
-                      
+
                       <div>
                         <Label htmlFor="fontSize">Font Size</Label>
                         <Select 
@@ -372,7 +371,7 @@ export default function ReceiptSettings() {
                         </Select>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="fontFamily">Font Family</Label>
@@ -390,7 +389,7 @@ export default function ReceiptSettings() {
                           </SelectContent>
                         </Select>
                       </div>
-                      
+
                       <div>
                         <Label htmlFor="headerStyle">Header Alignment</Label>
                         <Select 
@@ -555,7 +554,7 @@ export default function ReceiptSettings() {
                           onCheckedChange={(checked) => setSettings(prev => ({ ...prev, showCustomerDetails: checked }))}
                         />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <Label htmlFor="showItemSKU">Show Item SKU</Label>
                         <Switch 
@@ -564,7 +563,7 @@ export default function ReceiptSettings() {
                           onCheckedChange={(checked) => setSettings(prev => ({ ...prev, showItemSKU: checked }))}
                         />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <Label htmlFor="showMRP">Show MRP</Label>
                         <Switch 
@@ -573,7 +572,7 @@ export default function ReceiptSettings() {
                           onCheckedChange={(checked) => setSettings(prev => ({ ...prev, showMRP: checked }))}
                         />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <Label htmlFor="showSavings">Show Savings</Label>
                         <Switch 
@@ -582,7 +581,7 @@ export default function ReceiptSettings() {
                           onCheckedChange={(checked) => setSettings(prev => ({ ...prev, showSavings: checked }))}
                         />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <Label htmlFor="showBarcode">Show Barcode</Label>
                         <Switch 
@@ -591,7 +590,7 @@ export default function ReceiptSettings() {
                           onCheckedChange={(checked) => setSettings(prev => ({ ...prev, showBarcode: checked }))}
                         />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <Label htmlFor="showQRCode">Show QR Code</Label>
                         <Switch 
@@ -622,7 +621,7 @@ export default function ReceiptSettings() {
                           onCheckedChange={(checked) => setSettings(prev => ({ ...prev, headerBackground: checked }))}
                         />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <Label htmlFor="boldTotals">Bold Totals</Label>
                         <Switch 
@@ -641,7 +640,7 @@ export default function ReceiptSettings() {
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="separatorStyle">Separator Style</Label>
                       <Select 
@@ -691,7 +690,7 @@ export default function ReceiptSettings() {
                         <FileText className="h-6 w-6" />
                         Professional
                       </Button>
-                      
+
                       <Button 
                         variant="outline" 
                         className="h-20 flex flex-col items-center justify-center gap-2"
@@ -712,7 +711,7 @@ export default function ReceiptSettings() {
                         <FileText className="h-6 w-6" />
                         Compact
                       </Button>
-                      
+
                       <Button 
                         variant="outline" 
                         className="h-20 flex flex-col items-center justify-center gap-2"
@@ -733,7 +732,7 @@ export default function ReceiptSettings() {
                         <FileText className="h-6 w-6" />
                         Bold
                       </Button>
-                      
+
                       <Button 
                         variant="outline" 
                         className="h-20 flex flex-col items-center justify-center gap-2"
@@ -755,7 +754,7 @@ export default function ReceiptSettings() {
                         Office
                       </Button>
                     </div>
-                    
+
                     <div className="pt-4 border-t">
                       <h4 className="text-sm font-medium mb-3">Quick Actions</h4>
                       <div className="flex gap-2 flex-wrap">
@@ -811,7 +810,7 @@ export default function ReceiptSettings() {
                         onCheckedChange={(checked) => setSettings(prev => ({ ...prev, autoPrint: checked }))}
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="currencySymbol">Currency Symbol</Label>
                       <Input 
@@ -822,7 +821,7 @@ export default function ReceiptSettings() {
                         className="w-20"
                       />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <Label htmlFor="showTermsConditions">Show Terms & Conditions</Label>
                       <Switch 
@@ -831,7 +830,7 @@ export default function ReceiptSettings() {
                         onCheckedChange={(checked) => setSettings(prev => ({ ...prev, showTermsConditions: checked }))}
                       />
                     </div>
-                    
+
                     {settings.showTermsConditions && (
                       <div>
                         <Label htmlFor="termsConditions">Terms & Conditions</Label>
@@ -844,7 +843,7 @@ export default function ReceiptSettings() {
                         />
                       </div>
                     )}
-                    
+
                     <div className="flex items-center justify-between">
                       <Label htmlFor="showReturnPolicy">Show Return Policy</Label>
                       <Switch 
@@ -853,7 +852,7 @@ export default function ReceiptSettings() {
                         onCheckedChange={(checked) => setSettings(prev => ({ ...prev, showReturnPolicy: checked }))}
                       />
                     </div>
-                    
+
                     {settings.showReturnPolicy && (
                       <div>
                         <Label htmlFor="returnPolicy">Return Policy</Label>
@@ -866,7 +865,7 @@ export default function ReceiptSettings() {
                         />
                       </div>
                     )}
-                    
+
                     <div className="pt-4 border-t">
                       <h4 className="text-sm font-medium mb-3">Settings Management</h4>
                       <div className="flex gap-2">
@@ -876,21 +875,21 @@ export default function ReceiptSettings() {
                           onClick={() => {
                             const dataStr = JSON.stringify(settings, null, 2);
                             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                            
+
                             const exportFileDefaultName = 'receipt-settings.json';
-                            
+
                             const linkElement = document.createElement('a');
                             linkElement.setAttribute('href', dataUri);
                             linkElement.setAttribute('download', exportFileDefaultName);
                             linkElement.click();
-                            
+
                             toast({ title: "Settings Exported", description: "Receipt settings downloaded successfully" });
                           }}
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Export Settings
                         </Button>
-                        
+
                         <Button 
                           size="sm" 
                           variant="outline"
@@ -933,7 +932,7 @@ export default function ReceiptSettings() {
               currentSettings={settings}
               onApplyTemplate={(newSettings) => setSettings(newSettings)}
             />
-            
+
             <Card className="sticky top-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1000,7 +999,7 @@ export default function ReceiptSettings() {
                     <div className="flex justify-between"><span>Sub Total:</span><span>{settings.currencySymbol}250.00</span></div>
                     <div className="flex justify-between"><span>Taxable Amount:</span><span>{settings.currencySymbol}250.00</span></div>
                     <div className="flex justify-between"><span>GST (0%):</span><span>{settings.currencySymbol}0.00</span></div>
-                    
+
                     <div className={`border-2 border-black p-2 mt-2 ${settings.boldTotals ? 'font-bold' : ''} ${settings.headerBackground ? 'bg-yellow-100' : ''} rounded flex justify-between`}>
                       <span>GRAND TOTAL:</span><span>{settings.currencySymbol}250.00</span>
                     </div>

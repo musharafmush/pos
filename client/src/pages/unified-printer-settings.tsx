@@ -42,7 +42,7 @@ interface PrinterSettings {
   businessAddress: string;
   phoneNumber: string;
   taxId: string;
-  
+
   // Receipt Settings
   receiptFooter: string;
   paperWidth: string;
@@ -52,13 +52,14 @@ interface PrinterSettings {
   showItemSKU: boolean;
   showMRP: boolean;
   showSavings: boolean;
+  showLoyaltyPoints: boolean;
   headerStyle: string;
   boldTotals: boolean;
   separatorStyle: string;
   thermalOptimized: boolean;
   fontSize: string;
   fontFamily: string;
-  
+
   // Auto-Printer Settings
   enableAutoPrint: boolean;
   printDelay: number;
@@ -67,7 +68,7 @@ interface PrinterSettings {
   printMerchantCopy: boolean;
   autoOpenCashDrawer: boolean;
   quietMode: boolean;
-  
+
   // Print Triggers
   printOnSale: boolean;
   printOnReturn: boolean;
@@ -92,7 +93,7 @@ export default function UnifiedPrinterSettings() {
     businessAddress: '123 Business Street, City, State',
     phoneNumber: '+91-9876543210',
     taxId: '33GSPDB3311F1ZZ',
-    
+
     // Receipt Settings
     receiptFooter: 'Thank you for shopping with us!',
     paperWidth: '77mm',
@@ -102,13 +103,14 @@ export default function UnifiedPrinterSettings() {
     showItemSKU: true,
     showMRP: true,
     showSavings: true,
+    showLoyaltyPoints: true,
     headerStyle: 'centered',
     boldTotals: true,
     separatorStyle: 'solid',
     thermalOptimized: true,
     fontSize: 'medium',
     fontFamily: 'courier',
-    
+
     // Auto-Printer Settings
     enableAutoPrint: true,
     printDelay: 2,
@@ -117,7 +119,7 @@ export default function UnifiedPrinterSettings() {
     printMerchantCopy: true,
     autoOpenCashDrawer: true,
     quietMode: false,
-    
+
     // Print Triggers
     printOnSale: true,
     printOnReturn: true
@@ -154,7 +156,7 @@ export default function UnifiedPrinterSettings() {
       const response = await fetch('/api/settings/receipt');
       if (response.ok) {
         const backendSettings = await response.json();
-        
+
         setSettings(prev => ({
           ...prev,
           businessName: backendSettings.businessName || prev.businessName,
@@ -169,6 +171,7 @@ export default function UnifiedPrinterSettings() {
           showItemSKU: backendSettings.showItemSKU !== undefined ? backendSettings.showItemSKU : prev.showItemSKU,
           showMRP: backendSettings.showMRP !== undefined ? backendSettings.showMRP : prev.showMRP,
           showSavings: backendSettings.showSavings !== undefined ? backendSettings.showSavings : prev.showSavings,
+          showLoyaltyPoints: backendSettings.showLoyaltyPoints !== undefined ? backendSettings.showLoyaltyPoints : prev.showLoyaltyPoints,
           headerStyle: backendSettings.headerStyle || prev.headerStyle,
           boldTotals: backendSettings.boldTotals !== undefined ? backendSettings.boldTotals : prev.boldTotals,
           separatorStyle: backendSettings.separatorStyle || prev.separatorStyle,
@@ -193,14 +196,14 @@ export default function UnifiedPrinterSettings() {
     setIsSaving(true);
     try {
       console.log('💾 Saving printer settings:', settings);
-      
+
       // Save receipt settings to backend
       const receiptResponse = await fetch('/api/settings/receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       });
-      
+
       console.log('📊 Receipt settings save response:', receiptResponse.status, receiptResponse.statusText);
 
       if (receiptResponse.ok) {
@@ -265,7 +268,7 @@ export default function UnifiedPrinterSettings() {
 
       const { printReceipt } = await import('@/components/pos/print-receipt');
       printReceipt(testReceiptData, settings);
-      
+
       toast({
         title: "Test Print Sent",
         description: "Test receipt has been sent to printer"
@@ -293,6 +296,7 @@ export default function UnifiedPrinterSettings() {
       showItemSKU: true,
       showMRP: true,
       showSavings: true,
+      showLoyaltyPoints: true,
       headerStyle: 'centered',
       boldTotals: true,
       separatorStyle: 'solid',
@@ -309,7 +313,7 @@ export default function UnifiedPrinterSettings() {
       printOnSale: true,
       printOnReturn: true
     });
-    
+
     toast({
       title: "Settings Reset",
       description: "All settings have been reset to defaults"
@@ -395,7 +399,7 @@ export default function UnifiedPrinterSettings() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -407,7 +411,7 @@ export default function UnifiedPrinterSettings() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -421,7 +425,7 @@ export default function UnifiedPrinterSettings() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -742,7 +746,7 @@ export default function UnifiedPrinterSettings() {
                       <li>Advanced/Page Setup → Width: 77mm, Height: 297mm</li>
                       <li>Save as "Thermal Receipt"</li>
                     </ul>
-                    
+
                     <div className="mt-3"><strong>2. Print Dialog Settings:</strong></div>
                     <ul className="list-disc list-inside ml-4 space-y-1">
                       <li>More Settings → Margins: None</li>
@@ -764,7 +768,7 @@ export default function UnifiedPrinterSettings() {
                       <li>• Driver: Official Xprinter</li>
                     </ul>
                   </div>
-                  
+
                   <div className="border rounded-lg p-3 bg-red-50">
                     <h4 className="font-medium text-sm text-red-900">Common Issues</h4>
                     <ul className="text-sm text-red-800 mt-1 space-y-1">
@@ -850,6 +854,15 @@ export default function UnifiedPrinterSettings() {
                         id="showSavings"
                         checked={settings.showSavings}
                         onCheckedChange={(checked) => updateSetting('showSavings', checked)}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showLoyaltyPoints">Show Loyalty Points</Label>
+                      <Switch
+                        id="showLoyaltyPoints"
+                        checked={settings.showLoyaltyPoints}
+                        onCheckedChange={(checked) => updateSetting('showLoyaltyPoints', checked)}
                       />
                     </div>
                   </div>
@@ -1008,7 +1021,7 @@ export default function UnifiedPrinterSettings() {
                   >
                     Reset All Settings
                   </Button>
-                  
+
                   <Button 
                     variant="outline" 
                     onClick={() => {

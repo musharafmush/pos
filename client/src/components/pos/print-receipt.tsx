@@ -744,13 +744,14 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         </div>
       </div>
 
-      ${settings.showLoyaltyPoints && safeData.loyaltyInfo ? `
+      ${settings.showLoyaltyPoints !== false ? `
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
 
-      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin: 2mm 0; background: #f8f9fa; padding: 1.5mm; border: 1px solid #e9ecef; border-radius: 2px;">
-        <div style="text-align: center; font-weight: bold; margin-bottom: 1mm; color: #495057;">
-          🎁 LOYALTY REWARDS 🎁
+      <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; margin: 2mm 0; background: #f0f8ff; padding: 1.5mm; border: 1px solid #d0e7ff; border-radius: 2px;">
+        <div style="text-align: center; font-weight: bold; margin-bottom: 1mm; color: #1a365d;">
+          ⭐ LOYALTY POINTS ⭐
         </div>
+        ${safeData.loyaltyInfo ? `
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #059669;">
           <span>Points Earned:</span>
           <strong>+${Number(safeData.loyaltyInfo.pointsEarned || 0).toFixed(2)}</strong>
@@ -759,12 +760,40 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <span>Total Points:</span>
           <strong>${Number(safeData.loyaltyInfo.totalPoints || 0).toFixed(2)}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; color: #007bff;">
+        <div style="display: flex; justify-content: space-between; color: #2563eb;">
           <span>Available Points:</span>
           <strong>${Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2)}</strong>
         </div>
-        <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; color: #6c757d; margin-top: 1mm; font-style: italic;">
-          ₹100 spent = 1 loyalty point
+        ${safeData.loyaltyInfo.pointsRedeemed ? `
+        <div style="display: flex; justify-content: space-between; color: #dc2626;">
+          <span>Points Redeemed:</span>
+          <strong>-${Number(safeData.loyaltyInfo.pointsRedeemed || 0).toFixed(2)}</strong>
+        </div>
+        ` : ''}
+        ` : `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #059669;">
+          <span>Points Earned:</span>
+          <strong>+${(() => {
+            const total = parseFloat(safeData.total.toString()) || 0;
+            const pointsEarned = Math.round((total * 0.01) * 100) / 100;
+            return pointsEarned.toFixed(2);
+          })()}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; color: #6b7280;">
+          <span>Previous Points:</span>
+          <strong>0.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; color: #2563eb;">
+          <span>New Total:</span>
+          <strong>${(() => {
+            const total = parseFloat(safeData.total.toString()) || 0;
+            const pointsEarned = Math.round((total * 0.01) * 100) / 100;
+            return pointsEarned.toFixed(2);
+          })()}</strong>
+        </div>
+        `}
+        <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #6b7280; margin-top: 1mm; font-style: italic;">
+          Earn 1 point per ₹100 spent • 1 point = ₹1 discount
         </div>
       </div>` : ''}
 
