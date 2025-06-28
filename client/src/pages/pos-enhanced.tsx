@@ -1713,8 +1713,8 @@ export default function POSEnhanced() {
         notes: `Bill: ${receiptBillNumber} | Terminal: POS-Enhanced`,
         loyaltyInfo: selectedCustomer?.id ? {
           pointsEarned: Math.floor(receiptTotal * 0.01), // 1% of total as points
-          totalPoints: selectedCustomer?.loyaltyPoints || 0,
-          availablePoints: selectedCustomer?.availablePoints || 0
+          totalPoints: 0, // Will be fetched from loyalty system
+          availablePoints: 0 // Will be fetched from loyalty system
         } : undefined
       };
 
@@ -1808,6 +1808,11 @@ export default function POSEnhanced() {
         paymentMethod: (saleData.paymentMethod || 'CASH').toUpperCase(),
         status: 'completed',
         notes: saleData.notes || `Transaction completed successfully`,
+        loyaltyInfo: selectedCustomer?.id ? {
+          pointsEarned: Math.floor(saleData.total * 0.01), // 1% of total as points
+          totalPoints: 0, // Will be fetched from loyalty system
+          availablePoints: 0 // Will be fetched from loyalty system
+        } : undefined,
         createdAt: new Date().toISOString() // Always use current date/time for printing
       };
 
