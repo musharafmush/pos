@@ -584,7 +584,8 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         quantity: Number(item?.quantity) || 1,
         unitPrice: Number(item?.unitPrice || item?.price) || 100,
         subtotal: Number(item?.subtotal || item?.total) || 100,
-        productSku: item?.productSku || item?.sku || 'ITM000000'
+        productSku: item?.productSku || item?.sku || 'ITM000000',
+        mrp: Number(item?.mrp) || 0
       })) : [
         { productName: 'salte 250 (250g Pack)', quantity: 1, unitPrice: 100, subtotal: 100, productSku: 'ITM007797849-REPACK-250G-17494473112' },
         { productName: 'rice 250g', quantity: 1, unitPrice: 100, subtotal: 100, productSku: 'ITM688883976' },

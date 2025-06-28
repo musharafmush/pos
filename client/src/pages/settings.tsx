@@ -1815,7 +1815,7 @@ ${receiptSettings.receiptFooter}
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-1 gap-4 max-w-md">
                   <Button 
-                    onClick={() => window.open('/printer-settings', '_blank')}
+                    onClick={() => window.location.href = '/printer-settings'}
                     className="flex flex-col items-center gap-2 h-auto p-6 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
                     variant="outline"
                   >
