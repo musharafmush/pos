@@ -1478,6 +1478,14 @@ export default function POSEnhanced() {
         amountPaid: paidAmount,
         change: Math.max(0, paidAmount - total),
         customer: selectedCustomer,
+        loyaltyDiscount: loyaltyDiscount,
+        loyaltyPointsRedeemed: redeemedPointsForTransaction,
+        loyaltyInfo: customerLoyalty ? {
+          pointsEarned: calculatePointsToEarn(total),
+          totalPoints: parseFloat(customerLoyalty.totalPoints || '0'),
+          availablePoints: parseFloat(customerLoyalty.availablePoints || '0'),
+          pointsRedeemed: redeemedPointsForTransaction
+        } : null,
         items: cart.map(item => ({
           id: item.id,
           productId: item.id,
@@ -1851,11 +1859,19 @@ export default function POSEnhanced() {
         paymentMethod: (saleData.paymentMethod || 'CASH').toUpperCase(),
         status: 'completed',
         notes: saleData.notes || `Transaction completed successfully`,
-        loyaltyInfo: selectedCustomer?.id ? {
-          pointsEarned: Math.floor(saleData.total * 0.01), // 1% of total as points
-          totalPoints: 0, // Will be fetched from loyalty system
-          availablePoints: 0 // Will be fetched from loyalty system
+        loyaltyInfo: selectedCustomer?.id && customerLoyalty ? {
+          pointsEarned: calculatePointsToEarn(saleData.total),
+          totalPoints: parseFloat(customerLoyalty.totalPoints || '0'),
+          availablePoints: parseFloat(customerLoyalty.availablePoints || '0'),
+          pointsRedeemed: redeemedPointsForTransaction
+        } : selectedCustomer?.id ? {
+          pointsEarned: calculatePointsToEarn(saleData.total),
+          totalPoints: 0,
+          availablePoints: 0,
+          pointsRedeemed: 0
         } : undefined,
+        loyaltyDiscount: loyaltyDiscount,
+        loyaltyPointsRedeemed: redeemedPointsForTransaction,
         createdAt: new Date().toISOString() // Always use current date/time for printing
       };
 

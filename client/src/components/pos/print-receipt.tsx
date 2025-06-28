@@ -756,11 +756,15 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           ⭐ LOYALTY POINTS ⭐
         </div>
         
-        ${safeData.loyaltyInfo ? `
         <!-- Points to Earn from this purchase -->
         <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #059669; font-weight: bold;">
           <span>Points to Earn:</span>
-          <strong style="color: #047857;">+${Number(safeData.loyaltyInfo.pointsEarned || 0).toFixed(2)}</strong>
+          <strong style="color: #047857;">+${(() => {
+            // Calculate points earned from the final total (after all discounts)
+            const finalTotal = parseFloat(safeData.total?.toString() || '0');
+            const pointsEarned = Math.round((finalTotal * 0.01) * 100) / 100;
+            return pointsEarned.toFixed(2);
+          })()}</strong>
         </div>
         
         <!-- Loyalty Discount Applied (if any) -->
@@ -771,32 +775,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         </div>
         ` : ''}
         
-        <!-- Balance Points after this transaction -->
-        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #2563eb; font-weight: bold;">
-          <span>Balance Points:</span>
-          <strong style="color: #1d4ed8;">${Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2)}</strong>
-        </div>
-        ` : `
-        <!-- Calculate points for new customers or when loyalty info not available -->
-        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #059669; font-weight: bold;">
-          <span>Points to Earn:</span>
-          <strong style="color: #047857;">+${(() => {
-            // Calculate points earned from the final total (after discount)
-            const finalTotal = parseFloat(safeData.total?.toString() || '0');
-            const pointsEarned = Math.round((finalTotal * 0.01) * 100) / 100;
-            return pointsEarned.toFixed(2);
-          })()}</strong>
-        </div>
-        
-        <!-- Show loyalty discount if applied -->
-        ${safeData.loyaltyDiscount && Number(safeData.loyaltyDiscount) > 0 ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #dc2626; font-weight: bold;">
-          <span>Loyalty Discount:</span>
-          <strong style="color: #dc2626;">-${settings.currencySymbol}${Number(safeData.loyaltyDiscount).toFixed(2)}</strong>
-        </div>
-        ` : ''}
-        
-        <!-- Show redeemed points if any -->
+        <!-- Points Redeemed this transaction -->
         ${safeData.loyaltyPointsRedeemed && Number(safeData.loyaltyPointsRedeemed) > 0 ? `
         <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #dc2626; font-weight: bold;">
           <span>Points Redeemed:</span>
@@ -804,23 +783,30 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         </div>
         ` : ''}
         
-        <!-- Default balance for new customers -->
+        <!-- Balance Points after this transaction -->
         <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #2563eb; font-weight: bold;">
           <span>Balance Points:</span>
           <strong style="color: #1d4ed8;">${(() => {
-            // If we have loyaltyInfo, use it, otherwise calculate estimated balance
-            if (safeData.loyaltyInfo) {
-              return Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2);
-            }
-            // For new customers or when no loyalty info available
+            // Calculate balance: existing available points + points earned - points redeemed
+            const existingPoints = safeData.loyaltyInfo ? Number(safeData.loyaltyInfo.availablePoints || 0) : 0;
             const finalTotal = parseFloat(safeData.total?.toString() || '0');
             const pointsEarned = Math.round((finalTotal * 0.01) * 100) / 100;
             const pointsRedeemed = Number(safeData.loyaltyPointsRedeemed || 0);
-            const estimatedBalance = Math.max(0, pointsEarned - pointsRedeemed);
-            return estimatedBalance.toFixed(2);
+            
+            // If customer had points redeemed, their current balance would be: existing - redeemed + earned
+            // If no redemption, it's: existing + earned
+            let finalBalance;
+            if (pointsRedeemed > 0) {
+              // Points were redeemed, so the existing points already reflect the deduction
+              finalBalance = existingPoints + pointsEarned;
+            } else {
+              // No redemption, just add earned points to existing
+              finalBalance = existingPoints + pointsEarned;
+            }
+            
+            return Math.max(0, finalBalance).toFixed(2);
           })()}</strong>
         </div>
-        `}
         
         <!-- Loyalty Program Information -->
         <div style="border-top: 1px dashed #cbd5e1; margin-top: 1.5mm; padding-top: 1mm;">
