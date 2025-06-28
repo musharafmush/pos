@@ -270,11 +270,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Hash the new password properly
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      
-      // Update the user with the new hashed password
-      await storage.updateUser(user.id, { password: hashedPassword });
+      // Update the user with the new password (updateUser will hash it)
+      await storage.updateUser(user.id, { password: newPassword });
       
       res.json({ message: 'Password reset successfully' });
     } catch (error) {
