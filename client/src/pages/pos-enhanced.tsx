@@ -1721,6 +1721,8 @@ export default function POSEnhanced() {
         createdAt: new Date().toISOString(), // Always current timestamp
         customerDetails: {
           name: receiptCustomer?.name || selectedCustomer?.name || "Walk-in Customer",
+          phone: receiptCustomer?.phone || selectedCustomer?.phone || "",
+          email: receiptCustomer?.email || selectedCustomer?.email || "",
           doorNo: receiptCustomer?.phone ? `Ph: ${receiptCustomer.phone}` : selectedCustomer?.phone ? `Ph: ${selectedCustomer.phone}` : "",
           street: "",
           address: "",
@@ -1827,7 +1829,9 @@ export default function POSEnhanced() {
         billDate: currentDate,
         orderNumber: saleData.orderNumber,
         customerDetails: { 
-          name: saleData.customer?.name || saleData.customerName || selectedCustomer?.name || 'Walk-in Customer' 
+          name: saleData.customer?.name || saleData.customerName || selectedCustomer?.name || 'Walk-in Customer',
+          phone: saleData.customer?.phone || selectedCustomer?.phone || '',
+          email: saleData.customer?.email || selectedCustomer?.email || ''
         },
         customer: {
           name: saleData.customer?.name || saleData.customerName || selectedCustomer?.name || 'Walk-in Customer',
