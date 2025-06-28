@@ -83,7 +83,7 @@ import { Button } from "@/components/ui/button";
 import { useFormatCurrency } from "@/lib/currency";
 
 export default function SalesDashboard() {
-  const [timeRange, setTimeRange] = useState<string>("7");
+  const [timeRange, setTimeRange] = useState<string>("1");
   const [startDate, setStartDate] = useState<string>(format(subDays(new Date(), 7), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const formatCurrency = useFormatCurrency();
@@ -1202,6 +1202,7 @@ export default function SalesDashboard() {
                   <SelectValue placeholder="Select time range" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="1">Today</SelectItem>
                   <SelectItem value="7">Last 7 Days</SelectItem>
                   <SelectItem value="30">Last 30 Days</SelectItem>
                   <SelectItem value="90">Last 90 Days</SelectItem>
