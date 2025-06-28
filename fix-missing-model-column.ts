@@ -23,7 +23,18 @@ try {
   const requiredColumns = [
     { name: 'size', type: 'TEXT' },
     { name: 'color', type: 'TEXT' },
-    { name: 'material', type: 'TEXT' }
+    { name: 'material', type: 'TEXT' },
+    { name: 'min_order_qty', type: 'INTEGER DEFAULT 1' },
+    { name: 'max_order_qty', type: 'INTEGER' },
+    { name: 'reorder_point', type: 'INTEGER' },
+    { name: 'shelf_life', type: 'INTEGER' },
+    { name: 'expiry_date', type: 'TEXT' },
+    { name: 'batch_number', type: 'TEXT' },
+    { name: 'serial_number', type: 'TEXT' },
+    { name: 'warranty', type: 'TEXT' },
+    { name: 'location', type: 'TEXT' },
+    { name: 'rack', type: 'TEXT' },
+    { name: 'bin', type: 'TEXT' }
   ];
 
   for (const column of requiredColumns) {
