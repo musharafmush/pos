@@ -256,6 +256,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ user });
   });
 
+  // Password reset endpoint for fixing login issues
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { username, newPassword } = req.body;
+      
+      if (!username || !newPassword) {
+        return res.status(400).json({ message: 'Username and new password are required' });
+      }
+
+      const user = await storage.getUserByUsernameOrEmail(username);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Hash the new password properly
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update the user with the new hashed password
+      await storage.updateUser(user.id, { password: hashedPassword });
+      
+      res.json({ message: 'Password reset successfully' });
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Categories API
   app.get('/api/categories', async (req, res) => {
     try {
