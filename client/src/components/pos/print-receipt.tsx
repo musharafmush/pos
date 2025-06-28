@@ -653,21 +653,38 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
 
       <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
         <div><strong>Customer:</strong> ${safeData.customer.name}</div>
-        ${safeData.customerDetails && safeData.customerDetails.phone ? `
-        <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #666; margin-top: 1mm;">
-          📞 ${safeData.customerDetails.phone}
-        </div>
-        ` : ''}
-        ${safeData.customer && safeData.customer.phone ? `
-        <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #666; margin-top: 1mm;">
-          📞 ${safeData.customer.phone}
-        </div>
-        ` : ''}
-        ${safeData.customer && safeData.customer.email ? `
-        <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #666; margin-top: 1mm;">
-          ✉️ ${safeData.customer.email}
-        </div>
-        ` : ''}
+        ${(() => {
+          // Get phone number from multiple possible sources
+          const phoneNumber = safeData.customerDetails?.phone || 
+                             safeData.customer?.phone || 
+                             safeData.customerPhone ||
+                             (safeData.selectedCustomer && safeData.selectedCustomer.phone);
+          
+          if (phoneNumber) {
+            return `
+            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #666; margin-top: 1mm;">
+              📞 ${phoneNumber}
+            </div>
+            `;
+          }
+          return '';
+        })()}
+        ${(() => {
+          // Get email from multiple possible sources
+          const emailAddress = safeData.customerDetails?.email || 
+                               safeData.customer?.email || 
+                               safeData.customerEmail ||
+                               (safeData.selectedCustomer && safeData.selectedCustomer.email);
+          
+          if (emailAddress) {
+            return `
+            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #666; margin-top: 1mm;">
+              ✉️ ${emailAddress}
+            </div>
+            `;
+          }
+          return '';
+        })()}
       </div>
 
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>

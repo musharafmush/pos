@@ -1478,6 +1478,9 @@ export default function POSEnhanced() {
         amountPaid: paidAmount,
         change: Math.max(0, paidAmount - total),
         customer: selectedCustomer,
+        customerPhone: selectedCustomer?.phone,
+        customerEmail: selectedCustomer?.email,
+        selectedCustomer: selectedCustomer,
         loyaltyDiscount: loyaltyDiscount,
         loyaltyPointsRedeemed: redeemedPointsForTransaction,
         loyaltyInfo: customerLoyalty ? {
@@ -1830,14 +1833,17 @@ export default function POSEnhanced() {
         orderNumber: saleData.orderNumber,
         customerDetails: { 
           name: saleData.customer?.name || saleData.customerName || selectedCustomer?.name || 'Walk-in Customer',
-          phone: saleData.customer?.phone || selectedCustomer?.phone || '',
-          email: saleData.customer?.email || selectedCustomer?.email || ''
+          phone: saleData.customer?.phone || saleData.customerPhone || selectedCustomer?.phone || '',
+          email: saleData.customer?.email || saleData.customerEmail || selectedCustomer?.email || ''
         },
         customer: {
           name: saleData.customer?.name || saleData.customerName || selectedCustomer?.name || 'Walk-in Customer',
-          phone: saleData.customer?.phone || selectedCustomer?.phone || '',
-          email: saleData.customer?.email || selectedCustomer?.email || ''
+          phone: saleData.customer?.phone || saleData.customerPhone || selectedCustomer?.phone || '',
+          email: saleData.customer?.email || saleData.customerEmail || selectedCustomer?.email || ''
         },
+        customerPhone: saleData.customer?.phone || saleData.customerPhone || selectedCustomer?.phone || '',
+        customerEmail: saleData.customer?.email || saleData.customerEmail || selectedCustomer?.email || '',
+        selectedCustomer: selectedCustomer,
         salesMan: 'POS System',
         items: saleData.items.map((item: any) => ({
           id: item.id || item.productId,
