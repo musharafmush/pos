@@ -647,6 +647,32 @@ export default function Settings() {
     }
   });
 
+  // Fetch data statistics for Data Management section
+  const { data: statsData } = useQuery({
+    queryKey: ['/api/dashboard/stats'],
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
+  
+  const { data: salesData } = useQuery({
+    queryKey: ['/api/sales', { limit: 1000 }],
+    refetchInterval: 30000
+  });
+  
+  const { data: customersData } = useQuery({
+    queryKey: ['/api/customers'],
+    refetchInterval: 30000
+  });
+  
+  const { data: suppliersData } = useQuery({
+    queryKey: ['/api/suppliers'],
+    refetchInterval: 30000
+  });
+  
+  const { data: purchasesData } = useQuery({
+    queryKey: ['/api/purchases'],
+    refetchInterval: 30000
+  });
+
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -1383,23 +1409,70 @@ ${receiptSettings.receiptFooter}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                {/* Real-Time Data Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">∞</div>
-                    <div className="text-xs text-gray-600">Total Records</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {(salesData?.length || 0) + (customersData?.length || 0) + (suppliersData?.length || 0) + (statsData?.totalProducts || 0)}
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300">Total Records</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">✓</div>
-                    <div className="text-xs text-gray-600">System Status</div>
+                    <div className="text-2xl font-bold text-green-600">{statsData?.totalProducts || 0}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300">Products</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">📊</div>
-                    <div className="text-xs text-gray-600">Active Data</div>
+                    <div className="text-2xl font-bold text-orange-600">{salesData?.length || 0}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300">Sales</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">🔒</div>
-                    <div className="text-xs text-gray-600">Secure</div>
+                    <div className="text-2xl font-bold text-purple-600">{customersData?.length || 0}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300">Customers</div>
+                  </div>
+                </div>
+
+                {/* Detailed Data Breakdown */}
+                <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <DatabaseIcon className="h-5 w-5 text-blue-600" />
+                    Complete Data Overview
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                      <div className="text-lg font-bold text-blue-700 dark:text-blue-300">{statsData?.totalProducts || 0}</div>
+                      <div className="text-xs text-blue-600 dark:text-blue-400">Products</div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-700">
+                      <div className="text-lg font-bold text-green-700 dark:text-green-300">{salesData?.length || 0}</div>
+                      <div className="text-xs text-green-600 dark:text-green-400">Sales</div>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-700">
+                      <div className="text-lg font-bold text-purple-700 dark:text-purple-300">{customersData?.length || 0}</div>
+                      <div className="text-xs text-purple-600 dark:text-purple-400">Customers</div>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-700">
+                      <div className="text-lg font-bold text-orange-700 dark:text-orange-300">{suppliersData?.length || 0}</div>
+                      <div className="text-xs text-orange-600 dark:text-orange-400">Suppliers</div>
+                    </div>
+                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-700">
+                      <div className="text-lg font-bold text-indigo-700 dark:text-indigo-300">{purchasesData?.length || 0}</div>
+                      <div className="text-xs text-indigo-600 dark:text-indigo-400">Purchases</div>
+                    </div>
+                    <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg border border-teal-200 dark:border-teal-700">
+                      <div className="text-lg font-bold text-teal-700 dark:text-teal-300">
+                        ₹{statsData?.todaysRevenue ? Number(statsData.todaysRevenue).toLocaleString('en-IN') : '0'}
+                      </div>
+                      <div className="text-xs text-teal-600 dark:text-teal-400">Revenue</div>
+                    </div>
+                  </div>
+                  
+                  {/* Live Data Indicator */}
+                  <div className="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>Last updated: {new Date().toLocaleTimeString()}</span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span>Live Data</span>
+                    </div>
                   </div>
                 </div>
 
