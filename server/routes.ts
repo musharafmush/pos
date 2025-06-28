@@ -1939,9 +1939,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             dateThreshold.setHours(0, 0, 0, 0);
           }
           
+          // Format date for SQLite comparison (YYYY-MM-DD HH:mm:ss)
+          const sqliteDate = dateThreshold.toISOString().slice(0, 19).replace('T', ' ');
+          
           query += whereAdded ? ' AND' : ' WHERE';
           query += ' s.created_at >= ?';
-          params.push(dateThreshold.toISOString());
+          params.push(sqliteDate);
           whereAdded = true;
         }
 
