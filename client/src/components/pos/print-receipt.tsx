@@ -757,43 +757,37 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         </div>
         ${safeData.loyaltyInfo ? `
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #059669;">
-          <span>Points Earned:</span>
+          <span>Points to Earn:</span>
           <strong>+${Number(safeData.loyaltyInfo.pointsEarned || 0).toFixed(2)}</strong>
         </div>
         ${safeData.loyaltyPointsRedeemed && safeData.loyaltyPointsRedeemed > 0 ? `
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #dc2626;">
-          <span>Points Redeemed:</span>
-          <strong>-${Number(safeData.loyaltyPointsRedeemed).toFixed(2)}</strong>
+          <span>Loyalty Discount:</span>
+          <strong>₹${Number(safeData.loyaltyPointsRedeemed).toFixed(2)}</strong>
         </div>
         ` : ''}
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm;">
-          <span>Previous Points:</span>
-          <strong>${Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2)}</strong>
-        </div>
         <div style="display: flex; justify-content: space-between; color: #2563eb;">
-          <span>New Total:</span>
-          <strong>${Number(safeData.loyaltyInfo.totalPoints || 0).toFixed(2)}</strong>
+          <span>Balance Points:</span>
+          <strong>${Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2)}</strong>
         </div>
         ` : `
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #059669;">
-          <span>Points Earned:</span>
+          <span>Points to Earn:</span>
           <strong>+${(() => {
-            const total = parseFloat(safeData.total.toString()) || 0;
+            const total = parseFloat(safeData.grandTotal.toString()) || 0;
             const pointsEarned = Math.round((total * 0.01) * 100) / 100;
             return pointsEarned.toFixed(2);
           })()}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; color: #6b7280;">
-          <span>Previous Points:</span>
-          <strong>0.00</strong>
+        ${safeData.loyaltyDiscount && safeData.loyaltyDiscount > 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #dc2626;">
+          <span>Loyalty Discount:</span>
+          <strong>₹${Number(safeData.loyaltyDiscount).toFixed(2)}</strong>
         </div>
+        ` : ''}
         <div style="display: flex; justify-content: space-between; color: #2563eb;">
-          <span>New Total:</span>
-          <strong>${(() => {
-            const total = parseFloat(safeData.total.toString()) || 0;
-            const pointsEarned = Math.round((total * 0.01) * 100) / 100;
-            return pointsEarned.toFixed(2);
-          })()}</strong>
+          <span>Balance Points:</span>
+          <strong>0.00</strong>
         </div>
         `}
         <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #6b7280; margin-top: 1mm; font-style: italic;">
