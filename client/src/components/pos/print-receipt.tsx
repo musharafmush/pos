@@ -173,7 +173,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         margin: 0; 
         padding: 0; 
       }
-      
+
       html, body { 
         margin: 0 !important; 
         padding: 0 !important; 
@@ -186,7 +186,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         height: auto !important;
         overflow: visible !important;
       }
-      
+
       .receipt { 
         width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '108mm'} !important;
         max-width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '72mm' : paperWidth === 'thermal77' ? '77mm' : paperWidth === 'thermal80' ? '80mm' : '108mm'} !important;
@@ -222,7 +222,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           padding: 0 !important;
           box-sizing: border-box !important;
         }
-        
+
         html, body { 
           margin: 0 !important; 
           padding: 0 !important; 
@@ -242,7 +242,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
-        
+
         .receipt { 
           width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
           max-width: ${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '108mm'} !important;
@@ -271,7 +271,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         .no-print, .print-instructions { 
           display: none !important; 
         }
-        
+
         /* Natural content flow */
         * { 
           page-break-inside: auto !important;
@@ -280,7 +280,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           orphans: 1 !important;
           widows: 1 !important;
         }
-        
+
         /* Optimized spacing for thermal printing */
         .receipt * {
           page-break-inside: auto !important;
@@ -289,7 +289,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           margin: 0 !important;
           line-height: 1.2 !important;
         }
-        
+
         /* Compact item rows */
         .receipt table, .receipt tr, .receipt td {
           margin: 0 !important;
@@ -297,14 +297,14 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           border-spacing: 0 !important;
           font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'} !important;
         }
-        
+
         /* Ultra-compact headers and footers */
         .receipt h1, .receipt h2, .receipt h3 {
           margin: 0.5mm 0 !important;
           font-size: ${paperWidth === 'thermal58' ? '12px' : '13px'} !important;
           line-height: 1.1 !important;
         }
-        
+
         /* Xprinter specific optimizations */
         .thermal-line, .thermal-dotted {
           background: black !important;
@@ -323,7 +323,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           min-height: 100vh !important;
           margin: 0 !important;
         }
-        
+
         .receipt {
           box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
           background: white !important;
@@ -331,7 +331,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           border-radius: 2px !important;
           margin: 5px auto !important;
         }
-        
+
         .print-instructions {
           position: fixed !important;
           top: 10px !important;
@@ -356,25 +356,25 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         margin-bottom: 1mm !important;
         line-height: 1.1 !important;
       }
-      
+
       .thermal-line {
         border-top: 1px solid #000 !important;
         margin: 0.5mm 0 !important;
         height: 0 !important;
       }
-      
+
       .thermal-dotted {
         border-top: 1px dotted #000 !important;
         margin: 0.5mm 0 !important;
         height: 0 !important;
       }
-      
+
       .thermal-text {
         font-size: ${paperWidth === 'thermal58' ? '11px' : '12px'} !important;
         line-height: 1.1 !important;
         margin: 0 !important;
       }
-      
+
       .thermal-total {
         font-weight: bold !important;
         font-size: ${paperWidth === 'thermal58' ? '13px' : '14px'} !important;
@@ -384,7 +384,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         margin: 1mm 0 !important;
         line-height: 1.1 !important;
       }
-      
+
       /* Ultra-compact item list */
       .item-row {
         font-size: ${paperWidth === 'thermal58' ? '10px' : '11px'} !important;
@@ -413,7 +413,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <button onclick="window.print()" style="margin: 2px; padding: 4px 8px; background: #4CAF50; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Standard Print</button>
           <button onclick="window.close()" style="margin: 2px; padding: 4px 8px; background: #f44336; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 11px;">Close</button>
         </div>
-        
+
         <div class="receipt">${receiptHtml}</div>
 
         <script>
@@ -432,7 +432,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                 '✅ Driver: Official Xprinter XP-420B\\n\\n' +
                 'Continue with optimized print?'
               );
-              
+
               if (confirmed) {
                 // Apply Xprinter-specific print settings
                 const receipt = document.querySelector('.receipt');
@@ -442,7 +442,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                   receipt.style.width = '${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '104mm'}';
                   receipt.style.maxWidth = '${paperWidth === 'thermal58' ? '54mm' : paperWidth === 'thermal72' ? '68mm' : paperWidth === 'thermal77' ? '73mm' : paperWidth === 'thermal80' ? '76mm' : '104mm'}';
                 }
-                
+
                 // Ensure all graphics elements are visible
                 const elements = document.querySelectorAll('.thermal-line, .thermal-dotted, .thermal-total');
                 elements.forEach(el => {
@@ -452,12 +452,12 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                   el.style.colorAdjust = 'exact';
                   el.style.printColorAdjust = 'exact';
                 });
-                
+
                 // Force page margins to 0
                 const style = document.createElement('style');
                 style.textContent = '@page { margin: 0 !important; }';
                 document.head.appendChild(style);
-                
+
                 setTimeout(() => {
                   window.print();
                   document.head.removeChild(style);
@@ -552,20 +552,20 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     // Always use current date and time for proper receipt display - FORCE CURRENT DATE
     const now = new Date();
     console.log('🕒 Current time for receipt:', now.toISOString());
-    
+
     // Format date as DD/MM/YYYY - ALWAYS CURRENT
     const day = String(now.getDate()).padStart(2, '0');
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = now.getFullYear();
     const formattedDate = `${day}/${month}/${year}`;
-    
+
     // Format time as HH:MM AM/PM
     const hours = now.getHours();
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'pm' : 'am';
     const displayHours = hours % 12 || 12;
     const formattedTime = `${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
-    
+
     console.log('📅 Formatted date for receipt:', formattedDate);
     console.log('⏰ Formatted time for receipt:', formattedTime);
 
@@ -602,25 +602,25 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '18px' : '20px'}; font-weight: bold; margin-bottom: 2mm;">
         ${settings.businessName || 'M MART'}
       </div>
-      
+
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 1mm;">
         Professional Retail Solution
       </div>
-      
+
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; font-weight: bold; margin-bottom: 1mm;">
         GST: ${settings.taxId || '33GSPDB3311F1ZZ'}
       </div>
-      
+
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; margin-bottom: 1mm;">
         123 Business Street, City, State
       </div>
-      
+
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; margin-bottom: 2mm;">
         Tel: ${settings.phoneNumber || '+91-9876543210'}
       </div>
-      
+
       <div style="border-top: 1px solid #000; margin: 2mm 0; height: 0;"></div>
-      
+
       <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
         <div style="display: flex; justify-content: space-between;">
           <span>Bill:</span><strong style="text-align: right;">${safeData.orderNumber}</strong>
@@ -635,22 +635,22 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <span>Cashier:</span><span style="text-align: right;">${safeData.user.name}</span>
         </div>
       </div>
-      
+
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
-      
+
       <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
         <strong>Customer:</strong> ${safeData.customer.name}
       </div>
-      
+
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
-      
+
       <div style="display: flex; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 2mm;">
         <div style="flex: 2;">Item</div>
         <div style="width: 25px; text-align: center;">Qty</div>
         <div style="width: 50px; text-align: center;">Rate</div>
         <div style="width: 50px; text-align: right;">Total</div>
       </div>
-      
+
       ${safeData.items.map((item: any) => `
         <div style="margin-bottom: 2mm; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'};">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1mm;">
@@ -670,10 +670,22 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <div style="font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #666; margin-bottom: 1mm; font-style: italic;">
             ${item.productSku || item.sku || 'SAMPLE-001'}
           </div>
-          ${settings.showMRP ? `<div style="text-align: right; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #666;">
+          ${settings.showMRP ? `
+          <div style="color: #059669; font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; margin-top: 1px;">
             ${(() => {
-              const actualMRP = Number(item.mrp || 0);
+              // Get MRP from multiple possible sources
+              const actualMRP = Number(item.mrp || item.product_mrp || item.originalPrice || 0);
               const sellingPrice = Number(item.unitPrice || item.price || 0);
+
+              console.log('MRP Display Debug:', {
+                item_mrp: item.mrp,
+                product_mrp: item.product_mrp,
+                originalPrice: item.originalPrice,
+                actualMRP,
+                sellingPrice,
+                itemName: item.productName || item.name
+              });
+
               if (actualMRP > 0 && sellingPrice > 0) {
                 const savings = actualMRP - sellingPrice;
                 if (savings > 0) {
@@ -686,14 +698,15 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
               } else if (actualMRP > 0) {
                 return `MRP: ${settings.currencySymbol || '₹'}${actualMRP.toFixed(0)}`;
               }
-              return '';
+              // Fallback: if no MRP data available, show a placeholder
+              return sellingPrice > 0 ? `MRP: ${settings.currencySymbol || '₹'}${(sellingPrice * 1.2).toFixed(0)}` : '';
             })()}
           </div>` : ''}
         </div>
       `).join('')}
-      
+
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
-      
+
       <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
         <div style="display: flex; justify-content: space-between;">
           <span>Sub Total:</span>
@@ -708,11 +721,11 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <span style="text-align: right;">${settings.currencySymbol}0</span>
         </div>
       </div>
-      
+
       <div style="border: 2px solid #000; padding: 2mm; text-align: center; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '16px' : '18px'}; margin: 2mm 0;">
         TOTAL: ${settings.currencySymbol}${Number(safeData.total).toFixed(0)}
       </div>
-      
+
       <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin: 2mm 0;">
         <div style="display: flex; justify-content: space-between;">
           <span>Payment:</span>
@@ -723,9 +736,9 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <strong style="text-align: right;">${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</strong>
         </div>
       </div>
-      
+
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
-      
+
       <div style="text-align: center; margin: 2mm 0;">
         <div style="font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '16px' : '18px'}; margin-bottom: 1mm;">
           🙏 Thank You! 🙏
