@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -624,6 +625,7 @@ export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [showReceiptSettings, setShowReceiptSettings] = useState(false);
   const [selectedBackupFile, setSelectedBackupFile] = useState<File | null>(null);
@@ -1815,7 +1817,7 @@ ${receiptSettings.receiptFooter}
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-1 gap-4 max-w-md">
                   <Button 
-                    onClick={() => window.location.href = '/printer-settings'}
+                    onClick={() => setLocation('/printer-settings')}
                     className="flex flex-col items-center gap-2 h-auto p-6 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
                     variant="outline"
                   >
