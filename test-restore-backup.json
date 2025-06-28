@@ -1,0 +1,91 @@
+{
+  "timestamp": "2025-06-28T13:40:00.000Z",
+  "version": "2.0",
+  "source": "Awesome Shop POS",
+  "data": {
+    "users": [
+      {
+        "id": 1,
+        "username": "admin",
+        "password": "$2b$10$x.FhcqfCxKHvCjPQ/X9hMOi8HXFFxU4ou4Ck9Za5s5ezEtDJnl/dG",
+        "name": "Administrator",
+        "email": "admin@pos.local",
+        "role": "admin",
+        "image": null,
+        "active": 1,
+        "created_at": "2025-06-21 16:43:43"
+      }
+    ],
+    "categories": [
+      {
+        "id": 1,
+        "name": "General",
+        "description": "General products",
+        "created_at": "2025-06-21 16:43:43"
+      },
+      {
+        "id": 2,
+        "name": "Electronics",
+        "description": "Electronic items and gadgets",
+        "created_at": "2025-06-21 16:43:43"
+      }
+    ],
+    "suppliers": [
+      {
+        "id": 1,
+        "name": "Test Supplier Co.",
+        "email": "supplier@test.com",
+        "phone": "+91-9999999999",
+        "address": "Test Address",
+        "created_at": "2025-06-28 13:40:00"
+      }
+    ],
+    "customers": [
+      {
+        "id": 1,
+        "name": "Test Customer",
+        "email": "test@customer.com",
+        "phone": "+91-8888888888",
+        "address": "Test Customer Address",
+        "created_at": "2025-06-28 13:40:00"
+      }
+    ],
+    "products": [
+      {
+        "id": 1,
+        "name": "Test Product",
+        "description": "A test product for restore demo",
+        "sku": "TEST-001",
+        "price": 100,
+        "cost": 80,
+        "stock_quantity": 50,
+        "category_id": 1,
+        "created_at": "2025-06-28 13:40:00"
+      }
+    ],
+    "sales": [],
+    "sale_items": [],
+    "purchases": [],
+    "purchase_items": [],
+    "settings": [
+      {
+        "id": 1,
+        "key": "businessName",
+        "value": "Restored Business",
+        "updated_at": "2025-06-28 13:40:00"
+      }
+    ],
+    "returns": [],
+    "return_items": [],
+    "inventory_adjustments": [],
+    "payment_methods": [],
+    "discount_rules": [],
+    "tax_rates": []
+  },
+  "metadata": {
+    "created_at": "2025-06-28T13:40:00.000Z",
+    "total_tables": 8,
+    "total_records": 6,
+    "database_size": 1024
+  }
+}

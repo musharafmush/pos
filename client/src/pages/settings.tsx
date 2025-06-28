@@ -629,6 +629,8 @@ export default function Settings() {
   const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [showReceiptSettings, setShowReceiptSettings] = useState(false);
   const [selectedBackupFile, setSelectedBackupFile] = useState<File | null>(null);
+  const [backupPreview, setBackupPreview] = useState<any>(null);
+  const [restoreInProgress, setRestoreInProgress] = useState(false);
 
   // Load current user data
   const { data: userData } = useQuery({
@@ -885,16 +887,33 @@ export default function Settings() {
     }
   };
 
-  const handleRestoreFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRestoreFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       // Accept both .json files and files without extension (for downloaded backups)
       if (file.type === 'application/json' || file.name.endsWith('.json') || file.name.includes('pos-backup')) {
         setSelectedBackupFile(file);
-        toast({
-          title: "File selected",
-          description: `Selected: ${file.name}`,
-        });
+        
+        try {
+          // Read and parse the backup file for preview
+          const fileContent = await file.text();
+          const backupData = JSON.parse(fileContent);
+          setBackupPreview(backupData);
+          
+          toast({
+            title: "Backup File Analyzed",
+            description: `${file.name} - ${backupData.metadata?.total_records || 'Unknown'} records found`,
+          });
+        } catch (error) {
+          console.error('Error reading backup file:', error);
+          toast({
+            title: "Invalid Backup File",
+            description: "The selected file is not a valid backup format.",
+            variant: "destructive"
+          });
+          setSelectedBackupFile(null);
+          setBackupPreview(null);
+        }
       } else {
         toast({
           title: "Invalid file",
@@ -921,7 +940,15 @@ export default function Settings() {
 
     if (!confirmed) return;
 
+    setRestoreInProgress(true);
+    
     try {
+      // Step 1: Validate file
+      toast({
+        title: "Restore Process Started",
+        description: "Validating backup file...",
+      });
+
       // Read the file content
       const fileContent = await selectedBackupFile.text();
       let backupData;
@@ -936,6 +963,12 @@ export default function Settings() {
       if (!backupData.data || !backupData.timestamp) {
         throw new Error('Invalid backup file structure. This doesn\'t appear to be a valid POS backup file.');
       }
+
+      // Step 2: Process restore
+      toast({
+        title: "Processing Restore",
+        description: `Restoring ${backupData.metadata?.total_records || 'Unknown'} records...`,
+      });
 
       // Send backup data directly as JSON
       const response = await fetch('/api/backup/restore', {
