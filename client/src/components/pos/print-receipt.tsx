@@ -660,6 +660,15 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
                              safeData.customerPhone ||
                              (safeData.selectedCustomer && safeData.selectedCustomer.phone);
           
+          // Debug logging to console
+          console.log('🔍 Receipt Debug - Customer Data:', {
+            customerDetails: safeData.customerDetails,
+            customer: safeData.customer,
+            customerPhone: safeData.customerPhone,
+            selectedCustomer: safeData.selectedCustomer,
+            finalPhoneNumber: phoneNumber
+          });
+          
           if (phoneNumber) {
             return `
             <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #666; margin-top: 1mm;">
