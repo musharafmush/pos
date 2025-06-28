@@ -1,4 +1,4 @@
-import { db } from "../db/index.js";
+import { db } from "../db/sqlite-index.js";
 import {
   users,
   products,
@@ -9,17 +9,6 @@ import {
   saleItems,
   purchases,
   purchaseItems,
-  cashRegisters,
-  cashRegisterTransactions,
-  inventoryAdjustments,
-  expenses,
-  expenseCategories,
-  offers,
-  offerUsage,
-  customerLoyalty,
-  taxCategories,
-  taxSettings,
-  hsnCodes,
   User,
   Product,
   Category,
@@ -29,26 +18,16 @@ import {
   SaleItem,
   Purchase,
   PurchaseItem,
-  CashRegister,
-  CashRegisterTransaction,
-  InventoryAdjustment,
-  Expense,
-  ExpenseCategory,
-  ExpenseInsert,
-  ExpenseCategoryInsert,
-  Offer,
-  OfferInsert,
-  OfferUsage,
-  OfferUsageInsert,
-  CustomerLoyalty,
-  CustomerLoyaltyInsert,
-  TaxCategory,
-  TaxCategoryInsert,
-  TaxSettingsType,
-  TaxSettingsInsert,
-  HsnCode,
-  HsnCodeInsert
-} from "../shared/schema.js";
+  InsertUser,
+  InsertProduct,
+  InsertCategory,
+  InsertCustomer,
+  InsertSupplier,
+  InsertSale,
+  InsertSaleItem,
+  InsertPurchase,
+  InsertPurchaseItem
+} from "../shared/sqlite-schema.js";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -93,9 +72,13 @@ export const storage = {
     const username = user.username || user.email.split('@')[0] + '_' + Math.floor(Math.random() * 1000);
 
     const [newUser] = await db.insert(users).values({
-      ...user,
+      name: user.name,
+      email: user.email,
       username,
-      password: hashedPassword
+      password: hashedPassword,
+      role: user.role || 'cashier',
+      active: true,
+      createdAt: new Date().toISOString()
     }).returning();
     return newUser;
   },
