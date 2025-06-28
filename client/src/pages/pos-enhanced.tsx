@@ -163,6 +163,7 @@ export default function POSEnhanced() {
   const [loyaltyPointsToRedeem, setLoyaltyPointsToRedeem] = useState(0);
   const [showLoyaltyDialog, setShowLoyaltyDialog] = useState(false);
   const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+  const [redeemedPointsForTransaction, setRedeemedPointsForTransaction] = useState(0);
   const [cashInHand, setCashInHand] = useState(0);
   const [cashReceived, setCashReceived] = useState(0);
   const [upiReceived, setUpiReceived] = useState(0);
@@ -404,7 +405,7 @@ export default function POSEnhanced() {
   };
 
   // Handle loyalty point redemption
-  const handleLoyaltyRedemption = () => {
+  const handleLoyaltyRedemption = async () => {
     console.log('Handling loyalty redemption:', {
       customerLoyalty,
       loyaltyPointsToRedeem,
@@ -452,33 +453,74 @@ export default function POSEnhanced() {
       return;
     }
 
-    // Apply the loyalty discount
-    setLoyaltyDiscount(discountFromPoints);
-    
-    // Update customer loyalty points display to show remaining points
-    if (customerLoyalty) {
-      const updatedLoyalty = {
-        ...customerLoyalty,
-        totalPoints: customerLoyalty.totalPoints - loyaltyPointsToRedeem,
-        availablePoints: customerLoyalty.totalPoints - loyaltyPointsToRedeem
-      };
-      setCustomerLoyalty(updatedLoyalty);
+    try {
+      // Call backend API to redeem points
+      const response = await fetch('/api/loyalty/redeem-points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: selectedCustomer?.id,
+          points: loyaltyPointsToRedeem
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to redeem points');
+      }
+
+      const result = await response.json();
+      console.log('Backend redemption result:', result);
+
+      // Apply the loyalty discount
+      setLoyaltyDiscount(discountFromPoints);
+      
+      // Track redeemed points for this transaction
+      setRedeemedPointsForTransaction(loyaltyPointsToRedeem);
+      
+      // Update customer loyalty points display with actual backend data
+      if (result.success && result.loyalty) {
+        const updatedLoyalty = {
+          ...customerLoyalty,
+          totalPoints: parseFloat(result.loyalty.totalPoints || '0'),
+          availablePoints: parseFloat(result.loyalty.availablePoints || '0'),
+          usedPoints: parseFloat(result.loyalty.usedPoints || '0')
+        };
+        setCustomerLoyalty(updatedLoyalty);
+      } else {
+        // Fallback local update if backend doesn't return loyalty data
+        const updatedLoyalty = {
+          ...customerLoyalty,
+          totalPoints: customerLoyalty.totalPoints - loyaltyPointsToRedeem,
+          availablePoints: customerLoyalty.availablePoints - loyaltyPointsToRedeem,
+          usedPoints: parseFloat(customerLoyalty.usedPoints.toString()) + loyaltyPointsToRedeem
+        };
+        setCustomerLoyalty(updatedLoyalty);
+      }
+      
+      setShowLoyaltyDialog(false);
+      setLoyaltyPointsToRedeem(0);
+      
+      console.log('Loyalty redemption successful:', {
+        pointsRedeemed: loyaltyPointsToRedeem, 
+        discountApplied: discountFromPoints,
+        newLoyaltyDiscount: discountFromPoints,
+        updatedCustomerLoyalty: customerLoyalty
+      });
+      
+      toast({
+        title: "Points Redeemed Successfully",
+        description: `${loyaltyPointsToRedeem} points redeemed for ₹${discountFromPoints} discount`,
+        duration: 3000,
+      });
+
+    } catch (error) {
+      console.error('Error redeeming loyalty points:', error);
+      toast({
+        title: "Redemption Failed",
+        description: "Failed to redeem loyalty points. Please try again.",
+        variant: "destructive",
+      });
     }
-    
-    setShowLoyaltyDialog(false);
-    
-    console.log('Loyalty redemption successful:', {
-      pointsRedeemed: loyaltyPointsToRedeem, 
-      discountApplied: discountFromPoints,
-      newLoyaltyDiscount: discountFromPoints,
-      remainingPoints: (customerLoyalty?.totalPoints || 0) - loyaltyPointsToRedeem
-    });
-    
-    toast({
-      title: "Points Redeemed Successfully",
-      description: `${loyaltyPointsToRedeem} points redeemed for ₹${discountFromPoints} discount. Remaining: ${(customerLoyalty?.totalPoints || 0) - loyaltyPointsToRedeem} points`,
-      duration: 3000,
-    });
   };
 
   // Award loyalty points after successful sale
@@ -1715,7 +1757,8 @@ export default function POSEnhanced() {
           pointsEarned: Math.floor(receiptTotal * 0.01), // 1% of total as points
           totalPoints: 0, // Will be fetched from loyalty system
           availablePoints: 0 // Will be fetched from loyalty system
-        } : undefined
+        } : undefined,
+        loyaltyPointsRedeemed: redeemedPointsForTransaction
       };
 
       console.log("Printing receipt with data:", receiptData);
@@ -2046,6 +2089,9 @@ export default function POSEnhanced() {
         setAmountPaid("");
         setPaymentMethod("cash");
         setBarcodeInput("");
+        setLoyaltyDiscount(0);
+        setRedeemedPointsForTransaction(0);
+        setCustomerLoyalty(null);
         setOceanFreight({
           containerNumber: "",
           vesselName: "",
