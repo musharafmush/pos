@@ -5018,11 +5018,11 @@ export default function POSEnhanced() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const maxPoints = customerLoyalty?.totalPoints || 0;
+                            const maxPoints = customerLoyalty?.availablePoints || 0;
                             const pointsToSet = Math.min(points, maxPoints);
                             setLoyaltyPointsToRedeem(pointsToSet);
                           }}
-                          disabled={!customerLoyalty || customerLoyalty.totalPoints < points}
+                          disabled={!customerLoyalty || customerLoyalty.availablePoints < points}
                           className="text-xs h-8"
                         >
                           {points}
@@ -5030,15 +5030,15 @@ export default function POSEnhanced() {
                       ))}
                     </div>
                     
-                    {customerLoyalty && customerLoyalty.totalPoints > 0 && (
+                    {customerLoyalty && customerLoyalty.availablePoints > 0 && (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setLoyaltyPointsToRedeem(customerLoyalty.totalPoints)}
+                        onClick={() => setLoyaltyPointsToRedeem(Math.floor(parseFloat(customerLoyalty.availablePoints.toString())))}
                         className="w-full mt-2 text-xs h-8 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
                       >
-                        Use All Points ({customerLoyalty.totalPoints})
+                        Use All Points ({Math.floor(parseFloat(customerLoyalty.availablePoints.toString()))})
                       </Button>
                     )}
                   </div>
@@ -5053,7 +5053,7 @@ export default function POSEnhanced() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-blue-600">Points After Redemption:</span>
                       <span className="text-blue-700 font-medium">
-                        {(customerLoyalty?.totalPoints || 0) - loyaltyPointsToRedeem} points
+                        {Math.max(0, (parseFloat(customerLoyalty?.availablePoints?.toString() || '0')) - loyaltyPointsToRedeem)} points
                       </span>
                     </div>
                     <Button
@@ -5081,7 +5081,7 @@ export default function POSEnhanced() {
                   <Button
                     onClick={handleLoyaltyRedemption}
                     className="bg-green-600 hover:bg-green-700"
-                    disabled={loyaltyPointsToRedeem <= 0 || loyaltyPointsToRedeem > (customerLoyalty?.totalPoints || 0)}
+                    disabled={loyaltyPointsToRedeem <= 0 || loyaltyPointsToRedeem > (parseFloat(customerLoyalty?.availablePoints?.toString() || '0'))}
                   >
                     <Gift className="h-4 w-4 mr-2" />
                     Redeem Points
