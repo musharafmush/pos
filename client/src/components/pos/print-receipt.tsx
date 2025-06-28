@@ -719,6 +719,12 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
           <span>Sub Total:</span>
           <span style="text-align: right;">${settings.currencySymbol}${Number(safeData.total).toFixed(0)}</span>
         </div>
+        ${safeData.loyaltyDiscount && Number(safeData.loyaltyDiscount) > 0 ? `
+        <div style="display: flex; justify-content: space-between; color: #059669;">
+          <span>Loyalty Discount:</span>
+          <span style="text-align: right;">-${settings.currencySymbol}${Number(safeData.loyaltyDiscount).toFixed(0)}</span>
+        </div>
+        ` : ''}
       </div>
 
       <div style="border: 2px solid #000; padding: 2mm; text-align: center; font-weight: bold; font-size: ${settings.paperWidth === 'thermal58' ? '16px' : '18px'}; margin: 2mm 0;">
