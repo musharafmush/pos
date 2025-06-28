@@ -781,8 +781,9 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #059669; font-weight: bold;">
           <span>Points to Earn:</span>
           <strong style="color: #047857;">+${(() => {
-            const total = parseFloat(safeData.total?.toString() || safeData.grandTotal?.toString() || '0');
-            const pointsEarned = Math.round((total * 0.01) * 100) / 100;
+            // Calculate points earned from the final total (after discount)
+            const finalTotal = parseFloat(safeData.total?.toString() || '0');
+            const pointsEarned = Math.round((finalTotal * 0.01) * 100) / 100;
             return pointsEarned.toFixed(2);
           })()}</strong>
         </div>
@@ -795,18 +796,36 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
         </div>
         ` : ''}
         
+        <!-- Show redeemed points if any -->
+        ${safeData.loyaltyPointsRedeemed && Number(safeData.loyaltyPointsRedeemed) > 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #dc2626; font-weight: bold;">
+          <span>Points Redeemed:</span>
+          <strong style="color: #dc2626;">-${Number(safeData.loyaltyPointsRedeemed).toFixed(2)}</strong>
+        </div>
+        ` : ''}
+        
         <!-- Default balance for new customers -->
         <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #2563eb; font-weight: bold;">
           <span>Balance Points:</span>
-          <strong style="color: #1d4ed8;">0.00</strong>
+          <strong style="color: #1d4ed8;">${(() => {
+            // If we have loyaltyInfo, use it, otherwise calculate estimated balance
+            if (safeData.loyaltyInfo) {
+              return Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2);
+            }
+            // For new customers or when no loyalty info available
+            const finalTotal = parseFloat(safeData.total?.toString() || '0');
+            const pointsEarned = Math.round((finalTotal * 0.01) * 100) / 100;
+            const pointsRedeemed = Number(safeData.loyaltyPointsRedeemed || 0);
+            const estimatedBalance = Math.max(0, pointsEarned - pointsRedeemed);
+            return estimatedBalance.toFixed(2);
+          })()}</strong>
         </div>
         `}
         
         <!-- Loyalty Program Information -->
         <div style="border-top: 1px dashed #cbd5e1; margin-top: 1.5mm; padding-top: 1mm;">
           <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #6b7280; font-style: italic; line-height: 1.2;">
-            Earn 1 point per ${settings.currencySymbol}100 spent<br>
-            1 point = ${settings.currencySymbol}1 discount
+            Earn 1 point per ${settings.currencySymbol}100 spent • 1 point = ${settings.currencySymbol}1 discount
           </div>
         </div>
       </div>` : ''}
