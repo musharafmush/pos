@@ -752,46 +752,62 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
 
       <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; margin: 2mm 0; background: #f0f8ff; padding: 1.5mm; border: 1px solid #d0e7ff; border-radius: 2px;">
-        <div style="text-align: center; font-weight: bold; margin-bottom: 1mm; color: #1a365d;">
+        <div style="text-align: center; font-weight: bold; margin-bottom: 1.5mm; color: #1a365d; font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'};">
           ⭐ LOYALTY POINTS ⭐
         </div>
+        
         ${safeData.loyaltyInfo ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #059669;">
+        <!-- Points to Earn from this purchase -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #059669; font-weight: bold;">
           <span>Points to Earn:</span>
-          <strong>+${Number(safeData.loyaltyInfo.pointsEarned || 0).toFixed(2)}</strong>
+          <strong style="color: #047857;">+${Number(safeData.loyaltyInfo.pointsEarned || 0).toFixed(2)}</strong>
         </div>
-        ${safeData.loyaltyPointsRedeemed && safeData.loyaltyPointsRedeemed > 0 ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #dc2626;">
+        
+        <!-- Loyalty Discount Applied (if any) -->
+        ${safeData.loyaltyDiscount && Number(safeData.loyaltyDiscount) > 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #dc2626; font-weight: bold;">
           <span>Loyalty Discount:</span>
-          <strong>₹${Number(safeData.loyaltyPointsRedeemed).toFixed(2)}</strong>
+          <strong style="color: #dc2626;">-${settings.currencySymbol}${Number(safeData.loyaltyDiscount).toFixed(2)}</strong>
         </div>
         ` : ''}
-        <div style="display: flex; justify-content: space-between; color: #2563eb;">
+        
+        <!-- Balance Points after this transaction -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #2563eb; font-weight: bold;">
           <span>Balance Points:</span>
-          <strong>${Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2)}</strong>
+          <strong style="color: #1d4ed8;">${Number(safeData.loyaltyInfo.availablePoints || 0).toFixed(2)}</strong>
         </div>
         ` : `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #059669;">
+        <!-- Calculate points for new customers or when loyalty info not available -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #059669; font-weight: bold;">
           <span>Points to Earn:</span>
-          <strong>+${(() => {
-            const total = parseFloat(safeData.grandTotal.toString()) || 0;
+          <strong style="color: #047857;">+${(() => {
+            const total = parseFloat(safeData.total?.toString() || safeData.grandTotal?.toString() || '0');
             const pointsEarned = Math.round((total * 0.01) * 100) / 100;
             return pointsEarned.toFixed(2);
           })()}</strong>
         </div>
-        ${safeData.loyaltyDiscount && safeData.loyaltyDiscount > 0 ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5mm; color: #dc2626;">
+        
+        <!-- Show loyalty discount if applied -->
+        ${safeData.loyaltyDiscount && Number(safeData.loyaltyDiscount) > 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #dc2626; font-weight: bold;">
           <span>Loyalty Discount:</span>
-          <strong>₹${Number(safeData.loyaltyDiscount).toFixed(2)}</strong>
+          <strong style="color: #dc2626;">-${settings.currencySymbol}${Number(safeData.loyaltyDiscount).toFixed(2)}</strong>
         </div>
         ` : ''}
-        <div style="display: flex; justify-content: space-between; color: #2563eb;">
+        
+        <!-- Default balance for new customers -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm; color: #2563eb; font-weight: bold;">
           <span>Balance Points:</span>
-          <strong>0.00</strong>
+          <strong style="color: #1d4ed8;">0.00</strong>
         </div>
         `}
-        <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #6b7280; margin-top: 1mm; font-style: italic;">
-          Earn 1 point per ₹100 spent • 1 point = ₹1 discount
+        
+        <!-- Loyalty Program Information -->
+        <div style="border-top: 1px dashed #cbd5e1; margin-top: 1.5mm; padding-top: 1mm;">
+          <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '10px' : '11px'}; color: #6b7280; font-style: italic; line-height: 1.2;">
+            Earn 1 point per ${settings.currencySymbol}100 spent<br>
+            1 point = ${settings.currencySymbol}1 discount
+          </div>
         </div>
       </div>` : ''}
 
