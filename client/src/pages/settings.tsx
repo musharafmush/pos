@@ -1460,9 +1460,9 @@ ${receiptSettings.receiptFooter}
                     </div>
                     <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg border border-teal-200 dark:border-teal-700">
                       <div className="text-lg font-bold text-teal-700 dark:text-teal-300">
-                        ₹{statsData?.todaysRevenue ? Number(statsData.todaysRevenue).toLocaleString('en-IN') : '0'}
+                        ₹{salesData ? salesData.reduce((sum: number, sale: any) => sum + (parseFloat(sale.total) || 0), 0).toLocaleString('en-IN') : '0'}
                       </div>
-                      <div className="text-xs text-teal-600 dark:text-teal-400">Revenue</div>
+                      <div className="text-xs text-teal-600 dark:text-teal-400">Total Revenue</div>
                     </div>
                   </div>
                   
