@@ -16,7 +16,14 @@ async function fixSuppliersGstinColumn() {
       { name: 'tan', type: 'TEXT' },
       { name: 'payment_terms', type: 'TEXT' },
       { name: 'opening_balance', type: 'REAL DEFAULT 0' },
-      { name: 'balance_type', type: 'TEXT DEFAULT "Dr"' }
+      { name: 'balance_type', type: 'TEXT DEFAULT "Dr"' },
+      { name: 'business_type', type: 'TEXT' },
+      { name: 'bank_name', type: 'TEXT' },
+      { name: 'account_number', type: 'TEXT' },
+      { name: 'ifsc_code', type: 'TEXT' },
+      { name: 'branch_name', type: 'TEXT' },
+      { name: 'credit_limit', type: 'REAL DEFAULT 0' },
+      { name: 'msme_type', type: 'TEXT' }
     ];
 
     // Add missing columns
