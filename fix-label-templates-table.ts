@@ -1,44 +1,14 @@
 import Database from 'better-sqlite3';
 
-function checkDatabaseStructure() {
-  console.log('🔍 Checking database structure...');
+async function createLabelTemplatesTable() {
+  console.log('🔧 Creating label templates table in SQLite...');
   
   const db = new Database('./pos-data.db');
   
   try {
-    // Check if label_templates table exists
-    const tableExists = db.prepare(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='label_templates'
-    `).get();
-    
-    if (tableExists) {
-      console.log('✅ label_templates table exists');
-      
-      // Get table schema
-      const schema = db.prepare("PRAGMA table_info(label_templates)").all();
-      console.log('📋 Current table schema:');
-      schema.forEach(col => {
-        console.log(`  - ${col.name}: ${col.type} ${col.notnull ? 'NOT NULL' : ''} ${col.dflt_value ? `DEFAULT ${col.dflt_value}` : ''}`);
-      });
-      
-      // Count existing records
-      const count = db.prepare('SELECT COUNT(*) as count FROM label_templates').get();
-      console.log(`📊 Current records: ${count.count}`);
-      
-      // Drop the table to recreate with correct structure
-      console.log('🗑️ Dropping existing table...');
-      db.exec('DROP TABLE label_templates');
-      console.log('✅ Table dropped');
-    } else {
-      console.log('❌ label_templates table does not exist');
-    }
-    
-    // Create new table with correct structure
-    console.log('🔧 Creating new label_templates table...');
-    
+    // Create label_templates table
     db.exec(`
-      CREATE TABLE label_templates (
+      CREATE TABLE IF NOT EXISTS label_templates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         description TEXT,
@@ -64,10 +34,8 @@ function checkDatabaseStructure() {
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    
-    console.log('✅ New table created successfully');
-    
-    // Insert default templates
+
+    // Insert default professional templates
     const defaultTemplates = [
       {
         name: 'Modern Professional',
@@ -136,24 +104,19 @@ function checkDatabaseStructure() {
       );
     }
 
+    console.log('✅ Label templates table created successfully');
     console.log(`✅ Inserted ${defaultTemplates.length} default templates`);
 
-    // Verify the final result
-    const finalCount = db.prepare('SELECT COUNT(*) as count FROM label_templates').get();
-    console.log(`📊 Final template count: ${finalCount.count}`);
-    
-    // Show all templates
-    const templates = db.prepare('SELECT id, name, layout_style, primary_color FROM label_templates').all();
-    console.log('📋 Available templates:');
-    templates.forEach(template => {
-      console.log(`  ${template.id}. ${template.name} (${template.layout_style}) - ${template.primary_color}`);
-    });
+    // Verify the data
+    const count = db.prepare('SELECT COUNT(*) as count FROM label_templates').get();
+    console.log(`📊 Total templates in database: ${count.count}`);
 
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('❌ Error creating label templates table:', error);
   } finally {
     db.close();
   }
 }
 
-checkDatabaseStructure();
+// Run the migration
+createLabelTemplatesTable().catch(console.error);

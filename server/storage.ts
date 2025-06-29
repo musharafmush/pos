@@ -3844,12 +3844,18 @@ export const storage = {
 
   async getLabelTemplates(): Promise<any[]> {
     try {
-      const stmt = this.db.prepare(`
+      // Use direct SQLite database instead of this.db
+      const Database = require('better-sqlite3');
+      const db = new Database('./pos-data.db');
+      
+      const stmt = db.prepare(`
         SELECT * FROM label_templates 
         WHERE is_active = 1 
         ORDER BY is_default DESC, name ASC
       `);
-      return stmt.all();
+      const results = stmt.all();
+      db.close();
+      return results;
     } catch (error) {
       console.error('Error getting label templates:', error);
       return [];
@@ -3858,10 +3864,15 @@ export const storage = {
 
   async getLabelTemplateById(id: number): Promise<any | null> {
     try {
-      const stmt = this.db.prepare(`
+      const Database = require('better-sqlite3');
+      const db = new Database('./pos-data.db');
+      
+      const stmt = db.prepare(`
         SELECT * FROM label_templates WHERE id = ?
       `);
-      return stmt.get(id) || null;
+      const result = stmt.get(id) || null;
+      db.close();
+      return result;
     } catch (error) {
       console.error('Error getting label template by ID:', error);
       return null;
