@@ -3274,10 +3274,34 @@ export const storage = {
 
   // Customer Loyalty Management
   async getCustomerLoyalty(customerId: number): Promise<CustomerLoyalty | null> {
-    const loyalty = await db.query.customerLoyalty.findFirst({
-      where: eq(customerLoyalty.customerId, customerId)
-    });
-    return loyalty || null;
+    try {
+      console.log('Getting customer loyalty for customer ID:', customerId);
+      const { sqlite } = await import('../db/index.js');
+      
+      const loyalty = sqlite.prepare(`
+        SELECT * FROM customer_loyalty WHERE customer_id = ?
+      `).get(customerId);
+      
+      if (!loyalty) {
+        console.log('No loyalty record found for customer:', customerId);
+        return null;
+      }
+      
+      console.log('Loyalty record found:', loyalty);
+      return {
+        id: loyalty.id,
+        customerId: loyalty.customer_id,
+        totalPoints: parseFloat(loyalty.total_points || '0'),
+        usedPoints: parseFloat(loyalty.used_points || '0'),
+        availablePoints: parseFloat(loyalty.available_points || '0'),
+        tier: loyalty.tier || 'Member',
+        createdAt: new Date(loyalty.created_at),
+        lastUpdated: new Date(loyalty.last_updated || loyalty.created_at)
+      };
+    } catch (error) {
+      console.error('Error fetching customer loyalty:', error);
+      return null;
+    }
   },
 
   async createCustomerLoyalty(customerId: number): Promise<CustomerLoyalty> {
