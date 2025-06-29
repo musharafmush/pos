@@ -70,19 +70,60 @@ export default function ImageBasedLabels() {
 
   const products = (productsData as ProductType[]) || [];
 
-  // Generate simple barcode representation
+  // Generate realistic barcode representation
   const generateBarcodeDisplay = (text: string) => {
-    // Simple barcode-like pattern using CSS
+    if (!text) text = "1234567890123";
+    
+    // Create a deterministic barcode pattern based on text
+    const generatePattern = (str: string) => {
+      const patterns = [];
+      
+      // Start pattern
+      patterns.push({ type: 'black', width: '2px' });
+      patterns.push({ type: 'white', width: '1px' });
+      patterns.push({ type: 'black', width: '2px' });
+      patterns.push({ type: 'white', width: '1px' });
+      
+      // Generate bars based on character codes
+      for (let i = 0; i < str.length && patterns.length < 60; i++) {
+        const charCode = str.charCodeAt(i);
+        const variations = [
+          [2, 1, 2, 1], [1, 2, 2, 2], [2, 2, 1, 2], [1, 1, 3, 2],
+          [2, 3, 1, 1], [1, 3, 2, 1], [3, 1, 1, 2], [2, 1, 3, 1],
+          [3, 2, 1, 1], [1, 2, 1, 3]
+        ];
+        
+        const pattern = variations[charCode % variations.length];
+        for (let j = 0; j < pattern.length; j++) {
+          patterns.push({
+            type: j % 2 === 0 ? 'black' : 'white',
+            width: `${pattern[j]}px`
+          });
+        }
+      }
+      
+      // End pattern
+      patterns.push({ type: 'white', width: '1px' });
+      patterns.push({ type: 'black', width: '2px' });
+      patterns.push({ type: 'white', width: '1px' });
+      patterns.push({ type: 'black', width: '2px' });
+      
+      return patterns;
+    };
+
+    const bars = generatePattern(text);
+
     return (
-      <div className="flex items-center justify-center h-12 bg-white border">
-        <div className="flex space-x-px">
-          {Array.from({length: 40}, (_, i) => (
+      <div className="flex items-center justify-center bg-white border border-gray-300 px-2 py-1" style={{ height: '40px' }}>
+        <div className="flex items-center" style={{ gap: '0px', height: '32px' }}>
+          {bars.map((bar, index) => (
             <div
-              key={i}
-              className="bg-black"
+              key={index}
+              className={bar.type === 'black' ? "bg-black" : "bg-white"}
               style={{
-                width: '2px',
-                height: Math.random() > 0.5 ? '30px' : '20px'
+                width: bar.width,
+                height: '32px',
+                minWidth: bar.width
               }}
             />
           ))}
