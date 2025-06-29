@@ -42,6 +42,7 @@ import CustomersCRUD from "@/pages/customers-crud";
 import AddProduct from "@/pages/add-product";
 import PrintLabels from "@/pages/print-labels";
 import PrintLabelsEnhanced from "@/pages/print-labels-enhanced";
+import ImageBasedLabels from "@/pages/image-based-labels";
 import InventoryForecasting from "@/pages/inventory-forecasting";
 import Repacking from "@/pages/repacking";
 import RepackingDashboard from "@/pages/repacking-dashboard";
@@ -95,6 +96,7 @@ function Router() {
       <ProtectedRoute path="/repacking/repacking-dashboard-professional" component={RepackingDashboardProfessional} />
       <ProtectedRoute path="/print-labels" component={PrintLabels} />
       <ProtectedRoute path="/print-labels-enhanced" component={PrintLabelsEnhanced} />
+      <ProtectedRoute path="/image-based-labels" component={ImageBasedLabels} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/inventory-adjustments" component={InventoryAdjustments} />
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
