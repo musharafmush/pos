@@ -275,6 +275,49 @@ export const purchaseItems = pgTable('purchase_items', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
+// Label templates table for customizable label printing
+export const labelTemplates = pgTable('label_templates', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  description: text('description'),
+  width: decimal('width', { precision: 6, scale: 2 }).notNull(), // in mm
+  height: decimal('height', { precision: 6, scale: 2 }).notNull(), // in mm
+  fontSize: integer('font_size').notNull().default(12),
+  includeBarcode: boolean('include_barcode').default(true),
+  includePrice: boolean('include_price').default(true),
+  includeDescription: boolean('include_description').default(false),
+  includeMRP: boolean('include_mrp').default(true),
+  includeWeight: boolean('include_weight').default(false),
+  includeHSN: boolean('include_hsn').default(false),
+  barcodePosition: text('barcode_position').default('bottom'), // top, bottom, left, right
+  borderStyle: text('border_style').default('solid'), // solid, dashed, dotted, none
+  borderWidth: integer('border_width').default(1),
+  backgroundColor: text('background_color').default('#ffffff'),
+  textColor: text('text_color').default('#000000'),
+  customCSS: text('custom_css'),
+  isDefault: boolean('is_default').default(false),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// Print jobs table for tracking label printing history
+export const printJobs = pgTable('print_jobs', {
+  id: serial('id').primaryKey(),
+  templateId: integer('template_id').references(() => labelTemplates.id).notNull(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  productIds: text('product_ids').notNull(), // JSON array of product IDs
+  copies: integer('copies').notNull().default(1),
+  labelsPerRow: integer('labels_per_row').notNull().default(2),
+  paperSize: text('paper_size').default('A4'),
+  orientation: text('orientation').default('portrait'),
+  status: text('status').default('completed'), // pending, printing, completed, failed
+  totalLabels: integer('total_labels').notNull(),
+  customText: text('custom_text'),
+  printSettings: text('print_settings'), // JSON for additional settings
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
 // Define relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products)
@@ -334,6 +377,17 @@ export const hsnCodesRelations = relations(hsnCodes, ({ one }) => ({
 // Tax Settings relations
 export const taxSettingsRelations = relations(taxSettings, ({ one }) => ({
   defaultTaxCategory: one(taxCategories, { fields: [taxSettings.defaultTaxCategoryId], references: [taxCategories.id] })
+}));
+
+// Label Templates relations
+export const labelTemplatesRelations = relations(labelTemplates, ({ many }) => ({
+  printJobs: many(printJobs)
+}));
+
+// Print Jobs relations
+export const printJobsRelations = relations(printJobs, ({ one }) => ({
+  template: one(labelTemplates, { fields: [printJobs.templateId], references: [labelTemplates.id] }),
+  user: one(users, { fields: [printJobs.userId], references: [users.id] })
 }));
 
 // Validation schemas
@@ -556,6 +610,48 @@ export const returnItemInsertSchema = createInsertSchema(returnItems, {
 export type ReturnItemInsert = z.infer<typeof returnItemInsertSchema>;
 export const returnItemSelectSchema = createSelectSchema(returnItems);
 export type ReturnItem = z.infer<typeof returnItemSelectSchema>;
+
+// Label Templates validation schemas
+export const labelTemplateInsertSchema = createInsertSchema(labelTemplates, {
+  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
+  description: (schema) => schema.optional(),
+  width: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
+  height: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
+  fontSize: (schema) => schema.optional(),
+  includeBarcode: (schema) => schema.optional(),
+  includePrice: (schema) => schema.optional(),
+  includeDescription: (schema) => schema.optional(),
+  includeMRP: (schema) => schema.optional(),
+  includeWeight: (schema) => schema.optional(),
+  includeHSN: (schema) => schema.optional(),
+  barcodePosition: (schema) => schema.optional(),
+  borderStyle: (schema) => schema.optional(),
+  borderWidth: (schema) => schema.optional(),
+  backgroundColor: (schema) => schema.optional(),
+  textColor: (schema) => schema.optional(),
+  customCSS: (schema) => schema.optional(),
+  isDefault: (schema) => schema.optional(),
+  isActive: (schema) => schema.optional()
+});
+export type LabelTemplateInsert = z.infer<typeof labelTemplateInsertSchema>;
+export const labelTemplateSelectSchema = createSelectSchema(labelTemplates);
+export type LabelTemplate = z.infer<typeof labelTemplateSelectSchema>;
+
+// Print Jobs validation schemas
+export const printJobInsertSchema = createInsertSchema(printJobs, {
+  productIds: (schema) => schema.min(1, "Product IDs must be provided"),
+  copies: (schema) => schema.min(1, "Copies must be at least 1"),
+  labelsPerRow: (schema) => schema.min(1, "Labels per row must be at least 1"),
+  totalLabels: (schema) => schema.min(1, "Total labels must be at least 1"),
+  paperSize: (schema) => schema.optional(),
+  orientation: (schema) => schema.optional(),
+  status: (schema) => schema.optional(),
+  customText: (schema) => schema.optional(),
+  printSettings: (schema) => schema.optional()
+});
+export type PrintJobInsert = z.infer<typeof printJobInsertSchema>;
+export const printJobSelectSchema = createSelectSchema(printJobs);
+export type PrintJob = z.infer<typeof printJobSelectSchema>;
 
 // Cash register table
 export const cashRegisters = pgTable('cash_registers', {

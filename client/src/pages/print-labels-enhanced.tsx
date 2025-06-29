@@ -1,0 +1,1445 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { apiRequest } from "@/lib/queryClient";
+import { 
+  TagIcon, 
+  PrinterIcon, 
+  SettingsIcon, 
+  SearchIcon, 
+  Package2Icon,
+  FilterIcon,
+  DownloadIcon,
+  RefreshCwIcon,
+  GridIcon,
+  ListIcon,
+  Eye,
+  StarIcon,
+  ClockIcon,
+  PlusIcon,
+  EditIcon,
+  TrashIcon,
+  SaveIcon,
+  XIcon
+} from "lucide-react";
+
+interface Product {
+  id: number;
+  name: string;
+  sku: string;
+  price: string;
+  cost?: string;
+  description?: string;
+  barcode?: string;
+  category?: { name: string };
+  stockQuantity?: number;
+  mrp?: string;
+  weight?: string;
+  weightUnit?: string;
+  hsnCode?: string;
+  gstCode?: string;
+  active?: boolean;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+interface LabelTemplate {
+  id: number;
+  name: string;
+  description?: string;
+  width: number;
+  height: number;
+  font_size: number;
+  include_barcode: boolean;
+  include_price: boolean;
+  include_description: boolean;
+  include_mrp: boolean;
+  include_weight: boolean;
+  include_hsn: boolean;
+  barcode_position: 'top' | 'bottom' | 'left' | 'right';
+  border_style: 'solid' | 'dashed' | 'dotted' | 'none';
+  border_width: number;
+  background_color: string;
+  text_color: string;
+  custom_css?: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface PrintJob {
+  id: number;
+  template_id: number;
+  template_name?: string;
+  user_id: number;
+  user_name?: string;
+  product_ids: string;
+  copies: number;
+  labels_per_row: number;
+  paper_size: string;
+  orientation: string;
+  status: string;
+  total_labels: number;
+  custom_text?: string;
+  print_settings?: string;
+  created_at: string;
+}
+
+const templateFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  description: z.string().optional(),
+  width: z.number().min(10, "Width must be at least 10mm"),
+  height: z.number().min(10, "Height must be at least 10mm"),
+  font_size: z.number().min(6).max(72),
+  include_barcode: z.boolean(),
+  include_price: z.boolean(),
+  include_description: z.boolean(),
+  include_mrp: z.boolean(),
+  include_weight: z.boolean(),
+  include_hsn: z.boolean(),
+  barcode_position: z.enum(['top', 'bottom', 'left', 'right']),
+  border_style: z.enum(['solid', 'dashed', 'dotted', 'none']),
+  border_width: z.number().min(0).max(10),
+  background_color: z.string(),
+  text_color: z.string(),
+  custom_css: z.string().optional(),
+  is_default: z.boolean()
+});
+
+type TemplateFormData = z.infer<typeof templateFormSchema>;
+
+export default function PrintLabelsEnhanced() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // State management
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showOnlySelected, setShowOnlySelected] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+  const [copies, setCopies] = useState(1);
+  const [labelsPerRow, setLabelsPerRow] = useState(2);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<LabelTemplate | null>(null);
+  const [customText, setCustomText] = useState("");
+  const [paperSize, setPaperSize] = useState("A4");
+  const [orientation, setOrientation] = useState("portrait");
+
+  // Form for template creation/editing
+  const templateForm = useForm<TemplateFormData>({
+    resolver: zodResolver(templateFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      width: 80,
+      height: 50,
+      font_size: 12,
+      include_barcode: true,
+      include_price: true,
+      include_description: false,
+      include_mrp: true,
+      include_weight: false,
+      include_hsn: false,
+      barcode_position: 'bottom',
+      border_style: 'solid',
+      border_width: 1,
+      background_color: '#ffffff',
+      text_color: '#000000',
+      custom_css: "",
+      is_default: false
+    }
+  });
+
+  // Fetch data
+  const { data: productsData = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
+    queryKey: ['/api/products'],
+  });
+
+  const { data: categoriesData = [] } = useQuery({
+    queryKey: ['/api/categories'],
+  });
+
+  const { data: templatesData = [], refetch: refetchTemplates } = useQuery({
+    queryKey: ['/api/label-templates'],
+  });
+
+  const { data: printJobsData = [] } = useQuery({
+    queryKey: ['/api/print-jobs'],
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
+
+  const products = productsData as Product[];
+  const categories = categoriesData as Category[];
+  const templates = templatesData as LabelTemplate[];
+  const printJobs = printJobsData as PrintJob[];
+
+  // Mutations
+  const createTemplateMutation = useMutation({
+    mutationFn: (data: TemplateFormData) => fetch('/api/label-templates', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json()),
+    onSuccess: () => {
+      toast({
+        title: "Template created successfully",
+        description: "Your label template has been saved"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+      setIsTemplateDialogOpen(false);
+      templateForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error creating template",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<TemplateFormData> }) => 
+      fetch(`/api/label-templates/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      }).then(res => res.json()),
+    onSuccess: () => {
+      toast({
+        title: "Template updated successfully",
+        description: "Your changes have been saved"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+      setIsTemplateDialogOpen(false);
+      setEditingTemplate(null);
+      templateForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating template",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: (id: number) => fetch(`/api/label-templates/${id}`, {
+      method: 'DELETE'
+    }).then(res => res.json()),
+    onSuccess: () => {
+      toast({
+        title: "Template deleted successfully",
+        description: "The template has been removed"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error deleting template",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const createPrintJobMutation = useMutation({
+    mutationFn: (data: any) => fetch('/api/print-jobs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json()),
+    onSuccess: () => {
+      toast({
+        title: "Print job created successfully",
+        description: "Your labels are being prepared for printing"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/print-jobs'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error creating print job",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Set default template when templates load
+  useEffect(() => {
+    if (templates.length > 0 && !selectedTemplate) {
+      const defaultTemplate = templates.find(t => t.is_default) || templates[0];
+      setSelectedTemplate(defaultTemplate.id);
+    }
+  }, [templates, selectedTemplate]);
+
+  // Filter products
+  const filteredProducts = products.filter((product: Product) => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesCategory = selectedCategory === "all" || 
+                           (product.category && product.category.name === selectedCategory);
+
+    const matchesSelection = !showOnlySelected || selectedProducts.includes(product.id);
+
+    return matchesSearch && matchesCategory && matchesSelection;
+  });
+
+  // Get current template
+  const getCurrentTemplate = (): LabelTemplate | null => {
+    return templates.find(t => t.id === selectedTemplate) || null;
+  };
+
+  // Product selection handlers
+  const handleProductSelect = (productId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedProducts([...selectedProducts, productId]);
+    } else {
+      setSelectedProducts(selectedProducts.filter(id => id !== productId));
+    }
+  };
+
+  const handleSelectAll = () => {
+    const visibleProductIds = filteredProducts.map((p: Product) => p.id);
+    setSelectedProducts(visibleProductIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedProducts([]);
+  };
+
+  // Template handlers
+  const handleCreateTemplate = () => {
+    templateForm.reset();
+    setEditingTemplate(null);
+    setIsTemplateDialogOpen(true);
+  };
+
+  const handleEditTemplate = (template: LabelTemplate) => {
+    setEditingTemplate(template);
+    templateForm.reset({
+      name: template.name,
+      description: template.description || "",
+      width: template.width,
+      height: template.height,
+      font_size: template.font_size,
+      include_barcode: template.include_barcode,
+      include_price: template.include_price,
+      include_description: template.include_description,
+      include_mrp: template.include_mrp,
+      include_weight: template.include_weight,
+      include_hsn: template.include_hsn,
+      barcode_position: template.barcode_position,
+      border_style: template.border_style,
+      border_width: template.border_width,
+      background_color: template.background_color,
+      text_color: template.text_color,
+      custom_css: template.custom_css || "",
+      is_default: template.is_default
+    });
+    setIsTemplateDialogOpen(true);
+  };
+
+  const handleDeleteTemplate = (id: number) => {
+    if (confirm("Are you sure you want to delete this template?")) {
+      deleteTemplateMutation.mutate(id);
+    }
+  };
+
+  const onTemplateSubmit = (data: TemplateFormData) => {
+    if (editingTemplate) {
+      updateTemplateMutation.mutate({ id: editingTemplate.id, data });
+    } else {
+      createTemplateMutation.mutate(data);
+    }
+  };
+
+  // Generate professional barcode
+  const generateBarcode = (text: string, width: number = 100, height: number = 30) => {
+    const barcodeData = text.padEnd(12, '0').substring(0, 12);
+    const bars = barcodeData.split('').map((digit, index) => {
+      const digitValue = parseInt(digit);
+      const barWidth = digitValue % 4 + 1;
+      const barHeight = height - 15;
+      return `<rect x="${index * 8}" y="5" width="${barWidth}" height="${barHeight}" fill="#000"/>`;
+    }).join('');
+    
+    return `
+      <div style="text-align: center; margin: 2px 0;">
+        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #ddd;">
+          <rect width="${width}" height="${height}" fill="#fff"/>
+          ${bars}
+          <text x="${width/2}" y="${height - 2}" font-family="monospace" font-size="8" text-anchor="middle" fill="#000">${barcodeData}</text>
+        </svg>
+      </div>
+    `;
+  };
+
+  // Generate label HTML
+  const generateLabelHTML = (product: Product, template: LabelTemplate) => {
+    const {
+      width, height, font_size, border_style, border_width, background_color, text_color,
+      include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn
+    } = template;
+
+    const borderCSS = border_style !== 'none' ? 
+      `border: ${border_width}px ${border_style} #333;` : '';
+
+    const barcodeHTML = include_barcode ? 
+      generateBarcode(product.barcode || product.sku, Math.min(width * 2.8, 200), 25) : '';
+
+    return `
+      <div class="product-label" style="
+        width: ${width}mm;
+        height: ${height}mm;
+        ${borderCSS}
+        padding: 3mm;
+        margin: 2mm;
+        display: inline-block;
+        font-family: Arial, sans-serif;
+        background: ${background_color};
+        color: ${text_color};
+        page-break-inside: avoid;
+        box-sizing: border-box;
+        vertical-align: top;
+        position: relative;
+        font-size: ${font_size}px;
+        line-height: 1.3;
+        overflow: hidden;
+      ">
+        <div style="font-weight: bold; margin-bottom: 2mm; font-size: ${font_size + 1}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${product.name}
+        </div>
+
+        <div style="font-size: ${font_size - 1}px; color: #666; margin-bottom: 1mm;">
+          SKU: ${product.sku}
+        </div>
+
+        ${include_description && product.description ? 
+          `<div style="font-size: ${font_size - 2}px; color: #888; margin-bottom: 1mm; overflow: hidden; height: 15px;">
+            ${product.description.substring(0, 40)}${product.description.length > 40 ? '...' : ''}
+          </div>` : ''
+        }
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2mm;">
+          ${include_price ? 
+            `<div style="font-size: ${font_size + 2}px; font-weight: bold; color: #2563eb;">
+              ₹${parseFloat(product.price).toFixed(2)}
+            </div>` : ''
+          }
+          ${include_mrp && product.mrp && parseFloat(product.mrp) !== parseFloat(product.price) ? 
+            `<div style="font-size: ${font_size - 1}px; color: #666; text-decoration: line-through;">
+              MRP: ₹${parseFloat(product.mrp).toFixed(2)}
+            </div>` : ''
+          }
+        </div>
+
+        ${include_weight && product.weight ? 
+          `<div style="font-size: ${font_size - 1}px; color: #666; margin-bottom: 1mm;">
+            Weight: ${product.weight} ${product.weightUnit || 'kg'}
+          </div>` : ''
+        }
+
+        ${include_hsn && product.hsnCode ? 
+          `<div style="font-size: ${font_size - 2}px; color: #666; margin-bottom: 1mm;">
+            HSN: ${product.hsnCode}
+          </div>` : ''
+        }
+
+        ${customText ? 
+          `<div style="font-size: ${font_size - 1}px; color: #666; margin-bottom: 1mm;">
+            ${customText}
+          </div>` : ''
+        }
+
+        ${include_barcode ? 
+          `<div style="margin-top: auto; text-align: center;">
+            ${barcodeHTML}
+          </div>` : ''
+        }
+
+        <div style="position: absolute; bottom: 1mm; right: 2mm; font-size: 6px; color: #ccc;">
+          ${new Date().toLocaleDateString('en-IN')}
+        </div>
+      </div>
+    `;
+  };
+
+  // Print functionality
+  const handlePrint = () => {
+    if (selectedProducts.length === 0) {
+      toast({
+        title: "No products selected",
+        description: "Please select at least one product to print labels.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedTemplate) {
+      toast({
+        title: "No template selected",
+        description: "Please select a label template.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPrintDialogOpen(true);
+  };
+
+  const executePrint = () => {
+    const selectedProductsData = products.filter((p: Product) => 
+      selectedProducts.includes(p.id)
+    );
+
+    const template = getCurrentTemplate();
+    if (!template) return;
+
+    // Create print job record
+    const printJobData = {
+      templateId: template.id,
+      productIds: selectedProducts,
+      copies,
+      labelsPerRow,
+      paperSize,
+      orientation,
+      totalLabels: selectedProducts.length * copies,
+      customText: customText || null,
+      printSettings: JSON.stringify({
+        paperSize,
+        orientation,
+        labelsPerRow,
+        margin: 5
+      })
+    };
+
+    createPrintJobMutation.mutate(printJobData);
+
+    const printContent = selectedProductsData.map((product: Product) => {
+      return Array(copies).fill(null).map(() => 
+        generateLabelHTML(product, template)
+      ).join('');
+    }).join('');
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Product Labels - ${new Date().toLocaleDateString()}</title>
+            <meta charset="UTF-8">
+            <style>
+              @page { 
+                size: ${paperSize} ${orientation};
+                margin: 5mm;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+                background: white;
+              }
+              .labels-container {
+                display: grid;
+                grid-template-columns: repeat(${labelsPerRow}, 1fr);
+                gap: 2mm;
+                width: 100%;
+                align-items: start;
+              }
+              .product-label {
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+              @media print {
+                body { 
+                  margin: 0; 
+                  padding: 0;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
+                }
+                .labels-container {
+                  margin: 0;
+                  padding: 0;
+                }
+                .product-label {
+                  break-inside: avoid;
+                  page-break-inside: avoid;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="labels-container">
+              ${printContent}
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  setTimeout(function() {
+                    window.close();
+                  }, 2000);
+                }, 1000);
+              };
+            </script>
+          </body>
+        </html>
+      `;
+
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+    }
+
+    setIsPrintDialogOpen(false);
+    toast({
+      title: "Labels sent to printer",
+      description: `${selectedProducts.length * copies} labels prepared for printing`,
+    });
+  };
+
+  // Preview functionality
+  const handlePreview = () => {
+    if (selectedProducts.length === 0) {
+      toast({
+        title: "No products selected",
+        description: "Please select at least one product to preview labels.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsPreviewDialogOpen(true);
+  };
+
+  if (isLoadingProducts) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <RefreshCwIcon className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+            <p className="mt-2 text-muted-foreground">Loading print labels system...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <TagIcon className="h-8 w-8 text-blue-600" />
+              Print Labels Pro
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Professional label printing with database-integrated templates
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant="outline"
+              onClick={handlePreview}
+              disabled={selectedProducts.length === 0}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Preview
+            </Button>
+            <Button 
+              onClick={handlePrint}
+              disabled={selectedProducts.length === 0 || !selectedTemplate}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <PrinterIcon className="h-4 w-4 mr-2" />
+              Print Labels ({selectedProducts.length})
+            </Button>
+          </div>
+        </div>
+
+        <Tabs defaultValue="products" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="products">Products & Selection</TabsTrigger>
+            <TabsTrigger value="templates">Label Templates</TabsTrigger>
+            <TabsTrigger value="settings">Print Settings</TabsTrigger>
+            <TabsTrigger value="history">Print History</TabsTrigger>
+          </TabsList>
+
+          {/* Products & Selection Tab */}
+          <TabsContent value="products" className="space-y-6">
+            {/* Search and Filter Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <SearchIcon className="h-5 w-5" />
+                  Search & Filter Products
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="search">Search Products</Label>
+                    <Input
+                      id="search"
+                      placeholder="Search by name, SKU, or barcode..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="category">Category Filter</Label>
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center space-x-4 mt-6">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="show-selected"
+                        checked={showOnlySelected}
+                        onCheckedChange={setShowOnlySelected}
+                      />
+                      <Label htmlFor="show-selected">Show only selected</Label>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                    >
+                      {viewMode === 'grid' ? <ListIcon className="h-4 w-4" /> : <GridIcon className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                      Select All ({filteredProducts.length})
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDeselectAll}>
+                      Deselect All
+                    </Button>
+                  </div>
+                  <Badge variant="secondary">
+                    {selectedProducts.length} of {products.length} products selected
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Products Grid */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Products ({filteredProducts.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`grid gap-4 ${
+                  viewMode === 'grid' 
+                    ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' 
+                    : 'grid-cols-1'
+                }`}>
+                  {filteredProducts.map((product) => (
+                    <div 
+                      key={product.id}
+                      className={`border rounded-lg p-4 space-y-2 hover:shadow-md transition-shadow ${
+                        selectedProducts.includes(product.id) ? 'bg-blue-50 border-blue-300' : ''
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              checked={selectedProducts.includes(product.id)}
+                              onCheckedChange={(checked) => 
+                                handleProductSelect(product.id, checked as boolean)
+                              }
+                            />
+                            <h3 className="font-medium text-sm">{product.name}</h3>
+                          </div>
+                          <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                          {product.barcode && (
+                            <p className="text-xs text-muted-foreground">Barcode: {product.barcode}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-sm">₹{product.price}</p>
+                          {product.mrp && parseFloat(product.mrp) !== parseFloat(product.price) && (
+                            <p className="text-xs text-muted-foreground line-through">₹{product.mrp}</p>
+                          )}
+                        </div>
+                      </div>
+                      {viewMode === 'list' && product.description && (
+                        <p className="text-xs text-muted-foreground">{product.description}</p>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <Badge variant={product.stockQuantity && product.stockQuantity > 0 ? "default" : "destructive"}>
+                          Stock: {product.stockQuantity || 0}
+                        </Badge>
+                        {product.category && (
+                          <Badge variant="outline">{product.category.name}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {filteredProducts.length === 0 && (
+                  <div className="text-center py-12">
+                    <Package2Icon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No products found</h3>
+                    <p className="text-muted-foreground">
+                      Try adjusting your search criteria or filters
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Templates Tab */}
+          <TabsContent value="templates" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Label Templates</CardTitle>
+                    <CardDescription>
+                      Manage your label templates and create custom designs
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleCreateTemplate}>
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Create Template
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {templates.map((template) => (
+                    <div 
+                      key={template.id}
+                      className={`border rounded-lg p-4 space-y-3 cursor-pointer transition-all ${
+                        selectedTemplate === template.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' : 'hover:shadow-md'
+                      }`}
+                      onClick={() => setSelectedTemplate(template.id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium flex items-center gap-2">
+                            {template.name}
+                            {template.is_default && <StarIcon className="h-4 w-4 text-yellow-500" />}
+                          </h3>
+                          {template.description && (
+                            <p className="text-sm text-muted-foreground">{template.description}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTemplate(template);
+                            }}
+                          >
+                            <EditIcon className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTemplate(template.id);
+                            }}
+                          >
+                            <TrashIcon className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Size:</span>
+                          <span>{template.width}mm × {template.height}mm</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Font Size:</span>
+                          <span>{template.font_size}px</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {template.include_barcode && <Badge variant="outline" className="text-xs">Barcode</Badge>}
+                          {template.include_price && <Badge variant="outline" className="text-xs">Price</Badge>}
+                          {template.include_mrp && <Badge variant="outline" className="text-xs">MRP</Badge>}
+                          {template.include_weight && <Badge variant="outline" className="text-xs">Weight</Badge>}
+                          {template.include_hsn && <Badge variant="outline" className="text-xs">HSN</Badge>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Print Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Print Configuration</CardTitle>
+                <CardDescription>
+                  Configure print settings for your labels
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="copies">Number of Copies</Label>
+                      <Input
+                        id="copies"
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={copies}
+                        onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="labels-per-row">Labels per Row</Label>
+                      <Select value={labelsPerRow.toString()} onValueChange={(value) => setLabelsPerRow(parseInt(value))}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1 label per row</SelectItem>
+                          <SelectItem value="2">2 labels per row</SelectItem>
+                          <SelectItem value="3">3 labels per row</SelectItem>
+                          <SelectItem value="4">4 labels per row</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="paper-size">Paper Size</Label>
+                      <Select value={paperSize} onValueChange={setPaperSize}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="A4">A4</SelectItem>
+                          <SelectItem value="Letter">Letter</SelectItem>
+                          <SelectItem value="Legal">Legal</SelectItem>
+                          <SelectItem value="A5">A5</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="orientation">Orientation</Label>
+                      <Select value={orientation} onValueChange={setOrientation}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="portrait">Portrait</SelectItem>
+                          <SelectItem value="landscape">Landscape</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="custom-text">Custom Text (Optional)</Label>
+                      <Textarea
+                        id="custom-text"
+                        placeholder="Add custom text to all labels..."
+                        value={customText}
+                        onChange={(e) => setCustomText(e.target.value)}
+                        className="mt-1"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="bg-muted/50 p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Print Summary</h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span>Selected Products:</span>
+                          <span>{selectedProducts.length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Copies per Product:</span>
+                          <span>{copies}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Labels:</span>
+                          <span className="font-medium">{selectedProducts.length * copies}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Template:</span>
+                          <span>{getCurrentTemplate()?.name || 'None'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Print History Tab */}
+          <TabsContent value="history" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClockIcon className="h-5 w-5" />
+                  Print History
+                </CardTitle>
+                <CardDescription>
+                  View recent print jobs and their status
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {printJobs.length > 0 ? (
+                    printJobs.map((job) => (
+                      <div key={job.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium">
+                              Print Job #{job.id}
+                            </h4>
+                            <p className="text-sm text-muted-foreground">
+                              Template: {job.template_name || 'Unknown'} • 
+                              User: {job.user_name || 'Unknown'} • 
+                              {job.total_labels} labels
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(job.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                          <Badge 
+                            variant={
+                              job.status === 'completed' ? 'default' : 
+                              job.status === 'failed' ? 'destructive' : 
+                              'secondary'
+                            }
+                          >
+                            {job.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <ClockIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No print history</h3>
+                      <p className="text-muted-foreground">
+                        Print jobs will appear here once you start printing labels
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Template Creation/Edit Dialog */}
+        <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingTemplate ? 'Edit Template' : 'Create New Template'}
+              </DialogTitle>
+            </DialogHeader>
+            <Form {...templateForm}>
+              <form onSubmit={templateForm.handleSubmit(onTemplateSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={templateForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Template Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter template name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={templateForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter description" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={templateForm.control}
+                    name="width"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Width (mm)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field} 
+                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={templateForm.control}
+                    name="height"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Height (mm)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field} 
+                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={templateForm.control}
+                    name="font_size"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Font Size (px)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field} 
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-medium">Include Elements</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[
+                      { name: 'include_barcode', label: 'Barcode' },
+                      { name: 'include_price', label: 'Price' },
+                      { name: 'include_description', label: 'Description' },
+                      { name: 'include_mrp', label: 'MRP' },
+                      { name: 'include_weight', label: 'Weight' },
+                      { name: 'include_hsn', label: 'HSN Code' }
+                    ].map((item) => (
+                      <FormField
+                        key={item.name}
+                        control={templateForm.control}
+                        name={item.name as any}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Checkbox 
+                                checked={field.value} 
+                                onCheckedChange={field.onChange} 
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">
+                              {item.label}
+                            </FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={templateForm.control}
+                    name="barcode_position"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Barcode Position</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="top">Top</SelectItem>
+                            <SelectItem value="bottom">Bottom</SelectItem>
+                            <SelectItem value="left">Left</SelectItem>
+                            <SelectItem value="right">Right</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={templateForm.control}
+                    name="border_style"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Border Style</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="solid">Solid</SelectItem>
+                            <SelectItem value="dashed">Dashed</SelectItem>
+                            <SelectItem value="dotted">Dotted</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={templateForm.control}
+                    name="border_width"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Border Width (px)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field} 
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={templateForm.control}
+                    name="background_color"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Background Color</FormLabel>
+                        <FormControl>
+                          <Input type="color" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={templateForm.control}
+                    name="text_color"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Text Color</FormLabel>
+                        <FormControl>
+                          <Input type="color" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={templateForm.control}
+                  name="is_default"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox 
+                          checked={field.value} 
+                          onCheckedChange={field.onChange} 
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Set as default template
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsTemplateDialogOpen(false)}
+                  >
+                    <XIcon className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
+                  >
+                    <SaveIcon className="h-4 w-4 mr-2" />
+                    {editingTemplate ? 'Update Template' : 'Create Template'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Print Dialog */}
+        <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Print Job</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span>Products:</span>
+                  <span className="font-medium">{selectedProducts.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Copies each:</span>
+                  <span className="font-medium">{copies}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total labels:</span>
+                  <span className="font-medium">{selectedProducts.length * copies}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Template:</span>
+                  <span className="font-medium">{getCurrentTemplate()?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Paper:</span>
+                  <span className="font-medium">{paperSize} {orientation}</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This will create a print job and open the labels in a new window for printing.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsPrintDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={executePrint}
+                disabled={createPrintJobMutation.isPending}
+              >
+                <PrinterIcon className="h-4 w-4 mr-2" />
+                Print Labels
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Preview Dialog */}
+        <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Label Preview</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {selectedProducts.length > 0 && getCurrentTemplate() && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {products
+                    .filter(p => selectedProducts.slice(0, 6).includes(p.id))
+                    .map(product => (
+                      <div 
+                        key={product.id}
+                        className="border rounded p-2"
+                        dangerouslySetInnerHTML={{
+                          __html: generateLabelHTML(product, getCurrentTemplate()!)
+                        }}
+                      />
+                    ))}
+                </div>
+              )}
+              {selectedProducts.length > 6 && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Showing first 6 labels. Total: {selectedProducts.length} products
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setIsPreviewDialogOpen(false)}>
+                Close Preview
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DashboardLayout>
+  );
+}

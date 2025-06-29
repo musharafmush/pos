@@ -3796,5 +3796,272 @@ export const storage = {
       igst: hsn.igstRate || "0",
       cess: hsn.cessRate || "0"
     };
+  },
+
+  // Label Templates Management
+  async createLabelTemplate(templateData: any): Promise<any> {
+    try {
+      const stmt = this.db.prepare(`
+        INSERT INTO label_templates (
+          name, description, width, height, font_size, include_barcode, include_price,
+          include_description, include_mrp, include_weight, include_hsn, barcode_position,
+          border_style, border_width, background_color, text_color, custom_css,
+          is_default, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      const now = new Date().toISOString();
+      const result = stmt.run(
+        templateData.name,
+        templateData.description,
+        templateData.width,
+        templateData.height,
+        templateData.fontSize || 12,
+        templateData.includeBarcode ? 1 : 0,
+        templateData.includePrice ? 1 : 0,
+        templateData.includeDescription ? 1 : 0,
+        templateData.includeMRP ? 1 : 0,
+        templateData.includeWeight ? 1 : 0,
+        templateData.includeHSN ? 1 : 0,
+        templateData.barcodePosition || 'bottom',
+        templateData.borderStyle || 'solid',
+        templateData.borderWidth || 1,
+        templateData.backgroundColor || '#ffffff',
+        templateData.textColor || '#000000',
+        templateData.customCSS,
+        templateData.isDefault ? 1 : 0,
+        templateData.isActive !== false ? 1 : 0,
+        now,
+        now
+      );
+
+      return this.getLabelTemplateById(result.lastInsertRowid);
+    } catch (error) {
+      console.error('Error creating label template:', error);
+      throw error;
+    }
+  },
+
+  async getLabelTemplates(): Promise<any[]> {
+    try {
+      const stmt = this.db.prepare(`
+        SELECT * FROM label_templates 
+        WHERE is_active = 1 
+        ORDER BY is_default DESC, name ASC
+      `);
+      return stmt.all();
+    } catch (error) {
+      console.error('Error getting label templates:', error);
+      return [];
+    }
+  },
+
+  async getLabelTemplateById(id: number): Promise<any | null> {
+    try {
+      const stmt = this.db.prepare(`
+        SELECT * FROM label_templates WHERE id = ?
+      `);
+      return stmt.get(id) || null;
+    } catch (error) {
+      console.error('Error getting label template by ID:', error);
+      return null;
+    }
+  },
+
+  async updateLabelTemplate(id: number, templateData: any): Promise<any | null> {
+    try {
+      const updates = [];
+      const values = [];
+      
+      if (templateData.name !== undefined) {
+        updates.push('name = ?');
+        values.push(templateData.name);
+      }
+      if (templateData.description !== undefined) {
+        updates.push('description = ?');
+        values.push(templateData.description);
+      }
+      if (templateData.width !== undefined) {
+        updates.push('width = ?');
+        values.push(templateData.width);
+      }
+      if (templateData.height !== undefined) {
+        updates.push('height = ?');
+        values.push(templateData.height);
+      }
+      if (templateData.fontSize !== undefined) {
+        updates.push('font_size = ?');
+        values.push(templateData.fontSize);
+      }
+      if (templateData.includeBarcode !== undefined) {
+        updates.push('include_barcode = ?');
+        values.push(templateData.includeBarcode ? 1 : 0);
+      }
+      if (templateData.includePrice !== undefined) {
+        updates.push('include_price = ?');
+        values.push(templateData.includePrice ? 1 : 0);
+      }
+      if (templateData.includeDescription !== undefined) {
+        updates.push('include_description = ?');
+        values.push(templateData.includeDescription ? 1 : 0);
+      }
+      if (templateData.includeMRP !== undefined) {
+        updates.push('include_mrp = ?');
+        values.push(templateData.includeMRP ? 1 : 0);
+      }
+      if (templateData.includeWeight !== undefined) {
+        updates.push('include_weight = ?');
+        values.push(templateData.includeWeight ? 1 : 0);
+      }
+      if (templateData.includeHSN !== undefined) {
+        updates.push('include_hsn = ?');
+        values.push(templateData.includeHSN ? 1 : 0);
+      }
+      if (templateData.barcodePosition !== undefined) {
+        updates.push('barcode_position = ?');
+        values.push(templateData.barcodePosition);
+      }
+      if (templateData.borderStyle !== undefined) {
+        updates.push('border_style = ?');
+        values.push(templateData.borderStyle);
+      }
+      if (templateData.borderWidth !== undefined) {
+        updates.push('border_width = ?');
+        values.push(templateData.borderWidth);
+      }
+      if (templateData.backgroundColor !== undefined) {
+        updates.push('background_color = ?');
+        values.push(templateData.backgroundColor);
+      }
+      if (templateData.textColor !== undefined) {
+        updates.push('text_color = ?');
+        values.push(templateData.textColor);
+      }
+      if (templateData.customCSS !== undefined) {
+        updates.push('custom_css = ?');
+        values.push(templateData.customCSS);
+      }
+      if (templateData.isDefault !== undefined) {
+        updates.push('is_default = ?');
+        values.push(templateData.isDefault ? 1 : 0);
+      }
+      if (templateData.isActive !== undefined) {
+        updates.push('is_active = ?');
+        values.push(templateData.isActive ? 1 : 0);
+      }
+
+      updates.push('updated_at = ?');
+      values.push(new Date().toISOString());
+      values.push(id);
+
+      const stmt = this.db.prepare(`
+        UPDATE label_templates 
+        SET ${updates.join(', ')} 
+        WHERE id = ?
+      `);
+      
+      stmt.run(...values);
+      return this.getLabelTemplateById(id);
+    } catch (error) {
+      console.error('Error updating label template:', error);
+      return null;
+    }
+  },
+
+  async deleteLabelTemplate(id: number): Promise<boolean> {
+    try {
+      const stmt = this.db.prepare(`
+        UPDATE label_templates 
+        SET is_active = 0, updated_at = ? 
+        WHERE id = ?
+      `);
+      const result = stmt.run(new Date().toISOString(), id);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error deleting label template:', error);
+      return false;
+    }
+  },
+
+  // Print Jobs Management
+  async createPrintJob(jobData: any): Promise<any> {
+    try {
+      const stmt = this.db.prepare(`
+        INSERT INTO print_jobs (
+          template_id, user_id, product_ids, copies, labels_per_row,
+          paper_size, orientation, status, total_labels, custom_text,
+          print_settings, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      const now = new Date().toISOString();
+      const result = stmt.run(
+        jobData.templateId,
+        jobData.userId,
+        JSON.stringify(jobData.productIds),
+        jobData.copies || 1,
+        jobData.labelsPerRow || 2,
+        jobData.paperSize || 'A4',
+        jobData.orientation || 'portrait',
+        jobData.status || 'completed',
+        jobData.totalLabels,
+        jobData.customText,
+        jobData.printSettings ? JSON.stringify(jobData.printSettings) : null,
+        now
+      );
+
+      return this.getPrintJobById(result.lastInsertRowid);
+    } catch (error) {
+      console.error('Error creating print job:', error);
+      throw error;
+    }
+  },
+
+  async getPrintJobs(limit: number = 50): Promise<any[]> {
+    try {
+      const stmt = this.db.prepare(`
+        SELECT pj.*, lt.name as template_name, u.name as user_name
+        FROM print_jobs pj
+        LEFT JOIN label_templates lt ON pj.template_id = lt.id
+        LEFT JOIN users u ON pj.user_id = u.id
+        ORDER BY pj.created_at DESC
+        LIMIT ?
+      `);
+      return stmt.all(limit);
+    } catch (error) {
+      console.error('Error getting print jobs:', error);
+      return [];
+    }
+  },
+
+  async getPrintJobById(id: number): Promise<any | null> {
+    try {
+      const stmt = this.db.prepare(`
+        SELECT pj.*, lt.name as template_name, u.name as user_name
+        FROM print_jobs pj
+        LEFT JOIN label_templates lt ON pj.template_id = lt.id
+        LEFT JOIN users u ON pj.user_id = u.id
+        WHERE pj.id = ?
+      `);
+      return stmt.get(id) || null;
+    } catch (error) {
+      console.error('Error getting print job by ID:', error);
+      return null;
+    }
+  },
+
+  async updatePrintJobStatus(id: number, status: string): Promise<boolean> {
+    try {
+      const stmt = this.db.prepare(`
+        UPDATE print_jobs 
+        SET status = ? 
+        WHERE id = ?
+      `);
+      const result = stmt.run(status, id);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error updating print job status:', error);
+      return false;
+    }
   }
 };

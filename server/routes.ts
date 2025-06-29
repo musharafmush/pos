@@ -3893,6 +3893,168 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Label Templates API
+  app.get('/api/label-templates', isAuthenticated, async (req, res) => {
+    try {
+      const templates = await storage.getLabelTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching label templates:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/label-templates', isAuthenticated, async (req, res) => {
+    try {
+      const templateData = req.body;
+      
+      // Validate required fields
+      if (!templateData.name || !templateData.width || !templateData.height) {
+        return res.status(400).json({ 
+          message: 'Name, width, and height are required fields' 
+        });
+      }
+
+      const template = await storage.createLabelTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error('Error creating label template:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/label-templates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const template = await storage.getLabelTemplateById(id);
+      
+      if (!template) {
+        return res.status(404).json({ message: 'Label template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching label template:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/label-templates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const templateData = req.body;
+      
+      const updatedTemplate = await storage.updateLabelTemplate(id, templateData);
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: 'Label template not found' });
+      }
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error('Error updating label template:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/label-templates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteLabelTemplate(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: 'Label template not found' });
+      }
+      
+      res.json({ message: 'Label template deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting label template:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Print Jobs API
+  app.post('/api/print-jobs', isAuthenticated, async (req, res) => {
+    try {
+      const jobData = {
+        ...req.body,
+        userId: (req.user as any).id
+      };
+      
+      // Validate required fields
+      if (!jobData.templateId || !jobData.productIds || !Array.isArray(jobData.productIds) || jobData.productIds.length === 0) {
+        return res.status(400).json({ 
+          message: 'Template ID and product IDs are required' 
+        });
+      }
+
+      // Calculate total labels
+      jobData.totalLabels = jobData.productIds.length * (jobData.copies || 1);
+
+      const printJob = await storage.createPrintJob(jobData);
+      res.status(201).json(printJob);
+    } catch (error) {
+      console.error('Error creating print job:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/print-jobs', isAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const printJobs = await storage.getPrintJobs(limit);
+      res.json(printJobs);
+    } catch (error) {
+      console.error('Error fetching print jobs:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/print-jobs/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const printJob = await storage.getPrintJobById(id);
+      
+      if (!printJob) {
+        return res.status(404).json({ message: 'Print job not found' });
+      }
+      
+      res.json(printJob);
+    } catch (error) {
+      console.error('Error fetching print job:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/print-jobs/:id/status', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: 'Status is required' });
+      }
+      
+      const validStatuses = ['pending', 'printing', 'completed', 'failed'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ 
+          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+        });
+      }
+      
+      const updated = await storage.updatePrintJobStatus(id, status);
+      
+      if (!updated) {
+        return res.status(404).json({ message: 'Print job not found' });
+      }
+      
+      res.json({ message: 'Print job status updated successfully' });
+    } catch (error) {
+      console.error('Error updating print job status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Customer billing analytics API
   app.get('/api/reports/customer-billing', async (req, res) => {
     try {
