@@ -13,7 +13,10 @@ async function fixSuppliersGstinColumn() {
       { name: 'gstin', type: 'TEXT' },
       { name: 'gst_treatment', type: 'TEXT' },
       { name: 'pan', type: 'TEXT' },
-      { name: 'tan', type: 'TEXT' }
+      { name: 'tan', type: 'TEXT' },
+      { name: 'payment_terms', type: 'TEXT' },
+      { name: 'opening_balance', type: 'REAL DEFAULT 0' },
+      { name: 'balance_type', type: 'TEXT DEFAULT "Dr"' }
     ];
 
     // Add missing columns
