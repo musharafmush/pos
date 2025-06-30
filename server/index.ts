@@ -123,6 +123,7 @@ app.use((req, res, next) => {
 
 // Import label printing routes
 import './label-printing-routes';
+import { db } from '../db/sqlite-index.js';
 
 // Label Templates API Routes
 app.get('/api/label-templates', async (req, res) => {
