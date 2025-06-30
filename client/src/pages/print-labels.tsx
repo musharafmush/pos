@@ -158,6 +158,14 @@ export default function PrintLabels() {
   const [orientation, setOrientation] = useState("portrait");
   const [margin, setMargin] = useState(5);
 
+  const [printerSettings, setPrinterSettings] = useState({
+    selectedPrinter: 'thermal',
+    paperSize: '80x40',
+    density: 'medium',
+    connectionType: 'usb',
+    orientation: 'portrait'
+  });
+
   // Fetch data with proper typing
   const { data: productsData = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
     queryKey: ['/api/products'],
@@ -216,7 +224,7 @@ export default function PrintLabels() {
       const barHeight = height - 18;
       return `<rect x="${index * 10}" y="5" width="${barWidth}" height="${barHeight}" fill="#000"/>`;
     }).join('');
-    
+
     return `
       <div style="text-align: center; margin: 3px 0;">
         <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #ddd;">
@@ -662,7 +670,7 @@ export default function PrintLabels() {
                   {/* Label Content Options */}
                   <div className="space-y-3">
                     <Label className="text-sm font-medium">Include in Labels</Label>
-                    
+
                     <div className="flex items-center space-x-2">
                       <Checkbox 
                         id="include-barcode" 
