@@ -3798,10 +3798,22 @@ export const storage = {
     };
   },
 
+  // Initialize database connection for label operations
+  db: null as any,
+  
+  initLabelDatabase() {
+    if (!this.db) {
+      const Database = require('better-sqlite3');
+      this.db = new Database('pos-data.db');
+    }
+    return this.db;
+  },
+
   // Label Templates Management
   async createLabelTemplate(templateData: any): Promise<any> {
     try {
-      const stmt = this.db.prepare(`
+      const database = this.initLabelDatabase();
+      const stmt = database.prepare(`
         INSERT INTO label_templates (
           name, description, width, height, font_size, include_barcode, include_price,
           include_description, include_mrp, include_weight, include_hsn, barcode_position,
@@ -3844,7 +3856,8 @@ export const storage = {
 
   async getLabelTemplates(): Promise<any[]> {
     try {
-      const stmt = this.db.prepare(`
+      const database = this.initLabelDatabase();
+      const stmt = database.prepare(`
         SELECT * FROM label_templates 
         WHERE is_active = 1 
         ORDER BY is_default DESC, name ASC
@@ -3858,7 +3871,8 @@ export const storage = {
 
   async getLabelTemplateById(id: number): Promise<any | null> {
     try {
-      const stmt = this.db.prepare(`
+      const database = this.initLabelDatabase();
+      const stmt = database.prepare(`
         SELECT * FROM label_templates WHERE id = ?
       `);
       return stmt.get(id) || null;
@@ -4019,7 +4033,8 @@ export const storage = {
 
   async getPrintJobs(limit: number = 50): Promise<any[]> {
     try {
-      const stmt = this.db.prepare(`
+      const database = this.initLabelDatabase();
+      const stmt = database.prepare(`
         SELECT pj.*, lt.name as template_name, u.name as user_name
         FROM print_jobs pj
         LEFT JOIN label_templates lt ON pj.template_id = lt.id
@@ -4036,7 +4051,8 @@ export const storage = {
 
   async getPrintJobById(id: number): Promise<any | null> {
     try {
-      const stmt = this.db.prepare(`
+      const database = this.initLabelDatabase();
+      const stmt = database.prepare(`
         SELECT pj.*, lt.name as template_name, u.name as user_name
         FROM print_jobs pj
         LEFT JOIN label_templates lt ON pj.template_id = lt.id
@@ -4052,7 +4068,8 @@ export const storage = {
 
   async updatePrintJobStatus(id: number, status: string): Promise<boolean> {
     try {
-      const stmt = this.db.prepare(`
+      const database = this.initLabelDatabase();
+      const stmt = database.prepare(`
         UPDATE print_jobs 
         SET status = ? 
         WHERE id = ?
