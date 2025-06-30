@@ -3801,72 +3801,41 @@ export const storage = {
   // Label Templates Management
   async createLabelTemplate(templateData: any): Promise<any> {
     try {
-      // Use direct SQLite database to match other methods
-      const Database = (await import('better-sqlite3')).default;
-      const db = new Database('./pos-data.db');
-      
-      const stmt = db.prepare(`
+      const stmt = this.db.prepare(`
         INSERT INTO label_templates (
-          name, description, width, height, font_size, title_font_size, price_font_size, description_font_size,
-          layout_style, border_style, corner_radius, shadow_effect, font_family, font_weight,
-          title_position, price_position, barcode_position, company_name, brand_colors,
-          include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn,
-          include_qr_code, include_company_info, include_batch_number, include_expiry_date,
-          include_manufacturing_date, include_certification_marks, include_discount_badge,
-          include_stock_status, include_category_tag, include_rating_stars, include_regulatory_info,
-          include_environmental_icon, include_origin_country, include_warranty_info,
-          is_default, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          name, description, width, height, font_size, include_barcode, include_price,
+          include_description, include_mrp, include_weight, include_hsn, barcode_position,
+          border_style, border_width, background_color, text_color, custom_css,
+          is_default, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const now = new Date().toISOString();
       const result = stmt.run(
-        templateData.name || '',
-        templateData.description || '',
-        templateData.width || 50,
-        templateData.height || 30,
-        templateData.font_size || 12,
-        templateData.title_font_size || 16,
-        templateData.price_font_size || 18,
-        templateData.description_font_size || 10,
-        templateData.layout_style || 'modern',
-        templateData.border_style || 'solid',
-        templateData.corner_radius || 4,
-        templateData.shadow_effect ? 1 : 0,
-        templateData.font_family || 'Arial',
-        templateData.font_weight || 'normal',
-        templateData.title_position || 'top',
-        templateData.price_position || 'bottom-right',
-        templateData.barcode_position || 'bottom',
-        templateData.company_name || '',
-        templateData.brand_colors || '{}',
-        templateData.include_barcode ? 1 : 0,
-        templateData.include_price ? 1 : 0,
-        templateData.include_description ? 1 : 0,
-        templateData.include_mrp ? 1 : 0,
-        templateData.include_weight ? 1 : 0,
-        templateData.include_hsn ? 1 : 0,
-        templateData.include_qr_code ? 1 : 0,
-        templateData.include_company_info ? 1 : 0,
-        templateData.include_batch_number ? 1 : 0,
-        templateData.include_expiry_date ? 1 : 0,
-        templateData.include_manufacturing_date ? 1 : 0,
-        templateData.include_certification_marks ? 1 : 0,
-        templateData.include_discount_badge ? 1 : 0,
-        templateData.include_stock_status ? 1 : 0,
-        templateData.include_category_tag ? 1 : 0,
-        templateData.include_rating_stars ? 1 : 0,
-        templateData.include_regulatory_info ? 1 : 0,
-        templateData.include_environmental_icon ? 1 : 0,
-        templateData.include_origin_country ? 1 : 0,
-        templateData.include_warranty_info ? 1 : 0,
-        templateData.is_default ? 1 : 0,
+        templateData.name,
+        templateData.description,
+        templateData.width,
+        templateData.height,
+        templateData.fontSize || 12,
+        templateData.includeBarcode ? 1 : 0,
+        templateData.includePrice ? 1 : 0,
+        templateData.includeDescription ? 1 : 0,
+        templateData.includeMRP ? 1 : 0,
+        templateData.includeWeight ? 1 : 0,
+        templateData.includeHSN ? 1 : 0,
+        templateData.barcodePosition || 'bottom',
+        templateData.borderStyle || 'solid',
+        templateData.borderWidth || 1,
+        templateData.backgroundColor || '#ffffff',
+        templateData.textColor || '#000000',
+        templateData.customCSS,
+        templateData.isDefault ? 1 : 0,
+        templateData.isActive !== false ? 1 : 0,
+        now,
         now
       );
 
-      const newTemplate = this.getLabelTemplateById(result.lastInsertRowid);
-      db.close();
-      return newTemplate;
+      return this.getLabelTemplateById(result.lastInsertRowid);
     } catch (error) {
       console.error('Error creating label template:', error);
       throw error;
@@ -3875,18 +3844,12 @@ export const storage = {
 
   async getLabelTemplates(): Promise<any[]> {
     try {
-      // Use direct SQLite database instead of this.db
-      const Database = (await import('better-sqlite3')).default;
-      const db = new Database('./pos-data.db');
-      
-      const stmt = db.prepare(`
+      const stmt = this.db.prepare(`
         SELECT * FROM label_templates 
         WHERE is_active = 1 
         ORDER BY is_default DESC, name ASC
       `);
-      const results = stmt.all();
-      db.close();
-      return results;
+      return stmt.all();
     } catch (error) {
       console.error('Error getting label templates:', error);
       return [];
@@ -3895,15 +3858,10 @@ export const storage = {
 
   async getLabelTemplateById(id: number): Promise<any | null> {
     try {
-      const Database = (await import('better-sqlite3')).default;
-      const db = new Database('./pos-data.db');
-      
-      const stmt = db.prepare(`
+      const stmt = this.db.prepare(`
         SELECT * FROM label_templates WHERE id = ?
       `);
-      const result = stmt.get(id) || null;
-      db.close();
-      return result;
+      return stmt.get(id) || null;
     } catch (error) {
       console.error('Error getting label template by ID:', error);
       return null;
@@ -3912,14 +3870,9 @@ export const storage = {
 
   async updateLabelTemplate(id: number, templateData: any): Promise<any | null> {
     try {
-      // Use direct SQLite database to match other methods
-      const Database = (await import('better-sqlite3')).default;
-      const db = new Database('./pos-data.db');
-      
       const updates = [];
       const values = [];
       
-      // Handle all professional template fields
       if (templateData.name !== undefined) {
         updates.push('name = ?');
         values.push(templateData.name);
@@ -3936,100 +3889,79 @@ export const storage = {
         updates.push('height = ?');
         values.push(templateData.height);
       }
-      if (templateData.font_size !== undefined) {
+      if (templateData.fontSize !== undefined) {
         updates.push('font_size = ?');
-        values.push(templateData.font_size);
+        values.push(templateData.fontSize);
       }
-      if (templateData.title_font_size !== undefined) {
-        updates.push('title_font_size = ?');
-        values.push(templateData.title_font_size);
+      if (templateData.includeBarcode !== undefined) {
+        updates.push('include_barcode = ?');
+        values.push(templateData.includeBarcode ? 1 : 0);
       }
-      if (templateData.price_font_size !== undefined) {
-        updates.push('price_font_size = ?');
-        values.push(templateData.price_font_size);
+      if (templateData.includePrice !== undefined) {
+        updates.push('include_price = ?');
+        values.push(templateData.includePrice ? 1 : 0);
       }
-      if (templateData.description_font_size !== undefined) {
-        updates.push('description_font_size = ?');
-        values.push(templateData.description_font_size);
+      if (templateData.includeDescription !== undefined) {
+        updates.push('include_description = ?');
+        values.push(templateData.includeDescription ? 1 : 0);
       }
-      if (templateData.layout_style !== undefined) {
-        updates.push('layout_style = ?');
-        values.push(templateData.layout_style);
+      if (templateData.includeMRP !== undefined) {
+        updates.push('include_mrp = ?');
+        values.push(templateData.includeMRP ? 1 : 0);
       }
-      if (templateData.border_style !== undefined) {
-        updates.push('border_style = ?');
-        values.push(templateData.border_style);
+      if (templateData.includeWeight !== undefined) {
+        updates.push('include_weight = ?');
+        values.push(templateData.includeWeight ? 1 : 0);
       }
-      if (templateData.corner_radius !== undefined) {
-        updates.push('corner_radius = ?');
-        values.push(templateData.corner_radius);
+      if (templateData.includeHSN !== undefined) {
+        updates.push('include_hsn = ?');
+        values.push(templateData.includeHSN ? 1 : 0);
       }
-      if (templateData.shadow_effect !== undefined) {
-        updates.push('shadow_effect = ?');
-        values.push(templateData.shadow_effect ? 1 : 0);
-      }
-      if (templateData.font_family !== undefined) {
-        updates.push('font_family = ?');
-        values.push(templateData.font_family);
-      }
-      if (templateData.font_weight !== undefined) {
-        updates.push('font_weight = ?');
-        values.push(templateData.font_weight);
-      }
-      if (templateData.title_position !== undefined) {
-        updates.push('title_position = ?');
-        values.push(templateData.title_position);
-      }
-      if (templateData.price_position !== undefined) {
-        updates.push('price_position = ?');
-        values.push(templateData.price_position);
-      }
-      if (templateData.barcode_position !== undefined) {
+      if (templateData.barcodePosition !== undefined) {
         updates.push('barcode_position = ?');
-        values.push(templateData.barcode_position);
+        values.push(templateData.barcodePosition);
       }
-      if (templateData.company_name !== undefined) {
-        updates.push('company_name = ?');
-        values.push(templateData.company_name);
+      if (templateData.borderStyle !== undefined) {
+        updates.push('border_style = ?');
+        values.push(templateData.borderStyle);
       }
-      if (templateData.brand_colors !== undefined) {
-        updates.push('brand_colors = ?');
-        values.push(templateData.brand_colors);
+      if (templateData.borderWidth !== undefined) {
+        updates.push('border_width = ?');
+        values.push(templateData.borderWidth);
+      }
+      if (templateData.backgroundColor !== undefined) {
+        updates.push('background_color = ?');
+        values.push(templateData.backgroundColor);
+      }
+      if (templateData.textColor !== undefined) {
+        updates.push('text_color = ?');
+        values.push(templateData.textColor);
+      }
+      if (templateData.customCSS !== undefined) {
+        updates.push('custom_css = ?');
+        values.push(templateData.customCSS);
+      }
+      if (templateData.isDefault !== undefined) {
+        updates.push('is_default = ?');
+        values.push(templateData.isDefault ? 1 : 0);
+      }
+      if (templateData.isActive !== undefined) {
+        updates.push('is_active = ?');
+        values.push(templateData.isActive ? 1 : 0);
       }
 
-      // Boolean fields
-      const booleanFields = [
-        'include_barcode', 'include_price', 'include_description', 'include_mrp', 'include_weight', 'include_hsn',
-        'include_qr_code', 'include_company_info', 'include_batch_number', 'include_expiry_date',
-        'include_manufacturing_date', 'include_certification_marks', 'include_discount_badge',
-        'include_stock_status', 'include_category_tag', 'include_rating_stars', 'include_regulatory_info',
-        'include_environmental_icon', 'include_origin_country', 'include_warranty_info', 'is_default'
-      ];
-
-      booleanFields.forEach(field => {
-        if (templateData[field] !== undefined) {
-          updates.push(`${field} = ?`);
-          values.push(templateData[field] ? 1 : 0);
-        }
-      });
-
-      if (updates.length === 0) {
-        db.close();
-        return this.getLabelTemplateById(id);
-      }
-
+      updates.push('updated_at = ?');
+      values.push(new Date().toISOString());
       values.push(id);
 
-      const stmt = db.prepare(`
+      const stmt = this.db.prepare(`
         UPDATE label_templates 
         SET ${updates.join(', ')} 
         WHERE id = ?
       `);
       
       stmt.run(...values);
-      const updatedTemplate = this.getLabelTemplateById(id);
-      db.close();
-      return updatedTemplate;
+      return this.getLabelTemplateById(id);
     } catch (error) {
       console.error('Error updating label template:', error);
       return null;
