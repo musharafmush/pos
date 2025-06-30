@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { db } from "./db";
+import { db } from "../db/index.js";
 import { eq, and, desc } from "drizzle-orm";
-import { products, categories, labelTemplates, printJobs } from "@shared/schema";
+import { products, categories } from "../shared/schema.js";
 
 const router = Router();
 
@@ -242,7 +242,7 @@ router.post("/print-labels", async (req, res) => {
     const newPrintJob = {
       id: Math.max(...mockPrintJobs.map(j => j.id)) + 1,
       templateId,
-      userId: req.user?.id || 1,
+      userId: (req.user as any)?.id || 1,
       printerName: printer.name,
       productIds: JSON.stringify(productIds),
       copies: quantity || 1,
