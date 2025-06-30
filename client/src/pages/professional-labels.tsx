@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,6 +95,8 @@ export default function ProfessionalLabels() {
   const [showOnlySelected, setShowOnlySelected] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [newTemplate, setNewTemplate] = useState<Partial<LabelTemplate>>({
     name: "",
     description: "",
@@ -243,6 +245,98 @@ export default function ProfessionalLabels() {
     printLabelsMutation.mutate(printData);
   };
 
+  // Get current template
+  const currentTemplate = (templates as LabelTemplate[]).find(t => t.id === selectedTemplate) || (templates as LabelTemplate[])[0];
+
+  // Print preview generation
+  const generatePreview = () => {
+    if (!canvasRef.current || selectedProducts.length === 0 || !currentTemplate) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#f9f9f9';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const selectedProductsList = (products as Product[]).filter(p => selectedProducts.includes(p.id));
+    const labelWidth = 160;
+    const labelHeight = 100;
+    const margin = 10;
+    const cols = Math.floor((canvas.width - margin * 2) / (labelWidth + margin));
+    
+    selectedProductsList.slice(0, 12).forEach((product, index) => {
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const x = margin + col * (labelWidth + margin);
+      const y = margin + row * (labelHeight + margin);
+
+      // Draw label background
+      ctx.fillStyle = currentTemplate.backgroundColor || '#ffffff';
+      ctx.fillRect(x, y, labelWidth, labelHeight);
+      
+      // Draw border
+      ctx.strokeStyle = currentTemplate.textColor || '#000000';
+      ctx.lineWidth = currentTemplate.borderWidth || 1;
+      ctx.strokeRect(x, y, labelWidth, labelHeight);
+
+      // Draw product name
+      ctx.fillStyle = currentTemplate.textColor || '#000000';
+      ctx.font = `bold ${currentTemplate.fontSize || 12}px Arial`;
+      ctx.textAlign = 'center';
+      const nameY = y + 20;
+      ctx.fillText(product.name.substring(0, 20), x + labelWidth/2, nameY);
+
+      // Draw price
+      if (currentTemplate.includePrice) {
+        ctx.font = `${(currentTemplate.fontSize || 12) - 2}px Arial`;
+        ctx.fillText(`₹${product.price}`, x + labelWidth/2, nameY + 20);
+      }
+
+      // Draw MRP
+      if (currentTemplate.includeMrp && product.mrp) {
+        ctx.font = `${(currentTemplate.fontSize || 12) - 3}px Arial`;
+        ctx.fillText(`MRP: ₹${product.mrp}`, x + labelWidth/2, nameY + 35);
+      }
+
+      // Draw SKU
+      ctx.font = `${(currentTemplate.fontSize || 12) - 4}px Arial`;
+      ctx.fillText(`SKU: ${product.sku}`, x + labelWidth/2, nameY + 50);
+
+      // Draw barcode placeholder
+      if (currentTemplate.includeBarcode) {
+        ctx.fillStyle = '#000000';
+        for (let i = 0; i < 30; i++) {
+          const barX = x + 20 + i * 4;
+          const barHeight = Math.random() > 0.5 ? 15 : 10;
+          ctx.fillRect(barX, y + labelHeight - 25, 2, barHeight);
+        }
+      }
+    });
+  };
+
+  // Handle preview
+  const handlePreview = () => {
+    if (selectedProducts.length === 0) {
+      toast({
+        title: "No products selected",
+        description: "Please select at least one product to preview labels.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsPreviewOpen(true);
+  };
+
+  // Effect to generate preview when dialog opens
+  useEffect(() => {
+    if (isPreviewOpen && canvasRef.current) {
+      setTimeout(() => generatePreview(), 100);
+    }
+  }, [isPreviewOpen, selectedProducts, currentTemplate]);
+
   const handleCreateTemplate = () => {
     if (!newTemplate.name || !newTemplate.description) {
       toast({
@@ -255,8 +349,6 @@ export default function ProfessionalLabels() {
 
     createTemplateMutation.mutate(newTemplate);
   };
-
-  const currentTemplate = (templates as LabelTemplate[]).find(t => t.id === selectedTemplate);
 
   return (
     <DashboardLayout>
@@ -497,7 +589,7 @@ export default function ProfessionalLabels() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                <Button variant="outline" className="flex-1">
+                <Button variant="outline" className="flex-1" onClick={handlePreview}>
                   <Eye className="h-4 w-4 mr-2" />
                   Preview
                 </Button>
@@ -684,6 +776,36 @@ export default function ProfessionalLabels() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Print Preview Dialog */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>Print Preview</DialogTitle>
+              <DialogDescription>
+                Preview of {selectedProducts.length * copiesPerProduct} labels using {currentTemplate?.name || 'Standard'} template
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <canvas 
+                ref={canvasRef} 
+                width={800} 
+                height={600}
+                className="border border-gray-200 w-full mx-auto"
+                style={{ maxHeight: '500px' }}
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={handlePrintLabels} className="bg-green-600 hover:bg-green-700">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Labels
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
