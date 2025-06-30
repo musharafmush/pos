@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   TagIcon, 
   PrinterIcon, 
@@ -185,38 +185,18 @@ export default function PrintLabelsEnhanced() {
   // Fetch data
   const { data: productsData = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
     queryKey: ['/api/products'],
-    queryFn: async () => {
-      const response = await fetch('/api/products');
-      if (!response.ok) throw new Error('Failed to fetch products');
-      return response.json();
-    }
   });
 
   const { data: categoriesData = [] } = useQuery({
     queryKey: ['/api/categories'],
-    queryFn: async () => {
-      const response = await fetch('/api/categories');
-      if (!response.ok) throw new Error('Failed to fetch categories');
-      return response.json();
-    }
   });
 
   const { data: templatesData = [], refetch: refetchTemplates } = useQuery({
     queryKey: ['/api/label-templates'],
-    queryFn: async () => {
-      const response = await fetch('/api/label-templates');
-      if (!response.ok) throw new Error('Failed to fetch templates');
-      return response.json();
-    }
   });
 
   const { data: printJobsData = [] } = useQuery({
     queryKey: ['/api/print-jobs'],
-    queryFn: async () => {
-      const response = await fetch('/api/print-jobs');
-      if (!response.ok) throw new Error('Failed to fetch print jobs');
-      return response.json();
-    },
     refetchInterval: 30000 // Refresh every 30 seconds
   });
 
@@ -234,22 +214,13 @@ export default function PrintLabelsEnhanced() {
 
   // Mutations
   const createTemplateMutation = useMutation({
-    mutationFn: async (data: TemplateFormData) => {
-      const response = await fetch('/api/label-templates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to create template`);
-      }
-      
-      return response.json();
-    },
+    mutationFn: (data: TemplateFormData) => fetch('/api/label-templates', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json()),
     onSuccess: () => {
       toast({
         title: "Template created successfully",
@@ -258,7 +229,7 @@ export default function PrintLabelsEnhanced() {
       queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
       handleTemplateDialogClose();
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Error creating template",
         description: error.message,
@@ -306,18 +277,9 @@ export default function PrintLabelsEnhanced() {
   });
 
   const deleteTemplateMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/label-templates/${id}`, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to delete template`);
-      }
-      
-      return response.json();
-    },
+    mutationFn: (id: number) => fetch(`/api/label-templates/${id}`, {
+      method: 'DELETE'
+    }).then(res => res.json()),
     onSuccess: () => {
       toast({
         title: "Template deleted successfully",
@@ -325,7 +287,7 @@ export default function PrintLabelsEnhanced() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Error deleting template",
         description: error.message,
@@ -335,22 +297,13 @@ export default function PrintLabelsEnhanced() {
   });
 
   const createPrintJobMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch('/api/print-jobs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to create print job`);
-      }
-      
-      return response.json();
-    },
+    mutationFn: (data: any) => fetch('/api/print-jobs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json()),
     onSuccess: () => {
       toast({
         title: "Print job created successfully",
@@ -358,7 +311,7 @@ export default function PrintLabelsEnhanced() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/print-jobs'] });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Error creating print job",
         description: error.message,
