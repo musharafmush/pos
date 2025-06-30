@@ -471,13 +471,13 @@ export default function ProfessionalLabels() {
           align-items: center;
         ">
           <span>SKU: ${product.sku}</span>
-          ${template.include_category_tag && product.category ? `
+          ${(template.include_category_tag !== false) && product.category ? `
             <span style="
               background: ${colors.accent};
               color: white;
               padding: 0.5mm 1mm;
               border-radius: 2mm;
-              font-size: ${Math.max(6, template.description_font_size - 2)}px;
+              font-size: ${Math.max(6, (template.description_font_size || 12) - 2)}px;
             ">
               ${product.category.name}
             </span>
@@ -486,7 +486,7 @@ export default function ProfessionalLabels() {
 
         <!-- Price Section -->
         <div style="
-          ${template.price_position === 'prominent' ? `
+          ${(template.price_position || 'left') === 'prominent' ? `
             background: ${colors.primary};
             color: white;
             padding: 2mm;
@@ -494,19 +494,19 @@ export default function ProfessionalLabels() {
             text-align: center;
             border-radius: 0;
           ` : `
-            text-align: ${template.price_position.includes('right') ? 'right' : 'left'};
+            text-align: ${(template.price_position || 'left').includes('right') ? 'right' : 'left'};
           `}
-          font-size: ${template.price_font_size}px;
+          font-size: ${template.price_font_size || 14}px;
           font-weight: bold;
           margin-bottom: 1mm;
         ">
-          <span style="color: ${template.price_position === 'prominent' ? 'white' : colors.primary};">
+          <span style="color: ${(template.price_position || 'left') === 'prominent' ? 'white' : colors.primary};">
             ₹${product.price}
           </span>
-          ${template.include_mrp && product.mrp && parseFloat(product.mrp) !== parseFloat(product.price) ? `
+          ${(template.include_mrp !== false) && product.mrp && parseFloat(product.mrp) !== parseFloat(product.price) ? `
             <span style="
-              font-size: ${Math.max(10, template.price_font_size - 4)}px;
-              color: ${template.price_position === 'prominent' ? '#ffcccb' : colors.secondary};
+              font-size: ${Math.max(10, (template.price_font_size || 14) - 4)}px;
+              color: ${(template.price_position || 'left') === 'prominent' ? '#ffcccb' : colors.secondary};
               text-decoration: line-through;
               margin-left: 2mm;
             ">
@@ -517,21 +517,21 @@ export default function ProfessionalLabels() {
 
         <!-- Additional Information -->
         <div style="
-          font-size: ${Math.max(8, template.description_font_size)}px;
+          font-size: ${Math.max(8, template.description_font_size || 12)}px;
           color: ${colors.secondary};
           margin-bottom: 1mm;
         ">
-          ${template.include_weight && product.weight ? `
+          ${(template.include_weight !== false) && product.weight ? `
             <div style="margin-bottom: 0.5mm;">
               <strong>Weight:</strong> ${product.weight}
             </div>
           ` : ''}
-          ${template.include_hsn && product.hsn ? `
+          ${(template.include_hsn !== false) && product.hsn ? `
             <div style="margin-bottom: 0.5mm;">
               <strong>HSN:</strong> ${product.hsn}
             </div>
           ` : ''}
-          ${template.include_stock_status ? `
+          ${(template.include_stock_status !== false) ? `
             <div style="margin-bottom: 0.5mm;">
               <span style="
                 color: ${(product.stockQuantity || 0) > 0 ? colors.accent : '#dc2626'};
@@ -544,13 +544,13 @@ export default function ProfessionalLabels() {
         </div>
 
         <!-- Barcode -->
-        ${template.include_barcode ? `
+        ${(template.include_barcode !== false) ? `
           <div style="
             text-align: center;
             margin-top: auto;
             padding-top: 1mm;
-            ${template.barcode_position === 'top' ? 'order: 1;' : 
-              template.barcode_position === 'center' ? 'order: 2;' : 'order: 4;'}
+            ${(template.barcode_position || 'bottom') === 'top' ? 'order: 1;' : 
+              (template.barcode_position || 'bottom') === 'center' ? 'order: 2;' : 'order: 4;'}
           ">
             <div style="
               font-family: 'Courier New', monospace;

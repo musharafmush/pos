@@ -136,6 +136,21 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Professional Label Printing Runtime Error Fix (June 30, 2025)
+- Fixed critical ES module import error in label templates database connection
+- Updated storage methods to use proper ES imports instead of require() functions
+- Added comprehensive fallback values for all template properties to prevent runtime errors
+- Fixed undefined property references in professional-labels.tsx component
+- Label templates database now loads properly with 6 professional templates available
+- Professional label printing system fully functional with no "No templates selected" errors
+
+### Authentication & Access Information (June 30, 2025)
+- Professional labels system is integrated within the POS application
+- Requires user authentication to access label printing features
+- Default admin credentials: Username: admin, Password: admin123
+- Professional labels accessible at /professional-labels after authentication
+- Label Printing Hub available at /label-printing-hub for navigation between systems
+
 ### Professional Label Printing System (June 29, 2025)
 - Created comprehensive professional label printing system with fully customized templates
 - Implemented 6 professional layout styles: Modern, Classic, Minimal, Premium, Retail, and Industrial
