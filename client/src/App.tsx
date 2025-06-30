@@ -144,6 +144,8 @@ function Router() {
       <ProtectedRoute path="/offer-reports" component={OfferReports} />
       <ProtectedRoute path="/loyalty-management" component={LoyaltyManagement} />
       <ProtectedRoute path="/loyalty-rules" component={LoyaltyRules} />
+      <Route path="/label-printer-dashboard" element={<LabelPrinterDashboard />} />
+          <Route path="/label-printer" element={<LabelPrinterDashboard />} />
       <Route component={NotFound} />
     </Switch>
   );
