@@ -3799,81 +3799,6 @@ export const storage = {
   },
 
   // Label Templates Management
-  async addLabelTemplate(templateData: any): Promise<any> {
-    try {
-      const { sqlite } = await import('@db');
-      
-      // First ensure the table exists
-      sqlite.prepare(`
-        CREATE TABLE IF NOT EXISTS label_templates (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          description TEXT,
-          width INTEGER DEFAULT 50,
-          height INTEGER DEFAULT 30,
-          fontSize INTEGER DEFAULT 12,
-          includeBarcode BOOLEAN DEFAULT true,
-          includePrice BOOLEAN DEFAULT true,
-          includeDescription BOOLEAN DEFAULT true,
-          includeMrp BOOLEAN DEFAULT false,
-          includeWeight BOOLEAN DEFAULT false,
-          includeLogo BOOLEAN DEFAULT false,
-          barcodeType TEXT DEFAULT 'CODE128',
-          barcodePosition TEXT DEFAULT 'bottom',
-          textAlignment TEXT DEFAULT 'center',
-          borderStyle TEXT DEFAULT 'solid',
-          borderWidth INTEGER DEFAULT 1,
-          backgroundColor TEXT DEFAULT '#ffffff',
-          textColor TEXT DEFAULT '#000000',
-          logoPosition TEXT DEFAULT 'top',
-          template TEXT DEFAULT 'standard',
-          is_active BOOLEAN DEFAULT true,
-          is_default BOOLEAN DEFAULT false,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `).run();
-
-      const stmt = sqlite.prepare(`
-        INSERT INTO label_templates (
-          name, description, width, height, fontSize, includeBarcode, includePrice,
-          includeDescription, includeMrp, includeWeight, includeLogo, barcodeType,
-          barcodePosition, textAlignment, borderStyle, borderWidth, backgroundColor,
-          textColor, logoPosition, template, is_active, is_default
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      
-      const result = stmt.run(
-        templateData.name || 'New Template',
-        templateData.description || '',
-        templateData.width || 50,
-        templateData.height || 30,
-        templateData.fontSize || 12,
-        templateData.includeBarcode ? 1 : 0,
-        templateData.includePrice ? 1 : 0,
-        templateData.includeDescription ? 1 : 0,
-        templateData.includeMrp ? 1 : 0,
-        templateData.includeWeight ? 1 : 0,
-        templateData.includeLogo ? 1 : 0,
-        templateData.barcodeType || 'CODE128',
-        templateData.barcodePosition || 'bottom',
-        templateData.textAlignment || 'center',
-        templateData.borderStyle || 'solid',
-        templateData.borderWidth || 1,
-        templateData.backgroundColor || '#ffffff',
-        templateData.textColor || '#000000',
-        templateData.logoPosition || 'top',
-        templateData.template || 'standard',
-        templateData.isActive !== false ? 1 : 0,
-        templateData.isDefault ? 1 : 0
-      );
-
-      return { id: result.lastInsertRowid, ...templateData };
-    } catch (error) {
-      console.error('Error creating label template:', error);
-      throw error;
-    }
-  },
-
   async createLabelTemplate(templateData: any): Promise<any> {
     try {
       const stmt = this.db.prepare(`
@@ -3919,50 +3844,7 @@ export const storage = {
 
   async getLabelTemplates(): Promise<any[]> {
     try {
-      const { sqlite } = await import('@db');
-      
-      // First check if table exists, if not create it
-      try {
-        sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='label_templates'").get();
-      } catch {
-        // Create the table if it doesn't exist
-        sqlite.prepare(`
-          CREATE TABLE IF NOT EXISTS label_templates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            width INTEGER DEFAULT 50,
-            height INTEGER DEFAULT 30,
-            fontSize INTEGER DEFAULT 12,
-            includeBarcode BOOLEAN DEFAULT true,
-            includePrice BOOLEAN DEFAULT true,
-            includeDescription BOOLEAN DEFAULT true,
-            includeMrp BOOLEAN DEFAULT false,
-            includeWeight BOOLEAN DEFAULT false,
-            includeLogo BOOLEAN DEFAULT false,
-            barcodeType TEXT DEFAULT 'CODE128',
-            barcodePosition TEXT DEFAULT 'bottom',
-            textAlignment TEXT DEFAULT 'center',
-            borderStyle TEXT DEFAULT 'solid',
-            borderWidth INTEGER DEFAULT 1,
-            backgroundColor TEXT DEFAULT '#ffffff',
-            textColor TEXT DEFAULT '#000000',
-            logoPosition TEXT DEFAULT 'top',
-            template TEXT DEFAULT 'standard',
-            is_active BOOLEAN DEFAULT true,
-            is_default BOOLEAN DEFAULT false,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          )
-        `).run();
-        
-        // Insert some default templates
-        sqlite.prepare(`
-          INSERT INTO label_templates (name, description, width, height, fontSize, is_default) 
-          VALUES ('Standard Label', 'Basic product label with barcode', 50, 30, 12, true)
-        `).run();
-      }
-
-      const stmt = sqlite.prepare(`
+      const stmt = this.db.prepare(`
         SELECT * FROM label_templates 
         WHERE is_active = 1 
         ORDER BY is_default DESC, name ASC
@@ -4102,78 +3984,33 @@ export const storage = {
   },
 
   // Print Jobs Management
-  async addPrintJob(jobData: any): Promise<any> {
-    try {
-      const { sqlite } = await import('@db');
-      
-      // First ensure the table exists
-      sqlite.prepare(`
-        CREATE TABLE IF NOT EXISTS print_jobs (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          templateId INTEGER,
-          productIds TEXT,
-          copies INTEGER DEFAULT 1,
-          status TEXT DEFAULT 'pending',
-          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          userId INTEGER DEFAULT 1
-        )
-      `).run();
-
-      const stmt = sqlite.prepare(`
-        INSERT INTO print_jobs (templateId, productIds, copies, status, userId, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      
-      const result = stmt.run(
-        jobData.templateId || 1,
-        jobData.productIds || '[]',
-        jobData.copies || 1,
-        jobData.status || 'pending',
-        jobData.userId || 1,
-        jobData.createdAt || new Date().toISOString()
-      );
-
-      return { id: result.lastInsertRowid, ...jobData };
-    } catch (error) {
-      console.error('Error creating print job:', error);
-      throw error;
-    }
-  },
-
   async createPrintJob(jobData: any): Promise<any> {
     try {
-      const { sqlite } = await import('@db');
-      
-      // Ensure table exists with correct schema
-      sqlite.prepare(`
-        CREATE TABLE IF NOT EXISTS print_jobs (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          templateId INTEGER,
-          productIds TEXT,
-          copies INTEGER DEFAULT 1,
-          status TEXT DEFAULT 'pending',
-          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          userId INTEGER DEFAULT 1
-        )
-      `).run();
-      
-      const stmt = sqlite.prepare(`
+      const stmt = this.db.prepare(`
         INSERT INTO print_jobs (
-          templateId, userId, productIds, copies, status, createdAt
-        ) VALUES (?, ?, ?, ?, ?, ?)
+          template_id, user_id, product_ids, copies, labels_per_row,
+          paper_size, orientation, status, total_labels, custom_text,
+          print_settings, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const now = new Date().toISOString();
       const result = stmt.run(
         jobData.templateId,
-        jobData.userId || 1,
+        jobData.userId,
         JSON.stringify(jobData.productIds),
         jobData.copies || 1,
+        jobData.labelsPerRow || 2,
+        jobData.paperSize || 'A4',
+        jobData.orientation || 'portrait',
         jobData.status || 'completed',
+        jobData.totalLabels,
+        jobData.customText,
+        jobData.printSettings ? JSON.stringify(jobData.printSettings) : null,
         now
       );
 
-      return { id: result.lastInsertRowid, ...jobData, createdAt: now };
+      return this.getPrintJobById(result.lastInsertRowid);
     } catch (error) {
       console.error('Error creating print job:', error);
       throw error;
@@ -4182,31 +4019,12 @@ export const storage = {
 
   async getPrintJobs(limit: number = 50): Promise<any[]> {
     try {
-      const { sqlite } = await import('@db');
-      
-      // First ensure the table exists with proper schema
-      sqlite.prepare(`
-        CREATE TABLE IF NOT EXISTS print_jobs (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          templateId INTEGER,
-          productIds TEXT,
-          copies INTEGER DEFAULT 1,
-          status TEXT DEFAULT 'pending',
-          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          userId INTEGER DEFAULT 1
-        )
-      `).run();
-
-      // Add createdAt column if it doesn't exist (for existing tables)
-      try {
-        sqlite.prepare(`ALTER TABLE print_jobs ADD COLUMN createdAt DATETIME DEFAULT CURRENT_TIMESTAMP`).run();
-      } catch (e) {
-        // Column already exists, ignore error
-      }
-
-      const stmt = sqlite.prepare(`
-        SELECT * FROM print_jobs
-        ORDER BY createdAt DESC
+      const stmt = this.db.prepare(`
+        SELECT pj.*, lt.name as template_name, u.name as user_name
+        FROM print_jobs pj
+        LEFT JOIN label_templates lt ON pj.template_id = lt.id
+        LEFT JOIN users u ON pj.user_id = u.id
+        ORDER BY pj.created_at DESC
         LIMIT ?
       `);
       return stmt.all(limit);
@@ -4218,13 +4036,11 @@ export const storage = {
 
   async getPrintJobById(id: number): Promise<any | null> {
     try {
-      const { sqlite } = await import('@db');
-      
-      const stmt = sqlite.prepare(`
+      const stmt = this.db.prepare(`
         SELECT pj.*, lt.name as template_name, u.name as user_name
         FROM print_jobs pj
-        LEFT JOIN label_templates lt ON pj.templateId = lt.id
-        LEFT JOIN users u ON pj.userId = u.id
+        LEFT JOIN label_templates lt ON pj.template_id = lt.id
+        LEFT JOIN users u ON pj.user_id = u.id
         WHERE pj.id = ?
       `);
       return stmt.get(id) || null;

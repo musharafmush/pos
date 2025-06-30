@@ -7331,7 +7331,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       const offerData = {
         ...req.body,
-        createdBy: (req.user as any).id
+        createdBy: req.user.id
       };
       
       const validatedData = schema.offerInsertSchema.parse(offerData);
@@ -7596,12 +7596,8 @@ app.post("/api/customers", async (req, res) => {
   });
 
   // Import and mount label printing routes
-  try {
-    const labelPrintingRoutes = await import('./label-printing-routes.js');
-    app.use('/api', labelPrintingRoutes.default);
-  } catch (error) {
-    console.warn('Label printing routes not available:', error.message);
-  }
+  const labelPrintingRoutes = await import('./label-printing-routes.js');
+  app.use('/api', labelPrintingRoutes.default);
 
   return httpServer;
 }

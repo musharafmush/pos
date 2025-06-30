@@ -1,65 +1,57 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { 
+  TagIcon, 
   PrinterIcon, 
-  EyeIcon, 
-  SettingsIcon,
+  SettingsIcon, 
+  SearchIcon, 
+  Package2Icon,
+  FilterIcon,
+  DownloadIcon,
+  RefreshCwIcon,
   GridIcon,
   ListIcon,
-  SearchIcon,
-  CheckIcon,
-  XIcon,
-  PackageIcon,
-  TagIcon
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import JSBarcode from 'jsbarcode';
+  Eye,
+  StarIcon,
+  ClockIcon
+} from "lucide-react";
 
-// Types
 interface Product {
   id: number;
   name: string;
   sku: string;
-  price: number;
-  mrp?: number;
+  price: string;
+  cost?: string;
+  description?: string;
   barcode?: string;
   category?: { name: string };
-  weight?: number;
+  stockQuantity?: number;
+  mrp?: string;
+  weight?: string;
   weightUnit?: string;
   hsnCode?: string;
+  gstCode?: string;
+  active?: boolean;
 }
 
 interface Category {
   id: number;
   name: string;
-}
-
-interface LabelElement {
-  id: string;
-  type: 'text' | 'barcode' | 'line' | 'rectangle';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  content?: string;
-  dataField?: string;
-  fontSize?: number;
-  fontWeight?: 'normal' | 'bold';
-  textAlign?: 'left' | 'center' | 'right';
-  color?: string;
-  barcodeType?: string;
+  description?: string;
 }
 
 interface LabelTemplate {
@@ -67,159 +59,107 @@ interface LabelTemplate {
   name: string;
   width: number;
   height: number;
-  backgroundColor: string;
+  fontSize: number;
+  includeBarcode: boolean;
+  includePrice: boolean;
+  includeDescription: boolean;
+  includeMRP: boolean;
+  includeWeight: boolean;
+  includeHSN: boolean;
+  barcodePosition: 'top' | 'bottom' | 'left' | 'right';
+  borderStyle: 'solid' | 'dashed' | 'dotted' | 'none';
   borderWidth: number;
-  elements: LabelElement[];
+  backgroundColor: string;
+  textColor: string;
+  customCSS?: string;
 }
 
 const defaultTemplates: LabelTemplate[] = [
   {
-    id: 'm-mart-standard',
-    name: 'M MART Standard (₹36.00 Format)',
+    id: 'retail-standard',
+    name: 'Retail Standard',
     width: 80,
-    height: 40,
-    backgroundColor: '#ffffff',
+    height: 50,
+    fontSize: 12,
+    includeBarcode: true,
+    includePrice: true,
+    includeDescription: false,
+    includeMRP: true,
+    includeWeight: false,
+    includeHSN: false,
+    barcodePosition: 'bottom',
+    borderStyle: 'solid',
     borderWidth: 1,
-    elements: [
-      {
-        id: 'store-name',
-        type: 'text',
-        x: 2,
-        y: 2,
-        width: 76,
-        height: 8,
-        content: 'M MART',
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        color: '#000000'
-      },
-      {
-        id: 'product-name',
-        type: 'text',
-        x: 2,
-        y: 12,
-        width: 76,
-        height: 8,
-        dataField: 'name',
-        fontSize: 11,
-        textAlign: 'center',
-        color: '#000000'
-      },
-      {
-        id: 'price-label',
-        type: 'text',
-        x: 2,
-        y: 22,
-        width: 76,
-        height: 8,
-        dataField: 'price',
-        fontSize: 14,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        color: '#000000'
-      },
-      {
-        id: 'mrp-label',
-        type: 'text',
-        x: 2,
-        y: 32,
-        width: 76,
-        height: 6,
-        dataField: 'mrp',
-        fontSize: 9,
-        textAlign: 'center',
-        color: '#666666'
-      }
-    ]
+    backgroundColor: '#ffffff',
+    textColor: '#000000'
   },
   {
-    id: 'retail-standard',
-    name: 'Retail Standard (80x40mm)',
-    width: 80,
+    id: 'grocery-compact',
+    name: 'Grocery Compact',
+    width: 60,
     height: 40,
-    backgroundColor: '#ffffff',
+    fontSize: 10,
+    includeBarcode: true,
+    includePrice: true,
+    includeDescription: false,
+    includeMRP: true,
+    includeWeight: true,
+    includeHSN: false,
+    barcodePosition: 'bottom',
+    borderStyle: 'solid',
     borderWidth: 1,
-    elements: [
-      {
-        id: 'title',
-        type: 'text',
-        x: 2,
-        y: 2,
-        width: 76,
-        height: 8,
-        content: 'M MART',
-        fontSize: 14,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        color: '#000000'
-      },
-      {
-        id: 'product-name',
-        type: 'text',
-        x: 2,
-        y: 12,
-        width: 76,
-        height: 6,
-        dataField: 'name',
-        fontSize: 10,
-        textAlign: 'left',
-        color: '#000000'
-      },
-      {
-        id: 'price',
-        type: 'text',
-        x: 2,
-        y: 20,
-        width: 35,
-        height: 6,
-        dataField: 'price',
-        fontSize: 12,
-        fontWeight: 'bold',
-        textAlign: 'left',
-        color: '#000000'
-      },
-      {
-        id: 'mrp',
-        type: 'text',
-        x: 40,
-        y: 20,
-        width: 36,
-        height: 6,
-        dataField: 'mrp',
-        fontSize: 10,
-        textAlign: 'right',
-        color: '#666666'
-      },
-      {
-        id: 'barcode',
-        type: 'barcode',
-        x: 2,
-        y: 28,
-        width: 76,
-        height: 10,
-        dataField: 'barcode',
-        barcodeType: 'CODE128'
-      }
-    ]
+    backgroundColor: '#ffffff',
+    textColor: '#000000'
+  },
+  {
+    id: 'wholesale-detailed',
+    name: 'Wholesale Detailed',
+    width: 100,
+    height: 70,
+    fontSize: 14,
+    includeBarcode: true,
+    includePrice: true,
+    includeDescription: true,
+    includeMRP: true,
+    includeWeight: true,
+    includeHSN: true,
+    barcodePosition: 'bottom',
+    borderStyle: 'solid',
+    borderWidth: 2,
+    backgroundColor: '#ffffff',
+    textColor: '#000000'
   }
 ];
 
-export default function PrintLabelsPage() {
+export default function PrintLabels() {
+  const { toast } = useToast();
+
+  // State management
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showOnlySelected, setShowOnlySelected] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('m-mart-standard');
-  const [copiesPerProduct, setCopiesPerProduct] = useState(1);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { toast } = useToast();
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('retail-standard');
+  const [copies, setCopies] = useState(1);
+  const [labelsPerRow, setLabelsPerRow] = useState(2);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
 
-  const { data: productsData = [], isLoading: isLoadingProducts } = useQuery({
+  // Advanced label options
+  const [includeBarcode, setIncludeBarcode] = useState(true);
+  const [includePrice, setIncludePrice] = useState(true);
+  const [includeDescription, setIncludeDescription] = useState(false);
+  const [includeMRP, setIncludeMRP] = useState(true);
+  const [includeWeight, setIncludeWeight] = useState(false);
+  const [includeHSN, setIncludeHSN] = useState(false);
+  const [customText, setCustomText] = useState("");
+  const [paperSize, setPaperSize] = useState("A4");
+  const [orientation, setOrientation] = useState("portrait");
+  const [margin, setMargin] = useState(5);
+
+  // Fetch data with proper typing
+  const { data: productsData = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
     queryKey: ['/api/products'],
   });
 
@@ -230,11 +170,8 @@ export default function PrintLabelsPage() {
   const products = productsData as Product[];
   const categories = categoriesData as Category[];
 
-  const getCurrentTemplate = (): LabelTemplate => {
-    return defaultTemplates.find(t => t.id === selectedTemplate) || defaultTemplates[0];
-  };
-
-  const filteredProducts = products.filter((product) => {
+  // Filter products
+  const filteredProducts = products.filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -247,6 +184,12 @@ export default function PrintLabelsPage() {
     return matchesSearch && matchesCategory && matchesSelection;
   });
 
+  // Get current template
+  const getCurrentTemplate = (): LabelTemplate => {
+    return defaultTemplates.find(t => t.id === selectedTemplate) || defaultTemplates[0];
+  };
+
+  // Product selection handlers
   const handleProductSelect = (productId: number, checked: boolean) => {
     if (checked) {
       setSelectedProducts([...selectedProducts, productId]);
@@ -256,7 +199,7 @@ export default function PrintLabelsPage() {
   };
 
   const handleSelectAll = () => {
-    const visibleProductIds = filteredProducts.map(p => p.id);
+    const visibleProductIds = filteredProducts.map((p: Product) => p.id);
     setSelectedProducts(visibleProductIds);
   };
 
@@ -264,382 +207,260 @@ export default function PrintLabelsPage() {
     setSelectedProducts([]);
   };
 
-  const generatePreview = () => {
-    if (!canvasRef.current) return;
+  // Generate professional barcode
+  const generateBarcode = (text: string, width: number = 100, height: number = 30) => {
+    const barcodeData = text.padEnd(12, '0').substring(0, 12);
+    const bars = barcodeData.split('').map((digit, index) => {
+      const digitValue = parseInt(digit);
+      const barWidth = digitValue % 4 + 1;
+      const barHeight = height - 15;
+      return `<rect x="${index * 8}" y="5" width="${barWidth}" height="${barHeight}" fill="#000"/>`;
+    }).join('');
     
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const currentTemplate = getCurrentTemplate();
-    const selectedProductsList = products.filter(p => selectedProducts.includes(p.id));
-    
-    // Clear canvas first
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (selectedProductsList.length === 0) {
-      ctx.fillStyle = '#f8f9fa';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#6c757d';
-      ctx.font = 'bold 18px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Select products to preview labels', canvas.width / 2, canvas.height / 2);
-      ctx.font = '14px Arial';
-      ctx.fillText('Choose products from the list below', canvas.width / 2, canvas.height / 2 + 30);
-      return;
-    }
-
-    // Set canvas background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const mmToPx = 3.779528; // More accurate conversion: 96 DPI / 25.4 mm
-    const labelWidth = currentTemplate.width * mmToPx;
-    const labelHeight = currentTemplate.height * mmToPx;
-    const padding = 15;
-
-    const labelsPerRow = Math.floor((canvas.width - padding) / (labelWidth + padding));
-    const totalLabels = selectedProductsList.length * copiesPerProduct;
-    const rowsNeeded = Math.ceil(totalLabels / labelsPerRow);
-    
-    const totalHeight = Math.max(500, rowsNeeded * (labelHeight + padding) + padding);
-    canvas.height = totalHeight;
-
-    // Redraw background after height change
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    let labelIndex = 0;
-    
-    selectedProductsList.forEach((product) => {
-      for (let copy = 0; copy < copiesPerProduct; copy++) {
-        const row = Math.floor(labelIndex / labelsPerRow);
-        const col = labelIndex % labelsPerRow;
-        
-        const x = col * (labelWidth + padding) + padding;
-        const y = row * (labelHeight + padding) + padding;
-        
-        ctx.fillStyle = currentTemplate.backgroundColor || '#ffffff';
-        ctx.fillRect(x, y, labelWidth, labelHeight);
-        
-        if (currentTemplate.borderWidth > 0) {
-          ctx.strokeStyle = '#333333';
-          ctx.lineWidth = currentTemplate.borderWidth;
-          ctx.strokeRect(x, y, labelWidth, labelHeight);
-        }
-        
-        currentTemplate.elements.forEach((element) => {
-          const elementX = x + (element.x * mmToPx);
-          const elementY = y + (element.y * mmToPx);
-          const elementWidth = element.width * mmToPx;
-          const elementHeight = element.height * mmToPx;
-          
-          ctx.save();
-          ctx.translate(elementX, elementY);
-          
-          if (element.type === 'text') {
-            ctx.fillStyle = element.color || '#000000';
-            const fontSize = Math.max(8, (element.fontSize || 12) * 0.75); // Scale down for better fit
-            ctx.font = `${element.fontWeight || 'normal'} ${fontSize}px Arial`;
-            ctx.textAlign = element.textAlign || 'left';
-            ctx.textBaseline = 'top';
-            
-            let content = element.content || '';
-            if (element.dataField) {
-              switch (element.dataField) {
-                case 'name': 
-                  content = product.name || 'Unknown Product'; 
-                  break;
-                case 'price': 
-                  const price = Number(product.price) || 0;
-                  content = `₹${price.toFixed(2)}`; 
-                  break;
-                case 'mrp': 
-                  const mrp = Number(product.mrp) || Number(product.price) || 0;
-                  content = `MRP: ₹${mrp.toFixed(2)}`; 
-                  break;
-                case 'sku': 
-                  content = product.sku || 'NO-SKU'; 
-                  break;
-                case 'barcode': 
-                  content = product.barcode || product.sku || 'NO-BARCODE'; 
-                  break;
-                case 'category': 
-                  content = product.category?.name || 'General'; 
-                  break;
-                case 'weight': 
-                  content = product.weight ? `${product.weight}${product.weightUnit || 'kg'}` : ''; 
-                  break;
-                case 'hsn': 
-                  content = product.hsnCode || ''; 
-                  break;
-                default: 
-                  content = element.content || '';
-              }
-            }
-            
-            // Improved text wrapping with better word handling
-            const words = content.toString().split(' ');
-            const lines: string[] = [];
-            let currentLine = '';
-            const maxWidth = Math.max(50, elementWidth - 8); // Ensure minimum width
-            
-            for (const word of words) {
-              const testLine = currentLine + (currentLine ? ' ' : '') + word;
-              const metrics = ctx.measureText(testLine);
-              
-              if (metrics.width > maxWidth && currentLine) {
-                lines.push(currentLine);
-                currentLine = word;
-              } else {
-                currentLine = testLine;
-              }
-            }
-            if (currentLine) lines.push(currentLine);
-            
-            // Limit to maximum 3 lines for label space
-            const maxLines = Math.min(3, Math.floor(elementHeight / (fontSize * 1.2)));
-            const displayLines = lines.slice(0, maxLines);
-            
-            const lineHeight = fontSize * 1.2;
-            displayLines.forEach((line, index) => {
-              const yPos = 4 + (index * lineHeight);
-              if (yPos < elementHeight - 4) {
-                ctx.fillText(line, 4, yPos);
-              }
-            });
-            
-          } else if (element.type === 'barcode') {
-            try {
-              const barcodeData = (product.barcode || product.sku || `BC${product.id}`).toString();
-              const barcodeCanvas = document.createElement('canvas');
-              
-              // Set canvas size for barcode
-              barcodeCanvas.width = Math.max(200, elementWidth * 2);
-              barcodeCanvas.height = Math.max(60, elementHeight * 2);
-              
-              JSBarcode(barcodeCanvas, barcodeData, {
-                format: element.barcodeType || 'CODE128',
-                width: 1.5,
-                height: Math.max(40, (elementHeight * 2) - 30),
-                displayValue: true,
-                fontSize: 12,
-                margin: 5,
-                background: '#ffffff',
-                lineColor: '#000000'
-              });
-              
-              // Draw barcode scaled to fit element
-              ctx.drawImage(barcodeCanvas, 0, 0, elementWidth, elementHeight);
-              
-            } catch (error) {
-              // Fallback if barcode generation fails
-              ctx.fillStyle = '#f0f0f0';
-              ctx.fillRect(0, 0, elementWidth, elementHeight);
-              ctx.fillStyle = '#000000';
-              ctx.font = '8px monospace';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              const fallbackText = product.barcode || product.sku || `ID:${product.id}`;
-              ctx.fillText(fallbackText, elementWidth/2, elementHeight/2);
-            }
-          }
-          
-          ctx.restore();
-        });
-        
-        labelIndex++;
-      }
-    });
+    return `
+      <div style="text-align: center; margin: 2px 0;">
+        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #ddd;">
+          <rect width="${width}" height="${height}" fill="#fff"/>
+          ${bars}
+          <text x="${width/2}" y="${height - 2}" font-family="monospace" font-size="8" text-anchor="middle" fill="#000">${barcodeData}</text>
+        </svg>
+      </div>
+    `;
   };
 
-  useEffect(() => {
-    if (isPreviewOpen && canvasRef.current) {
-      generatePreview();
-    }
-  }, [isPreviewOpen, selectedProducts, copiesPerProduct, selectedTemplate]);
+  // Generate label HTML
+  const generateLabelHTML = (product: Product, template: LabelTemplate) => {
+    const currentTemplate = {
+      ...template,
+      includeBarcode,
+      includePrice,
+      includeDescription,
+      includeMRP,
+      includeWeight,
+      includeHSN
+    };
 
-  const printLabels = async () => {
+    const {
+      width, height, fontSize, borderStyle, borderWidth, backgroundColor, textColor
+    } = currentTemplate;
+
+    const borderCSS = borderStyle !== 'none' ? 
+      `border: ${borderWidth}px ${borderStyle} #333;` : '';
+
+    const barcodeHTML = currentTemplate.includeBarcode ? 
+      generateBarcode(product.barcode || product.sku, Math.min(width * 2.8, 200), 25) : '';
+
+    return `
+      <div class="product-label" style="
+        width: ${width}mm;
+        height: ${height}mm;
+        ${borderCSS}
+        padding: 3mm;
+        margin: 2mm;
+        display: inline-block;
+        font-family: Arial, sans-serif;
+        background: ${backgroundColor};
+        color: ${textColor};
+        page-break-inside: avoid;
+        box-sizing: border-box;
+        vertical-align: top;
+        position: relative;
+        font-size: ${fontSize}px;
+        line-height: 1.3;
+        overflow: hidden;
+      ">
+        <div style="font-weight: bold; margin-bottom: 2mm; font-size: ${fontSize + 1}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${product.name}
+        </div>
+
+        <div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 1mm;">
+          SKU: ${product.sku}
+        </div>
+
+        ${currentTemplate.includeDescription && product.description ? 
+          `<div style="font-size: ${fontSize - 2}px; color: #888; margin-bottom: 1mm; overflow: hidden; height: 15px;">
+            ${product.description.substring(0, 40)}${product.description.length > 40 ? '...' : ''}
+          </div>` : ''
+        }
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2mm;">
+          ${currentTemplate.includePrice ? 
+            `<div style="font-size: ${fontSize + 2}px; font-weight: bold; color: #2563eb;">
+              ₹${parseFloat(product.price).toFixed(2)}
+            </div>` : ''
+          }
+          ${currentTemplate.includeMRP && product.mrp && parseFloat(product.mrp) !== parseFloat(product.price) ? 
+            `<div style="font-size: ${fontSize - 1}px; color: #666; text-decoration: line-through;">
+              MRP: ₹${parseFloat(product.mrp).toFixed(2)}
+            </div>` : ''
+          }
+        </div>
+
+        ${currentTemplate.includeWeight && product.weight ? 
+          `<div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 1mm;">
+            Weight: ${product.weight} ${product.weightUnit || 'kg'}
+          </div>` : ''
+        }
+
+        ${currentTemplate.includeHSN && product.hsnCode ? 
+          `<div style="font-size: ${fontSize - 2}px; color: #666; margin-bottom: 1mm;">
+            HSN: ${product.hsnCode}
+          </div>` : ''
+        }
+
+        ${customText ? 
+          `<div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 1mm;">
+            ${customText}
+          </div>` : ''
+        }
+
+        ${currentTemplate.includeBarcode ? 
+          `<div style="margin-top: auto; text-align: center;">
+            ${barcodeHTML}
+          </div>` : ''
+        }
+
+        <div style="position: absolute; bottom: 1mm; right: 2mm; font-size: 6px; color: #ccc;">
+          ${new Date().toLocaleDateString('en-IN')}
+        </div>
+      </div>
+    `;
+  };
+
+  // Print functionality
+  const handlePrint = () => {
     if (selectedProducts.length === 0) {
       toast({
         title: "No products selected",
         description: "Please select at least one product to print labels.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
+    setIsPrintDialogOpen(true);
+  };
 
-    try {
-      const selectedProductsList = products.filter(p => selectedProducts.includes(p.id));
-      const currentTemplate = getCurrentTemplate();
-      
-      // Create print data
-      const printData = {
-        template: currentTemplate,
-        products: selectedProductsList,
-        copies: copiesPerProduct,
-        totalLabels: selectedProducts.length * copiesPerProduct
-      };
+  const executePrint = () => {
+    const selectedProductsData = products.filter((p: Product) => 
+      selectedProducts.includes(p.id)
+    );
 
-      // For now, create a print-ready canvas and trigger browser print
-      const printCanvas = document.createElement('canvas');
-      const printCtx = printCanvas.getContext('2d');
-      
-      if (printCtx) {
-        // Set up canvas for printing (higher resolution)
-        const scale = 2; // Higher DPI for print
-        const mmToPx = 3.779528 * scale;
-        const labelWidth = currentTemplate.width * mmToPx;
-        const labelHeight = currentTemplate.height * mmToPx;
-        const padding = 20 * scale;
+    const template = getCurrentTemplate();
 
-        const labelsPerRow = Math.floor((800 * scale - padding) / (labelWidth + padding));
-        const totalLabels = selectedProductsList.length * copiesPerProduct;
-        const rowsNeeded = Math.ceil(totalLabels / labelsPerRow);
-        
-        printCanvas.width = 800 * scale;
-        printCanvas.height = Math.max(600 * scale, rowsNeeded * (labelHeight + padding) + padding);
-        
-        // Scale context for high DPI
-        printCtx.scale(scale, scale);
-        
-        // White background
-        printCtx.fillStyle = '#ffffff';
-        printCtx.fillRect(0, 0, printCanvas.width, printCanvas.height);
+    const printContent = selectedProductsData.map((product: Product) => {
+      return Array(copies).fill(null).map(() => 
+        generateLabelHTML(product, template)
+      ).join('');
+    }).join('');
 
-        let labelIndex = 0;
-        
-        selectedProductsList.forEach((product) => {
-          for (let copy = 0; copy < copiesPerProduct; copy++) {
-            const row = Math.floor(labelIndex / labelsPerRow);
-            const col = labelIndex % labelsPerRow;
-            
-            const x = col * (labelWidth/scale + padding/scale) + padding/scale;
-            const y = row * (labelHeight/scale + padding/scale) + padding/scale;
-            
-            // Draw label background
-            printCtx.fillStyle = currentTemplate.backgroundColor || '#ffffff';
-            printCtx.fillRect(x, y, labelWidth/scale, labelHeight/scale);
-            
-            // Draw border
-            if (currentTemplate.borderWidth > 0) {
-              printCtx.strokeStyle = '#333333';
-              printCtx.lineWidth = currentTemplate.borderWidth;
-              printCtx.strokeRect(x, y, labelWidth/scale, labelHeight/scale);
-            }
-            
-            // Draw elements (simplified for print)
-            currentTemplate.elements.forEach((element) => {
-              const elementX = x + (element.x * mmToPx/scale);
-              const elementY = y + (element.y * mmToPx/scale);
-              const elementWidth = element.width * mmToPx/scale;
-              const elementHeight = element.height * mmToPx/scale;
-              
-              printCtx.save();
-              printCtx.translate(elementX, elementY);
-              
-              if (element.type === 'text') {
-                printCtx.fillStyle = element.color || '#000000';
-                const fontSize = (element.fontSize || 12);
-                printCtx.font = `${element.fontWeight || 'normal'} ${fontSize}px Arial`;
-                printCtx.textAlign = element.textAlign || 'left';
-                printCtx.textBaseline = 'top';
-                
-                let content = element.content || '';
-                if (element.dataField) {
-                  switch (element.dataField) {
-                    case 'name': content = product.name || 'Unknown Product'; break;
-                    case 'price': content = `₹${Number(product.price || 0).toFixed(2)}`; break;
-                    case 'mrp': content = `MRP: ₹${Number(product.mrp || product.price || 0).toFixed(2)}`; break;
-                    case 'sku': content = product.sku || 'NO-SKU'; break;
-                    case 'barcode': content = product.barcode || product.sku || 'NO-BARCODE'; break;
-                    case 'category': content = product.category?.name || 'General'; break;
-                    default: content = element.content || '';
-                  }
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Product Labels - ${new Date().toLocaleDateString()}</title>
+            <meta charset="UTF-8">
+            <style>
+              @page { 
+                size: ${paperSize} ${orientation};
+                margin: ${margin}mm;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+                background: white;
+              }
+              .labels-container {
+                display: grid;
+                grid-template-columns: repeat(${labelsPerRow}, 1fr);
+                gap: 2mm;
+                width: 100%;
+                align-items: start;
+              }
+              .product-label {
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+              @media print {
+                body { 
+                  margin: 0; 
+                  padding: 0;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
                 }
-                
-                // Simple text rendering for print
-                const lines = content.toString().split(' ');
-                let currentLine = '';
-                let yOffset = 4;
-                const lineHeight = fontSize * 1.2;
-                
-                lines.forEach((word, index) => {
-                  const testLine = currentLine + (currentLine ? ' ' : '') + word;
-                  const metrics = printCtx.measureText(testLine);
-                  
-                  if (metrics.width > elementWidth - 8 && currentLine) {
-                    printCtx.fillText(currentLine, 4, yOffset);
-                    currentLine = word;
-                    yOffset += lineHeight;
-                  } else {
-                    currentLine = testLine;
-                  }
-                });
-                
-                if (currentLine) {
-                  printCtx.fillText(currentLine, 4, yOffset);
+                .labels-container {
+                  margin: 0;
+                  padding: 0;
+                }
+                .product-label {
+                  break-inside: avoid;
+                  page-break-inside: avoid;
                 }
               }
-              
-              printCtx.restore();
-            });
-            
-            labelIndex++;
-          }
-        });
+            </style>
+          </head>
+          <body>
+            <div class="labels-container">
+              ${printContent}
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  setTimeout(function() {
+                    window.close();
+                  }, 2000);
+                }, 1000);
+              };
+            </script>
+          </body>
+        </html>
+      `;
 
-        // Create print window
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(`
-            <html>
-              <head>
-                <title>Print Labels - M MART</title>
-                <style>
-                  @page { margin: 0; size: A4; }
-                  body { margin: 0; padding: 20px; }
-                  canvas { max-width: 100%; height: auto; }
-                  @media print {
-                    body { padding: 0; }
-                    canvas { width: 100% !important; height: auto !important; }
-                  }
-                </style>
-              </head>
-              <body>
-                <canvas width="${printCanvas.width}" height="${printCanvas.height}"></canvas>
-                <script>
-                  const canvas = document.querySelector('canvas');
-                  const ctx = canvas.getContext('2d');
-                  const img = new Image();
-                  img.onload = function() {
-                    ctx.drawImage(img, 0, 0);
-                    setTimeout(() => window.print(), 100);
-                  };
-                  img.src = "${printCanvas.toDataURL()}";
-                </script>
-              </body>
-            </html>
-          `);
-          printWindow.document.close();
-        }
-      }
-
-      toast({
-        title: "Labels sent to printer",
-        description: `${selectedProducts.length * copiesPerProduct} labels prepared for printing`
-      });
-      
-      setIsPreviewOpen(false);
-      
-    } catch (error) {
-      console.error('Print error:', error);
-      toast({
-        title: "Print failed",
-        description: "Unable to generate labels for printing",
-        variant: "destructive"
-      });
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
     }
+
+    setIsPrintDialogOpen(false);
+    toast({
+      title: "Labels sent to printer",
+      description: `${selectedProducts.length * copies} labels prepared for printing`,
+    });
+  };
+
+  // Preview functionality
+  const handlePreview = () => {
+    if (selectedProducts.length === 0) {
+      toast({
+        title: "No products selected",
+        description: "Please select at least one product to preview labels.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsPreviewDialogOpen(true);
+  };
+
+  // Export functionality
+  const exportLabelsData = () => {
+    const selectedProductsData = products.filter((p: Product) => 
+      selectedProducts.includes(p.id)
+    );
+
+    const csvContent = selectedProductsData.map((product: Product) => 
+      `"${product.name}","${product.sku}","${product.price}","${product.barcode || ''}"`
+    ).join('\n');
+
+    const blob = new Blob([`Name,SKU,Price,Barcode\n${csvContent}`], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `labels-data-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (isLoadingProducts) {
@@ -647,8 +468,8 @@ export default function PrintLabelsPage() {
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading products...</p>
+            <RefreshCwIcon className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+            <p className="mt-2 text-muted-foreground">Loading products...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -658,289 +479,454 @@ export default function PrintLabelsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Label Printing</h1>
-            <p className="text-gray-600">Create and print product labels with Endura printer support</p>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <TagIcon className="h-8 w-8 text-blue-600" />
+              Print Labels
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Professional label printing with customizable templates
+            </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsSettingsOpen(true)}>
-              <SettingsIcon className="h-4 w-4 mr-2" />
-              Settings
+
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant="outline"
+              onClick={handlePreview}
+              disabled={selectedProducts.length === 0}
+              className="border-green-600 text-green-600 hover:bg-green-50"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Preview
             </Button>
             <Button 
-              onClick={() => setIsPreviewOpen(true)}
+              variant="outline"
+              onClick={exportLabelsData}
               disabled={selectedProducts.length === 0}
+              className="border-orange-600 text-orange-600 hover:bg-orange-50"
             >
-              <EyeIcon className="h-4 w-4 mr-2" />
-              Preview ({selectedProducts.length * copiesPerProduct} labels)
+              <DownloadIcon className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button 
+              onClick={handlePrint}
+              disabled={selectedProducts.length === 0}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <PrinterIcon className="h-4 w-4 mr-2" />
+              Print Labels ({selectedProducts.length})
             </Button>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Label Configuration</CardTitle>
-            <CardDescription>Configure your label template and printing options</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="template">Label Template</Label>
-                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                  <SelectTrigger>
-                    <SelectValue />
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Package2Icon className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Products</p>
+                  <p className="text-xl font-bold">{filteredProducts.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <TagIcon className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Selected</p>
+                  <p className="text-xl font-bold">{selectedProducts.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <PrinterIcon className="h-5 w-5 text-purple-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Labels to Print</p>
+                  <p className="text-xl font-bold">{selectedProducts.length * copies}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <StarIcon className="h-5 w-5 text-orange-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Template</p>
+                  <p className="text-sm font-bold">
+                    {getCurrentTemplate().name}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Settings Panel */}
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <SettingsIcon className="h-5 w-5" />
+                Label Settings
+              </CardTitle>
+              <CardDescription>
+                Configure your label options
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="basic">Basic</TabsTrigger>
+                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="basic" className="space-y-4">
+                  {/* Template Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Template</Label>
+                    <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {defaultTemplates.map(template => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Copies */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Copies per Product</Label>
+                    <Select value={copies.toString()} onValueChange={(value) => setCopies(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 10, 20, 50].map(num => (
+                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Layout */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Labels per Row</Label>
+                    <Select value={labelsPerRow.toString()} onValueChange={(value) => setLabelsPerRow(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 6].map(num => (
+                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Paper Size */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Paper Size</Label>
+                    <Select value={paperSize} onValueChange={setPaperSize}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A4">A4</SelectItem>
+                        <SelectItem value="A5">A5</SelectItem>
+                        <SelectItem value="Letter">Letter</SelectItem>
+                        <SelectItem value="3.15inch">Thermal 3.15"</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="advanced" className="space-y-4">
+                  {/* Label Content Options */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Include in Labels</Label>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-barcode" 
+                        checked={includeBarcode}
+                        onCheckedChange={(checked) => setIncludeBarcode(checked as boolean)}
+                      />
+                      <Label htmlFor="include-barcode" className="text-sm">Barcode</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-price" 
+                        checked={includePrice}
+                        onCheckedChange={(checked) => setIncludePrice(checked as boolean)}
+                      />
+                      <Label htmlFor="include-price" className="text-sm">Price</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-mrp" 
+                        checked={includeMRP}
+                        onCheckedChange={(checked) => setIncludeMRP(checked as boolean)}
+                      />
+                      <Label htmlFor="include-mrp" className="text-sm">MRP</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-weight" 
+                        checked={includeWeight}
+                        onCheckedChange={(checked) => setIncludeWeight(checked as boolean)}
+                      />
+                      <Label htmlFor="include-weight" className="text-sm">Weight</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-description" 
+                        checked={includeDescription}
+                        onCheckedChange={(checked) => setIncludeDescription(checked as boolean)}
+                      />
+                      <Label htmlFor="include-description" className="text-sm">Description</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-hsn" 
+                        checked={includeHSN}
+                        onCheckedChange={(checked) => setIncludeHSN(checked as boolean)}
+                      />
+                      <Label htmlFor="include-hsn" className="text-sm">HSN Code</Label>
+                    </div>
+                  </div>
+
+                  {/* Custom Text */}
+                  <div className="space-y-2">
+                    <Label htmlFor="custom-text" className="text-sm font-medium">Custom Text</Label>
+                    <Textarea
+                      id="custom-text"
+                      placeholder="Add custom text to labels..."
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
+                      className="min-h-[60px]"
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Products Panel */}
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package2Icon className="h-5 w-5" />
+                Product Selection
+              </CardTitle>
+              <CardDescription>
+                Select products to print labels for
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Filters and Search */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="flex-1">
+                  <div className="relative">
+                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search products by name, SKU, or barcode..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    {defaultTemplates.map(template => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name}
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label htmlFor="copies">Copies per Product</Label>
-                <Input
-                  id="copies"
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={copiesPerProduct}
-                  onChange={(e) => setCopiesPerProduct(parseInt(e.target.value) || 1)}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-selected"
-                  checked={showOnlySelected}
-                  onCheckedChange={setShowOnlySelected}
-                />
-                <Label htmlFor="show-selected">Show only selected</Label>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Product Selection</CardTitle>
-                <CardDescription>
-                  Select products to print labels for ({selectedProducts.length} selected)
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                  <CheckIcon className="h-4 w-4 mr-1" />
-                  Select All
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleDeselectAll}>
-                  <XIcon className="h-4 w-4 mr-1" />
-                  Clear All
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                >
-                  {viewMode === 'grid' ? <ListIcon className="h-4 w-4" /> : <GridIcon className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    placeholder="Search products by name, SKU, or barcode..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                  >
+                    {viewMode === 'grid' ? <ListIcon className="h-4 w-4" /> : <GridIcon className="h-4 w-4" />}
+                  </Button>
                 </div>
               </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.name}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
-            <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
-              {filteredProducts.map((product) => (
-                <Card key={product.id} className={`cursor-pointer transition-colors ${selectedProducts.includes(product.id) ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Checkbox
-                        checked={selectedProducts.includes(product.id)}
-                        onCheckedChange={(checked) => handleProductSelect(product.id, checked as boolean)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <PackageIcon className="h-4 w-4 text-gray-400" />
+              {/* Selection Controls */}
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                    Select All ({filteredProducts.length})
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDeselectAll}>
+                    Deselect All
+                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="show-only-selected" 
+                      checked={showOnlySelected}
+                      onCheckedChange={(checked) => setShowOnlySelected(checked as boolean)}
+                    />
+                    <Label htmlFor="show-only-selected" className="text-sm">Show only selected</Label>
+                  </div>
+                </div>
+                <Badge variant="secondary">{selectedProducts.length} selected</Badge>
+              </div>
+
+              {/* Products Grid/List */}
+              <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                {filteredProducts.map((product) => (
+                  <Card key={product.id} className={`cursor-pointer transition-all ${
+                    selectedProducts.includes(product.id) ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-md'
+                  }`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Checkbox 
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={(checked) => handleProductSelect(product.id, checked as boolean)}
+                        />
+                        <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-sm truncate">{product.name}</h3>
-                        </div>
-                        <div className="mt-1 space-y-1">
-                          <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <TagIcon className="h-3 w-3" />
-                            <span>SKU: {product.sku}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-semibold text-green-600">₹{Number(product.price).toFixed(2)}</span>
-                            {product.mrp && Number(product.mrp) !== Number(product.price) && (
-                              <span className="text-gray-500 line-through">₹{Number(product.mrp).toFixed(2)}</span>
+                          <p className="text-xs text-muted-foreground mt-1">SKU: {product.sku}</p>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-lg font-bold text-blue-600">₹{parseFloat(product.price).toFixed(2)}</span>
+                            {product.stockQuantity !== undefined && (
+                              <Badge variant={product.stockQuantity > 0 ? "secondary" : "destructive"}>
+                                Stock: {product.stockQuantity}
+                              </Badge>
                             )}
                           </div>
-                          {product.category && (
-                            <Badge variant="secondary" className="text-xs">
-                              {product.category.name}
-                            </Badge>
+                          {product.barcode && (
+                            <p className="text-xs text-muted-foreground mt-1">Barcode: {product.barcode}</p>
                           )}
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {filteredProducts.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <PackageIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No products found matching your criteria.</p>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="max-w-[90vw] max-h-[90vh]">
+              {filteredProducts.length === 0 && (
+                <div className="text-center py-8">
+                  <Package2Icon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No products found matching your criteria.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Print Dialog */}
+        <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Print Preview</DialogTitle>
-              <DialogDescription>
-                Preview of {selectedProducts.length * copiesPerProduct} labels
-              </DialogDescription>
+              <DialogTitle>Print Labels</DialogTitle>
             </DialogHeader>
-            <ScrollArea className="h-[60vh]">
-              <div className="p-4">
-                <canvas
-                  ref={canvasRef}
-                  width={800}
-                  height={400}
-                  className="mx-auto border border-gray-300 rounded"
-                />
+            <div className="space-y-4">
+              <p>Ready to print {selectedProducts.length * copies} labels?</p>
+              <div className="bg-muted p-4 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span>Products:</span>
+                  <span>{selectedProducts.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Copies each:</span>
+                  <span>{copies}</span>
+                </div>
+                <div className="flex justify-between font-bold">
+                  <span>Total labels:</span>
+                  <span>{selectedProducts.length * copies}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Template:</span>
+                  <span>{getCurrentTemplate().name}</span>
+                </div>
               </div>
-            </ScrollArea>
+            </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
-                Close
+              <Button variant="outline" onClick={() => setIsPrintDialogOpen(false)}>
+                Cancel
               </Button>
-              <Button onClick={printLabels}>
+              <Button onClick={executePrint} className="bg-blue-600 hover:bg-blue-700">
                 <PrinterIcon className="h-4 w-4 mr-2" />
-                Print Labels
+                Print Now
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-          <DialogContent className="max-w-2xl">
+        {/* Preview Dialog */}
+        <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+          <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Label Printing Settings</DialogTitle>
-              <DialogDescription>
-                Configure your Endura printer and label templates
-              </DialogDescription>
+              <DialogTitle>Label Preview</DialogTitle>
             </DialogHeader>
-            <Tabs defaultValue="printer" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="printer">Printer Settings</TabsTrigger>
-                <TabsTrigger value="templates">Templates</TabsTrigger>
-              </TabsList>
-              <TabsContent value="printer" className="space-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <Label>Printer Model</Label>
-                    <Select defaultValue="endura-80mm">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="endura-80mm">Endura 80mm Label Printer</SelectItem>
-                        <SelectItem value="endura-40mm">Endura 40mm Label Printer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Connection Type</Label>
-                    <Select defaultValue="usb">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="usb">USB Connection</SelectItem>
-                        <SelectItem value="network">Network (IP)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Label Size</Label>
-                    <Select defaultValue="80x40">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="80x40">80mm x 40mm</SelectItem>
-                        <SelectItem value="80x30">80mm x 30mm</SelectItem>
-                        <SelectItem value="60x40">60mm x 40mm</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </TabsContent>
-              <TabsContent value="templates" className="space-y-4">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    {defaultTemplates.map(template => (
-                      <Card key={template.id} className={`cursor-pointer ${selectedTemplate === template.id ? 'ring-2 ring-blue-500' : ''}`}>
-                        <CardContent className="p-4">
-                          <h3 className="font-medium">{template.name}</h3>
-                          <p className="text-sm text-gray-600">{template.width}mm x {template.height}mm</p>
-                          <div className="mt-2">
-                            <Button 
-                              size="sm" 
-                              variant={selectedTemplate === template.id ? "default" : "outline"}
-                              onClick={() => setSelectedTemplate(template.id)}
-                            >
-                              {selectedTemplate === template.id ? "Selected" : "Select"}
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="space-y-4">
+              <div className="bg-white p-4 border rounded-lg" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: `repeat(${labelsPerRow}, 1fr)`, 
+                gap: '8px',
+                maxHeight: '60vh',
+                overflowY: 'auto'
+              }}>
+                {products.filter(p => selectedProducts.includes(p.id)).slice(0, 6).map((product) => (
+                  <div 
+                    key={product.id} 
+                    dangerouslySetInnerHTML={{ 
+                      __html: generateLabelHTML(product, getCurrentTemplate()) 
+                    }} 
+                  />
+                ))}
+              </div>
+              {selectedProducts.length > 6 && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Showing first 6 labels. {selectedProducts.length - 6} more will be printed.
+                </p>
+              )}
+            </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
-                Close
+              <Button variant="outline" onClick={() => setIsPreviewDialogOpen(false)}>
+                Close Preview
               </Button>
-              <Button onClick={() => setIsSettingsOpen(false)}>
-                Save Settings
+              <Button onClick={() => {
+                setIsPreviewDialogOpen(false);
+                handlePrint();
+              }} className="bg-blue-600 hover:bg-blue-700">
+                <PrinterIcon className="h-4 w-4 mr-2" />
+                Print These Labels
               </Button>
             </DialogFooter>
           </DialogContent>

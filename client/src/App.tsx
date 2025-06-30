@@ -43,7 +43,6 @@ import AddProduct from "@/pages/add-product";
 import PrintLabels from "@/pages/print-labels";
 import PrintLabelsEnhanced from "@/pages/print-labels-enhanced";
 import CustomLabelPrinting from "@/pages/custom-label-printing";
-import LabelPrinting from "@/pages/label-printing";
 import InventoryForecasting from "@/pages/inventory-forecasting";
 import Repacking from "@/pages/repacking";
 import RepackingDashboard from "@/pages/repacking-dashboard";
@@ -57,9 +56,9 @@ import Brands from "./pages/brands";
 import AccountsDashboard from "./pages/accounts-dashboard";
 import SaleReturnsDashboard from "./pages/sale-returns-dashboard";
 import ProfitManagement from "./pages/profit-management";
-import ReceiptSettings from "@/pages/receipt-settings";
-import PrinterReceiptEditor from "@/pages/printer-receipt-editor";
-import InventoryAdjustments from "@/pages/inventory-adjustments";
+import ReceiptSettings from "./pages/receipt-settings";
+import PrinterReceiptEditor from "./pages/printer-receipt-editor";
+import InventoryAdjustments from "./pages/inventory-adjustments";
 import UnifiedPrinterSettings from "@/pages/unified-printer-settings";
 import CashRegisterManagement from "@/pages/cash-register-management";
 import ExpenseManagement from "@/pages/expense-management";
@@ -68,10 +67,6 @@ import OfferManagement from "@/pages/offer-management";
 import OfferReports from "@/pages/offer-reports";
 import LoyaltyManagement from "@/pages/loyalty-management";
 import LoyaltyRules from "@/pages/loyalty-rules";
-import PrintLabelsEndura from "@/pages/print-labels-endura";
-import ImageBasedLabels from "@/pages/image-based-labels";
-import LabelPrinterDashboard from "@/pages/label-printer-dashboard";
-import ProfessionalLabels from "@/pages/professional-labels";
 
 function Router() {
   return (
@@ -102,7 +97,6 @@ function Router() {
       <ProtectedRoute path="/print-labels" component={PrintLabels} />
       <ProtectedRoute path="/print-labels-enhanced" component={PrintLabelsEnhanced} />
       <ProtectedRoute path="/custom-label-printing" component={CustomLabelPrinting} />
-      <ProtectedRoute path="/label-printing" component={LabelPrinting} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/inventory-adjustments" component={InventoryAdjustments} />
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
@@ -144,9 +138,6 @@ function Router() {
       <ProtectedRoute path="/offer-reports" component={OfferReports} />
       <ProtectedRoute path="/loyalty-management" component={LoyaltyManagement} />
       <ProtectedRoute path="/loyalty-rules" component={LoyaltyRules} />
-      <ProtectedRoute path="/label-printer-dashboard" component={LabelPrinterDashboard} />
-      <ProtectedRoute path="/label-printer" component={LabelPrinterDashboard} />
-      <ProtectedRoute path="/professional-labels" component={ProfessionalLabels} />
       <Route component={NotFound} />
     </Switch>
   );
