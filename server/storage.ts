@@ -31,6 +31,7 @@ import {
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
+import Database from "better-sqlite3";
 
 export const storage = {
   // User related operations
@@ -3803,8 +3804,101 @@ export const storage = {
   
   initLabelDatabase() {
     if (!this.db) {
-      const Database = require('better-sqlite3');
       this.db = new Database('pos-data.db');
+      
+      // Create label tables if they don't exist
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS label_templates (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          width INTEGER NOT NULL,
+          height INTEGER NOT NULL,
+          font_size INTEGER DEFAULT 12,
+          font_family TEXT DEFAULT 'Arial',
+          orientation TEXT DEFAULT 'portrait',
+          paper_size TEXT DEFAULT 'A4',
+          margin_top INTEGER DEFAULT 5,
+          margin_left INTEGER DEFAULT 5,
+          margin_right INTEGER DEFAULT 5,
+          margin_bottom INTEGER DEFAULT 5,
+          fields TEXT DEFAULT '[]',
+          is_active BOOLEAN DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS printers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          connection_string TEXT,
+          paper_width INTEGER DEFAULT 80,
+          is_default BOOLEAN DEFAULT 0,
+          is_active BOOLEAN DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS print_jobs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          template_id INTEGER,
+          printer_id INTEGER,
+          product_data TEXT,
+          quantity INTEGER DEFAULT 1,
+          status TEXT DEFAULT 'pending',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          completed_at DATETIME,
+          FOREIGN KEY (template_id) REFERENCES label_templates(id),
+          FOREIGN KEY (printer_id) REFERENCES printers(id)
+        );
+      `);
+
+      // Insert default templates if none exist
+      const templateCount = this.db.prepare('SELECT COUNT(*) as count FROM label_templates').get();
+      if (templateCount.count === 0) {
+        const insertTemplate = this.db.prepare(`
+          INSERT INTO label_templates (name, width, height, font_size, orientation, fields) 
+          VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        
+        insertTemplate.run('Retail Standard', 80, 50, 18, 'landscape', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 5, y: 8, width: 70, height: 12 },
+          { name: 'price', type: 'text', x: 5, y: 22, width: 35, height: 10 },
+          { name: 'barcode', type: 'barcode', x: 45, y: 20, width: 30, height: 15 }
+        ]));
+        
+        insertTemplate.run('Premium Label', 50, 30, 14, 'portrait', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 2, y: 3, width: 46, height: 8 },
+          { name: 'price', type: 'text', x: 2, y: 12, width: 20, height: 6 },
+          { name: 'barcode', type: 'barcode', x: 25, y: 10, width: 22, height: 10 }
+        ]));
+        
+        insertTemplate.run('Landscape Shelf Label', 100, 30, 16, 'landscape', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 5, y: 5, width: 60, height: 8 },
+          { name: 'price', type: 'text', x: 5, y: 15, width: 30, height: 8 },
+          { name: 'barcode', type: 'barcode', x: 70, y: 8, width: 25, height: 12 }
+        ]));
+        
+        insertTemplate.run('Portrait Product Tag', 40, 80, 16, 'portrait', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 2, y: 5, width: 36, height: 12 },
+          { name: 'price', type: 'text', x: 2, y: 20, width: 18, height: 8 },
+          { name: 'barcode', type: 'barcode', x: 5, y: 50, width: 30, height: 20 }
+        ]));
+        
+        insertTemplate.run('Electronics Tag', 120, 80, 16, 'landscape', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 5, y: 8, width: 80, height: 12 },
+          { name: 'price', type: 'text', x: 5, y: 25, width: 40, height: 10 },
+          { name: 'barcode', type: 'barcode', x: 90, y: 20, width: 25, height: 15 }
+        ]));
+      }
+
+      // Insert default printer if none exist
+      const printerCount = this.db.prepare('SELECT COUNT(*) as count FROM printers').get();
+      if (printerCount.count === 0) {
+        this.db.prepare(`
+          INSERT INTO printers (name, type, paper_width, is_default, is_active) 
+          VALUES (?, ?, ?, ?, ?)
+        `).run('Default Thermal Printer', 'thermal', 77, 1, 1);
+      }
     }
     return this.db;
   },
