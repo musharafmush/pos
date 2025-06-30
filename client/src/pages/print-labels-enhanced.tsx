@@ -115,7 +115,7 @@ const templateFormSchema = z.object({
   description: z.string().optional(),
   width: z.number().min(10, "Width must be at least 10mm"),
   height: z.number().min(10, "Height must be at least 10mm"),
-  font_size: z.number().min(6).max(72),
+  font_size: z.number().min(6, "Font size must be at least 6pt").max(72, "Font size cannot exceed 72pt"),
   orientation: z.enum(['portrait', 'landscape']).optional(),
   include_barcode: z.boolean(),
   include_price: z.boolean(),
@@ -357,21 +357,21 @@ export default function PrintLabelsEnhanced() {
     setEditingTemplate(template);
     // Use setTimeout to ensure the form is properly initialized before setting values
     setTimeout(() => {
-      const formData = {
+      const formData: TemplateFormData = {
         name: template.name,
         description: template.description || "",
         width: Number(template.width) || 150,
         height: Number(template.height) || 100,
         font_size: Number(template.font_size) || 18,
-        orientation: template.orientation || 'landscape',
+        orientation: (template.orientation as 'portrait' | 'landscape') || 'landscape',
         include_barcode: Boolean(template.include_barcode),
         include_price: Boolean(template.include_price),
         include_description: Boolean(template.include_description),
         include_mrp: Boolean(template.include_mrp),
         include_weight: Boolean(template.include_weight),
         include_hsn: Boolean(template.include_hsn),
-        barcode_position: template.barcode_position || 'bottom',
-        border_style: template.border_style || 'solid',
+        barcode_position: (template.barcode_position as 'top' | 'bottom' | 'left' | 'right') || 'bottom',
+        border_style: (template.border_style as 'solid' | 'dashed' | 'dotted' | 'none') || 'solid',
         border_width: Number(template.border_width) || 1,
         background_color: template.background_color || '#ffffff',
         text_color: template.text_color || '#000000',
@@ -1307,8 +1307,12 @@ export default function PrintLabelsEnhanced() {
                               min="6"
                               max="72"
                               step="1"
+                              {...field}
                               value={field.value || 18}
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 18)}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 18;
+                                field.onChange(value);
+                              }}
                             />
                             <div className="text-sm text-muted-foreground">
                               Preview: <span style={{ fontSize: `${Math.min(field.value || 18, 20)}px` }}>Sample Text ({field.value || 18}pt)</span>
