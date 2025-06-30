@@ -222,9 +222,9 @@ export default function ImageBasedLabels() {
         
         {/* Price Section - Large price on left, MRP on right */}
         <div className="flex justify-between items-center mb-2">
-          <div className="text-lg font-bold">₹ {labelData.price.toFixed(2)}</div>
+          <div className="text-lg font-bold">₹ {Number(labelData.price || 0).toFixed(2)}</div>
           <div className="text-right text-[10px]">
-            <div>MRP: {labelData.mrp.toFixed(2)}</div>
+            <div>MRP: {Number(labelData.mrp || 0).toFixed(2)}</div>
           </div>
         </div>
         
