@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
 import { initializeDatabase } from "../db/sqlite-migrate";
+import labelPrintingRoutes from "./label-printing-routes.js";
+import { sqlite } from "../db/sqlite-index.js";
 
 const app = express();
 // Parse JSON with appropriate limits for backup files (reduced to prevent memory issues)
@@ -114,10 +116,7 @@ app.use((req, res, next) => {
       // Don't exit the process, just log the error
     });
 
-    // Import label printing routes
-    import './label-printing-routes';
-    import { db } from '../db/sqlite-index.js';
-    import { sqlite } from '../db/sqlite-index.js';
+    // Database modules will be imported at the top level
 
     // Label Templates API Routes
     app.get('/api/label-templates', async (req, res) => {
