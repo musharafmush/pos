@@ -241,7 +241,7 @@ export default function PrintLabelsEnhanced() {
   const updateTemplateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: TemplateFormData }) => {
       console.log('Updating template with data:', data);
-      
+
       const response = await fetch(`/api/label-templates/${id}`, {
         method: 'PUT',
         headers: {
@@ -249,12 +249,12 @@ export default function PrintLabelsEnhanced() {
         },
         body: JSON.stringify(data)
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(errorData.message || `HTTP ${response.status}: Failed to update template`);
       }
-      
+
       return response.json();
     },
     onSuccess: (data) => {
@@ -376,7 +376,7 @@ export default function PrintLabelsEnhanced() {
 
   const handleEditTemplate = (template: LabelTemplate) => {
     setEditingTemplate(template);
-    
+
     // Prepare form data with proper type conversions and validation
     const formData: TemplateFormData = {
       name: template.name || "",
@@ -405,11 +405,11 @@ export default function PrintLabelsEnhanced() {
       custom_css: template.custom_css || "",
       is_default: Boolean(template.is_default)
     };
-    
+
     // Clear any existing form errors and reset with the template data
     templateForm.clearErrors();
     templateForm.reset(formData);
-    
+
     // Add a small delay to ensure form state is properly updated
     setTimeout(() => {
       setIsTemplateDialogOpen(true);
@@ -424,7 +424,7 @@ export default function PrintLabelsEnhanced() {
 
   const onTemplateSubmit = (data: TemplateFormData) => {
     console.log('Form submitted with data:', data);
-    
+
     // Validate the data before submission
     const validatedData: TemplateFormData = {
       ...data,
@@ -433,7 +433,7 @@ export default function PrintLabelsEnhanced() {
       font_size: Math.max(6, Math.min(72, data.font_size)),
       border_width: Math.max(0, Math.min(10, data.border_width))
     };
-    
+
     if (editingTemplate) {
       console.log('Updating existing template:', editingTemplate.id);
       updateTemplateMutation.mutate({ id: editingTemplate.id, data: validatedData });
@@ -446,7 +446,7 @@ export default function PrintLabelsEnhanced() {
   const handleTemplateDialogClose = () => {
     setIsTemplateDialogOpen(false);
     setEditingTemplate(null);
-    
+
     // Clear form errors and reset to default values
     templateForm.clearErrors();
     templateForm.reset({
@@ -481,7 +481,7 @@ export default function PrintLabelsEnhanced() {
       const barHeight = height - 15;
       return `<rect x="${index * 8}" y="5" width="${barWidth}" height="${barHeight}" fill="#000"/>`;
     }).join('');
-    
+
     return `
       <div style="text-align: center; margin: 2px 0;">
         <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #ddd;">
@@ -506,7 +506,7 @@ export default function PrintLabelsEnhanced() {
     // Scale barcode size based on label dimensions
     const barcodeWidth = Math.min(width * 3.5, 320);
     const barcodeHeight = Math.max(35, Math.min(height * 0.15, 60));
-    
+
     const barcodeHTML = include_barcode ? 
       generateBarcode(product.barcode || product.sku, barcodeWidth, barcodeHeight) : '';
 
@@ -756,38 +756,52 @@ export default function PrintLabelsEnhanced() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              <TagIcon className="h-8 w-8 text-blue-600" />
-              Print Labels Pro
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Professional label printing with database-integrated templates
-            </p>
-          </div>
+      <div className="space-y-8">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
+                <div className="bg-blue-600 p-2 rounded-lg">
+                  <TagIcon className="h-10 w-10 text-white" />
+                </div>
+                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Print Labels Pro
+                </span>
+              </h1>
+              <p className="text-gray-600 mt-2 text-lg">
+                Professional label printing with database-integrated templates
+              </p>
+              <div className="flex items-center gap-4 mt-3">
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>System Online</span>
+                </div>
+                <div className="text-sm text-gray-500">
+                  {templates.length} Templates Available
+                </div>
+              </div>
+            </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button 
-              variant="outline"
-              onClick={handlePreview}
-              disabled={selectedProducts.length === 0}
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
-            <Button 
-              onClick={handlePrint}
-              disabled={selectedProducts.length === 0 || !selectedTemplate}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <PrinterIcon className="h-4 w-4 mr-2" />
-              Print Labels ({selectedProducts.length})
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                variant="outline"
+                onClick={handlePreview}
+                disabled={selectedProducts.length === 0}
+                className="border-green-600 text-green-600 hover:bg-green-50 transition-all duration-200"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview Labels
+              </Button>
+              <Button 
+                onClick={handlePrint}
+                disabled={selectedProducts.length === 0 || !selectedTemplate}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <PrinterIcon className="h-4 w-4 mr-2" />
+                Print Labels ({selectedProducts.length})
+              </Button>
+            </div>
           </div>
-        </div>
 
         <Tabs defaultValue="products" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
@@ -1004,7 +1018,7 @@ export default function PrintLabelsEnhanced() {
                           </Button>
                         </div>
                       </div>
-                      
+
                       {/* Visual Size Representation */}
                       <div className="flex justify-center py-3">
                         <div 
@@ -1031,7 +1045,7 @@ export default function PrintLabelsEnhanced() {
                             <span className="font-medium">{template.font_size}pt</span>
                           </div>
                         </div>
-                        
+
                         <div className="bg-gray-50 rounded-lg p-2">
                           <span className="text-muted-foreground block text-xs mb-1">Layout</span>
                           <div className="flex items-center gap-2">
@@ -1090,7 +1104,7 @@ export default function PrintLabelsEnhanced() {
                         className="mt-1"
                       />
                     </div>
-                    
+
                     {/* Orientation Quick Selector */}
                     <div>
                       <Label>Label Layout Orientation</Label>
