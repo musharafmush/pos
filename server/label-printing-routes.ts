@@ -190,7 +190,8 @@ const mockPrintJobs = [
 // Get all label templates
 router.get("/label-templates", async (req, res) => {
   try {
-    res.json(mockTemplates);
+    const templates = await db.select().from(labelTemplates);
+    res.json(templates);
   } catch (error) {
     console.error("Error fetching label templates:", error);
     res.status(500).json({ error: "Failed to fetch label templates" });
@@ -201,13 +202,7 @@ router.get("/label-templates", async (req, res) => {
 router.post("/label-templates", async (req, res) => {
   try {
     const templateData = req.body;
-    const newTemplate = {
-      ...templateData,
-      id: Math.max(...mockTemplates.map(t => t.id)) + 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    mockTemplates.push(newTemplate);
+    const [newTemplate] = await db.insert(labelTemplates).values(templateData).returning();
     res.status(201).json(newTemplate);
   } catch (error) {
     console.error("Error creating label template:", error);
@@ -221,18 +216,17 @@ router.put("/label-templates/:id", async (req, res) => {
     const templateId = parseInt(req.params.id);
     const updateData = req.body;
     
-    const templateIndex = mockTemplates.findIndex(t => t.id === templateId);
-    if (templateIndex === -1) {
+    const [updatedTemplate] = await db
+      .update(labelTemplates)
+      .set(updateData)
+      .where(eq(labelTemplates.id, templateId))
+      .returning();
+
+    if (!updatedTemplate) {
       return res.status(404).json({ error: "Template not found" });
     }
 
-    mockTemplates[templateIndex] = {
-      ...mockTemplates[templateIndex],
-      ...updateData,
-      updatedAt: new Date().toISOString()
-    };
-
-    res.json(mockTemplates[templateIndex]);
+    res.json(updatedTemplate);
   } catch (error) {
     console.error("Error updating label template:", error);
     res.status(500).json({ error: "Failed to update label template" });
@@ -243,13 +237,16 @@ router.put("/label-templates/:id", async (req, res) => {
 router.delete("/label-templates/:id", async (req, res) => {
   try {
     const templateId = parseInt(req.params.id);
-    const templateIndex = mockTemplates.findIndex(t => t.id === templateId);
     
-    if (templateIndex === -1) {
+    const [deletedTemplate] = await db
+      .delete(labelTemplates)
+      .where(eq(labelTemplates.id, templateId))
+      .returning();
+
+    if (!deletedTemplate) {
       return res.status(404).json({ error: "Template not found" });
     }
 
-    mockTemplates.splice(templateIndex, 1);
     res.json({ message: "Template deleted successfully" });
   } catch (error) {
     console.error("Error deleting label template:", error);

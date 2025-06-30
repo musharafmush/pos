@@ -302,6 +302,13 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Added realistic preview showing "SUGAR BULK" product data with dynamic scaling
 - Font size changes now reflect immediately in both form preview and saved templates
 
+### Database Connection Fix (June 30, 2025)
+- Fixed critical backend issue where label templates API was serving mock data instead of database records
+- Connected all label template CRUD operations (Create, Read, Update, Delete) to actual SQLite database
+- Resolved font size display inconsistency where edit dialog showed correct values but template cards showed outdated mock data
+- Template edits now persist correctly and display actual font sizes across all interfaces
+- Enhanced data integrity by ensuring all template operations work with authentic database records
+
 ### SQLite Authentication Fix (June 28, 2025)
 - Fixed critical SQLite user creation error caused by PostgreSQL-specific functions
 - Created SQLite-compatible schema to replace PostgreSQL defaultNow() functions
