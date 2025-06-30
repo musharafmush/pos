@@ -73,6 +73,7 @@ interface LabelTemplate {
   width: number;
   height: number;
   font_size: number;
+  orientation?: 'portrait' | 'landscape';
   include_barcode: boolean;
   include_price: boolean;
   include_description: boolean;
@@ -115,6 +116,7 @@ const templateFormSchema = z.object({
   width: z.number().min(10, "Width must be at least 10mm"),
   height: z.number().min(10, "Height must be at least 10mm"),
   font_size: z.number().min(6).max(72),
+  orientation: z.enum(['portrait', 'landscape']).optional(),
   include_barcode: z.boolean(),
   include_price: z.boolean(),
   include_description: z.boolean(),
@@ -159,9 +161,10 @@ export default function PrintLabelsEnhanced() {
     defaultValues: {
       name: "",
       description: "",
-      width: 80,
-      height: 50,
-      font_size: 12,
+      width: 150,
+      height: 100,
+      font_size: 18,
+      orientation: 'landscape',
       include_barcode: true,
       include_price: true,
       include_description: false,
@@ -360,6 +363,7 @@ export default function PrintLabelsEnhanced() {
       width: template.width,
       height: template.height,
       font_size: template.font_size,
+      orientation: template.orientation || 'landscape',
       include_barcode: template.include_barcode,
       include_price: template.include_price,
       include_description: template.include_description,
@@ -1247,7 +1251,7 @@ export default function PrintLabelsEnhanced() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <FormField
                     control={templateForm.control}
                     name="width"
@@ -1287,7 +1291,7 @@ export default function PrintLabelsEnhanced() {
                     name="font_size"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Font Size (px)</FormLabel>
+                        <FormLabel>Font Size (pt)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -1295,6 +1299,27 @@ export default function PrintLabelsEnhanced() {
                             onChange={(e) => field.onChange(parseInt(e.target.value))}
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={templateForm.control}
+                    name="orientation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Orientation</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select orientation" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="landscape">Landscape</SelectItem>
+                            <SelectItem value="portrait">Portrait</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
