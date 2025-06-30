@@ -357,27 +357,28 @@ export default function PrintLabelsEnhanced() {
     setEditingTemplate(template);
     // Use setTimeout to ensure the form is properly initialized before setting values
     setTimeout(() => {
-      templateForm.reset({
+      const formData = {
         name: template.name,
         description: template.description || "",
-        width: template.width,
-        height: template.height,
-        font_size: template.font_size,
+        width: Number(template.width) || 150,
+        height: Number(template.height) || 100,
+        font_size: Number(template.font_size) || 18,
         orientation: template.orientation || 'landscape',
-        include_barcode: template.include_barcode,
-        include_price: template.include_price,
-        include_description: template.include_description,
-        include_mrp: template.include_mrp,
-        include_weight: template.include_weight,
-        include_hsn: template.include_hsn,
-        barcode_position: template.barcode_position,
-        border_style: template.border_style,
-        border_width: template.border_width,
-        background_color: template.background_color,
-        text_color: template.text_color,
+        include_barcode: Boolean(template.include_barcode),
+        include_price: Boolean(template.include_price),
+        include_description: Boolean(template.include_description),
+        include_mrp: Boolean(template.include_mrp),
+        include_weight: Boolean(template.include_weight),
+        include_hsn: Boolean(template.include_hsn),
+        barcode_position: template.barcode_position || 'bottom',
+        border_style: template.border_style || 'solid',
+        border_width: Number(template.border_width) || 1,
+        background_color: template.background_color || '#ffffff',
+        text_color: template.text_color || '#000000',
         custom_css: template.custom_css || "",
-        is_default: template.is_default
-      });
+        is_default: Boolean(template.is_default)
+      };
+      templateForm.reset(formData);
     }, 100);
     setIsTemplateDialogOpen(true);
   };
@@ -1300,11 +1301,19 @@ export default function PrintLabelsEnhanced() {
                       <FormItem>
                         <FormLabel>Font Size (pt)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            {...field} 
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          />
+                          <div className="space-y-2">
+                            <Input 
+                              type="number" 
+                              min="6"
+                              max="72"
+                              step="1"
+                              value={field.value || 18}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 18)}
+                            />
+                            <div className="text-sm text-muted-foreground">
+                              Preview: <span style={{ fontSize: `${Math.min(field.value || 18, 20)}px` }}>Sample Text ({field.value || 18}pt)</span>
+                            </div>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
