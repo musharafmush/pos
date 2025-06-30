@@ -4142,42 +4142,9 @@ export const storage = {
 
   async createPrintJob(jobData: any): Promise<any> {
     try {
-      const stmt = this.db.prepare(`
-        INSERT INTO print_jobs (
-          template_id, user_id, product_ids, copies, labels_per_row,
-          paper_size, orientation, status, total_labels, custom_text,
-          print_settings, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      
-      const now = new Date().toISOString();
-      const result = stmt.run(
-        jobData.templateId,
-        jobData.userId,
-        JSON.stringify(jobData.productIds),
-        jobData.copies || 1,
-        jobData.labelsPerRow || 2,
-        jobData.paperSize || 'A4',
-        jobData.orientation || 'portrait',
-        jobData.status || 'completed',
-        jobData.totalLabels,
-        jobData.customText,
-        jobData.printSettings ? JSON.stringify(jobData.printSettings) : null,
-        now
-      );
-
-      return this.getPrintJobById(result.lastInsertRowid);
-    } catch (error) {
-      console.error('Error creating print job:', error);
-      throw error;
-    }
-  },
-
-  async getPrintJobs(limit: number = 50): Promise<any[]> {
-    try {
       const { sqlite } = await import('@db');
       
-      // First ensure the table exists
+      // Ensure table exists with correct schema
       sqlite.prepare(`
         CREATE TABLE IF NOT EXISTS print_jobs (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -4189,6 +4156,53 @@ export const storage = {
           userId INTEGER DEFAULT 1
         )
       `).run();
+      
+      const stmt = sqlite.prepare(`
+        INSERT INTO print_jobs (
+          templateId, userId, productIds, copies, status, createdAt
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      
+      const now = new Date().toISOString();
+      const result = stmt.run(
+        jobData.templateId,
+        jobData.userId || 1,
+        JSON.stringify(jobData.productIds),
+        jobData.copies || 1,
+        jobData.status || 'completed',
+        now
+      );
+
+      return { id: result.lastInsertRowid, ...jobData, createdAt: now };
+    } catch (error) {
+      console.error('Error creating print job:', error);
+      throw error;
+    }
+  },
+
+  async getPrintJobs(limit: number = 50): Promise<any[]> {
+    try {
+      const { sqlite } = await import('@db');
+      
+      // First ensure the table exists with proper schema
+      sqlite.prepare(`
+        CREATE TABLE IF NOT EXISTS print_jobs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          templateId INTEGER,
+          productIds TEXT,
+          copies INTEGER DEFAULT 1,
+          status TEXT DEFAULT 'pending',
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          userId INTEGER DEFAULT 1
+        )
+      `).run();
+
+      // Add createdAt column if it doesn't exist (for existing tables)
+      try {
+        sqlite.prepare(`ALTER TABLE print_jobs ADD COLUMN createdAt DATETIME DEFAULT CURRENT_TIMESTAMP`).run();
+      } catch (e) {
+        // Column already exists, ignore error
+      }
 
       const stmt = sqlite.prepare(`
         SELECT * FROM print_jobs
@@ -4204,11 +4218,13 @@ export const storage = {
 
   async getPrintJobById(id: number): Promise<any | null> {
     try {
-      const stmt = this.db.prepare(`
+      const { sqlite } = await import('@db');
+      
+      const stmt = sqlite.prepare(`
         SELECT pj.*, lt.name as template_name, u.name as user_name
         FROM print_jobs pj
-        LEFT JOIN label_templates lt ON pj.template_id = lt.id
-        LEFT JOIN users u ON pj.user_id = u.id
+        LEFT JOIN label_templates lt ON pj.templateId = lt.id
+        LEFT JOIN users u ON pj.userId = u.id
         WHERE pj.id = ?
       `);
       return stmt.get(id) || null;
