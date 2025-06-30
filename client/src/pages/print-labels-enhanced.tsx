@@ -1759,5 +1759,3 @@ export default function PrintLabelsEnhanced() {
     </DashboardLayout>
   );
 }
-
-// The code has been modified to include the Weight checkbox in the template creation dialog.
