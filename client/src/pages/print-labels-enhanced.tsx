@@ -309,6 +309,35 @@ export default function PrintLabelsEnhanced() {
     }
   }, [templates, selectedTemplate]);
 
+  // Watch for editing template changes and update form
+  useEffect(() => {
+    if (editingTemplate && isTemplateDialogOpen) {
+      const formData: TemplateFormData = {
+        name: editingTemplate.name || "",
+        description: editingTemplate.description || "",
+        width: Number(editingTemplate.width) || 150,
+        height: Number(editingTemplate.height) || 100,
+        font_size: Number(editingTemplate.font_size) || 18,
+        orientation: (editingTemplate.orientation as 'portrait' | 'landscape') || 'landscape',
+        include_barcode: Boolean(editingTemplate.include_barcode),
+        include_price: Boolean(editingTemplate.include_price),
+        include_description: Boolean(editingTemplate.include_description),
+        include_mrp: Boolean(editingTemplate.include_mrp),
+        include_weight: Boolean(editingTemplate.include_weight),
+        include_hsn: Boolean(editingTemplate.include_hsn),
+        barcode_position: (editingTemplate.barcode_position as 'top' | 'bottom' | 'left' | 'right') || 'bottom',
+        border_style: (editingTemplate.border_style as 'solid' | 'dashed' | 'dotted' | 'none') || 'solid',
+        border_width: Number(editingTemplate.border_width) || 1,
+        background_color: editingTemplate.background_color || '#ffffff',
+        text_color: editingTemplate.text_color || '#000000',
+        custom_css: editingTemplate.custom_css || "",
+        is_default: Boolean(editingTemplate.is_default)
+      };
+      
+      templateForm.reset(formData);
+    }
+  }, [editingTemplate, isTemplateDialogOpen, templateForm]);
+
   // Filter products
   const filteredProducts = products.filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -355,10 +384,12 @@ export default function PrintLabelsEnhanced() {
 
   const handleEditTemplate = (template: LabelTemplate) => {
     setEditingTemplate(template);
-    // Use setTimeout to ensure the form is properly initialized before setting values
-    setTimeout(() => {
+    setIsTemplateDialogOpen(true);
+    
+    // Use a more reliable approach to set form values
+    requestAnimationFrame(() => {
       const formData: TemplateFormData = {
-        name: template.name,
+        name: template.name || "",
         description: template.description || "",
         width: Number(template.width) || 150,
         height: Number(template.height) || 100,
@@ -378,9 +409,11 @@ export default function PrintLabelsEnhanced() {
         custom_css: template.custom_css || "",
         is_default: Boolean(template.is_default)
       };
+      
+      // Clear and reset form with new values
+      templateForm.reset();
       templateForm.reset(formData);
-    }, 100);
-    setIsTemplateDialogOpen(true);
+    });
   };
 
   const handleDeleteTemplate = (id: number) => {
@@ -400,7 +433,28 @@ export default function PrintLabelsEnhanced() {
   const handleTemplateDialogClose = () => {
     setIsTemplateDialogOpen(false);
     setEditingTemplate(null);
-    templateForm.reset();
+    // Reset form to default values
+    templateForm.reset({
+      name: "",
+      description: "",
+      width: 150,
+      height: 100,
+      font_size: 18,
+      orientation: 'landscape',
+      include_barcode: true,
+      include_price: true,
+      include_description: false,
+      include_mrp: true,
+      include_weight: false,
+      include_hsn: false,
+      barcode_position: 'bottom',
+      border_style: 'solid',
+      border_width: 1,
+      background_color: '#ffffff',
+      text_color: '#000000',
+      custom_css: "",
+      is_default: false
+    });
   };
 
   // Generate professional barcode
@@ -1329,7 +1383,7 @@ export default function PrintLabelsEnhanced() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Orientation</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || 'landscape'}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select orientation" />
@@ -1386,7 +1440,7 @@ export default function PrintLabelsEnhanced() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Barcode Position</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || 'bottom'}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select position" />
@@ -1409,7 +1463,7 @@ export default function PrintLabelsEnhanced() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Border Style</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || 'solid'}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select border style" />
