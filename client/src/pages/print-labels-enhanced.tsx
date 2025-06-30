@@ -1366,10 +1366,10 @@ export default function PrintLabelsEnhanced() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Barcode Position</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue />
+                              <SelectValue placeholder="Select position" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -1389,10 +1389,10 @@ export default function PrintLabelsEnhanced() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Border Style</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue />
+                              <SelectValue placeholder="Select border style" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
