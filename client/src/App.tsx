@@ -70,8 +70,8 @@ import LoyaltyManagement from "@/pages/loyalty-management";
 import LoyaltyRules from "@/pages/loyalty-rules";
 import PrintLabelsEndura from "@/pages/print-labels-endura";
 import ImageBasedLabels from "@/pages/image-based-labels";
-import ProfessionalLabels from "@/pages/professional-labels";
 import LabelPrinterDashboard from "@/pages/label-printer-dashboard";
+import ProfessionalLabels from "@/pages/professional-labels";
 
 function Router() {
   return (
@@ -146,6 +146,7 @@ function Router() {
       <ProtectedRoute path="/loyalty-rules" component={LoyaltyRules} />
       <ProtectedRoute path="/label-printer-dashboard" component={LabelPrinterDashboard} />
       <ProtectedRoute path="/label-printer" component={LabelPrinterDashboard} />
+      <ProtectedRoute path="/professional-labels" component={ProfessionalLabels} />
       <Route component={NotFound} />
     </Switch>
   );
