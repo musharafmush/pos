@@ -3845,7 +3845,7 @@ export const storage = {
   async getLabelTemplates(): Promise<any[]> {
     try {
       // Use direct SQLite database instead of this.db
-      const Database = require('better-sqlite3');
+      const Database = (await import('better-sqlite3')).default;
       const db = new Database('./pos-data.db');
       
       const stmt = db.prepare(`
@@ -3864,7 +3864,7 @@ export const storage = {
 
   async getLabelTemplateById(id: number): Promise<any | null> {
     try {
-      const Database = require('better-sqlite3');
+      const Database = (await import('better-sqlite3')).default;
       const db = new Database('./pos-data.db');
       
       const stmt = db.prepare(`
