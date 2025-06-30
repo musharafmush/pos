@@ -501,9 +501,11 @@ export default function PrintLabelsEnhanced() {
       ...data,
       width: Math.max(10, data.width),
       height: Math.max(10, data.height),
-      font_size: Math.max(6, Math.min(72, data.font_size)),
+      font_size: data.font_size, // Remove max constraint to allow larger font sizes
       border_width: Math.max(0, Math.min(10, data.border_width))
     };
+    
+    console.log('Font size being sent to server:', validatedData.font_size);
 
     if (editingTemplate) {
       console.log('Updating existing template:', editingTemplate.id);
@@ -1537,11 +1539,11 @@ export default function PrintLabelsEnhanced() {
                               <Input 
                                 type="number" 
                                 min="6"
-                                max="72"
+                                max="200"
                                 step="1"
                                 value={field.value}
                                 onChange={(e) => {
-                                  const value = Math.max(6, Math.min(72, parseInt(e.target.value) || 6));
+                                  const value = parseInt(e.target.value) || 6;
                                   field.onChange(value);
                                 }}
                                 className="w-20"
@@ -1549,7 +1551,7 @@ export default function PrintLabelsEnhanced() {
                               <input
                                 type="range"
                                 min="6"
-                                max="72"
+                                max="200"
                                 step="1"
                                 value={field.value}
                                 onChange={(e) => {
@@ -1558,7 +1560,7 @@ export default function PrintLabelsEnhanced() {
                                 }}
                                 className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                                 style={{
-                                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((field.value - 6) / (72 - 6)) * 100}%, #e5e7eb ${((field.value - 6) / (72 - 6)) * 100}%, #e5e7eb 100%)`
+                                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((field.value - 6) / (200 - 6)) * 100}%, #e5e7eb ${((field.value - 6) / (200 - 6)) * 100}%, #e5e7eb 100%)`
                                 }}
                               />
                               <span className="text-sm font-medium text-blue-600 min-w-[35px]">{field.value}pt</span>
@@ -1569,7 +1571,7 @@ export default function PrintLabelsEnhanced() {
                                 Live Preview:
                               </div>
                               <div style={{ 
-                                fontSize: `${Math.min(watchedFontSize || 18, 28)}px`, 
+                                fontSize: `${Math.min(watchedFontSize || 18, 40)}px`, 
                                 fontWeight: 'bold', 
                                 color: '#1e40af',
                                 lineHeight: '1.2',
@@ -1587,7 +1589,7 @@ export default function PrintLabelsEnhanced() {
                                 SKU: 24 • ₹45.00
                               </div>
                               <div className="text-xs text-blue-500 mt-2 opacity-75">
-                                Font size: {watchedFontSize || 18}pt • Preview scales up to 28px
+                                Font size: {watchedFontSize || 18}pt
                               </div>
                             </div>
                           </div>

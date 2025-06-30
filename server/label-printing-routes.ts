@@ -312,12 +312,16 @@ router.put("/label-templates/:id", async (req, res) => {
     };
     
     console.log('Mapped data for DB:', dbUpdateData);
+    console.log('Font size being saved to database:', dbUpdateData.fontSize);
     
     const [updatedTemplate] = await db
       .update(labelTemplates)
       .set(dbUpdateData)
       .where(eq(labelTemplates.id, templateId))
       .returning();
+      
+    console.log('Template returned from database after update:', updatedTemplate);
+    console.log('Font size returned from database:', updatedTemplate.fontSize);
 
     if (!updatedTemplate) {
       return res.status(404).json({ error: "Template not found" });
