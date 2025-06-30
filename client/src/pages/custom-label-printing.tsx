@@ -32,7 +32,9 @@ import {
   Wifi,
   WifiOff,
   QrCode,
-  Barcode
+  Barcode,
+  RectangleHorizontalIcon,
+  RectangleVerticalIcon
 } from "lucide-react";
 
 interface LabelTemplate {

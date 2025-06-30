@@ -37,7 +37,9 @@ import {
   EditIcon,
   TrashIcon,
   SaveIcon,
-  XIcon
+  XIcon,
+  RectangleHorizontalIcon,
+  RectangleVerticalIcon
 } from "lucide-react";
 
 interface Product {
@@ -954,6 +956,44 @@ export default function PrintLabelsEnhanced() {
                         className="mt-1"
                       />
                     </div>
+                    
+                    {/* Orientation Quick Selector */}
+                    <div>
+                      <Label>Label Layout Orientation</Label>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <Button
+                          type="button"
+                          variant={orientation === "portrait" ? "default" : "outline"}
+                          className="h-20 flex flex-col items-center justify-center gap-2"
+                          onClick={() => setOrientation("portrait")}
+                        >
+                          <RectangleVerticalIcon className="h-8 w-8" />
+                          <span className="text-xs">Portrait</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={orientation === "landscape" ? "default" : "outline"}
+                          className="h-20 flex flex-col items-center justify-center gap-2"
+                          onClick={() => setOrientation("landscape")}
+                        >
+                          <RectangleHorizontalIcon className="h-8 w-8" />
+                          <span className="text-xs">Landscape</span>
+                        </Button>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        {orientation === "portrait" ? (
+                          <div className="flex items-center gap-1">
+                            <RectangleVerticalIcon className="h-3 w-3" />
+                            <span>Vertical layout - ideal for product price tags and detailed item labels</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <RectangleHorizontalIcon className="h-3 w-3" />
+                            <span>Horizontal layout - perfect for shelf labels and wide product information</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <div>
                       <Label htmlFor="labels-per-row">Labels per Row</Label>
                       <Select value={labelsPerRow.toString()} onValueChange={(value) => setLabelsPerRow(parseInt(value))}>
@@ -983,16 +1023,39 @@ export default function PrintLabelsEnhanced() {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="orientation">Orientation</Label>
+                      <Label htmlFor="orientation">Label Orientation</Label>
                       <Select value={orientation} onValueChange={setOrientation}>
                         <SelectTrigger className="mt-1">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="portrait">Portrait</SelectItem>
-                          <SelectItem value="landscape">Landscape</SelectItem>
+                          <SelectItem value="portrait">
+                            <div className="flex items-center gap-2">
+                              <RectangleVerticalIcon className="h-4 w-4" />
+                              <span>Portrait (Vertical)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="landscape">
+                            <div className="flex items-center gap-2">
+                              <RectangleHorizontalIcon className="h-4 w-4" />
+                              <span>Landscape (Horizontal)</span>
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        {orientation === "portrait" ? (
+                          <div className="flex items-center gap-1">
+                            <RectangleVerticalIcon className="h-3 w-3" />
+                            <span>Taller than wide - ideal for product labels</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <RectangleHorizontalIcon className="h-3 w-3" />
+                            <span>Wider than tall - ideal for shelf labels</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-4">

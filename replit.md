@@ -254,6 +254,23 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Enhanced unified printer settings with comprehensive paper width options
 - Updated Xprinter XP-420B configuration guidance for 77mm paper
 
+### Label Printing Font Size Enhancement (June 30, 2025)
+- Significantly increased font sizes for better readability on printed labels
+- Standard Product Label: Enhanced from 12pt to 18pt font for optimal clarity
+- Premium Label 50x30: Improved from 10pt to 14pt font for compact readability
+- Updated default template creation to use 18pt font as standard
+- Enhanced template form reset to ensure all new templates use larger fonts
+
+### Landscape and Portrait Orientation Menu Options (June 30, 2025)
+- Added comprehensive landscape and portrait orientation selection with visual icons
+- Implemented visual orientation selector with large clickable buttons showing layout previews
+- Enhanced orientation descriptions with context-aware explanations for optimal use cases
+- Created new orientation-specific templates:
+  - Landscape Shelf Label (100x30mm, 16pt) for wide shelf pricing displays
+  - Portrait Product Tag (40x80mm, 16pt) for tall product identification labels
+- Added smart layout recommendations: Portrait for product tags, Landscape for shelf labels
+- Integrated orientation flexibility across entire label printing system
+
 ### SQLite Authentication Fix (June 28, 2025)
 - Fixed critical SQLite user creation error caused by PostgreSQL-specific functions
 - Created SQLite-compatible schema to replace PostgreSQL defaultNow() functions
