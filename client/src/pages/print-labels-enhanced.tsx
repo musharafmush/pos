@@ -1333,21 +1333,52 @@ export default function PrintLabelsEnhanced() {
                       <FormItem>
                         <FormLabel>Font Size (pt)</FormLabel>
                         <FormControl>
-                          <div className="space-y-2">
-                            <Input 
-                              type="number" 
-                              min="6"
-                              max="72"
-                              step="1"
-                              {...field}
-                              value={field.value || 18}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 18;
-                                field.onChange(value);
-                              }}
-                            />
-                            <div className="text-sm text-muted-foreground">
-                              Preview: <span style={{ fontSize: `${Math.min(field.value || 18, 20)}px` }}>Sample Text ({field.value || 18}pt)</span>
+                          <div className="space-y-3">
+                            <div className="flex gap-2 items-center">
+                              <Input 
+                                type="number" 
+                                min="6"
+                                max="72"
+                                step="1"
+                                {...field}
+                                value={field.value || 18}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 18;
+                                  field.onChange(value);
+                                }}
+                                className="w-20"
+                              />
+                              <input
+                                type="range"
+                                min="6"
+                                max="72"
+                                step="1"
+                                value={field.value || 18}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 18;
+                                  field.onChange(value);
+                                }}
+                                className="flex-1"
+                              />
+                              <span className="text-sm text-muted-foreground min-w-[30px]">{field.value || 18}pt</span>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-3 border">
+                              <div className="text-xs text-muted-foreground mb-1">Font Preview:</div>
+                              <div style={{ 
+                                fontSize: `${Math.min(field.value || 18, 32)}px`, 
+                                fontWeight: 'bold', 
+                                color: '#1e40af',
+                                lineHeight: '1.2'
+                              }}>
+                                SUGAR BULK
+                              </div>
+                              <div style={{ 
+                                fontSize: `${Math.max((field.value || 18) - 4, 8)}px`, 
+                                color: '#666',
+                                marginTop: '2px'
+                              }}>
+                                SKU: 24 • ₹45.00
+                              </div>
                             </div>
                           </div>
                         </FormControl>
