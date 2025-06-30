@@ -43,6 +43,7 @@ import AddProduct from "@/pages/add-product";
 import PrintLabels from "@/pages/print-labels";
 import PrintLabelsEnhanced from "@/pages/print-labels-enhanced";
 import CustomLabelPrinting from "@/pages/custom-label-printing";
+import LabelPrinting from "@/pages/label-printing";
 import InventoryForecasting from "@/pages/inventory-forecasting";
 import Repacking from "@/pages/repacking";
 import RepackingDashboard from "@/pages/repacking-dashboard";
@@ -97,6 +98,7 @@ function Router() {
       <ProtectedRoute path="/print-labels" component={PrintLabels} />
       <ProtectedRoute path="/print-labels-enhanced" component={PrintLabelsEnhanced} />
       <ProtectedRoute path="/custom-label-printing" component={CustomLabelPrinting} />
+      <ProtectedRoute path="/label-printing" component={LabelPrinting} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/inventory-adjustments" component={InventoryAdjustments} />
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
