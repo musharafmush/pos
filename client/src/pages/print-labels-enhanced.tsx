@@ -232,14 +232,22 @@ export default function PrintLabelsEnhanced() {
   });
 
   const updateTemplateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<TemplateFormData> }) => 
-      fetch(`/api/label-templates/${id}`, {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<TemplateFormData> }) => {
+      const response = await fetch(`/api/label-templates/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data)
-      }).then(res => res.json()),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update template");
+      }
+      
+      return response.json();
+    },
     onSuccess: () => {
       toast({
         title: "Template updated successfully",
@@ -248,10 +256,10 @@ export default function PrintLabelsEnhanced() {
       queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
       handleTemplateDialogClose();
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error updating template",
-        description: error.message,
+        description: error.message || "Failed to update template. Please try again.",
         variant: "destructive"
       });
     }
@@ -309,34 +317,7 @@ export default function PrintLabelsEnhanced() {
     }
   }, [templates, selectedTemplate]);
 
-  // Watch for editing template changes and update form
-  useEffect(() => {
-    if (editingTemplate && isTemplateDialogOpen) {
-      const formData: TemplateFormData = {
-        name: editingTemplate.name || "",
-        description: editingTemplate.description || "",
-        width: Number(editingTemplate.width) || 150,
-        height: Number(editingTemplate.height) || 100,
-        font_size: Number(editingTemplate.font_size) || 18,
-        orientation: (editingTemplate.orientation as 'portrait' | 'landscape') || 'landscape',
-        include_barcode: Boolean(editingTemplate.include_barcode),
-        include_price: Boolean(editingTemplate.include_price),
-        include_description: Boolean(editingTemplate.include_description),
-        include_mrp: Boolean(editingTemplate.include_mrp),
-        include_weight: Boolean(editingTemplate.include_weight),
-        include_hsn: Boolean(editingTemplate.include_hsn),
-        barcode_position: (editingTemplate.barcode_position as 'top' | 'bottom' | 'left' | 'right') || 'bottom',
-        border_style: (editingTemplate.border_style as 'solid' | 'dashed' | 'dotted' | 'none') || 'solid',
-        border_width: Number(editingTemplate.border_width) || 1,
-        background_color: editingTemplate.background_color || '#ffffff',
-        text_color: editingTemplate.text_color || '#000000',
-        custom_css: editingTemplate.custom_css || "",
-        is_default: Boolean(editingTemplate.is_default)
-      };
-      
-      templateForm.reset(formData);
-    }
-  }, [editingTemplate, isTemplateDialogOpen, templateForm]);
+
 
   // Filter products
   const filteredProducts = products.filter((product: Product) => {
@@ -384,36 +365,33 @@ export default function PrintLabelsEnhanced() {
 
   const handleEditTemplate = (template: LabelTemplate) => {
     setEditingTemplate(template);
-    setIsTemplateDialogOpen(true);
     
-    // Use a more reliable approach to set form values
-    requestAnimationFrame(() => {
-      const formData: TemplateFormData = {
-        name: template.name || "",
-        description: template.description || "",
-        width: Number(template.width) || 150,
-        height: Number(template.height) || 100,
-        font_size: Number(template.font_size) || 18,
-        orientation: (template.orientation as 'portrait' | 'landscape') || 'landscape',
-        include_barcode: Boolean(template.include_barcode),
-        include_price: Boolean(template.include_price),
-        include_description: Boolean(template.include_description),
-        include_mrp: Boolean(template.include_mrp),
-        include_weight: Boolean(template.include_weight),
-        include_hsn: Boolean(template.include_hsn),
-        barcode_position: (template.barcode_position as 'top' | 'bottom' | 'left' | 'right') || 'bottom',
-        border_style: (template.border_style as 'solid' | 'dashed' | 'dotted' | 'none') || 'solid',
-        border_width: Number(template.border_width) || 1,
-        background_color: template.background_color || '#ffffff',
-        text_color: template.text_color || '#000000',
-        custom_css: template.custom_css || "",
-        is_default: Boolean(template.is_default)
-      };
-      
-      // Clear and reset form with new values
-      templateForm.reset();
-      templateForm.reset(formData);
-    });
+    // Prepare form data with proper type conversions
+    const formData: TemplateFormData = {
+      name: template.name || "",
+      description: template.description || "",
+      width: Number(template.width) || 150,
+      height: Number(template.height) || 100,
+      font_size: Number(template.font_size) || 18,
+      orientation: (template.orientation as 'portrait' | 'landscape') || 'landscape',
+      include_barcode: Boolean(template.include_barcode),
+      include_price: Boolean(template.include_price),
+      include_description: Boolean(template.include_description),
+      include_mrp: Boolean(template.include_mrp),
+      include_weight: Boolean(template.include_weight),
+      include_hsn: Boolean(template.include_hsn),
+      barcode_position: (template.barcode_position as 'top' | 'bottom' | 'left' | 'right') || 'bottom',
+      border_style: (template.border_style as 'solid' | 'dashed' | 'dotted' | 'none') || 'solid',
+      border_width: Number(template.border_width) || 1,
+      background_color: template.background_color || '#ffffff',
+      text_color: template.text_color || '#000000',
+      custom_css: template.custom_css || "",
+      is_default: Boolean(template.is_default)
+    };
+    
+    // Reset form with the template data
+    templateForm.reset(formData);
+    setIsTemplateDialogOpen(true);
   };
 
   const handleDeleteTemplate = (id: number) => {
