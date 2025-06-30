@@ -274,31 +274,40 @@ export default function PrintLabelsPage() {
     const currentTemplate = getCurrentTemplate();
     const selectedProductsList = products.filter(p => selectedProducts.includes(p.id));
     
+    // Clear canvas first
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
     if (selectedProductsList.length === 0) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#f5f5f5';
+      ctx.fillStyle = '#f8f9fa';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#666666';
-      ctx.font = '16px Arial';
+      ctx.fillStyle = '#6c757d';
+      ctx.font = 'bold 18px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('No products selected', canvas.width / 2, canvas.height / 2);
+      ctx.fillText('Select products to preview labels', canvas.width / 2, canvas.height / 2);
+      ctx.font = '14px Arial';
+      ctx.fillText('Choose products from the list below', canvas.width / 2, canvas.height / 2 + 30);
       return;
     }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Set canvas background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const mmToPx = 96 / 25.4;
+    const mmToPx = 3.779528; // More accurate conversion: 96 DPI / 25.4 mm
     const labelWidth = currentTemplate.width * mmToPx;
     const labelHeight = currentTemplate.height * mmToPx;
-    const padding = 10;
+    const padding = 15;
 
     const labelsPerRow = Math.floor((canvas.width - padding) / (labelWidth + padding));
-    const rowsNeeded = Math.ceil((selectedProductsList.length * copiesPerProduct) / labelsPerRow);
+    const totalLabels = selectedProductsList.length * copiesPerProduct;
+    const rowsNeeded = Math.ceil(totalLabels / labelsPerRow);
     
-    const totalHeight = Math.max(400, rowsNeeded * (labelHeight + padding) + padding);
+    const totalHeight = Math.max(500, rowsNeeded * (labelHeight + padding) + padding);
     canvas.height = totalHeight;
+
+    // Redraw background after height change
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     let labelIndex = 0;
     
@@ -330,32 +339,55 @@ export default function PrintLabelsPage() {
           
           if (element.type === 'text') {
             ctx.fillStyle = element.color || '#000000';
-            ctx.font = `${element.fontWeight || 'normal'} ${element.fontSize || 12}px Arial`;
+            const fontSize = Math.max(8, (element.fontSize || 12) * 0.75); // Scale down for better fit
+            ctx.font = `${element.fontWeight || 'normal'} ${fontSize}px Arial`;
             ctx.textAlign = element.textAlign || 'left';
+            ctx.textBaseline = 'top';
             
             let content = element.content || '';
             if (element.dataField) {
               switch (element.dataField) {
-                case 'name': content = product.name; break;
-                case 'price': content = `₹${Number(product.price).toFixed(2)}`; break;
-                case 'mrp': content = `MRP: ₹${Number(product.mrp || product.price).toFixed(2)}`; break;
-                case 'sku': content = product.sku; break;
-                case 'barcode': content = product.barcode || product.sku; break;
-                case 'category': content = product.category?.name || ''; break;
-                case 'weight': content = product.weight ? `${product.weight}${product.weightUnit || 'kg'}` : ''; break;
-                case 'hsn': content = product.hsnCode || ''; break;
-                default: content = element.content || '';
+                case 'name': 
+                  content = product.name || 'Unknown Product'; 
+                  break;
+                case 'price': 
+                  const price = Number(product.price) || 0;
+                  content = `₹${price.toFixed(2)}`; 
+                  break;
+                case 'mrp': 
+                  const mrp = Number(product.mrp) || Number(product.price) || 0;
+                  content = `MRP: ₹${mrp.toFixed(2)}`; 
+                  break;
+                case 'sku': 
+                  content = product.sku || 'NO-SKU'; 
+                  break;
+                case 'barcode': 
+                  content = product.barcode || product.sku || 'NO-BARCODE'; 
+                  break;
+                case 'category': 
+                  content = product.category?.name || 'General'; 
+                  break;
+                case 'weight': 
+                  content = product.weight ? `${product.weight}${product.weightUnit || 'kg'}` : ''; 
+                  break;
+                case 'hsn': 
+                  content = product.hsnCode || ''; 
+                  break;
+                default: 
+                  content = element.content || '';
               }
             }
             
-            const words = content.split(' ');
+            // Improved text wrapping with better word handling
+            const words = content.toString().split(' ');
             const lines: string[] = [];
             let currentLine = '';
-            const maxWidth = elementWidth - 4;
+            const maxWidth = Math.max(50, elementWidth - 8); // Ensure minimum width
             
             for (const word of words) {
               const testLine = currentLine + (currentLine ? ' ' : '') + word;
               const metrics = ctx.measureText(testLine);
+              
               if (metrics.width > maxWidth && currentLine) {
                 lines.push(currentLine);
                 currentLine = word;
@@ -365,29 +397,51 @@ export default function PrintLabelsPage() {
             }
             if (currentLine) lines.push(currentLine);
             
-            const lineHeight = (element.fontSize || 12) * 1.2;
-            lines.forEach((line, index) => {
-              ctx.fillText(line, 2, (element.fontSize || 12) + (index * lineHeight));
+            // Limit to maximum 3 lines for label space
+            const maxLines = Math.min(3, Math.floor(elementHeight / (fontSize * 1.2)));
+            const displayLines = lines.slice(0, maxLines);
+            
+            const lineHeight = fontSize * 1.2;
+            displayLines.forEach((line, index) => {
+              const yPos = 4 + (index * lineHeight);
+              if (yPos < elementHeight - 4) {
+                ctx.fillText(line, 4, yPos);
+              }
             });
             
           } else if (element.type === 'barcode') {
-            const barcodeData = product.barcode || product.sku;
-            const barcodeCanvas = document.createElement('canvas');
             try {
+              const barcodeData = (product.barcode || product.sku || `BC${product.id}`).toString();
+              const barcodeCanvas = document.createElement('canvas');
+              
+              // Set canvas size for barcode
+              barcodeCanvas.width = Math.max(200, elementWidth * 2);
+              barcodeCanvas.height = Math.max(60, elementHeight * 2);
+              
               JSBarcode(barcodeCanvas, barcodeData, {
                 format: element.barcodeType || 'CODE128',
-                width: 2,
-                height: Math.max(30, elementHeight - 20),
+                width: 1.5,
+                height: Math.max(40, (elementHeight * 2) - 30),
                 displayValue: true,
-                fontSize: 10,
-                margin: 0
+                fontSize: 12,
+                margin: 5,
+                background: '#ffffff',
+                lineColor: '#000000'
               });
               
+              // Draw barcode scaled to fit element
               ctx.drawImage(barcodeCanvas, 0, 0, elementWidth, elementHeight);
-            } catch {
+              
+            } catch (error) {
+              // Fallback if barcode generation fails
+              ctx.fillStyle = '#f0f0f0';
+              ctx.fillRect(0, 0, elementWidth, elementHeight);
               ctx.fillStyle = '#000000';
-              ctx.font = '10px monospace';
-              ctx.fillText(barcodeData, 2, elementHeight/2);
+              ctx.font = '8px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              const fallbackText = product.barcode || product.sku || `ID:${product.id}`;
+              ctx.fillText(fallbackText, elementWidth/2, elementHeight/2);
             }
           }
           
@@ -405,7 +459,7 @@ export default function PrintLabelsPage() {
     }
   }, [isPreviewOpen, selectedProducts, copiesPerProduct, selectedTemplate]);
 
-  const printLabels = () => {
+  const printLabels = async () => {
     if (selectedProducts.length === 0) {
       toast({
         title: "No products selected",
@@ -415,12 +469,177 @@ export default function PrintLabelsPage() {
       return;
     }
 
-    toast({
-      title: "Printing labels",
-      description: `Printing ${selectedProducts.length * copiesPerProduct} labels...`
-    });
-    
-    setIsPreviewOpen(false);
+    try {
+      const selectedProductsList = products.filter(p => selectedProducts.includes(p.id));
+      const currentTemplate = getCurrentTemplate();
+      
+      // Create print data
+      const printData = {
+        template: currentTemplate,
+        products: selectedProductsList,
+        copies: copiesPerProduct,
+        totalLabels: selectedProducts.length * copiesPerProduct
+      };
+
+      // For now, create a print-ready canvas and trigger browser print
+      const printCanvas = document.createElement('canvas');
+      const printCtx = printCanvas.getContext('2d');
+      
+      if (printCtx) {
+        // Set up canvas for printing (higher resolution)
+        const scale = 2; // Higher DPI for print
+        const mmToPx = 3.779528 * scale;
+        const labelWidth = currentTemplate.width * mmToPx;
+        const labelHeight = currentTemplate.height * mmToPx;
+        const padding = 20 * scale;
+
+        const labelsPerRow = Math.floor((800 * scale - padding) / (labelWidth + padding));
+        const totalLabels = selectedProductsList.length * copiesPerProduct;
+        const rowsNeeded = Math.ceil(totalLabels / labelsPerRow);
+        
+        printCanvas.width = 800 * scale;
+        printCanvas.height = Math.max(600 * scale, rowsNeeded * (labelHeight + padding) + padding);
+        
+        // Scale context for high DPI
+        printCtx.scale(scale, scale);
+        
+        // White background
+        printCtx.fillStyle = '#ffffff';
+        printCtx.fillRect(0, 0, printCanvas.width, printCanvas.height);
+
+        let labelIndex = 0;
+        
+        selectedProductsList.forEach((product) => {
+          for (let copy = 0; copy < copiesPerProduct; copy++) {
+            const row = Math.floor(labelIndex / labelsPerRow);
+            const col = labelIndex % labelsPerRow;
+            
+            const x = col * (labelWidth/scale + padding/scale) + padding/scale;
+            const y = row * (labelHeight/scale + padding/scale) + padding/scale;
+            
+            // Draw label background
+            printCtx.fillStyle = currentTemplate.backgroundColor || '#ffffff';
+            printCtx.fillRect(x, y, labelWidth/scale, labelHeight/scale);
+            
+            // Draw border
+            if (currentTemplate.borderWidth > 0) {
+              printCtx.strokeStyle = '#333333';
+              printCtx.lineWidth = currentTemplate.borderWidth;
+              printCtx.strokeRect(x, y, labelWidth/scale, labelHeight/scale);
+            }
+            
+            // Draw elements (simplified for print)
+            currentTemplate.elements.forEach((element) => {
+              const elementX = x + (element.x * mmToPx/scale);
+              const elementY = y + (element.y * mmToPx/scale);
+              const elementWidth = element.width * mmToPx/scale;
+              const elementHeight = element.height * mmToPx/scale;
+              
+              printCtx.save();
+              printCtx.translate(elementX, elementY);
+              
+              if (element.type === 'text') {
+                printCtx.fillStyle = element.color || '#000000';
+                const fontSize = (element.fontSize || 12);
+                printCtx.font = `${element.fontWeight || 'normal'} ${fontSize}px Arial`;
+                printCtx.textAlign = element.textAlign || 'left';
+                printCtx.textBaseline = 'top';
+                
+                let content = element.content || '';
+                if (element.dataField) {
+                  switch (element.dataField) {
+                    case 'name': content = product.name || 'Unknown Product'; break;
+                    case 'price': content = `₹${Number(product.price || 0).toFixed(2)}`; break;
+                    case 'mrp': content = `MRP: ₹${Number(product.mrp || product.price || 0).toFixed(2)}`; break;
+                    case 'sku': content = product.sku || 'NO-SKU'; break;
+                    case 'barcode': content = product.barcode || product.sku || 'NO-BARCODE'; break;
+                    case 'category': content = product.category?.name || 'General'; break;
+                    default: content = element.content || '';
+                  }
+                }
+                
+                // Simple text rendering for print
+                const lines = content.toString().split(' ');
+                let currentLine = '';
+                let yOffset = 4;
+                const lineHeight = fontSize * 1.2;
+                
+                lines.forEach((word, index) => {
+                  const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                  const metrics = printCtx.measureText(testLine);
+                  
+                  if (metrics.width > elementWidth - 8 && currentLine) {
+                    printCtx.fillText(currentLine, 4, yOffset);
+                    currentLine = word;
+                    yOffset += lineHeight;
+                  } else {
+                    currentLine = testLine;
+                  }
+                });
+                
+                if (currentLine) {
+                  printCtx.fillText(currentLine, 4, yOffset);
+                }
+              }
+              
+              printCtx.restore();
+            });
+            
+            labelIndex++;
+          }
+        });
+
+        // Create print window
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <html>
+              <head>
+                <title>Print Labels - M MART</title>
+                <style>
+                  @page { margin: 0; size: A4; }
+                  body { margin: 0; padding: 20px; }
+                  canvas { max-width: 100%; height: auto; }
+                  @media print {
+                    body { padding: 0; }
+                    canvas { width: 100% !important; height: auto !important; }
+                  }
+                </style>
+              </head>
+              <body>
+                <canvas width="${printCanvas.width}" height="${printCanvas.height}"></canvas>
+                <script>
+                  const canvas = document.querySelector('canvas');
+                  const ctx = canvas.getContext('2d');
+                  const img = new Image();
+                  img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                    setTimeout(() => window.print(), 100);
+                  };
+                  img.src = "${printCanvas.toDataURL()}";
+                </script>
+              </body>
+            </html>
+          `);
+          printWindow.document.close();
+        }
+      }
+
+      toast({
+        title: "Labels sent to printer",
+        description: `${selectedProducts.length * copiesPerProduct} labels prepared for printing`
+      });
+      
+      setIsPreviewOpen(false);
+      
+    } catch (error) {
+      console.error('Print error:', error);
+      toast({
+        title: "Print failed",
+        description: "Unable to generate labels for printing",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoadingProducts) {
