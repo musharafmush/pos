@@ -665,16 +665,22 @@ export default function ProfessionalLabels() {
 
   const handleEditTemplate = (template: ProfessionalTemplate) => {
     setEditingTemplate(template);
-    templateForm.reset({
-      name: template.name,
+    
+    // Parse brand colors safely
+    const brandColors = typeof template.brand_colors === 'string' 
+      ? JSON.parse(template.brand_colors || '{}') 
+      : template.brand_colors || {};
+
+    const formData = {
+      name: template.name || "",
       description: template.description || "",
-      width: template.width,
-      height: template.height,
-      font_size: template.font_size,
-      title_font_size: template.title_font_size || template.font_size + 4,
-      price_font_size: template.price_font_size || template.font_size + 6,
-      description_font_size: template.description_font_size || template.font_size - 2,
-      corner_radius: template.corner_radius || 4,
+      width: Number(template.width) || 50,
+      height: Number(template.height) || 30,
+      font_size: Number(template.font_size) || 12,
+      title_font_size: Number(template.title_font_size) || 16,
+      price_font_size: Number(template.price_font_size) || 18,
+      description_font_size: Number(template.description_font_size) || 10,
+      corner_radius: Number(template.corner_radius) || 4,
       layout_style: template.layout_style || 'modern',
       border_style: template.border_style || 'solid',
       font_family: template.font_family || 'Arial',
@@ -683,50 +689,99 @@ export default function ProfessionalLabels() {
       price_position: template.price_position || 'bottom-right',
       barcode_position: template.barcode_position || 'bottom',
       company_name: template.company_name || "",
-      include_barcode: template.include_barcode,
-      include_price: template.include_price,
-      include_description: template.include_description,
-      include_mrp: template.include_mrp,
-      include_weight: template.include_weight,
-      include_hsn: template.include_hsn,
-      include_qr_code: template.include_qr_code || false,
-      include_company_info: template.include_company_info || false,
-      include_batch_number: template.include_batch_number || false,
-      include_expiry_date: template.include_expiry_date || false,
-      include_manufacturing_date: template.include_manufacturing_date || false,
-      include_certification_marks: template.include_certification_marks || false,
-      include_discount_badge: template.include_discount_badge || false,
-      include_stock_status: template.include_stock_status || false,
-      include_category_tag: template.include_category_tag || false,
-      include_rating_stars: template.include_rating_stars || false,
-      include_regulatory_info: template.include_regulatory_info || false,
-      include_environmental_icon: template.include_environmental_icon || false,
-      include_origin_country: template.include_origin_country || false,
-      include_warranty_info: template.include_warranty_info || false,
-      shadow_effect: template.shadow_effect || false,
-      brand_primary_color: template.brand_colors?.primary || "#2563eb",
-      brand_secondary_color: template.brand_colors?.secondary || "#64748b",
-      brand_accent_color: template.brand_colors?.accent || "#06b6d4",
-    });
+      include_barcode: Boolean(template.include_barcode),
+      include_price: Boolean(template.include_price),
+      include_description: Boolean(template.include_description),
+      include_mrp: Boolean(template.include_mrp),
+      include_weight: Boolean(template.include_weight),
+      include_hsn: Boolean(template.include_hsn),
+      include_qr_code: Boolean(template.include_qr_code),
+      include_company_info: Boolean(template.include_company_info),
+      include_batch_number: Boolean(template.include_batch_number),
+      include_expiry_date: Boolean(template.include_expiry_date),
+      include_manufacturing_date: Boolean(template.include_manufacturing_date),
+      include_certification_marks: Boolean(template.include_certification_marks),
+      include_discount_badge: Boolean(template.include_discount_badge),
+      include_stock_status: Boolean(template.include_stock_status),
+      include_category_tag: Boolean(template.include_category_tag),
+      include_rating_stars: Boolean(template.include_rating_stars),
+      include_regulatory_info: Boolean(template.include_regulatory_info),
+      include_environmental_icon: Boolean(template.include_environmental_icon),
+      include_origin_country: Boolean(template.include_origin_country),
+      include_warranty_info: Boolean(template.include_warranty_info),
+      shadow_effect: Boolean(template.shadow_effect),
+      brand_primary_color: brandColors.primary || "#2563eb",
+      brand_secondary_color: brandColors.secondary || "#64748b",
+      brand_accent_color: brandColors.accent || "#06b6d4",
+    };
+
+    console.log("Setting form data:", formData);
+    templateForm.reset(formData);
     setIsTemplateDialogOpen(true);
   };
 
   const onTemplateSubmit = async (values: z.infer<typeof templateSchema>) => {
+    console.log("Submitting template with values:", values);
+    
     const templateData = {
-      ...values,
-      brand_colors: {
-        primary: values.brand_primary_color,
-        secondary: values.brand_secondary_color,
-        accent: values.brand_accent_color,
+      name: values.name,
+      description: values.description || "",
+      width: Number(values.width),
+      height: Number(values.height),
+      font_size: Number(values.font_size),
+      title_font_size: Number(values.title_font_size),
+      price_font_size: Number(values.price_font_size),
+      description_font_size: Number(values.description_font_size),
+      corner_radius: Number(values.corner_radius),
+      layout_style: values.layout_style,
+      border_style: values.border_style,
+      font_family: values.font_family,
+      font_weight: values.font_weight,
+      title_position: values.title_position,
+      price_position: values.price_position,
+      barcode_position: values.barcode_position,
+      company_name: values.company_name || "",
+      include_barcode: Boolean(values.include_barcode),
+      include_price: Boolean(values.include_price),
+      include_description: Boolean(values.include_description),
+      include_mrp: Boolean(values.include_mrp),
+      include_weight: Boolean(values.include_weight),
+      include_hsn: Boolean(values.include_hsn),
+      include_qr_code: Boolean(values.include_qr_code),
+      include_company_info: Boolean(values.include_company_info),
+      include_batch_number: Boolean(values.include_batch_number),
+      include_expiry_date: Boolean(values.include_expiry_date),
+      include_manufacturing_date: Boolean(values.include_manufacturing_date),
+      include_certification_marks: Boolean(values.include_certification_marks),
+      include_discount_badge: Boolean(values.include_discount_badge),
+      include_stock_status: Boolean(values.include_stock_status),
+      include_category_tag: Boolean(values.include_category_tag),
+      include_rating_stars: Boolean(values.include_rating_stars),
+      include_regulatory_info: Boolean(values.include_regulatory_info),
+      include_environmental_icon: Boolean(values.include_environmental_icon),
+      include_origin_country: Boolean(values.include_origin_country),
+      include_warranty_info: Boolean(values.include_warranty_info),
+      shadow_effect: Boolean(values.shadow_effect),
+      brand_colors: JSON.stringify({
+        primary: values.brand_primary_color || "#2563eb",
+        secondary: values.brand_secondary_color || "#64748b",
+        accent: values.brand_accent_color || "#06b6d4",
         text: '#1f2937',
         background: '#ffffff'
-      }
+      }),
+      is_default: false
     };
 
-    if (editingTemplate) {
-      updateTemplateMutation.mutate({ id: editingTemplate.id, data: templateData });
-    } else {
-      createTemplateMutation.mutate(templateData);
+    console.log("Final template data:", templateData);
+
+    try {
+      if (editingTemplate) {
+        await updateTemplateMutation.mutateAsync({ id: editingTemplate.id, data: templateData });
+      } else {
+        await createTemplateMutation.mutateAsync(templateData);
+      }
+    } catch (error) {
+      console.error("Template submission error:", error);
     }
   };
 
