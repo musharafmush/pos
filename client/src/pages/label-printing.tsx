@@ -23,7 +23,10 @@ import {
   CopyIcon,
   TrashIcon,
   GridIcon,
-  CheckIcon
+  CheckIcon,
+  SearchIcon,
+  XIcon,
+  QrCodeIcon
 } from "lucide-react";
 import JSBarcode from "jsbarcode";
 
@@ -666,175 +669,332 @@ export default function LabelPrinting() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <TagIcon className="h-8 w-8 text-blue-600" />
-              Label Printing System
-            </h1>
-            <p className="text-gray-600">Create professional product labels with barcode support</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsSettingsOpen(true)}>
-              <SettingsIcon className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-            <Button 
-              onClick={() => setIsPreviewOpen(true)}
-              disabled={selectedProducts.length === 0}
-            >
-              <EyeIcon className="h-4 w-4 mr-2" />
-              Preview ({selectedProducts.length * copiesPerProduct} labels)
-            </Button>
-            <Button 
-              onClick={printLabels}
-              disabled={selectedProducts.length === 0}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <PrinterIcon className="h-4 w-4 mr-2" />
-              Print Labels
-            </Button>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="space-y-8">
+        {/* Professional Header */}
+        <div className="bg-white shadow-lg border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl shadow-lg">
+                  <TagIcon className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-purple-700 bg-clip-text text-transparent">
+                    Professional Label Printing
+                  </h1>
+                  <p className="text-gray-600 text-lg mt-1">Create stunning product labels with advanced barcode support</p>
+                  <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                    <span className="flex items-center">
+                      <CheckIcon className="h-4 w-4 mr-1 text-green-500" />
+                      Real-time Preview
+                    </span>
+                    <span className="flex items-center">
+                      <CheckIcon className="h-4 w-4 mr-1 text-green-500" />
+                      Multiple Templates
+                    </span>
+                    <span className="flex items-center">
+                      <CheckIcon className="h-4 w-4 mr-1 text-green-500" />
+                      Barcode Generation
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <SettingsIcon className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+                <Button 
+                  onClick={() => setIsPreviewOpen(true)}
+                  disabled={selectedProducts.length === 0}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <EyeIcon className="h-4 w-4 mr-2" />
+                  Preview ({selectedProducts.length * copiesPerProduct} labels)
+                </Button>
+                <Button 
+                  onClick={printLabels}
+                  disabled={selectedProducts.length === 0}
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <PrinterIcon className="h-4 w-4 mr-2" />
+                  Print Labels
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Configuration Panel */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Label Configuration</CardTitle>
-            <CardDescription>Configure your label template and printing options</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="template">Label Template</Label>
-                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {defaultTemplates.map(template => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="copies">Copies per Product</Label>
-                <Input
-                  id="copies"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={copiesPerProduct}
-                  onChange={(e) => setCopiesPerProduct(Math.max(1, parseInt(e.target.value) || 1))}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="search">Search Products</Label>
-                <Input
-                  id="search"
-                  placeholder="Search by name or SKU..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="category">Filter by Category</Label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((category: any) => (
-                      <SelectItem key={category.id} value={category.name}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Product Selection */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Product Selection</CardTitle>
-                <CardDescription>
-                  Choose products to print labels for ({selectedProducts.length} selected)
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                  <CheckIcon className="h-4 w-4 mr-1" />
-                  Select All ({filteredProducts.length})
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleDeselectAll}>
-                  <TrashIcon className="h-4 w-4 mr-1" />
-                  Clear Selection
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-              {filteredProducts.map((product: Product) => (
-                <div 
-                  key={product.id} 
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedProducts.includes(product.id) 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => handleSelectProduct(product.id)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm">{product.name}</h4>
-                      <p className="text-xs text-gray-500 mt-1">SKU: {product.sku}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="secondary" className="text-xs">
-                          ₹{product.price.toFixed(2)}
-                        </Badge>
-                        {product.mrp && product.mrp !== product.price && (
-                          <Badge variant="outline" className="text-xs">
-                            MRP: ₹{product.mrp.toFixed(2)}
-                          </Badge>
-                        )}
+        <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+            {/* Enhanced Configuration Panel */}
+            <Card className="bg-white/90 backdrop-blur-md shadow-2xl border-0 ring-1 ring-gray-200/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-1">
+                <div className="bg-white rounded-lg">
+                  <CardHeader className="pb-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg">
+                        <SettingsIcon className="h-6 w-6 text-white" />
                       </div>
-                      {product.category && (
-                        <p className="text-xs text-gray-400 mt-1">{product.category.name}</p>
-                      )}
+                      <div>
+                        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-purple-700 bg-clip-text text-transparent">
+                          Label Configuration
+                        </CardTitle>
+                        <CardDescription className="text-gray-600">
+                          Configure your label template and printing options for professional results
+                        </CardDescription>
+                      </div>
                     </div>
-                    <Checkbox 
-                      checked={selectedProducts.includes(product.id)}
-                      onChange={() => handleSelectProduct(product.id)}
-                    />
-                  </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="template" className="text-sm font-semibold text-gray-700 flex items-center">
+                          <TagIcon className="h-4 w-4 mr-2 text-blue-500" />
+                          Label Template
+                        </Label>
+                        <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                          <SelectTrigger className="h-11 border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 transition-colors">
+                            <SelectValue placeholder="Choose template" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {defaultTemplates.map(template => (
+                              <SelectItem key={template.id} value={template.id} className="py-3">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-8 h-6 bg-gradient-to-r from-blue-400 to-purple-400 rounded border"></div>
+                                  <span>{template.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="copies" className="text-sm font-semibold text-gray-700 flex items-center">
+                          <PrinterIcon className="h-4 w-4 mr-2 text-green-500" />
+                          Copies per Product
+                        </Label>
+                        <Input
+                          id="copies"
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={copiesPerProduct}
+                          onChange={(e) => setCopiesPerProduct(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="h-11 border-2 border-gray-200 hover:border-green-300 focus:border-green-500 transition-colors text-center font-semibold"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="search" className="text-sm font-semibold text-gray-700 flex items-center">
+                          <SearchIcon className="h-4 w-4 mr-2 text-purple-500" />
+                          Search Products
+                        </Label>
+                        <Input
+                          id="search"
+                          placeholder="Search by name or SKU..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="h-11 border-2 border-gray-200 hover:border-purple-300 focus:border-purple-500 transition-colors"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="category" className="text-sm font-semibold text-gray-700 flex items-center">
+                          <GridIcon className="h-4 w-4 mr-2 text-orange-500" />
+                          Filter by Category
+                        </Label>
+                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                          <SelectTrigger className="h-11 border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-colors">
+                            <SelectValue placeholder="All Categories" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all" className="py-3">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-4 h-4 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full"></div>
+                                <span>All Categories</span>
+                              </div>
+                            </SelectItem>
+                            {categories.map((category: any) => (
+                              <SelectItem key={category.id} value={category.name} className="py-3">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-4 h-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full"></div>
+                                  <span>{category.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    {/* Stats Bar */}
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-100">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold text-blue-600">{getCurrentTemplate().name.split(' ')[0]}</div>
+                          <div className="text-sm text-gray-600">Template</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold text-green-600">{copiesPerProduct}x</div>
+                          <div className="text-sm text-gray-600">Copies Each</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold text-purple-600">{filteredProducts.length}</div>
+                          <div className="text-sm text-gray-600">Products Found</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold text-orange-600">{selectedProducts.length * copiesPerProduct}</div>
+                          <div className="text-sm text-gray-600">Total Labels</div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
                 </div>
-              ))}
-            </div>
-            
-            {filteredProducts.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <GridIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No products found matching your criteria</p>
-                <p className="text-sm">Try adjusting your search or category filter</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </Card>
+
+            {/* Enhanced Product Selection */}
+            <Card className="bg-white/90 backdrop-blur-md shadow-2xl border-0 ring-1 ring-gray-200/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 p-1">
+                <div className="bg-white rounded-lg">
+                  <CardHeader className="pb-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-gradient-to-r from-green-500 to-blue-500 p-2 rounded-lg">
+                          <GridIcon className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-green-700 to-blue-700 bg-clip-text text-transparent">
+                            Product Selection
+                          </CardTitle>
+                          <CardDescription className="text-gray-600">
+                            Choose products to print labels for • {filteredProducts.length} products available • {selectedProducts.length} selected
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        <Button 
+                          variant="outline" 
+                          onClick={handleSelectAll}
+                          className="shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-300"
+                        >
+                          <CheckIcon className="h-4 w-4 mr-2" />
+                          Select All ({filteredProducts.length})
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={handleDeselectAll}
+                          disabled={selectedProducts.length === 0}
+                          className="shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-red-300"
+                        >
+                          <TrashIcon className="h-4 w-4 mr-2" />
+                          Clear Selection
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-96 overflow-y-auto pr-2">
+                      {filteredProducts.map((product: Product) => (
+                        <div 
+                          key={product.id} 
+                          className={`group relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                            selectedProducts.includes(product.id) 
+                              ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 shadow-md transform scale-[1.02]' 
+                              : 'border-gray-200 hover:border-blue-300 bg-white hover:bg-gray-50'
+                          }`}
+                          onClick={() => handleSelectProduct(product.id)}
+                        >
+                          {/* Selection Indicator */}
+                          {selectedProducts.includes(product.id) && (
+                            <div className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full p-1 shadow-lg">
+                              <CheckIcon className="h-4 w-4" />
+                            </div>
+                          )}
+                          
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 space-y-3">
+                              <div>
+                                <h3 className="font-bold text-gray-900 text-base group-hover:text-blue-700 transition-colors">
+                                  {product.name}
+                                </h3>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                    SKU: {product.sku}
+                                  </span>
+                                  {product.barcode && (
+                                    <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                      <QrCodeIcon className="h-3 w-3 inline mr-1" />
+                                      Barcode
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                  <div className="flex items-baseline space-x-2">
+                                    <span className="text-2xl font-bold text-green-600">₹{product.price}</span>
+                                    {product.mrp && product.mrp > product.price && (
+                                      <span className="text-sm text-gray-400 line-through">₹{product.mrp}</span>
+                                    )}
+                                  </div>
+                                  {product.mrp && product.mrp > product.price && (
+                                    <div className="text-xs text-green-600 font-semibold">
+                                      Save ₹{(product.mrp - product.price).toFixed(2)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {product.category && (
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-3 h-3 bg-gradient-to-r from-orange-400 to-red-400 rounded-full"></div>
+                                  <span className="text-xs font-medium text-gray-600">
+                                    {product.category.name}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="ml-4">
+                              <Checkbox
+                                checked={selectedProducts.includes(product.id)}
+                                onChange={() => handleSelectProduct(product.id)}
+                                className="scale-125"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {filteredProducts.length === 0 && (
+                      <div className="text-center py-16">
+                        <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+                          <GridIcon className="h-12 w-12 text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">No Products Found</h3>
+                        <p className="text-gray-500 mb-4">No products match your current search and filter criteria</p>
+                        <div className="space-y-2 text-sm text-gray-400">
+                          <p>• Try adjusting your search terms</p>
+                          <p>• Change or clear the category filter</p>
+                          <p>• Check if products exist in your inventory</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </div>
+              </div>
+            </Card>
 
         {/* Preview Dialog */}
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
@@ -956,6 +1116,8 @@ export default function LabelPrinting() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
+        </div>
       </div>
     </DashboardLayout>
   );
