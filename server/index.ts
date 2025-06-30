@@ -120,3 +120,140 @@ app.use((req, res, next) => {
     process.exit(1);
   }
 })();
+
+// Import label printing routes
+import './label-printing-routes';
+
+// Label Templates API Routes
+app.get('/api/label-templates', async (req, res) => {
+  try {
+    const templates = db.prepare(`
+      SELECT id, name, description, width, height, font_size, orientation,
+             include_barcode, include_price, include_description, include_mrp, 
+             include_weight, include_hsn, barcode_position, border_style, 
+             border_width, background_color, text_color, custom_css, 
+             is_default, is_active, created_at, updated_at
+      FROM label_templates 
+      WHERE is_active = 1 
+      ORDER BY is_default DESC, name ASC
+    `).all();
+    res.json(templates);
+  } catch (error) {
+    console.error('Error fetching label templates:', error);
+    res.status(500).json({ error: 'Failed to fetch label templates' });
+  }
+});
+
+app.post('/api/label-templates', async (req, res) => {
+  try {
+    const template = req.body;
+    const result = db.prepare(`
+      INSERT INTO label_templates (
+        name, description, width, height, font_size, orientation,
+        include_barcode, include_price, include_description, include_mrp,
+        include_weight, include_hsn, barcode_position, border_style,
+        border_width, background_color, text_color, custom_css, is_default
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      template.name, template.description, template.width, template.height,
+      template.font_size, template.orientation || 'landscape',
+      template.include_barcode ? 1 : 0, template.include_price ? 1 : 0,
+      template.include_description ? 1 : 0, template.include_mrp ? 1 : 0,
+      template.include_weight ? 1 : 0, template.include_hsn ? 1 : 0,
+      template.barcode_position, template.border_style, template.border_width,
+      template.background_color, template.text_color, template.custom_css,
+      template.is_default ? 1 : 0
+    );
+
+    const newTemplate = db.prepare('SELECT * FROM label_templates WHERE id = ?').get(result.lastInsertRowid);
+    res.json(newTemplate);
+  } catch (error) {
+    console.error('Error creating label template:', error);
+    res.status(500).json({ error: 'Failed to create label template' });
+  }
+});
+
+app.put('/api/label-templates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const template = req.body;
+
+    db.prepare(`
+      UPDATE label_templates SET
+        name = ?, description = ?, width = ?, height = ?, font_size = ?,
+        orientation = ?, include_barcode = ?, include_price = ?,
+        include_description = ?, include_mrp = ?, include_weight = ?,
+        include_hsn = ?, barcode_position = ?, border_style = ?,
+        border_width = ?, background_color = ?, text_color = ?,
+        custom_css = ?, is_default = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      template.name, template.description, template.width, template.height,
+      template.font_size, template.orientation || 'landscape',
+      template.include_barcode ? 1 : 0, template.include_price ? 1 : 0,
+      template.include_description ? 1 : 0, template.include_mrp ? 1 : 0,
+      template.include_weight ? 1 : 0, template.include_hsn ? 1 : 0,
+      template.barcode_position, template.border_style, template.border_width,
+      template.background_color, template.text_color, template.custom_css,
+      template.is_default ? 1 : 0, id
+    );
+
+    const updatedTemplate = db.prepare('SELECT * FROM label_templates WHERE id = ?').get(id);
+    res.json(updatedTemplate);
+  } catch (error) {
+    console.error('Error updating label template:', error);
+    res.status(500).json({ error: 'Failed to update label template' });
+  }
+});
+
+app.delete('/api/label-templates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    db.prepare('DELETE FROM label_templates WHERE id = ?').run(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting label template:', error);
+    res.status(500).json({ error: 'Failed to delete label template' });
+  }
+});
+
+// Print Jobs API Routes
+app.get('/api/print-jobs', async (req, res) => {
+  try {
+    const jobs = db.prepare(`
+      SELECT pj.*, lt.name as template_name, u.name as user_name
+      FROM print_jobs pj
+      LEFT JOIN label_templates lt ON pj.template_id = lt.id
+      LEFT JOIN users u ON pj.user_id = u.id
+      ORDER BY pj.created_at DESC
+      LIMIT 50
+    `).all();
+    res.json(jobs);
+  } catch (error) {
+    console.error('Error fetching print jobs:', error);
+    res.status(500).json({ error: 'Failed to fetch print jobs' });
+  }
+});
+
+app.post('/api/print-jobs', async (req, res) => {
+  try {
+    const job = req.body;
+    const result = db.prepare(`
+      INSERT INTO print_jobs (
+        template_id, user_id, product_ids, copies, labels_per_row,
+        paper_size, orientation, status, total_labels, custom_text, print_settings
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      job.templateId, 1, // Default user_id to 1
+      JSON.stringify(job.productIds), job.copies, job.labelsPerRow,
+      job.paperSize, job.orientation, 'completed', job.totalLabels,
+      job.customText, job.printSettings
+    );
+
+    const newJob = db.prepare('SELECT * FROM print_jobs WHERE id = ?').get(result.lastInsertRowid);
+    res.json(newJob);
+  } catch (error) {
+    console.error('Error creating print job:', error);
+    res.status(500).json({ error: 'Failed to create print job' });
+  }
+});

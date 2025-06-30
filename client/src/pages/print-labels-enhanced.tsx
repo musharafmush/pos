@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { 
   TagIcon, 
   PrinterIcon, 
@@ -185,22 +185,38 @@ export default function PrintLabelsEnhanced() {
   // Fetch data
   const { data: productsData = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
     queryKey: ['/api/products'],
-    queryFn: () => apiRequest('/api/products')
+    queryFn: async () => {
+      const response = await fetch('/api/products');
+      if (!response.ok) throw new Error('Failed to fetch products');
+      return response.json();
+    }
   });
 
   const { data: categoriesData = [] } = useQuery({
     queryKey: ['/api/categories'],
-    queryFn: () => apiRequest('/api/categories')
+    queryFn: async () => {
+      const response = await fetch('/api/categories');
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      return response.json();
+    }
   });
 
   const { data: templatesData = [], refetch: refetchTemplates } = useQuery({
     queryKey: ['/api/label-templates'],
-    queryFn: () => apiRequest('/api/label-templates')
+    queryFn: async () => {
+      const response = await fetch('/api/label-templates');
+      if (!response.ok) throw new Error('Failed to fetch templates');
+      return response.json();
+    }
   });
 
   const { data: printJobsData = [] } = useQuery({
     queryKey: ['/api/print-jobs'],
-    queryFn: () => apiRequest('/api/print-jobs'),
+    queryFn: async () => {
+      const response = await fetch('/api/print-jobs');
+      if (!response.ok) throw new Error('Failed to fetch print jobs');
+      return response.json();
+    },
     refetchInterval: 30000 // Refresh every 30 seconds
   });
 
