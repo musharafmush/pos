@@ -178,7 +178,8 @@ export default function PrintLabelsEnhanced() {
       text_color: '#000000',
       custom_css: "",
       is_default: false
-    }
+    },
+    mode: 'onChange'
   });
 
   // Fetch data
@@ -219,8 +220,7 @@ export default function PrintLabelsEnhanced() {
         description: "Your label template has been saved"
       });
       queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
-      setIsTemplateDialogOpen(false);
-      templateForm.reset();
+      handleTemplateDialogClose();
     },
     onError: (error) => {
       toast({
@@ -246,9 +246,7 @@ export default function PrintLabelsEnhanced() {
         description: "Your changes have been saved"
       });
       queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
-      setIsTemplateDialogOpen(false);
-      setEditingTemplate(null);
-      templateForm.reset();
+      handleTemplateDialogClose();
     },
     onError: (error) => {
       toast({
@@ -357,27 +355,30 @@ export default function PrintLabelsEnhanced() {
 
   const handleEditTemplate = (template: LabelTemplate) => {
     setEditingTemplate(template);
-    templateForm.reset({
-      name: template.name,
-      description: template.description || "",
-      width: template.width,
-      height: template.height,
-      font_size: template.font_size,
-      orientation: template.orientation || 'landscape',
-      include_barcode: template.include_barcode,
-      include_price: template.include_price,
-      include_description: template.include_description,
-      include_mrp: template.include_mrp,
-      include_weight: template.include_weight,
-      include_hsn: template.include_hsn,
-      barcode_position: template.barcode_position,
-      border_style: template.border_style,
-      border_width: template.border_width,
-      background_color: template.background_color,
-      text_color: template.text_color,
-      custom_css: template.custom_css || "",
-      is_default: template.is_default
-    });
+    // Use setTimeout to ensure the form is properly initialized before setting values
+    setTimeout(() => {
+      templateForm.reset({
+        name: template.name,
+        description: template.description || "",
+        width: template.width,
+        height: template.height,
+        font_size: template.font_size,
+        orientation: template.orientation || 'landscape',
+        include_barcode: template.include_barcode,
+        include_price: template.include_price,
+        include_description: template.include_description,
+        include_mrp: template.include_mrp,
+        include_weight: template.include_weight,
+        include_hsn: template.include_hsn,
+        barcode_position: template.barcode_position,
+        border_style: template.border_style,
+        border_width: template.border_width,
+        background_color: template.background_color,
+        text_color: template.text_color,
+        custom_css: template.custom_css || "",
+        is_default: template.is_default
+      });
+    }, 100);
     setIsTemplateDialogOpen(true);
   };
 
@@ -393,6 +394,12 @@ export default function PrintLabelsEnhanced() {
     } else {
       createTemplateMutation.mutate(data);
     }
+  };
+
+  const handleTemplateDialogClose = () => {
+    setIsTemplateDialogOpen(false);
+    setEditingTemplate(null);
+    templateForm.reset();
   };
 
   // Generate professional barcode
@@ -1213,7 +1220,7 @@ export default function PrintLabelsEnhanced() {
         </Tabs>
 
         {/* Template Creation/Edit Dialog */}
-        <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+        <Dialog open={isTemplateDialogOpen} onOpenChange={handleTemplateDialogClose}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -1476,7 +1483,7 @@ export default function PrintLabelsEnhanced() {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setIsTemplateDialogOpen(false)}
+                    onClick={handleTemplateDialogClose}
                   >
                     <XIcon className="h-4 w-4 mr-2" />
                     Cancel
