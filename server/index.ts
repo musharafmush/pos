@@ -114,6 +114,167 @@ app.use((req, res, next) => {
       // Don't exit the process, just log the error
     });
 
+    // Import label printing routes
+    import './label-printing-routes';
+    import { db } from '../db/sqlite-index.js';
+    import { sqlite } from '../db/sqlite-index.js';
+
+    // Label Templates API Routes
+    app.get('/api/label-templates', async (req, res) => {
+      try {
+        // Ensure label templates table exists
+        sqlite.exec(`
+          CREATE TABLE IF NOT EXISTS label_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            width INTEGER NOT NULL,
+            height INTEGER NOT NULL,
+            font_size INTEGER DEFAULT 12,
+            include_barcode INTEGER DEFAULT 1,
+            include_price INTEGER DEFAULT 1,
+            include_description INTEGER DEFAULT 0,
+            include_mrp INTEGER DEFAULT 1,
+            include_weight INTEGER DEFAULT 0,
+            include_hsn INTEGER DEFAULT 0,
+            barcode_position TEXT DEFAULT 'bottom',
+            border_style TEXT DEFAULT 'solid',
+            border_width INTEGER DEFAULT 1,
+            background_color TEXT DEFAULT '#ffffff',
+            text_color TEXT DEFAULT '#000000',
+            is_default INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        const templates = sqlite.prepare(`
+          SELECT * FROM label_templates 
+          WHERE is_active = 1 
+          ORDER BY is_default DESC, name ASC
+        `).all();
+        res.json(templates);
+      } catch (error) {
+        console.error('Error fetching label templates:', error);
+        res.status(500).json({ error: 'Failed to fetch label templates' });
+      }
+    });
+
+    app.post('/api/label-templates', async (req, res) => {
+      try {
+        const templateData = req.body;
+
+        // Validate required fields
+        if (!templateData.name || !templateData.width || !templateData.height) {
+          return res.status(400).json({ 
+            message: 'Name, width, and height are required' 
+          });
+        }
+
+        // Ensure label templates table exists
+        sqlite.exec(`
+          CREATE TABLE IF NOT EXISTS label_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            width INTEGER NOT NULL,
+            height INTEGER NOT NULL,
+            font_size INTEGER DEFAULT 12,
+            include_barcode INTEGER DEFAULT 1,
+            include_price INTEGER DEFAULT 1,
+            include_description INTEGER DEFAULT 0,
+            include_mrp INTEGER DEFAULT 1,
+            include_weight INTEGER DEFAULT 0,
+            include_hsn INTEGER DEFAULT 0,
+            barcode_position TEXT DEFAULT 'bottom',
+            border_style TEXT DEFAULT 'solid',
+            border_width INTEGER DEFAULT 1,
+            background_color TEXT DEFAULT '#ffffff',
+            text_color TEXT DEFAULT '#000000',
+            is_default INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        const stmt = sqlite.prepare(`
+          INSERT INTO label_templates (
+            name, description, width, height, font_size, include_barcode, include_price,
+            include_description, include_mrp, include_weight, include_hsn, barcode_position,
+            border_style, border_width, background_color, text_color, is_default, is_active,
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        const now = new Date().toISOString();
+        const result = stmt.run(
+          templateData.name,
+          templateData.description || '',
+          templateData.width,
+          templateData.height,
+          templateData.font_size || 12,
+          templateData.include_barcode ? 1 : 0,
+          templateData.include_price ? 1 : 0,
+          templateData.include_description ? 1 : 0,
+          templateData.include_mrp ? 1 : 0,
+          templateData.include_weight ? 1 : 0,
+          templateData.include_hsn ? 1 : 0,
+          templateData.barcode_position || 'bottom',
+          templateData.border_style || 'solid',
+          templateData.border_width || 1,
+          templateData.background_color || '#ffffff',
+          templateData.text_color || '#000000',
+          templateData.is_default ? 1 : 0,
+          templateData.is_active !== false ? 1 : 0,
+          now,
+          now
+        );
+
+        // Get the created template
+        const newTemplate = sqlite.prepare('SELECT * FROM label_templates WHERE id = ?').get(result.lastInsertRowid);
+        res.status(201).json(newTemplate);
+      } catch (error) {
+        console.error('Error creating label template:', error);
+        res.status(500).json({ error: 'Failed to create label template' });
+      }
+    });
+
+    app.get('/api/print-jobs', async (req, res) => {
+      try {
+        // Ensure print jobs table exists
+        sqlite.exec(`
+          CREATE TABLE IF NOT EXISTS print_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            template_id INTEGER NOT NULL,
+            user_id INTEGER DEFAULT 1,
+            printer_name TEXT NOT NULL,
+            product_ids TEXT NOT NULL,
+            copies INTEGER DEFAULT 1,
+            labels_per_row INTEGER DEFAULT 2,
+            paper_size TEXT DEFAULT 'A4',
+            orientation TEXT DEFAULT 'portrait',
+            status TEXT DEFAULT 'completed',
+            total_labels INTEGER NOT NULL,
+            custom_text TEXT,
+            print_settings TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        const jobs = sqlite.prepare(`
+          SELECT * FROM print_jobs 
+          ORDER BY created_at DESC 
+          LIMIT 50
+        `).all();
+        res.json(jobs);
+      } catch (error) {
+        console.error('Error fetching print jobs:', error);
+        res.status(500).json({ error: 'Failed to fetch print jobs' });
+      }
+    });
+
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     console.error('Stack:', error.stack);
