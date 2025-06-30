@@ -337,8 +337,8 @@ export default function PrintLabelsPage() {
             if (element.dataField) {
               switch (element.dataField) {
                 case 'name': content = product.name; break;
-                case 'price': content = `₹${product.price.toFixed(2)}`; break;
-                case 'mrp': content = `MRP: ₹${(product.mrp || product.price).toFixed(2)}`; break;
+                case 'price': content = `₹${Number(product.price).toFixed(2)}`; break;
+                case 'mrp': content = `MRP: ₹${Number(product.mrp || product.price).toFixed(2)}`; break;
                 case 'sku': content = product.sku; break;
                 case 'barcode': content = product.barcode || product.sku; break;
                 case 'category': content = product.category?.name || ''; break;
@@ -581,9 +581,9 @@ export default function PrintLabelsPage() {
                             <span>SKU: {product.sku}</span>
                           </div>
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-semibold text-green-600">₹{product.price.toFixed(2)}</span>
-                            {product.mrp && product.mrp !== product.price && (
-                              <span className="text-gray-500 line-through">₹{product.mrp.toFixed(2)}</span>
+                            <span className="font-semibold text-green-600">₹{Number(product.price).toFixed(2)}</span>
+                            {product.mrp && Number(product.mrp) !== Number(product.price) && (
+                              <span className="text-gray-500 line-through">₹{Number(product.mrp).toFixed(2)}</span>
                             )}
                           </div>
                           {product.category && (
