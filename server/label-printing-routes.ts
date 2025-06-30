@@ -191,7 +191,31 @@ const mockPrintJobs = [
 router.get("/label-templates", async (req, res) => {
   try {
     const templates = await db.select().from(labelTemplates);
-    res.json(templates);
+    
+    // Map database field names to frontend field names
+    const mappedTemplates = templates.map(template => ({
+      ...template,
+      font_size: template.fontSize,
+      include_barcode: template.includeBarcode,
+      include_price: template.includePrice,
+      include_description: template.includeDescription,
+      include_mrp: template.includeMRP,
+      include_weight: template.includeWeight,
+      include_hsn: template.includeHSN,
+      barcode_position: template.barcodePosition,
+      border_style: template.borderStyle,
+      border_width: template.borderWidth,
+      background_color: template.backgroundColor,
+      text_color: template.textColor,
+      custom_css: template.customCSS,
+      is_default: template.isDefault,
+      is_active: template.isActive,
+      created_at: template.createdAt,
+      updated_at: template.updatedAt
+    }));
+    
+    console.log('Sending templates with mapped fields:', mappedTemplates.map(t => ({ id: t.id, name: t.name, font_size: t.font_size })));
+    res.json(mappedTemplates);
   } catch (error) {
     console.error("Error fetching label templates:", error);
     res.status(500).json({ error: "Failed to fetch label templates" });
@@ -216,9 +240,37 @@ router.put("/label-templates/:id", async (req, res) => {
     const templateId = parseInt(req.params.id);
     const updateData = req.body;
     
+    console.log('Received update data:', updateData);
+    console.log('Font size received:', updateData.font_size);
+    
+    // Map frontend field names to database field names
+    const dbUpdateData = {
+      name: updateData.name,
+      description: updateData.description,
+      width: updateData.width,
+      height: updateData.height,
+      fontSize: updateData.font_size, // Map font_size to fontSize
+      includeBarcode: updateData.include_barcode,
+      includePrice: updateData.include_price,
+      includeDescription: updateData.include_description,
+      includeMRP: updateData.include_mrp,
+      includeWeight: updateData.include_weight,
+      includeHSN: updateData.include_hsn,
+      barcodePosition: updateData.barcode_position,
+      borderStyle: updateData.border_style,
+      borderWidth: updateData.border_width,
+      backgroundColor: updateData.background_color,
+      textColor: updateData.text_color,
+      customCSS: updateData.custom_css,
+      isDefault: updateData.is_default,
+      orientation: updateData.orientation
+    };
+    
+    console.log('Mapped data for DB:', dbUpdateData);
+    
     const [updatedTemplate] = await db
       .update(labelTemplates)
-      .set(updateData)
+      .set(dbUpdateData)
       .where(eq(labelTemplates.id, templateId))
       .returning();
 
@@ -226,7 +278,27 @@ router.put("/label-templates/:id", async (req, res) => {
       return res.status(404).json({ error: "Template not found" });
     }
 
-    res.json(updatedTemplate);
+    // Map back to frontend field names
+    const responseData = {
+      ...updatedTemplate,
+      font_size: updatedTemplate.fontSize,
+      include_barcode: updatedTemplate.includeBarcode,
+      include_price: updatedTemplate.includePrice,
+      include_description: updatedTemplate.includeDescription,
+      include_mrp: updatedTemplate.includeMRP,
+      include_weight: updatedTemplate.includeWeight,
+      include_hsn: updatedTemplate.includeHSN,
+      barcode_position: updatedTemplate.barcodePosition,
+      border_style: updatedTemplate.borderStyle,
+      border_width: updatedTemplate.borderWidth,
+      background_color: updatedTemplate.backgroundColor,
+      text_color: updatedTemplate.textColor,
+      custom_css: updatedTemplate.customCSS,
+      is_default: updatedTemplate.isDefault
+    };
+
+    console.log('Sending response:', responseData);
+    res.json(responseData);
   } catch (error) {
     console.error("Error updating label template:", error);
     res.status(500).json({ error: "Failed to update label template" });
