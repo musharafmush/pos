@@ -193,6 +193,13 @@ export default function PrintLabelsEnhanced() {
 
   const { data: templatesData = [], refetch: refetchTemplates } = useQuery({
     queryKey: ['/api/label-templates'],
+    select: (data: any) => {
+      console.log('Templates from server:', data);
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('First template font_size:', data[0].font_size);
+      }
+      return data || [];
+    }
   });
 
   const { data: printJobsData = [] } = useQuery({
@@ -241,6 +248,7 @@ export default function PrintLabelsEnhanced() {
   const updateTemplateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: TemplateFormData }) => {
       console.log('Updating template with data:', data);
+      console.log('Font size being sent:', data.font_size);
 
       const response = await fetch(`/api/label-templates/${id}`, {
         method: 'PUT',
@@ -257,13 +265,18 @@ export default function PrintLabelsEnhanced() {
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('Template updated successfully:', data);
+      console.log('Updated font_size:', data.font_size);
       toast({
         title: "Template updated successfully",
-        description: `Template "${data.name}" has been saved with your changes`
+        description: `Template "${data.name}" has been saved with your changes (Font: ${data.font_size}pt)`
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+      
+      // Force immediate refetch of templates
+      await queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+      await refetchTemplates();
+      
       handleTemplateDialogClose();
     },
     onError: (error: Error) => {
