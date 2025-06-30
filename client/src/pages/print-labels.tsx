@@ -80,7 +80,7 @@ const defaultTemplates: LabelTemplate[] = [
     name: 'Retail Standard',
     width: 80,
     height: 50,
-    fontSize: 12,
+    fontSize: 18,
     includeBarcode: true,
     includePrice: true,
     includeDescription: false,
@@ -98,7 +98,7 @@ const defaultTemplates: LabelTemplate[] = [
     name: 'Grocery Compact',
     width: 60,
     height: 40,
-    fontSize: 10,
+    fontSize: 16,
     includeBarcode: true,
     includePrice: true,
     includeDescription: false,
@@ -116,7 +116,7 @@ const defaultTemplates: LabelTemplate[] = [
     name: 'Wholesale Detailed',
     width: 100,
     height: 70,
-    fontSize: 14,
+    fontSize: 20,
     includeBarcode: true,
     includePrice: true,
     includeDescription: true,
@@ -208,21 +208,21 @@ export default function PrintLabels() {
   };
 
   // Generate professional barcode
-  const generateBarcode = (text: string, width: number = 100, height: number = 30) => {
+  const generateBarcode = (text: string, width: number = 100, height: number = 35) => {
     const barcodeData = text.padEnd(12, '0').substring(0, 12);
     const bars = barcodeData.split('').map((digit, index) => {
       const digitValue = parseInt(digit);
-      const barWidth = digitValue % 4 + 1;
-      const barHeight = height - 15;
-      return `<rect x="${index * 8}" y="5" width="${barWidth}" height="${barHeight}" fill="#000"/>`;
+      const barWidth = digitValue % 4 + 2;
+      const barHeight = height - 18;
+      return `<rect x="${index * 10}" y="5" width="${barWidth}" height="${barHeight}" fill="#000"/>`;
     }).join('');
     
     return `
-      <div style="text-align: center; margin: 2px 0;">
+      <div style="text-align: center; margin: 3px 0;">
         <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #ddd;">
           <rect width="${width}" height="${height}" fill="#fff"/>
           ${bars}
-          <text x="${width/2}" y="${height - 2}" font-family="monospace" font-size="8" text-anchor="middle" fill="#000">${barcodeData}</text>
+          <text x="${width/2}" y="${height - 3}" font-family="monospace" font-size="12" text-anchor="middle" fill="#000" font-weight="bold">${barcodeData}</text>
         </svg>
       </div>
     `;
@@ -248,14 +248,14 @@ export default function PrintLabels() {
       `border: ${borderWidth}px ${borderStyle} #333;` : '';
 
     const barcodeHTML = currentTemplate.includeBarcode ? 
-      generateBarcode(product.barcode || product.sku, Math.min(width * 2.8, 200), 25) : '';
+      generateBarcode(product.barcode || product.sku, Math.min(width * 2.8, 200), 35) : '';
 
     return `
       <div class="product-label" style="
         width: ${width}mm;
         height: ${height}mm;
         ${borderCSS}
-        padding: 3mm;
+        padding: 4mm;
         margin: 2mm;
         display: inline-block;
         font-family: Arial, sans-serif;
@@ -266,50 +266,50 @@ export default function PrintLabels() {
         vertical-align: top;
         position: relative;
         font-size: ${fontSize}px;
-        line-height: 1.3;
+        line-height: 1.4;
         overflow: hidden;
       ">
-        <div style="font-weight: bold; margin-bottom: 2mm; font-size: ${fontSize + 1}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <div style="font-weight: bold; margin-bottom: 3mm; font-size: ${fontSize + 3}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
           ${product.name}
         </div>
 
-        <div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 1mm;">
+        <div style="font-size: ${fontSize}px; color: #444; margin-bottom: 2mm; font-weight: 600;">
           SKU: ${product.sku}
         </div>
 
         ${currentTemplate.includeDescription && product.description ? 
-          `<div style="font-size: ${fontSize - 2}px; color: #888; margin-bottom: 1mm; overflow: hidden; height: 15px;">
-            ${product.description.substring(0, 40)}${product.description.length > 40 ? '...' : ''}
+          `<div style="font-size: ${fontSize - 2}px; color: #666; margin-bottom: 2mm; overflow: hidden; height: 20px;">
+            ${product.description.substring(0, 35)}${product.description.length > 35 ? '...' : ''}
           </div>` : ''
         }
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2mm;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3mm;">
           ${currentTemplate.includePrice ? 
-            `<div style="font-size: ${fontSize + 2}px; font-weight: bold; color: #2563eb;">
+            `<div style="font-size: ${fontSize + 6}px; font-weight: bold; color: #1e40af;">
               ₹${parseFloat(product.price).toFixed(2)}
             </div>` : ''
           }
           ${currentTemplate.includeMRP && product.mrp && parseFloat(product.mrp) !== parseFloat(product.price) ? 
-            `<div style="font-size: ${fontSize - 1}px; color: #666; text-decoration: line-through;">
+            `<div style="font-size: ${fontSize + 1}px; color: #666; text-decoration: line-through;">
               MRP: ₹${parseFloat(product.mrp).toFixed(2)}
             </div>` : ''
           }
         </div>
 
         ${currentTemplate.includeWeight && product.weight ? 
-          `<div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 1mm;">
+          `<div style="font-size: ${fontSize}px; color: #555; margin-bottom: 2mm; font-weight: 500;">
             Weight: ${product.weight} ${product.weightUnit || 'kg'}
           </div>` : ''
         }
 
         ${currentTemplate.includeHSN && product.hsnCode ? 
-          `<div style="font-size: ${fontSize - 2}px; color: #666; margin-bottom: 1mm;">
+          `<div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 2mm;">
             HSN: ${product.hsnCode}
           </div>` : ''
         }
 
         ${customText ? 
-          `<div style="font-size: ${fontSize - 1}px; color: #666; margin-bottom: 1mm;">
+          `<div style="font-size: ${fontSize}px; color: #555; margin-bottom: 2mm; font-weight: 500;">
             ${customText}
           </div>` : ''
         }
@@ -320,7 +320,7 @@ export default function PrintLabels() {
           </div>` : ''
         }
 
-        <div style="position: absolute; bottom: 1mm; right: 2mm; font-size: 6px; color: #ccc;">
+        <div style="position: absolute; bottom: 1mm; right: 2mm; font-size: 8px; color: #999;">
           ${new Date().toLocaleDateString('en-IN')}
         </div>
       </div>
