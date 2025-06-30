@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
@@ -204,6 +204,13 @@ export default function PrintLabelsEnhanced() {
   const categories = categoriesData as Category[];
   const templates = templatesData as LabelTemplate[];
   const printJobs = printJobsData as PrintJob[];
+
+  // Watch font size changes for real-time preview
+  const watchedFontSize = useWatch({
+    control: templateForm.control,
+    name: "font_size",
+    defaultValue: 18
+  });
 
   // Mutations
   const createTemplateMutation = useMutation({
@@ -1370,23 +1377,25 @@ export default function PrintLabelsEnhanced() {
                                 Live Preview:
                               </div>
                               <div style={{ 
-                                fontSize: `${Math.min(field.value, 28)}px`, 
+                                fontSize: `${Math.min(watchedFontSize || 18, 28)}px`, 
                                 fontWeight: 'bold', 
                                 color: '#1e40af',
                                 lineHeight: '1.2',
-                                marginBottom: '4px'
+                                marginBottom: '4px',
+                                transition: 'font-size 0.2s ease'
                               }}>
                                 SUGAR BULK
                               </div>
                               <div style={{ 
-                                fontSize: `${Math.max(field.value - 6, 8)}px`, 
+                                fontSize: `${Math.max((watchedFontSize || 18) - 6, 8)}px`, 
                                 color: '#666',
-                                fontWeight: '500'
+                                fontWeight: '500',
+                                transition: 'font-size 0.2s ease'
                               }}>
                                 SKU: 24 • ₹45.00
                               </div>
                               <div className="text-xs text-blue-500 mt-2 opacity-75">
-                                Font size: {field.value}pt • Preview scales up to 28px
+                                Font size: {watchedFontSize || 18}pt • Preview scales up to 28px
                               </div>
                             </div>
                           </div>
