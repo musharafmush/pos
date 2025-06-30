@@ -7595,5 +7595,9 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Import and mount label printing routes
+  const labelPrintingRoutes = await import('./label-printing-routes.js');
+  app.use('/api', labelPrintingRoutes.default);
+
   return httpServer;
 }

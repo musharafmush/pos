@@ -611,6 +611,81 @@ export type ReturnItemInsert = z.infer<typeof returnItemInsertSchema>;
 export const returnItemSelectSchema = createSelectSchema(returnItems);
 export type ReturnItem = z.infer<typeof returnItemSelectSchema>;
 
+
+
+// Printer Settings table for managing Endura and other printers
+export const printerSettings = pgTable('printer_settings', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  printerType: text('printer_type').default('endura'), // endura, thermal, laser, inkjet
+  connectionType: text('connection_type').default('usb'), // usb, network, bluetooth, serial
+  ipAddress: text('ip_address'),
+  port: integer('port'),
+  devicePath: text('device_path'), // for USB/Serial connections
+  paperWidth: integer('paper_width').default(80), // in mm
+  paperHeight: integer('paper_height').default(40), // in mm
+  printDensity: integer('print_density').default(8), // 1-15 for thermal printers
+  printSpeed: integer('print_speed').default(4), // 1-14 for thermal printers
+  isDefault: boolean('is_default').default(false),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+
+
+// Label Design Elements table for drag-drop designer
+export const labelElements = pgTable('label_elements', {
+  id: serial('id').primaryKey(),
+  templateId: integer('template_id').references(() => labelTemplates.id).notNull(),
+  elementType: text('element_type').notNull(), // text, barcode, image, line, box
+  fieldName: text('field_name'), // product_name, price, barcode, etc.
+  positionX: integer('position_x').default(0),
+  positionY: integer('position_y').default(0),
+  width: integer('width').default(100),
+  height: integer('height').default(20),
+  fontSize: integer('font_size').default(12),
+  fontWeight: text('font_weight').default('normal'),
+  textAlign: text('text_align').default('left'),
+  color: text('color').default('#000000'),
+  backgroundColor: text('background_color'),
+  borderWidth: integer('border_width').default(0),
+  borderColor: text('border_color').default('#000000'),
+  rotation: integer('rotation').default(0),
+  zIndex: integer('z_index').default(1),
+  customProperties: text('custom_properties'), // JSON for element-specific properties
+  isVisible: boolean('is_visible').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+
+
+
+
+// Label Elements validation schemas
+export const labelElementInsertSchema = createInsertSchema(labelElements, {
+  elementType: (schema) => schema.min(2, "Element type must be specified"),
+  fieldName: (schema) => schema.optional(),
+  positionX: (schema) => schema.min(0, "X position must be at least 0").optional(),
+  positionY: (schema) => schema.min(0, "Y position must be at least 0").optional(),
+  width: (schema) => schema.min(1, "Width must be at least 1").optional(),
+  height: (schema) => schema.min(1, "Height must be at least 1").optional(),
+  fontSize: (schema) => schema.min(6, "Font size must be at least 6").max(72, "Font size cannot exceed 72").optional(),
+  fontWeight: (schema) => schema.optional(),
+  textAlign: (schema) => schema.optional(),
+  color: (schema) => schema.optional(),
+  backgroundColor: (schema) => schema.optional(),
+  borderWidth: (schema) => schema.min(0, "Border width must be at least 0").optional(),
+  borderColor: (schema) => schema.optional(),
+  rotation: (schema) => schema.min(-360, "Rotation must be at least -360").max(360, "Rotation cannot exceed 360").optional(),
+  zIndex: (schema) => schema.min(1, "Z-index must be at least 1").optional(),
+  customProperties: (schema) => schema.optional(),
+  isVisible: (schema) => schema.optional()
+});
+export type LabelElementInsert = z.infer<typeof labelElementInsertSchema>;
+export const labelElementSelectSchema = createSelectSchema(labelElements);
+export type LabelElement = z.infer<typeof labelElementSelectSchema>;
+
 // Label Templates validation schemas
 export const labelTemplateInsertSchema = createInsertSchema(labelTemplates, {
   name: (schema) => schema.min(2, "Name must be at least 2 characters"),
