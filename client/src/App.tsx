@@ -57,9 +57,9 @@ import Brands from "./pages/brands";
 import AccountsDashboard from "./pages/accounts-dashboard";
 import SaleReturnsDashboard from "./pages/sale-returns-dashboard";
 import ProfitManagement from "./pages/profit-management";
-import ReceiptSettings from "./pages/receipt-settings";
-import PrinterReceiptEditor from "./pages/printer-receipt-editor";
-import InventoryAdjustments from "./pages/inventory-adjustments";
+import ReceiptSettings from "@/pages/receipt-settings";
+import PrinterReceiptEditor from "@/pages/printer-receipt-editor";
+import InventoryAdjustments from "@/pages/inventory-adjustments";
 import UnifiedPrinterSettings from "@/pages/unified-printer-settings";
 import CashRegisterManagement from "@/pages/cash-register-management";
 import ExpenseManagement from "@/pages/expense-management";
@@ -68,6 +68,10 @@ import OfferManagement from "@/pages/offer-management";
 import OfferReports from "@/pages/offer-reports";
 import LoyaltyManagement from "@/pages/loyalty-management";
 import LoyaltyRules from "@/pages/loyalty-rules";
+import PrintLabelsEndura from "@/pages/print-labels-endura";
+import ImageBasedLabels from "@/pages/image-based-labels";
+import ProfessionalLabels from "@/pages/professional-labels";
+import LabelPrinterDashboard from "@/pages/label-printer-dashboard";
 
 function Router() {
   return (
