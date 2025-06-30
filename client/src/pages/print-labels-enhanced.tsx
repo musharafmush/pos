@@ -866,23 +866,28 @@ export default function PrintLabelsEnhanced() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {templates.map((template) => (
                     <div 
                       key={template.id}
-                      className={`border rounded-lg p-4 space-y-3 cursor-pointer transition-all ${
-                        selectedTemplate === template.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' : 'hover:shadow-md'
+                      className={`border rounded-lg p-6 space-y-4 cursor-pointer transition-all ${
+                        selectedTemplate === template.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' : 'hover:shadow-md hover:border-blue-200'
                       }`}
                       onClick={() => setSelectedTemplate(template.id)}
                     >
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium flex items-center gap-2">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg flex items-center gap-2">
                             {template.name}
-                            {template.is_default && <StarIcon className="h-4 w-4 text-yellow-500" />}
+                            {template.is_default && <StarIcon className="h-5 w-5 text-yellow-500" />}
+                            {template.orientation === 'landscape' ? (
+                              <RectangleHorizontalIcon className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <RectangleVerticalIcon className="h-4 w-4 text-green-600" />
+                            )}
                           </h3>
                           {template.description && (
-                            <p className="text-sm text-muted-foreground">{template.description}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{template.description}</p>
                           )}
                         </div>
                         <div className="flex gap-1">
@@ -894,7 +899,7 @@ export default function PrintLabelsEnhanced() {
                               handleEditTemplate(template);
                             }}
                           >
-                            <EditIcon className="h-3 w-3" />
+                            <EditIcon className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -904,25 +909,63 @@ export default function PrintLabelsEnhanced() {
                               handleDeleteTemplate(template.id);
                             }}
                           >
-                            <TrashIcon className="h-3 w-3" />
+                            <TrashIcon className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
-                      <div className="text-sm space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Size:</span>
-                          <span>{template.width}mm × {template.height}mm</span>
+                      
+                      {/* Visual Size Representation */}
+                      <div className="flex justify-center py-3">
+                        <div 
+                          className="border-2 border-dashed border-blue-300 bg-blue-50 rounded flex items-center justify-center text-xs font-medium text-blue-700"
+                          style={{
+                            width: `${Math.min(template.width / 3, 120)}px`,
+                            height: `${Math.min(template.height / 3, 80)}px`,
+                            minWidth: '60px',
+                            minHeight: '40px'
+                          }}
+                        >
+                          {template.width}×{template.height}mm
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Font Size:</span>
-                          <span>{template.font_size}px</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="bg-gray-50 rounded-lg p-2">
+                            <span className="text-muted-foreground block text-xs">Dimensions</span>
+                            <span className="font-medium">{template.width}mm × {template.height}mm</span>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-2">
+                            <span className="text-muted-foreground block text-xs">Font Size</span>
+                            <span className="font-medium">{template.font_size}pt</span>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {template.include_barcode && <Badge variant="outline" className="text-xs">Barcode</Badge>}
-                          {template.include_price && <Badge variant="outline" className="text-xs">Price</Badge>}
-                          {template.include_mrp && <Badge variant="outline" className="text-xs">MRP</Badge>}
-                          {template.include_weight && <Badge variant="outline" className="text-xs">Weight</Badge>}
-                          {template.include_hsn && <Badge variant="outline" className="text-xs">HSN</Badge>}
+                        
+                        <div className="bg-gray-50 rounded-lg p-2">
+                          <span className="text-muted-foreground block text-xs mb-1">Layout</span>
+                          <div className="flex items-center gap-2">
+                            {template.orientation === 'landscape' ? (
+                              <>
+                                <RectangleHorizontalIcon className="h-4 w-4 text-blue-600" />
+                                <span className="text-sm font-medium text-blue-600">Landscape</span>
+                                <span className="text-xs text-muted-foreground">• Wide format</span>
+                              </>
+                            ) : (
+                              <>
+                                <RectangleVerticalIcon className="h-4 w-4 text-green-600" />
+                                <span className="text-sm font-medium text-green-600">Portrait</span>
+                                <span className="text-xs text-muted-foreground">• Tall format</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1">
+                          {template.include_barcode && <Badge variant="secondary" className="text-xs">📊 Barcode</Badge>}
+                          {template.include_price && <Badge variant="secondary" className="text-xs">💰 Price</Badge>}
+                          {template.include_mrp && <Badge variant="secondary" className="text-xs">🏷️ MRP</Badge>}
+                          {template.include_weight && <Badge variant="secondary" className="text-xs">⚖️ Weight</Badge>}
+                          {template.include_hsn && <Badge variant="secondary" className="text-xs">📋 HSN</Badge>}
                         </div>
                       </div>
                     </div>

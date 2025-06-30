@@ -3860,34 +3860,34 @@ export const storage = {
           VALUES (?, ?, ?, ?, ?, ?)
         `);
         
-        insertTemplate.run('Retail Standard', 80, 50, 18, 'landscape', JSON.stringify([
-          { name: 'product_name', type: 'text', x: 5, y: 8, width: 70, height: 12 },
-          { name: 'price', type: 'text', x: 5, y: 22, width: 35, height: 10 },
-          { name: 'barcode', type: 'barcode', x: 45, y: 20, width: 30, height: 15 }
+        insertTemplate.run('Large Product Label', 150, 100, 22, 'landscape', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 10, y: 15, width: 130, height: 20 },
+          { name: 'price', type: 'text', x: 10, y: 40, width: 60, height: 18 },
+          { name: 'barcode', type: 'barcode', x: 80, y: 35, width: 60, height: 25 }
         ]));
         
-        insertTemplate.run('Premium Label', 50, 30, 14, 'portrait', JSON.stringify([
-          { name: 'product_name', type: 'text', x: 2, y: 3, width: 46, height: 8 },
-          { name: 'price', type: 'text', x: 2, y: 12, width: 20, height: 6 },
-          { name: 'barcode', type: 'barcode', x: 25, y: 10, width: 22, height: 10 }
+        insertTemplate.run('Medium Retail Label', 120, 80, 20, 'landscape', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 8, y: 12, width: 104, height: 16 },
+          { name: 'price', type: 'text', x: 8, y: 32, width: 50, height: 14 },
+          { name: 'barcode', type: 'barcode', x: 65, y: 28, width: 50, height: 20 }
         ]));
         
-        insertTemplate.run('Landscape Shelf Label', 100, 30, 16, 'landscape', JSON.stringify([
-          { name: 'product_name', type: 'text', x: 5, y: 5, width: 60, height: 8 },
-          { name: 'price', type: 'text', x: 5, y: 15, width: 30, height: 8 },
-          { name: 'barcode', type: 'barcode', x: 70, y: 8, width: 25, height: 12 }
+        insertTemplate.run('Wide Shelf Label', 200, 60, 18, 'landscape', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 10, y: 8, width: 120, height: 14 },
+          { name: 'price', type: 'text', x: 10, y: 25, width: 60, height: 12 },
+          { name: 'barcode', type: 'barcode', x: 140, y: 15, width: 50, height: 18 }
         ]));
         
-        insertTemplate.run('Portrait Product Tag', 40, 80, 16, 'portrait', JSON.stringify([
-          { name: 'product_name', type: 'text', x: 2, y: 5, width: 36, height: 12 },
-          { name: 'price', type: 'text', x: 2, y: 20, width: 18, height: 8 },
-          { name: 'barcode', type: 'barcode', x: 5, y: 50, width: 30, height: 20 }
+        insertTemplate.run('Tall Product Tag', 80, 120, 18, 'portrait', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 5, y: 10, width: 70, height: 20 },
+          { name: 'price', type: 'text', x: 5, y: 35, width: 35, height: 16 },
+          { name: 'barcode', type: 'barcode', x: 10, y: 70, width: 60, height: 30 }
         ]));
         
-        insertTemplate.run('Electronics Tag', 120, 80, 16, 'landscape', JSON.stringify([
-          { name: 'product_name', type: 'text', x: 5, y: 8, width: 80, height: 12 },
-          { name: 'price', type: 'text', x: 5, y: 25, width: 40, height: 10 },
-          { name: 'barcode', type: 'barcode', x: 90, y: 20, width: 25, height: 15 }
+        insertTemplate.run('Standard A4 Sheet', 210, 297, 16, 'portrait', JSON.stringify([
+          { name: 'product_name', type: 'text', x: 20, y: 30, width: 170, height: 25 },
+          { name: 'price', type: 'text', x: 20, y: 60, width: 80, height: 20 },
+          { name: 'barcode', type: 'barcode', x: 50, y: 150, width: 110, height: 50 }
         ]));
       }
 
