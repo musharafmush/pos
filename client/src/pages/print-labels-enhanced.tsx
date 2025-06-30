@@ -239,7 +239,9 @@ export default function PrintLabelsEnhanced() {
   });
 
   const updateTemplateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<TemplateFormData> }) => {
+    mutationFn: async ({ id, data }: { id: number; data: TemplateFormData }) => {
+      console.log('Updating template with data:', data);
+      
       const response = await fetch(`/api/label-templates/${id}`, {
         method: 'PUT',
         headers: {
@@ -249,24 +251,26 @@ export default function PrintLabelsEnhanced() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update template");
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to update template`);
       }
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Template updated successfully:', data);
       toast({
         title: "Template updated successfully",
-        description: "Your changes have been saved"
+        description: `Template "${data.name}" has been saved with your changes`
       });
       queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
       handleTemplateDialogClose();
     },
     onError: (error: Error) => {
+      console.error('Template update error:', error);
       toast({
         title: "Error updating template",
-        description: error.message || "Failed to update template. Please try again.",
+        description: error.message || "Failed to update template. Please check your input and try again.",
         variant: "destructive"
       });
     }
@@ -373,32 +377,43 @@ export default function PrintLabelsEnhanced() {
   const handleEditTemplate = (template: LabelTemplate) => {
     setEditingTemplate(template);
     
-    // Prepare form data with proper type conversions
+    // Prepare form data with proper type conversions and validation
     const formData: TemplateFormData = {
       name: template.name || "",
       description: template.description || "",
-      width: Number(template.width) || 150,
-      height: Number(template.height) || 100,
-      font_size: Number(template.font_size) || 18,
-      orientation: (template.orientation as 'portrait' | 'landscape') || 'landscape',
+      width: Math.max(10, Number(template.width) || 150),
+      height: Math.max(10, Number(template.height) || 100),
+      font_size: Math.max(6, Math.min(72, Number(template.font_size) || 18)),
+      orientation: (template.orientation === 'portrait' || template.orientation === 'landscape') 
+        ? template.orientation 
+        : 'landscape',
       include_barcode: Boolean(template.include_barcode),
       include_price: Boolean(template.include_price),
       include_description: Boolean(template.include_description),
       include_mrp: Boolean(template.include_mrp),
       include_weight: Boolean(template.include_weight),
       include_hsn: Boolean(template.include_hsn),
-      barcode_position: (template.barcode_position as 'top' | 'bottom' | 'left' | 'right') || 'bottom',
-      border_style: (template.border_style as 'solid' | 'dashed' | 'dotted' | 'none') || 'solid',
-      border_width: Number(template.border_width) || 1,
+      barcode_position: (['top', 'bottom', 'left', 'right'].includes(template.barcode_position)) 
+        ? template.barcode_position as 'top' | 'bottom' | 'left' | 'right'
+        : 'bottom',
+      border_style: (['solid', 'dashed', 'dotted', 'none'].includes(template.border_style))
+        ? template.border_style as 'solid' | 'dashed' | 'dotted' | 'none'
+        : 'solid',
+      border_width: Math.max(0, Math.min(10, Number(template.border_width) || 1)),
       background_color: template.background_color || '#ffffff',
       text_color: template.text_color || '#000000',
       custom_css: template.custom_css || "",
       is_default: Boolean(template.is_default)
     };
     
-    // Reset form with the template data
+    // Clear any existing form errors and reset with the template data
+    templateForm.clearErrors();
     templateForm.reset(formData);
-    setIsTemplateDialogOpen(true);
+    
+    // Add a small delay to ensure form state is properly updated
+    setTimeout(() => {
+      setIsTemplateDialogOpen(true);
+    }, 50);
   };
 
   const handleDeleteTemplate = (id: number) => {
@@ -408,17 +423,32 @@ export default function PrintLabelsEnhanced() {
   };
 
   const onTemplateSubmit = (data: TemplateFormData) => {
+    console.log('Form submitted with data:', data);
+    
+    // Validate the data before submission
+    const validatedData: TemplateFormData = {
+      ...data,
+      width: Math.max(10, data.width),
+      height: Math.max(10, data.height),
+      font_size: Math.max(6, Math.min(72, data.font_size)),
+      border_width: Math.max(0, Math.min(10, data.border_width))
+    };
+    
     if (editingTemplate) {
-      updateTemplateMutation.mutate({ id: editingTemplate.id, data });
+      console.log('Updating existing template:', editingTemplate.id);
+      updateTemplateMutation.mutate({ id: editingTemplate.id, data: validatedData });
     } else {
-      createTemplateMutation.mutate(data);
+      console.log('Creating new template');
+      createTemplateMutation.mutate(validatedData);
     }
   };
 
   const handleTemplateDialogClose = () => {
     setIsTemplateDialogOpen(false);
     setEditingTemplate(null);
-    // Reset form to default values
+    
+    // Clear form errors and reset to default values
+    templateForm.clearErrors();
     templateForm.reset({
       name: "",
       description: "",
@@ -1410,15 +1440,29 @@ export default function PrintLabelsEnhanced() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Orientation</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || 'landscape'}>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value || 'landscape'}
+                          defaultValue="landscape"
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select orientation" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="landscape">Landscape</SelectItem>
-                            <SelectItem value="portrait">Portrait</SelectItem>
+                            <SelectItem value="landscape">
+                              <div className="flex items-center gap-2">
+                                <RectangleHorizontalIcon className="h-4 w-4" />
+                                <span>Landscape</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="portrait">
+                              <div className="flex items-center gap-2">
+                                <RectangleVerticalIcon className="h-4 w-4" />
+                                <span>Portrait</span>
+                              </div>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
