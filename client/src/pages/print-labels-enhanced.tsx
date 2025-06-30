@@ -375,6 +375,7 @@ export default function PrintLabelsEnhanced() {
   };
 
   const handleEditTemplate = (template: LabelTemplate) => {
+    console.log('Editing template:', template);
     setEditingTemplate(template);
 
     // Prepare form data with proper type conversions and validation
@@ -406,6 +407,8 @@ export default function PrintLabelsEnhanced() {
       is_default: Boolean(template.is_default)
     };
 
+    console.log('Form data prepared:', formData);
+
     // Clear any existing form errors and reset with the template data
     templateForm.clearErrors();
     templateForm.reset(formData);
@@ -413,6 +416,11 @@ export default function PrintLabelsEnhanced() {
     // Add a small delay to ensure form state is properly updated
     setTimeout(() => {
       setIsTemplateDialogOpen(true);
+      // Log form state after dialog opens
+      setTimeout(() => {
+        console.log('Form state after dialog open:', templateForm.getValues());
+        console.log('Form errors after dialog open:', templateForm.formState.errors);
+      }, 100);
     }, 50);
   };
 
@@ -424,6 +432,7 @@ export default function PrintLabelsEnhanced() {
 
   const onTemplateSubmit = (data: TemplateFormData) => {
     console.log('Form submitted with data:', data);
+    console.log('Form errors:', templateForm.formState.errors);
 
     // Validate the data before submission
     const validatedData: TemplateFormData = {
@@ -1304,7 +1313,11 @@ export default function PrintLabelsEnhanced() {
         </Tabs>
 
         {/* Template Creation/Edit Dialog */}
-        <Dialog open={isTemplateDialogOpen} onOpenChange={handleTemplateDialogClose}>
+        <Dialog open={isTemplateDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            handleTemplateDialogClose();
+          }
+        }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -1312,7 +1325,10 @@ export default function PrintLabelsEnhanced() {
               </DialogTitle>
             </DialogHeader>
             <Form {...templateForm}>
-              <form onSubmit={templateForm.handleSubmit(onTemplateSubmit)} className="space-y-4">
+              <form onSubmit={(e) => {
+                console.log('Form submit event triggered');
+                templateForm.handleSubmit(onTemplateSubmit)(e);
+              }} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={templateForm.control}
