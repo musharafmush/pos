@@ -226,8 +226,53 @@ router.get("/label-templates", async (req, res) => {
 router.post("/label-templates", async (req, res) => {
   try {
     const templateData = req.body;
-    const [newTemplate] = await db.insert(labelTemplates).values(templateData).returning();
-    res.status(201).json(newTemplate);
+    console.log('Creating template with data:', templateData);
+    
+    // Map frontend field names to database field names
+    const dbTemplateData = {
+      name: templateData.name,
+      description: templateData.description,
+      width: templateData.width,
+      height: templateData.height,
+      fontSize: templateData.font_size, // Map font_size to fontSize
+      includeBarcode: templateData.include_barcode,
+      includePrice: templateData.include_price,
+      includeDescription: templateData.include_description,
+      includeMRP: templateData.include_mrp,
+      includeWeight: templateData.include_weight,
+      includeHSN: templateData.include_hsn,
+      barcodePosition: templateData.barcode_position,
+      borderStyle: templateData.border_style,
+      borderWidth: templateData.border_width,
+      backgroundColor: templateData.background_color,
+      textColor: templateData.text_color,
+      customCSS: templateData.custom_css,
+      isDefault: templateData.is_default,
+      orientation: templateData.orientation
+    };
+    
+    const [newTemplate] = await db.insert(labelTemplates).values(dbTemplateData).returning();
+    
+    // Map back to frontend field names
+    const responseData = {
+      ...newTemplate,
+      font_size: newTemplate.fontSize,
+      include_barcode: newTemplate.includeBarcode,
+      include_price: newTemplate.includePrice,
+      include_description: newTemplate.includeDescription,
+      include_mrp: newTemplate.includeMRP,
+      include_weight: newTemplate.includeWeight,
+      include_hsn: newTemplate.includeHSN,
+      barcode_position: newTemplate.barcodePosition,
+      border_style: newTemplate.borderStyle,
+      border_width: newTemplate.borderWidth,
+      background_color: newTemplate.backgroundColor,
+      text_color: newTemplate.textColor,
+      custom_css: newTemplate.customCSS,
+      is_default: newTemplate.isDefault
+    };
+    
+    res.status(201).json(responseData);
   } catch (error) {
     console.error("Error creating label template:", error);
     res.status(500).json({ error: "Failed to create label template" });

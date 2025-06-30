@@ -331,6 +331,16 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - No additional backend or database setup required - system is fully operational
 - Label printing is integrated feature within comprehensive POS system, not standalone application
 
+### Label Template Field Mapping Fix (June 30, 2025)
+- Fixed critical field name mismatch between frontend (snake_case) and database (camelCase)
+- Implemented bidirectional field mapping for all template operations:
+  - Frontend `font_size` ↔ Database `fontSize`
+  - Frontend `include_barcode` ↔ Database `includeBarcode`
+  - All other snake_case fields properly mapped to camelCase equivalents
+- Template creation and updates now correctly persist all fields including font size
+- UI properly displays updated values after save operations
+- Verified working: Extra Large Sheet template successfully updated to 36pt font
+
 ### SQLite Authentication Fix (June 28, 2025)
 - Fixed critical SQLite user creation error caused by PostgreSQL-specific functions
 - Created SQLite-compatible schema to replace PostgreSQL defaultNow() functions
