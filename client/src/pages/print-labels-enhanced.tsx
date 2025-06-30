@@ -1340,10 +1340,9 @@ export default function PrintLabelsEnhanced() {
                                 min="6"
                                 max="72"
                                 step="1"
-                                {...field}
-                                value={field.value || 18}
+                                value={field.value}
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 18;
+                                  const value = Math.max(6, Math.min(72, parseInt(e.target.value) || 6));
                                   field.onChange(value);
                                 }}
                                 className="w-20"
@@ -1353,31 +1352,41 @@ export default function PrintLabelsEnhanced() {
                                 min="6"
                                 max="72"
                                 step="1"
-                                value={field.value || 18}
+                                value={field.value}
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 18;
+                                  const value = parseInt(e.target.value);
                                   field.onChange(value);
                                 }}
-                                className="flex-1"
+                                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                style={{
+                                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((field.value - 6) / (72 - 6)) * 100}%, #e5e7eb ${((field.value - 6) / (72 - 6)) * 100}%, #e5e7eb 100%)`
+                                }}
                               />
-                              <span className="text-sm text-muted-foreground min-w-[30px]">{field.value || 18}pt</span>
+                              <span className="text-sm font-medium text-blue-600 min-w-[35px]">{field.value}pt</span>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-3 border">
-                              <div className="text-xs text-muted-foreground mb-1">Font Preview:</div>
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                              <div className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
+                                <Eye className="h-3 w-3" />
+                                Live Preview:
+                              </div>
                               <div style={{ 
-                                fontSize: `${Math.min(field.value || 18, 32)}px`, 
+                                fontSize: `${Math.min(field.value, 28)}px`, 
                                 fontWeight: 'bold', 
                                 color: '#1e40af',
-                                lineHeight: '1.2'
+                                lineHeight: '1.2',
+                                marginBottom: '4px'
                               }}>
                                 SUGAR BULK
                               </div>
                               <div style={{ 
-                                fontSize: `${Math.max((field.value || 18) - 4, 8)}px`, 
+                                fontSize: `${Math.max(field.value - 6, 8)}px`, 
                                 color: '#666',
-                                marginTop: '2px'
+                                fontWeight: '500'
                               }}>
                                 SKU: 24 • ₹45.00
+                              </div>
+                              <div className="text-xs text-blue-500 mt-2 opacity-75">
+                                Font size: {field.value}pt • Preview scales up to 28px
                               </div>
                             </div>
                           </div>
