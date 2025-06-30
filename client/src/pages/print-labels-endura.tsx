@@ -424,7 +424,7 @@ const dataFields = [
   { value: 'time', label: 'Current Time' }
 ];
 
-export default function PrintLabels() {
+export default function PrintLabelsEndura() {
   const [selectedTemplate, setSelectedTemplate] = useState<LabelTemplate>(defaultTemplates[0]);
   const [selectedPrinter, setSelectedPrinter] = useState<PrinterSettings>(defaultPrinters[0]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
@@ -934,7 +934,7 @@ export default function PrintLabels() {
   }, [selectedProducts, selectedTemplate, copiesPerProduct]);
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Label Printing System" icon={<PrinterIcon />}>
       <div className="space-y-6">
         {/* Header Stats */}
         <div className="grid gap-4 md:grid-cols-4">
@@ -1395,7 +1395,7 @@ export default function PrintLabels() {
                       <Checkbox
                         id="show-selected"
                         checked={showOnlySelected}
-                        onCheckedChange={(checked) => setShowOnlySelected(checked as boolean)}
+                        onCheckedChange={setShowOnlySelected}
                       />
                       <Label htmlFor="show-selected">Show only selected</Label>
                     </div>
