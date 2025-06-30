@@ -302,7 +302,7 @@ export default function ProfessionalLabels() {
 
   // Mutations
   const createTemplateMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('/api/label-templates', 'POST', data),
+    mutationFn: (data: any) => apiRequest('POST', '/api/label-templates', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
       setIsTemplateDialogOpen(false);
@@ -324,7 +324,7 @@ export default function ProfessionalLabels() {
 
   const updateTemplateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => 
-      apiRequest(`/api/label-templates/${id}`, 'PUT', data),
+      apiRequest('PUT', `/api/label-templates/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
       setIsTemplateDialogOpen(false);
@@ -338,7 +338,7 @@ export default function ProfessionalLabels() {
   });
 
   const createPrintJobMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('/api/print-jobs', 'POST', data),
+    mutationFn: (data: any) => apiRequest('POST', '/api/print-jobs', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/print-jobs'] });
       setIsPrintDialogOpen(false);
