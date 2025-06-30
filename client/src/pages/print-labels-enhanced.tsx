@@ -422,15 +422,25 @@ export default function PrintLabelsEnhanced() {
     const borderCSS = border_style !== 'none' ? 
       `border: ${border_width}px ${border_style} #333;` : '';
 
+    // Scale barcode size based on label dimensions
+    const barcodeWidth = Math.min(width * 3.5, 320);
+    const barcodeHeight = Math.max(35, Math.min(height * 0.15, 60));
+    
     const barcodeHTML = include_barcode ? 
-      generateBarcode(product.barcode || product.sku, Math.min(width * 2.8, 200), 25) : '';
+      generateBarcode(product.barcode || product.sku, barcodeWidth, barcodeHeight) : '';
+
+    // Calculate responsive font sizes based on label dimensions
+    const baseFontSize = Math.max(font_size, Math.min(width * 0.08, height * 0.06));
+    const titleFontSize = Math.max(baseFontSize + 4, 18);
+    const priceFontSize = Math.max(baseFontSize + 6, 20);
+    const detailsFontSize = Math.max(baseFontSize - 2, 12);
 
     return `
       <div class="product-label" style="
         width: ${width}mm;
         height: ${height}mm;
         ${borderCSS}
-        padding: 3mm;
+        padding: ${Math.max(3, width * 0.015)}mm;
         margin: 2mm;
         display: inline-block;
         font-family: Arial, sans-serif;
@@ -440,62 +450,62 @@ export default function PrintLabelsEnhanced() {
         box-sizing: border-box;
         vertical-align: top;
         position: relative;
-        font-size: ${font_size}px;
-        line-height: 1.3;
+        font-size: ${baseFontSize}px;
+        line-height: 1.4;
         overflow: hidden;
       ">
-        <div style="font-weight: bold; margin-bottom: 2mm; font-size: ${font_size + 1}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <div style="font-weight: bold; margin-bottom: ${Math.max(2, height * 0.02)}mm; font-size: ${titleFontSize}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
           ${product.name}
         </div>
 
-        <div style="font-size: ${font_size - 1}px; color: #666; margin-bottom: 1mm;">
+        <div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm;">
           SKU: ${product.sku}
         </div>
 
         ${include_description && product.description ? 
-          `<div style="font-size: ${font_size - 2}px; color: #888; margin-bottom: 1mm; overflow: hidden; height: 15px;">
-            ${product.description.substring(0, 40)}${product.description.length > 40 ? '...' : ''}
+          `<div style="font-size: ${detailsFontSize}px; color: #888; margin-bottom: ${Math.max(1, height * 0.015)}mm; overflow: hidden; max-height: ${Math.max(20, height * 0.1)}px; line-height: 1.3;">
+            ${product.description.substring(0, Math.min(60, width * 0.3))}${product.description.length > Math.min(60, width * 0.3) ? '...' : ''}
           </div>` : ''
         }
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2mm;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${Math.max(2, height * 0.02)}mm; flex-wrap: wrap;">
           ${include_price ? 
-            `<div style="font-size: ${font_size + 2}px; font-weight: bold; color: #2563eb;">
+            `<div style="font-size: ${priceFontSize}px; font-weight: bold; color: #2563eb; margin-right: 5mm;">
               ₹${parseFloat(product.price).toFixed(2)}
             </div>` : ''
           }
           ${include_mrp && product.mrp && parseFloat(product.mrp) !== parseFloat(product.price) ? 
-            `<div style="font-size: ${font_size - 1}px; color: #666; text-decoration: line-through;">
+            `<div style="font-size: ${detailsFontSize}px; color: #666; text-decoration: line-through;">
               MRP: ₹${parseFloat(product.mrp).toFixed(2)}
             </div>` : ''
           }
         </div>
 
         ${include_weight && product.weight ? 
-          `<div style="font-size: ${font_size - 1}px; color: #666; margin-bottom: 1mm;">
+          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm;">
             Weight: ${product.weight} ${product.weightUnit || 'kg'}
           </div>` : ''
         }
 
         ${include_hsn && product.hsnCode ? 
-          `<div style="font-size: ${font_size - 2}px; color: #666; margin-bottom: 1mm;">
+          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm;">
             HSN: ${product.hsnCode}
           </div>` : ''
         }
 
         ${customText ? 
-          `<div style="font-size: ${font_size - 1}px; color: #666; margin-bottom: 1mm;">
+          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm;">
             ${customText}
           </div>` : ''
         }
 
         ${include_barcode ? 
-          `<div style="margin-top: auto; text-align: center;">
+          `<div style="margin-top: auto; text-align: center; padding: ${Math.max(2, height * 0.02)}mm 0;">
             ${barcodeHTML}
           </div>` : ''
         }
 
-        <div style="position: absolute; bottom: 1mm; right: 2mm; font-size: 6px; color: #ccc;">
+        <div style="position: absolute; bottom: ${Math.max(1, height * 0.01)}mm; right: ${Math.max(2, width * 0.01)}mm; font-size: ${Math.max(8, baseFontSize * 0.6)}px; color: #ccc;">
           ${new Date().toLocaleDateString('en-IN')}
         </div>
       </div>
