@@ -3915,10 +3915,28 @@ app.post("/api/customers", async (req, res) => {
         });
       }
 
+      // Check for duplicate template names
+      const existingTemplates = await storage.getLabelTemplates();
+      const duplicateName = existingTemplates.find(t => t.name.toLowerCase() === templateData.name.toLowerCase());
+      
+      if (duplicateName) {
+        return res.status(400).json({ 
+          message: `Template name "${templateData.name}" already exists. Please use a different name.` 
+        });
+      }
+
       const template = await storage.createLabelTemplate(templateData);
       res.status(201).json(template);
     } catch (error) {
       console.error('Error creating label template:', error);
+      
+      // Handle specific SQLite constraint errors
+      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        return res.status(400).json({ 
+          message: 'Template name already exists. Please choose a different name.' 
+        });
+      }
+      
       res.status(500).json({ message: 'Internal server error' });
     }
   });
