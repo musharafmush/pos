@@ -154,6 +154,9 @@ export default function PrintLabelsEnhanced() {
   const [customText, setCustomText] = useState("");
   const [paperSize, setPaperSize] = useState("A4");
   const [orientation, setOrientation] = useState("portrait");
+  const [bulkAction, setBulkAction] = useState<'none' | 'selectAll' | 'deselectAll' | 'invertSelection'>('none');
+  const [sortBy, setSortBy] = useState<'name' | 'sku' | 'price' | 'stock'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Form for template creation/editing
   const templateForm = useForm<TemplateFormData>({
@@ -343,7 +346,7 @@ export default function PrintLabelsEnhanced() {
 
 
 
-  // Filter products
+  // Filter and sort products
   const filteredProducts = products.filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -355,6 +358,23 @@ export default function PrintLabelsEnhanced() {
     const matchesSelection = !showOnlySelected || selectedProducts.includes(product.id);
 
     return matchesSearch && matchesCategory && matchesSelection;
+  }).sort((a, b) => {
+    let compareValue = 0;
+    switch (sortBy) {
+      case 'name':
+        compareValue = a.name.localeCompare(b.name);
+        break;
+      case 'sku':
+        compareValue = a.sku.localeCompare(b.sku);
+        break;
+      case 'price':
+        compareValue = parseFloat(a.price) - parseFloat(b.price);
+        break;
+      case 'stock':
+        compareValue = (a.stockQuantity || 0) - (b.stockQuantity || 0);
+        break;
+    }
+    return sortOrder === 'asc' ? compareValue : -compareValue;
   });
 
   // Get current template
@@ -368,6 +388,35 @@ export default function PrintLabelsEnhanced() {
       setSelectedProducts([...selectedProducts, productId]);
     } else {
       setSelectedProducts(selectedProducts.filter(id => id !== productId));
+    }
+  };
+
+  // Bulk selection handlers
+  const handleBulkAction = (action: string) => {
+    switch (action) {
+      case 'selectAll':
+        setSelectedProducts(filteredProducts.map(p => p.id));
+        toast({
+          title: "All products selected",
+          description: `Selected ${filteredProducts.length} products`
+        });
+        break;
+      case 'deselectAll':
+        setSelectedProducts([]);
+        toast({
+          title: "All products deselected"
+        });
+        break;
+      case 'invertSelection':
+        const inverted = filteredProducts
+          .filter(p => !selectedProducts.includes(p.id))
+          .map(p => p.id);
+        setSelectedProducts(inverted);
+        toast({
+          title: "Selection inverted",
+          description: `Selected ${inverted.length} products`
+        });
+        break;
     }
   };
 
@@ -891,12 +940,34 @@ export default function PrintLabelsEnhanced() {
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                  <div className="flex gap-2 items-center">
+                    <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name">Name</SelectItem>
+                        <SelectItem value="sku">SKU</SelectItem>
+                        <SelectItem value="price">Price</SelectItem>
+                        <SelectItem value="stock">Stock</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    >
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </Button>
+                    <Separator orientation="vertical" className="h-8 mx-2" />
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('selectAll')}>
                       Select All ({filteredProducts.length})
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleDeselectAll}>
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('deselectAll')}>
                       Deselect All
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('invertSelection')}>
+                      Invert
                     </Button>
                   </div>
                   <Badge variant="secondary">
@@ -1025,6 +1096,7 @@ export default function PrintLabelsEnhanced() {
                               e.stopPropagation();
                               handleEditTemplate(template);
                             }}
+                            title="Edit template"
                           >
                             <EditIcon className="h-4 w-4" />
                           </Button>
@@ -1033,26 +1105,73 @@ export default function PrintLabelsEnhanced() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteTemplate(template.id);
+                              const duplicatedData = {
+                                name: `${template.name} (Copy)`,
+                                description: template.description,
+                                width: template.width,
+                                height: template.height,
+                                font_size: template.font_size,
+                                orientation: template.orientation || 'landscape',
+                                include_barcode: template.include_barcode,
+                                include_price: template.include_price,
+                                include_description: template.include_description,
+                                include_mrp: template.include_mrp,
+                                include_weight: template.include_weight,
+                                include_hsn: template.include_hsn,
+                                barcode_position: template.barcode_position,
+                                border_style: template.border_style,
+                                border_width: template.border_width,
+                                background_color: template.background_color,
+                                text_color: template.text_color,
+                                custom_css: template.custom_css,
+                                is_default: false
+                              };
+                              createTemplateMutation.mutate(duplicatedData);
                             }}
+                            title="Duplicate template"
+                          >
+                            <RefreshCwIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('Are you sure you want to delete this template?')) {
+                                deleteTemplateMutation.mutate(template.id);
+                              }
+                            }}
+                            title="Delete template"
                           >
                             <TrashIcon className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
 
-                      {/* Visual Size Representation */}
+                      {/* Visual Size Representation with Preview */}
                       <div className="flex justify-center py-3">
                         <div 
-                          className="border-2 border-dashed border-blue-300 bg-blue-50 rounded flex items-center justify-center text-xs font-medium text-blue-700"
+                          className="border-2 border-dashed border-blue-300 bg-blue-50 rounded flex flex-col items-center justify-center text-xs font-medium text-blue-700 p-2"
                           style={{
-                            width: `${Math.min(template.width / 3, 120)}px`,
-                            height: `${Math.min(template.height / 3, 80)}px`,
-                            minWidth: '60px',
-                            minHeight: '40px'
+                            width: `${Math.min(template.width / 2, 150)}px`,
+                            height: `${Math.min(template.height / 2, 100)}px`,
+                            minWidth: '80px',
+                            minHeight: '60px',
+                            fontSize: `${Math.min(template.font_size / 3, 12)}px`
                           }}
                         >
-                          {template.width}×{template.height}mm
+                          <div className="text-center">
+                            <div className="font-bold" style={{ fontSize: `${Math.min(template.font_size / 2.5, 14)}px` }}>
+                              PRODUCT NAME
+                            </div>
+                            {template.include_price && <div>₹99.00</div>}
+                            {template.include_barcode && (
+                              <div className="mt-1 bg-black h-3 w-12 mx-auto opacity-50"></div>
+                            )}
+                          </div>
+                          <div className="mt-2 text-[10px] opacity-75">
+                            {template.width}×{template.height}mm
+                          </div>
                         </div>
                       </div>
 

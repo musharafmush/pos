@@ -341,6 +341,16 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - UI properly displays updated values after save operations
 - Verified working: Extra Large Sheet template successfully updated to 36pt font
 
+### Print Labels Enhanced Page Improvements (June 30, 2025)
+- Added bulk selection actions (Select All, Deselect All, Invert Selection)
+- Implemented product sorting by name, SKU, price, and stock with ascending/descending options
+- Enhanced template cards with visual preview showing font size and included elements
+- Added template duplication feature with one-click copy functionality
+- Improved product cards with better pricing display and savings percentage
+- Added comprehensive statistics cards showing products selected, total labels, current template, and print jobs today
+- Enhanced visual feedback with gradient backgrounds and improved spacing
+- Added tooltips to template action buttons for better UX
+
 ### SQLite Authentication Fix (June 28, 2025)
 - Fixed critical SQLite user creation error caused by PostgreSQL-specific functions
 - Created SQLite-compatible schema to replace PostgreSQL defaultNow() functions
