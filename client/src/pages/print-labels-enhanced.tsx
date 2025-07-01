@@ -2935,6 +2935,208 @@ export default function PrintLabelsEnhanced() {
                   />
                 </div>
 
+                {/* Date Management Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <PlusIcon className="h-4 w-4" />
+                    Date Management
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        const dateFormat = window.prompt(
+                          "Select date format:\n1. DD/MM/YYYY (01/07/2025)\n2. MM/DD/YYYY (07/01/2025)\n3. YYYY-MM-DD (2025-07-01)\n\nEnter 1, 2, or 3:"
+                        );
+                        
+                        let format: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD' = 'DD/MM/YYYY';
+                        if (dateFormat === '2') format = 'MM/DD/YYYY';
+                        else if (dateFormat === '3') format = 'YYYY-MM-DD';
+                        
+                        if (editingTemplate) {
+                          try {
+                            await boxAlignmentCenter.addDateData(editingTemplate.id, format);
+                            toast({
+                              title: "Date Added",
+                              description: "Current date added to template",
+                            });
+                          } catch (error) {
+                            console.error('Add date failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-green-100 hover:bg-green-200 text-green-700 border-green-300"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Add Date
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          const confirmed = window.confirm(
+                            "Remove all date data from this template?"
+                          );
+                          if (confirmed) {
+                            try {
+                              await boxAlignmentCenter.removeDateData(editingTemplate.id);
+                              toast({
+                                title: "Date Removed",
+                                description: "Date data removed from template",
+                              });
+                            } catch (error) {
+                              console.error('Remove date failed:', error);
+                            }
+                          }
+                        }
+                      }}
+                      className="bg-red-100 hover:bg-red-200 text-red-700 border-red-300"
+                    >
+                      <TrashIcon className="h-4 w-4 mr-1" />
+                      Remove Date
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          try {
+                            const results = await boxAlignmentCenter.opcanAnalysis(editingTemplate.id);
+                            const result = results[0];
+                            
+                            toast({
+                              title: "OPCAN Analysis Complete",
+                              description: `Readability: ${result.analysis.readabilityScore}% | ${result.analysis.fontOptimization}`,
+                            });
+                            
+                            // Show detailed analysis
+                            alert(`OPCAN Analysis Results for "${result.templateName}":\n\n` +
+                              `Readability Score: ${result.analysis.readabilityScore}%\n` +
+                              `Font Optimization: ${result.analysis.fontOptimization}\n` +
+                              `Scan Accuracy: ${result.analysis.scanAccuracy}%\n` +
+                              `Print Quality: ${result.analysis.printQuality}\n` +
+                              `Barcode: ${result.analysis.barcodeReadability}\n\n` +
+                              `Recommendations:\n${result.analysis.recommendations.join('\n')}`
+                            );
+                          } catch (error) {
+                            console.error('OPCAN analysis failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-300"
+                    >
+                      <StarIcon className="h-4 w-4 mr-1" />
+                      OPCAN
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Box Alignment Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <GridIcon className="h-4 w-4" />
+                    Box Alignment Center
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          try {
+                            await boxAlignmentCenter.applyAlignment(editingTemplate.id, 'single');
+                            toast({
+                              title: "Single Center Applied",
+                              description: "Template centered using single alignment",
+                            });
+                          } catch (error) {
+                            console.error('Single alignment failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300"
+                    >
+                      <GridIcon className="h-4 w-4 mr-1" />
+                      Single
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          try {
+                            await boxAlignmentCenter.applyAlignment(editingTemplate.id, 'grid', '2x2');
+                            toast({
+                              title: "2x2 Grid Applied",
+                              description: "Template arranged in 2x2 grid layout",
+                            });
+                          } catch (error) {
+                            console.error('2x2 alignment failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300"
+                    >
+                      <GridIcon className="h-4 w-4 mr-1" />
+                      2x2
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          try {
+                            await boxAlignmentCenter.applyAlignment(editingTemplate.id, 'grid', '3x3');
+                            toast({
+                              title: "3x3 Grid Applied",
+                              description: "Template arranged in 3x3 grid layout",
+                            });
+                          } catch (error) {
+                            console.error('3x3 alignment failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300"
+                    >
+                      <GridIcon className="h-4 w-4 mr-1" />
+                      3x3
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          try {
+                            await boxAlignmentCenter.applyAlignment(editingTemplate.id, 'perfect');
+                            toast({
+                              title: "Perfect Center Applied",
+                              description: "Template centered with perfect alignment",
+                            });
+                          } catch (error) {
+                            console.error('Perfect alignment failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300"
+                    >
+                      <StarIcon className="h-4 w-4 mr-1" />
+                      Perfect
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Apply professional box alignment to position label elements precisely
+                  </p>
+                </div>
+
                 <FormField
                   control={templateForm.control}
                   name="is_default"
