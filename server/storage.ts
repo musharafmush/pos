@@ -3971,11 +3971,16 @@ export const storage = {
       `);
       const template = stmt.get(id);
       
-      if (template && template.elements) {
-        try {
-          template.elements = JSON.parse(template.elements);
-        } catch (parseError) {
-          console.error('Error parsing elements JSON:', parseError);
+      if (template) {
+        if (template.elements) {
+          try {
+            template.elements = JSON.parse(template.elements);
+          } catch (parseError) {
+            console.error('Error parsing elements JSON:', parseError);
+            template.elements = [];
+          }
+        } else {
+          // Ensure elements is always an array, never null
           template.elements = [];
         }
       }

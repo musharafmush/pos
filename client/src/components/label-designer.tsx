@@ -104,12 +104,15 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
 
   // Initialize with saved elements or default elements based on template settings
   useEffect(() => {
+    console.log('Visual designer initializing with template data:', templateData);
     if (templateData) {
       // Check if template has saved elements
-      if (templateData.elements && Array.isArray(templateData.elements) && templateData.elements.length > 0) {
+      if (Array.isArray(templateData.elements) && templateData.elements.length > 0) {
         console.log('Loading saved elements:', templateData.elements);
         setElements(templateData.elements);
         return;
+      } else {
+        console.log('No saved elements found, creating default elements. Elements value:', templateData.elements);
       }
       
       // Otherwise, create default elements
