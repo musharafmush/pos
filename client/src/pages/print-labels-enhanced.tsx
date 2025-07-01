@@ -3665,6 +3665,7 @@ export default function PrintLabelsEnhanced() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Visual Designer */}
@@ -3677,8 +3678,6 @@ export default function PrintLabelsEnhanced() {
           />
         </div>
       )}
-        </div>
-      </div>
     </DashboardLayout>
   );
 }
