@@ -204,13 +204,21 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
   }, [templateData, templateWidth, templateHeight]);
 
   const handleCanvasClick = (e: React.MouseEvent) => {
-    if (tool === 'select') return;
+    console.log('Canvas clicked, current tool:', tool);
+    if (tool === 'select') {
+      setSelectedElement(null);
+      console.log('Deselected all elements');
+      return;
+    }
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = templateWidth / (templateWidth * (zoom / 100));
+    const scaleY = templateHeight / (templateHeight * (zoom / 100));
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
 
     const newElement: LabelElement = {
       id: `element-${Date.now()}`,
@@ -255,7 +263,11 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
 
     setElements(elements.map(el => 
       el.id === selectedElement 
-        ? { ...el, x: Math.max(0, el.x + deltaX), y: Math.max(0, el.y + deltaY) }
+        ? { 
+            ...el, 
+            x: Math.max(0, Math.min(templateWidth - el.width, el.x + deltaX)), 
+            y: Math.max(0, Math.min(templateHeight - el.height, el.y + deltaY))
+          }
         : el
     ));
 
@@ -308,8 +320,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
     return (
       <div
         key={element.id}
-        className={`absolute cursor-move border-2 ${
-          isSelected ? 'border-blue-500 bg-blue-50/30' : 'border-transparent hover:border-gray-300'
+        className={`absolute select-none ${
+          isSelected ? 'border-2 border-blue-500 bg-blue-50/30' : 'border border-transparent hover:border-gray-300'
         }`}
         style={{
           left: element.x,
@@ -319,12 +331,25 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
           transform: `rotate(${element.rotation}deg)`,
           opacity: element.opacity,
           zIndex: element.zIndex,
+          cursor: tool === 'select' ? 'move' : 'default',
           backgroundColor: element.backgroundColor,
-          borderColor: element.borderColor,
-          borderWidth: element.borderWidth,
+          borderColor: isSelected ? '#3b82f6' : element.borderColor,
+          borderWidth: isSelected ? 2 : element.borderWidth,
           borderStyle: element.borderStyle,
         }}
-        onMouseDown={(e) => handleElementMouseDown(e, element.id)}
+        onMouseDown={(e) => {
+          if (tool === 'select') {
+            handleElementMouseDown(e, element.id);
+          }
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          console.log('Element clicked:', element.id, 'Current tool:', tool);
+          if (tool === 'select') {
+            setSelectedElement(element.id);
+            console.log('Element selected:', element.id);
+          }
+        }}
       >
         {element.type === 'text' || element.type === 'price' || element.type === 'mrp' || element.type === 'sku' ? (
           <div
@@ -365,10 +390,13 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
         
         {isSelected && (
           <>
-            <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-full cursor-nw-resize"></div>
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full cursor-ne-resize"></div>
-            <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-500 rounded-full cursor-sw-resize"></div>
-            <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-500 rounded-full cursor-se-resize"></div>
+            <div className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-nw-resize shadow-sm"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-ne-resize shadow-sm"></div>
+            <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-sw-resize shadow-sm"></div>
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-se-resize shadow-sm"></div>
+            <div className="absolute -top-8 left-0 bg-blue-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
+              {element.type}: {element.width}×{element.height}
+            </div>
           </>
         )}
       </div>
@@ -388,6 +416,7 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
               variant={tool === 'select' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTool('select')}
+              title="Select Tool (Click elements to select and drag)"
             >
               <MousePointerIcon className="h-4 w-4" />
             </Button>
@@ -597,10 +626,10 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
           <div className="flex justify-center">
             <div
               ref={canvasRef}
-              className="relative bg-white shadow-lg"
+              className="relative bg-white shadow-lg border border-gray-300"
               style={{
-                width: templateWidth * (zoom / 100),
-                height: templateHeight * (zoom / 100),
+                width: templateWidth,
+                height: templateHeight,
                 transform: `scale(${zoom / 100})`,
                 transformOrigin: 'top left',
                 cursor: tool === 'select' ? 'default' : 'crosshair'
@@ -612,7 +641,7 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
             >
               {elements.map(renderElement)}
               
-              {/* Grid overlay */}
+                    {/* Grid overlay */}
               <div 
                 className="absolute inset-0 pointer-events-none opacity-20"
                 style={{
@@ -623,6 +652,13 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
                   backgroundSize: '20px 20px'
                 }}
               />
+              
+              {/* Tool indicator */}
+              {tool !== 'select' && (
+                <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs">
+                  Click to add {tool}
+                </div>
+              )}
             </div>
           </div>
         </div>
