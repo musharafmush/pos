@@ -41,7 +41,11 @@ import {
   XIcon,
   RectangleHorizontalIcon,
   RectangleVerticalIcon,
-  PaletteIcon
+  PaletteIcon,
+  AlignLeftIcon,
+  AlignCenterIcon,
+  AlignRightIcon,
+  AlignJustifyIcon
 } from "lucide-react";
 
 interface Product {
@@ -3168,6 +3172,133 @@ export default function PrintLabelsEnhanced() {
                   </div>
                   <p className="text-xs text-gray-500">
                     Apply professional box alignment to position label elements precisely
+                  </p>
+                </div>
+
+                {/* Advanced Text Alignment Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <GridIcon className="h-4 w-4" />
+                    Advanced Text Alignment
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          try {
+                            const updatedTemplate = {
+                              ...editingTemplate,
+                              custom_css: `${editingTemplate.custom_css || ''} 
+                                .label-text { text-align: left; justify-content: flex-start; }
+                                .label-content { align-items: flex-start; }`
+                            };
+                            await updateTemplateMutation.mutateAsync({ 
+                              id: editingTemplate.id, 
+                              data: { custom_css: updatedTemplate.custom_css }
+                            });
+                            toast({
+                              title: "Left Alignment Applied",
+                              description: "All text elements aligned to the left",
+                            });
+                          } catch (error) {
+                            console.error('Left alignment failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-green-100 hover:bg-green-200 text-green-700 border-green-300 flex items-center gap-1"
+                    >
+                      <span className="text-xs">Left</span>
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          try {
+                            const updatedTemplate = {
+                              ...editingTemplate,
+                              custom_css: `${editingTemplate.custom_css || ''} 
+                                .label-text { text-align: center; justify-content: center; }
+                                .label-content { align-items: center; }`
+                            };
+                            await updateTemplateMutation.mutateAsync({ 
+                              id: editingTemplate.id, 
+                              data: { custom_css: updatedTemplate.custom_css }
+                            });
+                            toast({
+                              title: "Center Alignment Applied",
+                              description: "All text elements centered",
+                            });
+                          } catch (error) {
+                            console.error('Center alignment failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-green-100 hover:bg-green-200 text-green-700 border-green-300 flex items-center gap-1"
+                    >
+                      <span className="text-xs">Center</span>
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          try {
+                            const updatedTemplate = {
+                              ...editingTemplate,
+                              custom_css: `${editingTemplate.custom_css || ''} 
+                                .label-text { text-align: right; justify-content: flex-end; }
+                                .label-content { align-items: flex-end; }`
+                            };
+                            await updateTemplateMutation.mutateAsync(updatedTemplate);
+                            toast({
+                              title: "Right Alignment Applied",
+                              description: "All text elements aligned to the right",
+                            });
+                          } catch (error) {
+                            console.error('Right alignment failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-green-100 hover:bg-green-200 text-green-700 border-green-300 flex items-center gap-1"
+                    >
+                      <span className="text-xs">Right</span>
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        if (editingTemplate) {
+                          try {
+                            const updatedTemplate = {
+                              ...editingTemplate,
+                              custom_css: `${editingTemplate.custom_css || ''} 
+                                .label-text { text-align: justify; text-justify: inter-word; }
+                                .label-content { align-items: stretch; text-align: justify; }`
+                            };
+                            await updateTemplateMutation.mutateAsync(updatedTemplate);
+                            toast({
+                              title: "Justify Alignment Applied",
+                              description: "All text elements justified for even spacing",
+                            });
+                          } catch (error) {
+                            console.error('Justify alignment failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-green-100 hover:bg-green-200 text-green-700 border-green-300 flex items-center gap-1"
+                    >
+                      <span className="text-xs">Justify</span>
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Apply professional text alignment styles to all elements in this template
                   </p>
                 </div>
 

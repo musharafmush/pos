@@ -433,6 +433,18 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Fixed hardcoded date display that was bypassing template-based date control settings
 - Date removal now works completely for both template editing and actual label printing
 
+### Advanced Text Alignment System (July 1, 2025)
+- Created comprehensive text alignment system for visual label designer with Left, Center, Right, and Justify options
+- Enhanced alignment controls with improved 2x2 grid button layout and visual labels
+- Added Advanced Text Alignment section to Edit Template dialog with four alignment preset buttons
+- Implemented CSS-based alignment with proper text-align, justify-content, and flexbox properties
+- Enhanced text rendering with proper justify support using text-justify: inter-word for professional typography
+- Improved visual designer alignment controls with better spacing and user-friendly labels
+- Added real-time alignment application with immediate visual feedback and toast notifications
+- Integrated alignment system with dynamic CRUD operations for persistent template updates
+- Fixed text positioning issues and overlapping elements in visual label designer
+- Enhanced font size handling with proper pixel units and better text wrapping controls
+
 ### Comprehensive Visual Label Designer Implementation (July 1, 2025)
 - Created fully customizable WYSIWYG visual label designer with professional-grade features
 - Comprehensive element customization with organized property panels:

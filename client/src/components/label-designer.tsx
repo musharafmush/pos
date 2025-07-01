@@ -428,8 +428,9 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
               alignItems: 'center',
               justifyContent: element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start',
               wordWrap: 'break-word',
-              whiteSpace: 'pre-wrap',
-              boxSizing: 'border-box'
+              whiteSpace: element.textAlign === 'justify' ? 'pre-wrap' : 'pre-wrap',
+              boxSizing: 'border-box',
+              textJustify: element.textAlign === 'justify' ? 'inter-word' : 'auto'
             }}
           >
             <span style={{ 
@@ -728,27 +729,42 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
                   </Button>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant={selectedEl.textAlign === 'left' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => updateSelectedElement({ textAlign: 'left' })}
+                    className="flex items-center gap-1"
                   >
                     <AlignLeftIcon className="h-4 w-4" />
+                    <span className="text-xs">Left</span>
                   </Button>
                   <Button
                     variant={selectedEl.textAlign === 'center' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => updateSelectedElement({ textAlign: 'center' })}
+                    className="flex items-center gap-1"
                   >
                     <AlignCenterIcon className="h-4 w-4" />
+                    <span className="text-xs">Center</span>
                   </Button>
                   <Button
                     variant={selectedEl.textAlign === 'right' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => updateSelectedElement({ textAlign: 'right' })}
+                    className="flex items-center gap-1"
                   >
                     <AlignRightIcon className="h-4 w-4" />
+                    <span className="text-xs">Right</span>
+                  </Button>
+                  <Button
+                    variant={selectedEl.textAlign === 'justify' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateSelectedElement({ textAlign: 'justify' })}
+                    className="flex items-center gap-1"
+                  >
+                    <AlignLeftIcon className="h-4 w-4" />
+                    <span className="text-xs">Justify</span>
                   </Button>
                 </div>
               </div>
