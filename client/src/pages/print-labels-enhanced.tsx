@@ -86,6 +86,8 @@ interface LabelTemplate {
   include_mrp: boolean;
   include_weight: boolean;
   include_hsn: boolean;
+  include_manufacturing_date: boolean;
+  include_expiry_date: boolean;
   barcode_position: 'top' | 'bottom' | 'left' | 'right';
   border_style: 'solid' | 'dashed' | 'dotted' | 'none';
   border_width: number;
@@ -131,6 +133,8 @@ const templateFormSchema = z.object({
   include_mrp: z.boolean(),
   include_weight: z.boolean(),
   include_hsn: z.boolean(),
+  include_manufacturing_date: z.boolean(),
+  include_expiry_date: z.boolean(),
   barcode_position: z.enum(['top', 'bottom', 'left', 'right']),
   border_style: z.enum(['solid', 'dashed', 'dotted', 'none']),
   border_width: z.number().min(0).max(10),
@@ -184,6 +188,8 @@ export default function PrintLabelsEnhanced() {
       include_mrp: true,
       include_weight: false,
       include_hsn: false,
+      include_manufacturing_date: false,
+      include_expiry_date: false,
       barcode_position: 'bottom',
       border_style: 'solid',
       border_width: 1,
@@ -357,6 +363,8 @@ export default function PrintLabelsEnhanced() {
             include_mrp: template.include_mrp,
             include_weight: template.include_weight,
             include_hsn: template.include_hsn,
+            include_manufacturing_date: template.include_manufacturing_date || false,
+            include_expiry_date: template.include_expiry_date || false,
             barcode_position: template.barcode_position,
             border_style: template.border_style,
             border_width: template.border_width,
@@ -431,6 +439,8 @@ export default function PrintLabelsEnhanced() {
             include_mrp: template.include_mrp,
             include_weight: template.include_weight,
             include_hsn: template.include_hsn,
+            include_manufacturing_date: template.include_manufacturing_date || false,
+            include_expiry_date: template.include_expiry_date || false,
             barcode_position: template.barcode_position,
             border_style: template.border_style,
             border_width: template.border_width,
@@ -518,6 +528,8 @@ export default function PrintLabelsEnhanced() {
             include_mrp: template.include_mrp,
             include_weight: template.include_weight,
             include_hsn: template.include_hsn,
+            include_manufacturing_date: template.include_manufacturing_date || false,
+            include_expiry_date: template.include_expiry_date || false,
             barcode_position: template.barcode_position,
             border_style: template.border_style,
             border_width: template.border_width,
@@ -1040,6 +1052,8 @@ export default function PrintLabelsEnhanced() {
       include_mrp: Boolean(template.include_mrp),
       include_weight: Boolean(template.include_weight),
       include_hsn: Boolean(template.include_hsn),
+      include_manufacturing_date: Boolean(template.include_manufacturing_date),
+      include_expiry_date: Boolean(template.include_expiry_date),
       barcode_position: (['top', 'bottom', 'left', 'right'].includes(template.barcode_position)) 
         ? template.barcode_position as 'top' | 'bottom' | 'left' | 'right'
         : 'bottom',
@@ -1104,6 +1118,8 @@ export default function PrintLabelsEnhanced() {
       include_mrp: true,
       include_weight: true,
       include_hsn: true,
+      include_manufacturing_date: false,
+      include_expiry_date: false,
       barcode_position: 'bottom' as const,
       border_style: 'solid' as const,
       border_width: 2,
@@ -1148,6 +1164,8 @@ export default function PrintLabelsEnhanced() {
         include_mrp: true,
         include_weight: false,
         include_hsn: false,
+        include_manufacturing_date: false,
+        include_expiry_date: false,
         barcode_position: 'bottom' as const,
         border_style: 'solid' as const,
         border_width: 1,
@@ -1169,6 +1187,8 @@ export default function PrintLabelsEnhanced() {
         include_mrp: true,
         include_weight: true,
         include_hsn: true,
+        include_manufacturing_date: false,
+        include_expiry_date: false,
         barcode_position: 'bottom' as const,
         border_style: 'solid' as const,
         border_width: 2,
@@ -1190,6 +1210,8 @@ export default function PrintLabelsEnhanced() {
         include_mrp: false,
         include_weight: false,
         include_hsn: false,
+        include_manufacturing_date: false,
+        include_expiry_date: false,
         barcode_position: 'right' as const,
         border_style: 'dashed' as const,
         border_width: 1,
@@ -1211,6 +1233,8 @@ export default function PrintLabelsEnhanced() {
         include_mrp: false,
         include_weight: false,
         include_hsn: false,
+        include_manufacturing_date: false,
+        include_expiry_date: false,
         barcode_position: 'bottom' as const,
         border_style: 'none' as const,
         border_width: 0,
@@ -1232,6 +1256,8 @@ export default function PrintLabelsEnhanced() {
         include_mrp: true,
         include_weight: false,
         include_hsn: false,
+        include_manufacturing_date: false,
+        include_expiry_date: false,
         barcode_position: 'bottom' as const,
         border_style: 'solid' as const,
         border_width: 3,
@@ -1391,7 +1417,8 @@ export default function PrintLabelsEnhanced() {
   const generateLabelHTML = (product: Product, template: LabelTemplate) => {
     const {
       width, height, font_size, border_style, border_width, background_color, text_color,
-      include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn
+      include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn,
+      include_manufacturing_date, include_expiry_date
     } = template;
 
     const borderCSS = border_style !== 'none' ? 
@@ -1465,6 +1492,18 @@ export default function PrintLabelsEnhanced() {
         ${include_hsn && product.hsnCode ? 
           `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm;">
             HSN: ${product.hsnCode}
+          </div>` : ''
+        }
+
+        ${include_manufacturing_date ? 
+          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm;">
+            Mfg: ${new Date().toLocaleDateString('en-IN')}
+          </div>` : ''
+        }
+
+        ${include_expiry_date ? 
+          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm;">
+            Exp: ${new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN')}
           </div>` : ''
         }
 
@@ -2159,6 +2198,8 @@ export default function PrintLabelsEnhanced() {
                             include_mrp: true,
                             include_weight: false,
                             include_hsn: false,
+                            include_manufacturing_date: false,
+                            include_expiry_date: false,
                             barcode_position: 'bottom',
                             border_style: 'solid',
                             border_width: 1,
@@ -2529,6 +2570,8 @@ export default function PrintLabelsEnhanced() {
                                 include_mrp: template.include_mrp,
                                 include_weight: template.include_weight,
                                 include_hsn: template.include_hsn,
+                                include_manufacturing_date: template.include_manufacturing_date || false,
+                                include_expiry_date: template.include_expiry_date || false,
                                 barcode_position: template.barcode_position,
                                 border_style: template.border_style,
                                 border_width: template.border_width,
@@ -2636,6 +2679,8 @@ export default function PrintLabelsEnhanced() {
                           {template.include_mrp && <Badge variant="secondary" className="text-xs">🏷️ MRP</Badge>}
                           {template.include_weight && <Badge variant="secondary" className="text-xs">⚖️ Weight</Badge>}
                           {template.include_hsn && <Badge variant="secondary" className="text-xs">📋 HSN</Badge>}
+                          {template.include_manufacturing_date && <Badge variant="secondary" className="text-xs">📅 Mfg Date</Badge>}
+                          {template.include_expiry_date && <Badge variant="secondary" className="text-xs">⏰ Exp Date</Badge>}
                         </div>
                       </div>
                     </div>
@@ -3091,7 +3136,9 @@ export default function PrintLabelsEnhanced() {
                       { name: 'include_description', label: 'Description' },
                       { name: 'include_mrp', label: 'MRP' },
                       { name: 'include_weight', label: 'Weight' },
-                      { name: 'include_hsn', label: 'HSN Code' }
+                      { name: 'include_hsn', label: 'HSN Code' },
+                      { name: 'include_manufacturing_date', label: 'Manufacturing Date' },
+                      { name: 'include_expiry_date', label: 'Expiry Date' }
                     ].map((item) => (
                       <FormField
                         key={item.name}

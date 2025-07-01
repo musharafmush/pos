@@ -331,6 +331,18 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - No additional backend or database setup required - system is fully operational
 - Label printing is integrated feature within comprehensive POS system, not standalone application
 
+### Manufacturing and Expiry Date Functionality Implementation (July 1, 2025)
+- Successfully implemented manufacturing and expiry date fields in label template system
+- Added include_manufacturing_date and include_expiry_date boolean fields to LabelTemplate interface
+- Updated database schema with new manufacturing and expiry date columns in label_templates table
+- Enhanced label generation HTML to display "Mfg: DD/MM/YYYY" (today's date) and "Exp: DD/MM/YYYY" (one year from today)
+- Added checkboxes in template editor UI for manufacturing and expiry date selection
+- Updated all template creation, editing, and duplication workflows to include new date fields
+- Added visual badges in template cards showing manufacturing and expiry date inclusion status
+- Dates display in Indian format (DD/MM/YYYY) matching existing system locale
+- Manufacturing date shows current date, expiry date shows one year from manufacturing date
+- Complete integration with existing dynamic CRUD operations and template management system
+
 ### Comprehensive CRUD Label Template System (July 1, 2025)
 - Implemented complete CRUD (Create, Read, Update, Delete) operations for label templates
 - Added "Quick Templates" button that creates 5 professional predefined templates:

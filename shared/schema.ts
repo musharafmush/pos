@@ -289,6 +289,8 @@ export const labelTemplates = pgTable('label_templates', {
   includeMRP: boolean('include_mrp').default(true),
   includeWeight: boolean('include_weight').default(false),
   includeHSN: boolean('include_hsn').default(false),
+  includeManufacturingDate: boolean('include_manufacturing_date').default(false),
+  includeExpiryDate: boolean('include_expiry_date').default(false),
   barcodePosition: text('barcode_position').default('bottom'), // top, bottom, left, right
   borderStyle: text('border_style').default('solid'), // solid, dashed, dotted, none
   borderWidth: integer('border_width').default(1),
@@ -699,6 +701,8 @@ export const labelTemplateInsertSchema = createInsertSchema(labelTemplates, {
   includeMRP: (schema) => schema.optional(),
   includeWeight: (schema) => schema.optional(),
   includeHSN: (schema) => schema.optional(),
+  includeManufacturingDate: (schema) => schema.optional(),
+  includeExpiryDate: (schema) => schema.optional(),
   barcodePosition: (schema) => schema.optional(),
   borderStyle: (schema) => schema.optional(),
   borderWidth: (schema) => schema.optional(),
