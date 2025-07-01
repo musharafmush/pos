@@ -321,6 +321,66 @@ export default function PrintLabelsEnhanced() {
         });
         throw error;
       }
+    },
+
+    // Remove date data from templates
+    removeDateData: async (templateId?: number) => {
+      console.log('🔄 Removing date data from templates:', templateId ? `template ${templateId}` : 'all templates');
+      
+      try {
+        const targetsToUpdate = templateId ? [templates.find(t => t.id === templateId)].filter(Boolean) : templates;
+        
+        if (targetsToUpdate.length === 0) {
+          throw new Error('No templates found to update');
+        }
+        
+        const updatedTemplates = [];
+        
+        for (const template of targetsToUpdate) {
+          if (!template) continue;
+          
+          // Create updated template data with required fields
+          const updatedTemplateData: TemplateFormData = {
+            name: template.name.replace(/date|Date|DATE/g, '').replace(/01-07-2025|1\/7\/2025|07-01-2025/g, '').trim() || template.name,
+            description: (template.description || '').replace(/date|Date|DATE/g, '').replace(/01-07-2025|1\/7\/2025|07-01-2025/g, ''),
+            width: template.width,
+            height: template.height,
+            font_size: template.font_size,
+            orientation: template.orientation || 'landscape',
+            include_barcode: template.include_barcode,
+            include_price: template.include_price,
+            include_description: template.include_description,
+            include_mrp: template.include_mrp,
+            include_weight: template.include_weight,
+            include_hsn: template.include_hsn,
+            barcode_position: template.barcode_position,
+            border_style: template.border_style,
+            border_width: template.border_width,
+            background_color: template.background_color,
+            text_color: template.text_color,
+            custom_css: (template.custom_css || '').replace(/date|Date|DATE/g, '').replace(/01-07-2025|1\/7\/2025|07-01-2025/g, ''),
+            is_default: template.is_default
+          };
+          
+          const result = await dynamicCRUD.update(template.id, updatedTemplateData);
+          updatedTemplates.push(result);
+        }
+        
+        toast({
+          title: "Date Data Removed",
+          description: `Removed date data from ${updatedTemplates.length} template(s)`,
+        });
+        
+        return updatedTemplates;
+      } catch (error) {
+        console.error('❌ Remove date data failed:', error);
+        toast({
+          title: "Remove Date Failed",
+          description: "Could not remove date data from templates",
+          variant: "destructive"
+        });
+        throw error;
+      }
     }
   };
 
@@ -1796,6 +1856,26 @@ export default function PrintLabelsEnhanced() {
                     >
                       <GridIcon className="h-4 w-4 mr-1" />
                       Box Align Center
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        const confirmed = window.confirm(
+                          "This will remove all date data (1/7/2025, 01-07-2025) from all templates. Continue?"
+                        );
+                        if (confirmed) {
+                          try {
+                            await boxAlignmentCenter.removeDateData();
+                          } catch (error) {
+                            console.error('Remove date data failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-red-100 hover:bg-red-200 text-red-700 border-red-300"
+                    >
+                      <TrashIcon className="h-4 w-4 mr-1" />
+                      Remove Date Data
                     </Button>
                     <Button 
                       variant="outline" 
