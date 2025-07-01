@@ -32,19 +32,54 @@ interface LabelElement {
   width: number;
   height: number;
   content: string;
+  
+  // Typography properties
   fontSize: number;
+  fontFamily?: string;
   fontWeight: 'normal' | 'bold';
   fontStyle: 'normal' | 'italic';
   textDecoration: 'none' | 'underline';
-  textAlign: 'left' | 'center' | 'right';
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  lineHeight?: number;
+  letterSpacing?: number;
+  
+  // Color properties
   color: string;
   backgroundColor: string;
+  
+  // Border properties
   borderWidth: number;
   borderColor: string;
   borderStyle: 'solid' | 'dashed' | 'dotted' | 'none';
+  borderRadius?: number;
+  
+  // Shadow properties
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  
+  // Transform properties
   rotation: number;
+  scaleX?: number;
+  scaleY?: number;
+  skewX?: number;
+  skewY?: number;
+  
+  // Display properties
   opacity: number;
   zIndex: number;
+  visible?: boolean;
+  
+  // Padding and margin
+  paddingTop?: number;
+  paddingRight?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
+  marginTop?: number;
+  marginRight?: number;
+  marginBottom?: number;
+  marginLeft?: number;
 }
 
 interface LabelDesignerProps {
@@ -328,7 +363,12 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
           top: element.y,
           width: element.width,
           height: element.height,
-          transform: `rotate(${element.rotation}deg)`,
+          transform: `
+            rotate(${element.rotation || 0}deg) 
+            scale(${element.scaleX || 1}, ${element.scaleY || 1})
+            ${element.skewX ? `skewX(${element.skewX}deg)` : ''} 
+            ${element.skewY ? `skewY(${element.skewY}deg)` : ''}
+          `,
           opacity: element.opacity,
           zIndex: element.zIndex,
           cursor: tool === 'select' ? (isSelected ? 'move' : 'pointer') : 'default',
@@ -336,6 +376,12 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
           borderColor: isSelected ? '#3b82f6' : element.borderColor,
           borderWidth: isSelected ? 2 : element.borderWidth,
           borderStyle: element.borderStyle,
+          borderRadius: element.borderRadius || 0,
+          boxShadow: element.shadowBlur ? 
+            `${element.shadowOffsetX || 0}px ${element.shadowOffsetY || 0}px ${element.shadowBlur}px ${element.shadowColor || 'rgba(0,0,0,0.3)'}` 
+            : 'none',
+          padding: `${element.paddingTop || 0}px ${element.paddingRight || 0}px ${element.paddingBottom || 0}px ${element.paddingLeft || 0}px`,
+          margin: `${element.marginTop || 0}px ${element.marginRight || 0}px ${element.marginBottom || 0}px ${element.marginLeft || 0}px`,
         }}
         onMouseDown={(e) => {
           if (tool === 'select') {
@@ -356,12 +402,20 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
             className="w-full h-full flex items-center px-2"
             style={{
               fontSize: element.fontSize,
+              fontFamily: element.fontFamily || 'Arial',
               fontWeight: element.fontWeight,
               fontStyle: element.fontStyle,
               textDecoration: element.textDecoration,
               textAlign: element.textAlign,
               color: element.color,
-              overflow: 'hidden'
+              lineHeight: element.lineHeight || 1.2,
+              letterSpacing: element.letterSpacing || 0,
+              overflow: 'hidden',
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start'
             }}
           >
             {element.content.replace(/\{\{product\.(\w+)\}\}/g, (match, field) => {
@@ -469,143 +523,589 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
         {/* Element Properties */}
         {selectedEl && (
           <div className="space-y-4">
-            <h3 className="font-semibold">Properties ({selectedEl.type})</h3>
+            <h3 className="font-semibold flex items-center gap-2">
+              Properties ({selectedEl.type})
+              <Button 
+                size="sm" 
+                variant="destructive" 
+                onClick={() => {
+                  setElements(elements.filter(el => el.id !== selectedElement));
+                  setSelectedElement(null);
+                }}
+              >
+                Delete
+              </Button>
+            </h3>
             
-            <div className="space-y-2">
-              <Label htmlFor="content">Content</Label>
-              <Input
-                id="content"
-                value={selectedEl.content}
-                onChange={(e) => updateSelectedElement({ content: e.target.value })}
-              />
+            {/* Content Section */}
+            <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+              <h4 className="font-medium text-sm">Content</h4>
+              
+              {selectedEl.type === 'text' && (
+                <div>
+                  <Label htmlFor="content">Text Content</Label>
+                  <Input
+                    id="content"
+                    value={selectedEl.content || ''}
+                    onChange={(e) => updateSelectedElement({ content: e.target.value })}
+                    placeholder="Enter text content"
+                  />
+                </div>
+              )}
+
+              {selectedEl.type === 'barcode' && (
+                <div>
+                  <Label htmlFor="content">Barcode Value</Label>
+                  <Input
+                    id="content"
+                    value={selectedEl.content || ''}
+                    onChange={(e) => updateSelectedElement({ content: e.target.value })}
+                    placeholder="Enter barcode value"
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="fontSize">Font Size</Label>
-                <Input
-                  id="fontSize"
-                  type="number"
-                  value={selectedEl.fontSize}
-                  onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) || 12 })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="color">Color</Label>
-                <Input
-                  id="color"
-                  type="color"
-                  value={selectedEl.color}
-                  onChange={(e) => updateSelectedElement({ color: e.target.value })}
-                />
-              </div>
-            </div>
+            {/* Font & Typography Section */}
+            {selectedEl.type === 'text' && (
+              <div className="space-y-3 p-3 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-sm">Typography</h4>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="fontSize">Font Size</Label>
+                    <Input
+                      id="fontSize"
+                      type="number"
+                      value={selectedEl.fontSize || 16}
+                      onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) || 16 })}
+                      min="6"
+                      max="200"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="fontFamily">Font Family</Label>
+                    <Select 
+                      value={selectedEl.fontFamily || 'Arial'} 
+                      onValueChange={(value) => updateSelectedElement({ fontFamily: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Arial">Arial</SelectItem>
+                        <SelectItem value="Helvetica">Helvetica</SelectItem>
+                        <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                        <SelectItem value="Courier New">Courier New</SelectItem>
+                        <SelectItem value="Georgia">Georgia</SelectItem>
+                        <SelectItem value="Verdana">Verdana</SelectItem>
+                        <SelectItem value="Impact">Impact</SelectItem>
+                        <SelectItem value="Tahoma">Tahoma</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <div className="flex gap-2">
-              <Button
-                variant={selectedEl.fontWeight === 'bold' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => updateSelectedElement({ 
-                  fontWeight: selectedEl.fontWeight === 'bold' ? 'normal' : 'bold' 
-                })}
-              >
-                <BoldIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={selectedEl.fontStyle === 'italic' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => updateSelectedElement({ 
-                  fontStyle: selectedEl.fontStyle === 'italic' ? 'normal' : 'italic' 
-                })}
-              >
-                <ItalicIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={selectedEl.textDecoration === 'underline' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => updateSelectedElement({ 
-                  textDecoration: selectedEl.textDecoration === 'underline' ? 'none' : 'underline' 
-                })}
-              >
-                <UnderlineIcon className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant={selectedEl.textAlign === 'left' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => updateSelectedElement({ textAlign: 'left' })}
-              >
-                <AlignLeftIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={selectedEl.textAlign === 'center' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => updateSelectedElement({ textAlign: 'center' })}
-              >
-                <AlignCenterIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={selectedEl.textAlign === 'right' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => updateSelectedElement({ textAlign: 'right' })}
-              >
-                <AlignRightIcon className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="x">X Position</Label>
-                <Input
-                  id="x"
-                  type="number"
-                  value={selectedEl.x}
-                  onChange={(e) => updateSelectedElement({ x: parseInt(e.target.value) || 0 })}
-                />
+                <div>
+                  <Label htmlFor="textAlign">Text Alignment</Label>
+                  <Select 
+                    value={selectedEl.textAlign || 'left'} 
+                    onValueChange={(value) => updateSelectedElement({ textAlign: value as 'left' | 'center' | 'right' | 'justify' })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="left">Left</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                      <SelectItem value="right">Right</SelectItem>
+                      <SelectItem value="justify">Justify</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="y">Y Position</Label>
-                <Input
-                  id="y"
-                  type="number"
-                  value={selectedEl.y}
-                  onChange={(e) => updateSelectedElement({ y: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
+            )}
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="width">Width</Label>
-                <Input
-                  id="width"
-                  type="number"
-                  value={selectedEl.width}
-                  onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) || 50 })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="height">Height</Label>
-                <Input
-                  id="height"
-                  type="number"
-                  value={selectedEl.height}
-                  onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) || 20 })}
-                />
+            {/* Color Section */}
+            <div className="space-y-3 p-3 bg-green-50 rounded-lg">
+              <h4 className="font-medium text-sm">Colors</h4>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="color">Text Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="color"
+                      type="color"
+                      value={selectedEl.color || '#000000'}
+                      onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                      className="w-12 h-8"
+                    />
+                    <Input
+                      value={selectedEl.color || '#000000'}
+                      onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                      placeholder="#000000"
+                      className="flex-1 text-xs"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="backgroundColor">Background</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="backgroundColor"
+                      type="color"
+                      value={selectedEl.backgroundColor || '#ffffff'}
+                      onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
+                      className="w-12 h-8"
+                    />
+                    <Input
+                      value={selectedEl.backgroundColor || '#ffffff'}
+                      onChange={(e) => updateSelectedElement({ backgroundColor: e.target.value })}
+                      placeholder="#ffffff"
+                      className="flex-1 text-xs"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <Separator />
+            {/* Text Style Buttons */}
+            {selectedEl.type === 'text' && (
+              <div className="space-y-2 p-3 bg-purple-50 rounded-lg">
+                <h4 className="font-medium text-sm">Text Style</h4>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant={selectedEl.fontWeight === 'bold' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateSelectedElement({ 
+                      fontWeight: selectedEl.fontWeight === 'bold' ? 'normal' : 'bold' 
+                    })}
+                  >
+                    <BoldIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={selectedEl.fontStyle === 'italic' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateSelectedElement({ 
+                      fontStyle: selectedEl.fontStyle === 'italic' ? 'normal' : 'italic' 
+                    })}
+                  >
+                    <ItalicIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={selectedEl.textDecoration === 'underline' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateSelectedElement({ 
+                      textDecoration: selectedEl.textDecoration === 'underline' ? 'none' : 'underline' 
+                    })}
+                  >
+                    <UnderlineIcon className="h-4 w-4" />
+                  </Button>
+                </div>
 
-            <div className="flex gap-2">
-              <Button size="sm" onClick={duplicateSelectedElement}>
-                <CopyIcon className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="destructive" onClick={deleteSelectedElement}>
-                <TrashIcon className="h-4 w-4" />
-              </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant={selectedEl.textAlign === 'left' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateSelectedElement({ textAlign: 'left' })}
+                  >
+                    <AlignLeftIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={selectedEl.textAlign === 'center' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateSelectedElement({ textAlign: 'center' })}
+                  >
+                    <AlignCenterIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={selectedEl.textAlign === 'right' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateSelectedElement({ textAlign: 'right' })}
+                  >
+                    <AlignRightIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Position & Size Section */}
+            <div className="space-y-3 p-3 bg-orange-50 rounded-lg">
+              <h4 className="font-medium text-sm">Position & Size</h4>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="x">X Position</Label>
+                  <Input
+                    id="x"
+                    type="number"
+                    value={selectedEl.x}
+                    onChange={(e) => updateSelectedElement({ x: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="y">Y Position</Label>
+                  <Input
+                    id="y"
+                    type="number"
+                    value={selectedEl.y}
+                    onChange={(e) => updateSelectedElement({ y: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="width">Width</Label>
+                  <Input
+                    id="width"
+                    type="number"
+                    value={selectedEl.width}
+                    onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) || 50 })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="height">Height</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={selectedEl.height}
+                    onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) || 20 })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Border & Effects Section */}
+            <div className="space-y-3 p-3 bg-red-50 rounded-lg">
+              <h4 className="font-medium text-sm">Border & Effects</h4>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label htmlFor="borderWidth">Border Width</Label>
+                  <Input
+                    id="borderWidth"
+                    type="number"
+                    value={selectedEl.borderWidth || 0}
+                    onChange={(e) => updateSelectedElement({ borderWidth: parseInt(e.target.value) || 0 })}
+                    min="0"
+                    max="10"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="borderRadius">Border Radius</Label>
+                  <Input
+                    id="borderRadius"
+                    type="number"
+                    value={selectedEl.borderRadius || 0}
+                    onChange={(e) => updateSelectedElement({ borderRadius: parseInt(e.target.value) || 0 })}
+                    min="0"
+                    max="50"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="opacity">Opacity</Label>
+                  <Input
+                    id="opacity"
+                    type="number"
+                    value={Math.round((selectedEl.opacity || 1) * 100)}
+                    onChange={(e) => updateSelectedElement({ opacity: (parseInt(e.target.value) || 100) / 100 })}
+                    min="0"
+                    max="100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="borderColor">Border Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="borderColor"
+                    type="color"
+                    value={selectedEl.borderColor || '#000000'}
+                    onChange={(e) => updateSelectedElement({ borderColor: e.target.value })}
+                    className="w-12 h-8"
+                  />
+                  <Input
+                    value={selectedEl.borderColor || '#000000'}
+                    onChange={(e) => updateSelectedElement({ borderColor: e.target.value })}
+                    placeholder="#000000"
+                    className="flex-1 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="borderStyle">Border Style</Label>
+                <Select 
+                  value={selectedEl.borderStyle || 'solid'} 
+                  onValueChange={(value) => updateSelectedElement({ borderStyle: value as 'solid' | 'dashed' | 'dotted' | 'none' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="solid">Solid</SelectItem>
+                    <SelectItem value="dashed">Dashed</SelectItem>
+                    <SelectItem value="dotted">Dotted</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Transform Section */}
+            <div className="space-y-3 p-3 bg-yellow-50 rounded-lg">
+              <h4 className="font-medium text-sm">Transform</h4>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="rotation">Rotation (deg)</Label>
+                  <Input
+                    id="rotation"
+                    type="number"
+                    value={selectedEl.rotation || 0}
+                    onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) || 0 })}
+                    min="-360"
+                    max="360"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="zIndex">Layer (Z-Index)</Label>
+                  <Input
+                    id="zIndex"
+                    type="number"
+                    value={selectedEl.zIndex || 1}
+                    onChange={(e) => updateSelectedElement({ zIndex: parseInt(e.target.value) || 1 })}
+                    min="1"
+                    max="100"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="scaleX">Scale X</Label>
+                  <Input
+                    id="scaleX"
+                    type="number"
+                    step="0.1"
+                    value={selectedEl.scaleX || 1}
+                    onChange={(e) => updateSelectedElement({ scaleX: parseFloat(e.target.value) || 1 })}
+                    min="0.1"
+                    max="5"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="scaleY">Scale Y</Label>
+                  <Input
+                    id="scaleY"
+                    type="number"
+                    step="0.1"
+                    value={selectedEl.scaleY || 1}
+                    onChange={(e) => updateSelectedElement({ scaleY: parseFloat(e.target.value) || 1 })}
+                    min="0.1"
+                    max="5"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Shadow & Effects Section */}
+            <div className="space-y-3 p-3 bg-indigo-50 rounded-lg">
+              <h4 className="font-medium text-sm">Shadow & Effects</h4>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="shadowBlur">Shadow Blur</Label>
+                  <Input
+                    id="shadowBlur"
+                    type="number"
+                    value={selectedEl.shadowBlur || 0}
+                    onChange={(e) => updateSelectedElement({ shadowBlur: parseInt(e.target.value) || 0 })}
+                    min="0"
+                    max="50"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="shadowColor">Shadow Color</Label>
+                  <Input
+                    id="shadowColor"
+                    type="color"
+                    value={selectedEl.shadowColor || '#000000'}
+                    onChange={(e) => updateSelectedElement({ shadowColor: e.target.value })}
+                    className="w-full h-8"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="shadowOffsetX">Shadow X</Label>
+                  <Input
+                    id="shadowOffsetX"
+                    type="number"
+                    value={selectedEl.shadowOffsetX || 0}
+                    onChange={(e) => updateSelectedElement({ shadowOffsetX: parseInt(e.target.value) || 0 })}
+                    min="-20"
+                    max="20"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="shadowOffsetY">Shadow Y</Label>
+                  <Input
+                    id="shadowOffsetY"
+                    type="number"
+                    value={selectedEl.shadowOffsetY || 0}
+                    onChange={(e) => updateSelectedElement({ shadowOffsetY: parseInt(e.target.value) || 0 })}
+                    min="-20"
+                    max="20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Typography Advanced Section */}
+            {selectedEl.type === 'text' && (
+              <div className="space-y-3 p-3 bg-pink-50 rounded-lg">
+                <h4 className="font-medium text-sm">Advanced Typography</h4>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="lineHeight">Line Height</Label>
+                    <Input
+                      id="lineHeight"
+                      type="number"
+                      step="0.1"
+                      value={selectedEl.lineHeight || 1.2}
+                      onChange={(e) => updateSelectedElement({ lineHeight: parseFloat(e.target.value) || 1.2 })}
+                      min="0.5"
+                      max="3"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="letterSpacing">Letter Spacing</Label>
+                    <Input
+                      id="letterSpacing"
+                      type="number"
+                      step="0.1"
+                      value={selectedEl.letterSpacing || 0}
+                      onChange={(e) => updateSelectedElement({ letterSpacing: parseFloat(e.target.value) || 0 })}
+                      min="-5"
+                      max="10"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Layer Controls */}
+            <div className="space-y-3 p-3 bg-cyan-50 rounded-lg">
+              <h4 className="font-medium text-sm">Layer Controls</h4>
+              
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => updateSelectedElement({ zIndex: (selectedEl.zIndex || 1) + 1 })}
+                  className="flex-1"
+                >
+                  Bring Forward
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => updateSelectedElement({ zIndex: Math.max(1, (selectedEl.zIndex || 1) - 1) })}
+                  className="flex-1"
+                >
+                  Send Back
+                </Button>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="visible"
+                  checked={selectedEl.visible !== false}
+                  onCheckedChange={(checked) => updateSelectedElement({ visible: checked })}
+                />
+                <Label htmlFor="visible">Visible</Label>
+              </div>
+            </div>
+
+            {/* Quick Preset Styles */}
+            <div className="space-y-3 p-3 bg-emerald-50 rounded-lg">
+              <h4 className="font-medium text-sm">Quick Presets</h4>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => updateSelectedElement({
+                    fontSize: 24,
+                    fontWeight: 'bold',
+                    color: '#000000',
+                    backgroundColor: '#ffff00',
+                    borderWidth: 2,
+                    borderColor: '#000000'
+                  })}
+                >
+                  Bold Header
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => updateSelectedElement({
+                    fontSize: 12,
+                    fontStyle: 'italic',
+                    color: '#666666',
+                    backgroundColor: 'transparent'
+                  })}
+                >
+                  Subtitle
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => updateSelectedElement({
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    color: '#ff0000',
+                    shadowBlur: 2,
+                    shadowColor: '#000000'
+                  })}
+                >
+                  Price Tag
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => updateSelectedElement({
+                    borderWidth: 2,
+                    borderStyle: 'dashed',
+                    borderColor: '#000000',
+                    backgroundColor: '#f0f0f0'
+                  })}
+                >
+                  Box Style
+                </Button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 p-3 bg-gray-100 rounded-lg">
+              <h4 className="font-medium text-sm">Actions</h4>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={duplicateSelectedElement} className="flex-1">
+                  <CopyIcon className="h-4 w-4 mr-1" />
+                  Duplicate
+                </Button>
+                <Button size="sm" variant="destructive" onClick={deleteSelectedElement} className="flex-1">
+                  <TrashIcon className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
         )}
