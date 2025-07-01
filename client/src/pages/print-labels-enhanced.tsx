@@ -350,6 +350,85 @@ export default function PrintLabelsEnhanced() {
           variant: "destructive"
         });
       }
+    },
+
+    // BULK_UPDATE: Dynamic bulk update operations for print-labels
+    bulkUpdate: async (updates: Array<{ id: number; data: Partial<TemplateFormData> }>) => {
+      console.log('🔄 Dynamic BULK UPDATE operation for print-labels:', updates);
+      const results = [];
+      const errors = [];
+      
+      try {
+        for (const update of updates) {
+          try {
+            const result = await dynamicCRUD.update(update.id, update.data as TemplateFormData);
+            results.push(result);
+            console.log(`✅ Print-labels update successful for template ${update.id}`);
+          } catch (error) {
+            errors.push({ id: update.id, error });
+            console.error(`❌ Print-labels update failed for template ${update.id}:`, error);
+          }
+        }
+        
+        const successCount = results.length;
+        const errorCount = errors.length;
+        
+        if (successCount > 0) {
+          toast({
+            title: "Print Labels Bulk Update Complete",
+            description: `${successCount} templates updated successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+          });
+        }
+        
+        if (errorCount > 0) {
+          toast({
+            title: "Some Print Labels Updates Failed",
+            description: `${errorCount} templates could not be updated`,
+            variant: "destructive"
+          });
+        }
+        
+        return { results, errors };
+      } catch (error) {
+        console.error('❌ Dynamic BULK UPDATE completely failed:', error);
+        toast({
+          title: "Print Labels Bulk Update Failed",
+          description: "Failed to update templates with dynamic CRUD operations",
+          variant: "destructive"
+        });
+        throw error;
+      }
+    },
+
+    // VERSION_UPDATE: Create versioned updates for print-labels
+    versionUpdate: async (originalId: number, newData: TemplateFormData) => {
+      console.log('🔄 Dynamic VERSION UPDATE for print-labels:', { originalId, newData });
+      try {
+        // Create a new version with timestamp
+        const versionedData = {
+          ...newData,
+          name: `${newData.name} - v${Date.now()}`,
+          description: `${newData.description || ''} (Updated version of template ${originalId})`
+        };
+        
+        const newVersion = await dynamicCRUD.create(versionedData);
+        console.log('✅ Print-labels version update created:', newVersion);
+        
+        toast({
+          title: "Print Labels Version Created",
+          description: `New version of template created with dynamic CRUD`,
+        });
+        
+        return newVersion;
+      } catch (error) {
+        console.error('❌ Print-labels version update failed:', error);
+        toast({
+          title: "Version Update Failed",
+          description: "Could not create versioned template",
+          variant: "destructive"
+        });
+        throw error;
+      }
     }
   };
 
@@ -410,45 +489,29 @@ export default function PrintLabelsEnhanced() {
     }
   });
 
+  // Enhanced Dynamic UPDATE mutation with advanced features
   const updateTemplateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: TemplateFormData }) => {
-      console.log('Updating template with data:', data);
-      console.log('Font size being sent:', data.font_size);
-
-      const response = await fetch(`/api/label-templates/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to update template`);
-      }
-
-      return response.json();
+      console.log('🔄 Dynamic UPDATE initiated for template:', id);
+      console.log('📝 Update data:', data);
+      
+      // Use dynamic CRUD update operation
+      return await dynamicCRUD.update(id, data);
     },
     onSuccess: async (data) => {
-      console.log('Template updated successfully:', data);
-      console.log('Updated font_size:', data.font_size);
+      console.log('✅ Dynamic template update completed:', data);
       toast({
-        title: "Template updated successfully",
-        description: `Template "${data.name}" has been saved with your changes (Font: ${data.font_size}pt)`
+        title: "Print Labels Update Complete",
+        description: `Template "${data.name}" updated with dynamic CRUD operations (Font: ${data.font_size}pt)`,
       });
-      
-      // Force immediate refetch of templates
-      await queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
-      await refetchTemplates();
       
       handleTemplateDialogClose();
     },
     onError: (error: Error) => {
-      console.error('Template update error:', error);
+      console.error('❌ Dynamic template update failed:', error);
       toast({
-        title: "Error updating template",
-        description: error.message || "Failed to update template. Please check your input and try again.",
+        title: "Print Labels Update Failed",
+        description: error.message || "Failed to update template with dynamic CRUD operations.",
         variant: "destructive"
       });
     }
@@ -1573,6 +1636,36 @@ export default function PrintLabelsEnhanced() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        const confirmed = window.confirm(
+                          "This will bulk update all templates' font sizes to 16pt using dynamic CRUD. Continue?"
+                        );
+                        if (confirmed) {
+                          // Prepare bulk updates for all templates
+                          const bulkUpdates = templates.map(template => ({
+                            id: template.id,
+                            data: {
+                              ...template,
+                              font_size: 16,
+                              description: `${template.description || ''} - Updated via print-labels bulk update`
+                            } as Partial<TemplateFormData>
+                          }));
+                          
+                          try {
+                            await dynamicCRUD.bulkUpdate(bulkUpdates);
+                          } catch (error) {
+                            console.error('Bulk update failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300"
+                    >
+                      <RefreshCwIcon className="h-4 w-4 mr-1" />
+                      Bulk Update
+                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
