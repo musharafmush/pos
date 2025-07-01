@@ -3969,7 +3969,18 @@ export const storage = {
       const stmt = database.prepare(`
         SELECT * FROM label_templates WHERE id = ?
       `);
-      return stmt.get(id) || null;
+      const template = stmt.get(id);
+      
+      if (template && template.elements) {
+        try {
+          template.elements = JSON.parse(template.elements);
+        } catch (parseError) {
+          console.error('Error parsing elements JSON:', parseError);
+          template.elements = [];
+        }
+      }
+      
+      return template || null;
     } catch (error) {
       console.error('Error getting label template by ID:', error);
       return null;
@@ -4056,6 +4067,12 @@ export const storage = {
       if (templateData.isActive !== undefined) {
         updates.push('is_active = ?');
         values.push(templateData.isActive ? 1 : 0);
+      }
+      
+      // Add support for visual designer elements
+      if (templateData.elements !== undefined) {
+        updates.push('elements = ?');
+        values.push(JSON.stringify(templateData.elements));
       }
 
       updates.push('updated_at = ?');

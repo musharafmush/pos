@@ -102,9 +102,17 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
   const templateWidth = templateData?.width ? (templateData.width * 3.78) : 400;
   const templateHeight = templateData?.height ? (templateData.height * 3.78) : 300;
 
-  // Initialize with default elements based on template settings
+  // Initialize with saved elements or default elements based on template settings
   useEffect(() => {
     if (templateData) {
+      // Check if template has saved elements
+      if (templateData.elements && Array.isArray(templateData.elements) && templateData.elements.length > 0) {
+        console.log('Loading saved elements:', templateData.elements);
+        setElements(templateData.elements);
+        return;
+      }
+      
+      // Otherwise, create default elements
       const defaultElements: LabelElement[] = [];
       
       // Add product name
@@ -1145,7 +1153,73 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
               </SelectContent>
             </Select>
             
-            <Button onClick={() => onSave(elements)}>Save Template</Button>
+            <Button 
+              onClick={async () => {
+                try {
+                  console.log('Saving template with elements:', elements);
+                  
+                  // Prepare template data for saving
+                  const templateUpdateData = {
+                    name: templateData?.name,
+                    description: templateData?.description, 
+                    width: templateData?.width,
+                    height: templateData?.height,
+                    font_size: templateData?.font_size,
+                    include_barcode: templateData?.include_barcode,
+                    include_price: templateData?.include_price,
+                    include_mrp: templateData?.include_mrp,
+                    orientation: templateData?.orientation,
+                    elements: elements // Save the visual designer elements
+                  };
+
+                  const response = await fetch(`/api/label-templates/${templateData?.id}`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(templateUpdateData)
+                  });
+
+                  if (response.ok) {
+                    const result = await response.json();
+                    console.log('Template saved successfully:', result);
+                    
+                    // Show success notification
+                    const successMessage = document.createElement('div');
+                    successMessage.style.cssText = `
+                      position: fixed;
+                      top: 20px;
+                      right: 20px;
+                      background: #4ade80;
+                      color: white;
+                      padding: 12px 20px;
+                      border-radius: 8px;
+                      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                      z-index: 9999;
+                      font-weight: 500;
+                    `;
+                    successMessage.textContent = '✓ Template saved successfully!';
+                    document.body.appendChild(successMessage);
+                    
+                    setTimeout(() => {
+                      document.body.removeChild(successMessage);
+                    }, 3000);
+                    
+                    onSave(elements); // Call original callback
+                  } else {
+                    const error = await response.text();
+                    console.error('Failed to save template:', error);
+                    alert('Failed to save template. Please try again.');
+                  }
+                } catch (error) {
+                  console.error('Error saving template:', error);
+                  alert('Error saving template. Please check your connection.');
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Save Template
+            </Button>
             <Button variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
         </div>
