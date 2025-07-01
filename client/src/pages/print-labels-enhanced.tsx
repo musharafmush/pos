@@ -504,6 +504,148 @@ export default function PrintLabelsEnhanced() {
     setIsDesignerOpen(true);
   };
 
+  const handleCreatePredefinedTemplates = async () => {
+    const predefinedTemplates = [
+      {
+        name: "Retail Price Tag",
+        description: "Standard retail pricing label with barcode",
+        width: 80,
+        height: 50,
+        font_size: 14,
+        orientation: 'landscape' as const,
+        include_barcode: true,
+        include_price: true,
+        include_description: false,
+        include_mrp: true,
+        include_weight: false,
+        include_hsn: false,
+        barcode_position: 'bottom' as const,
+        border_style: 'solid' as const,
+        border_width: 1,
+        background_color: '#ffffff',
+        text_color: '#000000',
+        custom_css: '',
+        is_default: false
+      },
+      {
+        name: "Product Information Label",
+        description: "Detailed product info with all elements",
+        width: 120,
+        height: 80,
+        font_size: 16,
+        orientation: 'portrait' as const,
+        include_barcode: true,
+        include_price: true,
+        include_description: true,
+        include_mrp: true,
+        include_weight: true,
+        include_hsn: true,
+        barcode_position: 'bottom' as const,
+        border_style: 'solid' as const,
+        border_width: 2,
+        background_color: '#f8f9fa',
+        text_color: '#212529',
+        custom_css: '',
+        is_default: false
+      },
+      {
+        name: "Shelf Label",
+        description: "Wide shelf labeling for inventory management",
+        width: 200,
+        height: 60,
+        font_size: 18,
+        orientation: 'landscape' as const,
+        include_barcode: true,
+        include_price: true,
+        include_description: true,
+        include_mrp: false,
+        include_weight: false,
+        include_hsn: false,
+        barcode_position: 'right' as const,
+        border_style: 'dashed' as const,
+        border_width: 1,
+        background_color: '#e3f2fd',
+        text_color: '#1565c0',
+        custom_css: '',
+        is_default: false
+      },
+      {
+        name: "Small Barcode Label",
+        description: "Compact barcode-only label for small items",
+        width: 60,
+        height: 40,
+        font_size: 10,
+        orientation: 'landscape' as const,
+        include_barcode: true,
+        include_price: false,
+        include_description: false,
+        include_mrp: false,
+        include_weight: false,
+        include_hsn: false,
+        barcode_position: 'bottom' as const,
+        border_style: 'none' as const,
+        border_width: 0,
+        background_color: '#ffffff',
+        text_color: '#000000',
+        custom_css: '',
+        is_default: false
+      },
+      {
+        name: "Premium Product Tag",
+        description: "Elegant label for premium products with styling",
+        width: 100,
+        height: 70,
+        font_size: 20,
+        orientation: 'portrait' as const,
+        include_barcode: true,
+        include_price: true,
+        include_description: true,
+        include_mrp: true,
+        include_weight: false,
+        include_hsn: false,
+        barcode_position: 'bottom' as const,
+        border_style: 'solid' as const,
+        border_width: 3,
+        background_color: '#fff3e0',
+        text_color: '#e65100',
+        custom_css: 'font-family: serif; font-weight: bold;',
+        is_default: false
+      }
+    ];
+
+    try {
+      let createdCount = 0;
+      for (const template of predefinedTemplates) {
+        const response = await fetch('/api/label-templates', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(template)
+        });
+
+        if (response.ok) {
+          createdCount++;
+        }
+      }
+
+      // Refresh templates list
+      queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+
+      toast({
+        title: "Success",
+        description: `Created ${createdCount} professional label templates ready for use!`,
+      });
+    } catch (error) {
+      console.error('Error creating predefined templates:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create predefined templates. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleDesignerSave = (elements: any[]) => {
     if (!designerTemplate) return;
     
@@ -1096,7 +1238,7 @@ export default function PrintLabelsEnhanced() {
                       Manage your label templates and create custom designs
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button onClick={handleCreateTemplate}>
                       <PlusIcon className="h-4 w-4 mr-2" />
                       Create Template
@@ -1161,10 +1303,97 @@ export default function PrintLabelsEnhanced() {
                       <PaletteIcon className="h-4 w-4 mr-2" />
                       Visual Designer
                     </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => handleCreatePredefinedTemplates()}
+                    >
+                      <TagIcon className="h-4 w-4 mr-2" />
+                      Quick Templates
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Template Management Controls */}
+                <div className="mb-6 flex flex-wrap gap-3 items-center justify-between">
+                  <div className="flex gap-2 items-center">
+                    <span className="text-sm text-muted-foreground">
+                      {templates.length} templates available
+                    </span>
+                    <Badge variant="secondary" className="text-xs">
+                      CRUD Operations Enabled
+                    </Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const confirmed = window.confirm(
+                          "This will create a backup of all templates. Continue?"
+                        );
+                        if (confirmed) {
+                          // Export templates as JSON
+                          const templateData = templates.map(t => ({
+                            ...t,
+                            backup_date: new Date().toISOString()
+                          }));
+                          const blob = new Blob([JSON.stringify(templateData, null, 2)], {
+                            type: 'application/json'
+                          });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `label-templates-backup-${Date.now()}.json`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          
+                          toast({
+                            title: "Backup Created",
+                            description: "Template backup downloaded successfully",
+                          });
+                        }
+                      }}
+                    >
+                      <Package2Icon className="h-4 w-4 mr-1" />
+                      Backup
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.json';
+                        input.onchange = async (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) {
+                            const text = await file.text();
+                            try {
+                              const templateData = JSON.parse(text);
+                              // Import templates logic would go here
+                              toast({
+                                title: "Import Ready",
+                                description: "Template import functionality prepared",
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Import Error",
+                                description: "Invalid template file format",
+                                variant: "destructive"
+                              });
+                            }
+                          }
+                        };
+                        input.click();
+                      }}
+                    >
+                      <Package2Icon className="h-4 w-4 mr-1" />
+                      Import
+                    </Button>
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {templates.map((template) => (
                     <div 
@@ -1301,8 +1530,8 @@ export default function PrintLabelsEnhanced() {
                         </div>
 
                         <div className="bg-gray-50 rounded-lg p-2">
-                          <span className="text-muted-foreground block text-xs mb-1">Layout</span>
-                          <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground block text-xs mb-1">Layout & Status</span>
+                          <div className="flex items-center gap-2 mb-2">
                             {template.orientation === 'landscape' ? (
                               <>
                                 <RectangleHorizontalIcon className="h-4 w-4 text-blue-600" />
@@ -1316,6 +1545,19 @@ export default function PrintLabelsEnhanced() {
                                 <span className="text-xs text-muted-foreground">• Tall format</span>
                               </>
                             )}
+                          </div>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <Badge variant={template.is_active ? "default" : "secondary"} className="text-xs">
+                              {template.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                            {template.is_default && (
+                              <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-300">
+                                Default
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="text-xs text-blue-600">
+                              ID: {template.id}
+                            </Badge>
                           </div>
                         </div>
 
