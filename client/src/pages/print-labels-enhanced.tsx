@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { LabelDesigner } from "@/components/label-designer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,7 +40,8 @@ import {
   SaveIcon,
   XIcon,
   RectangleHorizontalIcon,
-  RectangleVerticalIcon
+  RectangleVerticalIcon,
+  PaletteIcon
 } from "lucide-react";
 
 interface Product {
@@ -151,6 +153,8 @@ export default function PrintLabelsEnhanced() {
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<LabelTemplate | null>(null);
+  const [isDesignerOpen, setIsDesignerOpen] = useState(false);
+  const [designerTemplate, setDesignerTemplate] = useState<LabelTemplate | null>(null);
   const [customText, setCustomText] = useState("");
   const [paperSize, setPaperSize] = useState("A4");
   const [orientation, setOrientation] = useState("portrait");
@@ -490,6 +494,36 @@ export default function PrintLabelsEnhanced() {
     if (confirm("Are you sure you want to delete this template?")) {
       deleteTemplateMutation.mutate(id);
     }
+  };
+
+  const handleOpenDesigner = (template: LabelTemplate) => {
+    setDesignerTemplate(template);
+    setIsDesignerOpen(true);
+  };
+
+  const handleDesignerSave = (elements: any[]) => {
+    if (!designerTemplate) return;
+    
+    // Convert designer elements back to template format
+    const updatedTemplate = {
+      ...designerTemplate,
+      elements: elements,
+      updated_at: new Date().toISOString()
+    };
+
+    // Save the template with new elements
+    updateTemplateMutation.mutate({ 
+      id: designerTemplate.id, 
+      data: updatedTemplate 
+    });
+
+    setIsDesignerOpen(false);
+    setDesignerTemplate(null);
+  };
+
+  const handleDesignerCancel = () => {
+    setIsDesignerOpen(false);
+    setDesignerTemplate(null);
   };
 
   const onTemplateSubmit = (data: TemplateFormData) => {
@@ -1059,10 +1093,47 @@ export default function PrintLabelsEnhanced() {
                       Manage your label templates and create custom designs
                     </CardDescription>
                   </div>
-                  <Button onClick={handleCreateTemplate}>
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    Create Template
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={handleCreateTemplate}>
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Create Template
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        // Create a basic template to start with in designer
+                        const basicTemplate: LabelTemplate = {
+                          id: 0,
+                          name: "New Visual Template",
+                          description: "Created with Visual Designer",
+                          width: 150,
+                          height: 100,
+                          font_size: 18,
+                          orientation: 'landscape',
+                          include_barcode: true,
+                          include_price: true,
+                          include_description: false,
+                          include_mrp: true,
+                          include_weight: false,
+                          include_hsn: false,
+                          barcode_position: 'bottom',
+                          border_style: 'solid',
+                          border_width: 1,
+                          background_color: '#ffffff',
+                          text_color: '#000000',
+                          custom_css: '',
+                          is_default: false,
+                          is_active: true,
+                          created_at: new Date().toISOString(),
+                          updated_at: new Date().toISOString()
+                        };
+                        handleOpenDesigner(basicTemplate);
+                      }}
+                    >
+                      <PaletteIcon className="h-4 w-4 mr-2" />
+                      Visual Designer
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1101,6 +1172,18 @@ export default function PrintLabelsEnhanced() {
                             title="Edit template"
                           >
                             <EditIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDesigner(template);
+                            }}
+                            title="Visual Designer"
+                            className="text-purple-600 hover:text-purple-700"
+                          >
+                            <PaletteIcon className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -1890,6 +1973,17 @@ export default function PrintLabelsEnhanced() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Visual Designer */}
+      {isDesignerOpen && designerTemplate && (
+        <div className="fixed inset-0 z-50 bg-white">
+          <LabelDesigner
+            templateData={designerTemplate}
+            onSave={handleDesignerSave}
+            onCancel={handleDesignerCancel}
+          />
+        </div>
+      )}
     </DashboardLayout>
   );
 }
