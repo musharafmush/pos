@@ -1655,7 +1655,244 @@ export default function PrintLabelsEnhanced() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="flex gap-6">
+        {/* Sidebar */}
+        <div className="w-80 space-y-4 sticky top-0 h-fit">
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-blue-700">
+                <SettingsIcon className="h-5 w-5" />
+                Label Controls
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Template Selection */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Active Template</Label>
+                <Select value={selectedTemplate?.toString()} onValueChange={(value) => setSelectedTemplate(Number(value))}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id.toString()}>
+                        {template.name} ({template.width}×{template.height}mm)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white p-3 rounded-lg border border-gray-200">
+                  <div className="text-2xl font-bold text-blue-600">{selectedProducts.length}</div>
+                  <div className="text-xs text-gray-500">Selected</div>
+                </div>
+                <div className="bg-white p-3 rounded-lg border border-gray-200">
+                  <div className="text-2xl font-bold text-green-600">{selectedProducts.length * copies}</div>
+                  <div className="text-xs text-gray-500">Total Labels</div>
+                </div>
+              </div>
+
+              {/* Print Settings */}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">Copies per Label</Label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCopies(Math.max(1, copies - 1))}
+                      disabled={copies <= 1}
+                    >
+                      -
+                    </Button>
+                    <Input
+                      type="number"
+                      value={copies}
+                      onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 text-center"
+                      min="1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCopies(copies + 1)}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">Labels per Row</Label>
+                  <Select value={labelsPerRow.toString()} onValueChange={(value) => setLabelsPerRow(Number(value))}>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 per row</SelectItem>
+                      <SelectItem value="2">2 per row</SelectItem>
+                      <SelectItem value="3">3 per row</SelectItem>
+                      <SelectItem value="4">4 per row</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Quick Actions</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkAction('selectAll')}
+                    className="text-xs"
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkAction('deselectAll')}
+                    className="text-xs"
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Template Management */}
+          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-green-700">
+                <PaletteIcon className="h-5 w-5" />
+                Template Tools
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                onClick={() => setIsTemplateDialogOpen(true)}
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                size="sm"
+              >
+                <PlusIcon className="h-4 w-4 mr-2" />
+                New Template
+              </Button>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCreateTemplate()}
+                  className="text-xs border-green-600 text-green-600 hover:bg-green-50"
+                >
+                  Quick Templates
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const dataStr = JSON.stringify(templates, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `templates_backup_${new Date().toISOString().split('T')[0]}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="text-xs border-green-600 text-green-600 hover:bg-green-50"
+                >
+                  Export
+                </Button>
+              </div>
+
+              {/* Advanced Operations */}
+              <Separator className="my-3" />
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-gray-600">Advanced Operations</Label>
+                <div className="space-y-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => boxAlignmentCenter.applyAlignment(selectedTemplate!, 'grid', '2x2')}
+                    disabled={!selectedTemplate}
+                    className="w-full text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                  >
+                    Box Align Center
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => boxAlignmentCenter.removeDateData()}
+                    className="w-full text-xs bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                  >
+                    Remove Date Data
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => boxAlignmentCenter.opcanAnalysis()}
+                    className="w-full text-xs bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                  >
+                    OPCAN Analysis
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Print Status */}
+          <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-amber-700">
+                <PrinterIcon className="h-5 w-5" />
+                Print Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Print Queue</span>
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                  Ready
+                </Badge>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Templates</span>
+                  <span className="font-medium">{templates.length}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Products</span>
+                  <span className="font-medium">{filteredProducts.length}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Ready to Print</span>
+                  <span className="font-medium text-green-600">{selectedProducts.length > 0 && selectedTemplate ? 'Yes' : 'No'}</span>
+                </div>
+              </div>
+
+              <Button
+                onClick={handlePreview}
+                disabled={selectedProducts.length === 0 || !selectedTemplate}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                size="sm"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview & Print
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 space-y-8">
           {/* Header */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
             <div>
@@ -3440,6 +3677,8 @@ export default function PrintLabelsEnhanced() {
           />
         </div>
       )}
+        </div>
+      </div>
     </DashboardLayout>
   );
 }
