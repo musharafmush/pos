@@ -527,7 +527,7 @@ export default function PrintLabelsEnhanced() {
       description: "",
       width: 150,
       height: 100,
-      font_size: ,
+      font_size: 18,
       orientation: 'landscape',
       include_barcode: true,
       include_price: true,
