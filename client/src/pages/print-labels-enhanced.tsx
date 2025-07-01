@@ -358,7 +358,7 @@ export default function PrintLabelsEnhanced() {
             border_width: template.border_width,
             background_color: template.background_color,
             text_color: template.text_color,
-            custom_css: (template.custom_css || '').replace(/date|Date|DATE/g, '').replace(/01-07-2025|1\/7\/2025|07-01-2025/g, ''),
+            custom_css: `${(template.custom_css || '').replace(/date|Date|DATE/g, '').replace(/01-07-2025|1\/7\/2025|07-01-2025/g, '').replace(/\/\* Date Added:[^*]*\*\//g, '')}\n/* Date Removed - No date display */`,
             is_default: template.is_default
           };
           
@@ -1476,9 +1476,14 @@ export default function PrintLabelsEnhanced() {
           </div>` : ''
         }
 
-        <div style="position: absolute; bottom: ${Math.max(1, height * 0.01)}mm; right: ${Math.max(2, width * 0.01)}mm; font-size: ${Math.max(8, baseFontSize * 0.6)}px; color: #ccc;">
-          ${new Date().toLocaleDateString('en-IN')}
-        </div>
+        ${!template.custom_css?.includes('/* Date Removed') ? 
+          `<div style="position: absolute; bottom: ${Math.max(1, height * 0.01)}mm; right: ${Math.max(2, width * 0.01)}mm; font-size: ${Math.max(8, baseFontSize * 0.6)}px; color: #ccc;">
+            ${template.custom_css?.includes('/* Date Added:') ? 
+              template.custom_css.match(/\/\* Date Added: ([^*]+) \*\//)?.[1] || new Date().toLocaleDateString('en-IN') :
+              new Date().toLocaleDateString('en-IN')
+            }
+          </div>` : ''
+        }
       </div>
     `;
   };
@@ -2037,6 +2042,35 @@ export default function PrintLabelsEnhanced() {
                     >
                       <TrashIcon className="h-4 w-4 mr-1" />
                       Remove Date Data
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        const confirmed = window.confirm(
+                          "This will immediately remove ALL dates from ALL templates and printed labels. Continue?"
+                        );
+                        if (confirmed) {
+                          try {
+                            // Remove dates from all templates
+                            await boxAlignmentCenter.removeDateData();
+                            
+                            // Force refresh templates
+                            await queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+                            
+                            toast({
+                              title: "All Dates Removed",
+                              description: "Removed dates from all templates and future printed labels",
+                            });
+                          } catch (error) {
+                            console.error('Emergency date removal failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300"
+                    >
+                      <TrashIcon className="h-4 w-4 mr-1" />
+                      Emergency Remove All
                     </Button>
                     <Button 
                       variant="outline" 
