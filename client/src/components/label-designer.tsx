@@ -148,9 +148,9 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
           id: 'price',
           type: 'price',
           x: 10,
-          y: 60,
-          width: 100,
-          height: 30,
+          y: 55,
+          width: 120,
+          height: 35,
           content: '{{product.price}}',
           fontSize: (templateData.font_size || 18) + 2,
           fontWeight: 'bold',
@@ -173,10 +173,10 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
         defaultElements.push({
           id: 'mrp',
           type: 'mrp',
-          x: templateWidth - 110,
-          y: 60,
-          width: 100,
-          height: 30,
+          x: templateWidth - 130,
+          y: 55,
+          width: 120,
+          height: 35,
           content: '{{product.mrp}}',
           fontSize: (templateData.font_size || 18) - 2,
           fontWeight: 'normal',
@@ -199,11 +199,11 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
         id: 'sku',
         type: 'sku',
         x: 10,
-        y: templateHeight - 40,
-        width: 150,
+        y: templateHeight - 35,
+        width: 160,
         height: 25,
         content: '{{product.sku}}',
-        fontSize: (templateData.font_size || 18) - 6,
+        fontSize: Math.max((templateData.font_size || 18) - 6, 10),
         fontWeight: 'normal',
         fontStyle: 'normal',
         textDecoration: 'none',
@@ -220,13 +220,13 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
 
       // Add barcode if enabled
       if (templateData.include_barcode) {
-        const barcodeY = templateData.barcode_position === 'top' ? 10 : templateHeight - 80;
+        const barcodeY = templateData.barcode_position === 'top' ? 100 : templateHeight - 80;
         defaultElements.push({
           id: 'barcode',
           type: 'barcode',
-          x: (templateWidth - 120) / 2,
+          x: (templateWidth - 140) / 2,
           y: barcodeY,
-          width: 120,
+          width: 140,
           height: 60,
           content: '{{product.barcode}}',
           fontSize: 12,
@@ -410,9 +410,9 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
       >
         {element.type === 'text' || element.type === 'price' || element.type === 'mrp' || element.type === 'sku' ? (
           <div
-            className="w-full h-full flex items-center px-2"
+            className="w-full h-full flex items-center px-1"
             style={{
-              fontSize: element.fontSize,
+              fontSize: `${element.fontSize}px`,
               fontFamily: element.fontFamily || 'Arial',
               fontWeight: element.fontWeight,
               fontStyle: element.fontStyle,
@@ -426,19 +426,30 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
               height: '100%',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start'
+              justifyContent: element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start',
+              wordWrap: 'break-word',
+              whiteSpace: 'pre-wrap',
+              boxSizing: 'border-box'
             }}
           >
-            {element.content.replace(/\{\{product\.(\w+)\}\}/g, (match, field) => {
-              switch (field) {
-                case 'name': return 'SAMPLE PRODUCT';
-                case 'price': return '₹45.00';
-                case 'mrp': return '₹50.00';
-                case 'sku': return 'SKU123';
-                case 'barcode': return '1234567890';
-                default: return match;
-              }
-            })}
+            <span style={{ 
+              maxWidth: '100%', 
+              maxHeight: '100%', 
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: 'block'
+            }}>
+              {element.content.replace(/\{\{product\.(\w+)\}\}/g, (match, field) => {
+                switch (field) {
+                  case 'name': return 'SAMPLE PRODUCT';
+                  case 'price': return '₹45.00';
+                  case 'mrp': return '₹50.00';
+                  case 'sku': return 'SKU123';
+                  case 'barcode': return '1234567890';
+                  default: return match;
+                }
+              })}
+            </span>
           </div>
         ) : element.type === 'barcode' ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-white">
