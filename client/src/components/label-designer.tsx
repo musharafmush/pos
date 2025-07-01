@@ -462,7 +462,7 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Toolbar */}
-      <div className="w-64 bg-white border-r p-4 space-y-4">
+      <div className="w-80 bg-white border-r p-4 space-y-4 overflow-y-auto">
         <div>
           <h3 className="font-semibold mb-2">Tools</h3>
           <div className="grid grid-cols-2 gap-2">
@@ -522,8 +522,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
 
         {/* Element Properties */}
         {selectedEl && (
-          <div className="space-y-4">
-            <h3 className="font-semibold flex items-center gap-2">
+          <div className="space-y-3">
+            <h3 className="font-semibold flex items-center justify-between">
               Properties ({selectedEl.type})
               <Button 
                 size="sm" 
@@ -538,7 +538,7 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
             </h3>
             
             {/* Content Section */}
-            <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+            <div className="space-y-2 p-2 bg-gray-50 rounded text-sm">
               <h4 className="font-medium text-sm">Content</h4>
               
               {selectedEl.type === 'text' && (
@@ -568,8 +568,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
 
             {/* Font & Typography Section */}
             {selectedEl.type === 'text' && (
-              <div className="space-y-3 p-3 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-sm">Typography</h4>
+              <div className="space-y-2 p-2 bg-blue-50 rounded text-sm">
+                <h4 className="font-medium text-xs">Typography</h4>
                 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -581,6 +581,7 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
                       onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) || 16 })}
                       min="6"
                       max="200"
+                      className="h-8 text-xs"
                     />
                   </div>
                   <div>
@@ -627,8 +628,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
             )}
 
             {/* Color Section */}
-            <div className="space-y-3 p-3 bg-green-50 rounded-lg">
-              <h4 className="font-medium text-sm">Colors</h4>
+            <div className="space-y-2 p-2 bg-green-50 rounded text-sm">
+              <h4 className="font-medium text-xs">Colors</h4>
               
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -672,8 +673,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
 
             {/* Text Style Buttons */}
             {selectedEl.type === 'text' && (
-              <div className="space-y-2 p-3 bg-purple-50 rounded-lg">
-                <h4 className="font-medium text-sm">Text Style</h4>
+              <div className="space-y-2 p-2 bg-purple-50 rounded text-sm">
+                <h4 className="font-medium text-xs">Text Style</h4>
                 
                 <div className="flex gap-2">
                   <Button
@@ -732,8 +733,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
             )}
 
             {/* Position & Size Section */}
-            <div className="space-y-3 p-3 bg-orange-50 rounded-lg">
-              <h4 className="font-medium text-sm">Position & Size</h4>
+            <div className="space-y-2 p-2 bg-orange-50 rounded text-sm">
+              <h4 className="font-medium text-xs">Position & Size</h4>
               
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -779,8 +780,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
             </div>
 
             {/* Border & Effects Section */}
-            <div className="space-y-3 p-3 bg-red-50 rounded-lg">
-              <h4 className="font-medium text-sm">Border & Effects</h4>
+            <div className="space-y-2 p-2 bg-red-50 rounded text-sm">
+              <h4 className="font-medium text-xs">Border & Effects</h4>
               
               <div className="grid grid-cols-3 gap-2">
                 <div>
@@ -857,8 +858,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
             </div>
 
             {/* Transform Section */}
-            <div className="space-y-3 p-3 bg-yellow-50 rounded-lg">
-              <h4 className="font-medium text-sm">Transform</h4>
+            <div className="space-y-2 p-2 bg-yellow-50 rounded text-sm">
+              <h4 className="font-medium text-xs">Transform</h4>
               
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -914,8 +915,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
             </div>
 
             {/* Shadow & Effects Section */}
-            <div className="space-y-3 p-3 bg-indigo-50 rounded-lg">
-              <h4 className="font-medium text-sm">Shadow & Effects</h4>
+            <div className="space-y-2 p-2 bg-indigo-50 rounded text-sm">
+              <h4 className="font-medium text-xs">Shadow & Effects</h4>
               
               <div className="grid grid-cols-2 gap-2">
                 <div>
