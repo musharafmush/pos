@@ -191,6 +191,139 @@ export default function PrintLabelsEnhanced() {
     mode: 'onChange' // Real-time validation and dynamic data updates
   });
 
+  // Box Alignment Center System for Print Labels
+  const boxAlignmentCenter = {
+    // Center alignment for single labels
+    centerSingle: (template: any) => ({
+      ...template,
+      custom_css: `${template.custom_css || ''} 
+        .label-container { 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          text-align: center; 
+          margin: auto;
+        }
+        .label-content { 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          justify-content: center; 
+        }`
+    }),
+
+    // Grid alignment for multiple labels (2x2, 3x3, etc.)
+    centerGrid: (templates: any[], gridSize: '2x2' | '3x3' | '4x2' | '4x4' = '2x2') => {
+      const gridConfigs = {
+        '2x2': { columns: 2, rows: 2, maxItems: 4 },
+        '3x3': { columns: 3, rows: 3, maxItems: 9 },
+        '4x2': { columns: 4, rows: 2, maxItems: 8 },
+        '4x4': { columns: 4, rows: 4, maxItems: 16 }
+      };
+      
+      const config = gridConfigs[gridSize];
+      return {
+        gridConfig: config,
+        centeredTemplates: templates.slice(0, config.maxItems).map(template => ({
+          ...template,
+          gridPosition: true,
+          custom_css: `${template.custom_css || ''} 
+            .label-grid { 
+              display: grid; 
+              grid-template-columns: repeat(${config.columns}, 1fr); 
+              grid-template-rows: repeat(${config.rows}, 1fr); 
+              gap: 2mm; 
+              justify-items: center; 
+              align-items: center; 
+              width: 100%; 
+              height: 100%; 
+            }
+            .label-item { 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              text-align: center; 
+              border: 1px solid #ddd; 
+              padding: 2mm; 
+            }`
+        }))
+      };
+    },
+
+    // Perfect center alignment with precise positioning
+    perfectCenter: (template: any) => ({
+      ...template,
+      custom_css: `${template.custom_css || ''} 
+        .label-perfect-center { 
+          position: absolute; 
+          top: 50%; 
+          left: 50%; 
+          transform: translate(-50%, -50%); 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          justify-content: center; 
+          text-align: center; 
+          width: 100%; 
+          height: 100%; 
+        }
+        .center-content { 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          gap: 1mm; 
+        }`
+    }),
+
+    // Apply center alignment to template
+    applyAlignment: async (templateId: number, alignmentType: 'single' | 'grid' | 'perfect', gridSize?: '2x2' | '3x3' | '4x2' | '4x4') => {
+      console.log('🔄 Applying box alignment center:', { templateId, alignmentType, gridSize });
+      
+      try {
+        // Get current template
+        const template = templates.find(t => t.id === templateId);
+        if (!template) throw new Error('Template not found');
+        
+        let centeredTemplate;
+        switch (alignmentType) {
+          case 'single':
+            centeredTemplate = boxAlignmentCenter.centerSingle(template);
+            break;
+          case 'grid':
+            const gridResult = boxAlignmentCenter.centerGrid([template], gridSize);
+            centeredTemplate = gridResult.centeredTemplates[0];
+            break;
+          case 'perfect':
+            centeredTemplate = boxAlignmentCenter.perfectCenter(template);
+            break;
+          default:
+            throw new Error('Invalid alignment type');
+        }
+        
+        // Update template with centered alignment
+        const result = await dynamicCRUD.update(templateId, {
+          ...centeredTemplate,
+          description: `${template.description || ''} - Box alignment center applied (${alignmentType})`
+        });
+        
+        toast({
+          title: "Box Alignment Center Applied",
+          description: `Template centered using ${alignmentType} alignment`,
+        });
+        
+        return result;
+      } catch (error) {
+        console.error('❌ Box alignment center failed:', error);
+        toast({
+          title: "Alignment Failed",
+          description: "Could not apply box alignment center",
+          variant: "destructive"
+        });
+        throw error;
+      }
+    }
+  };
+
   // Dynamic CRUD Operations Manager
   const dynamicCRUD = {
     // CREATE: Dynamic template creation with real-time validation
@@ -1636,6 +1769,34 @@ export default function PrintLabelsEnhanced() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        const confirmed = window.confirm(
+                          "This will apply box alignment center (2x2 grid) to all templates. Continue?"
+                        );
+                        if (confirmed) {
+                          try {
+                            // Apply box alignment center to all templates
+                            for (const template of templates) {
+                              await boxAlignmentCenter.applyAlignment(template.id, 'grid', '2x2');
+                            }
+                            
+                            toast({
+                              title: "Box Alignment Center Complete",
+                              description: `Applied 2x2 grid alignment to ${templates.length} templates`,
+                            });
+                          } catch (error) {
+                            console.error('Box alignment failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300"
+                    >
+                      <GridIcon className="h-4 w-4 mr-1" />
+                      Box Align Center
+                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
