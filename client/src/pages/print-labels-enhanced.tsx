@@ -615,7 +615,16 @@ export default function PrintLabelsEnhanced() {
 
     try {
       let createdCount = 0;
+      let skippedCount = 0;
+      
       for (const template of predefinedTemplates) {
+        // Check if template with same name already exists
+        const existingTemplate = templates.find(t => t.name === template.name);
+        if (existingTemplate) {
+          skippedCount++;
+          continue;
+        }
+
         const response = await fetch('/api/label-templates', {
           method: 'POST',
           headers: {
@@ -632,9 +641,17 @@ export default function PrintLabelsEnhanced() {
       // Refresh templates list
       queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
 
+      const messages = [];
+      if (createdCount > 0) {
+        messages.push(`Created ${createdCount} new templates`);
+      }
+      if (skippedCount > 0) {
+        messages.push(`${skippedCount} templates already exist`);
+      }
+
       toast({
-        title: "Success",
-        description: `Created ${createdCount} professional label templates ready for use!`,
+        title: createdCount > 0 ? "Success" : "Info",
+        description: messages.join(', ') + (createdCount === 0 ? '. All templates are already available!' : ' ready for use!'),
       });
     } catch (error) {
       console.error('Error creating predefined templates:', error);
@@ -1247,9 +1264,13 @@ export default function PrintLabelsEnhanced() {
                       variant="outline"
                       onClick={async () => {
                         try {
+                          // Generate unique template name
+                          const timestamp = Date.now();
+                          const templateName = `Visual Template ${timestamp}`;
+                          
                           // Create a basic template in database first
                           const basicTemplateData: TemplateFormData = {
-                            name: "New Visual Template",
+                            name: templateName,
                             description: "Created with Visual Designer",
                             width: 150,
                             height: 100,
@@ -1288,13 +1309,14 @@ export default function PrintLabelsEnhanced() {
                             // Refresh templates list
                             queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
                           } else {
-                            throw new Error('Failed to create template');
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Failed to create template');
                           }
                         } catch (error) {
                           console.error('Error creating template for visual designer:', error);
                           toast({
                             title: "Error",
-                            description: "Failed to create template. Please try again.",
+                            description: error instanceof Error ? error.message : "Failed to create template. Please try again.",
                             variant: "destructive"
                           });
                         }
