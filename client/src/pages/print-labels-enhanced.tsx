@@ -668,6 +668,50 @@ export default function PrintLabelsEnhanced() {
     setIsDesignerOpen(true);
   };
 
+  // Create Print Labels Pro template using dynamic CRUD
+  const handleCreatePrintLabelsProTemplate = async () => {
+    const printLabelsProTemplate = {
+      name: "Print Labels Pro - Premium",
+      description: "Professional premium label template with all features enabled",
+      width: 120,
+      height: 80,
+      font_size: 18,
+      orientation: 'landscape' as const,
+      include_barcode: true,
+      include_price: true,
+      include_description: true,
+      include_mrp: true,
+      include_weight: true,
+      include_hsn: true,
+      barcode_position: 'bottom' as const,
+      border_style: 'solid' as const,
+      border_width: 2,
+      background_color: '#f8f9fa',
+      text_color: '#1a365d',
+      custom_css: 'font-family: "Segoe UI", Arial, sans-serif; font-weight: 600;',
+      is_default: true
+    };
+
+    try {
+      const result = await dynamicCRUD.create(printLabelsProTemplate);
+      console.log('✅ Print Labels Pro template created via dynamic CRUD:', result);
+      
+      toast({
+        title: "Print Labels Pro Created",
+        description: "Premium template created with dynamic CRUD operations",
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to create Print Labels Pro template:', error);
+      toast({
+        title: "Creation Failed",
+        description: "Could not create Print Labels Pro template",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleCreatePredefinedTemplates = async () => {
     const predefinedTemplates = [
       {
@@ -1494,6 +1538,14 @@ export default function PrintLabelsEnhanced() {
                     >
                       <PaletteIcon className="h-4 w-4 mr-2" />
                       Visual Designer
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => handleCreatePrintLabelsProTemplate()}
+                      className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 border-0"
+                    >
+                      <StarIcon className="h-4 w-4 mr-2" />
+                      Print Labels Pro
                     </Button>
                     <Button 
                       variant="outline"
