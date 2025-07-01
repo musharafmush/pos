@@ -320,8 +320,8 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
     return (
       <div
         key={element.id}
-        className={`absolute select-none ${
-          isSelected ? 'border-2 border-blue-500 bg-blue-50/30' : 'border border-transparent hover:border-gray-300'
+        className={`absolute select-none pointer-events-auto ${
+          isSelected ? 'border-2 border-blue-500 bg-blue-50/30' : 'border border-transparent hover:border-gray-300 hover:bg-gray-50/20'
         }`}
         style={{
           left: element.x,
@@ -331,7 +331,7 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
           transform: `rotate(${element.rotation}deg)`,
           opacity: element.opacity,
           zIndex: element.zIndex,
-          cursor: tool === 'select' ? 'move' : 'default',
+          cursor: tool === 'select' ? (isSelected ? 'move' : 'pointer') : 'default',
           backgroundColor: element.backgroundColor,
           borderColor: isSelected ? '#3b82f6' : element.borderColor,
           borderWidth: isSelected ? 2 : element.borderWidth,
@@ -446,10 +446,30 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
 
         <Separator />
 
+        {/* Instructions */}
+        <div className="bg-blue-50 p-3 rounded-lg text-sm">
+          <h4 className="font-medium text-blue-800 mb-2">How to Use:</h4>
+          <ul className="text-blue-700 space-y-1 text-xs">
+            <li>• Use Select tool to click and drag elements</li>
+            <li>• Use Text/Barcode tools to add new elements</li>
+            <li>• Selected elements show blue border and handles</li>
+            <li>• Modify properties in the panel below</li>
+          </ul>
+        </div>
+
+        <Separator />
+
+        {/* Status Display */}
+        <div className="bg-gray-50 p-2 rounded text-xs">
+          <div>Tool: <span className="font-mono">{tool}</span></div>
+          <div>Selected: <span className="font-mono">{selectedElement || 'none'}</span></div>
+          <div>Elements: <span className="font-mono">{elements.length}</span></div>
+        </div>
+
         {/* Element Properties */}
         {selectedEl && (
           <div className="space-y-4">
-            <h3 className="font-semibold">Properties</h3>
+            <h3 className="font-semibold">Properties ({selectedEl.type})</h3>
             
             <div className="space-y-2">
               <Label htmlFor="content">Content</Label>
@@ -598,6 +618,14 @@ export function LabelDesigner({ templateData, onSave, onCancel }: LabelDesignerP
           <div className="flex items-center gap-4">
             <h2 className="font-semibold">Label Designer - {templateData?.name}</h2>
             <Badge variant="outline">{templateWidth}mm × {templateHeight}mm</Badge>
+            <Badge variant={tool === 'select' ? 'default' : 'secondary'}>
+              Current Tool: {tool === 'select' ? 'Select' : tool === 'text' ? 'Text' : tool === 'barcode' ? 'Barcode' : 'Image'}
+            </Badge>
+            {selectedElement && (
+              <Badge variant="outline" className="bg-blue-50">
+                Selected: {elements.find(el => el.id === selectedElement)?.type || 'Unknown'}
+              </Badge>
+            )}
           </div>
           
           <div className="flex items-center gap-2">
