@@ -222,8 +222,7 @@ export default function PrintLabelsEnhanced() {
   // Watch font size changes for real-time preview
   const watchedFontSize = useWatch({
     control: templateForm.control,
-    name: "font_size",
-    defaultValue: 18
+    name: "font_size"
   });
 
   // Mutations
@@ -442,6 +441,7 @@ export default function PrintLabelsEnhanced() {
 
   const handleEditTemplate = (template: LabelTemplate) => {
     console.log('Editing template:', template);
+    console.log('Template font_size value:', template.font_size, typeof template.font_size);
     setEditingTemplate(template);
 
     // Prepare form data with proper type conversions and validation
@@ -474,6 +474,7 @@ export default function PrintLabelsEnhanced() {
     };
 
     console.log('Form data prepared:', formData);
+    console.log('Prepared font_size value:', formData.font_size, typeof formData.font_size);
 
     // Clear any existing form errors and reset with the template data
     templateForm.clearErrors();
@@ -484,7 +485,9 @@ export default function PrintLabelsEnhanced() {
       setIsTemplateDialogOpen(true);
       // Log form state after dialog opens
       setTimeout(() => {
-        console.log('Form state after dialog open:', templateForm.getValues());
+        const formValues = templateForm.getValues();
+        console.log('Form state after dialog open:', formValues);
+        console.log('Form font_size after dialog open:', formValues.font_size, typeof formValues.font_size);
         console.log('Form errors after dialog open:', templateForm.formState.errors);
       }, 100);
     }, 50);
