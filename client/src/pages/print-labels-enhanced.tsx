@@ -1100,34 +1100,59 @@ export default function PrintLabelsEnhanced() {
                     </Button>
                     <Button 
                       variant="outline"
-                      onClick={() => {
-                        // Create a basic template to start with in designer
-                        const basicTemplate: LabelTemplate = {
-                          id: 0,
-                          name: "New Visual Template",
-                          description: "Created with Visual Designer",
-                          width: 150,
-                          height: 100,
-                          font_size: 18,
-                          orientation: 'landscape',
-                          include_barcode: true,
-                          include_price: true,
-                          include_description: false,
-                          include_mrp: true,
-                          include_weight: false,
-                          include_hsn: false,
-                          barcode_position: 'bottom',
-                          border_style: 'solid',
-                          border_width: 1,
-                          background_color: '#ffffff',
-                          text_color: '#000000',
-                          custom_css: '',
-                          is_default: false,
-                          is_active: true,
-                          created_at: new Date().toISOString(),
-                          updated_at: new Date().toISOString()
-                        };
-                        handleOpenDesigner(basicTemplate);
+                      onClick={async () => {
+                        try {
+                          // Create a basic template in database first
+                          const basicTemplateData: TemplateFormData = {
+                            name: "New Visual Template",
+                            description: "Created with Visual Designer",
+                            width: 150,
+                            height: 100,
+                            font_size: 18,
+                            orientation: 'landscape',
+                            include_barcode: true,
+                            include_price: true,
+                            include_description: false,
+                            include_mrp: true,
+                            include_weight: false,
+                            include_hsn: false,
+                            barcode_position: 'bottom',
+                            border_style: 'solid',
+                            border_width: 1,
+                            background_color: '#ffffff',
+                            text_color: '#000000',
+                            custom_css: '',
+                            is_default: false
+                          };
+
+                          const response = await fetch('/api/label-templates', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(basicTemplateData)
+                          });
+
+                          if (response.ok) {
+                            const newTemplate = await response.json();
+                            console.log('Created new template for visual designer:', newTemplate);
+                            
+                            // Now open visual designer with the actual template from database
+                            handleOpenDesigner(newTemplate);
+                            
+                            // Refresh templates list
+                            queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+                          } else {
+                            throw new Error('Failed to create template');
+                          }
+                        } catch (error) {
+                          console.error('Error creating template for visual designer:', error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to create template. Please try again.",
+                            variant: "destructive"
+                          });
+                        }
                       }}
                     >
                       <PaletteIcon className="h-4 w-4 mr-2" />
