@@ -474,6 +474,7 @@ export default function PrintLabelsEnhanced() {
           if (!template) continue;
           
           // OPCAN Analysis: Optical Character Analysis Network
+          const recommendations: string[] = [];
           const opcanResult = {
             templateId: template.id,
             templateName: template.name,
@@ -484,19 +485,19 @@ export default function PrintLabelsEnhanced() {
               scanAccuracy: Math.floor(Math.random() * 20) + 80, // 80-100% scan accuracy
               printQuality: template.width >= 100 && template.height >= 60 ? 'Professional' : 'Compact',
               barcodeReadability: template.include_barcode ? 'Scanner Ready' : 'No Barcode',
-              recommendations: []
+              recommendations
             }
           };
           
           // Generate OPCAN recommendations
           if (template.font_size < 12) {
-            opcanResult.analysis.recommendations.push('Increase font size to 12pt or higher for better readability');
+            recommendations.push('Increase font size to 12pt or higher for better readability');
           }
           if (!template.include_barcode) {
-            opcanResult.analysis.recommendations.push('Consider adding barcode for inventory management');
+            recommendations.push('Consider adding barcode for inventory management');
           }
           if (template.width < 80) {
-            opcanResult.analysis.recommendations.push('Increase template width for better label visibility');
+            recommendations.push('Increase template width for better label visibility');
           }
           
           // Update template with OPCAN analysis
@@ -2036,6 +2037,57 @@ export default function PrintLabelsEnhanced() {
                     >
                       <TrashIcon className="h-4 w-4 mr-1" />
                       Remove Date Data
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        const dateFormat = window.prompt(
+                          "Select date format:\n1. DD/MM/YYYY (01/07/2025)\n2. MM/DD/YYYY (07/01/2025)\n3. YYYY-MM-DD (2025-07-01)\n\nEnter 1, 2, or 3:"
+                        );
+                        
+                        let format: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD' = 'DD/MM/YYYY';
+                        if (dateFormat === '2') format = 'MM/DD/YYYY';
+                        else if (dateFormat === '3') format = 'YYYY-MM-DD';
+                        
+                        try {
+                          await boxAlignmentCenter.addDateData(undefined, format);
+                        } catch (error) {
+                          console.error('Add date data failed:', error);
+                        }
+                      }}
+                      className="bg-green-100 hover:bg-green-200 text-green-700 border-green-300"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Add Date
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        const confirmed = window.confirm(
+                          "This will run OPCAN (Optical Character Analysis Network) on all templates to analyze readability and provide optimization recommendations. Continue?"
+                        );
+                        if (confirmed) {
+                          try {
+                            const results = await boxAlignmentCenter.opcanAnalysis();
+                            console.log('OPCAN Analysis Results:', results);
+                            
+                            // Show detailed results
+                            const summary = results.map(r => 
+                              `${r.templateName}: ${r.analysis.readabilityScore}% readability, ${r.analysis.fontOptimization}`
+                            ).join('\n');
+                            
+                            alert(`OPCAN Analysis Complete!\n\n${summary}`);
+                          } catch (error) {
+                            console.error('OPCAN analysis failed:', error);
+                          }
+                        }
+                      }}
+                      className="bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-300"
+                    >
+                      <StarIcon className="h-4 w-4 mr-1" />
+                      OPCAN Analysis
                     </Button>
                     <Button 
                       variant="outline" 
