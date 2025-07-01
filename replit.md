@@ -331,6 +331,14 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - No additional backend or database setup required - system is fully operational
 - Label printing is integrated feature within comprehensive POS system, not standalone application
 
+### Font Size Slider Fix (July 1, 2025)
+- Fixed critical font size validation constraints preventing slider from working properly
+- Updated Zod schema validation from max 72pt to max 200pt for larger professional label fonts
+- Removed conflicting form data preparation constraints that limited font size during template editing
+- Font size input field and range slider now work harmoniously with values from 6pt to 200pt
+- Template editing dialog now correctly saves and displays large font sizes up to 200pt
+- Enhanced user experience with consistent font size controls across creation and editing workflows
+
 ### Label Template Field Mapping Fix (June 30, 2025)
 - Fixed critical field name mismatch between frontend (snake_case) and database (camelCase)
 - Implemented bidirectional field mapping for all template operations:

@@ -115,7 +115,7 @@ const templateFormSchema = z.object({
   description: z.string().optional(),
   width: z.number().min(10, "Width must be at least 10mm"),
   height: z.number().min(10, "Height must be at least 10mm"),
-  font_size: z.number().min(6, "Font size must be at least 6pt").max(72, "Font size cannot exceed 72pt"),
+  font_size: z.number().min(6, "Font size must be at least 6pt").max(200, "Font size cannot exceed 200pt"),
   orientation: z.enum(['portrait', 'landscape']).optional(),
   include_barcode: z.boolean(),
   include_price: z.boolean(),
@@ -446,7 +446,7 @@ export default function PrintLabelsEnhanced() {
       description: template.description || "",
       width: Math.max(10, Number(template.width) || 150),
       height: Math.max(10, Number(template.height) || 100),
-      font_size: Math.max(6, Math.min(72, Number(template.font_size) || 18)),
+      font_size: Math.max(6, Math.min(200, Number(template.font_size) || 18)),
       orientation: (template.orientation === 'portrait' || template.orientation === 'landscape') 
         ? template.orientation 
         : 'landscape',
