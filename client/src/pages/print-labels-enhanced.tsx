@@ -117,7 +117,9 @@ const templateFormSchema = z.object({
   description: z.string().optional(),
   width: z.number().min(10, "Width must be at least 10mm"),
   height: z.number().min(10, "Height must be at least 10mm"),
-  font_size: z.number().min(6, "Font size must be at least 6pt").max(200, "Font size cannot exceed 200pt"),
+  font_size: z.number().min(6, "Font size must be at least 6pt").max(200, "Font size cannot exceed 200pt").refine((val) => val > 0, {
+    message: "Please customize your font size - this field is required"
+  }),
   orientation: z.enum(['portrait', 'landscape']).optional(),
   include_barcode: z.boolean(),
   include_price: z.boolean(),
@@ -170,7 +172,7 @@ export default function PrintLabelsEnhanced() {
       description: "",
       width: 150,
       height: 100,
-      font_size: 18,
+      font_size: 0, // No default font size - user must customize (0 means not set)
       orientation: 'landscape',
       include_barcode: true,
       include_price: true,
@@ -450,7 +452,7 @@ export default function PrintLabelsEnhanced() {
       description: template.description || "",
       width: Math.max(10, Number(template.width) || 150),
       height: Math.max(10, Number(template.height) || 100),
-      font_size: Math.max(6, Math.min(200, Number(template.font_size) || 18)),
+      font_size: template.font_size ? Math.max(6, Math.min(200, Number(template.font_size))) : 12, // Fallback for existing templates
       orientation: (template.orientation === 'portrait' || template.orientation === 'landscape') 
         ? template.orientation 
         : 'landscape',
@@ -1271,10 +1273,10 @@ export default function PrintLabelsEnhanced() {
                           // Create a basic template in database first
                           const basicTemplateData: TemplateFormData = {
                             name: templateName,
-                            description: "Created with Visual Designer",
+                            description: "Created with Visual Designer - Customize font size required",
                             width: 150,
                             height: 100,
-                            font_size: 18,
+                            font_size: 24, // Initial size for visual designer, user will customize
                             orientation: 'landscape',
                             include_barcode: true,
                             include_price: true,
@@ -1907,7 +1909,12 @@ export default function PrintLabelsEnhanced() {
                     name="font_size"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Font Size (pt)</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          Font Size (pt) 
+                          <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                            Required - Customize Your Size
+                          </span>
+                        </FormLabel>
                         <FormControl>
                           <div className="space-y-3">
                             <div className="flex gap-2 items-center">
@@ -1916,56 +1923,76 @@ export default function PrintLabelsEnhanced() {
                                 min="6"
                                 max="200"
                                 step="1"
-                                value={field.value}
+                                value={field.value > 0 ? field.value : ""}
+                                placeholder="Enter font size"
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 6;
-                                  field.onChange(value);
+                                  const value = parseInt(e.target.value);
+                                  if (!isNaN(value) && value > 0) {
+                                    field.onChange(value);
+                                  } else if (e.target.value === "") {
+                                    field.onChange(0);
+                                  }
                                 }}
-                                className="w-20"
+                                className="w-24"
                               />
                               <input
                                 type="range"
                                 min="6"
                                 max="200"
                                 step="1"
-                                value={field.value}
+                                value={field.value > 0 ? field.value : 12}
                                 onChange={(e) => {
                                   const value = parseInt(e.target.value);
                                   field.onChange(value);
                                 }}
                                 className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                                 style={{
-                                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((field.value - 6) / (200 - 6)) * 100}%, #e5e7eb ${((field.value - 6) / (200 - 6)) * 100}%, #e5e7eb 100%)`
+                                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(((field.value > 0 ? field.value : 12) - 6) / (200 - 6)) * 100}%, #e5e7eb ${(((field.value > 0 ? field.value : 12) - 6) / (200 - 6)) * 100}%, #e5e7eb 100%)`
                                 }}
                               />
-                              <span className="text-sm font-medium text-blue-600 min-w-[35px]">{field.value}pt</span>
+                              <span className="text-sm font-medium text-blue-600 min-w-[35px]">
+                                {field.value > 0 ? `${field.value}pt` : "Select"}
+                              </span>
                             </div>
                             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                               <div className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
                                 <Eye className="h-3 w-3" />
                                 Live Preview:
                               </div>
-                              <div style={{ 
-                                fontSize: `${Math.min(watchedFontSize || 18, 40)}px`, 
-                                fontWeight: 'bold', 
-                                color: '#1e40af',
-                                lineHeight: '1.2',
-                                marginBottom: '4px',
-                                transition: 'font-size 0.2s ease'
-                              }}>
-                                SUGAR BULK
-                              </div>
-                              <div style={{ 
-                                fontSize: `${Math.max((watchedFontSize || 18) - 6, 8)}px`, 
-                                color: '#666',
-                                fontWeight: '500',
-                                transition: 'font-size 0.2s ease'
-                              }}>
-                                SKU: 24 • ₹45.00
-                              </div>
-                              <div className="text-xs text-blue-500 mt-2 opacity-75">
-                                Font size: {watchedFontSize || 18}pt
-                              </div>
+                              {watchedFontSize && watchedFontSize > 0 ? (
+                                <>
+                                  <div style={{ 
+                                    fontSize: `${Math.min(watchedFontSize, 40)}px`, 
+                                    fontWeight: 'bold', 
+                                    color: '#1e40af',
+                                    lineHeight: '1.2',
+                                    marginBottom: '4px',
+                                    transition: 'font-size 0.2s ease'
+                                  }}>
+                                    SUGAR BULK
+                                  </div>
+                                  <div style={{ 
+                                    fontSize: `${Math.max(watchedFontSize - 6, 8)}px`, 
+                                    color: '#666',
+                                    fontWeight: '500',
+                                    transition: 'font-size 0.2s ease'
+                                  }}>
+                                    SKU: 24 • ₹45.00
+                                  </div>
+                                  <div className="text-xs text-blue-500 mt-2 opacity-75">
+                                    Font size: {watchedFontSize}pt
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="text-center py-4 text-orange-600">
+                                  <div className="text-sm font-medium">
+                                    🎨 Please set your custom font size
+                                  </div>
+                                  <div className="text-xs mt-1 opacity-75">
+                                    Use the input field or slider above to customize
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </FormControl>
