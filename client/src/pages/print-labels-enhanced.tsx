@@ -1560,7 +1560,10 @@ export default function PrintLabelsEnhanced() {
                                 }}
                                 className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                                 style={{
-                                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((field.value - 6) / (200 - 6)) * 100}%, #e5e7eb ${((field.value - 6) / (200 - 6)) * 100}%, #e5e7eb 100%)`
+                                  background: (() => {
+                                    const percentage = ((field.value - 6) / (200 - 6)) * 100;
+                                    return `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`;
+                                  })()
                                 }}
                               />
                               <span className="text-sm font-medium text-blue-600 min-w-[35px]">{field.value}pt</span>
