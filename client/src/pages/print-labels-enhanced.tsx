@@ -641,6 +641,8 @@ export default function PrintLabelsEnhanced() {
             includeWeight: data.include_weight,
             includeHsn: data.include_hsn,
             barcodePosition: data.barcode_position,
+            barcodeWidth: data.barcode_width,
+            barcodeHeight: data.barcode_height,
             borderStyle: data.border_style,
             borderWidth: data.border_width,
             backgroundColor: data.background_color,
