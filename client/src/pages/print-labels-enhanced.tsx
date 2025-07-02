@@ -3196,6 +3196,210 @@ export default function PrintLabelsEnhanced() {
                   />
                 </div>
 
+                {/* Barcode Size Controls Section */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-6 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-xl">📊</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-300">
+                        Barcode Size Controls
+                      </h3>
+                      <p className="text-sm text-blue-600 dark:text-blue-400">
+                        Customize barcode dimensions for optimal scanning
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                        Barcode Width (% of label)
+                      </Label>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="range"
+                            min="30"
+                            max="95"
+                            defaultValue="90"
+                            className="flex-1 h-3 bg-gradient-to-r from-green-200 to-green-600 rounded-lg appearance-none cursor-pointer"
+                            onChange={(e) => {
+                              const percent = e.target.value;
+                              const display = document.getElementById('barcode-width-display');
+                              if (display) display.textContent = `${percent}%`;
+                            }}
+                          />
+                          <Badge 
+                            id="barcode-width-display" 
+                            variant="secondary" 
+                            className="min-w-[50px] text-center bg-green-100 text-green-800 font-medium"
+                          >
+                            90%
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Controls horizontal span across the label width
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                        Barcode Height (% of label)
+                      </Label>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="range"
+                            min="20"
+                            max="80"
+                            defaultValue="70"
+                            className="flex-1 h-3 bg-gradient-to-r from-purple-200 to-purple-600 rounded-lg appearance-none cursor-pointer"
+                            onChange={(e) => {
+                              const percent = e.target.value;
+                              const display = document.getElementById('barcode-height-display');
+                              if (display) display.textContent = `${percent}%`;
+                            }}
+                          />
+                          <Badge 
+                            id="barcode-height-display" 
+                            variant="secondary" 
+                            className="min-w-[50px] text-center bg-purple-100 text-purple-800 font-medium"
+                          >
+                            70%
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Controls vertical height on the label
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Preset Buttons */}
+                  <div className="mt-6">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">
+                      Quick Size Presets
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
+                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
+                          const widthDisplay = document.getElementById('barcode-width-display');
+                          const heightDisplay = document.getElementById('barcode-height-display');
+                          
+                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
+                            widthSlider.value = '45';
+                            heightSlider.value = '25';
+                            widthDisplay.textContent = '45%';
+                            heightDisplay.textContent = '25%';
+                          }
+                        }}
+                        className="bg-gray-50 hover:bg-gray-100 border-gray-300"
+                      >
+                        🏷️ Small
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
+                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
+                          const widthDisplay = document.getElementById('barcode-width-display');
+                          const heightDisplay = document.getElementById('barcode-height-display');
+                          
+                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
+                            widthSlider.value = '65';
+                            heightSlider.value = '45';
+                            widthDisplay.textContent = '65%';
+                            heightDisplay.textContent = '45%';
+                          }
+                        }}
+                        className="bg-blue-50 hover:bg-blue-100 border-blue-300"
+                      >
+                        📊 Medium
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
+                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
+                          const widthDisplay = document.getElementById('barcode-width-display');
+                          const heightDisplay = document.getElementById('barcode-height-display');
+                          
+                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
+                            widthSlider.value = '80';
+                            heightSlider.value = '60';
+                            widthDisplay.textContent = '80%';
+                            heightDisplay.textContent = '60%';
+                          }
+                        }}
+                        className="bg-green-50 hover:bg-green-100 border-green-300"
+                      >
+                        📈 Large
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
+                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
+                          const widthDisplay = document.getElementById('barcode-width-display');
+                          const heightDisplay = document.getElementById('barcode-height-display');
+                          
+                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
+                            widthSlider.value = '90';
+                            heightSlider.value = '70';
+                            widthDisplay.textContent = '90%';
+                            heightDisplay.textContent = '70%';
+                          }
+                        }}
+                        className="bg-purple-50 hover:bg-purple-100 border-purple-300 font-medium"
+                      >
+                        🎯 Full Size
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
+                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
+                          const widthDisplay = document.getElementById('barcode-width-display');
+                          const heightDisplay = document.getElementById('barcode-height-display');
+                          
+                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
+                            widthSlider.value = '95';
+                            heightSlider.value = '80';
+                            widthDisplay.textContent = '95%';
+                            heightDisplay.textContent = '80%';
+                          }
+                        }}
+                        className="bg-red-50 hover:bg-red-100 border-red-300 font-bold"
+                      >
+                        🚀 Maximum
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <p className="text-xs text-blue-700 dark:text-blue-300 flex items-center">
+                      <span className="mr-2">💡</span>
+                      <strong>Tip:</strong> Larger barcodes scan better from distance. Full Size (90% × 70%) recommended for retail use.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="space-y-3">
                   <h4 className="font-medium">Include Elements</h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
