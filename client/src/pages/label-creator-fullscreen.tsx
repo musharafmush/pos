@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Maximize2, Minimize2, Save, Eye, Printer, ArrowLeft, Plus, Copy, Trash2, RefreshCw } from 'lucide-react';
+import { Maximize2, Minimize2, Save, Eye, Printer, ArrowLeft, Plus, Copy, Trash2, RefreshCw, X } from 'lucide-react';
 import { Link } from 'wouter';
 import JsBarcode from 'jsbarcode';
 
@@ -289,8 +289,24 @@ export default function LabelCreatorFullscreen() {
     });
   };
 
+  // Close any existing dialogs on mount
+  useEffect(() => {
+    // Close any background dialogs that might be open
+    const dialogs = document.querySelectorAll('[role="dialog"]');
+    dialogs.forEach(dialog => {
+      const closeButton = dialog.querySelector('[data-dialog-close]') || dialog.querySelector('button[aria-label="Close"]');
+      if (closeButton && closeButton instanceof HTMLElement) {
+        closeButton.click();
+      }
+    });
+    
+    // Remove any overlay backgrounds
+    const overlays = document.querySelectorAll('[data-radix-dialog-overlay]');
+    overlays.forEach(overlay => overlay.remove());
+  }, []);
+
   return (
-    <div className={`${isMaximized ? 'fixed inset-0 z-50' : 'container mx-auto p-6'} bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800`}>
+    <div className={`${isMaximized ? 'fixed inset-0 z-[9999]' : 'container mx-auto p-6'} bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800`} style={{ zIndex: isMaximized ? 9999 : 'auto' }}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
         <div className="flex items-center gap-4">
@@ -307,6 +323,23 @@ export default function LabelCreatorFullscreen() {
         </div>
         
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              // Force close any dialogs
+              const dialogs = document.querySelectorAll('[role="dialog"]');
+              dialogs.forEach(dialog => dialog.remove());
+              const overlays = document.querySelectorAll('[data-radix-dialog-overlay]');
+              overlays.forEach(overlay => overlay.remove());
+              const portals = document.querySelectorAll('[data-radix-portal]');
+              portals.forEach(portal => portal.remove());
+            }}
+            className="text-red-600 hover:text-red-700"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Close Dialogs
+          </Button>
           <Button
             variant="outline"
             size="sm"
