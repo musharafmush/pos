@@ -3897,7 +3897,59 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/label-templates', isAuthenticated, async (req, res) => {
     try {
       const templates = await storage.getLabelTemplates();
-      res.json(templates);
+      
+      // Map database field names to frontend field names for all templates
+      const mappedTemplates = templates.map(template => {
+        const mappedTemplate = {
+          ...template,
+          font_size: template.fontSize || template.font_size,
+          include_barcode: template.includeBarcode || template.include_barcode,
+          include_price: template.includePrice || template.include_price,
+          include_description: template.includeDescription || template.include_description,
+          include_mrp: template.includeMRP || template.include_mrp,
+          include_weight: template.includeWeight || template.include_weight,
+          include_hsn: template.includeHSN || template.include_hsn,
+          include_manufacturing_date: template.includeManufacturingDate || template.include_manufacturing_date,
+          include_expiry_date: template.includeExpiryDate || template.include_expiry_date,
+          barcode_position: template.barcodePosition || template.barcode_position,
+          border_style: template.borderStyle || template.border_style,
+          border_width: template.borderWidth || template.border_width,
+          background_color: template.backgroundColor || template.background_color,
+          text_color: template.textColor || template.text_color,
+          custom_css: template.customCSS || template.custom_css,
+          store_title: template.storeTitle || template.store_title,
+          is_default: template.isDefault || template.is_default,
+          is_active: template.isActive || template.is_active,
+          created_at: template.createdAt || template.created_at,
+          updated_at: template.updatedAt || template.updated_at
+        };
+        
+        // Remove the original camelCase fields to avoid confusion
+        delete mappedTemplate.fontSize;
+        delete mappedTemplate.includeBarcode;
+        delete mappedTemplate.includePrice;
+        delete mappedTemplate.includeDescription;
+        delete mappedTemplate.includeMRP;
+        delete mappedTemplate.includeWeight;
+        delete mappedTemplate.includeHSN;
+        delete mappedTemplate.includeManufacturingDate;
+        delete mappedTemplate.includeExpiryDate;
+        delete mappedTemplate.barcodePosition;
+        delete mappedTemplate.borderStyle;
+        delete mappedTemplate.borderWidth;
+        delete mappedTemplate.backgroundColor;
+        delete mappedTemplate.textColor;
+        delete mappedTemplate.customCSS;
+        delete mappedTemplate.storeTitle;
+        delete mappedTemplate.isDefault;
+        delete mappedTemplate.isActive;
+        delete mappedTemplate.createdAt;
+        delete mappedTemplate.updatedAt;
+        
+        return mappedTemplate;
+      });
+      
+      res.json(mappedTemplates);
     } catch (error) {
       console.error('Error fetching label templates:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -3977,7 +4029,54 @@ app.post("/api/customers", async (req, res) => {
         return res.status(404).json({ message: 'Label template not found' });
       }
       
-      res.json(template);
+      // Map database field names to frontend field names
+      const responseTemplate = {
+        ...template,
+        font_size: template.fontSize || template.font_size,
+        include_barcode: template.includeBarcode || template.include_barcode,
+        include_price: template.includePrice || template.include_price,
+        include_description: template.includeDescription || template.include_description,
+        include_mrp: template.includeMRP || template.include_mrp,
+        include_weight: template.includeWeight || template.include_weight,
+        include_hsn: template.includeHSN || template.include_hsn,
+        include_manufacturing_date: template.includeManufacturingDate || template.include_manufacturing_date,
+        include_expiry_date: template.includeExpiryDate || template.include_expiry_date,
+        barcode_position: template.barcodePosition || template.barcode_position,
+        border_style: template.borderStyle || template.border_style,
+        border_width: template.borderWidth || template.border_width,
+        background_color: template.backgroundColor || template.background_color,
+        text_color: template.textColor || template.text_color,
+        custom_css: template.customCSS || template.custom_css,
+        store_title: template.storeTitle || template.store_title,
+        is_default: template.isDefault || template.is_default,
+        is_active: template.isActive || template.is_active,
+        created_at: template.createdAt || template.created_at,
+        updated_at: template.updatedAt || template.updated_at
+      };
+      
+      // Remove the original camelCase fields to avoid confusion
+      delete responseTemplate.fontSize;
+      delete responseTemplate.includeBarcode;
+      delete responseTemplate.includePrice;
+      delete responseTemplate.includeDescription;
+      delete responseTemplate.includeMRP;
+      delete responseTemplate.includeWeight;
+      delete responseTemplate.includeHSN;
+      delete responseTemplate.includeManufacturingDate;
+      delete responseTemplate.includeExpiryDate;
+      delete responseTemplate.barcodePosition;
+      delete responseTemplate.borderStyle;
+      delete responseTemplate.borderWidth;
+      delete responseTemplate.backgroundColor;
+      delete responseTemplate.textColor;
+      delete responseTemplate.customCSS;
+      delete responseTemplate.storeTitle;
+      delete responseTemplate.isDefault;
+      delete responseTemplate.isActive;
+      delete responseTemplate.createdAt;
+      delete responseTemplate.updatedAt;
+      
+      res.json(responseTemplate);
     } catch (error) {
       console.error('Error fetching label template:', error);
       res.status(500).json({ message: 'Internal server error' });
