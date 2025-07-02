@@ -1119,6 +1119,8 @@ export default function PrintLabelsEnhanced() {
       barcode_position: (['top', 'bottom', 'left', 'right'].includes(template.barcode_position)) 
         ? template.barcode_position as 'top' | 'bottom' | 'left' | 'right'
         : 'bottom',
+      barcode_width: Math.max(30, Math.min(95, Number(template.barcode_width) || 90)),
+      barcode_height: Math.max(20, Math.min(80, Number(template.barcode_height) || 70)),
       border_style: (['solid', 'dashed', 'dotted', 'none'].includes(template.border_style))
         ? template.border_style as 'solid' | 'dashed' | 'dotted' | 'none'
         : 'solid',
