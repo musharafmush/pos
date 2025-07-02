@@ -150,16 +150,6 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Enhanced keyboard shortcuts: Ctrl+N (Purchase), Ctrl+S (Sale), Ctrl+L (Labels), Ctrl+B (Backup)
 - Integrated desktop-specific security features with context isolation and web security enforcement
 
-### ES Module Conversion for Desktop Backend (July 2, 2025)
-- Successfully converted desktop-backend/launcher.js and desktop-backend/main.js from CommonJS to ES module format
-- Updated import statements to use ES module syntax (import/export instead of require/module.exports)
-- Fixed Electron integration with proper default import pattern for CommonJS compatibility
-- Added ES module compatibility helpers for __dirname and __filename using fileURLToPath and dirname
-- Enhanced Node.js v20+ compatibility and future-proof architecture
-- Resolved ES module scope issues with proper import.meta.url usage for entry point detection
-- Maintained full functionality including automatic Chrome browser opening and cross-platform support
-- Updated technical documentation to reflect ES module implementation details
-
 ### Edit-Options Page Removal (June 25, 2025)
 - Removed the edit-options page (POS Bill Edit) from the application
 - Cleaned up App.tsx routing configuration to remove references to deleted page

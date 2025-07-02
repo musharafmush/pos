@@ -26,7 +26,6 @@ if not exist "node_modules" (
 
 echo ✅ Dependencies ready
 echo 🔄 Launching desktop application...
-echo 🌐 Chrome will automatically open to localhost:5000
 echo.
 
 REM Set environment for desktop mode

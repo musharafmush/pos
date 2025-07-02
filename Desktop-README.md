@@ -27,7 +27,6 @@
 - Export functionality (JSON/CSV)
 - Health monitoring and statistics
 - Professional menu system with shortcuts
-- Automatic Chrome browser opening to localhost:5000
 
 ### Quick Start
 
@@ -120,13 +119,6 @@ Desktop Application Stack:
 - Web security enforced
 - No remote module access
 
-#### 5. Automatic Browser Integration
-- **Smart Chrome Detection**: Automatically detects and opens Chrome browser
-- **Cross-Platform Support**: Works on Windows, macOS, and Linux
-- **Fallback Handling**: Provides manual URL if automatic opening fails
-- **Ready State Detection**: Opens browser only when server is fully ready
-- **URL Access**: Direct navigation to http://localhost:5000
-
 ### File Structure
 
 ```
@@ -153,24 +145,6 @@ Start-Desktop-POS.sh    # Linux/Mac launcher
 - `GET /api/desktop/backup` - Create database backup
 - `GET /api/desktop/export/json` - Export data as JSON
 - `GET /api/desktop/export/csv` - Export data as CSV
-
-### Technical Architecture
-
-#### ES Module Compatibility (Updated July 2, 2025)
-The desktop backend has been fully converted to ES module format for better Node.js compatibility:
-
-**Converted Files:**
-- `desktop-backend/launcher.js` - Enhanced desktop launcher with ES module imports
-- `desktop-backend/main.js` - Desktop backend service with ES module compatibility
-- Proper import/export statements replacing CommonJS require/module.exports
-- ES module compatibility helpers for `__dirname` and `__filename`
-- Cross-platform Electron integration with ES module support
-
-**Benefits:**
-- Better Node.js v20+ compatibility
-- Improved module resolution
-- Enhanced development experience
-- Future-proof architecture
 
 ### Troubleshooting
 

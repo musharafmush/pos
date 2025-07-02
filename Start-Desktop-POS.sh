@@ -30,7 +30,6 @@ fi
 
 echo "✅ Dependencies ready"
 echo "🔄 Launching desktop application..."
-echo "🌐 Chrome will automatically open to localhost:5000"
 echo ""
 
 # Set environment for desktop mode
