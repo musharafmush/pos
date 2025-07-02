@@ -638,6 +638,8 @@ export default function PrintLabelsEnhanced() {
         includeDescription: data.include_description,
         includeWeight: data.include_weight,
         includeHsn: data.include_hsn,
+        includeManufacturingDate: data.include_manufacturing_date,
+        includeExpiryDate: data.include_expiry_date,
         barcodePosition: data.barcode_position,
         barcodeWidth: data.barcode_width,
         barcodeHeight: data.barcode_height,
