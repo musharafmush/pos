@@ -5,6 +5,10 @@ echo "🏗️  Installing Awesome Shop POS Desktop Application"
 echo "💰 Professional Indian Rupee POS System"
 echo ""
 
+# Set script directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+APP_DIR="$SCRIPT_DIR/app"
+
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
     echo "❌ Node.js is required but not installed"
@@ -16,14 +20,25 @@ fi
 echo "✅ Node.js detected"
 echo ""
 
-# Navigate to app directory
-cd "$(dirname "$0")/app"
+# Check if app directory exists
+if [ ! -d "$APP_DIR" ]; then
+    echo "❌ App directory not found: $APP_DIR"
+    echo "💡 Please ensure the installer is in the correct location"
+    exit 1
+fi
 
-# Install dependencies
+echo "📁 App directory found: $APP_DIR"
+echo ""
+
+# Navigate to app directory and install dependencies
 echo "📦 Installing application dependencies..."
+cd "$APP_DIR"
 npm install --production --silent
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to install dependencies"
+INSTALL_ERROR=$?
+
+if [ $INSTALL_ERROR -ne 0 ]; then
+    echo "❌ Failed to install dependencies in $APP_DIR"
+    echo "💡 Please check your internet connection and try again"
     exit 1
 fi
 
@@ -35,7 +50,7 @@ echo "🖥️  Creating desktop shortcut..."
 node create-desktop-shortcut.cjs
 
 # Return to installer directory
-cd "$(dirname "$0")"
+cd "$SCRIPT_DIR"
 
 # Make launcher executable
 chmod +x AwesomeShopPOS.js
