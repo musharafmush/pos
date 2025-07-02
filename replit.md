@@ -302,6 +302,15 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Added tooltips and guidance for optimal barcode sizing for retail scanner compatibility
 - Full user control over barcode dimensions while maintaining professional scanning standards
 
+### Barcode Size Controls Functionality Fix (July 2, 2025)
+- Fixed generateLabelHTML function to use template's barcode_width and barcode_height values instead of hardcoded dimensions
+- Enhanced barcode calculation to convert template percentages to actual pixel dimensions for proper rendering
+- Updated server API routes to properly handle barcode width/height fields in template creation and updates
+- Enhanced storage functions to include barcode sizing in database operations with proper field mapping
+- Added barcode_width and barcode_height columns to database schema with defaults (90%, 70%)
+- Fixed field mapping between frontend (snake_case: barcode_width/barcode_height) and backend (camelCase: barcodeWidth/barcodeHeight)
+- Verified working: Barcode size controls now respond dynamically with real-time preview updates and proper persistence
+
 ### Label Box Center Alignment System (July 2, 2025)
 - Fixed label box centering alignment issues in both preview and print layouts
 - Enhanced print CSS with flexbox layout for perfect center alignment
