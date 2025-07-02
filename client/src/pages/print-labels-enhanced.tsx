@@ -2988,7 +2988,7 @@ export default function PrintLabelsEnhanced() {
             handleTemplateDialogClose();
           }
         }}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw]">
             <DialogHeader>
               <DialogTitle>
                 {editingTemplate ? 'Edit Template' : 'Create New Template'}
@@ -4346,7 +4346,7 @@ export default function PrintLabelsEnhanced() {
 
         {/* Preview Dialog */}
         <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw]">
             <DialogHeader>
               <DialogTitle>Label Preview - Centered Layout</DialogTitle>
             </DialogHeader>
