@@ -32,6 +32,6 @@
     "windows": "Start-Desktop-POS.bat",
     "unix": "Start-Desktop-POS.sh"
   },
-  "created": "2025-07-02T16:54:24.658Z",
+  "created": "2025-07-02T17:21:18.668Z",
   "author": "Awesome Shop POS Team"
 }

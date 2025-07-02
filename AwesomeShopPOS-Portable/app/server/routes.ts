@@ -907,7 +907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 Creating comprehensive data backup...');
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Helper function to safely query tables
       const safeTableQuery = (tableName: string) => {
@@ -1130,7 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Check database connection with retry mechanism
       try {
@@ -1429,7 +1429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 Clearing all data...');
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Check database connection first
       try {
@@ -1586,7 +1586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('📊 Fetching returns statistics');
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Get total returns and refund amount
       const totalStats = sqlite.prepare(`
@@ -1758,7 +1758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ Validated sale items:", saleItems);
 
       // Direct SQLite transaction for reliable data saving
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       const result = sqlite.transaction(() => {
         try {
@@ -1880,7 +1880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Try direct database query first
       try {
-        const { sqlite } = await import('@db');
+        const { sqlite } = await import('../db/index.js');
 
         let query = `
           SELECT 
@@ -2081,7 +2081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string || '10');
 
       // Direct database approach with proper column names
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // First check if sales table exists and has data
       const tableCheck = sqlite.prepare(`
@@ -2175,7 +2175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 Fetching sale details for ID:', saleId);
 
       // Use direct SQLite query for better reliability
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Get sale details
       const saleQuery = sqlite.prepare(`
@@ -2428,7 +2428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if purchase exists
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       
       const existingPurchaseQuery = sqlite.prepare('SELECT * FROM purchases WHERE id = ?');
       const existingPurchase = existingPurchaseQuery.get(id);
@@ -2763,7 +2763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const offset = parseInt(req.query.offset as string || '0');
 
       // Use direct SQLite query for reliability
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Check if purchases table exists
       const tableCheck = sqlite.prepare(`
@@ -2888,7 +2888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use direct SQLite query for better control
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Check if item exists
       const existingItem = sqlite.prepare('SELECT * FROM purchase_items WHERE id = ?').get(id);
@@ -3001,7 +3001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use direct SQLite query
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Check if purchase exists
       const existingPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
@@ -3198,7 +3198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use direct SQLite update with column checking
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       
       // Check what columns exist in the purchases table
       const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
@@ -4309,7 +4309,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('🏢 Fetching business settings');
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Get business-related settings
       const businessKeys = [
@@ -4357,7 +4357,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('💾 Saving business settings:', req.body);
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Ensure settings table exists
       sqlite.prepare(`
@@ -4407,7 +4407,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('🛒 Fetching POS settings');
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       const posKeys = [
         'quickSaleMode', 'barcodeScanning', 'customerRequired', 'discountEnabled',
@@ -4452,7 +4452,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('💾 Saving POS settings:', req.body);
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       const upsertSetting = sqlite.prepare(`
         INSERT INTO settings (key, value, updated_at) 
@@ -4492,7 +4492,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('🔧 Fetching receipt settings');
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Ensure settings table exists with proper schema
       sqlite.prepare(`
@@ -4575,7 +4575,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('💾 Saving receipt settings:', req.body);
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Ensure settings table exists with proper schema
       sqlite.prepare(`
@@ -4651,7 +4651,7 @@ app.post("/api/customers", async (req, res) => {
 
       // Test 1: Database connection and table existence
       try {
-        const { sqlite } = await import('@db');
+        const { sqlite } = await import('../db/index.js');
 
         // Check if sales table exists
         const tableCheck = sqlite.prepare(`
@@ -4742,7 +4742,7 @@ app.post("/api/customers", async (req, res) => {
       const hsnCode = req.params.hsnCode;
       console.log('🔍 Looking up tax rates for HSN code:', hsnCode);
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Look up HSN code in our tax database
       const hsnQuery = sqlite.prepare(`
@@ -4793,7 +4793,7 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/tax/configurations', async (req, res) => {
     try {
       console.log('📋 Fetching tax configurations');
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       const taxConfigs = sqlite.prepare(`
         SELECT * FROM tax_configurations ORDER BY created_at DESC
@@ -4813,7 +4813,7 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/tax/categories', async (req, res) => {
     try {
       console.log('📋 Fetching tax categories');
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       const taxCategories = sqlite.prepare(`
         SELECT * FROM tax_categories ORDER BY name
@@ -4933,7 +4933,7 @@ app.post("/api/customers", async (req, res) => {
       startDate.setDate(startDate.getDate() - daysPeriod);
 
       // Use direct SQLite queries for reliable data access
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Get sales data with product details and costs
       const salesQuery = sqlite.prepare(`
@@ -5136,7 +5136,7 @@ app.post("/api/customers", async (req, res) => {
         });
       }
 
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       
       // Get sales data within date range
       const salesQuery = `
@@ -5853,7 +5853,7 @@ app.post("/api/customers", async (req, res) => {
   app.get("/api/reports/suppliers", isAuthenticated, async (req, res) => {
     try {
       console.log('📊 Supplier reports endpoint accessed');
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       
       const dateRange = req.query.range as string || '30days';
       console.log('📅 Date range:', dateRange);
@@ -6018,7 +6018,7 @@ app.post("/api/customers", async (req, res) => {
   app.get("/api/reports/tax", isAuthenticated, async (req, res) => {
     try {
       console.log('📊 Tax reports endpoint accessed');
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       
       const dateRange = req.query.range as string || '30days';
       console.log('📅 Date range:', dateRange);
@@ -6486,7 +6486,7 @@ app.post("/api/customers", async (req, res) => {
   app.get("/api/products/search", isAuthenticated, async (req, res) => {
     try {
       console.log('🔍 Product search endpoint accessed');
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       
       const searchTerm = req.query.q as string || '';
       console.log('🔍 Search term:', searchTerm);
@@ -6532,7 +6532,7 @@ app.post("/api/customers", async (req, res) => {
   app.get("/api/products/history/:id", isAuthenticated, async (req, res) => {
     try {
       console.log('📊 Product history endpoint accessed');
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
       
       const productId = parseInt(req.params.id);
       const dateRange = req.query.range as string || '30days';
@@ -6804,7 +6804,7 @@ app.post("/api/customers", async (req, res) => {
       console.log('🗑️ Deleting purchase:', id);
 
       // Use direct SQLite transaction
-      const { sqlite } = await import('@db');
+      const { sqlite } = await import('../db/index.js');
 
       // Start a transaction to ensure data consistency
       const deleteTransaction = sqlite.transaction(() => {
