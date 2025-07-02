@@ -396,6 +396,16 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Manufacturing date shows current date, expiry date shows one year from manufacturing date
 - Complete integration with existing dynamic CRUD operations and template management system
 
+### Manufacturing and Expiry Date Display Enhancement (July 2, 2025)
+- Fixed critical display issue where Manufacturing and Expiry dates weren't appearing in label previews
+- Enhanced CSS styling with distinctive gray backgrounds (#f0f0f0) and black borders for maximum visibility
+- Added comprehensive CSS overrides with !important declarations to force date display
+- Implemented specific CSS classes (mfg-date-override, exp-date-override) with enhanced styling properties
+- Added bold formatting and improved color contrast for better readability
+- Manufacturing and Expiry Date functionality now works completely with dynamic save/update capabilities
+- Server logs confirm proper data persistence with both checkboxes saving correctly as true values
+- Template editing system successfully updates and displays Manufacturing/Expiry date settings
+
 ### Comprehensive CRUD Label Template System (July 1, 2025)
 - Implemented complete CRUD (Create, Read, Update, Delete) operations for label templates
 - Added "Quick Templates" button that creates 5 professional predefined templates:
