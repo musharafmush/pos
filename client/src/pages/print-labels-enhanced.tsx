@@ -1405,15 +1405,15 @@ export default function PrintLabelsEnhanced() {
       // Generate barcode using JsBarcode
       JsBarcode(canvas, barcodeText, {
         format: "CODE128",
-        width: Math.max(2.5, width / 100), // Significantly wider bars for better visibility
-        height: Math.max(height - 25, 70), // Much taller barcode for optimal scanning
+        width: Math.max(3.5, width / 80), // MAXIMUM width bars for full size visibility
+        height: Math.max(height - 20, 100), // FULL HEIGHT barcode for maximum scanning
         displayValue: true,
-        fontSize: Math.max(14, height / 5), // Even larger font size for better readability
+        fontSize: Math.max(16, height / 4), // LARGE font size for maximum readability
         fontOptions: "bold",
         font: "monospace",
         textAlign: "center",
         textPosition: "bottom",
-        textMargin: 6,
+        textMargin: 8,
         background: "#FFFFFF",
         lineColor: "#000000"
       });
@@ -1448,9 +1448,9 @@ export default function PrintLabelsEnhanced() {
     const borderCSS = border_style !== 'none' ? 
       `border: ${border_width}px ${border_style} #333;` : '';
 
-    // Scale barcode size based on label dimensions for professional appearance
-    const barcodeWidth = Math.min(width * 4.5, 420); // Significantly larger width for better visibility
-    const barcodeHeight = Math.max(90, Math.min(height * 0.5, 160)); // Even taller for optimal scanning
+    // Scale barcode size based on label dimensions for FULL SIZE appearance
+    const barcodeWidth = Math.min(width * 0.9, 500); // Full width barcode for maximum visibility
+    const barcodeHeight = Math.max(120, Math.min(height * 0.7, 250)); // FULL SIZE height for optimal scanning
 
     const barcodeHTML = include_barcode ? 
       generateBarcode(product.barcode || product.sku, barcodeWidth, barcodeHeight) : '';
