@@ -5,10 +5,16 @@
  * Professional desktop launcher with advanced backend services
  */
 
-const { spawn, exec } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const DesktopBackendService = require('./main');
+import { spawn, exec } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import DesktopBackendService from './main.js';
+
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 class DesktopLauncher {
   constructor() {
@@ -287,9 +293,9 @@ class DesktopLauncher {
 }
 
 // Launch the desktop application
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const launcher = new DesktopLauncher();
   launcher.launch();
 }
 
-module.exports = DesktopLauncher;
+export default DesktopLauncher;

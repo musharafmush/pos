@@ -5,11 +5,14 @@
  * Professional desktop application backend for Indian retail businesses
  */
 
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const sqlite3 = require('better-sqlite3');
-const { app: electronApp, BrowserWindow, Menu, ipcMain, dialog, shell } = require('electron');
+import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import sqlite3 from 'better-sqlite3';
+import electron from 'electron';
+const { app: electronApp, BrowserWindow, Menu, ipcMain, dialog, shell } = electron;
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 class DesktopBackendService {
   constructor() {
@@ -259,7 +262,10 @@ class DesktopBackendService {
 }
 
 // Start the desktop backend service
-if (require.main === module) {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+if (import.meta.url === `file://${process.argv[1]}`) {
   const desktopBackend = new DesktopBackendService();
   desktopBackend.start().catch(error => {
     console.error('❌ Failed to start desktop backend:', error);
@@ -267,4 +273,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = DesktopBackendService;
+export default DesktopBackendService;

@@ -154,6 +154,24 @@ Start-Desktop-POS.sh    # Linux/Mac launcher
 - `GET /api/desktop/export/json` - Export data as JSON
 - `GET /api/desktop/export/csv` - Export data as CSV
 
+### Technical Architecture
+
+#### ES Module Compatibility (Updated July 2, 2025)
+The desktop backend has been fully converted to ES module format for better Node.js compatibility:
+
+**Converted Files:**
+- `desktop-backend/launcher.js` - Enhanced desktop launcher with ES module imports
+- `desktop-backend/main.js` - Desktop backend service with ES module compatibility
+- Proper import/export statements replacing CommonJS require/module.exports
+- ES module compatibility helpers for `__dirname` and `__filename`
+- Cross-platform Electron integration with ES module support
+
+**Benefits:**
+- Better Node.js v20+ compatibility
+- Improved module resolution
+- Enhanced development experience
+- Future-proof architecture
+
 ### Troubleshooting
 
 #### Common Issues
