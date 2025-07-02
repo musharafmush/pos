@@ -71,6 +71,10 @@ class DesktopLauncher {
         // Check if server is ready
         if (output.includes('serving on port 5000') || output.includes('Server started on port 5000')) {
           console.log('✅ Main POS application server ready!\n');
+          
+          // Automatically open Chrome to localhost:5000
+          this.openChromeToLocalhost();
+          
           resolve(true);
         }
       });
@@ -93,6 +97,10 @@ class DesktopLauncher {
       setTimeout(() => {
         if (this.processes.has('mainApp')) {
           console.log('✅ Main application server assumed ready (timeout)\n');
+          
+          // Automatically open Chrome to localhost:5000 (fallback)
+          this.openChromeToLocalhost();
+          
           resolve(true);
         }
       }, 30000);
@@ -115,6 +123,44 @@ class DesktopLauncher {
         resolve(null);
       });
     });
+  }
+
+  openChromeToLocalhost() {
+    const url = 'http://localhost:5000';
+    console.log('🌐 Opening Chrome browser to localhost:5000...');
+    
+    // Determine the platform and use appropriate command
+    const platform = process.platform;
+    let command;
+    
+    switch (platform) {
+      case 'darwin': // macOS
+        command = `open -a "Google Chrome" "${url}"`;
+        break;
+      case 'win32': // Windows
+        command = `start chrome "${url}"`;
+        break;
+      case 'linux': // Linux
+        command = `google-chrome "${url}" || chromium-browser "${url}" || chromium "${url}"`;
+        break;
+      default:
+        console.log('⚠️  Unknown platform, skipping Chrome auto-open');
+        return;
+    }
+    
+    // Wait a moment for server to be ready, then open browser
+    setTimeout(() => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.log('⚠️  Could not open Chrome automatically. Please open your browser manually to:');
+          console.log(`   🔗 ${url}`);
+          console.log(`   Error: ${error.message}`);
+        } else {
+          console.log('✅ Chrome browser opened successfully!');
+          console.log(`🔗 Navigate to: ${url}`);
+        }
+      });
+    }, 2000);
   }
 
   async startElectronApp() {

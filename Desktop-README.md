@@ -27,6 +27,7 @@
 - Export functionality (JSON/CSV)
 - Health monitoring and statistics
 - Professional menu system with shortcuts
+- Automatic Chrome browser opening to localhost:5000
 
 ### Quick Start
 
@@ -118,6 +119,13 @@ Desktop Application Stack:
 - Context isolation enabled
 - Web security enforced
 - No remote module access
+
+#### 5. Automatic Browser Integration
+- **Smart Chrome Detection**: Automatically detects and opens Chrome browser
+- **Cross-Platform Support**: Works on Windows, macOS, and Linux
+- **Fallback Handling**: Provides manual URL if automatic opening fails
+- **Ready State Detection**: Opens browser only when server is fully ready
+- **URL Access**: Direct navigation to http://localhost:5000
 
 ### File Structure
 
