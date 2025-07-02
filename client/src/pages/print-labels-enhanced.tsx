@@ -1446,7 +1446,7 @@ export default function PrintLabelsEnhanced() {
     const {
       width, height, font_size, border_style, border_width, background_color, text_color,
       include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn,
-      include_manufacturing_date, include_expiry_date
+      include_manufacturing_date, include_expiry_date, store_title
     } = template;
 
     const borderCSS = border_style !== 'none' ? 
@@ -1487,6 +1487,11 @@ export default function PrintLabelsEnhanced() {
         line-height: 1.4;
         overflow: hidden;
       ">
+        ${store_title ? 
+          `<div style="font-weight: bold; margin-bottom: ${Math.max(1, height * 0.01)}mm; font-size: ${Math.max(titleFontSize - 2, 16)}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e40af; text-transform: uppercase; letter-spacing: 1px;">
+            ${store_title}
+          </div>` : ''
+        }
         <div style="font-weight: bold; margin-bottom: ${Math.max(2, height * 0.02)}mm; font-size: ${titleFontSize}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
           ${product.name}
         </div>
