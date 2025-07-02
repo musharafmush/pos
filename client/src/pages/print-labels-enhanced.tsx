@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,6 +80,7 @@ interface LabelTemplate {
   width: number;
   height: number;
   font_size: number;
+  brand_title?: string;
   orientation?: 'portrait' | 'landscape';
   include_barcode: boolean;
   include_price: boolean;
@@ -127,6 +128,7 @@ const templateFormSchema = z.object({
   font_size: z.number().min(6, "Font size must be at least 6pt").max(200, "Font size cannot exceed 200pt").refine((val) => val > 0, {
     message: "Please customize your font size - this field is required"
   }),
+  brand_title: z.string().optional(),
   orientation: z.enum(['portrait', 'landscape']).optional(),
   include_barcode: z.boolean(),
   include_price: z.boolean(),
@@ -1044,6 +1046,7 @@ export default function PrintLabelsEnhanced() {
       width: Math.max(10, Number(template.width) || 150),
       height: Math.max(10, Number(template.height) || 100),
       font_size: template.font_size ? Math.max(6, Math.min(200, Number(template.font_size))) : 12, // Fallback for existing templates
+      brand_title: template.brand_title || "",
       orientation: (template.orientation === 'portrait' || template.orientation === 'landscape') 
         ? template.orientation 
         : 'landscape',
@@ -1376,6 +1379,7 @@ export default function PrintLabelsEnhanced() {
       width: 150,
       height: 100,
       font_size: 18,
+      brand_title: "",
       orientation: 'landscape',
       include_barcode: true,
       include_price: true,
@@ -1441,7 +1445,7 @@ export default function PrintLabelsEnhanced() {
   const generateLabelHTML = (product: Product, template: LabelTemplate) => {
     const {
       width, height, font_size, border_style, border_width, background_color, text_color,
-      include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn,
+      brand_title, include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn,
       include_manufacturing_date, include_expiry_date
     } = template;
 
@@ -1483,6 +1487,24 @@ export default function PrintLabelsEnhanced() {
         line-height: 1.4;
         overflow: hidden;
       ">
+        ${brand_title ? `
+        <div style="
+          font-weight: bold; 
+          font-size: ${Math.max(titleFontSize + 2, 20)}px; 
+          margin-bottom: ${Math.max(3, height * 0.03)}mm; 
+          color: #d32f2f; 
+          text-transform: uppercase; 
+          letter-spacing: 1px;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 2px;
+          width: 100%;
+          overflow: hidden; 
+          text-overflow: ellipsis; 
+          white-space: nowrap;
+        ">
+          ${brand_title}
+        </div>` : ''}
+        
         <div style="font-weight: bold; margin-bottom: ${Math.max(2, height * 0.02)}mm; font-size: ${titleFontSize}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
           ${product.name}
         </div>
@@ -3417,17 +3439,52 @@ export default function PrintLabelsEnhanced() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Custom Title Input */}
+                    <div className="space-y-3 md:col-span-2">
+                      <Label className="text-sm font-medium text-orange-700 dark:text-orange-300">🏪 Store Title/Branding</Label>
+                      <FormField
+                        control={templateForm.control}
+                        name="brand_title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="Enter store name (e.g., M MART, YOUR STORE NAME, etc.)"
+                                className="h-12 text-lg font-bold border-2 border-orange-300 focus:border-orange-500 bg-white dark:bg-gray-800"
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs text-orange-600 dark:text-orange-400">
+                              This title will appear at the top of your labels. Leave empty for no store branding.
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
                     {/* Store Branding Selection */}
                     <div className="space-y-3">
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Store Branding</Label>
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quick Presets</Label>
                       <div className="grid grid-cols-2 gap-2">
-                        <Button type="button" variant="outline" size="sm" className="h-16 flex flex-col items-center justify-center bg-red-50 hover:bg-red-100 border-red-300 text-red-700">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-16 flex flex-col items-center justify-center bg-red-50 hover:bg-red-100 border-red-300 text-red-700"
+                          onClick={() => templateForm.setValue('brand_title', 'M MART')}
+                        >
                           <span className="font-bold text-lg">M MART</span>
                           <span className="text-xs">Authentic</span>
                         </Button>
-                        <Button type="button" variant="outline" size="sm" className="h-16 flex flex-col items-center justify-center">
-                          <span className="font-bold">Custom Store</span>
-                          <span className="text-xs">Your Brand</span>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-16 flex flex-col items-center justify-center"
+                          onClick={() => templateForm.setValue('brand_title', '')}
+                        >
+                          <span className="font-bold">Clear Title</span>
+                          <span className="text-xs">No Branding</span>
                         </Button>
                       </div>
                     </div>
