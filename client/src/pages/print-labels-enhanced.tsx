@@ -1568,6 +1568,16 @@ export default function PrintLabelsEnhanced() {
     const detailsFontSize = Math.max(baseFontSize - 2, 12);
 
     return `
+      <style>
+        .mfg-date-override, .exp-date-override {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          height: auto !important;
+          overflow: visible !important;
+          color: #666 !important;
+        }
+      </style>
       <div class="product-label" style="
         width: ${width}mm;
         height: ${height}mm;
@@ -1634,14 +1644,14 @@ export default function PrintLabelsEnhanced() {
         }
 
         ${include_manufacturing_date ? 
-          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important;">
-            Mfg: ${new Date().toLocaleDateString('en-IN')}
+          `<div class="mfg-date-override" style="font-size: ${detailsFontSize}px; color: #666 !important; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important; overflow: visible !important;">
+            <strong>Mfg: ${new Date().toLocaleDateString('en-IN')}</strong>
           </div>` : ''
         }
 
         ${include_expiry_date ? 
-          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important;">
-            Exp: ${new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN')}
+          `<div class="exp-date-override" style="font-size: ${detailsFontSize}px; color: #666 !important; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important; overflow: visible !important;">
+            <strong>Exp: ${new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN')}</strong>
           </div>` : ''
         }
 
