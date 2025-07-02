@@ -3435,6 +3435,400 @@ export default function PrintLabelsEnhanced() {
                   </div>
                 </div>
 
+                {/* M MART Professional Branding Section */}
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 p-6 rounded-lg border-2 border-indigo-200 dark:border-indigo-800">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-2xl font-bold">M</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
+                        M MART Professional Branding
+                      </h3>
+                      <p className="text-sm text-indigo-600 dark:text-indigo-400">
+                        Create authentic M MART style labels like the professional retail example
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Store Branding
+                        </Label>
+                        <Select defaultValue="mmart">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select store brand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="mmart">
+                              <div className="flex items-center space-x-2">
+                                <span className="w-6 h-6 bg-black text-white rounded text-xs flex items-center justify-center font-bold">M</span>
+                                <span className="font-bold">M MART</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="custom">
+                              <div className="flex items-center space-x-2">
+                                <span className="w-6 h-6 bg-blue-600 text-white rounded text-xs flex items-center justify-center">✏️</span>
+                                <span>Custom Store Name</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="none">
+                              <div className="flex items-center space-x-2">
+                                <span className="w-6 h-6 bg-gray-400 text-white rounded text-xs flex items-center justify-center">○</span>
+                                <span>No Branding</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Brand Position
+                        </Label>
+                        <Select defaultValue="top-center">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select brand position" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="top-center">📍 Top Center (M MART Style)</SelectItem>
+                            <SelectItem value="top-left">📍 Top Left</SelectItem>
+                            <SelectItem value="top-right">📍 Top Right</SelectItem>
+                            <SelectItem value="bottom-center">📍 Bottom Center</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Brand Typography
+                        </Label>
+                        <Select defaultValue="bold-black">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select brand style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bold-black">🅱️ Bold Black (M MART Original)</SelectItem>
+                            <SelectItem value="bold-white">⚪ Bold White Background</SelectItem>
+                            <SelectItem value="outlined">🔲 Black Outline Style</SelectItem>
+                            <SelectItem value="gradient">🌈 Gradient Professional</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Product Layout Style
+                        </Label>
+                        <Select defaultValue="mmart-classic">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select layout style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="mmart-classic">
+                              <div className="flex flex-col">
+                                <span className="font-bold">📋 M MART Classic</span>
+                                <span className="text-xs text-gray-500">Store → Product → Barcode → Price → MRP</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="premium-retail">
+                              <div className="flex flex-col">
+                                <span className="font-bold">💎 Premium Retail</span>
+                                <span className="text-xs text-gray-500">Enhanced spacing and professional styling</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="compact-efficient">
+                              <div className="flex flex-col">
+                                <span className="font-bold">⚡ Compact Efficient</span>
+                                <span className="text-xs text-gray-500">Space-optimized for small labels</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Price Display Format
+                        </Label>
+                        <Select defaultValue="mmart-format">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select price format" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="mmart-format">₹ .55.00 (M MART Style)</SelectItem>
+                            <SelectItem value="standard-format">₹55.00 (Standard)</SelectItem>
+                            <SelectItem value="premium-format">₹ 55.00 (Premium Spaced)</SelectItem>
+                            <SelectItem value="bold-large">₹55.00 (Bold Large)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          MRP Display Style
+                        </Label>
+                        <Select defaultValue="bottom-simple">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select MRP style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bottom-simple">MRP:64.00 (M MART Style)</SelectItem>
+                            <SelectItem value="bottom-bold">MRP: ₹64.00 (Bold)</SelectItem>
+                            <SelectItem value="side-by-side">Price | MRP: ₹64.00</SelectItem>
+                            <SelectItem value="hidden">Hide MRP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* M MART Preview */}
+                  <div className="mt-6">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">
+                      M MART Style Preview
+                    </Label>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border-2 border-gray-200 dark:border-gray-600 max-w-xs mx-auto">
+                      <div className="text-center space-y-3">
+                        <div className="bg-black text-white px-4 py-1 rounded font-bold text-lg">
+                          M MART
+                        </div>
+                        <div className="font-bold text-gray-800 dark:text-gray-200 text-sm leading-tight">
+                          KADALAI PARUPPU 500G
+                        </div>
+                        <div className="flex justify-center">
+                          <div className="bg-black text-white px-2 py-1 text-xs font-mono">||||||||||||||||</div>
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">23</div>
+                        <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                          ₹ .55.00
+                        </div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          MRP:64.00
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                    <p className="text-xs text-indigo-700 dark:text-indigo-300 flex items-center">
+                      <span className="mr-2">🏪</span>
+                      <strong>M MART Professional:</strong> Create authentic retail labels matching real M MART store standards with perfect branding consistency.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Advanced Professional Customization */}
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 p-6 rounded-lg border-2 border-emerald-200 dark:border-emerald-800">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-xl">⚙️</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                        Advanced Professional Options
+                      </h3>
+                      <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                        Fine-tune every aspect of your label design for professional printing
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-700 dark:text-gray-300">Typography Controls</h4>
+                      
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Font Family
+                        </Label>
+                        <Select defaultValue="arial">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select font family" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="arial">Arial (Clean, Professional)</SelectItem>
+                            <SelectItem value="helvetica">Helvetica (Swiss, Modern)</SelectItem>
+                            <SelectItem value="roboto">Roboto (Google, Digital)</SelectItem>
+                            <SelectItem value="opensans">Open Sans (Friendly, Readable)</SelectItem>
+                            <SelectItem value="montserrat">Montserrat (Elegant, Bold)</SelectItem>
+                            <SelectItem value="poppins">Poppins (Geometric, Modern)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Text Weight
+                        </Label>
+                        <Select defaultValue="bold">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select text weight" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="light">📝 Light (300)</SelectItem>
+                            <SelectItem value="normal">📄 Normal (400)</SelectItem>
+                            <SelectItem value="medium">📋 Medium (500)</SelectItem>
+                            <SelectItem value="semibold">📊 Semi Bold (600)</SelectItem>
+                            <SelectItem value="bold">📌 Bold (700)</SelectItem>
+                            <SelectItem value="extrabold">🔥 Extra Bold (800)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Line Spacing
+                        </Label>
+                        <Select defaultValue="normal">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select line spacing" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="tight">Tight (1.0)</SelectItem>
+                            <SelectItem value="normal">Normal (1.2)</SelectItem>
+                            <SelectItem value="relaxed">Relaxed (1.4)</SelectItem>
+                            <SelectItem value="loose">Loose (1.6)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-700 dark:text-gray-300">Color & Style</h4>
+                      
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Text Color Scheme
+                        </Label>
+                        <Select defaultValue="classic-black">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select color scheme" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="classic-black">⚫ Classic Black</SelectItem>
+                            <SelectItem value="professional-gray">⚪ Professional Gray</SelectItem>
+                            <SelectItem value="deep-blue">🔵 Deep Blue</SelectItem>
+                            <SelectItem value="forest-green">🟢 Forest Green</SelectItem>
+                            <SelectItem value="burgundy-red">🔴 Burgundy Red</SelectItem>
+                            <SelectItem value="custom">🎨 Custom Color</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Background Style
+                        </Label>
+                        <Select defaultValue="transparent">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select background" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="transparent">🔲 Transparent</SelectItem>
+                            <SelectItem value="white">⬜ White Clean</SelectItem>
+                            <SelectItem value="light-gray">◽ Light Gray</SelectItem>
+                            <SelectItem value="cream">🟨 Cream Professional</SelectItem>
+                            <SelectItem value="gradient">🌈 Gradient Premium</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Text Effects
+                        </Label>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="text-shadow" />
+                            <Label htmlFor="text-shadow" className="text-sm">Drop Shadow</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="text-outline" />
+                            <Label htmlFor="text-outline" className="text-sm">Text Outline</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="text-uppercase" />
+                            <Label htmlFor="text-uppercase" className="text-sm">ALL UPPERCASE</Label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-700 dark:text-gray-300">Layout & Spacing</h4>
+                      
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Content Alignment
+                        </Label>
+                        <Select defaultValue="center">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select alignment" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="left">📄 Left Align</SelectItem>
+                            <SelectItem value="center">📍 Center Align</SelectItem>
+                            <SelectItem value="right">📋 Right Align</SelectItem>
+                            <SelectItem value="justify">📊 Justify</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Margin & Padding
+                        </Label>
+                        <Select defaultValue="standard">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select spacing" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None (0px)</SelectItem>
+                            <SelectItem value="minimal">Minimal (2px)</SelectItem>
+                            <SelectItem value="standard">Standard (4px)</SelectItem>
+                            <SelectItem value="comfortable">Comfortable (8px)</SelectItem>
+                            <SelectItem value="spacious">Spacious (12px)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Print Quality
+                        </Label>
+                        <Select defaultValue="high">
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select print quality" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="draft">📝 Draft (Fast)</SelectItem>
+                            <SelectItem value="standard">📄 Standard (Balanced)</SelectItem>
+                            <SelectItem value="high">📊 High (Sharp)</SelectItem>
+                            <SelectItem value="ultra">💎 Ultra (Professional)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 p-4 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">🎯</span>
+                      <div>
+                        <h4 className="font-medium text-emerald-800 dark:text-emerald-200">Professional Tip</h4>
+                        <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                          For retail labels like M MART: Use Bold Arial, Center alignment, High print quality, and Classic black text for maximum readability and professional appearance.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={templateForm.control}
