@@ -82,101 +82,85 @@ export function Header({ toggleSidebar }: HeaderProps) {
   const currentUser = data?.user;
 
   return (
-    <header className="bg-blue-700 shadow-sm z-10 text-white border-b border-blue-600">
-      <div className="flex items-center justify-between px-4 py-3 max-w-full">
-        {/* Left Section */}
-        <div className="flex items-center space-x-3">
+    <header className="bg-blue-700 shadow-sm z-10 text-white">
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={toggleSidebar}
-            className="text-white hover:bg-blue-600 shrink-0"
+            className="text-white hover:bg-blue-600"
           >
-            <MenuIcon className="h-5 w-5" />
+            <MenuIcon className="h-6 w-6" />
           </Button>
           
-          <div className="hidden lg:flex items-center">
-            <div className="text-sm text-white/80 font-medium">
+          <div className="hidden md:flex items-center ml-4">
+            <div className="text-sm text-white/80">
               {format(currentDate, "MM/dd/yyyy")}
             </div>
           </div>
         </div>
         
-        {/* Center Section - Action Buttons */}
-        <div className="flex items-center space-x-2 overflow-hidden">
+        <div className="flex items-center space-x-2">
           <Link href="/pos">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="hidden md:flex text-white border-white/50 hover:bg-blue-600 hover:border-white transition-colors"
-            >
-              <ShoppingCartIcon className="h-4 w-4 mr-1" />
-              <span className="hidden lg:inline">POS</span>
+            <Button variant="outline" size="sm" className="hidden sm:flex text-white border-white hover:bg-blue-600">
+              <ShoppingCartIcon className="h-4 w-4 mr-2" />
+              POS
             </Button>
           </Link>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="hidden md:flex text-white border-white/50 hover:bg-blue-600 hover:border-white transition-colors"
-          >
-            <PlusIcon className="h-4 w-4 mr-1" />
-            <span className="hidden lg:inline">Add</span>
+          <Button variant="outline" size="sm" className="hidden sm:flex text-white border-white hover:bg-blue-600">
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Add
           </Button>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-white border-white/50 hover:bg-blue-600 hover:border-white transition-colors"
-          >
-            <CalculatorIcon className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Calculator</span>
+          <Button variant="outline" size="sm" className="hidden sm:flex text-white border-white hover:bg-blue-600">
+            <CalculatorIcon className="h-4 w-4 mr-2" />
+            Calculator
           </Button>
-        </div>
-        
-        {/* Right Section - User Controls */}
-        <div className="flex items-center space-x-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden xl:flex items-center border-white/50 text-white hover:bg-blue-600 hover:border-white transition-colors"
-          >
-            <CalendarIcon className="h-4 w-4 mr-1" />
-            <span className="text-xs">Filter</span>
-            <ChevronDownIcon className="h-3 w-3 ml-1" />
-          </Button>
+          
+          <div className="flex items-center space-x-2 ml-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center border-white text-white hover:bg-blue-600"
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Filter by date
+              <ChevronDownIcon className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
           
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:bg-blue-600 transition-colors"
+            className="p-1 rounded-full text-white hover:bg-blue-600"
           >
-            <BellIcon className="h-5 w-5" />
+            <span className="sr-only">View notifications</span>
+            <BellIcon className="h-6 w-6" />
           </Button>
           
           <ThemeToggle />
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center text-white hover:bg-blue-600 transition-colors">
-                <span className="hidden md:inline mr-2 font-medium text-sm">
-                  {currentUser?.name || "Admin"}
-                </span>
-                <Avatar className="h-7 w-7 border-2 border-white/50">
-                  <AvatarImage src={currentUser?.image || ""} alt="User avatar" />
-                  <AvatarFallback className="bg-blue-500 text-white text-sm">
-                    {currentUser?.name?.charAt(0) || "A"}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="relative">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center text-white hover:bg-blue-600">
+                  <span className="hidden md:inline mr-2 font-medium">Admin</span>
+                  <Avatar className="h-8 w-8 border-2 border-white">
+                    <AvatarImage src={currentUser?.image || ""} alt="User avatar" />
+                    <AvatarFallback className="bg-blue-500">{currentUser?.name?.charAt(0) || "A"}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem>Profile</DropdownMenuItem>
+                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </header>
