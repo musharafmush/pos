@@ -1098,6 +1098,10 @@ export default function PrintLabelsEnhanced() {
   const handleEditTemplate = (template: LabelTemplate) => {
     console.log('Editing template:', template);
     console.log('Template font_size value:', template.font_size, typeof template.font_size);
+    console.log('📅 Template date fields from DB:', {
+      include_manufacturing_date: template.include_manufacturing_date,
+      include_expiry_date: template.include_expiry_date
+    });
     setEditingTemplate(template);
 
     // Prepare form data with proper type conversions and validation
@@ -1136,6 +1140,10 @@ export default function PrintLabelsEnhanced() {
 
     console.log('Form data prepared:', formData);
     console.log('Prepared font_size value:', formData.font_size, typeof formData.font_size);
+    console.log('📅 Form data date fields prepared:', {
+      include_manufacturing_date: formData.include_manufacturing_date,
+      include_expiry_date: formData.include_expiry_date
+    });
 
     // Clear any existing form errors and reset with the template data
     templateForm.clearErrors();
