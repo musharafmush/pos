@@ -3400,6 +3400,318 @@ export default function PrintLabelsEnhanced() {
                   </div>
                 </div>
 
+                {/* M MART Professional Branding Section */}
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 p-6 rounded-lg border-2 border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-xl">🏪</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-orange-700 dark:text-orange-300">
+                        M MART Professional Branding
+                      </h3>
+                      <p className="text-sm text-orange-600 dark:text-orange-400">
+                        Authentic store branding options with M MART layout matching real retail labels
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Store Branding Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Store Branding</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button type="button" variant="outline" size="sm" className="h-16 flex flex-col items-center justify-center bg-red-50 hover:bg-red-100 border-red-300 text-red-700">
+                          <span className="font-bold text-lg">M MART</span>
+                          <span className="text-xs">Authentic</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="h-16 flex flex-col items-center justify-center">
+                          <span className="font-bold">Custom Store</span>
+                          <span className="text-xs">Your Brand</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Brand Positioning */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand Position</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button type="button" variant="outline" size="sm" className="bg-orange-50 hover:bg-orange-100 border-orange-300 text-orange-700">
+                          Top Center <span className="text-xs">(M MART Style)</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm">Top Left</Button>
+                        <Button type="button" variant="outline" size="sm">Top Right</Button>
+                        <Button type="button" variant="outline" size="sm">Bottom Center</Button>
+                      </div>
+                    </div>
+
+                    {/* M MART Layout Style */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Product Layout</Label>
+                      <div className="space-y-2">
+                        <Button type="button" variant="outline" size="sm" className="w-full justify-start bg-red-50 hover:bg-red-100 border-red-300 text-red-700">
+                          <span className="font-medium">M MART Classic:</span>
+                          <span className="text-xs ml-2">Store → Product → Barcode → Price → MRP</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="w-full justify-start">
+                          <span className="font-medium">Premium Retail:</span>
+                          <span className="text-xs ml-2">Enhanced spacing and typography</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="w-full justify-start">
+                          <span className="font-medium">Compact Efficient:</span>
+                          <span className="text-xs ml-2">Space-optimized layout</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Price Format */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Price Format</Label>
+                      <div className="space-y-2">
+                        <Button type="button" variant="outline" size="sm" className="w-full justify-start bg-orange-50 hover:bg-orange-100 border-orange-300 text-orange-700">
+                          <span className="font-bold">₹ .55.00</span>
+                          <span className="text-xs ml-2">(M MART Style)</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="w-full justify-start">
+                          <span className="font-bold">₹55.00</span>
+                          <span className="text-xs ml-2">Standard format</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="w-full justify-start">
+                          <span className="font-bold">₹ 55.00</span>
+                          <span className="text-xs ml-2">Premium spaced</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* MRP Display */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">MRP Display</Label>
+                      <div className="space-y-2">
+                        <Button type="button" variant="outline" size="sm" className="w-full justify-start bg-red-50 hover:bg-red-100 border-red-300 text-red-700">
+                          <span className="font-bold">MRP:64.00</span>
+                          <span className="text-xs ml-2">(M MART Style)</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="w-full justify-start">
+                          <span className="font-bold">MRP ₹64.00</span>
+                          <span className="text-xs ml-2">Bold format</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="w-full justify-start">
+                          <span className="font-bold">Price: ₹55.00 | MRP: ₹64.00</span>
+                          <span className="text-xs ml-2">Side-by-side</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Brand Typography */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand Typography</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button type="button" variant="outline" size="sm" className="bg-gray-900 text-white hover:bg-gray-800">
+                          <span className="font-bold">Bold Black</span>
+                          <span className="text-xs block">(M MART Original)</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="bg-white text-black border-2 border-black">
+                          <span className="font-bold">Bold White BG</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="border-2 border-black">
+                          <span className="font-bold" style={{textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'}}>Black Outline</span>
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
+                          <span className="font-bold">Gradient Pro</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* M MART Live Preview */}
+                  <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-orange-300">
+                    <Label className="text-sm font-medium text-orange-700 dark:text-orange-300 mb-3 block">
+                      🏪 Live M MART Preview
+                    </Label>
+                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded border text-center space-y-2">
+                      <div className="font-bold text-lg text-red-600">M MART</div>
+                      <div className="font-semibold text-blue-600">KADALAI PARUPPU 500G</div>
+                      <div className="font-mono text-xs">||||| ||||| |||||</div>
+                      <div className="flex justify-center space-x-4 text-sm">
+                        <span className="font-bold text-blue-600">₹ .55.00</span>
+                        <span className="text-gray-600">MRP:64.00</span>
+                      </div>
+                      <div className="text-xs text-gray-500">M MART Classic Layout Preview</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                    <p className="text-xs text-orange-700 dark:text-orange-300 flex items-center">
+                      <span className="mr-2">🏪</span>
+                      <strong>Professional Tip:</strong> M MART Classic layout matches authentic retail store labels for professional branding consistency.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Advanced Professional Options Section */}
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950 p-6 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-xl">⚙️</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-purple-700 dark:text-purple-300">
+                        Advanced Professional Options
+                      </h3>
+                      <p className="text-sm text-purple-600 dark:text-purple-400">
+                        Fine-tune typography, colors, layout, and effects for professional retail labels
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Typography Controls */}
+                    <div className="space-y-4">
+                      <Label className="text-sm font-medium text-purple-700 dark:text-purple-300">Typography Controls</Label>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs text-gray-600">Font Family</Label>
+                          <Select defaultValue="arial">
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="arial">Arial (Classic)</SelectItem>
+                              <SelectItem value="helvetica">Helvetica (Professional)</SelectItem>
+                              <SelectItem value="roboto">Roboto (Modern)</SelectItem>
+                              <SelectItem value="opensans">Open Sans (Clean)</SelectItem>
+                              <SelectItem value="montserrat">Montserrat (Elegant)</SelectItem>
+                              <SelectItem value="poppins">Poppins (Friendly)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs text-gray-600">Text Weight</Label>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Button type="button" variant="outline" size="sm" className="text-xs font-light">Light (300)</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs font-normal">Normal (400)</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs font-medium">Medium (500)</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs font-semibold">SemiBold (600)</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs font-bold">Bold (700)</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs font-extrabold">Extra Bold (800)</Button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs text-gray-600">Line Spacing</Label>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Tight</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Normal</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Relaxed</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Loose</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Color & Style */}
+                    <div className="space-y-4">
+                      <Label className="text-sm font-medium text-purple-700 dark:text-purple-300">Color & Style</Label>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs text-gray-600">Text Color Schemes</Label>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Button type="button" variant="outline" size="sm" className="text-xs bg-black text-white">Classic Black</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs text-gray-600">Professional Gray</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs text-blue-600">Deep Blue</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs text-green-600">Forest Green</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs text-red-700">Burgundy Red</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Custom</Button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs text-gray-600">Background Style</Label>
+                          <div className="space-y-1">
+                            <Button type="button" variant="outline" size="sm" className="w-full text-xs justify-start">Transparent</Button>
+                            <Button type="button" variant="outline" size="sm" className="w-full text-xs justify-start bg-white">White Clean</Button>
+                            <Button type="button" variant="outline" size="sm" className="w-full text-xs justify-start bg-gray-100">Light Gray</Button>
+                            <Button type="button" variant="outline" size="sm" className="w-full text-xs justify-start bg-yellow-50">Cream Professional</Button>
+                            <Button type="button" variant="outline" size="sm" className="w-full text-xs justify-start bg-gradient-to-r from-blue-50 to-purple-50">Gradient Premium</Button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs text-gray-600">Text Effects</Label>
+                          <div className="space-y-1">
+                            <Button type="button" variant="outline" size="sm" className="w-full text-xs justify-start" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.3)'}}>Drop Shadow</Button>
+                            <Button type="button" variant="outline" size="sm" className="w-full text-xs justify-start" style={{textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'}}>Text Outline</Button>
+                            <Button type="button" variant="outline" size="sm" className="w-full text-xs justify-start font-bold">ALL UPPERCASE</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Layout & Spacing */}
+                    <div className="space-y-4">
+                      <Label className="text-sm font-medium text-purple-700 dark:text-purple-300">Layout & Spacing</Label>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs text-gray-600">Content Alignment</Label>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Button type="button" variant="outline" size="sm" className="text-xs text-left">Left</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs text-center">Center</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs text-right">Right</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs text-justify">Justify</Button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs text-gray-600">Margin & Padding</Label>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Button type="button" variant="outline" size="sm" className="text-xs">None (0px)</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Minimal (2px)</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Normal (6px)</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Spacious (12px)</Button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs text-gray-600">Print Quality</Label>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Draft</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Standard</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">High</Button>
+                            <Button type="button" variant="outline" size="sm" className="text-xs">Ultra</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-purple-300">
+                    <Label className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-3 block">
+                      ⚙️ Professional Preview with Advanced Options
+                    </Label>
+                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded border text-center space-y-2">
+                      <div className="font-bold text-lg text-purple-600" style={{fontFamily: 'Arial', textShadow: '1px 1px 2px rgba(0,0,0,0.3)'}}>M MART</div>
+                      <div className="font-semibold text-blue-600" style={{fontFamily: 'Helvetica', letterSpacing: '0.5px'}}>PREMIUM PRODUCT LABEL</div>
+                      <div className="font-mono text-xs" style={{letterSpacing: '2px'}}>||||| ||||| |||||</div>
+                      <div className="flex justify-center space-x-4 text-sm">
+                        <span className="font-bold text-blue-600" style={{textShadow: '1px 1px 0 rgba(255,255,255,0.8)'}}>₹ 55.00</span>
+                        <span className="text-gray-600 font-medium">MRP: ₹64.00</span>
+                      </div>
+                      <div className="text-xs text-purple-500">Advanced Typography & Styling Applied</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <p className="text-xs text-purple-700 dark:text-purple-300 flex items-center">
+                      <span className="mr-2">⚙️</span>
+                      <strong>Professional Tip:</strong> Combine M MART Classic layout with advanced typography for optimal retail label creation.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="space-y-3">
                   <h4 className="font-medium">Include Elements</h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
