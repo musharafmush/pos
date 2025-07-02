@@ -1,8 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
-import { initializePostgresDatabase } from "../db/postgres.js";
+import { initializeDatabase } from "../db/sqlite-migrate";
 import labelPrintingRoutes from "./label-printing-routes.js";
+import { sqlite } from "../db/sqlite-index.js";
 
 const app = express();
 // Parse JSON with appropriate limits for backup files (reduced to prevent memory issues)
@@ -42,7 +43,7 @@ app.use((req, res, next) => {
 (async () => {
   try {
     console.log('🔄 Initializing database...');
-    await initializePostgresDatabase();
+    await initializeDatabase();
     console.log('✅ Database initialized successfully');
 
     const server = await registerRoutes(app);

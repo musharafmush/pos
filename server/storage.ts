@@ -1,6 +1,4 @@
-import { getPostgresConnection } from "../db/postgres.js";
-
-const db = getPostgresConnection();
+import { db } from "../db/sqlite-index.js";
 import {
   users,
   products,
@@ -11,8 +9,6 @@ import {
   saleItems,
   purchases,
   purchaseItems,
-  labelTemplates,
-  printJobs,
   User,
   Product,
   Category,
@@ -22,8 +18,6 @@ import {
   SaleItem,
   Purchase,
   PurchaseItem,
-  LabelTemplate,
-  PrintJob,
   InsertUser,
   InsertProduct,
   InsertCategory,
@@ -32,10 +26,8 @@ import {
   InsertSale,
   InsertSaleItem,
   InsertPurchase,
-  InsertPurchaseItem,
-  InsertLabelTemplate,
-  InsertPrintJob
-} from "../shared/schema.js";
+  InsertPurchaseItem
+} from "../shared/sqlite-schema.js";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
