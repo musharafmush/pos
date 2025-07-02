@@ -283,6 +283,15 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Added fallback handling for barcode generation errors
 - Barcode generation now matches professional retail standards like M MART examples
 
+### Label Box Center Alignment System (July 2, 2025)
+- Fixed label box centering alignment issues in both preview and print layouts
+- Enhanced print CSS with flexbox layout for perfect center alignment
+- Updated label container with justify-center and align-center properties
+- Implemented proper grid centering with justify-items and align-items center
+- Enhanced individual label styling with flex column layout and center alignment
+- Improved label preview dialog with centered layout and better spacing
+- Fixed print margins and added proper center alignment for professional printing
+
 ### Landscape and Portrait Orientation Controls (July 2, 2025)
 - Added landscape and portrait orientation selection to Label Controls sidebar section
 - Implemented clean 2-column button layout with visual orientation icons

@@ -1466,15 +1466,18 @@ export default function PrintLabelsEnhanced() {
         width: ${width}mm;
         height: ${height}mm;
         ${borderCSS}
-        padding: ${Math.max(3, width * 0.015)}mm;
-        margin: 2mm;
-        display: inline-block;
+        padding: ${Math.max(4, width * 0.02)}mm;
+        margin: 2mm auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
         font-family: Arial, sans-serif;
         background: ${background_color};
         color: ${text_color};
         page-break-inside: avoid;
         box-sizing: border-box;
-        vertical-align: top;
         position: relative;
         font-size: ${baseFontSize}px;
         line-height: 1.4;
@@ -1623,24 +1626,39 @@ export default function PrintLabelsEnhanced() {
             <style>
               @page { 
                 size: ${paperSize} ${orientation};
-                margin: 5mm;
+                margin: 8mm;
               }
               body {
                 margin: 0;
                 padding: 0;
                 font-family: Arial, sans-serif;
                 background: white;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                min-height: 100vh;
               }
               .labels-container {
                 display: grid;
                 grid-template-columns: repeat(${labelsPerRow}, 1fr);
-                gap: 2mm;
+                gap: 4mm;
+                justify-content: center;
+                align-items: center;
+                justify-items: center;
                 width: 100%;
-                align-items: start;
+                max-width: 100%;
+                padding: 4mm;
+                box-sizing: border-box;
               }
               .product-label {
                 break-inside: avoid;
                 page-break-inside: avoid;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                margin: 0 auto;
               }
               @media print {
                 body { 
@@ -1650,12 +1668,16 @@ export default function PrintLabelsEnhanced() {
                   print-color-adjust: exact;
                 }
                 .labels-container {
-                  margin: 0;
-                  padding: 0;
+                  margin: 0 auto;
+                  padding: 2mm;
+                  justify-content: center;
+                  align-content: center;
                 }
                 .product-label {
                   break-inside: avoid;
                   page-break-inside: avoid;
+                  margin: 0 auto;
+                  text-align: center;
                 }
               }
             </style>
@@ -3726,19 +3748,23 @@ export default function PrintLabelsEnhanced() {
 
         {/* Preview Dialog */}
         <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Label Preview</DialogTitle>
+              <DialogTitle>Label Preview - Centered Layout</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               {selectedProducts.length > 0 && getCurrentTemplate() && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="flex flex-wrap justify-center items-center gap-4 p-4 bg-gray-50 rounded-lg">
                   {products
                     .filter(p => selectedProducts.slice(0, 6).includes(p.id))
                     .map(product => (
                       <div 
                         key={product.id}
-                        className="border rounded p-2"
+                        className="flex justify-center items-center p-2 bg-white rounded shadow-sm"
+                        style={{
+                          minWidth: '200px',
+                          minHeight: '150px'
+                        }}
                         dangerouslySetInnerHTML={{
                           __html: generateLabelHTML(product, getCurrentTemplate()!)
                         }}
