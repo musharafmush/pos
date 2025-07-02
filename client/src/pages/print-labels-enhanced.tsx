@@ -1634,13 +1634,13 @@ export default function PrintLabelsEnhanced() {
         }
 
         ${include_manufacturing_date ? 
-          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm;">
+          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important;">
             Mfg: ${new Date().toLocaleDateString('en-IN')}
           </div>` : ''
         }
 
         ${include_expiry_date ? 
-          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm;">
+          `<div style="font-size: ${detailsFontSize}px; color: #666; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important;">
             Exp: ${new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN')}
           </div>` : ''
         }
