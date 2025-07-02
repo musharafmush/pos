@@ -4088,6 +4088,15 @@ app.post("/api/customers", async (req, res) => {
       const id = parseInt(req.params.id);
       const requestData = req.body;
       
+      console.log('🔧 PUT request received for template ID:', id);
+      console.log('📦 Request body received:', requestData);
+      console.log('🎯 Barcode dimensions in request:', { 
+        barcode_width: requestData.barcode_width, 
+        barcode_height: requestData.barcode_height,
+        barcodeWidth: requestData.barcodeWidth,
+        barcodeHeight: requestData.barcodeHeight
+      });
+      
       // Map frontend field names to storage field names
       const templateData = {
         name: requestData.name,

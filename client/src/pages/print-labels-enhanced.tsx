@@ -626,30 +626,37 @@ export default function PrintLabelsEnhanced() {
     // UPDATE: Dynamic template updating with live data sync
     update: async (id: number, data: TemplateFormData) => {
       console.log('🔄 Dynamic UPDATE operation:', { id, data });
+      console.log('🎯 Barcode dimensions being sent:', { width: data.barcode_width, height: data.barcode_height });
+      
+      const requestPayload = {
+        ...data,
+        // Dynamic field mapping for database compatibility
+        fontSize: data.font_size,
+        includeBarcode: data.include_barcode,
+        includePrice: data.include_price,
+        includeMrp: data.include_mrp,
+        includeDescription: data.include_description,
+        includeWeight: data.include_weight,
+        includeHsn: data.include_hsn,
+        barcodePosition: data.barcode_position,
+        barcodeWidth: data.barcode_width,
+        barcodeHeight: data.barcode_height,
+        borderStyle: data.border_style,
+        borderWidth: data.border_width,
+        backgroundColor: data.background_color,
+        textColor: data.text_color,
+        customCss: data.custom_css,
+        isDefault: data.is_default
+      };
+      
+      console.log('📤 Full request payload:', requestPayload);
+      console.log('📏 Mapped barcode dimensions:', { barcodeWidth: requestPayload.barcodeWidth, barcodeHeight: requestPayload.barcodeHeight });
+      
       try {
         const response = await fetch(`/api/label-templates/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...data,
-            // Dynamic field mapping for database compatibility
-            fontSize: data.font_size,
-            includeBarcode: data.include_barcode,
-            includePrice: data.include_price,
-            includeMrp: data.include_mrp,
-            includeDescription: data.include_description,
-            includeWeight: data.include_weight,
-            includeHsn: data.include_hsn,
-            barcodePosition: data.barcode_position,
-            barcodeWidth: data.barcode_width,
-            barcodeHeight: data.barcode_height,
-            borderStyle: data.border_style,
-            borderWidth: data.border_width,
-            backgroundColor: data.background_color,
-            textColor: data.text_color,
-            customCss: data.custom_css,
-            isDefault: data.is_default
-          })
+          body: JSON.stringify(requestPayload)
         });
         
         if (!response.ok) {
@@ -2734,6 +2741,8 @@ export default function PrintLabelsEnhanced() {
                                 include_manufacturing_date: template.include_manufacturing_date || false,
                                 include_expiry_date: template.include_expiry_date || false,
                                 barcode_position: template.barcode_position,
+                                barcode_width: template.barcode_width || 90,
+                                barcode_height: template.barcode_height || 70,
                                 border_style: template.border_style,
                                 border_width: template.border_width,
                                 background_color: template.background_color,
