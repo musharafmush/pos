@@ -1722,6 +1722,30 @@ export default function PrintLabelsEnhanced() {
                 </Select>
               </div>
 
+              {/* Orientation Selection */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Print Orientation</Label>
+                <Select value={orientation} onValueChange={setOrientation}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select orientation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="landscape">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-3 border border-gray-400 rounded"></div>
+                        <span>Landscape</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="portrait">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-4 border border-gray-400 rounded"></div>
+                        <span>Portrait</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Quick Stats */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white p-3 rounded-lg border border-gray-200">
