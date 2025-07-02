@@ -1,0 +1,37 @@
+{
+  "name": "awesome-shop-pos-desktop",
+  "version": "1.0.0",
+  "description": "Professional Point of Sale System for Indian Retail Businesses",
+  "type": "desktop-application",
+  "main": "AwesomeShopPOS.js",
+  "features": [
+    "Indian Rupee formatting",
+    "GST compliance",
+    "Offline capability",
+    "Thermal printing",
+    "Inventory management",
+    "Customer loyalty",
+    "Professional reporting"
+  ],
+  "requirements": {
+    "nodejs": ">=18.0.0",
+    "platform": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "memory": "2GB",
+    "storage": "500MB"
+  },
+  "installation": {
+    "windows": "Install-POS.bat",
+    "unix": "Install-POS.sh"
+  },
+  "launch": {
+    "main": "AwesomeShopPOS.js",
+    "windows": "Start-Desktop-POS.bat",
+    "unix": "Start-Desktop-POS.sh"
+  },
+  "created": "2025-07-02T16:54:24.658Z",
+  "author": "Awesome Shop POS Team"
+}

@@ -214,10 +214,18 @@ export default function Suppliers() {
   // Delete supplier mutation
   const deleteSupplierMutation = useMutation({
     mutationFn: async (id: number) => {
+      console.log('Frontend: Attempting to delete supplier:', id);
       const res = await apiRequest("DELETE", `/api/suppliers/${id}`);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete supplier');
+      }
+      
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Frontend: Supplier deleted successfully:', data);
       toast({
         title: "Supplier deleted",
         description: "The supplier has been successfully deleted.",
@@ -226,12 +234,14 @@ export default function Suppliers() {
       setSupplierToDelete(null);
       setOpenDeleteDialog(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Frontend: Error deleting supplier:', error);
       toast({
         title: "Error deleting supplier",
-        description: error.message,
+        description: error.message || "An unexpected error occurred while deleting the supplier.",
         variant: "destructive",
       });
+      // Keep dialog open so user can try again or cancel
     },
   });
   

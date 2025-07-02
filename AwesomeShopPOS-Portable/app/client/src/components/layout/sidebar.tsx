@@ -7,8 +7,9 @@ import {
   ClipboardCheckIcon, 
   GalleryHorizontalIcon, 
   BarChart4Icon, 
-  UsersIcon, 
+  UsersIcon,
   SettingsIcon,
+  Printer,
   LogOutIcon,
   UserIcon,
   ArrowRightLeft,
@@ -102,20 +103,29 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       label: "Products",
       icon: <PackageIcon className="h-5 w-5" />,
       items: [
-        { href: "/products", icon: <PackageIcon className="h-5 w-5" />, label: "List Products" },
-        { href: "/products/add", icon: <PlusIcon className="h-5 w-5" />, label: "Add Product" },
-        { href: "/products/repacking", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Repacking" },
-        { href: "/repacking-dashboard", icon: <BarChart4Icon className="h-5 w-5" />, label: "Repacking Dashboard" },
-        { href: "/products/update-price", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Update Price" },
+        { href: "/add-item-dashboard", icon: <BarChart4Icon className="h-5 w-5" />, label: "Add Item Dashboard" },
+        { href: "/add-item-professional", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>, label: "Add Item Professional" },
+        { href: "/update-price-professional", icon: <Calculator className="h-5 w-5" />, label: "Update Price" },
         { href: "/print-labels", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Print Labels" },
+        { href: "/print-labels-enhanced", icon: <Printer className="h-5 w-5" />, label: "Print Labels Enhanced" },
+        { href: "/product-history", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>, label: "Product History" },
         { href: "/products/variations", icon: <GalleryHorizontalIcon className="h-5 w-5" />, label: "Variations" },
         { href: "/products/import", icon: <ArrowDownIcon className="h-5 w-5" />, label: "Import Products" },
         { href: "/products/opening-stock", icon: <PackageIcon className="h-5 w-5" />, label: "Import Opening Stock" },
         { href: "/products/selling-price-group", icon: <BarChart4Icon className="h-5 w-5" />, label: "Selling Price Group" },
-        { href: "/products/units", icon: <Calculator className="h-5 w-5" />, label: "Units" },
+        { href: "/units", icon: <Calculator className="h-5 w-5" />, label: "Units" },
         { href: "/categories", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, label: "Categories" },
-        { href: "/products/brands", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>, label: "Brands" },
+        { href: "/brands", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>, label: "Brands" },
         { href: "/products/warranties", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label: "Warranties" }
+      ]
+    },
+    {
+      id: "repacking",
+      label: "Repacking",
+      icon: <Calculator className="h-5 w-5" />,
+      items: [
+        { href: "/repacking-dashboard-professional", icon: <BarChart4Icon className="h-5 w-5" />, label: "Professional Dashboard" },
+        { href: "/repacking-professional", icon: <Calculator className="h-5 w-5" />, label: "Professional Repacking" }
       ]
     },
     {
@@ -124,6 +134,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"/></svg>,
       items: [
         { href: "/purchase-dashboard", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, label: "Purchase Dashboard" },
+        { href: "/purchase-entry-professional", icon: <PlusIcon className="h-5 w-5" />, label: "Professional Purchase Entry" },
         { href: "/purchase-entry", icon: <PlusIcon className="h-5 w-5" />, label: "Purchase Entry" },
         { href: "/purchases/return", icon: <ArrowRightLeft className="h-5 w-5" />, label: "List Purchase Return" }
       ]
@@ -133,8 +144,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       label: "Sales",
       icon: <ShoppingBagIcon className="h-5 w-5" />,
       items: [
-        { href: "/pos", icon: <ShoppingBagIcon className="h-5 w-5" />, label: "Modern POS" },
-        { href: "/pos-gofrugal", icon: <Calculator className="h-5 w-5" />, label: "Classic Desktop POS" }
+        { href: "/sales-dashboard", icon: <BarChart4Icon className="h-5 w-5" />, label: "Sales Dashboard" },
+        { href: "/pos-enhanced", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>, label: "Enhanced Desktop POS" },
+        { href: "/sales/return", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Sale Returns" },
+        { href: "/sale-returns-dashboard", icon: <BarChart4Icon className="h-5 w-5" />, label: "Sale Returns Dashboard" }
       ]
     },
     {
@@ -144,12 +157,51 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [
         { href: "/inventory", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Stock Transfers" },
         { href: "/inventory-forecasting", icon: <BarChart4Icon className="h-5 w-5" />, label: "Inventory Forecasting" },
-        { href: "/adjustments", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Stock Adjustment" }
+        { href: "/inventory-adjustments", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Stock Adjustment" }
       ]
     },
     {
       id: "reports",
-      items: [{ href: "/reports", icon: <BarChart4Icon className="h-5 w-5" />, label: "Reports" }]
+      label: "Reports",
+      icon: <BarChart4Icon className="h-5 w-5" />,
+      items: [
+        { href: "/reports", icon: <BarChart4Icon className="h-5 w-5" />, label: "Reports" },
+        { href: "/sales-reports", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>, label: "Sales Reports" },
+        { href: "/purchase-reports", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"/></svg>, label: "Purchase Reports" },
+        { href: "/stock-reports", icon: <PackageIcon className="h-5 w-5" />, label: "Stock Reports" },
+        { href: "/customer-reports", icon: <UsersIcon className="h-5 w-5" />, label: "Customer Reports" },
+        { href: "/supplier-reports", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>, label: "Supplier Reports" },
+        { href: "/tax-reports", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13l-3.5 3.5-2-2L8 17"/></svg>, label: "Tax Reports" }
+      ]
+    },
+    {
+      id: "offers",
+      label: "Offers & Promotions",
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
+      items: [
+        { href: "/offer-management", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label: "Manage Offers" },
+        { href: "/loyalty-management", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>, label: "Customer Loyalty" },
+        { href: "/loyalty-rules", icon: <SettingsIcon className="h-5 w-5" />, label: "Loyalty Rules" },
+        { href: "/offer-reports", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>, label: "Offer Reports" }
+      ]
+    },
+    {
+      id: "accounts",
+      label: "Accounts",
+      icon: <Calculator className="h-5 w-5" />,
+      items: [
+        { href: "/accounts-dashboard", icon: <Calculator className="h-5 w-5" />, label: "Accounts Dashboard" },
+        { href: "/cash-register-management", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>, label: "Cash Register Management" }
+      ]
+    },
+    {
+      id: "expenses",
+      label: "Expense Management",
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7"/><path d="M3 10h18"/><path d="M16 19l2 2 4-4"/></svg>,
+      items: [
+        { href: "/expense-management", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7"/><path d="M3 10h18"/><path d="M16 19l2 2 4-4"/></svg>, label: "Expenses" },
+        { href: "/expense-categories", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h4"/></svg>, label: "Expense Categories" }
+      ]
     },
     {
       id: "settings",
@@ -158,8 +210,16 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [
         { href: "/settings", icon: <SettingsIcon className="h-5 w-5" />, label: "General Settings" },
         { href: "/settings/business", icon: <SettingsIcon className="h-5 w-5" />, label: "Business Settings" },
-        { href: "/settings/currency", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>, label: "Currency Settings" }
+        { href: "/settings/currency", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 0 0 1 0 7H6"/></svg>, label: "Currency Settings" },
+
+        { href: "/thermal-printer-setup", icon: <Printer className="h-5 w-5" />, label: "Thermal Printer" },
+        { href: "/auto-printer-setup", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-7-7z"/><path d="M13 2v7h7"/><path d="M10 13v-2"/><path d="M14 13v-2"/><path d="M10 17v-2"/><path d="M14 17v-2"/></svg>, label: "Auto-Printer" }
       ]
+    },
+    // Adding Profit Management here as a new navigation group
+    {
+      id: "profit",
+      items: [{ href: "/profit-management", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 0 0 1 0 7H6"/></svg>, label: "Profit Management" }]
     }
   ];
 
@@ -265,7 +325,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         </>
                       )}
                     </button>
-                    
+
                     {isExpanded && open && (
                       <div className="bg-blue-800">
                         {group.items.map((item) => (

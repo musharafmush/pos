@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { SalesChart } from "@/components/dashboard/sales-chart";
@@ -20,7 +21,6 @@ import {
   PercentIcon,
   BadgePercentIcon
 } from "lucide-react";
-import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFormatCurrency } from "@/lib/currency";
@@ -38,160 +38,173 @@ export default function Dashboard() {
         throw new Error('Failed to fetch dashboard stats');
       }
       return response.json();
-    }
+    },
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // 30 seconds
   });
 
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
         {/* Enhanced Welcome header with dynamic greeting */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-            Welcome {currentUser?.name || 'Admin'}, <span className="text-yellow-500">👋</span>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+            Welcome {currentUser?.name || 'Administrator'}, <span className="text-yellow-500">👋</span>
           </h2>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="p-6 shadow-sm border-none">
-            <div className="flex flex-col">
-              <div className="flex items-center mb-2">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 mr-3">
-                  <ShoppingBagIcon className="h-6 w-6 text-blue-500" />
-                </div>
-                <div className="font-medium text-sm text-gray-500">Total Sales</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100">
+                <ShoppingBagIcon className="h-5 w-5 text-blue-600" />
               </div>
-              <div className="text-2xl font-bold mb-2">
-                {isLoading ? "..." : formatCurrency(dashboardStats?.todaySales || "0")}
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-600">Total Sales</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysRevenue || 0)}
+                </div>
               </div>
             </div>
           </Card>
           
-          <Card className="p-6 shadow-sm border-none">
-            <div className="flex flex-col">
-              <div className="flex items-center mb-2">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 mr-3">
-                  <DollarSignIcon className="h-6 w-6 text-green-500" />
-                </div>
-                <div className="font-medium text-sm text-gray-500">Net</div>
+          <Card className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
+                <DollarSignIcon className="h-5 w-5 text-green-600" />
               </div>
-              <div className="text-2xl font-bold mb-2">
-                {isLoading ? "..." : formatCurrency(dashboardStats?.todaySales || "0")}
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-600">Net</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysNet || 0)}
+                </div>
               </div>
             </div>
           </Card>
           
-          <Card className="p-6 shadow-sm border-none">
-            <div className="flex flex-col">
-              <div className="flex items-center mb-2">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100 mr-3">
-                  <ArrowUpIcon className="h-6 w-6 text-purple-500" />
+          <Card className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100">
+                <ArrowUpIcon className="h-5 w-5 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-600">Total Purchase</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysPurchaseAmount || 0)}
                 </div>
-                <div className="font-medium text-sm text-gray-500">Smart Freight Distribution</div>
+                <div className="text-xs text-gray-500">Today's purchases</div>
               </div>
-              <div className="text-2xl font-bold mb-2">
-                {isLoading ? "..." : formatCurrency(dashboardStats?.totalFreightDistributed || "0")}
-              </div>
-              <div className="text-xs text-gray-400">Across all purchase orders</div>
             </div>
           </Card>
           
-          <Card className="p-6 shadow-sm border-none">
-            <div className="flex flex-col">
-              <div className="flex items-center mb-2">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-100 mr-3">
-                  <ArrowDownIcon className="h-6 w-6 text-red-500" />
-                </div>
-                <div className="font-medium text-sm text-gray-500">Total Sell Return</div>
+          <Card className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-100">
+                <ArrowDownIcon className="h-5 w-5 text-red-600" />
               </div>
-              <div className="text-2xl font-bold mb-2">
-                {isLoading ? "..." : formatCurrency("0.00")}
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-600">Total Sell Return</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysReturnAmount || 0)}
+                </div>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 shadow-sm border-none">
-            <div className="flex flex-col">
-              <div className="flex items-center mb-2">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 mr-3">
-                  <WalletIcon className="h-6 w-6 text-blue-500" />
-                </div>
-                <div className="font-medium text-sm text-gray-500">Total Purchase</div>
+          <Card className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100">
+                <WalletIcon className="h-5 w-5 text-blue-600" />
               </div>
-              <div className="text-2xl font-bold mb-2">
-                {isLoading ? "..." : formatCurrency("0.00")}
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-600">Total Purchase</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysPurchaseAmount || 0)}
+                </div>
               </div>
             </div>
           </Card>
           
-          <Card className="p-6 shadow-sm border-none">
-            <div className="flex flex-col">
-              <div className="flex items-center mb-2">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-100 mr-3">
-                  <CircleDollarSignIcon className="h-6 w-6 text-yellow-500" />
-                </div>
-                <div className="font-medium text-sm text-gray-500">Purchase Due</div>
+          <Card className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-100">
+                <CircleDollarSignIcon className="h-5 w-5 text-yellow-600" />
               </div>
-              <div className="text-2xl font-bold mb-2">
-                {isLoading ? "..." : formatCurrency("0.00")}
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-600">Purchase Due</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {isLoading ? "..." : formatCurrency("0.00")}
+                </div>
               </div>
             </div>
           </Card>
           
-          <Card className="p-6 shadow-sm border-none">
-            <div className="flex flex-col">
-              <div className="flex items-center mb-2">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 mr-3">
-                  <ArrowUpIcon className="h-6 w-6 text-green-500" />
-                </div>
-                <div className="font-medium text-sm text-gray-500">Total Purchase Return</div>
+          <Card className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
+                <ArrowUpIcon className="h-5 w-5 text-green-600" />
               </div>
-              <div className="text-2xl font-bold mb-2">
-                {isLoading ? "..." : formatCurrency("0.00")}
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-600">Total Purchase Return</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {isLoading ? "..." : formatCurrency("0.00")}
+                </div>
               </div>
             </div>
           </Card>
           
-          <Card className="p-6 shadow-sm border-none">
-            <div className="flex flex-col">
-              <div className="flex items-center mb-2">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100 mr-3">
-                  <BadgePercentIcon className="h-6 w-6 text-purple-500" />
-                </div>
-                <div className="font-medium text-sm text-gray-500">Expense</div>
+          <Card className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100">
+                <BadgePercentIcon className="h-5 w-5 text-purple-600" />
               </div>
-              <div className="text-2xl font-bold mb-2">
-                {isLoading ? "..." : formatCurrency("0.00")}
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-600">Expense</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {isLoading ? "..." : formatCurrency(dashboardStats?.todaysExpenses || 0)}
+                </div>
               </div>
             </div>
           </Card>
         </div>
 
         {/* Sales Chart */}
-        <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium">Sales Last 30 Days</h3>
+            <h3 className="text-lg font-semibold text-gray-800">Sales Last 30 Days</h3>
           </div>
           <SalesChart />
         </div>
 
         {/* Recent Sales and Top Products */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-            <h3 className="text-lg font-medium mb-4">Recent Sales</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Sales</h3>
             <RecentSales />
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-            <h3 className="text-lg font-medium mb-4">Top Products</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Top Products</h3>
             <TopSellingProducts />
           </div>
         </div>
 
         {/* Low Stock Items */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-8">
-          <h3 className="text-lg font-medium mb-4">Low Stock Items</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Low Stock Items</h3>
           <LowStockItems />
+        </div>
+
+        {/* Test Link to Cash Register Management */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h3 className="text-lg font-semibold text-blue-800 mb-2">Cash Register Management</h3>
+          <p className="text-blue-600 mb-3">Manage cash register operations and view transaction history</p>
+          <Link href="/cash-register-management">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              Open Cash Register Management
+            </Button>
+          </Link>
         </div>
       </div>
     </DashboardLayout>

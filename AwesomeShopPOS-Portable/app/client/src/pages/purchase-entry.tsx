@@ -150,24 +150,24 @@ type PurchaseEntryFormValues = z.infer<typeof purchaseEntrySchema>;
 
 // Empty purchase item for initialization
 const emptyPurchaseItem = {
-  productId: undefined as any, // Changed from 0 to undefined to prevent validation issues
+  productId: undefined as any, // undefined to prevent validation issues
   code: "",
   productName: "",
   description: "",
-  receivedQty: "1",
+  receivedQty: "0", // Start with 0, user will enter quantity
   freeQty: "0",
-  cost: "100", // Set a default cost so form doesn't submit with 0
+  cost: "0", // Start with 0, user will enter cost
   hsnCode: "",
   taxPercent: "0",
   discountAmount: "0",
   expiryDate: "",
-  netCost: "100",
+  netCost: "0",
   roiPercent: "0",
   grossProfitPercent: "0",
-  sellingPrice: "120",
-  mrp: "120",
-  amount: "100",
-  netAmount: "100",
+  sellingPrice: "0",
+  mrp: "0",
+  amount: "0",
+  netAmount: "0",
   cashDiscountPercent: "0",
   cashDiscountAmount: "0",
   batchNo: "",
@@ -380,15 +380,33 @@ export default function PurchaseEntry() {
   // Create/Update purchase mutation
   const savePurchaseMutation = useMutation({
     mutationFn: async (data: PurchaseEntryFormValues) => {
-      if (isEditMode) {
-        const res = await apiRequest("PUT", `/api/purchases/${editId}`, data);
-        return await res.json();
-      } else {
-        const res = await apiRequest("POST", "/api/purchases", data);
-        return await res.json();
+      console.log('Mutation function called with data:', data);
+      
+      try {
+        let response;
+        if (isEditMode) {
+          console.log('Updating purchase with ID:', editId);
+          response = await apiRequest("PUT", `/api/purchases/${editId}`, data);
+        } else {
+          console.log('Creating new purchase');
+          response = await apiRequest("POST", "/api/purchases", data);
+        }
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('API response:', result);
+        return result;
+      } catch (error) {
+        console.error('Mutation error:', error);
+        throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Purchase saved successfully:', data);
       toast({
         title: isEditMode ? "Purchase order updated" : "Purchase order created",
         description: isEditMode 
@@ -398,16 +416,54 @@ export default function PurchaseEntry() {
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
       
       if (!isEditMode) {
-        form.reset();
-        form.setValue("items", [{ ...emptyPurchaseItem }]);
-        form.setValue("poDate", today);
-        form.setValue("dueDate", today);
+        // Reset form to initial state
+        form.reset({
+          poDate: today,
+          dueDate: today,
+          paymentType: "cash",
+          holdBills: false,
+          print: "yes",
+          supplierCode: "",
+          supplierName: "",
+          supplierPhone: "",
+          supplierMobile: "",
+          supplierGstNo: "",
+          invoiceNo: "",
+          invoiceDate: "",
+          invoiceAmount: "0",
+          lrNo: "",
+          remarks: "",
+          grossAmount: "0",
+          itemDiscountAmount: "0",
+          taxAmount: "0",
+          cashDiscountAmount: "0",
+          surchargeAmount: "0",
+          freightAmount: "0",
+          packingCharge: "0",
+          otherCharge: "0",
+          manualDiscountAmount: "0",
+          payableAmount: "0",
+          items: [{
+            ...emptyPurchaseItem,
+            receivedQty: "0",
+            freeQty: "0", 
+            cost: "0",
+            taxPercent: "0",
+            discountAmount: "0",
+            netCost: "0",
+            amount: "0",
+            netAmount: "0",
+            sellingPrice: "0",
+            mrp: "0"
+          }],
+        });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Purchase save error:', error);
       toast({
         title: isEditMode ? "Error updating purchase order" : "Error creating purchase order",
-        description: error.message,
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     },
@@ -677,44 +733,85 @@ export default function PurchaseEntry() {
   };
   
   const onSubmit = (data: PurchaseEntryFormValues) => {
-    // Enhanced data processing to include freight charges in line items
-    const enhancedData = { ...data };
-    
-    // Get additional charges
-    const freightAmount = Number(data.freightAmount) || 0;
-    const packingCharge = Number(data.packingCharge) || 0;
-    const otherCharge = Number(data.otherCharge) || 0;
-    const surchargeAmount = Number(data.surchargeAmount) || 0;
-    
-    // Total additional charges to distribute
-    const totalAdditionalCharges = freightAmount + packingCharge + otherCharge + surchargeAmount;
-    
-    if (totalAdditionalCharges > 0 && data.items && data.items.length > 0) {
-      // Calculate total line items amount for proportional distribution
-      const totalLineItemAmount = data.items.reduce((sum, item) => {
-        return sum + (Number(item.amount) || 0);
-      }, 0);
+    try {
+      console.log('Form submission data:', data);
       
-      // Distribute additional charges proportionally across line items
-      enhancedData.items = data.items.map((item) => {
-        const itemAmount = Number(item.amount) || 0;
-        const proportion = totalLineItemAmount > 0 ? itemAmount / totalLineItemAmount : 0;
-        const itemAdditionalCharge = totalAdditionalCharges * proportion;
-        
-        // Add freight and other charges to line item details for database storage
-        return {
-          ...item,
-          freightCharge: (freightAmount * proportion).toFixed(0),
-          packingCharge: (packingCharge * proportion).toFixed(0),
-          otherCharge: (otherCharge * proportion).toFixed(0),
-          surchargeAmount: (surchargeAmount * proportion).toFixed(0),
-          totalAdditionalCharge: itemAdditionalCharge.toFixed(0),
-          finalNetAmount: (Number(item.netAmount) + itemAdditionalCharge).toFixed(0)
-        };
+      // Validate required fields
+      if (!data.supplierId) {
+        toast({
+          title: "Validation Error",
+          description: "Please select a supplier",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!data.items || data.items.length === 0) {
+        toast({
+          title: "Validation Error", 
+          description: "Please add at least one item",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check if any items have valid product IDs and quantities
+      const validItems = data.items.filter(item => 
+        item.productId && 
+        item.productId > 0 && 
+        Number(item.receivedQty) > 0 &&
+        Number(item.cost) > 0
+      );
+      
+      if (validItems.length === 0) {
+        toast({
+          title: "Validation Error",
+          description: "Please ensure all items have valid products, quantities, and costs",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Process the data for API submission
+      const processedData = {
+        ...data,
+        items: validItems.map(item => ({
+          productId: Number(item.productId),
+          receivedQty: Number(item.receivedQty) || 1,
+          cost: Number(item.cost) || 0,
+          amount: Number(item.amount) || 0,
+          // Keep other fields as strings for now
+          productName: item.productName || '',
+          code: item.code || '',
+          description: item.description || '',
+          freeQty: item.freeQty || '0',
+          hsnCode: item.hsnCode || '',
+          taxPercent: item.taxPercent || '0',
+          discountAmount: item.discountAmount || '0',
+          netCost: item.netCost || '0',
+          roiPercent: item.roiPercent || '0',
+          grossProfitPercent: item.grossProfitPercent || '0',
+          sellingPrice: item.sellingPrice || '0',
+          mrp: item.mrp || '0',
+          netAmount: item.netAmount || '0',
+          cashDiscountPercent: item.cashDiscountPercent || '0',
+          cashDiscountAmount: item.cashDiscountAmount || '0',
+          batchNo: item.batchNo || '',
+          location: item.location || '',
+          unit: item.unit || 'PCS'
+        }))
+      };
+      
+      console.log('Processed data for submission:', processedData);
+      savePurchaseMutation.mutate(processedData);
+    } catch (error) {
+      console.error('Form submission error:', error);
+      toast({
+        title: "Submission Error",
+        description: "An error occurred while preparing the data. Please try again.",
+        variant: "destructive",
       });
     }
-    
-    savePurchaseMutation.mutate(enhancedData);
   };
 
   // Setup keyboard shortcuts after onSubmit is defined

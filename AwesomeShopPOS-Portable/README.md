@@ -1,40 +1,75 @@
 # Awesome Shop POS - Desktop Application
 
-🎉 Professional Point of Sale System for Indian Retail Businesses
+## Professional Point of Sale System for Indian Retail Businesses
 
-## Features:
-✓ Indian Rupee formatting (₹100)
-✓ Professional purchase entry with freight distribution
-✓ Clean line items with proper calculations
-✓ Keyboard shortcuts for faster operations
-✓ Offline capability for your business
+### 🚀 Quick Start
 
-## Installation:
+1. **Install the Application**
+   - Windows: Run `Install-POS.bat`
+   - Linux/Mac: Run `./Install-POS.sh`
 
-### Windows:
-Double-click "Start-POS.bat"
+2. **Launch the Application**
+   - Double-click the desktop shortcut
+   - Or run `AwesomeShopPOS.js`
+   - Or use the launch scripts
 
-### Mac/Linux:
-Run "./Start-POS.sh" in terminal
+3. **Login**
+   - Username: `admin`
+   - Password: `admin`
 
-## First Time Setup:
-1. The app will automatically install dependencies
-2. Your POS system will open in a desktop window
-3. Login with your credentials to start using the system
+### 💰 Indian Business Features
 
-## Keyboard Shortcuts:
-- Ctrl+N: New Purchase Order
-- Ctrl+S: New Sale
-- Ctrl+D: Dashboard
-- Ctrl+P: Products
-- Ctrl+U: Customers
+- **Currency**: Complete Indian Rupee (₹) formatting
+- **GST Compliance**: CGST/SGST/IGST calculations
+- **HSN Codes**: Tax compliance management
+- **Thermal Printing**: Professional receipt printing
+- **Offline Support**: Complete offline capability
 
-## Support:
-Your POS system includes all features:
-- Purchase Entry with freight calculations
-- Indian Rupee formatting throughout
-- Professional line items management
-- Customer and supplier management
-- Sales and inventory tracking
+### 🏪 Core Features
 
-Enjoy your professional desktop POS system! 🚀
+- **POS Sales**: Complete point of sale interface
+- **Inventory**: Product and stock management
+- **Purchases**: Supplier and purchase management
+- **Customers**: Customer loyalty program
+- **Reports**: Sales and business analytics
+- **Label Printing**: Professional product labels
+
+### 🔧 System Requirements
+
+- **Operating System**: Windows 7+, macOS 10.12+, Linux
+- **Node.js**: Version 18 or higher
+- **RAM**: Minimum 2GB recommended
+- **Storage**: 500MB free space
+- **Network**: Not required (offline capable)
+
+### 📞 Support
+
+For technical support or business inquiries:
+- Check the `DESKTOP-SETUP.md` file for detailed setup instructions
+- Review `Desktop-README.md` for troubleshooting guides
+
+### 📋 File Structure
+
+```
+AwesomeShopPOS-Portable/
+├── AwesomeShopPOS.js          # Main launcher
+├── Install-POS.bat            # Windows installer
+├── Install-POS.sh             # Linux/Mac installer
+├── app/                       # Application files
+├── data/                      # Database and user data
+├── logs/                      # Application logs
+├── backups/                   # Database backups
+└── exports/                   # Data exports
+```
+
+### 💡 Usage Tips
+
+- The application runs completely offline
+- All data is stored locally in the `data` directory
+- Regular backups are created in the `backups` directory
+- Use the built-in export features for data portability
+
+---
+
+**Awesome Shop POS** - Professional retail management made simple.
+Built specifically for Indian businesses with complete GST compliance.

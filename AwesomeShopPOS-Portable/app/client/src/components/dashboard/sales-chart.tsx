@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, subDays, parseISO } from "date-fns";
+import { useFormatCurrency } from "@/lib/currency";
 
 interface SalesChartProps {
   className?: string;
@@ -11,6 +12,7 @@ interface SalesChartProps {
 
 export function SalesChart({ className }: SalesChartProps) {
   const [timeRange, setTimeRange] = useState<string>("7");
+  const formatCurrency = useFormatCurrency();
   
   const { data: salesData, isLoading } = useQuery({
     queryKey: ['/api/dashboard/sales-chart', timeRange],
@@ -23,38 +25,31 @@ export function SalesChart({ className }: SalesChartProps) {
     }
   });
 
-  // Process and format the data for the chart
-  const chartData = salesData?.map((item: { date: string; total: string }) => ({
-    date: format(new Date(item.date), "EEE"),
-    total: parseFloat(item.total)
-  })) || [];
-
-  // If there's no data or fewer days than expected, fill in with zeros
-  useEffect(() => {
-    if (chartData.length < parseInt(timeRange)) {
-      const today = new Date();
-      const filledData = [];
+  // Create a filled dataset with proper date range
+  const chartData = (() => {
+    const today = new Date();
+    const filledData = [];
+    
+    for (let i = parseInt(timeRange) - 1; i >= 0; i--) {
+      const date = subDays(today, i);
+      const formattedDate = format(date, "EEE");
+      const dateString = format(date, "yyyy-MM-dd");
       
-      for (let i = parseInt(timeRange) - 1; i >= 0; i--) {
-        const date = subDays(today, i);
-        const formattedDate = format(date, "EEE");
-        
-        const existingEntry = chartData.find(entry => entry.date === formattedDate);
-        
-        if (existingEntry) {
-          filledData.push(existingEntry);
-        } else {
-          filledData.push({
-            date: formattedDate,
-            total: 0
-          });
-        }
-      }
+      // Find existing data for this date
+      const existingEntry = salesData?.find((item: { date: string; total: string }) => 
+        format(new Date(item.date), "yyyy-MM-dd") === dateString
+      );
       
-      // We don't actually update chartData directly as it's derived from salesData
-      // This would normally be done by updating the state
+      const total = existingEntry ? parseFloat(existingEntry.total) : 0;
+      
+      filledData.push({
+        date: formattedDate,
+        total: total
+      });
     }
-  }, [salesData, timeRange]);
+    
+    return filledData;
+  })();
 
   return (
     <Card className={`shadow ${className}`}>
@@ -79,7 +74,7 @@ export function SalesChart({ className }: SalesChartProps) {
           <div className="w-full h-72 flex items-center justify-center">
             <p className="text-gray-500 dark:text-gray-400">Loading chart data...</p>
           </div>
-        ) : (
+        ) : chartData.some(item => item.total > 0) ? (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
               data={chartData}
@@ -90,7 +85,7 @@ export function SalesChart({ className }: SalesChartProps) {
                 bottom: 20,
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
               <XAxis 
                 dataKey="date" 
                 tickLine={false}
@@ -103,20 +98,38 @@ export function SalesChart({ className }: SalesChartProps) {
                 axisLine={false}
                 dx={-10}
                 tick={{ fontSize: 12, fill: '#6B7280' }}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => formatCurrency(value)}
+                domain={[0, 'dataMax']}
               />
               <Tooltip 
-                formatter={(value) => [`$${value}`, 'Sales']}
+                formatter={(value) => {
+                  const numValue = Array.isArray(value) ? value[0] : value;
+                  return [formatCurrency(Number(numValue)), 'Sales'];
+                }}
                 labelFormatter={(label) => `${label}`}
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}
               />
               <Bar 
                 dataKey="total" 
-                fill="hsl(var(--primary))" 
+                fill="#3b82f6" 
                 radius={[4, 4, 0, 0]}
                 barSize={40}
               />
             </BarChart>
           </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-72 flex items-center justify-center bg-gray-50 rounded-lg">
+            <div className="text-center">
+              <div className="text-gray-400 mb-2">📊</div>
+              <p className="text-gray-600 font-medium">No sales data available</p>
+              <p className="text-gray-500 text-sm">Sales will appear here once transactions are made</p>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

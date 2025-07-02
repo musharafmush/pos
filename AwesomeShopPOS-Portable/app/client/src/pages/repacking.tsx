@@ -145,9 +145,22 @@ export default function Repacking() {
       setIsProcessing(false);
     },
     onError: (error: any) => {
+      let errorMessage = "There was an error processing the repacking";
+      
+      // Handle specific error types
+      if (error.message?.includes("UNIQUE constraint failed: products.sku")) {
+        errorMessage = "SKU already exists. Please try again with a different SKU.";
+        // Auto-generate a new SKU if there's a conflict
+        if (selectedSourceProduct) {
+          const newRandomSuffix = Math.floor(Math.random() * 100000);
+          const newSku = `${selectedSourceProduct.sku.substring(0, 8)}-RP${newRandomSuffix}`;
+          form.setValue("targetProductSku", newSku);
+        }
+      }
+      
       toast({
         title: "Repacking failed",
-        description: error.message || "There was an error processing the repacking",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsProcessing(false);
@@ -180,10 +193,10 @@ export default function Repacking() {
     setSelectedSourceProduct(product);
     form.setValue("sourceProductId", product.id.toString());
     
-    // Auto-generate unique SKU for target product with random suffix
-    const timestamp = Date.now();
+    // Auto-generate unique SKU for target product with shorter format
     const randomSuffix = Math.floor(Math.random() * 10000);
-    form.setValue("targetProductSku", `${product.sku}-RP${timestamp}-${randomSuffix}`);
+    const shortSku = `${product.sku.substring(0, 8)}-RP${randomSuffix}`;
+    form.setValue("targetProductSku", shortSku);
     setCurrentStep(2);
   };
 

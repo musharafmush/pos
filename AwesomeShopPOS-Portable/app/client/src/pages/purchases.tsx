@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -250,7 +251,7 @@ export default function Purchases() {
     if (!searchTerm) return true;
     
     return (
-      purchase.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      purchase.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (purchase.supplier?.name && purchase.supplier.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   });
@@ -271,7 +272,7 @@ export default function Purchases() {
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             </div>
             <Button 
-              onClick={() => window.location.href = "/purchase-entry-legacy"} 
+              onClick={() => window.location.href = "/purchase-entry-professional"} 
               className="bg-blue-500 hover:bg-blue-600"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
@@ -320,7 +321,7 @@ export default function Purchases() {
                         <TableCell>
                           ${typeof purchase.total === 'number' 
                             ? purchase.total.toFixed(2) 
-                            : parseFloat(purchase.total).toFixed(2)}
+                            : parseFloat(purchase.total || 0).toFixed(2)}
                         </TableCell>
                         <TableCell>
                           <Badge className={cn(
@@ -329,7 +330,7 @@ export default function Purchases() {
                             purchase.status === 'received' && "bg-green-100 text-green-800 dark:bg-green-900 dark:bg-opacity-30 dark:text-green-300 hover:bg-green-100",
                             purchase.status === 'cancelled' && "bg-red-100 text-red-800 dark:bg-red-900 dark:bg-opacity-30 dark:text-red-300 hover:bg-red-100"
                           )}>
-                            {purchase.status.charAt(0).toUpperCase() + purchase.status.slice(1)}
+                            {purchase.status?.charAt(0).toUpperCase() + purchase.status?.slice(1)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -369,154 +370,6 @@ export default function Purchases() {
         </Card>
       </div>
 
-      {/* Create Purchase Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Create Purchase Order</DialogTitle>
-            <DialogDescription>
-              Create a new purchase order from a supplier.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...purchaseForm}>
-            <form onSubmit={purchaseForm.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={purchaseForm.control}
-                name="supplierId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Supplier*</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value.toString()}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a supplier" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {suppliers?.map((supplier: any) => (
-                          <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-sm font-medium">Items*</h3>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={addItemField}
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Add Item
-                  </Button>
-                </div>
-                
-                <div className="space-y-4">
-                  {Array.from({ length: itemCount }).map((_, index) => (
-                    <div key={index} className="flex flex-col p-4 border border-gray-200 dark:border-gray-700 rounded-md space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-medium">Item {index + 1}</h4>
-                        {index > 0 && (
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeItemField(index)}
-                            className="h-6 w-6 rounded-full text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      
-                      <FormField
-                        control={purchaseForm.control}
-                        name={`items.${index}.productId`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Product*</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value.toString()}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a product" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {products?.map((product: any) => (
-                                  <SelectItem key={product.id} value={product.id.toString()}>
-                                    {product.name} (SKU: {product.sku})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={purchaseForm.control}
-                          name={`items.${index}.quantity`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Quantity*</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="1" placeholder="0" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={purchaseForm.control}
-                          name={`items.${index}.unitCost`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Unit Cost*</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="0.00" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsCreateDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createPurchaseMutation.isPending}
-                >
-                  {createPurchaseMutation.isPending ? "Creating..." : "Create Purchase Order"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
       {/* View Purchase Dialog */}
       {selectedPurchase && (
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
@@ -543,7 +396,7 @@ export default function Purchases() {
                     selectedPurchase.status === 'received' && "bg-green-100 text-green-800 dark:bg-green-900 dark:bg-opacity-30 dark:text-green-300 hover:bg-green-100",
                     selectedPurchase.status === 'cancelled' && "bg-red-100 text-red-800 dark:bg-red-900 dark:bg-opacity-30 dark:text-red-300 hover:bg-red-100"
                   )}>
-                    {selectedPurchase.status.charAt(0).toUpperCase() + selectedPurchase.status.slice(1)}
+                    {selectedPurchase.status?.charAt(0).toUpperCase() + selectedPurchase.status?.slice(1)}
                   </Badge>
                 </div>
                 <div>
@@ -553,67 +406,13 @@ export default function Purchases() {
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Received Date</h3>
-                  <p className="text-sm">
-                    {selectedPurchase.receivedDate 
-                      ? format(new Date(selectedPurchase.receivedDate), 'MMM dd, yyyy')
-                      : "Not received yet"}
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total</h3>
+                  <p className="text-lg font-bold">
+                    ${typeof selectedPurchase.total === 'number' 
+                      ? selectedPurchase.total.toFixed(2) 
+                      : parseFloat(selectedPurchase.total || 0).toFixed(2)}
                   </p>
                 </div>
-              </div>
-              
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h3 className="text-sm font-medium mb-2">Items</h3>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead className="text-right">Unit Cost</TableHead>
-                        <TableHead className="text-right">Subtotal</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedPurchase.items?.map((item: any) => (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <div className="h-8 w-8 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 mr-2">
-                                {item.product?.image ? (
-                                  <img src={item.product.image} alt={item.product.name} className="h-8 w-8 rounded-md object-cover" />
-                                ) : (
-                                  <PackageIcon className="h-4 w-4" />
-                                )}
-                              </div>
-                              <span>{item.product?.name || "Unknown Product"}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">{item.quantity}</TableCell>
-                          <TableCell className="text-right">
-                            ${typeof item.unitCost === 'number' 
-                              ? item.unitCost.toFixed(2) 
-                              : parseFloat(item.unitCost).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            ${typeof item.subtotal === 'number' 
-                              ? item.subtotal.toFixed(2) 
-                              : parseFloat(item.subtotal).toFixed(2)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-              
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex justify-between items-center">
-                <h3 className="text-sm font-medium">Total</h3>
-                <p className="text-lg font-bold">
-                  ${typeof selectedPurchase.total === 'number' 
-                    ? selectedPurchase.total.toFixed(2) 
-                    : parseFloat(selectedPurchase.total).toFixed(2)}
-                </p>
               </div>
             </div>
             

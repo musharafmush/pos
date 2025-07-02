@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SearchIcon, PlusIcon, MinusIcon, XIcon, CreditCardIcon, ReceiptIcon, PrinterIcon } from "lucide-react";
+import { SearchIcon, PlusIcon, MinusIcon, XIcon, CreditCardIcon, ReceiptIcon, PrinterIcon, Scan, Gift } from "lucide-react";
+import { OfferEngine } from "@/components/pos/offer-engine";
+import { BarcodeScanner } from "@/components/pos/barcode-scanner";
 import { 
   Dialog,
   DialogContent,
@@ -54,6 +56,10 @@ export default function POS() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastSaleData, setLastSaleData] = useState<any>(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number>();
+  const [appliedOffers, setAppliedOffers] = useState<any[]>([]);
+  const [totalOfferDiscount, setTotalOfferDiscount] = useState(0);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const formatCurrency = useFormatCurrency();
@@ -80,6 +86,16 @@ export default function POS() {
       return response.json();
     },
     enabled: searchTerm.length > 0
+  });
+
+  // Fetch customers for offer eligibility
+  const { data: customers = [] } = useQuery({
+    queryKey: ['/api/customers'],
+    queryFn: async () => {
+      const response = await fetch('/api/customers');
+      if (!response.ok) throw new Error('Failed to fetch customers');
+      return response.json();
+    }
   });
 
   // Fetch business settings for receipt header
@@ -159,6 +175,31 @@ export default function POS() {
     } finally {
       setBarcodeInput("");
     }
+  };
+
+  // Handle offer calculations when cart changes
+  const handleOffersCalculated = (offers: any[], totalDiscount: number) => {
+    setAppliedOffers(offers);
+    setTotalOfferDiscount(totalDiscount);
+  };
+
+  // Handle barcode scanner product addition
+  const handleProductScanned = (product: any, triggeredOffers?: any[]) => {
+    addToCart(product);
+    if (triggeredOffers && triggeredOffers.length > 0) {
+      toast({
+        title: "Special Offers Activated!",
+        description: `${triggeredOffers.length} offer(s) triggered by scanning ${product.name}`,
+      });
+    }
+  };
+
+  // Handle offers triggered by barcode scanning
+  const handleOfferTriggered = (offers: any[]) => {
+    toast({
+      title: "Barcode Offer Activated!",
+      description: `Special promotion activated: ${offers.map(o => o.name).join(', ')}`,
+    });
   };
 
   const addToCart = (product: Product) => {
@@ -249,13 +290,21 @@ export default function POS() {
     return cart.reduce((sum, item) => sum + item.total, 0);
   };
 
+  const calculateOfferDiscount = () => {
+    return totalOfferDiscount;
+  };
+
+  const calculateSubtotalAfterOffers = () => {
+    return Math.max(0, calculateSubtotal() - calculateOfferDiscount());
+  };
+
   const calculateTax = () => {
-    // Assuming 7% tax rate
-    return calculateSubtotal() * 0.07;
+    // Tax calculated on subtotal after offers
+    return calculateSubtotalAfterOffers() * 0.07;
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
+    return calculateSubtotalAfterOffers() + calculateTax();
   };
 
   const generateReceipt = (saleData: any) => {
@@ -336,6 +385,12 @@ export default function POS() {
             <span>Subtotal:</span>
             <span>${formatCurrency(calculateSubtotal())}</span>
         </div>
+        ${totalOfferDiscount > 0 ? `
+        <div style="display: flex; justify-content: space-between; color: #16a34a;">
+            <span>Offer Discount:</span>
+            <span>-${formatCurrency(calculateOfferDiscount())}</span>
+        </div>
+        ` : ''}
         <div style="display: flex; justify-content: space-between;">
             <span>Tax (7%):</span>
             <span>${formatCurrency(calculateTax())}</span>
@@ -349,6 +404,11 @@ export default function POS() {
             <span>Payment Method:</span>
             <span>${paymentMethod.toUpperCase()}</span>
         </div>
+        ${appliedOffers.length > 0 ? `
+        <div style="margin-top: 10px; font-size: 10px; color: #16a34a;">
+            Offers Applied: ${appliedOffers.map(o => o.name).join(', ')}
+        </div>
+        ` : ''}
     </div>
     
     ${customerNote ? `
@@ -548,8 +608,66 @@ export default function POS() {
           </div>
           
           {/* Shopping Cart Panel */}
-          <div className="md:w-1/3 flex flex-col h-full">
-            <Card className="h-full flex flex-col">
+          <div className="md:w-1/3 flex flex-col h-full space-y-4">
+            {/* Customer Selection */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Gift className="h-4 w-4" />
+                  Customer & Offers
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Select value={selectedCustomerId?.toString()} onValueChange={(value) => setSelectedCustomerId(value ? parseInt(value) : undefined)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select customer for offers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="walk-in">Walk-in Customer</SelectItem>
+                    {customers.map((customer: any) => (
+                      <SelectItem key={customer.id} value={customer.id.toString()}>
+                        {customer.name} - {customer.phone || 'No phone'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowBarcodeScanner(!showBarcodeScanner)}
+                  className="w-full"
+                >
+                  <Scan className="h-4 w-4 mr-2" />
+                  {showBarcodeScanner ? 'Hide' : 'Show'} Barcode Scanner
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Barcode Scanner */}
+            {showBarcodeScanner && (
+              <BarcodeScanner
+                onProductScanned={handleProductScanned}
+                onOfferTriggered={handleOfferTriggered}
+              />
+            )}
+
+            {/* Offer Engine */}
+            <OfferEngine
+              cartItems={cart.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: typeof item.price === 'number' ? item.price : parseFloat(item.price),
+                quantity: item.quantity,
+                category: item.category?.name,
+                barcode: item.barcode
+              }))}
+              customerId={selectedCustomerId}
+              onOffersCalculated={handleOffersCalculated}
+            />
+
+            {/* Shopping Cart */}
+            <Card className="flex-1 flex flex-col">
               <CardHeader className="pb-0">
                 <CardTitle className="text-lg flex items-center justify-between">
                   <span>Current Sale</span>
@@ -644,6 +762,15 @@ export default function POS() {
                     <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
                     <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(calculateSubtotal())}</span>
                   </div>
+                  {totalOfferDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="flex items-center gap-1">
+                        <Gift className="h-4 w-4" />
+                        Offer Discount
+                      </span>
+                      <span className="font-medium">-{formatCurrency(calculateOfferDiscount())}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Tax (7%)</span>
                     <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(calculateTax())}</span>
@@ -652,6 +779,11 @@ export default function POS() {
                     <span className="text-lg font-bold text-gray-800 dark:text-gray-100">Total</span>
                     <span className="text-lg font-bold text-primary">{formatCurrency(calculateTotal())}</span>
                   </div>
+                  {appliedOffers.length > 0 && (
+                    <div className="text-xs text-green-600 pt-1">
+                      {appliedOffers.length} offer(s) applied: {appliedOffers.map(o => o.name).join(', ')}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="w-full mt-4 space-y-2">
