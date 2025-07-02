@@ -3909,11 +3909,11 @@ export const storage = {
       const database = this.initLabelDatabase();
       const stmt = database.prepare(`
         INSERT INTO label_templates (
-          name, description, width, height, font_size, include_barcode, include_price,
+          name, description, width, height, font_size, brand_title, include_barcode, include_price,
           include_description, include_mrp, include_weight, include_hsn, barcode_position,
           border_style, border_width, background_color, text_color, custom_css,
           is_default, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const now = new Date().toISOString();
@@ -3923,6 +3923,7 @@ export const storage = {
         templateData.width,
         templateData.height,
         templateData.fontSize || 12,
+        templateData.brand_title || templateData.brandTitle || '',
         templateData.includeBarcode ? 1 : 0,
         templateData.includePrice ? 1 : 0,
         templateData.includeDescription ? 1 : 0,
