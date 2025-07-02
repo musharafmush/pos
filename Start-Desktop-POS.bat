@@ -33,13 +33,18 @@ set DESKTOP_MODE=true
 set NODE_ENV=development
 
 REM Launch the desktop application
-node desktop-backend/launcher.js
+echo 🖥️  Starting professional desktop application...
+node web-desktop-app.cjs
 
 if %errorlevel% neq 0 (
     echo.
-    echo ❌ Desktop application failed to start
+    echo ❌ Web desktop application failed to start
     echo 💡 Trying alternative launch method...
-    call npm run dev
+    node desktop-backend/launcher.js
+    if %errorlevel% neq 0 (
+        echo 💡 Trying standard web version...
+        call npm run dev
+    )
 )
 
 echo.

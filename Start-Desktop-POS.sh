@@ -37,14 +37,19 @@ export DESKTOP_MODE=true
 export NODE_ENV=development
 
 # Launch the desktop application
-node desktop-backend/launcher.js
+echo "🖥️  Starting professional desktop application..."
+node web-desktop-app.cjs
 
 # Check if launch was successful
 if [ $? -ne 0 ]; then
     echo ""
-    echo "❌ Desktop application failed to start"
+    echo "❌ Web desktop application failed to start"
     echo "💡 Trying alternative launch method..."
-    npm run dev
+    node desktop-backend/launcher.js
+    if [ $? -ne 0 ]; then
+        echo "💡 Trying standard web version..."
+        npm run dev
+    fi
 fi
 
 echo ""
