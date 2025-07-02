@@ -1538,6 +1538,9 @@ export default function PrintLabelsEnhanced() {
       include_manufacturing_date, include_expiry_date, store_title, barcode_width, barcode_height
     } = template;
 
+    // If both manufacturing and expiry dates are enabled, ignore any "Date Removed" CSS markers
+    const shouldShowDates = include_manufacturing_date || include_expiry_date;
+
     const borderCSS = border_style !== 'none' ? 
       `border: ${border_width}px ${border_style} #333;` : '';
 
@@ -1576,7 +1579,20 @@ export default function PrintLabelsEnhanced() {
           height: auto !important;
           overflow: visible !important;
           color: #666 !important;
+          position: relative !important;
+          font-weight: bold !important;
+          margin: 0 !important;
+          padding: 2px 0 !important;
+          z-index: 9999 !important;
         }
+        ${shouldShowDates ? `
+          /* Force override any date removal CSS when dates are enabled */
+          .mfg-date-override * , .exp-date-override * {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+          }
+        ` : ''}
       </style>
       <div class="product-label" style="
         width: ${width}mm;
@@ -1644,13 +1660,13 @@ export default function PrintLabelsEnhanced() {
         }
 
         ${include_manufacturing_date ? 
-          `<div class="mfg-date-override" style="font-size: ${detailsFontSize}px; color: #666 !important; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important; overflow: visible !important;">
+          `<div class="mfg-date-override" style="font-size: ${detailsFontSize}px; color: #000 !important; background: #f0f0f0 !important; border: 2px solid #666 !important; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important; overflow: visible !important; padding: 4px !important;">
             <strong>Mfg: ${new Date().toLocaleDateString('en-IN')}</strong>
           </div>` : ''
         }
 
         ${include_expiry_date ? 
-          `<div class="exp-date-override" style="font-size: ${detailsFontSize}px; color: #666 !important; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important; overflow: visible !important;">
+          `<div class="exp-date-override" style="font-size: ${detailsFontSize}px; color: #000 !important; background: #f0f0f0 !important; border: 2px solid #666 !important; margin-bottom: ${Math.max(1, height * 0.015)}mm; display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important; overflow: visible !important; padding: 4px !important;">
             <strong>Exp: ${new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN')}</strong>
           </div>` : ''
         }
