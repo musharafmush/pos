@@ -3911,9 +3911,9 @@ export const storage = {
         INSERT INTO label_templates (
           name, description, width, height, font_size, include_barcode, include_price,
           include_description, include_mrp, include_weight, include_hsn, barcode_position,
-          border_style, border_width, background_color, text_color, custom_css,
-          storeTitle, is_default, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          barcode_width, barcode_height, border_style, border_width, background_color, 
+          text_color, custom_css, storeTitle, is_default, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const now = new Date().toISOString();
@@ -3930,6 +3930,8 @@ export const storage = {
         templateData.includeWeight ? 1 : 0,
         templateData.includeHSN ? 1 : 0,
         templateData.barcodePosition || 'bottom',
+        templateData.barcodeWidth || 90,
+        templateData.barcodeHeight || 70,
         templateData.borderStyle || 'solid',
         templateData.borderWidth || 1,
         templateData.backgroundColor || '#ffffff',
@@ -4045,6 +4047,14 @@ export const storage = {
       if (templateData.barcodePosition !== undefined) {
         updates.push('barcode_position = ?');
         values.push(templateData.barcodePosition);
+      }
+      if (templateData.barcodeWidth !== undefined) {
+        updates.push('barcode_width = ?');
+        values.push(templateData.barcodeWidth);
+      }
+      if (templateData.barcodeHeight !== undefined) {
+        updates.push('barcode_height = ?');
+        values.push(templateData.barcodeHeight);
       }
       if (templateData.borderStyle !== undefined) {
         updates.push('border_style = ?');

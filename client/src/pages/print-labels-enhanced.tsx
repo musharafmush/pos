@@ -1475,12 +1475,25 @@ export default function PrintLabelsEnhanced() {
     const borderCSS = border_style !== 'none' ? 
       `border: ${border_width}px ${border_style} #333;` : '';
 
-    // Scale barcode size based on label dimensions for FULL SIZE appearance
-    const barcodeWidth = Math.min(width * 0.9, 500); // Full width barcode for maximum visibility
-    const barcodeHeight = Math.max(120, Math.min(height * 0.7, 250)); // FULL SIZE height for optimal scanning
+    // Calculate barcode dimensions using template settings
+    let calculatedBarcodeWidth = Math.min(width * 0.9, 500); // Default full width
+    let calculatedBarcodeHeight = Math.max(120, Math.min(height * 0.7, 250)); // Default full height
+    
+    // Use template's barcode size settings if available
+    if (barcode_width && barcode_height) {
+      const labelWidthPx = width * 3.779; // Convert mm to pixels
+      const labelHeightPx = height * 3.779;
+      
+      calculatedBarcodeWidth = Math.min((labelWidthPx * barcode_width) / 100, 500);
+      calculatedBarcodeHeight = Math.min((labelHeightPx * barcode_height) / 100, 250);
+      
+      // Ensure minimum sizes for readability
+      calculatedBarcodeWidth = Math.max(calculatedBarcodeWidth, 60);
+      calculatedBarcodeHeight = Math.max(calculatedBarcodeHeight, 30);
+    }
 
     const barcodeHTML = include_barcode ? 
-      generateBarcode(product.barcode || product.sku, barcodeWidth, barcodeHeight, template) : '';
+      generateBarcode(product.barcode || product.sku, calculatedBarcodeWidth, calculatedBarcodeHeight, template) : '';
 
     // Calculate responsive font sizes based on label dimensions
     const baseFontSize = Math.max(font_size, Math.min(width * 0.08, height * 0.06));

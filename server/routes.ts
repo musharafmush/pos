@@ -4104,6 +4104,8 @@ app.post("/api/customers", async (req, res) => {
         includeManufacturingDate: requestData.include_manufacturing_date,
         includeExpiryDate: requestData.include_expiry_date,
         barcodePosition: requestData.barcode_position,
+        barcodeWidth: requestData.barcode_width,
+        barcodeHeight: requestData.barcode_height,
         borderStyle: requestData.border_style,
         borderWidth: requestData.border_width,
         backgroundColor: requestData.background_color,
