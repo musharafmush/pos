@@ -283,6 +283,14 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Added fallback handling for barcode generation errors
 - Barcode generation now matches professional retail standards like M MART examples
 
+### Enhanced Barcode Size and Visibility (July 2, 2025)
+- Significantly increased barcode dimensions for better visibility and scanning
+- Enhanced barcode width to 4.5x label width (max 420px) for optimal scanning
+- Increased barcode height to 35% of label height (max 120px) for better readability
+- Improved bar width from 1.5x to 2.5x for enhanced print quality
+- Enhanced font size for barcode text labels for better legibility
+- Updated margins and spacing for professional barcode appearance
+
 ### Label Box Center Alignment System (July 2, 2025)
 - Fixed label box centering alignment issues in both preview and print layouts
 - Enhanced print CSS with flexbox layout for perfect center alignment
