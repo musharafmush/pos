@@ -1725,25 +1725,24 @@ export default function PrintLabelsEnhanced() {
               {/* Orientation Selection */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">Print Orientation</Label>
-                <Select value={orientation} onValueChange={setOrientation}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select orientation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="landscape">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-3 border border-gray-400 rounded"></div>
-                        <span>Landscape</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="portrait">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-4 border border-gray-400 rounded"></div>
-                        <span>Portrait</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant={orientation === "landscape" ? "default" : "outline"}
+                    className="flex flex-col items-center gap-1 h-16 p-2"
+                    onClick={() => setOrientation("landscape")}
+                  >
+                    <div className="w-6 h-4 border-2 border-current rounded"></div>
+                    <span className="text-xs">Landscape</span>
+                  </Button>
+                  <Button
+                    variant={orientation === "portrait" ? "default" : "outline"}
+                    className="flex flex-col items-center gap-1 h-16 p-2"
+                    onClick={() => setOrientation("portrait")}
+                  >
+                    <div className="w-4 h-6 border-2 border-current rounded"></div>
+                    <span className="text-xs">Portrait</span>
+                  </Button>
+                </div>
               </div>
 
               {/* Quick Stats */}
