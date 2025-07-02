@@ -202,9 +202,9 @@ app.use((req, res, next) => {
           INSERT INTO label_templates (
             name, description, width, height, font_size, include_barcode, include_price,
             include_description, include_mrp, include_weight, include_hsn, barcode_position,
-            border_style, border_width, background_color, text_color, is_default, is_active,
-            created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            barcode_width, barcode_height, border_style, border_width, background_color, 
+            text_color, is_default, is_active, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const now = new Date().toISOString();
@@ -221,6 +221,8 @@ app.use((req, res, next) => {
           templateData.include_weight ? 1 : 0,
           templateData.include_hsn ? 1 : 0,
           templateData.barcode_position || 'bottom',
+          templateData.barcode_width || 90,
+          templateData.barcode_height || 70,
           templateData.border_style || 'solid',
           templateData.border_width || 1,
           templateData.background_color || '#ffffff',

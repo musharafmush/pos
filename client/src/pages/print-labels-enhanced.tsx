@@ -90,6 +90,8 @@ interface LabelTemplate {
   include_manufacturing_date: boolean;
   include_expiry_date: boolean;
   barcode_position: 'top' | 'bottom' | 'left' | 'right';
+  barcode_width?: number;
+  barcode_height?: number;
   border_style: 'solid' | 'dashed' | 'dotted' | 'none';
   border_width: number;
   background_color: string;
@@ -138,6 +140,8 @@ const templateFormSchema = z.object({
   include_manufacturing_date: z.boolean(),
   include_expiry_date: z.boolean(),
   barcode_position: z.enum(['top', 'bottom', 'left', 'right']),
+  barcode_width: z.number().min(30).max(95).optional(),
+  barcode_height: z.number().min(20).max(80).optional(),
   border_style: z.enum(['solid', 'dashed', 'dotted', 'none']),
   border_width: z.number().min(0).max(10),
   background_color: z.string(),
@@ -1388,6 +1392,8 @@ export default function PrintLabelsEnhanced() {
       include_weight: false,
       include_hsn: false,
       barcode_position: 'bottom',
+      barcode_width: 90,
+      barcode_height: 70,
       border_style: 'solid',
       border_width: 1,
       background_color: '#ffffff',
@@ -1398,7 +1404,7 @@ export default function PrintLabelsEnhanced() {
   };
 
   // Generate professional barcode using JsBarcode
-  const generateBarcode = (text: string, width: number = 200, height: number = 60) => {
+  const generateBarcode = (text: string, width: number = 200, height: number = 60, template?: LabelTemplate) => {
     try {
       // Create a temporary canvas element
       const canvas = document.createElement('canvas');
@@ -1406,13 +1412,30 @@ export default function PrintLabelsEnhanced() {
       // Clean the text for barcode generation
       const barcodeText = text.replace(/[^a-zA-Z0-9]/g, '').padEnd(12, '0').substring(0, 12);
       
+      // Calculate barcode dimensions from template settings if available
+      let barcodeWidth = width;
+      let barcodeHeight = height;
+      
+      if (template && template.barcode_width && template.barcode_height) {
+        // Convert percentage to actual pixel dimensions based on label size
+        const labelWidthPx = template.width * 3.779; // Convert mm to pixels (approximately)
+        const labelHeightPx = template.height * 3.779;
+        
+        barcodeWidth = Math.min((labelWidthPx * template.barcode_width) / 100, 500);
+        barcodeHeight = Math.min((labelHeightPx * template.barcode_height) / 100, 250);
+        
+        // Ensure minimum sizes for readability
+        barcodeWidth = Math.max(barcodeWidth, 100);
+        barcodeHeight = Math.max(barcodeHeight, 40);
+      }
+      
       // Generate barcode using JsBarcode
       JsBarcode(canvas, barcodeText, {
         format: "CODE128",
-        width: Math.max(3.5, width / 80), // MAXIMUM width bars for full size visibility
-        height: Math.max(height - 20, 100), // FULL HEIGHT barcode for maximum scanning
+        width: Math.max(3.5, barcodeWidth / 80), // Dynamic width bars for visibility
+        height: Math.max(barcodeHeight - 20, 40), // Dynamic HEIGHT barcode
         displayValue: true,
-        fontSize: Math.max(16, height / 4), // LARGE font size for maximum readability
+        fontSize: Math.max(12, barcodeHeight / 5), // Dynamic font size
         fontOptions: "bold",
         font: "monospace",
         textAlign: "center",
@@ -1427,7 +1450,7 @@ export default function PrintLabelsEnhanced() {
       
       return `
         <div style="text-align: center; margin: 4px 0; padding: 2px;">
-          <img src="${dataURL}" style="max-width: ${width}px; max-height: ${height}px; border: 1px solid #ddd; background: white;" alt="Barcode: ${barcodeText}" />
+          <img src="${dataURL}" style="max-width: ${barcodeWidth}px; max-height: ${barcodeHeight}px; border: 1px solid #ddd; background: white;" alt="Barcode: ${barcodeText}" />
         </div>
       `;
     } catch (error) {
@@ -1446,7 +1469,7 @@ export default function PrintLabelsEnhanced() {
     const {
       width, height, font_size, border_style, border_width, background_color, text_color,
       include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn,
-      include_manufacturing_date, include_expiry_date, store_title
+      include_manufacturing_date, include_expiry_date, store_title, barcode_width, barcode_height
     } = template;
 
     const borderCSS = border_style !== 'none' ? 
@@ -1457,7 +1480,7 @@ export default function PrintLabelsEnhanced() {
     const barcodeHeight = Math.max(120, Math.min(height * 0.7, 250)); // FULL SIZE height for optimal scanning
 
     const barcodeHTML = include_barcode ? 
-      generateBarcode(product.barcode || product.sku, barcodeWidth, barcodeHeight) : '';
+      generateBarcode(product.barcode || product.sku, barcodeWidth, barcodeHeight, template) : '';
 
     // Calculate responsive font sizes based on label dimensions
     const baseFontSize = Math.max(font_size, Math.min(width * 0.08, height * 0.06));
@@ -3306,69 +3329,73 @@ export default function PrintLabelsEnhanced() {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                        Barcode Width (% of label)
-                      </Label>
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="range"
-                            min="30"
-                            max="95"
-                            defaultValue="90"
-                            className="flex-1 h-3 bg-gradient-to-r from-green-200 to-green-600 rounded-lg appearance-none cursor-pointer"
-                            onChange={(e) => {
-                              const percent = e.target.value;
-                              const display = document.getElementById('barcode-width-display');
-                              if (display) display.textContent = `${percent}%`;
-                            }}
-                          />
-                          <Badge 
-                            id="barcode-width-display" 
-                            variant="secondary" 
-                            className="min-w-[50px] text-center bg-green-100 text-green-800 font-medium"
-                          >
-                            90%
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Controls horizontal span across the label width
-                        </p>
-                      </div>
-                    </div>
+                    <FormField
+                      control={templateForm.control}
+                      name="barcode_width"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Barcode Width (% of label)
+                          </FormLabel>
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="range"
+                                min="30"
+                                max="95"
+                                value={field.value || 90}
+                                onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                className="flex-1 h-3 bg-gradient-to-r from-green-200 to-green-600 rounded-lg appearance-none cursor-pointer"
+                              />
+                              <Badge 
+                                variant="secondary" 
+                                className="min-w-[50px] text-center bg-green-100 text-green-800 font-medium"
+                              >
+                                {field.value || 90}%
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Controls horizontal span across the label width
+                            </p>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                        Barcode Height (% of label)
-                      </Label>
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="range"
-                            min="20"
-                            max="80"
-                            defaultValue="70"
-                            className="flex-1 h-3 bg-gradient-to-r from-purple-200 to-purple-600 rounded-lg appearance-none cursor-pointer"
-                            onChange={(e) => {
-                              const percent = e.target.value;
-                              const display = document.getElementById('barcode-height-display');
-                              if (display) display.textContent = `${percent}%`;
-                            }}
-                          />
-                          <Badge 
-                            id="barcode-height-display" 
-                            variant="secondary" 
-                            className="min-w-[50px] text-center bg-purple-100 text-purple-800 font-medium"
-                          >
-                            70%
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Controls vertical height on the label
-                        </p>
-                      </div>
-                    </div>
+                    <FormField
+                      control={templateForm.control}
+                      name="barcode_height"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Barcode Height (% of label)
+                          </FormLabel>
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="range"
+                                min="20"
+                                max="80"
+                                value={field.value || 70}
+                                onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                className="flex-1 h-3 bg-gradient-to-r from-purple-200 to-purple-600 rounded-lg appearance-none cursor-pointer"
+                              />
+                              <Badge 
+                                variant="secondary" 
+                                className="min-w-[50px] text-center bg-purple-100 text-purple-800 font-medium"
+                              >
+                                {field.value || 70}%
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Controls vertical height on the label
+                            </p>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
                   {/* Preset Buttons */}
@@ -3382,17 +3409,8 @@ export default function PrintLabelsEnhanced() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
-                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
-                          const widthDisplay = document.getElementById('barcode-width-display');
-                          const heightDisplay = document.getElementById('barcode-height-display');
-                          
-                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
-                            widthSlider.value = '45';
-                            heightSlider.value = '25';
-                            widthDisplay.textContent = '45%';
-                            heightDisplay.textContent = '25%';
-                          }
+                          templateForm.setValue('barcode_width', 45);
+                          templateForm.setValue('barcode_height', 25);
                         }}
                         className="bg-gray-50 hover:bg-gray-100 border-gray-300"
                       >
@@ -3403,17 +3421,8 @@ export default function PrintLabelsEnhanced() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
-                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
-                          const widthDisplay = document.getElementById('barcode-width-display');
-                          const heightDisplay = document.getElementById('barcode-height-display');
-                          
-                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
-                            widthSlider.value = '65';
-                            heightSlider.value = '45';
-                            widthDisplay.textContent = '65%';
-                            heightDisplay.textContent = '45%';
-                          }
+                          templateForm.setValue('barcode_width', 65);
+                          templateForm.setValue('barcode_height', 45);
                         }}
                         className="bg-blue-50 hover:bg-blue-100 border-blue-300"
                       >
@@ -3421,20 +3430,11 @@ export default function PrintLabelsEnhanced() {
                       </Button>
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="outline"  
                         size="sm"
                         onClick={() => {
-                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
-                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
-                          const widthDisplay = document.getElementById('barcode-width-display');
-                          const heightDisplay = document.getElementById('barcode-height-display');
-                          
-                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
-                            widthSlider.value = '80';
-                            heightSlider.value = '60';
-                            widthDisplay.textContent = '80%';
-                            heightDisplay.textContent = '60%';
-                          }
+                          templateForm.setValue('barcode_width', 80);
+                          templateForm.setValue('barcode_height', 60);
                         }}
                         className="bg-green-50 hover:bg-green-100 border-green-300"
                       >
@@ -3445,17 +3445,8 @@ export default function PrintLabelsEnhanced() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
-                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
-                          const widthDisplay = document.getElementById('barcode-width-display');
-                          const heightDisplay = document.getElementById('barcode-height-display');
-                          
-                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
-                            widthSlider.value = '90';
-                            heightSlider.value = '70';
-                            widthDisplay.textContent = '90%';
-                            heightDisplay.textContent = '70%';
-                          }
+                          templateForm.setValue('barcode_width', 90);
+                          templateForm.setValue('barcode_height', 70);
                         }}
                         className="bg-purple-50 hover:bg-purple-100 border-purple-300 font-medium"
                       >
@@ -3466,17 +3457,8 @@ export default function PrintLabelsEnhanced() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          const widthSlider = document.querySelector('input[min="30"][max="95"]') as HTMLInputElement;
-                          const heightSlider = document.querySelector('input[min="20"][max="80"]') as HTMLInputElement;
-                          const widthDisplay = document.getElementById('barcode-width-display');
-                          const heightDisplay = document.getElementById('barcode-height-display');
-                          
-                          if (widthSlider && heightSlider && widthDisplay && heightDisplay) {
-                            widthSlider.value = '95';
-                            heightSlider.value = '80';
-                            widthDisplay.textContent = '95%';
-                            heightDisplay.textContent = '80%';
-                          }
+                          templateForm.setValue('barcode_width', 95);
+                          templateForm.setValue('barcode_height', 80);
                         }}
                         className="bg-red-50 hover:bg-red-100 border-red-300 font-bold"
                       >
