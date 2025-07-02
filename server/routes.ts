@@ -4097,6 +4097,13 @@ app.post("/api/customers", async (req, res) => {
         barcodeHeight: requestData.barcodeHeight
       });
       
+      console.log('📅 Manufacturing/Expiry date fields in request:', {
+        include_manufacturing_date: requestData.include_manufacturing_date,
+        include_expiry_date: requestData.include_expiry_date,
+        includeManufacturingDate: requestData.includeManufacturingDate,
+        includeExpiryDate: requestData.includeExpiryDate
+      });
+      
       // Map frontend field names to storage field names
       const templateData = {
         name: requestData.name,
