@@ -4689,9 +4689,27 @@ export default function PrintLabelsEnhanced() {
               )}
             </div>
             <DialogFooter>
-              <Button onClick={() => setIsPreviewDialogOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsPreviewDialogOpen(false)}
+              >
                 Close Preview
               </Button>
+              {getCurrentTemplate() && (
+                <Button
+                  onClick={() => {
+                    const currentTemplate = getCurrentTemplate();
+                    if (currentTemplate) {
+                      handleEditTemplate(currentTemplate);
+                      setIsPreviewDialogOpen(false);
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <EditIcon className="h-4 w-4 mr-2" />
+                  Edit Template
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
