@@ -286,10 +286,11 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 ### Enhanced Barcode Size and Visibility (July 2, 2025)
 - Significantly increased barcode dimensions for better visibility and scanning
 - Enhanced barcode width to 4.5x label width (max 420px) for optimal scanning
-- Increased barcode height to 35% of label height (max 120px) for better readability
+- Increased barcode height to 50% of label height (max 160px) for superior readability
 - Improved bar width from 1.5x to 2.5x for enhanced print quality
 - Enhanced font size for barcode text labels for better legibility
 - Updated margins and spacing for professional barcode appearance
+- Minimum barcode height increased to 90px for guaranteed scanner compatibility
 
 ### Label Box Center Alignment System (July 2, 2025)
 - Fixed label box centering alignment issues in both preview and print layouts
