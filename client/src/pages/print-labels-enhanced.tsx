@@ -840,11 +840,56 @@ export default function PrintLabelsEnhanced() {
   const templates = templatesData as LabelTemplate[];
   const printJobs = printJobsData as PrintJob[];
 
-  // Watch font size changes for real-time preview
+  // Watch template changes for real-time preview
   const watchedFontSize = useWatch({
     control: templateForm.control,
     name: "font_size"
   });
+
+  const watchedBarcodeWidth = useWatch({
+    control: templateForm.control,
+    name: "barcode_width"
+  });
+
+  const watchedBarcodeHeight = useWatch({
+    control: templateForm.control,
+    name: "barcode_height"
+  });
+
+  // Generate preview template from current form values
+  const generatePreviewTemplate = (): LabelTemplate => {
+    const formValues = templateForm.getValues();
+    return {
+      id: editingTemplate?.id || 0,
+      name: formValues.name || "Preview Template",
+      description: formValues.description || "",
+      width: formValues.width || 150,
+      height: formValues.height || 100,
+      font_size: formValues.font_size || 18,
+      orientation: formValues.orientation || 'landscape',
+      include_barcode: formValues.include_barcode || false,
+      include_price: formValues.include_price || false,
+      include_description: formValues.include_description || false,
+      include_mrp: formValues.include_mrp || false,
+      include_weight: formValues.include_weight || false,
+      include_hsn: formValues.include_hsn || false,
+      include_manufacturing_date: formValues.include_manufacturing_date || false,
+      include_expiry_date: formValues.include_expiry_date || false,
+      barcode_position: formValues.barcode_position || 'bottom',
+      barcode_width: formValues.barcode_width || 90,
+      barcode_height: formValues.barcode_height || 70,
+      border_style: formValues.border_style || 'solid',
+      border_width: formValues.border_width || 1,
+      background_color: formValues.background_color || '#ffffff',
+      text_color: formValues.text_color || '#000000',
+      custom_css: formValues.custom_css || "",
+      store_title: formValues.store_title || "",
+      is_default: formValues.is_default || false,
+      is_active: true,
+      created_at: editingTemplate?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  };
 
   // Dynamic CRUD Mutations with real-time data handling
   const createTemplateMutation = useMutation({
@@ -3964,6 +4009,43 @@ export default function PrintLabelsEnhanced() {
                     </FormItem>
                   )}
                 />
+
+                {/* Real-time Preview Section */}
+                <div className="border-t pt-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-sm">👁️</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-700">
+                        Live Preview
+                      </h3>
+                      <p className="text-sm text-blue-600">
+                        Real-time preview with current settings {watchedBarcodeWidth && watchedBarcodeHeight ? `(Barcode: ${watchedBarcodeWidth}% × ${watchedBarcodeHeight}%)` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {products && products.length > 0 && (
+                    <div className="bg-gray-50 p-4 rounded-lg border">
+                      <div className="flex justify-center">
+                        <div 
+                          className="bg-white rounded shadow-sm p-2"
+                          style={{
+                            minWidth: '200px',
+                            minHeight: '150px'
+                          }}
+                          dangerouslySetInnerHTML={{
+                            __html: generateLabelHTML(products[0], generatePreviewTemplate())
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 text-center mt-2">
+                        Preview using "{products[0]?.name}" with current form settings
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 <DialogFooter>
                   <Button 
