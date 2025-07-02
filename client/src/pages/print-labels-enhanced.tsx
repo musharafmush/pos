@@ -2061,6 +2061,14 @@ export default function PrintLabelsEnhanced() {
             <div className="flex flex-wrap gap-3">
               <Button 
                 variant="outline"
+                onClick={() => window.open('/label-creator-fullscreen', '_blank')}
+                className="border-purple-600 text-purple-600 hover:bg-purple-50 transition-all duration-200"
+              >
+                <SettingsIcon className="h-4 w-4 mr-2" />
+                Full Screen Creator
+              </Button>
+              <Button 
+                variant="outline"
                 onClick={handlePreview}
                 disabled={selectedProducts.length === 0}
                 className="border-green-600 text-green-600 hover:bg-green-50 transition-all duration-200"
