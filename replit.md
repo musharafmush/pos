@@ -274,6 +274,22 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Updated default template creation to use larger fonts across all templates
 - Enhanced template form reset to ensure all new templates use larger fonts
 
+### Professional Barcode Generation Implementation (July 2, 2025)
+- Enhanced barcode generation with JsBarcode library for professional CODE128 barcodes
+- Replaced basic SVG barcode with industry-standard barcode generation
+- Added comprehensive barcode configuration: width, height, font settings, and positioning
+- Enhanced barcode scaling based on label dimensions for optimal readability
+- Integrated professional barcode generation with existing template system
+- Added fallback handling for barcode generation errors
+- Barcode generation now matches professional retail standards like M MART examples
+
+### Landscape and Portrait Orientation Controls (July 2, 2025)
+- Added landscape and portrait orientation selection to Label Controls sidebar section
+- Implemented clean 2-column button layout with visual orientation icons
+- Created active state highlighting for selected orientation
+- Fixed layout from 3-column to desired 1,2 image layout as requested
+- Orientation controls integrate with existing template system and print functionality
+
 ### Landscape and Portrait Orientation Menu Options (June 30, 2025)
 - Added comprehensive landscape and portrait orientation selection with visual icons
 - Implemented visual orientation selector with large clickable buttons showing layout previews

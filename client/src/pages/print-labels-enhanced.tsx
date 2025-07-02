@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import JsBarcode from "jsbarcode";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { LabelDesigner } from "@/components/label-designer";
 import { Button } from "@/components/ui/button";
@@ -1392,25 +1393,48 @@ export default function PrintLabelsEnhanced() {
     });
   };
 
-  // Generate professional barcode
-  const generateBarcode = (text: string, width: number = 100, height: number = 30) => {
-    const barcodeData = text.padEnd(12, '0').substring(0, 12);
-    const bars = barcodeData.split('').map((digit, index) => {
-      const digitValue = parseInt(digit);
-      const barWidth = digitValue % 4 + 1;
-      const barHeight = height - 15;
-      return `<rect x="${index * 8}" y="5" width="${barWidth}" height="${barHeight}" fill="#000"/>`;
-    }).join('');
-
-    return `
-      <div style="text-align: center; margin: 2px 0;">
-        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #ddd;">
-          <rect width="${width}" height="${height}" fill="#fff"/>
-          ${bars}
-          <text x="${width/2}" y="${height - 2}" font-family="monospace" font-size="8" text-anchor="middle" fill="#000">${barcodeData}</text>
-        </svg>
-      </div>
-    `;
+  // Generate professional barcode using JsBarcode
+  const generateBarcode = (text: string, width: number = 200, height: number = 60) => {
+    try {
+      // Create a temporary canvas element
+      const canvas = document.createElement('canvas');
+      
+      // Clean the text for barcode generation
+      const barcodeText = text.replace(/[^a-zA-Z0-9]/g, '').padEnd(12, '0').substring(0, 12);
+      
+      // Generate barcode using JsBarcode
+      JsBarcode(canvas, barcodeText, {
+        format: "CODE128",
+        width: Math.max(1, width / 150), // Adjust bar width based on overall width
+        height: height - 15, // Leave space for text
+        displayValue: true,
+        fontSize: Math.max(8, height / 8),
+        fontOptions: "bold",
+        font: "monospace",
+        textAlign: "center",
+        textPosition: "bottom",
+        textMargin: 2,
+        background: "#FFFFFF",
+        lineColor: "#000000"
+      });
+      
+      // Convert canvas to data URL
+      const dataURL = canvas.toDataURL('image/png');
+      
+      return `
+        <div style="text-align: center; margin: 4px 0; padding: 2px;">
+          <img src="${dataURL}" style="max-width: ${width}px; max-height: ${height}px; border: 1px solid #ddd; background: white;" alt="Barcode: ${barcodeText}" />
+        </div>
+      `;
+    } catch (error) {
+      console.error('Barcode generation failed:', error);
+      // Fallback to simple text if barcode generation fails
+      return `
+        <div style="text-align: center; margin: 4px 0; padding: 8px; border: 1px solid #ddd; background: #f9f9f9; font-family: monospace; font-size: 12px;">
+          ${text}
+        </div>
+      `;
+    }
   };
 
   // Generate label HTML
@@ -1424,9 +1448,9 @@ export default function PrintLabelsEnhanced() {
     const borderCSS = border_style !== 'none' ? 
       `border: ${border_width}px ${border_style} #333;` : '';
 
-    // Scale barcode size based on label dimensions
-    const barcodeWidth = Math.min(width * 3.5, 320);
-    const barcodeHeight = Math.max(35, Math.min(height * 0.15, 60));
+    // Scale barcode size based on label dimensions for professional appearance
+    const barcodeWidth = Math.min(width * 3, 280); // Slightly smaller for better proportions
+    const barcodeHeight = Math.max(40, Math.min(height * 0.2, 80)); // Taller for better readability
 
     const barcodeHTML = include_barcode ? 
       generateBarcode(product.barcode || product.sku, barcodeWidth, barcodeHeight) : '';
