@@ -3912,8 +3912,8 @@ export const storage = {
           name, description, width, height, font_size, include_barcode, include_price,
           include_description, include_mrp, include_weight, include_hsn, barcode_position,
           border_style, border_width, background_color, text_color, custom_css,
-          is_default, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          storeTitle, is_default, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const now = new Date().toISOString();
@@ -3935,6 +3935,7 @@ export const storage = {
         templateData.backgroundColor || '#ffffff',
         templateData.textColor || '#000000',
         templateData.customCSS,
+        templateData.storeTitle || templateData.store_title,
         templateData.isDefault ? 1 : 0,
         templateData.isActive !== false ? 1 : 0,
         now,
@@ -4064,6 +4065,10 @@ export const storage = {
       if (templateData.customCSS !== undefined) {
         updates.push('custom_css = ?');
         values.push(templateData.customCSS);
+      }
+      if (templateData.storeTitle !== undefined || templateData.store_title !== undefined) {
+        updates.push('storeTitle = ?');
+        values.push(templateData.storeTitle || templateData.store_title);
       }
       if (templateData.isDefault !== undefined) {
         updates.push('is_default = ?');

@@ -202,12 +202,15 @@ router.get("/label-templates", async (req, res) => {
       include_mrp: template.includeMRP,
       include_weight: template.includeWeight,
       include_hsn: template.includeHSN,
+      include_manufacturing_date: template.includeManufacturingDate,
+      include_expiry_date: template.includeExpiryDate,
       barcode_position: template.barcodePosition,
       border_style: template.borderStyle,
       border_width: template.borderWidth,
       background_color: template.backgroundColor,
       text_color: template.textColor,
       custom_css: template.customCSS,
+      store_title: template.storeTitle,
       is_default: template.isDefault,
       is_active: template.isActive,
       created_at: template.createdAt,
@@ -241,12 +244,15 @@ router.post("/label-templates", async (req, res) => {
       includeMRP: templateData.include_mrp,
       includeWeight: templateData.include_weight,
       includeHSN: templateData.include_hsn,
+      includeManufacturingDate: templateData.include_manufacturing_date,
+      includeExpiryDate: templateData.include_expiry_date,
       barcodePosition: templateData.barcode_position,
       borderStyle: templateData.border_style,
       borderWidth: templateData.border_width,
       backgroundColor: templateData.background_color,
       textColor: templateData.text_color,
       customCSS: templateData.custom_css,
+      storeTitle: templateData.store_title, // Map store_title to storeTitle
       isDefault: templateData.is_default,
       orientation: templateData.orientation
     };
@@ -263,13 +269,19 @@ router.post("/label-templates", async (req, res) => {
       include_mrp: newTemplate.includeMRP,
       include_weight: newTemplate.includeWeight,
       include_hsn: newTemplate.includeHSN,
+      include_manufacturing_date: newTemplate.includeManufacturingDate,
+      include_expiry_date: newTemplate.includeExpiryDate,
       barcode_position: newTemplate.barcodePosition,
       border_style: newTemplate.borderStyle,
       border_width: newTemplate.borderWidth,
       background_color: newTemplate.backgroundColor,
       text_color: newTemplate.textColor,
       custom_css: newTemplate.customCSS,
-      is_default: newTemplate.isDefault
+      store_title: newTemplate.storeTitle,
+      is_default: newTemplate.isDefault,
+      is_active: newTemplate.isActive,
+      created_at: newTemplate.createdAt,
+      updated_at: newTemplate.updatedAt
     };
     
     res.status(201).json(responseData);
@@ -301,12 +313,15 @@ router.put("/label-templates/:id", async (req, res) => {
       includeMRP: updateData.include_mrp,
       includeWeight: updateData.include_weight,
       includeHSN: updateData.include_hsn,
+      includeManufacturingDate: updateData.include_manufacturing_date,
+      includeExpiryDate: updateData.include_expiry_date,
       barcodePosition: updateData.barcode_position,
       borderStyle: updateData.border_style,
       borderWidth: updateData.border_width,
       backgroundColor: updateData.background_color,
       textColor: updateData.text_color,
       customCSS: updateData.custom_css,
+      storeTitle: updateData.store_title, // Map store_title to storeTitle
       isDefault: updateData.is_default,
       orientation: updateData.orientation
     };
@@ -337,13 +352,19 @@ router.put("/label-templates/:id", async (req, res) => {
       include_mrp: updatedTemplate.includeMRP,
       include_weight: updatedTemplate.includeWeight,
       include_hsn: updatedTemplate.includeHSN,
+      include_manufacturing_date: updatedTemplate.includeManufacturingDate,
+      include_expiry_date: updatedTemplate.includeExpiryDate,
       barcode_position: updatedTemplate.barcodePosition,
       border_style: updatedTemplate.borderStyle,
       border_width: updatedTemplate.borderWidth,
       background_color: updatedTemplate.backgroundColor,
       text_color: updatedTemplate.textColor,
       custom_css: updatedTemplate.customCSS,
-      is_default: updatedTemplate.isDefault
+      store_title: updatedTemplate.storeTitle,
+      is_default: updatedTemplate.isDefault,
+      is_active: updatedTemplate.isActive,
+      created_at: updatedTemplate.createdAt,
+      updated_at: updatedTemplate.updatedAt
     };
 
     console.log('Sending response:', responseData);

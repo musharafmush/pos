@@ -3906,14 +3906,41 @@ app.post("/api/customers", async (req, res) => {
 
   app.post('/api/label-templates', isAuthenticated, async (req, res) => {
     try {
-      const templateData = req.body;
+      const requestData = req.body;
       
       // Validate required fields
-      if (!templateData.name || !templateData.width || !templateData.height) {
+      if (!requestData.name || !requestData.width || !requestData.height) {
         return res.status(400).json({ 
           message: 'Name, width, and height are required fields' 
         });
       }
+
+      // Map frontend field names to storage field names
+      const templateData = {
+        name: requestData.name,
+        description: requestData.description,
+        width: requestData.width,
+        height: requestData.height,
+        fontSize: requestData.font_size || 12,
+        includeBarcode: requestData.include_barcode,
+        includePrice: requestData.include_price,
+        includeDescription: requestData.include_description,
+        includeMRP: requestData.include_mrp,
+        includeWeight: requestData.include_weight,
+        includeHSN: requestData.include_hsn,
+        includeManufacturingDate: requestData.include_manufacturing_date,
+        includeExpiryDate: requestData.include_expiry_date,
+        barcodePosition: requestData.barcode_position,
+        borderStyle: requestData.border_style,
+        borderWidth: requestData.border_width,
+        backgroundColor: requestData.background_color,
+        textColor: requestData.text_color,
+        customCSS: requestData.custom_css,
+        storeTitle: requestData.store_title,
+        isDefault: requestData.is_default,
+        isActive: requestData.is_active,
+        orientation: requestData.orientation
+      };
 
       // Check for duplicate template names
       const existingTemplates = await storage.getLabelTemplates();
@@ -3960,7 +3987,34 @@ app.post("/api/customers", async (req, res) => {
   app.put('/api/label-templates/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const templateData = req.body;
+      const requestData = req.body;
+      
+      // Map frontend field names to storage field names
+      const templateData = {
+        name: requestData.name,
+        description: requestData.description,
+        width: requestData.width,
+        height: requestData.height,
+        fontSize: requestData.font_size,
+        includeBarcode: requestData.include_barcode,
+        includePrice: requestData.include_price,
+        includeDescription: requestData.include_description,
+        includeMRP: requestData.include_mrp,
+        includeWeight: requestData.include_weight,
+        includeHSN: requestData.include_hsn,
+        includeManufacturingDate: requestData.include_manufacturing_date,
+        includeExpiryDate: requestData.include_expiry_date,
+        barcodePosition: requestData.barcode_position,
+        borderStyle: requestData.border_style,
+        borderWidth: requestData.border_width,
+        backgroundColor: requestData.background_color,
+        textColor: requestData.text_color,
+        customCSS: requestData.custom_css,
+        storeTitle: requestData.store_title,
+        isDefault: requestData.is_default,
+        isActive: requestData.is_active,
+        orientation: requestData.orientation
+      };
       
       const updatedTemplate = await storage.updateLabelTemplate(id, templateData);
       

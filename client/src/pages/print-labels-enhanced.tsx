@@ -95,6 +95,7 @@ interface LabelTemplate {
   background_color: string;
   text_color: string;
   custom_css?: string;
+  store_title?: string;
   is_default: boolean;
   is_active: boolean;
   created_at: string;
@@ -142,6 +143,7 @@ const templateFormSchema = z.object({
   background_color: z.string(),
   text_color: z.string(),
   custom_css: z.string().optional(),
+  store_title: z.string().optional(),
   is_default: z.boolean()
 });
 
@@ -197,6 +199,7 @@ export default function PrintLabelsEnhanced() {
       background_color: '#ffffff',
       text_color: '#000000',
       custom_css: "",
+      store_title: "",
       is_default: false
     },
     mode: 'onChange' // Real-time validation and dynamic data updates
@@ -1065,6 +1068,7 @@ export default function PrintLabelsEnhanced() {
       background_color: template.background_color || '#ffffff',
       text_color: template.text_color || '#000000',
       custom_css: template.custom_css || "",
+      store_title: template.store_title || "",
       is_default: Boolean(template.is_default)
     };
 
@@ -3026,6 +3030,90 @@ export default function PrintLabelsEnhanced() {
                       </FormItem>
                     )}
                   />
+                </div>
+
+                {/* Store Title/Header Section */}
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 p-4 rounded-lg border-2 border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-lg">🏪</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-orange-700 dark:text-orange-300">
+                        Store Title & Header
+                      </h3>
+                      <p className="text-sm text-orange-600 dark:text-orange-400">
+                        Add your store name or brand header to the label
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={templateForm.control}
+                      name="store_title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Store Title/Header
+                          </FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              placeholder="e.g., M MART, SuperMarket, etc." 
+                              className="border-orange-200 focus:border-orange-400"
+                            />
+                          </FormControl>
+                          <p className="text-xs text-gray-500">
+                            This will appear as a header on your labels
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Title Position
+                      </Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-xs bg-orange-50 hover:bg-orange-100 border-orange-300"
+                        >
+                          Top
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          Center
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          Bottom
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Choose where to place the store title
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 p-3 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                    <p className="text-xs text-orange-700 dark:text-orange-300 flex items-center">
+                      <span className="mr-2">💡</span>
+                      <strong>Example:</strong> "M MART" will appear prominently on your labels for brand recognition
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

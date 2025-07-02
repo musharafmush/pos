@@ -297,6 +297,7 @@ export const labelTemplates = pgTable('label_templates', {
   backgroundColor: text('background_color').default('#ffffff'),
   textColor: text('text_color').default('#000000'),
   customCSS: text('custom_css'),
+  storeTitle: text('store_title'), // Store name/header like "M MART"
   isDefault: boolean('is_default').default(false),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -709,6 +710,7 @@ export const labelTemplateInsertSchema = createInsertSchema(labelTemplates, {
   backgroundColor: (schema) => schema.optional(),
   textColor: (schema) => schema.optional(),
   customCSS: (schema) => schema.optional(),
+  storeTitle: (schema) => schema.optional(),
   isDefault: (schema) => schema.optional(),
   isActive: (schema) => schema.optional()
 });
