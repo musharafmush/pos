@@ -1426,6 +1426,7 @@ export default function PrintLabelsEnhanced() {
       width: Math.max(10, data.width),
       height: Math.max(10, data.height),
       font_size: data.font_size, // Remove max constraint to allow larger font sizes
+      product_name_font_size: data.product_name_font_size, // Include product name font size
       border_width: Math.max(0, Math.min(10, data.border_width))
     };
     
@@ -1452,6 +1453,7 @@ export default function PrintLabelsEnhanced() {
       width: 150,
       height: 100,
       font_size: 18,
+      product_name_font_size: 18,
       orientation: 'landscape',
       include_barcode: true,
       include_price: true,
