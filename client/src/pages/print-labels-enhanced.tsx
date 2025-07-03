@@ -1572,7 +1572,15 @@ export default function PrintLabelsEnhanced() {
 
     // Calculate responsive font sizes based on label dimensions
     const baseFontSize = Math.max(font_size, Math.min(width * 0.08, height * 0.06));
-    const productNameFontSize = product_name_font_size ? Math.max(product_name_font_size, 12) : Math.max(baseFontSize + 4, 18); // Use dedicated product name font size
+    const productNameFontSize = product_name_font_size && product_name_font_size > 0 ? product_name_font_size : Math.max(baseFontSize + 4, 18); // Use dedicated product name font size
+    
+    // Debug logging for font sizes
+    console.log('🎯 Font size debugging:', {
+      template_font_size: font_size,
+      template_product_name_font_size: product_name_font_size,
+      calculated_baseFontSize: baseFontSize,
+      calculated_productNameFontSize: productNameFontSize
+    });
     const priceFontSize = Math.max(baseFontSize + 6, 20);
     const detailsFontSize = Math.max(baseFontSize - 2, 12);
 
