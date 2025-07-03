@@ -936,9 +936,13 @@ export default function PrintLabelsEnhanced() {
     },
     onSuccess: async (data) => {
       console.log('✅ Dynamic template update completed:', data);
+      
+      // Invalidate template cache to ensure fresh data in preview
+      await queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+      
       toast({
         title: "Print Labels Update Complete",
-        description: `Template "${data.name}" updated with dynamic CRUD operations (Font: ${data.font_size}pt)`,
+        description: `Template "${data.name}" updated with dynamic CRUD operations (Font: ${data.font_size}pt, Product Name: ${data.product_name_font_size}pt)`,
       });
       
       handleTemplateDialogClose();

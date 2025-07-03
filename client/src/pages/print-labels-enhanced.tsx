@@ -937,9 +937,13 @@ export default function PrintLabelsEnhanced() {
     },
     onSuccess: async (data) => {
       console.log('✅ Dynamic template update completed:', data);
+      
+      // Invalidate template cache to ensure fresh data in preview
+      await queryClient.invalidateQueries({ queryKey: ['/api/label-templates'] });
+      
       toast({
         title: "Print Labels Update Complete",
-        description: `Template "${data.name}" updated with dynamic CRUD operations (Font: ${data.font_size}pt)`,
+        description: `Template "${data.name}" updated with dynamic CRUD operations (Font: ${data.font_size}pt, Product Name: ${data.product_name_font_size}pt)`,
       });
       
       handleTemplateDialogClose();
@@ -1543,6 +1547,15 @@ export default function PrintLabelsEnhanced() {
       include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn,
       include_manufacturing_date, include_expiry_date, store_title, barcode_width, barcode_height
     } = template;
+
+    // Debug logging for template data
+    console.log('🔍 Template data in generateLabelHTML:', {
+      template_id: template.id,
+      template_name: template.name,
+      font_size,
+      product_name_font_size,
+      received_template_keys: Object.keys(template)
+    });
 
     // If both manufacturing and expiry dates are enabled, ignore any "Date Removed" CSS markers
     const shouldShowDates = include_manufacturing_date || include_expiry_date;
