@@ -3985,11 +3985,11 @@ export const storage = {
       const database = this.initLabelDatabase();
       const stmt = database.prepare(`
         INSERT INTO label_templates (
-          name, description, width, height, font_size, include_barcode, include_price,
+          name, description, width, height, font_size, product_name_font_size, include_barcode, include_price,
           include_description, include_mrp, include_weight, include_hsn, barcode_position,
           barcode_width, barcode_height, border_style, border_width, background_color, 
           text_color, custom_css, storeTitle, is_default, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const now = new Date().toISOString();
@@ -3999,6 +3999,7 @@ export const storage = {
         templateData.width,
         templateData.height,
         templateData.fontSize || 12,
+        templateData.productNameFontSize || templateData.product_name_font_size || 18,
         templateData.includeBarcode ? 1 : 0,
         templateData.includePrice ? 1 : 0,
         templateData.includeDescription ? 1 : 0,
@@ -4095,6 +4096,10 @@ export const storage = {
       if (templateData.fontSize !== undefined) {
         updates.push('font_size = ?');
         values.push(templateData.fontSize);
+      }
+      if (templateData.productNameFontSize !== undefined || templateData.product_name_font_size !== undefined) {
+        updates.push('product_name_font_size = ?');
+        values.push(templateData.productNameFontSize || templateData.product_name_font_size);
       }
       if (templateData.includeBarcode !== undefined) {
         updates.push('include_barcode = ?');

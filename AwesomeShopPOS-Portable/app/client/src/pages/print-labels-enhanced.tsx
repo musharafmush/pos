@@ -80,6 +80,7 @@ interface LabelTemplate {
   width: number;
   height: number;
   font_size: number;
+  product_name_font_size?: number;
   orientation?: 'portrait' | 'landscape';
   include_barcode: boolean;
   include_price: boolean;
@@ -130,6 +131,7 @@ const templateFormSchema = z.object({
   font_size: z.number().min(6, "Font size must be at least 6pt").max(200, "Font size cannot exceed 200pt").refine((val) => val > 0, {
     message: "Please customize your font size - this field is required"
   }),
+  product_name_font_size: z.number().min(6, "Product name font size must be at least 6pt").max(200, "Product name font size cannot exceed 200pt").optional(),
   orientation: z.enum(['portrait', 'landscape']).optional(),
   include_barcode: z.boolean(),
   include_price: z.boolean(),

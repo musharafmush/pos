@@ -3903,6 +3903,7 @@ app.post("/api/customers", async (req, res) => {
         const mappedTemplate = {
           ...template,
           font_size: template.fontSize || template.font_size,
+          product_name_font_size: template.productNameFontSize || template.product_name_font_size,
           include_barcode: template.includeBarcode || template.include_barcode,
           include_price: template.includePrice || template.include_price,
           include_description: template.includeDescription || template.include_description,
@@ -4033,6 +4034,7 @@ app.post("/api/customers", async (req, res) => {
       const responseTemplate = {
         ...template,
         font_size: template.fontSize || template.font_size,
+        product_name_font_size: template.productNameFontSize || template.product_name_font_size,
         include_barcode: template.includeBarcode || template.include_barcode,
         include_price: template.includePrice || template.include_price,
         include_description: template.includeDescription || template.include_description,

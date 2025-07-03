@@ -283,6 +283,7 @@ export const labelTemplates = pgTable('label_templates', {
   width: decimal('width', { precision: 6, scale: 2 }).notNull(), // in mm
   height: decimal('height', { precision: 6, scale: 2 }).notNull(), // in mm
   fontSize: integer('font_size').notNull().default(12),
+  productNameFontSize: integer('product_name_font_size').default(18),
   includeBarcode: boolean('include_barcode').default(true),
   includePrice: boolean('include_price').default(true),
   includeDescription: boolean('include_description').default(false),
@@ -696,6 +697,7 @@ export const labelTemplateInsertSchema = createInsertSchema(labelTemplates, {
   width: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
   height: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
   fontSize: (schema) => schema.optional(),
+  productNameFontSize: (schema) => schema.optional(),
   includeBarcode: (schema) => schema.optional(),
   includePrice: (schema) => schema.optional(),
   includeDescription: (schema) => schema.optional(),

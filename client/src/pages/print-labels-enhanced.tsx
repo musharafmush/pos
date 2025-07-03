@@ -80,6 +80,7 @@ interface LabelTemplate {
   width: number;
   height: number;
   font_size: number;
+  product_name_font_size?: number;
   orientation?: 'portrait' | 'landscape';
   include_barcode: boolean;
   include_price: boolean;
@@ -130,6 +131,7 @@ const templateFormSchema = z.object({
   font_size: z.number().min(6, "Font size must be at least 6pt").max(200, "Font size cannot exceed 200pt").refine((val) => val > 0, {
     message: "Please customize your font size - this field is required"
   }),
+  product_name_font_size: z.number().min(6, "Product name font size must be at least 6pt").max(200, "Product name font size cannot exceed 200pt").optional(),
   orientation: z.enum(['portrait', 'landscape']).optional(),
   include_barcode: z.boolean(),
   include_price: z.boolean(),
@@ -188,6 +190,7 @@ export default function PrintLabelsEnhanced() {
       width: 150,
       height: 100,
       font_size: 0, // No default font size - user must customize (0 means not set)
+      product_name_font_size: 18, // Default product name font size slightly larger than general font
       orientation: 'landscape',
       include_barcode: true,
       include_price: true,
@@ -1111,6 +1114,7 @@ export default function PrintLabelsEnhanced() {
       width: Math.max(10, Number(template.width) || 150),
       height: Math.max(10, Number(template.height) || 100),
       font_size: template.font_size ? Math.max(6, Math.min(200, Number(template.font_size))) : 12, // Fallback for existing templates
+      product_name_font_size: template.product_name_font_size ? Math.max(6, Math.min(200, Number(template.product_name_font_size))) : 18, // Default to 18pt for product names
       orientation: (template.orientation === 'portrait' || template.orientation === 'landscape') 
         ? template.orientation 
         : 'landscape',
@@ -1533,7 +1537,7 @@ export default function PrintLabelsEnhanced() {
   // Generate label HTML
   const generateLabelHTML = (product: Product, template: LabelTemplate) => {
     const {
-      width, height, font_size, border_style, border_width, background_color, text_color,
+      width, height, font_size, product_name_font_size, border_style, border_width, background_color, text_color,
       include_barcode, include_price, include_description, include_mrp, include_weight, include_hsn,
       include_manufacturing_date, include_expiry_date, store_title, barcode_width, barcode_height
     } = template;
@@ -1566,7 +1570,7 @@ export default function PrintLabelsEnhanced() {
 
     // Calculate responsive font sizes based on label dimensions
     const baseFontSize = Math.max(font_size, Math.min(width * 0.08, height * 0.06));
-    const titleFontSize = Math.max(baseFontSize + 4, 18);
+    const productNameFontSize = product_name_font_size ? Math.max(product_name_font_size, 12) : Math.max(baseFontSize + 4, 18); // Use dedicated product name font size
     const priceFontSize = Math.max(baseFontSize + 6, 20);
     const detailsFontSize = Math.max(baseFontSize - 2, 12);
 
@@ -1616,11 +1620,11 @@ export default function PrintLabelsEnhanced() {
         overflow: hidden;
       ">
         ${store_title ? 
-          `<div style="font-weight: bold; margin-bottom: ${Math.max(1, height * 0.01)}mm; font-size: ${Math.max(titleFontSize - 2, 16)}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e40af; text-transform: uppercase; letter-spacing: 1px;">
+          `<div style="font-weight: bold; margin-bottom: ${Math.max(1, height * 0.01)}mm; font-size: ${Math.max(productNameFontSize - 2, 16)}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e40af; text-transform: uppercase; letter-spacing: 1px;">
             ${store_title}
           </div>` : ''
         }
-        <div style="font-weight: bold; margin-bottom: ${Math.max(2, height * 0.02)}mm; font-size: ${titleFontSize}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <div style="font-weight: bold; margin-bottom: ${Math.max(2, height * 0.02)}mm; font-size: ${productNameFontSize}px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e11d48;">
           ${product.name}
         </div>
 
@@ -2823,7 +2827,7 @@ export default function PrintLabelsEnhanced() {
                           }}
                         >
                           <div className="text-center">
-                            <div className="font-bold" style={{ fontSize: `${Math.min(template.font_size / 2.5, 14)}px` }}>
+                            <div className="font-bold" style={{ fontSize: `${Math.min((template.product_name_font_size || template.font_size) / 2.5, 14)}px`, color: '#e11d48' }}>
                               PRODUCT NAME
                             </div>
                             {template.include_price && <div>₹99.00</div>}
@@ -2844,8 +2848,13 @@ export default function PrintLabelsEnhanced() {
                             <span className="font-medium">{template.width}mm × {template.height}mm</span>
                           </div>
                           <div className="bg-gray-50 rounded-lg p-2">
-                            <span className="text-muted-foreground block text-xs">Font Size</span>
-                            <span className="font-medium">{template.font_size}pt</span>
+                            <span className="text-muted-foreground block text-xs">Font Sizes</span>
+                            <div className="space-y-1">
+                              <div className="font-medium text-xs">General: {template.font_size}pt</div>
+                              {template.product_name_font_size && (
+                                <div className="font-medium text-xs text-rose-600">Product: {template.product_name_font_size}pt</div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -3375,6 +3384,84 @@ export default function PrintLabelsEnhanced() {
                                   </div>
                                 </div>
                               )}
+                            </div>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={templateForm.control}
+                    name="product_name_font_size"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          Product Name Font Size (pt)
+                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                            Separate Control
+                          </span>
+                        </FormLabel>
+                        <FormControl>
+                          <div className="space-y-3">
+                            <div className="flex gap-2 items-center">
+                              <Input 
+                                type="number" 
+                                min="6"
+                                max="200"
+                                step="1"
+                                value={field.value || 18}
+                                placeholder="Enter product name font size"
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  if (!isNaN(value) && value > 0) {
+                                    field.onChange(value);
+                                  } else if (e.target.value === "") {
+                                    field.onChange(18);
+                                  }
+                                }}
+                                className="w-24"
+                              />
+                              <input
+                                type="range"
+                                min="6"
+                                max="200"
+                                step="1"
+                                value={field.value || 18}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  field.onChange(value);
+                                }}
+                                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                style={{
+                                  background: `linear-gradient(to right, #059669 0%, #059669 ${(((field.value || 18) - 6) / (200 - 6)) * 100}%, #e5e7eb ${(((field.value || 18) - 6) / (200 - 6)) * 100}%, #e5e7eb 100%)`
+                                }}
+                              />
+                              <span className="text-sm font-medium text-green-600 min-w-[35px]">
+                                {field.value || 18}pt
+                              </span>
+                            </div>
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                              <div className="text-xs text-green-600 font-medium mb-2 flex items-center gap-1">
+                                <TagIcon className="h-3 w-3" />
+                                Product Name Preview:
+                              </div>
+                              <div style={{ 
+                                fontSize: `${Math.min(field.value || 18, 40)}px`, 
+                                fontWeight: 'bold', 
+                                color: '#059669',
+                                lineHeight: '1.2',
+                                marginBottom: '4px',
+                                transition: 'font-size 0.2s ease'
+                              }}>
+                                GOLD WINNER (1000KG)
+                              </div>
+                              <div className="text-xs text-green-500 mt-2 opacity-75">
+                                Product name font: {field.value || 18}pt
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                This controls only the product name size, other elements use general font size
+                              </div>
                             </div>
                           </div>
                         </FormControl>
