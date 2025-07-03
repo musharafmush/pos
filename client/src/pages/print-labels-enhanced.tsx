@@ -2145,33 +2145,53 @@ export default function PrintLabelsEnhanced() {
             </CardContent>
           </Card>
 
-          {/* Product Name Form with Size Increase */}
-          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-purple-700">
-                <Package2Icon className="h-5 w-5" />
-                Product Name Form
+          {/* Enhanced Professional Product Name Form - Separate Design System */}
+          <Card className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 border-2 border-purple-300 shadow-lg">
+            <CardHeader className="pb-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold">
+                <Package2Icon className="h-6 w-6" />
+                Professional Product Name Form
               </CardTitle>
+              <p className="text-purple-100 text-sm mt-2">
+                Design custom product labels with advanced font controls
+              </p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Product Name Input */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Product Name</Label>
+            <CardContent className="space-y-6 p-6">
+              {/* Product Name Input - Enhanced */}
+              <div className="space-y-3">
+                <Label className="text-lg font-semibold text-gray-800">Product Name</Label>
                 <Input
-                  placeholder="Enter product name (e.g., SUGAR BULK)"
-                  className="bg-white"
+                  placeholder="Enter product name (e.g., GOLD WINNER 1000KG)"
+                  className="bg-white border-2 border-purple-300 focus:border-purple-500 text-lg py-3 px-4 rounded-lg shadow-sm"
+                  value={productNameInput}
+                  onChange={(e) => setProductNameInput(e.target.value)}
                 />
+                <p className="text-sm text-gray-600">
+                  This name will appear prominently on your printed labels
+                </p>
               </div>
 
-              {/* Font Size Increase Controls */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Font Size Controls</Label>
-                <div className="flex items-center gap-2">
+              {/* Font Size Control Center */}
+              <div className="space-y-4 bg-white p-4 rounded-lg border-2 border-purple-200 shadow-sm">
+                <Label className="text-lg font-semibold text-gray-800">Font Size Control Center</Label>
+                
+                {/* Current Size Display - Enhanced */}
+                <div className="p-4 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-lg border-2 border-purple-300 text-center">
+                  <div className="text-sm text-gray-600 mb-2">Current Font Size</div>
+                  <div className="text-3xl font-bold text-purple-700">
+                    {selectedTemplate ? 
+                      `${templates.find(t => t.id === selectedTemplate)?.font_size || 16}pt` : 
+                      'Select Template First'
+                    }
+                  </div>
+                </div>
+
+                {/* Size Adjustment Buttons - Enhanced */}
+                <div className="grid grid-cols-2 gap-4">
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="lg"
                     onClick={() => {
-                      // Increase font size for selected template
                       if (selectedTemplate) {
                         const template = templates.find(t => t.id === selectedTemplate);
                         if (template) {
@@ -2181,16 +2201,15 @@ export default function PrintLabelsEnhanced() {
                       }
                     }}
                     disabled={!selectedTemplate}
-                    className="flex-1"
+                    className="bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white border-none py-4 font-bold text-lg shadow-lg transform hover:scale-105 transition-all duration-200"
                   >
-                    <PlusIcon className="h-3 w-3 mr-1" />
-                    Increase (+2pt)
+                    <PlusIcon className="h-5 w-5 mr-2" />
+                    Increase Size (+2pt)
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="lg"
                     onClick={() => {
-                      // Decrease font size for selected template
                       if (selectedTemplate) {
                         const template = templates.find(t => t.id === selectedTemplate);
                         if (template) {
@@ -2200,102 +2219,130 @@ export default function PrintLabelsEnhanced() {
                       }
                     }}
                     disabled={!selectedTemplate}
-                    className="flex-1"
+                    className="bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600 text-white border-none py-4 font-bold text-lg shadow-lg transform hover:scale-105 transition-all duration-200"
                   >
-                    <XIcon className="h-3 w-3 mr-1" />
-                    Decrease (-2pt)
+                    <XIcon className="h-5 w-5 mr-2" />
+                    Decrease Size (-2pt)
                   </Button>
                 </div>
               </div>
 
-              {/* Current Font Size Display */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Current Size</Label>
-                <div className="p-2 bg-white rounded border text-center">
-                  <span className="text-lg font-bold text-purple-600">
-                    {selectedTemplate ? 
-                      `${templates.find(t => t.id === selectedTemplate)?.font_size || 16}pt` : 
-                      'Select Template'
-                    }
-                  </span>
-                </div>
-              </div>
-
-              {/* Size Presets */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Quick Size Presets</Label>
-                <div className="grid grid-cols-2 gap-2">
+              {/* Quick Size Presets - Enhanced */}
+              <div className="space-y-3">
+                <Label className="text-lg font-semibold text-gray-800">Quick Size Presets</Label>
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="lg"
                     onClick={() => {
                       if (selectedTemplate) {
                         handleTemplateFontSizeUpdateMove(selectedTemplate, 12);
                       }
                     }}
                     disabled={!selectedTemplate}
-                    className="text-xs"
+                    className="bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white border-none py-4 font-bold shadow-md transform hover:scale-105 transition-all duration-200"
                   >
                     Small (12pt)
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="lg"
                     onClick={() => {
                       if (selectedTemplate) {
                         handleTemplateFontSizeUpdateMove(selectedTemplate, 18);
                       }
                     }}
                     disabled={!selectedTemplate}
-                    className="text-xs"
+                    className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white border-none py-4 font-bold shadow-md transform hover:scale-105 transition-all duration-200"
                   >
                     Medium (18pt)
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="lg"
                     onClick={() => {
                       if (selectedTemplate) {
                         handleTemplateFontSizeUpdateMove(selectedTemplate, 24);
                       }
                     }}
                     disabled={!selectedTemplate}
-                    className="text-xs"
+                    className="bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 text-white border-none py-4 font-bold shadow-md transform hover:scale-105 transition-all duration-200"
                   >
                     Large (24pt)
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="lg"
                     onClick={() => {
                       if (selectedTemplate) {
                         handleTemplateFontSizeUpdateMove(selectedTemplate, 36);
                       }
                     }}
                     disabled={!selectedTemplate}
-                    className="text-xs"
+                    className="bg-gradient-to-r from-pink-400 to-pink-500 hover:from-pink-500 hover:to-pink-600 text-white border-none py-4 font-bold shadow-md transform hover:scale-105 transition-all duration-200"
                   >
                     XL (36pt)
                   </Button>
                 </div>
               </div>
 
-              {/* Apply to Product Name */}
-              <Button
-                onClick={() => {
-                  if (selectedTemplate) {
-                    toast({
-                      title: "Font Size Applied",
-                      description: `Updated template font size for product naming`,
-                    });
-                  }
-                }}
-                disabled={!selectedTemplate}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                size="sm"
-              >
-                Apply Size to Labels
-              </Button>
+              {/* Professional Actions */}
+              <div className="space-y-3">
+                <Button
+                  onClick={() => {
+                    if (selectedTemplate && productNameInput.trim()) {
+                      toast({
+                        title: "Label Design Applied",
+                        description: `Product name "${productNameInput}" applied to template with ${templates.find(t => t.id === selectedTemplate)?.font_size}pt font`,
+                      });
+                    }
+                  }}
+                  disabled={!selectedTemplate || !productNameInput.trim()}
+                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-4 text-lg font-bold shadow-lg transform hover:scale-105 transition-all duration-200"
+                  size="lg"
+                >
+                  Apply Design to Labels
+                </Button>
+                
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setProductNameInput('')}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium"
+                  >
+                    Reset Form
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (selectedTemplate) {
+                        toast({
+                          title: "Template Preview",
+                          description: `Viewing template with ${templates.find(t => t.id === selectedTemplate)?.font_size}pt font`,
+                        });
+                      }
+                    }}
+                    disabled={!selectedTemplate}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium"
+                  >
+                    Preview Design
+                  </Button>
+                </div>
+              </div>
+
+              {/* Pro Tips */}
+              <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
+                <div className="text-sm text-yellow-800">
+                  <strong>Pro Tips:</strong>
+                  <ul className="mt-2 space-y-1 text-xs">
+                    <li>• Use 24pt+ for better readability on small labels</li>
+                    <li>• Product names with ALL CAPS appear more professional</li>
+                    <li>• Test different sizes to find the perfect fit</li>
+                  </ul>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
