@@ -1303,6 +1303,9 @@ export default function POSEnhanced() {
       // Select the newly created customer
       setSelectedCustomer(newCustomer);
 
+      // Automatically fetch and display loyalty information
+      await fetchCustomerLoyalty(newCustomer.id);
+
       // Reset form and close dialog
       setNewCustomerName("");
       setNewCustomerPhone("");
@@ -1311,7 +1314,7 @@ export default function POSEnhanced() {
 
       toast({
         title: "Customer Added",
-        description: `${newCustomer.name} has been created successfully`,
+        description: `${newCustomer.name} has been created successfully with loyalty account`,
       });
 
     } catch (error) {

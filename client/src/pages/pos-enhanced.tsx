@@ -1303,6 +1303,9 @@ export default function POSEnhanced() {
       // Select the newly created customer
       setSelectedCustomer(newCustomer);
 
+      // Automatically fetch and display loyalty information
+      await fetchCustomerLoyalty(newCustomer.id);
+
       // Reset form and close dialog
       setNewCustomerName("");
       setNewCustomerPhone("");
@@ -1311,7 +1314,7 @@ export default function POSEnhanced() {
 
       toast({
         title: "Customer Added",
-        description: `${newCustomer.name} has been created successfully`,
+        description: `${newCustomer.name} has been created successfully with loyalty account`,
       });
 
     } catch (error) {
@@ -2227,17 +2230,22 @@ export default function POSEnhanced() {
         });
 
         // Then restore the held sale state
-        setTimeout(() => {
+        setTimeout(async () => {
           setCart(restoredCart);
           setSelectedCustomer(restoredCustomer);
           setDiscount(holdSale.discount || 0);
           setOceanFreight(restoredOceanFreight);
 
+          // Automatically fetch loyalty information if customer exists
+          if (restoredCustomer) {
+            await fetchCustomerLoyalty(restoredCustomer.id);
+          }
+
           setShowHoldSales(false);
 
           toast({
             title: "Sale Recalled Successfully",
-            description: `${holdSale.id} restored with ${restoredCart.length} items`,
+            description: `${holdSale.id} restored with ${restoredCart.length} items${restoredCustomer ? ' and loyalty data' : ''}`,
           });
         }, 50);
       }, 10);
@@ -4374,12 +4382,16 @@ export default function POSEnhanced() {
                             <div
                               key={customer.id}
                               className="p-3 bg-white border border-purple-100 rounded cursor-pointer hover:bg-purple-50 transition-colors"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSelectedCustomer(customer);
                                 setCustomerSearchTerm("");
+                                
+                                // Automatically fetch loyalty information
+                                await fetchCustomerLoyalty(customer.id);
+                                
                                 toast({
                                   title: "Customer Selected",
-                                  description: `${customer.name} selected for this order`,
+                                  description: `${customer.name} selected with loyalty information loaded`,
                                 });
                               }}
                             >
@@ -4406,11 +4418,14 @@ export default function POSEnhanced() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
+                        onClick={async () => {
                           // Auto-select Amit Patel and add test products for demo
                           const amitPatel = customers.find((c: Customer) => c.name === "Amit Patel");
                           if (amitPatel) {
                             setSelectedCustomer(amitPatel);
+                            
+                            // Automatically fetch loyalty information
+                            await fetchCustomerLoyalty(amitPatel.id);
                             
                             // Add test products to cart
                             const testItems = [
@@ -4444,7 +4459,7 @@ export default function POSEnhanced() {
                             
                             toast({
                               title: "Demo Setup Complete",
-                              description: "Amit Patel selected with test products in cart",
+                              description: "Amit Patel selected with loyalty and test products",
                             });
                           }
                         }}

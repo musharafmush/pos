@@ -136,7 +136,7 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
-### Complete Installable Desktop Application Implementation (July 2, 2025)
+### Complete Installable Desktop Application Implementation (July 3, 2025)
 - Created comprehensive installable desktop application with professional distribution package
 - Built complete desktop installer (create-installer.cjs) generating portable AwesomeShopPOS-Portable package
 - Enhanced with cross-platform installation scripts: Install-POS.bat (Windows) and Install-POS.sh (Linux/Mac)
@@ -150,10 +150,20 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Added comprehensive documentation: README.md, INSTALLATION-GUIDE.md with complete setup instructions
 - Desktop package includes: app source files, data directories, backup system, and export functionality
 - Professional directory structure with isolated data, logs, backups, and exports folders
-- Created distribution archive (AwesomeShopPOS-Desktop-Fixed-v1.0.1.tar.gz) with all fixes included
+- Created distribution archive (AwesomeShopPOS-Desktop-Final-v1.0.2.tar.gz) with all fixes included
 - Complete offline capability with local SQLite database and no internet dependency required
 - Indian business compliance built-in with GST calculations, HSN codes, and Indian Rupee formatting
 - Professional installation workflow with dependency checking and desktop shortcut creation
+
+### Automatic Customer Loyalty Display Fix (July 3, 2025)
+- Fixed customer loyalty program automatic display when adding new customers in POS Enhanced
+- Enhanced createNewCustomer function to automatically fetch and display loyalty information after customer creation
+- Added automatic loyalty data fetching when existing customers are selected from search results
+- Improved customer selection workflow with automatic loyalty loading for demo customers and recalled sales
+- Updated toast notifications to confirm loyalty account creation and data loading
+- Fixed both main application and desktop portable version to ensure consistency across deployments
+- Customer loyalty information now appears immediately after customer selection without manual intervention
+- Enhanced user experience with seamless loyalty program integration during customer management workflows
 
 ### Edit-Options Page Removal (June 25, 2025)
 - Removed the edit-options page (POS Bill Edit) from the application
