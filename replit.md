@@ -136,16 +136,19 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
-### Product Name Font Size Control Fix (July 3, 2025)
-- Fixed critical issue where Product Name Font Size control wasn't working properly in template editor
+### Product Name Font Size Control Complete Fix (July 3, 2025)
+- Fixed critical missing product_name_font_size field in generatePreviewTemplate function - this was the root cause preventing preview updates
+- Enhanced cache invalidation in updateTemplateMutation.onSuccess to ensure fresh template data after edits
 - Updated form submission handler to properly include product_name_font_size field in validated data
 - Fixed form reset to include product_name_font_size default value (18pt) when creating new templates
 - Fixed preview generation logic to use product_name_font_size instead of falling back to base font size
 - Updated portable version to use productNameFontSize variable instead of titleFontSize for product names
-- Added debugging logs to track font size calculations and ensure proper value usage
+- Added comprehensive debugging logs to track complete data flow from form to database
+- Enhanced backend field mapping to handle both camelCase and snake_case variants
 - Applied fixes to both main application and AwesomeShopPOS-Portable versions for consistency
 - Product name font size control now fully functional with proper save/load functionality in both preview and final output
 - Users can now set independent font sizes for product names separate from other text elements
+- Complete architectural review resolved all preview rendering pipeline issues
 
 ### Complete Installable Desktop Application Implementation (July 3, 2025)
 - Created comprehensive installable desktop application with professional distribution package

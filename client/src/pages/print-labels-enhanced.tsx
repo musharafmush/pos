@@ -880,6 +880,7 @@ export default function PrintLabelsEnhanced() {
       width: formValues.width || 150,
       height: formValues.height || 100,
       font_size: formValues.font_size || 18,
+      product_name_font_size: formValues.product_name_font_size || 18,
       orientation: formValues.orientation || 'landscape',
       include_barcode: formValues.include_barcode || false,
       include_price: formValues.include_price || false,
@@ -1436,7 +1437,8 @@ export default function PrintLabelsEnhanced() {
       border_width: Math.max(0, Math.min(10, data.border_width))
     };
     
-    console.log('Font size being sent to server:', validatedData.font_size);
+    console.log('🚀 Complete validated data being sent to server:', validatedData);
+    console.log('🎯 Product Name Font Size in submission:', validatedData.product_name_font_size);
 
     if (editingTemplate) {
       console.log('Updating existing template:', editingTemplate.id);
@@ -1554,7 +1556,8 @@ export default function PrintLabelsEnhanced() {
       template_name: template.name,
       font_size,
       product_name_font_size,
-      received_template_keys: Object.keys(template)
+      received_template_keys: Object.keys(template),
+      full_template_object: template
     });
 
     // If both manufacturing and expiry dates are enabled, ignore any "Date Removed" CSS markers
