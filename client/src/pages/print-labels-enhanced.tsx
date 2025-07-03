@@ -178,6 +178,7 @@ export default function PrintLabelsEnhanced() {
   const [bulkAction, setBulkAction] = useState<'none' | 'selectAll' | 'deselectAll' | 'invertSelection'>('none');
   const [sortBy, setSortBy] = useState<'name' | 'sku' | 'price' | 'stock'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [productNameInput, setProductNameInput] = useState("");
 
   // Dynamic CRUD Form for template creation/editing with real-time data handling
   const templateForm = useForm<TemplateFormData>({
