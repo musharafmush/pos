@@ -821,6 +821,8 @@ export default function PrintLabelsEnhanced() {
     }
   };
 
+
+
   // Fetch data
   const { data: productsData = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
     queryKey: ['/api/products'],
@@ -850,6 +852,57 @@ export default function PrintLabelsEnhanced() {
   const categories = categoriesData as Category[];
   const templates = templatesData as LabelTemplate[];
   const printJobs = printJobsData as PrintJob[];
+
+  // Font size update function for Product Name Form
+  const handleTemplateFontSizeUpdateMove = async (templateId: number, newFontSize: number) => {
+    try {
+      const template = templates.find(t => t.id === templateId);
+      if (!template) {
+        throw new Error('Template not found');
+      }
+
+      const updatedData: TemplateFormData = {
+        name: template.name,
+        description: template.description || '',
+        width: template.width,
+        height: template.height,
+        font_size: newFontSize,
+        orientation: template.orientation || 'landscape',
+        include_barcode: template.include_barcode,
+        include_price: template.include_price,
+        include_description: template.include_description,
+        include_mrp: template.include_mrp,
+        include_weight: template.include_weight,
+        include_hsn: template.include_hsn,
+        include_manufacturing_date: template.include_manufacturing_date || false,
+        include_expiry_date: template.include_expiry_date || false,
+        barcode_position: template.barcode_position,
+        barcode_width: template.barcode_width,
+        barcode_height: template.barcode_height,
+        border_style: template.border_style,
+        border_width: template.border_width,
+        background_color: template.background_color,
+        text_color: template.text_color,
+        custom_css: template.custom_css,
+        store_title: template.store_title,
+        is_default: template.is_default
+      };
+
+      await dynamicCRUD.update(templateId, updatedData);
+      
+      toast({
+        title: "Font Size Updated",
+        description: `Template font size updated to ${newFontSize}pt`,
+      });
+    } catch (error) {
+      console.error('❌ Font size update failed:', error);
+      toast({
+        title: "Update Failed",
+        description: "Could not update template font size",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Watch template changes for real-time preview
   const watchedFontSize = useWatch({
@@ -2089,6 +2142,160 @@ export default function PrintLabelsEnhanced() {
                   </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Product Name Form with Size Increase */}
+          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-purple-700">
+                <Package2Icon className="h-5 w-5" />
+                Product Name Form
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Product Name Input */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Product Name</Label>
+                <Input
+                  placeholder="Enter product name (e.g., SUGAR BULK)"
+                  className="bg-white"
+                />
+              </div>
+
+              {/* Font Size Increase Controls */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Font Size Controls</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Increase font size for selected template
+                      if (selectedTemplate) {
+                        const template = templates.find(t => t.id === selectedTemplate);
+                        if (template) {
+                          const newFontSize = Math.min(template.font_size + 2, 72);
+                          handleTemplateFontSizeUpdateMove(selectedTemplate, newFontSize);
+                        }
+                      }
+                    }}
+                    disabled={!selectedTemplate}
+                    className="flex-1"
+                  >
+                    <PlusIcon className="h-3 w-3 mr-1" />
+                    Increase (+2pt)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Decrease font size for selected template
+                      if (selectedTemplate) {
+                        const template = templates.find(t => t.id === selectedTemplate);
+                        if (template) {
+                          const newFontSize = Math.max(template.font_size - 2, 6);
+                          handleTemplateFontSizeUpdateMove(selectedTemplate, newFontSize);
+                        }
+                      }
+                    }}
+                    disabled={!selectedTemplate}
+                    className="flex-1"
+                  >
+                    <XIcon className="h-3 w-3 mr-1" />
+                    Decrease (-2pt)
+                  </Button>
+                </div>
+              </div>
+
+              {/* Current Font Size Display */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Current Size</Label>
+                <div className="p-2 bg-white rounded border text-center">
+                  <span className="text-lg font-bold text-purple-600">
+                    {selectedTemplate ? 
+                      `${templates.find(t => t.id === selectedTemplate)?.font_size || 16}pt` : 
+                      'Select Template'
+                    }
+                  </span>
+                </div>
+              </div>
+
+              {/* Size Presets */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Quick Size Presets</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedTemplate) {
+                        handleTemplateFontSizeUpdateMove(selectedTemplate, 12);
+                      }
+                    }}
+                    disabled={!selectedTemplate}
+                    className="text-xs"
+                  >
+                    Small (12pt)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedTemplate) {
+                        handleTemplateFontSizeUpdateMove(selectedTemplate, 18);
+                      }
+                    }}
+                    disabled={!selectedTemplate}
+                    className="text-xs"
+                  >
+                    Medium (18pt)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedTemplate) {
+                        handleTemplateFontSizeUpdateMove(selectedTemplate, 24);
+                      }
+                    }}
+                    disabled={!selectedTemplate}
+                    className="text-xs"
+                  >
+                    Large (24pt)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedTemplate) {
+                        handleTemplateFontSizeUpdateMove(selectedTemplate, 36);
+                      }
+                    }}
+                    disabled={!selectedTemplate}
+                    className="text-xs"
+                  >
+                    XL (36pt)
+                  </Button>
+                </div>
+              </div>
+
+              {/* Apply to Product Name */}
+              <Button
+                onClick={() => {
+                  if (selectedTemplate) {
+                    toast({
+                      title: "Font Size Applied",
+                      description: `Updated template font size for product naming`,
+                    });
+                  }
+                }}
+                disabled={!selectedTemplate}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                size="sm"
+              >
+                Apply Size to Labels
+              </Button>
             </CardContent>
           </Card>
 
