@@ -67,7 +67,6 @@ import OfferManagement from "@/pages/offer-management";
 import OfferReports from "@/pages/offer-reports";
 import LoyaltyManagement from "@/pages/loyalty-management";
 import LoyaltyRules from "@/pages/loyalty-rules";
-import SizeAdjustmentDemo from "@/pages/size-adjustment-demo";
 
 function Router() {
   return (
@@ -139,7 +138,6 @@ function Router() {
       <ProtectedRoute path="/offer-reports" component={OfferReports} />
       <ProtectedRoute path="/loyalty-management" component={LoyaltyManagement} />
       <ProtectedRoute path="/loyalty-rules" component={LoyaltyRules} />
-      <ProtectedRoute path="/size-adjustment-demo" component={SizeAdjustmentDemo} />
       <Route component={NotFound} />
     </Switch>
   );

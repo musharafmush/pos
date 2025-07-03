@@ -206,17 +206,6 @@ export default function Dashboard() {
             </Button>
           </Link>
         </div>
-
-        {/* Size Adjustment Demo */}
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4 mb-6">
-          <h3 className="text-lg font-semibold text-purple-800 mb-2">Product Size Adjustment Demo</h3>
-          <p className="text-purple-600 mb-3">Test dynamic product sizing with adjustable quantities and weights for SUGAR BULK products</p>
-          <Link href="/size-adjustment-demo">
-            <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
-              Open Size Adjustment Demo
-            </Button>
-          </Link>
-        </div>
       </div>
     </DashboardLayout>
   );
