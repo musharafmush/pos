@@ -3357,32 +3357,70 @@ export const storage = {
   },
 
   async redeemLoyaltyPoints(customerId: number, pointsToRedeem: number): Promise<CustomerLoyalty | null> {
-    const loyalty = await this.getCustomerLoyalty(customerId);
-    if (!loyalty) return null;
+    try {
+      console.log('Redeeming loyalty points:', { customerId, pointsToRedeem });
+      const { sqlite } = await import('../db/index.js');
+      
+      const loyalty = await this.getCustomerLoyalty(customerId);
+      if (!loyalty) return null;
 
-    const availablePoints = parseFloat(loyalty.availablePoints.toString());
-    if (availablePoints < pointsToRedeem) {
-      throw new Error('Insufficient loyalty points');
+      const availablePoints = parseFloat(loyalty.availablePoints.toString());
+      if (availablePoints < pointsToRedeem) {
+        throw new Error('Insufficient loyalty points');
+      }
+
+      const newUsed = parseFloat(loyalty.usedPoints.toString()) + pointsToRedeem;
+      const newAvailable = availablePoints - pointsToRedeem;
+
+      // Update using SQLite
+      const result = sqlite.prepare(`
+        UPDATE customer_loyalty 
+        SET used_points = ?, 
+            available_points = ?, 
+            last_updated = datetime('now')
+        WHERE customer_id = ?
+      `).run(
+        newUsed.toString(),
+        newAvailable.toString(),
+        customerId
+      );
+
+      if (result.changes === 0) {
+        console.log('No loyalty account found to update for customer:', customerId);
+        return null;
+      }
+
+      // Fetch and return the updated record
+      const updatedRecord = sqlite.prepare(`
+        SELECT * FROM customer_loyalty WHERE customer_id = ?
+      `).get(customerId);
+
+      if (!updatedRecord) {
+        return null;
+      }
+
+      console.log('Loyalty points redeemed successfully:', updatedRecord);
+      return {
+        id: updatedRecord.id,
+        customerId: updatedRecord.customer_id,
+        totalPoints: parseFloat(updatedRecord.total_points || '0'),
+        usedPoints: parseFloat(updatedRecord.used_points || '0'),
+        availablePoints: parseFloat(updatedRecord.available_points || '0'),
+        tier: updatedRecord.tier || 'Member',
+        createdAt: new Date(updatedRecord.created_at),
+        lastUpdated: new Date(updatedRecord.last_updated || updatedRecord.created_at)
+      };
+    } catch (error) {
+      console.error('Error redeeming loyalty points:', error);
+      throw error;
     }
-
-    const newUsed = parseFloat(loyalty.usedPoints.toString()) + pointsToRedeem;
-    const newAvailable = availablePoints - pointsToRedeem;
-
-    const [updated] = await db
-      .update(customerLoyalty)
-      .set({
-        usedPoints: newUsed.toString(),
-        availablePoints: newAvailable.toString(),
-        lastUpdated: new Date()
-      })
-      .where(eq(customerLoyalty.customerId, customerId))
-      .returning();
-
-    return updated;
   },
 
   async addLoyaltyPoints(customerId: number, pointsToAdd: number, reason: string): Promise<CustomerLoyalty | null> {
     try {
+      console.log('Adding loyalty points:', { customerId, pointsToAdd, reason });
+      const { sqlite } = await import('../db/index.js');
+      
       const loyalty = await this.getCustomerLoyalty(customerId);
       if (!loyalty) {
         // Create new loyalty account if doesn't exist
@@ -3396,17 +3434,44 @@ export const storage = {
       const newTotal = Math.round((currentTotal + pointsToAdd) * 100) / 100;
       const newAvailable = Math.round((currentAvailable + pointsToAdd) * 100) / 100;
 
-      const [updated] = await db
-        .update(customerLoyalty)
-        .set({
-          totalPoints: newTotal.toString(),
-          availablePoints: newAvailable.toString(),
-          lastUpdated: new Date()
-        })
-        .where(eq(customerLoyalty.customerId, customerId))
-        .returning();
+      // Update using SQLite
+      const result = sqlite.prepare(`
+        UPDATE customer_loyalty 
+        SET total_points = ?, 
+            available_points = ?, 
+            last_updated = datetime('now')
+        WHERE customer_id = ?
+      `).run(
+        newTotal.toString(),
+        newAvailable.toString(),
+        customerId
+      );
 
-      return updated;
+      if (result.changes === 0) {
+        console.log('No loyalty account found to update for customer:', customerId);
+        return null;
+      }
+
+      // Fetch and return the updated record
+      const updatedRecord = sqlite.prepare(`
+        SELECT * FROM customer_loyalty WHERE customer_id = ?
+      `).get(customerId);
+
+      if (!updatedRecord) {
+        return null;
+      }
+
+      console.log('Loyalty points added successfully:', updatedRecord);
+      return {
+        id: updatedRecord.id,
+        customerId: updatedRecord.customer_id,
+        totalPoints: parseFloat(updatedRecord.total_points || '0'),
+        usedPoints: parseFloat(updatedRecord.used_points || '0'),
+        availablePoints: parseFloat(updatedRecord.available_points || '0'),
+        tier: updatedRecord.tier || 'Member',
+        createdAt: new Date(updatedRecord.created_at),
+        lastUpdated: new Date(updatedRecord.last_updated || updatedRecord.created_at)
+      };
     } catch (error) {
       console.error('Error adding loyalty points:', error);
       throw error;
