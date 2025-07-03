@@ -3415,17 +3415,47 @@ export const storage = {
 
   async updateLoyaltyAccount(customerId: number, updates: { totalPoints: number; availablePoints: number; notes?: string }): Promise<CustomerLoyalty | null> {
     try {
-      const [updated] = await db.update(customerLoyalty)
-        .set({
-          totalPoints: updates.totalPoints.toString(),
-          availablePoints: updates.availablePoints.toString(),
-          notes: updates.notes || null,
-          lastUpdated: new Date()
-        })
-        .where(eq(customerLoyalty.customerId, customerId))
-        .returning();
+      console.log('Updating loyalty account:', { customerId: customerId.toString(), ...updates });
+      const { sqlite } = await import('../db/index.js');
+      
+      // Update the loyalty account using SQLite
+      const result = sqlite.prepare(`
+        UPDATE customer_loyalty 
+        SET total_points = ?, 
+            available_points = ?, 
+            last_updated = datetime('now')
+        WHERE customer_id = ?
+      `).run(
+        updates.totalPoints.toString(),
+        updates.availablePoints.toString(),
+        customerId
+      );
 
-      return updated;
+      if (result.changes === 0) {
+        console.log('No loyalty account found to update for customer:', customerId);
+        return null;
+      }
+
+      // Fetch and return the updated record
+      const updatedRecord = sqlite.prepare(`
+        SELECT * FROM customer_loyalty WHERE customer_id = ?
+      `).get(customerId);
+
+      if (!updatedRecord) {
+        return null;
+      }
+
+      console.log('Loyalty account updated successfully:', updatedRecord);
+      return {
+        id: updatedRecord.id,
+        customerId: updatedRecord.customer_id,
+        totalPoints: parseFloat(updatedRecord.total_points || '0'),
+        usedPoints: parseFloat(updatedRecord.used_points || '0'),
+        availablePoints: parseFloat(updatedRecord.available_points || '0'),
+        tier: updatedRecord.tier || 'Member',
+        createdAt: new Date(updatedRecord.created_at),
+        lastUpdated: new Date(updatedRecord.last_updated || updatedRecord.created_at)
+      };
     } catch (error) {
       console.error('Error updating loyalty account:', error);
       throw error;
