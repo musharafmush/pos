@@ -3389,7 +3389,23 @@ export const storage = {
       const loyalty = await this.getCustomerLoyalty(customerId);
       if (!loyalty) {
         // Create new loyalty account if doesn't exist
-        return await this.createLoyaltyAccount(customerId);
+        const newLoyalty = await this.createCustomerLoyalty(customerId);
+        
+        // Now add the points to the new account
+        const result = sqlite.prepare(`
+          UPDATE customer_loyalty 
+          SET total_points = ?, 
+              available_points = ?, 
+              last_updated = datetime('now')
+          WHERE customer_id = ?
+        `).run(
+          pointsToAdd.toString(),
+          pointsToAdd.toString(),
+          customerId
+        );
+        
+        // Return the updated loyalty record
+        return await this.getCustomerLoyalty(customerId);
       }
 
       const currentTotal = parseFloat(loyalty.totalPoints.toString());
