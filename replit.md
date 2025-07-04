@@ -128,6 +128,7 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - **Electron Integration**: Desktop app build capabilities
 - **Portable Mode**: Self-contained executable for offline use
 - **Local Database**: SQLite for desktop installations
+- **Future Enhancement**: Windows EXE installer via electron-builder for professional distribution
 
 ### Database Migration Strategy
 - **Schema Versioning**: Comprehensive migration scripts for schema updates
