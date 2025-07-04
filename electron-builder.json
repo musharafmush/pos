@@ -1,43 +1,72 @@
 {
   "appId": "com.awesomeshop.pos",
   "productName": "Awesome Shop POS",
-  "description": "Professional Point of Sale System for Indian Retail Businesses",
-  "author": "Awesome Shop",
-  "main": "electron/main.js",
   "directories": {
-    "output": "dist-electron"
+    "output": "dist"
   },
   "files": [
-    "dist/**/*",
-    "electron/main.js",
-    "generated-icon.png"
+    "build/**/*",
+    "node_modules/**/*",
+    "package.json"
   ],
   "extraResources": [
     {
-      "from": "generated-icon.png",
-      "to": "icon.png"
+      "from": "pos-data.db",
+      "to": "pos-data.db"
     }
   ],
   "win": {
-    "target": "nsis",
-    "icon": "generated-icon.png",
-    "requestedExecutionLevel": "asInvoker"
-  },
-  "mac": {
-    "target": "dmg",
-    "icon": "generated-icon.png",
-    "category": "public.app-category.business"
-  },
-  "linux": {
-    "target": "AppImage",
-    "icon": "generated-icon.png",
-    "category": "Office"
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64",
+          "ia32"
+        ]
+      }
+    ],
+    "icon": "build/icon.ico",
+    "artifactName": "AwesomeShopPOS-Setup-${version}.exe"
   },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
+    "installerIcon": "build/icon.ico",
+    "uninstallerIcon": "build/icon.ico",
+    "installerHeaderIcon": "build/icon.ico",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Awesome Shop POS"
+    "shortcutName": "Awesome Shop POS",
+    "include": "build/installer.nsh"
+  },
+  "linux": {
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "build/icon.png",
+    "category": "Office"
+  },
+  "mac": {
+    "target": [
+      {
+        "target": "dmg",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      }
+    ],
+    "icon": "build/icon.icns",
+    "category": "public.app-category.business"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "awesomeshop",
+    "repo": "pos-system"
   }
 }
