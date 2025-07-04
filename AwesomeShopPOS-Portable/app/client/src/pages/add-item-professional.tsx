@@ -2544,6 +2544,14 @@ export default function AddItemProfessional() {
                                                   <Button
                                                     type="button"
                                                     onClick={() => {
+                                                      // Debug: Check selectedBulkItem data
+                                                      console.log('🔍 selectedBulkItem data:', selectedBulkItem);
+                                                      console.log('💰 Pricing debug:', {
+                                                        cost: selectedBulkItem.cost,
+                                                        price: selectedBulkItem.price,
+                                                        mrp: selectedBulkItem.mrp
+                                                      });
+                                                      
                                                       // Navigate to repacking-professional with pre-filled data
                                                       const repackingData = {
                                                         bulkProduct: {
@@ -2567,8 +2575,14 @@ export default function AddItemProfessional() {
                                                         }
                                                       };
                                                       
+                                                      console.log('💾 Storing repackingData:', repackingData);
+                                                      
                                                       // Store data in localStorage for repacking-professional
                                                       localStorage.setItem('repackingIntegrationData', JSON.stringify(repackingData));
+                                                      
+                                                      // Verify data was stored
+                                                      const stored = localStorage.getItem('repackingIntegrationData');
+                                                      console.log('✅ Data stored successfully:', stored);
                                                       
                                                       // Navigate to repacking-professional
                                                       setLocation('/repacking-professional');
