@@ -228,6 +228,7 @@ export default function RepackingProfessional() {
         // Pre-fill form with integration data
         form.setValue("bulkProductId", foundProduct.id);
         form.setValue("costPrice", parseFloat(bulkProduct.price || "0"));
+        form.setValue("sellingPrice", parseFloat(bulkProduct.sellingPrice || "0"));
         form.setValue("mrp", parseFloat(bulkProduct.mrp || "0"));
         
         if (newProduct.itemName) {
