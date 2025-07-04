@@ -836,8 +836,9 @@ export default function RepackingProfessional() {
                             min="0"
                             step="0.01"
                             {...field}
+                            value={field.value || 0}
                             onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            className="h-9 bg-white border-purple-300"
+                            className="h-9 bg-white border-purple-300 font-semibold"
                           />
                         </FormControl>
                         <FormMessage />
@@ -857,8 +858,9 @@ export default function RepackingProfessional() {
                             min="0"
                             step="0.01"
                             {...field}
+                            value={field.value || 0}
                             onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            className="h-9 bg-white border-purple-300"
+                            className="h-9 bg-white border-purple-300 font-semibold"
                           />
                         </FormControl>
                         <FormMessage />
@@ -879,14 +881,46 @@ export default function RepackingProfessional() {
                           min="0"
                           step="0.01"
                           {...field}
+                          value={field.value || 0}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          className="h-9 bg-white border-purple-300"
+                          className="h-9 bg-white border-purple-300 font-semibold"
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </div>
+              
+              {/* Live Price Display */}
+              <div className="mt-4 p-3 bg-purple-100 border border-purple-300 rounded">
+                <h5 className="text-sm font-semibold text-purple-800 mb-2">Live Price Configuration</h5>
+                <div className="grid grid-cols-3 gap-3 text-xs">
+                  <div className="text-center">
+                    <div className="text-purple-600 font-medium">Cost Price</div>
+                    <div className="text-lg font-bold text-purple-900">₹{form.watch("costPrice")?.toFixed(2) || "0.00"}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-purple-600 font-medium">Selling Price</div>
+                    <div className="text-lg font-bold text-purple-900">₹{form.watch("sellingPrice")?.toFixed(2) || "0.00"}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-purple-600 font-medium">MRP</div>
+                    <div className="text-lg font-bold text-purple-900">₹{form.watch("mrp")?.toFixed(2) || "0.00"}</div>
+                  </div>
+                </div>
+                
+                {/* Profit Margin Display */}
+                {form.watch("costPrice") && form.watch("sellingPrice") && (
+                  <div className="mt-3 pt-3 border-t border-purple-300">
+                    <div className="text-center">
+                      <div className="text-purple-600 font-medium text-xs">Profit Margin</div>
+                      <div className="text-lg font-bold text-green-700">
+                        {((form.watch("sellingPrice") - form.watch("costPrice")) / form.watch("costPrice") * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
