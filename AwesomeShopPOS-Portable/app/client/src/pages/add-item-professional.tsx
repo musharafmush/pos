@@ -2550,8 +2550,8 @@ export default function AddItemProfessional() {
                                                           id: selectedBulkItem.id,
                                                           name: selectedBulkItem.name,
                                                           sku: selectedBulkItem.sku,
-                                                          price: selectedBulkItem.price,
-                                                          sellingPrice: selectedBulkItem.sellingPrice || (parseFloat(selectedBulkItem.price || "0") * 1.2), // Calculate 20% markup if not available
+                                                          costPrice: selectedBulkItem.cost, // Cost Price (₹100)
+                                                          sellingPrice: selectedBulkItem.price, // Selling Price (₹120)
                                                           mrp: selectedBulkItem.mrp,
                                                           weight: selectedBulkItem.weight,
                                                           weightUnit: selectedBulkItem.weightUnit,
